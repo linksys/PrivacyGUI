@@ -40,6 +40,7 @@ dependencies:
   qr_code_scanner: ^0.7.0
   flutter_native_splash: ^2.1.5
   test: ^1.19.5
+  equatable: ^2.0.0
 
 dev_dependencies:
   flutter_test:
