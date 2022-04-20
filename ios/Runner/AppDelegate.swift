@@ -20,7 +20,7 @@ import NetworkExtension
               let ssid = args["ssid"] as? String
               let password = args["password"] as? String
               if #available(iOS 11.0, *) {
-                  self.connectToWiFi(ssid: ssid!, password: password!)
+                  self.connectToWiFi(result: result, ssid: ssid!, password: password!)
               } else {
                   // Fallback on earlier versions
               }
@@ -32,14 +32,16 @@ import NetworkExtension
   }
     
     @available(iOS 11.0, *)
-    private func connectToWiFi(ssid: String, password: String) {
+    private func connectToWiFi(result: @escaping FlutterResult, ssid: String, password: String) {
         let hotspotConfig = NEHotspotConfiguration(ssid: ssid, passphrase: password, isWEP: false)
                 hotspotConfig.joinOnce = false
         NEHotspotConfigurationManager.shared.apply(hotspotConfig) { error in
             if let error = error {
                 print("Error: \(error.localizedDescription)")
+                result(false)
             } else {
                 print("No error, you can check the connection")
+                result(true)
             }
         }
     }
