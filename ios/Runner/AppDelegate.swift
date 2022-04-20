@@ -1,5 +1,6 @@
 import UIKit
 import Flutter
+import NetworkExtension
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
@@ -7,7 +8,39 @@ import Flutter
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    GeneratedPluginRegistrant.register(with: self)
+      
+      let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
+      let connectWiFiChannel = FlutterMethodChannel(name: "com.linksys.native.channel.wifi.connect",
+                                                binaryMessenger: controller.binaryMessenger)
+      connectWiFiChannel.setMethodCallHandler({
+        (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+        
+          if call.method == "connectToWiFi" {
+              guard let args = call.arguments as? [String : Any] else {return}
+              let ssid = args["ssid"] as? String
+              let password = args["password"] as? String
+              if #available(iOS 11.0, *) {
+                  self.connectToWiFi(ssid: ssid!, password: password!)
+              } else {
+                  // Fallback on earlier versions
+              }
+          }
+      })
+
+      GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
+    
+    @available(iOS 11.0, *)
+    private func connectToWiFi(ssid: String, password: String) {
+        let hotspotConfig = NEHotspotConfiguration(ssid: ssid, passphrase: password, isWEP: false)
+                hotspotConfig.joinOnce = false
+        NEHotspotConfigurationManager.shared.apply(hotspotConfig) { error in
+            if let error = error {
+                print("Error: \(error.localizedDescription)")
+            } else {
+                print("No error, you can check the connection")
+            }
+        }
+    }
 }
