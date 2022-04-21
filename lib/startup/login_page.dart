@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:moab_poc/design_system/colors.dart';
 import 'package:moab_poc/design_system/texts.dart';
 import 'package:moab_poc/design_system/dimensions.dart';
+import 'package:moab_poc/home/dashboard_page.dart';
 
 class LoginPage extends StatelessWidget {
 
@@ -140,7 +141,11 @@ class _LoginFormState extends State<LoginForm> {
             minimumSize: const Size.fromHeight(50),
             shape: RoundedRectangleBorder(borderRadius: MoabRadius.getS()),
           ),
-          onPressed: () => showInfo(),
+          onPressed: () {
+            showInfo();
+            Navigator.push(context,
+                MaterialPageRoute(builder: (context) => const DashboardPage()));
+            },
         ),
       ],
       crossAxisAlignment: CrossAxisAlignment.center,
