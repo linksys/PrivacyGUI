@@ -9,7 +9,7 @@ void main() {
   group('test login bloc', () {
     test('test login', () async {
       LoginCubit cubit = LoginCubit();
-      await cubit.login(device, identity);
+      await cubit.login(username: 'root', password: 'Belkin123');
       expect(cubit.state, const LoginState.authenticated());
     });
   });

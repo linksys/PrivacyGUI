@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 void main() {
   const device = Device(address: '192.168.100.1', port: '80');
   const identity = Identity(username: 'root', password: 'Belkin123');
-  final repo = LocalDeviceRepository(OpenWRTClient(device, identity));
+  final repo = LocalDeviceRepository(OpenWRTClient(device));
 
   group('test local device repository', () {
     test('test get wireless info', () async {

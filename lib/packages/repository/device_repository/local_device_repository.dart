@@ -8,7 +8,6 @@ class LocalDeviceRepository extends DeviceRepository {
 
   @override
   Future<SystemInfo> getSystemInfo() async {
-    // TODO
     final result = await client.authenticate().then((value) => client.execute(
             value, [
           SystemBoardReply(ReplyStatus.unknown),
@@ -36,7 +35,8 @@ class LocalDeviceRepository extends DeviceRepository {
   @override
   Future<bool> login(String username, String password) async {
     try {
-      await client.authenticate();
+      await client.authenticate(
+          input: Identity(username: username, password: password));
       return true;
     } catch (_) {
       return false;

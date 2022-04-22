@@ -13,7 +13,7 @@ import 'model/device.dart';
 import 'model/identity.dart';
 
 class OpenWRTClient {
-  late Identity _identity;
+  Identity? _identity;
   late Device _device;
 
   static const int Timeout = 3;
@@ -25,8 +25,7 @@ class OpenWRTClient {
     return url;
   }
 
-  OpenWRTClient(Device d, Identity i) {
-    _identity = i;
+  OpenWRTClient(Device d) {
     _device = d;
   }
 
@@ -65,18 +64,23 @@ class OpenWRTClient {
     }
   }
 
-  Future<String> authenticate() async {
+  Future<String> authenticate({Identity? input}) async {
+    if (input == null && _identity == null) {
+      throw Exception('Unauthorized');
+    }
+    final identity = input ?? _identity!;
     List<CommandReplyBase> commands = [
-      AuthenticateReply.withIdentity(_identity)
+      AuthenticateReply.withIdentity(identity)
     ];
-    try {
-      final auth = (await execute(null, commands))
-          .whereType<AuthenticateReply>()
-          .first
-          .authCode;
-      return auth != null ? Future.value(auth) : throw Exception();
-    } catch (e) {
-      rethrow;
+    final auth = (await execute(null, commands))
+        .whereType<AuthenticateReply>()
+        .first
+        .authCode;
+    if (auth != null) {
+      _identity = identity;
+      return Future.value(auth);
+    } else {
+      throw Exception('Authorization fail');
     }
   }
 

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/design_system/colors.dart';
 import 'package:moab_poc/design_system/dimensions.dart';
 import 'package:moab_poc/design_system/texts.dart';
+import 'package:moab_poc/page/login/cubit.dart';
 
 import '../dashboard/view.dart';
 
@@ -140,10 +142,12 @@ class _LoginFormState extends State<LoginForm> {
             minimumSize: const Size.fromHeight(50),
             shape: RoundedRectangleBorder(borderRadius: MoabRadius.getS()),
           ),
-          onPressed: () {
+          onPressed: () async {
+            await context.read<LoginCubit>().login(username: '', password: '');
             showInfo();
             Navigator.push(context,
                 MaterialPageRoute(builder: (context) => DashboardPage()));
+            Navigator.pushNamed(context, '/dashboard');
           },
         ),
       ],

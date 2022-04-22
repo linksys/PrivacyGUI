@@ -6,7 +6,7 @@ void main() {
   const identity = Identity(username: 'root', password: 'Belkin123');
   group('test OpenWRT authentication', () {
     test('make authenticate', () async {
-      final actual = await OpenWRTClient(device, identity).authenticate();
+      final actual = await OpenWRTClient(device).authenticate();
       print('auth: $actual');
       expect(actual, isA<String>());
     });
@@ -14,37 +14,37 @@ void main() {
 
   group('test uci command', () {
     test('uci state wireless', () async {
-      final client = OpenWRTClient(device, identity);
-      final actual = await client.authenticate().then((value) =>
+      final client = OpenWRTClient(device);
+      final actual = await client.authenticate(input: identity).then((value) =>
           client.execute(value, [WirelessStateReply(ReplyStatus.unknown)]));
       expect(actual, isA<List<CommandReplyBase>>());
     });
 
     test('ubus system board', () async {
-      final client = OpenWRTClient(device, identity);
-      final actual = await client.authenticate().then((value) =>
+      final client = OpenWRTClient(device);
+      final actual = await client.authenticate(input: identity).then((value) =>
           client.execute(value, [SystemBoardReply(ReplyStatus.unknown)]));
       expect(actual, isA<List<CommandReplyBase>>());
     });
 
     test('ubus system info', () async {
-      final client = OpenWRTClient(device, identity);
-      final actual = await client.authenticate().then((value) =>
+      final client = OpenWRTClient(device);
+      final actual = await client.authenticate(input: identity).then((value) =>
           client.execute(value, [SystemInfoReply(ReplyStatus.unknown)]));
       expect(actual, isA<List<CommandReplyBase>>());
     });
 
     test('ubus network.device and targeting to eth1', () async {
-      final client = OpenWRTClient(device, identity);
-      final actual = await client.authenticate().then((value) =>
+      final client = OpenWRTClient(device);
+      final actual = await client.authenticate(input: identity).then((value) =>
           client.execute(value, [NetworkStatusReply(ReplyStatus.unknown)]));
       expect(actual, isA<List<CommandReplyBase>>());
     });
 
     test('compose commands', () async {
-      final client = OpenWRTClient(device, identity);
-      final actual = await client.authenticate().then((value) => client.execute(
-              value, [
+      final client = OpenWRTClient(device);
+      final actual = await client.authenticate(input: identity).then((value) =>
+          client.execute(value, [
             SystemInfoReply(ReplyStatus.unknown),
             SystemBoardReply(ReplyStatus.unknown)
           ]));
