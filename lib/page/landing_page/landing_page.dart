@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -24,20 +25,35 @@ class LandingPage extends StatefulWidget {
 class _LandingPageState extends State<LandingPage> with Permissions {
   ConnectivityResult _connectionStatus = ConnectivityResult.none;
   final Connectivity _connectivity = Connectivity();
+  final DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
+  AndroidDeviceInfo? _deviceInfo;
   late StreamSubscription<ConnectivityResult> _connectivitySubscription;
   final _networkInfo = NetworkInfo();
-  bool isScanning = false;
+  bool _isScanning = false;
+  bool _isLoading = false;
   String _wifiName = '';
   String _gatewayIp = '';
+  String _errorMessage = '';
+  String _targetSsid = '';
+  Timer? _timer;
 
   void _incrementCounter() async {
     if (Platform.isAndroid) {
-      NativeConnectWiFiChannel().connectToWiFi('', '');
+      try {
+        final result = await NativeConnectWiFiChannel().connectToWiFi('', '');
+        log("success: $result");
+      } on PlatformException catch (e) {
+        log("Error: ${e.message ?? ""}");
+        setState(() {
+          _errorMessage = e.message ?? "";
+          // _isScanning = true;
+        });
+      }
     } else {
       final permissionResult = await checkCameraPermissions();
       if (permissionResult) {
         setState(() {
-          isScanning = true;
+          _isScanning = true;
         });
       } else {
         openAppSettings();
@@ -68,6 +84,11 @@ class _LandingPageState extends State<LandingPage> with Permissions {
       return;
     }
 
+    final deviceInfo = await _deviceInfoPlugin.androidInfo;
+    setState(() {
+      _deviceInfo = deviceInfo;
+    });
+
     late ConnectivityResult result;
     // Platform messages may fail, so we use a try/catch PlatformException.
     try {
@@ -95,6 +116,14 @@ class _LandingPageState extends State<LandingPage> with Permissions {
     });
   }
 
+  Future<void> _connectToWiFi(String ssid, String password) async {
+    if (Platform.isAndroid) {
+      await NativeConnectWiFiChannel().wifiSuggestion(ssid, password);
+    } else {
+      await NativeConnectWiFiChannel().connectToWiFi(ssid, password);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -104,46 +133,165 @@ class _LandingPageState extends State<LandingPage> with Permissions {
       body: Center(
         child: _buildContent(context),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _isLoading && _isScanning
+          ? null
+          : FloatingActionButton(
+              onPressed: _incrementCounter,
+              tooltip: 'Increment',
+              child: const Icon(Icons.add),
+            ),
     );
   }
 
+  // Show AlertDialog
+  _showAlertDialog(BuildContext context) {
+    // Init
+    AlertDialog dialog = AlertDialog(
+      title: Text("Seems still can not connect to $_targetSsid!"),
+      actions: [
+        ElevatedButton(
+            child: const Text("Open WiFi Settings"),
+            onPressed: () {
+              if (Platform.isAndroid) {
+                NativeConnectWiFiChannel().openWifiPanel();
+              } else {
+                openAppSettings();
+              }
+              Navigator.pop(context);
+            }),
+      ],
+    );
+    // Show the dialog
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return dialog;
+        });
+  }
+
   Widget _buildContent(BuildContext context) {
-    Widget child = isScanning
-        ? CustomQRView(
-            callback: (code) {
-              log('QR code: ${code.code}');
-              // GetStorage().write("public_key", code.code);
-              // Get.back(
-              //     result: code.code, id: Get.find<Preferences>().navigationKey);
-            },
-            onFinish: (code) {
-              log('QR: onFinish: ${code.code}');
-              final token = code.code!.split(';');
-              final ssid = token[1].replaceAll('S:', '');
-              final password = token[2].replaceAll('P:', '');
-              log('Parsed WiFI: $ssid, $password');
+    late Widget child;
+    if (_isScanning) {
+      child = CustomQRView(
+        callback: (code) {
+          log('QR code: ${code.code}');
+          // GetStorage().write("public_key", code.code);
+          // Get.back(
+          //     result: code.code, id: Get.find<Preferences>().navigationKey);
+        },
+        onFinish: (code) async {
+          log('QR: onFinish: ${code.code}');
+          final token = code.code!.split(';');
+          final ssid = token[1].replaceAll('S:', '');
+          final password = token[2].replaceAll('P:', '');
+          log('Parsed WiFI: $ssid, $password');
+          setState(() {
+            _isScanning = false;
+            _targetSsid = ssid;
+            _isLoading = true;
+          });
+
+          await _connectToWiFi(ssid, password).then((value) {
+            if (_timer != null && (_timer?.isActive ?? false)) {
+              _timer?.cancel();
+            }
+            _timer = Timer(const Duration(seconds: 5), () {
+              log("Timer Triggered:: $_targetSsid, $_wifiName");
+              if (_targetSsid != _wifiName) {
+                _showAlertDialog(context);
+              }
               setState(() {
-                isScanning = false;
+                _isLoading = false;
               });
-              NativeConnectWiFiChannel().connectToWiFi(ssid, password);
-            },
-          )
-        : Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Text(
-                'Current SSID: $_wifiName',
-              ),
-              Text(
-                'Gateway IP: $_gatewayIp',
-              ),
-            ],
-          );
+            });
+          });
+        },
+      );
+    } else if (_isLoading) {
+      child = const Center(
+        child: CircularProgressIndicator(),
+      );
+    } else {
+      child = Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Press + for testing this device is support Easy Connect or not",
+                  style: Theme.of(context).textTheme.headline6,
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    "You'll see a QR-code scanner if your smart phone support Easy Connect, otherwise you'll see error below.",
+                    style: Theme.of(context).textTheme.bodyText1,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Smartphone Information:",
+                        style: Theme.of(context).textTheme.headline6,
+                        textAlign: TextAlign.start,
+                      ),
+                      Text(
+                        "Brand: ${_deviceInfo?.brand ?? ""}",
+                        style: Theme.of(context).textTheme.subtitle1,
+                      ),
+                      Text(
+                        "Model: ${_deviceInfo?.model ?? ""}",
+                        style: Theme.of(context).textTheme.subtitle1,
+                      ),
+                      Text(
+                        "Manufacturer: ${_deviceInfo?.manufacturer ?? ""}",
+                        style: Theme.of(context).textTheme.subtitle1,
+                      ),
+                      Text(
+                        "Device: ${_deviceInfo?.device ?? ""}",
+                        style: Theme.of(context).textTheme.subtitle1,
+                      ),
+                      Text("OS version: ${_deviceInfo?.version.release ?? ""}",
+                          style: Theme.of(context).textTheme.subtitle1)
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+              child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Current SSID: $_wifiName',
+                ),
+                Text(
+                  'Gateway IP: $_gatewayIp',
+                ),
+                Text(
+                  _errorMessage,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyText1
+                      ?.copyWith(color: Colors.red),
+                ),
+              ],
+            ),
+          )),
+        ],
+      );
+    }
     return Center(
       child: child,
     );

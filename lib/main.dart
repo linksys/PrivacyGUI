@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const LandingPage(title: 'Flutter Demo Home Page'),
+      home: const LandingPage(title: 'Easy Connect Tester'),
     );
   }
 }

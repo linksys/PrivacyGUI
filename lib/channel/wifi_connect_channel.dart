@@ -17,12 +17,21 @@ class NativeConnectWiFiChannel {
   NativeConnectWiFiChannel._internal();
 
   connectToWiFi(String ssid, String password) async {
+    return await _platform
+        .invokeMethod('connectToWiFi', {'ssid': ssid, 'password': password});
+  }
+
+  Future<bool> wifiSuggestion(String ssid, String password) async {
     try {
       return await _platform
-          .invokeMethod('connectToWiFi', {'ssid': ssid, 'password': password});
+          .invokeMethod('wifiSuggestion', {'ssid': ssid, 'password': password});
     } on PlatformException catch (e) {
-      log(e.message ?? "");
+      log("wifiSuggestion: ${e.message ?? " "}");
       return false;
     }
+  }
+
+  openWifiPanel() async {
+    await _platform.invokeMethod('openWiFiPanel');
   }
 }
