@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-
-import '../../design_system/colors.dart';
-import '../../design_system/texts.dart';
+import 'package:moab_poc/design_system/colors.dart';
+import 'package:moab_poc/design_system/texts.dart';
 import '../mesh/add_child_page.dart';
 
 class DashboardView extends StatelessWidget {
@@ -9,28 +8,29 @@ class DashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return Scaffold(
+      body: SafeArea(
         child: Container(
-      child: Column(
-        children: [
-          const Text(
-            'SSID',
-            style: primaryPageTitle,
+          child: Column(
+            children: [
+              const Text(
+                'SSID',
+                style: primaryPageTitle,
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, AddChildPage.routeName);
+                },
+                child: const Text('Add child'),
+              )
+            ],
+            crossAxisAlignment: CrossAxisAlignment.center,
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const AddChildPage()));
-            },
-            child: const Text('Add child'),
-          )
-        ],
-        crossAxisAlignment: CrossAxisAlignment.center,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 24),
+          color: MoabColor.white,
+        ),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 24),
-      color: MoabColor.lightGrey2,
-    ));
+    );
   }
 }

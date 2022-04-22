@@ -9,6 +9,8 @@ import '../components/qr_view.dart';
 class AddChildPage extends StatelessWidget {
   const AddChildPage({Key? key}) : super(key: key);
 
+  static const routeName = '/add_child_page';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

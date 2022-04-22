@@ -7,6 +7,8 @@ import 'cubit.dart';
 class DashboardPage extends StatelessWidget {
   const DashboardPage({Key? key}) : super(key: key);
 
+  static const routeName = '/dashboard_page';
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -18,6 +20,6 @@ class DashboardPage extends StatelessWidget {
   Widget _buildPage(BuildContext context) {
     final cubit = BlocProvider.of<DashboardCubit>(context);
 
-    return DashboardView();
+    return const DashboardView();
   }
 }

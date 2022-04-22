@@ -1,28 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/page/dashboard/view.dart';
 import 'package:moab_poc/page/login/view.dart';
+import 'package:moab_poc/page/mesh/add_child_page.dart';
 
 void main() {
-  runApp(const Moab());
+  runApp(const MoabApp());
 }
 
-class Moab extends StatelessWidget {
-  const Moab({Key? key}) : super(key: key);
+class MoabApp extends StatelessWidget {
+  const MoabApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    var appBarTitle = const Text('Moab');
-
-    var appBar = AppBar(
-      title: appBarTitle,
+    return MaterialApp(
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const LoginPage(),
+        DashboardPage.routeName: (context) => const DashboardPage(),
+        AddChildPage.routeName: (context) => const AddChildPage(),
+      },
     );
-
-    var moabApp = MaterialApp(
-      home: Scaffold(
-        appBar: appBar,
-        body: LoginPage(),
-      ),
-    );
-
-    return moabApp;
   }
 }

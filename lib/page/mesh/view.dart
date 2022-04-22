@@ -5,6 +5,8 @@ import 'cubit.dart';
 import 'state.dart';
 
 class MeshPage extends StatelessWidget {
+  const MeshPage({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(

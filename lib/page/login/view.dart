@@ -7,12 +7,13 @@ import 'cubit.dart';
 class LoginPage extends StatelessWidget {
   const LoginPage({Key? key}) : super(key: key);
 
-  static const routeName = '/login';
+  static const routeName = '/login_page';
+
   @override
   Widget build(BuildContext context) {
-    final args =
-        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
-    final ip = args['ip'] ?? "";
+    // final args =
+    //     ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+    // final ip = args['ip'] ?? "";
 
     return BlocProvider(
       create: (BuildContext context) => LoginCubit(),

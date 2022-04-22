@@ -1,69 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/services.dart';
 import 'package:moab_poc/design_system/colors.dart';
 import 'package:moab_poc/design_system/dimensions.dart';
 import 'package:moab_poc/design_system/texts.dart';
+import 'package:moab_poc/page/dashboard/view.dart';
 import 'package:moab_poc/page/login/cubit.dart';
 
-import '../dashboard/view.dart';
-
 class LoginView extends StatelessWidget {
-  LoginView({Key? key}) : super(key: key);
+  const LoginView({Key? key}) : super(key: key);
 
   final titleText = const Text(
     'Log in',
     style: primaryPageTitle,
   );
 
-  final subTitleText = const Text(
-    'Manage settings at home or away from home',
-    style: primaryPageSubTitle,
-  );
-
-  final troubleShootingButton = TextButton(
-    child: const Text(
-      'Having a problem? Tell us about it',
-      style: primaryTextButton,
-    ),
-    onPressed: () => print('Tap TroubleShooting button'),
-  );
-
-  final newHereText = const Text(
-    'New here?',
-    style: primaryContent,
-  );
-
-  final createAccountButton = TextButton(
-    child: const Text(
-      'Create an account',
-      style: primaryTextButton,
-    ),
-    onPressed: () => print('Tap Create Account button'),
-  );
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: Column(
-        children: [
-          Row(
-            children: [titleText],
-            mainAxisAlignment: MainAxisAlignment.start,
+    return AnnotatedRegion(
+      child: Scaffold(
+        body: SafeArea(
+          child: Container(
+            child: Column(
+              children: [
+                Row(
+                  children: [titleText],
+                  mainAxisAlignment: MainAxisAlignment.start,
+                ),
+                const LoginForm(),
+              ],
+              crossAxisAlignment: CrossAxisAlignment.center,
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+            color: MoabColor.white,
           ),
-          Row(
-            children: [subTitleText],
-            mainAxisAlignment: MainAxisAlignment.start,
-          ),
-          const LoginForm(),
-          troubleShootingButton,
-          const Spacer(),
-          newHereText,
-          createAccountButton,
-        ],
-        crossAxisAlignment: CrossAxisAlignment.center,
+        ),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-      color: MoabColor.lightGrey2,
+      value: const SystemUiOverlayStyle(
+        statusBarBrightness: Brightness.light,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarColor: MoabColor.white,
+      )
     );
   }
 }
@@ -72,9 +49,7 @@ class LoginForm extends StatefulWidget {
   const LoginForm({Key? key}) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() {
-    return _LoginFormState();
-  }
+  _LoginFormState createState() => _LoginFormState();
 }
 
 class _LoginFormState extends State<LoginForm> {
@@ -118,17 +93,8 @@ class _LoginFormState extends State<LoginForm> {
           ),
           onSubmitted: (text) => showInfo(),
         ),
-        Row(
-          children: [
-            TextButton(
-              child: const Text(
-                'Forgot password?',
-                style: primaryTextButton,
-              ),
-              onPressed: () => print('Tap Forgot Password button'),
-            ),
-          ],
-          mainAxisAlignment: MainAxisAlignment.end,
+        const SizedBox(
+          height: 36,
         ),
         ElevatedButton.icon(
           icon: const Icon(
@@ -145,9 +111,7 @@ class _LoginFormState extends State<LoginForm> {
           onPressed: () async {
             await context.read<LoginCubit>().login(username: '', password: '');
             showInfo();
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => DashboardPage()));
-            Navigator.pushNamed(context, '/dashboard');
+            Navigator.pushNamed(context, DashboardPage.routeName);
           },
         ),
       ],
