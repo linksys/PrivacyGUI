@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:moab_poc/startup/login_page.dart';
+import 'package:moab_poc/page/login/view.dart';
 
 void main() {
   runApp(const Moab());

@@ -1,9 +1,10 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:moab_poc/home/spinner_page.dart';
+import 'package:moab_poc/page/mesh/spinner_page.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import '../page/components/qr_view.dart';
+
+import '../components/qr_view.dart';
 
 class AddChildPage extends StatelessWidget {
   const AddChildPage({Key? key}) : super(key: key);
@@ -12,7 +13,9 @@ class AddChildPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: BackButton(onPressed: () => Navigator.pop(context),),
+        leading: BackButton(
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: const QRCodeScanner(),
     );
@@ -35,7 +38,9 @@ class _QRCodeScannerState extends State<QRCodeScanner> {
   Widget build(BuildContext context) {
     return isLoading
         ? const SpinnerPage()
-        : CustomQRView(onFinish: handleScannerResult,);
+        : CustomQRView(
+            onFinish: handleScannerResult,
+          );
   }
 
   void handleScannerResult(Barcode result) {
@@ -51,7 +56,7 @@ class _QRCodeScannerState extends State<QRCodeScanner> {
 
   Future<void> startAddChild() async {
     // TODO: Send info to parent
-    await Future.delayed(const Duration(seconds: 5), (){
+    await Future.delayed(const Duration(seconds: 5), () {
       setState(() {
         isLoading = false;
       });

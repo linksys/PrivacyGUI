@@ -1,6 +1,6 @@
-import 'package:moab_poc/login/cubit.dart';
-import 'package:moab_poc/login/state.dart';
 import 'package:moab_poc/packages/openwrt/model/model.dart';
+import 'package:moab_poc/page/login/cubit.dart';
+import 'package:moab_poc/page/login/state.dart';
 import 'package:test/test.dart';
 
 void main() {

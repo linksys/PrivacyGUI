@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design_system/colors.dart';
-import 'package:moab_poc/design_system/texts.dart';
 import 'package:moab_poc/design_system/dimensions.dart';
-import 'package:moab_poc/home/dashboard_page.dart';
+import 'package:moab_poc/design_system/texts.dart';
 
-class LoginPage extends StatelessWidget {
+import '../dashboard/view.dart';
 
-  LoginPage({Key? key}) : super(key: key);
+class LoginView extends StatelessWidget {
+  LoginView({Key? key}) : super(key: key);
 
   final titleText = const Text(
     'Log in',
@@ -45,15 +45,11 @@ class LoginPage extends StatelessWidget {
       child: Column(
         children: [
           Row(
-            children: [
-              titleText
-            ],
+            children: [titleText],
             mainAxisAlignment: MainAxisAlignment.start,
           ),
           Row(
-            children: [
-              subTitleText
-            ],
+            children: [subTitleText],
             mainAxisAlignment: MainAxisAlignment.start,
           ),
           const LoginForm(),
@@ -77,17 +73,17 @@ class LoginForm extends StatefulWidget {
   State<StatefulWidget> createState() {
     return _LoginFormState();
   }
-
 }
 
 class _LoginFormState extends State<LoginForm> {
-
   final emailController = TextEditingController();
   final pwdController = TextEditingController();
 
   void showInfo() {
-    print('\nEmail: ' + emailController.text +
-        '\nPassword: ' + pwdController.text);
+    print('\nEmail: ' +
+        emailController.text +
+        '\nPassword: ' +
+        pwdController.text);
   }
 
   @override
@@ -99,7 +95,6 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-
     return Column(
       children: [
         TextField(
@@ -134,7 +129,11 @@ class _LoginFormState extends State<LoginForm> {
           mainAxisAlignment: MainAxisAlignment.end,
         ),
         ElevatedButton.icon(
-          icon: const Icon(Icons.lock, color: MoabColor.white, size: 20,),
+          icon: const Icon(
+            Icons.lock,
+            color: MoabColor.white,
+            size: 20,
+          ),
           label: const Text('Log in'),
           style: ElevatedButton.styleFrom(
             textStyle: const TextStyle(fontSize: 16),
@@ -144,12 +143,11 @@ class _LoginFormState extends State<LoginForm> {
           onPressed: () {
             showInfo();
             Navigator.push(context,
-                MaterialPageRoute(builder: (context) => const DashboardPage()));
-            },
+                MaterialPageRoute(builder: (context) => DashboardPage()));
+          },
         ),
       ],
       crossAxisAlignment: CrossAxisAlignment.center,
     );
   }
-
 }
