@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/page/login/view.dart';
 import 'package:moab_poc/util/permission.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -76,7 +78,16 @@ class _LandingPageState extends State<LandingView> with Permissions {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<LandingBloc, LandingState>(
+    return BlocConsumer<LandingBloc, LandingState>(
+      listenWhen: (context, state) {
+        return state.isConnectToDevice;
+      },
+      listener: (context, state) {
+        if (state.isConnectToDevice) {
+          Navigator.pushNamed(context, LoginPage.routeName,
+              arguments: {'ip': state.gatewayIp, 'ssid': state.ssid});
+        }
+      },
       builder: (context, state) {
         return Scaffold(
           appBar: AppBar(),
@@ -91,7 +102,13 @@ class _LandingPageState extends State<LandingView> with Permissions {
   Widget _buildContent(BuildContext context, LandingState state) {
     late Widget child;
     if (state.isConnectToDevice) {
-      child = Text('You are already connected');
+      child = Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          CircularProgressIndicator(),
+          Text('You are already connected...'),
+        ],
+      );
     } else if (state.scanning) {
       child = CustomQRView(callback: (code) {
         log('QR code: ${code.code}');
@@ -104,19 +121,26 @@ class _LandingPageState extends State<LandingView> with Permissions {
         await NativeConnectWiFiChannel().connectToWiFi(ssid, password);
       });
     } else {
-      child = TextButton(
-          onPressed: () {
-            context.read<LandingBloc>().add(ScanQrCode());
-          },
-          child: Column(
-            children: [
-              Text(state.ssid.isEmpty ? 'unknown' : state.ssid),
-              Text('Connect'),
-            ],
-          ));
+      child = Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('You are not connect to a Kauai device!'),
+          Text("SSID: ${state.ssid.isEmpty ? 'unknown' : state.ssid}"),
+          const SizedBox(
+            height: 32,
+          ),
+          ElevatedButton(
+              onPressed: () {
+                if (Platform.isAndroid) {
+                  NativeConnectWiFiChannel().connectToWiFi('', '');
+                } else {
+                  context.read<LandingBloc>().add(ScanQrCode());
+                }
+              },
+              child: const Text('Connect'))
+        ],
+      );
     }
-    return Center(
-      child: child,
-    );
+    return child;
   }
 }

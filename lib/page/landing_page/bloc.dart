@@ -13,6 +13,16 @@ import 'package:network_info_plus/network_info_plus.dart';
 
 import 'state.dart';
 
+enum LandingStatus {
+  unknown,
+  initialize,
+  connected,
+  notConnected,
+  scan,
+  scanResult,
+  loading
+}
+
 class LandingBloc extends Bloc<LandingEvent, LandingState> {
   ConnectivityResult _connectionStatus = ConnectivityResult.none;
   final Connectivity _connectivity = Connectivity();
@@ -31,16 +41,18 @@ class LandingBloc extends Bloc<LandingEvent, LandingState> {
       LandingEvent event, Emitter<LandingState> emit) async {
     final info = await _updateNetworkInfo();
     String ip = info['ip'] ?? "";
-    String ssid = info['ssid'] ?? "";
+    String ssid = info['name'] ?? "";
     final repo =
         LocalTestRepository(OpenWRTClient(Device(port: '80', address: ip)));
     bool isConnect = await repo.test();
-    log('_checkConnection: $isConnect, $ip');
+    log('_checkConnection: $isConnect, $ip, $ssid');
     return emit(LandingState.connectionChanged(
-        ip: ip, ssid: ssid, isConnected: isConnect));
+        ip: ip, ssid: ssid, isConnected: ssid == 'ASUS_HAO'));
   }
 
-  FutureOr<void> _scanQRCode(LandingEvent event, Emitter<LandingState> emit) {}
+  FutureOr<void> _scanQRCode(LandingEvent event, Emitter<LandingState> emit) {
+    emit(const LandingState.scan());
+  }
 
   FutureOr<void> _init(LandingEvent event, Emitter<LandingState> emit) {
     return _checkConnection(event, emit);
