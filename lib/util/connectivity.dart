@@ -81,6 +81,4 @@ mixin ConnectivityListener {
 
   Future onConnectivityChanged(
       ConnectivityResult result, ConnectivityInfo info);
-
-
 }

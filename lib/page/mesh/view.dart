@@ -5,7 +5,6 @@ import 'package:moab_poc/packages/repository/device_repository/device_repository
 import 'package:moab_poc/util/connectivity.dart';
 
 import 'cubit.dart';
-import 'state.dart';
 
 class MeshPage extends StatelessWidget {
   const MeshPage({Key? key}) : super(key: key);
