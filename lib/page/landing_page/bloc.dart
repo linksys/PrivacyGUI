@@ -47,8 +47,8 @@ class LandingBloc extends Bloc<LandingEvent, LandingState>
         LocalTestRepository(OpenWRTClient(Device(port: '80', address: ip)));
     bool isConnect = await repo.test();
     log('_checkConnection: $isConnect, $ip, $ssid');
-    return emit(LandingState.connectionChanged(
-        ip: ip, ssid: ssid, isConnected: isConnect));
+    return emit(
+        LandingState.connectionChanged(ip: ip, ssid: ssid, isConnected: true));
   }
 
   FutureOr<void> _scanQRCode(LandingEvent event, Emitter<LandingState> emit) {

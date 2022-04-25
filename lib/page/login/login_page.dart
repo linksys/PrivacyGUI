@@ -80,9 +80,7 @@ class _LoginFormState extends State<LoginForm> {
             hintText: 'Enter email address',
             hintStyle: primaryPlaceholder,
           ),
-          onChanged: (value) {
-            context.read<LoginCubit>().onUsernameChanged(value);
-          },
+          onChanged: (value) {},
         ),
         TextField(
           controller: pwdController,
@@ -92,9 +90,7 @@ class _LoginFormState extends State<LoginForm> {
             hintText: 'Enter password',
             hintStyle: primaryPlaceholder,
           ),
-          onChanged: (value) {
-            context.read<LoginCubit>().onPasswordChanged(value);
-          },
+          onChanged: (value) {},
           onSubmitted: (text) => showInfo(),
         ),
         const SizedBox(
@@ -113,7 +109,9 @@ class _LoginFormState extends State<LoginForm> {
             shape: RoundedRectangleBorder(borderRadius: MoabRadius.getS()),
           ),
           onPressed: () async {
-            await context.read<LoginCubit>().login();
+            await context
+                .read<LoginCubit>()
+                .login(emailController.text, pwdController.text);
             showInfo();
             // Navigator.pushNamed(context, DashboardPage.routeName);
           },

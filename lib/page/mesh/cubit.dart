@@ -6,7 +6,11 @@ import 'state.dart';
 enum MeshStatus { initial, qrcodeScanning, loading, complete }
 
 class MeshCubit extends Cubit<MeshState> {
-  MeshCubit() : super(const MeshState.initial());
+  MeshCubit({required DeviceRepository repo})
+      : _repository = repo,
+        super(const MeshState.initial());
+
+  final DeviceRepository _repository;
 
   void meshStatusChange(MeshStatus status) {
     switch (status) {
@@ -31,8 +35,8 @@ class MeshCubit extends Cubit<MeshState> {
     emit(const MeshState.qrcodeScanning());
   }
 
-  Future<void> syncDPPWithChild(DeviceRepository repository, String dpp) async{
-      //TODO send DPP to child by repository
+  Future<void> syncDPPWithChild(DeviceRepository repository, String dpp) async {
+    //TODO send DPP to child by repository
   }
 
   @override

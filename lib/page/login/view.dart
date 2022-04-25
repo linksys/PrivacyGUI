@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/packages/openwrt/openwrt.dart';
 import 'package:moab_poc/packages/repository/device_repository/device_repository.dart';
 import 'package:moab_poc/page/login/login_page.dart';
+import 'package:moab_poc/util/connectivity.dart';
 
 import 'cubit.dart';
 
@@ -19,7 +20,6 @@ class LoginPage extends StatelessWidget {
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
     final ip = args['ip'] ?? "";
     final ssid = args['ssid'] ?? "";
-
     log('LoginPage: $ip, $ssid');
     return BlocProvider(
       create: (BuildContext context) => LoginCubit(

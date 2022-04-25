@@ -14,34 +14,12 @@ class ConnectivityInfo {
   final String ssid;
 }
 
-mixin ConnectivityListener {
-  ConnectivityResult connectionStatus = ConnectivityResult.none;
-  ConnectivityInfo connectivityInfo =
-      const ConnectivityInfo(gatewayIp: '', ssid: '');
-  final Connectivity _connectivity = Connectivity();
-  late StreamSubscription<ConnectivityResult>? _connectivitySubscription;
-  final _networkInfo = NetworkInfo();
+class ConnectivityUtil {
+  static String gatewayIp = '';
 
-  void start() {
-    _connectivitySubscription =
-        _connectivity.onConnectivityChanged.listen(_updateConnectivity);
-  }
+  static Future<ConnectivityInfo> updateNetworkInfo() async {
+    final _networkInfo = NetworkInfo();
 
-  void stop() {
-    _connectivitySubscription?.cancel();
-  }
-
-  _updateConnectivity(ConnectivityResult result) async {
-    connectionStatus = result;
-    connectivityInfo = await _updateNetworkInfo();
-
-    onConnectivityChanged(connectionStatus, connectivityInfo);
-  }
-
-  Future onConnectivityChanged(
-      ConnectivityResult result, ConnectivityInfo info);
-
-  Future<ConnectivityInfo> _updateNetworkInfo() async {
     String? wifiName, wifiGatewayIP;
 
     try {
@@ -71,12 +49,38 @@ mixin ConnectivityListener {
       wifiGatewayIP = 'Failed to get Wifi gateway address';
     }
 
-    // emit?
-    // setState(() {
-    //   _wifiName = wifiName ?? "";
-    //   _gatewayIp = wifiGatewayIP ?? "";
-    // });
+    gatewayIp = wifiGatewayIP ?? '';
+
     return ConnectivityInfo(
         gatewayIp: wifiGatewayIP ?? "", ssid: wifiName ?? "");
   }
+}
+
+mixin ConnectivityListener {
+  ConnectivityResult connectionStatus = ConnectivityResult.none;
+  ConnectivityInfo connectivityInfo =
+      const ConnectivityInfo(gatewayIp: '', ssid: '');
+  final Connectivity _connectivity = Connectivity();
+  late StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+
+  void start() {
+    _connectivitySubscription =
+        _connectivity.onConnectivityChanged.listen(_updateConnectivity);
+  }
+
+  void stop() {
+    _connectivitySubscription?.cancel();
+  }
+
+  _updateConnectivity(ConnectivityResult result) async {
+    connectionStatus = result;
+    connectivityInfo = await ConnectivityUtil.updateNetworkInfo();
+
+    onConnectivityChanged(connectionStatus, connectivityInfo);
+  }
+
+  Future onConnectivityChanged(
+      ConnectivityResult result, ConnectivityInfo info);
+
+
 }
