@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/design_system/colors.dart';
 import 'package:moab_poc/design_system/dimensions.dart';
 import 'package:moab_poc/design_system/texts.dart';
-import 'package:moab_poc/page/dashboard/view.dart';
 import 'package:moab_poc/page/login/cubit.dart';
 
 class LoginView extends StatelessWidget {
@@ -81,6 +80,9 @@ class _LoginFormState extends State<LoginForm> {
             hintText: 'Enter email address',
             hintStyle: primaryPlaceholder,
           ),
+          onChanged: (value) {
+            context.read<LoginCubit>().onUsernameChanged(value);
+          },
         ),
         TextField(
           controller: pwdController,
@@ -90,6 +92,9 @@ class _LoginFormState extends State<LoginForm> {
             hintText: 'Enter password',
             hintStyle: primaryPlaceholder,
           ),
+          onChanged: (value) {
+            context.read<LoginCubit>().onPasswordChanged(value);
+          },
           onSubmitted: (text) => showInfo(),
         ),
         const SizedBox(
@@ -108,9 +113,9 @@ class _LoginFormState extends State<LoginForm> {
             shape: RoundedRectangleBorder(borderRadius: MoabRadius.getS()),
           ),
           onPressed: () async {
-            await context.read<LoginCubit>().login(username: '', password: '');
+            await context.read<LoginCubit>().login();
             showInfo();
-            Navigator.pushNamed(context, DashboardPage.routeName);
+            // Navigator.pushNamed(context, DashboardPage.routeName);
           },
         ),
       ],

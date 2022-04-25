@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:bloc/bloc.dart';
 import 'package:moab_poc/packages/repository/device_repository/device_repository.dart';
 
@@ -11,14 +13,23 @@ class LoginCubit extends Cubit<LoginState> {
 
   final DeviceRepository _repository;
 
-  Future<void> login(
-      {required String username, required String password}) async {
-    bool result = await _repository.login(username, password);
+  Future<void> login() async {
+    log('username: ${state.username}, ${state.password}');
+    bool result = await _repository.login(state.username, state.password);
     if (result) {
       emit(const LoginState.authenticated());
     } else {
       emit(const LoginState.unauthenticated());
     }
+  }
+
+  onUsernameChanged(String username) {
+    log('onUsernameChanged: $username');
+    emit(LoginState.updateUsername(username));
+  }
+
+  onPasswordChanged(String password) {
+    emit(LoginState.updatePassword(password));
   }
 
   @override

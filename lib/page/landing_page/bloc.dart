@@ -40,6 +40,9 @@ class LandingBloc extends Bloc<LandingEvent, LandingState>
       LandingEvent event, Emitter<LandingState> emit) async {
     String ip = connectivityInfo.gatewayIp;
     String ssid = connectivityInfo.ssid;
+    if (ip.isEmpty) {
+      return;
+    }
     final repo =
         LocalTestRepository(OpenWRTClient(Device(port: '80', address: ip)));
     bool isConnect = await repo.test();
