@@ -27,7 +27,13 @@ class AuthenticateReply extends CommandReplyBase {
 
   @override
   CommandReplyBase createReply(ReplyStatus status, Map<String, dynamic> data) {
-    final authCode = data['result'][1]['ubus_rpc_session'];
-    return AuthenticateReply(status, authCode: authCode);
+    final result = data['result'] as List;
+    if (result.length > 1) {
+      final authCode = data['result'][1]['ubus_rpc_session'];
+      return AuthenticateReply(status, authCode: authCode);
+    } else {
+      // unauthorized
+      return AuthenticateReply(status, authCode: '');
+    }
   }
 }

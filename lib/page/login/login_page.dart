@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/design_system/colors.dart';
 import 'package:moab_poc/design_system/dimensions.dart';
 import 'package:moab_poc/design_system/texts.dart';
@@ -10,38 +10,37 @@ import 'package:moab_poc/page/login/cubit.dart';
 class LoginView extends StatelessWidget {
   const LoginView({Key? key}) : super(key: key);
 
-  final titleText = const Text(
-    'Log in',
-    style: primaryPageTitle,
-  );
-
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion(
-      child: Scaffold(
-        body: SafeArea(
-          child: Container(
-            child: Column(
-              children: [
-                Row(
-                  children: [titleText],
-                  mainAxisAlignment: MainAxisAlignment.start,
-                ),
-                const LoginForm(),
-              ],
-              crossAxisAlignment: CrossAxisAlignment.center,
+        child: Scaffold(
+          body: SafeArea(
+            child: Container(
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Log in to ',
+                        style: primaryPageTitle,
+                      )
+                    ],
+                    mainAxisAlignment: MainAxisAlignment.start,
+                  ),
+                  const LoginForm(),
+                ],
+                crossAxisAlignment: CrossAxisAlignment.center,
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+              color: MoabColor.white,
             ),
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-            color: MoabColor.white,
           ),
         ),
-      ),
-      value: const SystemUiOverlayStyle(
-        statusBarBrightness: Brightness.light,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarColor: MoabColor.white,
-      )
-    );
+        value: const SystemUiOverlayStyle(
+          statusBarBrightness: Brightness.light,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarColor: MoabColor.white,
+        ));
   }
 }
 

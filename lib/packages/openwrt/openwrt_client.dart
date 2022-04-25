@@ -72,13 +72,10 @@ class OpenWRTClient {
     List<CommandReplyBase> commands = [
       AuthenticateReply.withIdentity(identity)
     ];
-    final auth = (await execute(null, commands))
-        .whereType<AuthenticateReply>()
-        .first
-        .authCode;
-    if (auth != null) {
+    final authObj = (await execute(null, commands)).first;
+    if (authObj is AuthenticateReply && authObj.authCode != null) {
       _identity = identity;
-      return Future.value(auth);
+      return Future.value(authObj.authCode);
     } else {
       throw Exception('Authorization fail');
     }

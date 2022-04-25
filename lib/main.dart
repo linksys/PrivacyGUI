@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/page/dashboard/view.dart';
+import 'package:moab_poc/page/landing_page/view.dart';
 import 'package:moab_poc/page/login/view.dart';
 import 'package:moab_poc/page/mesh/add_child_page.dart';
 
@@ -13,9 +14,10 @@ class MoabApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      initialRoute: '/',
+      initialRoute: LandingPage.routeName,
       routes: {
-        '/': (context) => const LoginPage(),
+        LandingPage.routeName: (context) => const LandingPage(),
+        LoginPage.routeName: (context) => const LoginPage(),
         DashboardPage.routeName: (context) => const DashboardPage(),
         AddChildPage.routeName: (context) => const AddChildPage(),
       },

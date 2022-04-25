@@ -2,9 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/page/login/view.dart';
 import 'package:moab_poc/util/permission.dart';
@@ -24,56 +22,22 @@ class LandingView extends StatefulWidget {
 }
 
 class _LandingPageState extends State<LandingView> with Permissions {
-  ConnectivityResult _connectionStatus = ConnectivityResult.none;
-  final Connectivity _connectivity = Connectivity();
-  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
-
   @override
   void initState() {
     super.initState();
     _initConnectivity();
-
-    BlocProvider.of<LandingBloc>(context);
-
-    _connectivitySubscription =
-        _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
-  }
-
-  @override
-  void dispose() {
-    _connectivitySubscription.cancel();
-    super.dispose();
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> _initConnectivity() async {
-    final permission = await checkLocationPermissions();
-    if (!permission) {
-      openAppSettings();
-      return;
-    }
-
-    late ConnectivityResult result;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    try {
-      result = await _connectivity.checkConnectivity();
-    } on PlatformException catch (e) {
-      log('Couldn\'t check connectivity status', error: e);
-      return;
-    }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) {
-      return Future.value(null);
-    }
-
-    _updateConnectionStatus(result);
-  }
-
-  _updateConnectionStatus(ConnectivityResult result) async {
-    context.read<LandingBloc>().add(CheckingConnection());
+    await checkLocationPermissions().then((value) {
+      BlocProvider.of<LandingBloc>(context).start();
+      if (!value) {
+        openAppSettings();
+      } else {
+        BlocProvider.of<LandingBloc>(context).start();
+      }
+    });
   }
 
   @override
@@ -84,13 +48,13 @@ class _LandingPageState extends State<LandingView> with Permissions {
       },
       listener: (context, state) {
         if (state.isConnectToDevice) {
-          Navigator.pushNamed(context, LoginPage.routeName,
+          Navigator.popAndPushNamed(context, LoginPage.routeName,
               arguments: {'ip': state.gatewayIp, 'ssid': state.ssid});
         }
       },
       builder: (context, state) {
         return Scaffold(
-          appBar: AppBar(),
+          // appBar: AppBar(),
           body: Center(
             child: _buildContent(context, state),
           ),
