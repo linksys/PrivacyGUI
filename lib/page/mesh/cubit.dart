@@ -35,8 +35,13 @@ class MeshCubit extends Cubit<MeshState> {
     emit(const MeshState.qrcodeScanning());
   }
 
-  Future<void> syncDPPWithChild(DeviceRepository repository, String dpp) async {
+  Future<void> syncDPPWithChild(String dpp) async {
     //TODO send DPP to child by repository
+    emit(const MeshState.loading());
+
+    await Future.delayed(const Duration(seconds: 5), () {
+      emit(const MeshState.complete());
+    });
   }
 
   @override

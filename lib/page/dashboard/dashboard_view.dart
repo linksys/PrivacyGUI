@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design_system/colors.dart';
 import 'package:moab_poc/design_system/texts.dart';
-import '../mesh/add_child_page.dart';
+import 'package:moab_poc/page/mesh/view.dart';
 
 class DashboardView extends StatelessWidget {
   const DashboardView({Key? key}) : super(key: key);
@@ -19,7 +19,7 @@ class DashboardView extends StatelessWidget {
               ),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, AddChildPage.routeName);
+                  Navigator.pushNamed(context, MeshPage.routeName);
                 },
                 child: const Text('Add child'),
               )
