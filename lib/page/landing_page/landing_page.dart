@@ -74,16 +74,24 @@ class _LandingPageState extends State<LandingView> with Permissions {
         ],
       );
     } else if (state.scanning) {
-      child = CustomQRView(callback: (code) {
-        log('QR code: ${code.code}');
-      }, onFinish: (code) async {
-        log('QR: onFinish: ${code.code}');
-        final token = code.code!.split(';');
-        final ssid = token[1].replaceAll('S:', '');
-        final password = token[2].replaceAll('P:', '');
-        log('Parsed WiFI: $ssid, $password');
-        await NativeConnectWiFiChannel().connectToWiFi(ssid, password);
-      });
+      child = Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          leading: BackButton(onPressed: () => context.read<LandingBloc>().add(StopScanningQrCode())),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: CustomQRView(callback: (code) {
+          log('QR code: ${code.code}');
+        }, onFinish: (code) async {
+          log('QR: onFinish: ${code.code}');
+          final token = code.code!.split(';');
+          final ssid = token[1].replaceAll('S:', '');
+          final password = token[2].replaceAll('P:', '');
+          log('Parsed WiFI: $ssid, $password');
+          await NativeConnectWiFiChannel().connectToWiFi(ssid, password);
+        }),
+      );
     } else {
       child = Column(
         mainAxisAlignment: MainAxisAlignment.center,

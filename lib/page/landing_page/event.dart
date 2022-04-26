@@ -13,4 +13,6 @@ class CheckingConnection extends LandingEvent {}
 
 class ScanQrCode extends LandingEvent {}
 
+class StopScanningQrCode extends LandingEvent {}
+
 class ConnectionChanged extends LandingEvent {}

@@ -18,7 +18,8 @@ class LandingState extends Equatable {
       : this._(gatewayIp: ip, ssid: ssid, isConnectToDevice: isConnected);
 
   const LandingState.scan() : this._(scanning: true);
+  const LandingState.stopScanning() : this._(scanning: false);
 
   @override
-  List<Object> get props => [gatewayIp, isConnectToDevice];
+  List<Object> get props => [gatewayIp, isConnectToDevice, ssid, scanning];
 }
