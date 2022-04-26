@@ -35,9 +35,13 @@ class LocalDeviceRepository extends DeviceRepository {
   @override
   Future<bool> login(String username, String password) async {
     try {
-      await client.authenticate(
+      final authCode = await client.authenticate(
           input: Identity(username: username, password: password));
-      return true;
+      if (authCode.isNotEmpty) {
+        return true;
+      } else {
+        return false;
+      }
     } catch (_) {
       return false;
     }

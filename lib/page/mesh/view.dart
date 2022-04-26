@@ -4,14 +4,17 @@ import 'package:moab_poc/packages/openwrt/openwrt.dart';
 import 'package:moab_poc/packages/repository/device_repository/device_repository.dart';
 import 'package:moab_poc/util/connectivity.dart';
 
+import 'add_child_page.dart';
 import 'cubit.dart';
 
 class MeshPage extends StatelessWidget {
   const MeshPage({Key? key}) : super(key: key);
 
+  static const routeName = '/add_child_page';
+
   @override
   Widget build(BuildContext context) {
-    String ip = ConnectivityUtil.gatewayIp;
+    String ip = ConnectivityUtil.info.gatewayIp;
 
     return BlocProvider(
       create: (BuildContext context) => MeshCubit(
@@ -23,7 +26,6 @@ class MeshPage extends StatelessWidget {
 
   Widget _buildPage(BuildContext context) {
     final cubit = BlocProvider.of<MeshCubit>(context);
-
-    return Container();
+    return AddChildPage();
   }
 }

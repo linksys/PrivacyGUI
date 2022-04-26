@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:moab_poc/util/connectivity.dart';
 import 'package:moab_poc/utils.dart';
 
 import 'model/command_reply/authenticate_reply.dart';
@@ -13,7 +14,6 @@ import 'model/device.dart';
 import 'model/identity.dart';
 
 class OpenWRTClient {
-  Identity? _identity;
   late Device _device;
 
   static const int Timeout = 3;
@@ -65,16 +65,16 @@ class OpenWRTClient {
   }
 
   Future<String> authenticate({Identity? input}) async {
-    if (input == null && _identity == null) {
+    if (input == null && ConnectivityUtil.identity == null) {
       throw Exception('Unauthorized');
     }
-    final identity = input ?? _identity!;
+    final identity = input ?? ConnectivityUtil.identity!;
     List<CommandReplyBase> commands = [
       AuthenticateReply.withIdentity(identity)
     ];
     final authObj = (await execute(null, commands)).first;
     if (authObj is AuthenticateReply && authObj.authCode != null) {
-      _identity = identity;
+      ConnectivityUtil.identity = identity;
       return Future.value(authObj.authCode);
     } else {
       throw Exception('Authorization fail');

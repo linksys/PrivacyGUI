@@ -1,10 +1,12 @@
 import 'package:moab_poc/packages/openwrt/openwrt.dart';
 import 'package:moab_poc/packages/repository/device_repository/device_repository.dart';
+import 'package:moab_poc/util/connectivity.dart';
 import 'package:test/test.dart';
 
 void main() {
-  const device = Device(address: '192.168.100.1', port: '80');
+  const device = Device(address: '192.168.1.10', port: '80');
   const identity = Identity(username: 'root', password: 'Belkin123');
+  ConnectivityUtil.identity = identity;
   final repo = LocalDeviceRepository(OpenWRTClient(device));
 
   group('test local device repository', () {

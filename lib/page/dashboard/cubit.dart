@@ -1,15 +1,21 @@
 import 'package:bloc/bloc.dart';
 import 'package:moab_poc/packages/repository/device_repository/device_repository.dart';
+import 'package:moab_poc/util/connectivity.dart';
 
 import 'state.dart';
 
 class DashboardCubit extends Cubit<DashboardState> {
-  DashboardCubit() : super(const DashboardState.initial());
+  DashboardCubit({required DeviceRepository repo})
+      : _repository = repo,
+        super(const DashboardState.initial());
 
-  Future<String> getSSID(DeviceRepository repository) async {
-    WirelessInfoList? wifiInfo = await repository.getWirelessInfo();
-    emit(DashboardState.ssidFetched(wifiInfo.children.first.ssid));
-    return wifiInfo.children.first.ssid;
+  final DeviceRepository _repository;
+
+  Future<String> getSSID() async {
+    // WirelessInfoList? wifiInfo = await _repository.getWirelessInfo();
+    final ssid = ConnectivityUtil.info.ssid;
+    emit(DashboardState.ssidFetched(ssid));
+    return ssid;
   }
 
   @override

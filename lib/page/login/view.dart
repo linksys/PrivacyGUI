@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/packages/openwrt/openwrt.dart';
 import 'package:moab_poc/packages/repository/device_repository/device_repository.dart';
+import 'package:moab_poc/page/dashboard/view.dart';
+import 'package:moab_poc/page/login/login.dart';
 import 'package:moab_poc/page/login/login_page.dart';
 
 import 'cubit.dart';
@@ -31,6 +33,15 @@ class LoginPage extends StatelessWidget {
   Widget _buildPage(BuildContext context) {
     final cubit = BlocProvider.of<LoginCubit>(context);
 
-    return LoginView();
+    return BlocConsumer<LoginCubit, LoginState>(
+      listener: (context, state) {
+        if (state.isLoggedIn) {
+          Navigator.popAndPushNamed(context, DashboardPage.routeName);
+        }
+      },
+      builder: (context, state) {
+        return const LoginView();
+      },
+    );
   }
 }

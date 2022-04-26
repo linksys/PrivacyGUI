@@ -15,6 +15,7 @@ class WirelessInfoList extends BaseDataModel {
             .startsWith('wifi'))
         .map((e) => MapEntry<String, dynamic>(e.value['device'], e.value));
     final wifiExtMap = Map.fromEntries(wifiExtList);
+    print("wifiExtMap: $wifiExtMap");
     return WirelessInfoList(
         children: wifiList
             .map((e) => WirelessInfo(
