@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/packages/openwrt/openwrt.dart';
 import 'package:moab_poc/packages/repository/device_repository/device_repository.dart';
+import 'package:moab_poc/page/mesh/mesh_view.dart';
 import 'package:moab_poc/util/connectivity.dart';
 
-import 'add_child_page.dart';
 import 'cubit.dart';
 
 class MeshPage extends StatelessWidget {
   const MeshPage({Key? key}) : super(key: key);
 
-  static const routeName = '/add_child_page';
+  static const routeName = '/mesh';
 
   @override
   Widget build(BuildContext context) {
     String ip = ConnectivityUtil.info.gatewayIp;
 
-    return BlocProvider(
+    return BlocProvider<MeshCubit>(
       create: (BuildContext context) => MeshCubit(
           repo: LocalDeviceRepository(
               OpenWRTClient(Device(address: ip, port: '80')))),
@@ -26,6 +26,7 @@ class MeshPage extends StatelessWidget {
 
   Widget _buildPage(BuildContext context) {
     final cubit = BlocProvider.of<MeshCubit>(context);
-    return AddChildPage();
+
+    return const MeshView();
   }
 }
