@@ -11,27 +11,44 @@ class LoginView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final args =
+    ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+    final ssid = args['ssid'] ?? 'Unknown';
+
     return AnnotatedRegion(
         child: Scaffold(
           body: SafeArea(
-            child: Container(
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'Log in to ',
-                        style: primaryPageTitle,
-                      )
-                    ],
-                    mainAxisAlignment: MainAxisAlignment.start,
-                  ),
-                  const LoginForm(),
-                ],
-                crossAxisAlignment: CrossAxisAlignment.center,
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-              color: MoabColor.white,
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints viewportConstraints) {
+                return SingleChildScrollView(
+                  child: Container(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: viewportConstraints.maxHeight,
+                      ),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(child: Text(
+                                  'Log in to ' + ssid,
+                                  style: primaryPageTitle,
+                                ))
+                              ],
+                              mainAxisAlignment: MainAxisAlignment.start,
+                            ),
+                            const LoginForm(),
+                          ],
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                        ),
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+                    color: MoabColor.white,
+                  )
+                );
+              },
             ),
           ),
         ),
@@ -39,7 +56,8 @@ class LoginView extends StatelessWidget {
           statusBarBrightness: Brightness.light,
           statusBarIconBrightness: Brightness.dark,
           statusBarColor: MoabColor.white,
-        ));
+        )
+    );
   }
 }
 
@@ -75,9 +93,9 @@ class _LoginFormState extends State<LoginForm> {
         TextField(
           controller: emailController,
           decoration: const InputDecoration(
-            labelText: 'Email',
+            labelText: 'Username',
             labelStyle: primaryFieldTitle,
-            hintText: 'Enter email address',
+            hintText: 'Enter username',
             hintStyle: primaryPlaceholder,
           ),
           onChanged: (value) {},

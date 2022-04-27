@@ -26,6 +26,7 @@ class LandingBloc extends Bloc<LandingEvent, LandingState>
     on<Initial>(_init);
     on<CheckingConnection>(_checkConnection);
     on<ScanQrCode>(_scanQRCode);
+    on<StopScanningQrCode>(_stopScanningQRCode);
 
     add(Initial());
   }
@@ -53,6 +54,10 @@ class LandingBloc extends Bloc<LandingEvent, LandingState>
 
   FutureOr<void> _scanQRCode(LandingEvent event, Emitter<LandingState> emit) {
     emit(const LandingState.scan());
+  }
+
+  FutureOr<void> _stopScanningQRCode(LandingEvent event, Emitter<LandingState> emit) {
+    emit(const LandingState.stopScanning());
   }
 
   FutureOr<void> _init(LandingEvent event, Emitter<LandingState> emit) {
