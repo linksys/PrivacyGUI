@@ -56,7 +56,8 @@ class LandingBloc extends Bloc<LandingEvent, LandingState>
     emit(const LandingState.scan());
   }
 
-  FutureOr<void> _stopScanningQRCode(LandingEvent event, Emitter<LandingState> emit) {
+  FutureOr<void> _stopScanningQRCode(
+      LandingEvent event, Emitter<LandingState> emit) {
     emit(const LandingState.stopScanning());
   }
 
