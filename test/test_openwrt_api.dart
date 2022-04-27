@@ -1,6 +1,9 @@
-import 'package:moab_poc/packages/openwrt/model/command_reply/send_bootstrap_reply.dart';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:moab_poc/packages/openwrt/model/command_reply/wan_status_reply.dart';
 import 'package:moab_poc/packages/openwrt/openwrt.dart';
-import 'package:moab_poc/page/landing_page/landing_page.dart';
+import 'package:moab_poc/util/connectivity.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -60,21 +63,35 @@ void main() {
                   'second respond', true));
     });
 
-    test('send dpp command', () async {
+    test('test wan status', () async {
       final client = OpenWRTClient(device);
-      final actual = await client
-          .authenticate(input: identity)
-          .then((value) => client.execute(value, [
-                SendBootstrapReply(ReplyStatus.unknown,
-                    bootstrap:
-                        'DPP:V:2;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADOGZXzmKxZPwzr0ztoyglLs7bUPvqvDwGjFXYi0A3ymw=;;')
-              ]));
+      final actual = await client.authenticate(input: identity).then((value) =>
+          client.execute(value, [WanStatusReply(ReplyStatus.unknown)]));
       expect(actual, isA<List<CommandReplyBase>>());
     });
 
     test('test regex', () async {
       final testRege = WiFiCredential.parse(
           'WIFI:S:test_s  sid;T:WPA;P:Belkin;;;1H:jjj;23;;;!;H:;;');
+    });
+    test('test socket', () async {
+      // final channel = WebSocketChannel.connect(Uri.parse('ws://192.168.1.10'));
+      // channel.stream.listen((event) {
+      //   print(event);
+      // });
+      // channel.sink.add('data');
+      //
+      // print("socket:: ${channel.closeCode ?? '-1'}");
+      // Future.delayed(Duration(seconds: 10));
+
+      const bootstrap =
+          'DPP:V:2;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADJNlVv3IkDhtDAmypbYrk+MXMmYnfJmVjNJDlFcZEN2U=;;';
+      Socket socket = await Socket.connect('192.168.1.10', 8000);
+      socket.write('"peer_bs_info":"$bootstrap"');
+      await socket.flush();
+      String _response = await utf8.decoder.bind(socket).join();
+      print('Socket: $_response');
+      await socket.close();
     });
   });
 }

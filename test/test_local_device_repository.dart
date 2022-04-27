@@ -1,5 +1,6 @@
 import 'package:moab_poc/packages/openwrt/openwrt.dart';
 import 'package:moab_poc/packages/repository/device_repository/device_repository.dart';
+import 'package:moab_poc/packages/repository/device_repository/model/wan_staus.dart';
 import 'package:moab_poc/util/connectivity.dart';
 import 'package:test/test.dart';
 
@@ -23,6 +24,12 @@ void main() {
     test('test get network info', () async {
       final actual = await repo.getNetworkInfo();
       expect(actual, isA<NetworkInfo>());
+    });
+
+    test('test get wan status', () async {
+      final actual = await repo.getWanStatus();
+      print('isOnline: ${actual.isOnline}');
+      expect(actual, isA<WanStatus>());
     });
   });
 }

@@ -65,4 +65,10 @@ class LandingBloc extends Bloc<LandingEvent, LandingState>
     log("onConnectivityChanged:: $result, $info");
     add(CheckingConnection());
   }
+
+  @override
+  void onChange(Change<LandingState> change) {
+    super.onChange(change);
+    print('Landing: $change');
+  }
 }

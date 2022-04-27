@@ -39,7 +39,8 @@ class MeshCubit extends Cubit<MeshState> {
     //TODO send DPP to child by repository
     emit(const MeshState.loading());
 
-    await Future.delayed(const Duration(seconds: 5), () {
+    _repository.sendBootstrap(dpp);
+    await Future.delayed(const Duration(seconds: 180), () {
       emit(const MeshState.complete());
     });
   }

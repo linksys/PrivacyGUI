@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/page/mesh/mesh.dart';
 import 'package:moab_poc/page/mesh/spinner_page.dart';
+import 'package:moab_poc/util/permission.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import 'package:moab_poc/util/permission.dart';
 
 import '../components/qr_view.dart';
 
@@ -36,7 +36,6 @@ class QRCodeScanner extends StatefulWidget {
 }
 
 class _QRCodeScannerState extends State<QRCodeScanner> with Permissions {
-
   @override
   void initState() {
     super.initState();
@@ -60,19 +59,21 @@ class _QRCodeScannerState extends State<QRCodeScanner> with Permissions {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<MeshCubit, MeshState>(
-        listener: (context, state) {
-          if (state.status == MeshStatus.complete) {
-            Navigator.pop(context);
-          }
-        },
-        builder: (context, state) {
-          switch (state.status) {
-            case MeshStatus.loading:
-              return const SpinnerPage();
-            default:
-              return CustomQRView(onFinish: handleScannerResult);
-          }
-        },
+      listener: (context, state) {
+        if (state.status == MeshStatus.complete) {
+          Navigator.pop(context);
+        }
+      },
+      builder: (context, state) {
+        switch (state.status) {
+          case MeshStatus.loading:
+            return const SpinnerPage();
+          case MeshStatus.qrcodeScanning:
+            return CustomQRView(onFinish: handleScannerResult);
+          default:
+            return Container();
+        }
+      },
     );
   }
 
