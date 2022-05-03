@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/page/mesh/event.dart';
 import 'package:moab_poc/page/mesh/mesh.dart';
 import 'package:moab_poc/page/mesh/spinner_page.dart';
 import 'package:moab_poc/util/permission.dart';
@@ -54,12 +55,12 @@ class _QRCodeScannerState extends State<QRCodeScanner> with Permissions {
   }
 
   Future<void> _initMeshStatus() async {
-    context.read<MeshCubit>().startMesh();
+    context.read<MeshBloc>().add(const StartMesh());
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<MeshCubit, MeshState>(
+    return BlocConsumer<MeshBloc, MeshState>(
       listener: (context, state) {
         if (state.runtimeType == MeshComplete) {
           Navigator.pop(context);
@@ -82,7 +83,7 @@ class _QRCodeScannerState extends State<QRCodeScanner> with Permissions {
     if (result.code != null) {
       log('QR code result: ' + result.code.toString());
       var dpp = parseDpp(result.code!);
-      context.read<MeshCubit>().syncDPPWithChild(dpp);
+      context.read<MeshBloc>().add(SyncDPPWithChild(dpp: dpp));
     }
   }
 

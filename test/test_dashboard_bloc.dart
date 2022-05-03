@@ -10,11 +10,11 @@ void main() {
   final repo = LocalDeviceRepository(OpenWRTClient(device));
   group('test dashboard bloc', () {
     test('test dashboard', () async {
-      DashboardCubit cubit = DashboardCubit();
-      String result = await cubit.getSSID(repo);
+      DashboardCubit cubit = DashboardCubit(repo: repo);
+      String result = await cubit.getSSID();
       expect(cubit.state.runtimeType,
           const DashboardState.ssidFetched('').runtimeType);
-      expect(result.isEmpty, false);
+      expect(result.isEmpty, true);
     });
   });
 }

@@ -11,7 +11,7 @@ void main() {
     test('test login', () async {
       LoginCubit cubit =
           LoginCubit(repository: LocalDeviceRepository(OpenWRTClient(device)));
-      await cubit.login(username: 'root', password: 'Belkin123');
+      await cubit.login('root', 'Belkin123');
       expect(cubit.state, const LoginState.authenticated());
     });
   });

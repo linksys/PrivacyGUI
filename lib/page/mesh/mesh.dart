@@ -1,2 +1,2 @@
-export 'cubit.dart';
+export 'bloc.dart';
 export 'state.dart';
