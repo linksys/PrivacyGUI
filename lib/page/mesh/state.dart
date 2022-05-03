@@ -1,12 +1,19 @@
-import 'cubit.dart';
+abstract class MeshState{
+  const MeshState();
+}
 
-class MeshState {
-  const MeshState._({this.status = MeshStatus.initial});
+class MeshInitial extends MeshState {
+  const MeshInitial(): super();
+}
 
-  final MeshStatus status;
+class MeshQRCodeScanning extends MeshState {
+  const MeshQRCodeScanning(): super();
+}
 
-  const MeshState.initial(): this._(status: MeshStatus.initial);
-  const MeshState.qrcodeScanning(): this._(status: MeshStatus.qrcodeScanning);
-  const MeshState.loading(): this._(status: MeshStatus.loading);
-  const MeshState.complete(): this._(status: MeshStatus.complete);
+class MeshLoading extends MeshState {
+  const MeshLoading(): super();
+}
+
+class MeshComplete extends MeshState {
+  const MeshComplete(): super();
 }

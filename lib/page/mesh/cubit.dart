@@ -3,45 +3,44 @@ import 'package:moab_poc/packages/repository/device_repository/device_repository
 
 import 'state.dart';
 
-enum MeshStatus { initial, qrcodeScanning, loading, complete }
 
 class MeshCubit extends Cubit<MeshState> {
   MeshCubit({required DeviceRepository repo})
       : _repository = repo,
-        super(const MeshState.initial());
+        super(const MeshInitial());
 
   final DeviceRepository _repository;
 
-  void meshStatusChange(MeshStatus status) {
-    switch (status) {
-      case MeshStatus.initial:
-        emit(const MeshState.initial());
+  void meshStatusChange(MeshState status) {
+    switch (status.runtimeType) {
+      case MeshInitial:
+        emit(const MeshInitial());
         break;
-      case MeshStatus.qrcodeScanning:
-        emit(const MeshState.qrcodeScanning());
+      case MeshQRCodeScanning:
+        emit(const MeshQRCodeScanning());
         break;
-      case MeshStatus.loading:
-        emit(const MeshState.loading());
+      case MeshLoading:
+        emit(const MeshLoading());
         break;
-      case MeshStatus.complete:
-        emit(const MeshState.complete());
+      case MeshComplete:
+        emit(const MeshComplete());
         break;
       default:
-        emit(const MeshState.initial());
+        emit(const MeshInitial());
     }
   }
 
   void startMesh() {
-    emit(const MeshState.qrcodeScanning());
+    emit(const MeshQRCodeScanning());
   }
 
   Future<void> syncDPPWithChild(String dpp) async {
     //TODO send DPP to child by repository
-    emit(const MeshState.loading());
+    emit(const MeshLoading());
 
     _repository.sendBootstrap(dpp);
     await Future.delayed(const Duration(seconds: 180), () {
-      emit(const MeshState.complete());
+      emit(const MeshComplete());
     });
   }
 

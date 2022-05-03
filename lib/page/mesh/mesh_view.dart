@@ -36,6 +36,7 @@ class QRCodeScanner extends StatefulWidget {
 }
 
 class _QRCodeScannerState extends State<QRCodeScanner> with Permissions {
+
   @override
   void initState() {
     super.initState();
@@ -60,15 +61,15 @@ class _QRCodeScannerState extends State<QRCodeScanner> with Permissions {
   Widget build(BuildContext context) {
     return BlocConsumer<MeshCubit, MeshState>(
       listener: (context, state) {
-        if (state.status == MeshStatus.complete) {
+        if (state.runtimeType == MeshComplete) {
           Navigator.pop(context);
         }
       },
       builder: (context, state) {
-        switch (state.status) {
-          case MeshStatus.loading:
+        switch (state.runtimeType) {
+          case MeshLoading:
             return const SpinnerPage();
-          case MeshStatus.qrcodeScanning:
+          case QRCodeScanner:
             return CustomQRView(onFinish: handleScannerResult);
           default:
             return Container();
