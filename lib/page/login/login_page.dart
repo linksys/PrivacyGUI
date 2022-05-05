@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:moab_poc/design_system/colors.dart';
-import 'package:moab_poc/design_system/dimensions.dart';
-import 'package:moab_poc/design_system/texts.dart';
+import 'package:moab_poc/design/dimensions.dart';
 import 'package:moab_poc/page/login/login.dart';
 
 class LoginView extends StatelessWidget {
@@ -33,7 +31,6 @@ class LoginView extends StatelessWidget {
                               children: [
                                 Flexible(child: Text(
                                   'Log in to ' + ssid,
-                                  style: primaryPageTitle,
                                 ))
                               ],
                               mainAxisAlignment: MainAxisAlignment.start,
@@ -45,7 +42,7 @@ class LoginView extends StatelessWidget {
                       ),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-                    color: MoabColor.white,
+                    color: Colors.white,
                   )
                 );
               },
@@ -55,7 +52,7 @@ class LoginView extends StatelessWidget {
         value: const SystemUiOverlayStyle(
           statusBarBrightness: Brightness.light,
           statusBarIconBrightness: Brightness.dark,
-          statusBarColor: MoabColor.white,
+          statusBarColor: Colors.white,
         )
     );
   }
@@ -94,9 +91,9 @@ class _LoginFormState extends State<LoginForm> {
           controller: emailController,
           decoration: const InputDecoration(
             labelText: 'Username',
-            labelStyle: primaryFieldTitle,
+            // labelStyle: primaryFieldTitle,
             hintText: 'Enter username',
-            hintStyle: primaryPlaceholder,
+            // hintStyle: primaryPlaceholder,
           ),
           onChanged: (value) {},
         ),
@@ -104,9 +101,9 @@ class _LoginFormState extends State<LoginForm> {
           controller: pwdController,
           decoration: const InputDecoration(
             labelText: 'Password',
-            labelStyle: primaryFieldTitle,
+            // labelStyle: primaryFieldTitle,
             hintText: 'Enter password',
-            hintStyle: primaryPlaceholder,
+            // hintStyle: primaryPlaceholder,
           ),
           onChanged: (value) {},
           onSubmitted: (text) => showInfo(),
@@ -117,7 +114,7 @@ class _LoginFormState extends State<LoginForm> {
         ElevatedButton.icon(
           icon: const Icon(
             Icons.lock,
-            color: MoabColor.white,
+            color: Colors.white,
             size: 20,
           ),
           label: const Text('Log in'),

@@ -1,0 +1,16 @@
+import 'package:flutter/material.dart';
+
+class MoabColor {
+  static const white = Color(0xffffffff);
+  static const whiteAlpha10 = Color.fromRGBO(255, 255, 255, 0.1);
+  static const whiteAlpha70 = Color.fromRGBO(255, 255, 255, 0.7);
+  static const black = Color(0xff000000);
+  static const blackAlpha70 = Color(0xb3000000);
+  static const primaryBlue = Color(0xff093c9d);
+  static const primaryBlueAlpha10 = Color(0x1a093c9d);
+  static const textButtonBlue = Color.fromRGBO(8, 112, 234, 1.0);
+  static const placeholderGrey = Color.fromRGBO(153, 153, 153, 1.0);
+
+  static const primaryDarkGrey = Color.fromRGBO(95, 13, 13, 1.0);
+  static const primaryDarkGreen = Color.fromRGBO(34, 85, 20, 1.0);
+}

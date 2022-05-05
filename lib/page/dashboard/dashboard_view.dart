@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:moab_poc/design_system/colors.dart';
-import 'package:moab_poc/design_system/texts.dart';
 import 'package:moab_poc/page/mesh/view.dart';
 
 class DashboardView extends StatelessWidget {
@@ -15,7 +13,6 @@ class DashboardView extends StatelessWidget {
             children: [
               const Text(
                 'SSID',
-                style: primaryPageTitle,
               ),
               ElevatedButton(
                 onPressed: () {
@@ -28,7 +25,7 @@ class DashboardView extends StatelessWidget {
           ),
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 24),
-          color: MoabColor.white,
+          color: Colors.white,
         ),
       ),
     );

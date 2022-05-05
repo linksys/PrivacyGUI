@@ -1,5 +1,8 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:moab_poc/design/themes.dart';
+import 'package:moab_poc/page/home/entry_page.dart';
+import 'package:moab_poc/page/home/setup_page_1.dart';
+import 'package:moab_poc/page/home/setup_page_2.dart';
 import 'package:moab_poc/page/dashboard/view.dart';
 import 'package:moab_poc/page/landing_page/view.dart';
 import 'package:moab_poc/page/login/view.dart';
@@ -15,13 +18,18 @@ class MoabApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      initialRoute: LandingPage.routeName,
+      initialRoute: EntryPage.routeName,
       routes: {
-        LandingPage.routeName: (context) => const LandingPage(),
-        LoginPage.routeName: (context) => const LoginPage(),
-        DashboardPage.routeName: (context) => const DashboardPage(),
-        MeshPage.routeName: (context) => const MeshPage(),
+        EntryPage.routeName: (context) => const EntryPage(),
+        SetupPage1.routeName: (context) => const SetupPage1(),
+        SetupPage2.routeName: (context) => const SetupPage2(),
+        // LandingPage.routeName: (context) => const LandingPage(),
+        // LoginPage.routeName: (context) => const LoginPage(),
+        // DashboardPage.routeName: (context) => const DashboardPage(),
+        // MeshPage.routeName: (context) => const MeshPage(),
       },
+      theme: MoabTheme.mainLightModeData,
+      darkTheme: MoabTheme.mainDarkModeData,
     );
   }
 }

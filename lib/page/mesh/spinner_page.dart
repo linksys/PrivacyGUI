@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
-import 'package:moab_poc/design_system/colors.dart';
 
 class SpinnerPage extends StatelessWidget {
   const SpinnerPage({Key? key}) : super(key: key);
@@ -9,7 +8,7 @@ class SpinnerPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       child: const _RotatingSpinner(),
-      color: MoabColor.white,
+      color: Colors.white,
       alignment: Alignment.center,
     );
   }
@@ -66,7 +65,7 @@ class Spinner extends CustomPainter {
     ..isAntiAlias = true
     ..strokeWidth = 8
     ..invertColors = false
-    ..color = MoabColor.primary
+    ..color = const Color.fromRGBO(9, 163, 234, 1.0)
     ..style = PaintingStyle.stroke;
 
   @override
