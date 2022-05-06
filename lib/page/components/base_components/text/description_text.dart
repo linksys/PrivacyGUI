@@ -9,7 +9,7 @@ class DescriptionText extends StatelessWidget {
     return Text(
       text,
       style: Theme.of(context).textTheme.headline3?.copyWith(
-          color: Theme.of(context).colorScheme.tertiary),
+        color: Theme.of(context).colorScheme.tertiary),
     );
   }
 

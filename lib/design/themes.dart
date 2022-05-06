@@ -15,26 +15,26 @@ class MoabTheme {
 
   static final _mainLightColorTheme = const ColorScheme.light().copyWith(
     brightness: Brightness.light,
-    primary: MoabColor.white,//模板
-    secondary: MoabColor.black,//文字,輸入外框
+    primary: MoabColor.white,//文字,輸入外框,主按鈕背景等主色調
+    secondary: MoabColor.black,//次按鈕背景色
     tertiary: MoabColor.blackAlpha70,//透明文字
     surface: MoabColor.placeholderGrey,//placeHolder文字
     background: MoabColor.white,//背景
-    onPrimary: MoabColor.primaryBlue,//主按鈕背景色
-    onSecondary: MoabColor.primaryBlueAlpha10,//次按鈕背景色
+    onPrimary: MoabColor.primaryBlue,//主按鈕文字
+    onSecondary: MoabColor.primaryBlueAlpha10,//次按鈕文字
     onTertiary: MoabColor.textButtonBlue,//TextBtn文字
   );
 
   static final _mainDarkColorTheme = const ColorScheme.dark().copyWith(
     brightness: Brightness.dark,
-    primary: MoabColor.primaryDarkGrey,//模板
-    secondary: Colors.yellow,//文字,輸入外框
-    tertiary: const Color.fromRGBO(246, 191, 0, 0.7),//透明文字
-    surface: Colors.white,//placeHolder文字
-    background: MoabColor.primaryDarkGrey,//背景
-    onPrimary: const Color.fromRGBO(0, 0, 0, 1.0),//主按鈕背景色
-    onSecondary: const Color.fromRGBO(0, 0, 0, 0.1),//次按鈕背景色
-    onTertiary: const Color.fromRGBO(12, 234, 188, 1.0),//TextBtn文字
+    primary: MoabColor.primaryDarkGrey,
+    secondary: Colors.yellow,
+    tertiary: const Color.fromRGBO(246, 191, 0, 0.7),
+    surface: Colors.white,
+    background: MoabColor.primaryDarkGrey,
+    onPrimary: const Color.fromRGBO(0, 0, 0, 1.0),
+    onSecondary: const Color.fromRGBO(0, 0, 0, 0.1),
+    onTertiary: const Color.fromRGBO(12, 234, 188, 1.0),
   );
 
   ///////Setup
@@ -51,26 +51,26 @@ class MoabTheme {
 
   static final _setupModuleLightColorTheme = const ColorScheme.light().copyWith(
     brightness: Brightness.light,
-    primary: MoabColor.primaryBlue,//模板
-    secondary: MoabColor.white,//文字,輸入外框
+    primary: MoabColor.white,//文字,輸入外框,主按鈕背景等主色調
+    secondary: MoabColor.whiteAlpha10,//次按鈕背景色
     tertiary: MoabColor.whiteAlpha70,//透明文字
     surface: MoabColor.placeholderGrey,//placeHolder文字
     background: MoabColor.primaryBlue,//背景
-    onPrimary: MoabColor.white,//主按鈕背景色
-    onSecondary: MoabColor.whiteAlpha10,//次按鈕背景色
+    onPrimary: MoabColor.black,//主按鈕文字
+    onSecondary: MoabColor.white,//次按鈕文字
     onTertiary: MoabColor.textButtonBlue,//TextBtn文字
   );
 
   static final _setupModuleDarkColorTheme = const ColorScheme.dark().copyWith(
     brightness: Brightness.dark,
-    primary: MoabColor.primaryDarkGreen,//模板
-    secondary: Colors.yellow,//文字,輸入外框
-    tertiary: const Color.fromRGBO(246, 191, 0, 0.7),//透明文字
-    surface: Colors.white,//placeHolder文字
-    background: MoabColor.primaryDarkGreen,//背景
-    onPrimary: const Color.fromRGBO(0, 0, 0, 1.0),//主按鈕背景色
-    onSecondary: const Color.fromRGBO(0, 0, 0, 0.1),//次按鈕背景色
-    onTertiary: const Color.fromRGBO(234, 12, 56, 1.0),//TextBtn文字
+    primary: MoabColor.primaryDarkGreen,
+    secondary: Colors.yellow,
+    tertiary: const Color.fromRGBO(246, 191, 0, 0.7),
+    surface: Colors.white,
+    background: MoabColor.primaryDarkGreen,
+    onPrimary: const Color.fromRGBO(0, 0, 0, 1.0),
+    onSecondary: const Color.fromRGBO(0, 0, 0, 0.1),
+    onTertiary: const Color.fromRGBO(234, 12, 56, 1.0),
   );
 
   static final _textTheme = Typography().white.copyWith(

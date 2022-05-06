@@ -1,25 +1,29 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/negative_button.dart';
 import 'package:moab_poc/page/components/base_components/button/positive_button.dart';
-import 'package:moab_poc/page/components/layouts/base_layout.dart';
-import 'package:moab_poc/page/playground/welcome_view.dart';
+import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
 
 class HomeView extends StatelessWidget {
-  const HomeView({Key? key}) : super(key: key);
+  HomeView({Key? key}) : super(key: key);
 
-  static const routeName = '/home';
+  // static const routeName = '/home';
+
+  final Widget logoImage = SvgPicture.asset(
+    'assets/images/linksys_logo_large_white.svg',
+    semanticsLabel: 'Linksys Logo',
+    height: 180,
+  );
 
   @override
   Widget build(BuildContext context) {
     return BasePageView(
-      child: BaseLayout(
-        content: const Icon(
-          Icons.lock,
-          size: 200,
-        ),//TODO: Add logo,
+      child: BasicLayout(
+        content: logoImage,
         footer: _footer(context),
+        alignment: CrossAxisAlignment.end,
       ),
     );
   }
@@ -35,6 +39,6 @@ class HomeView extends StatelessWidget {
   }
 
   void _goToSetUpWifi(BuildContext context) {
-    Navigator.pushNamed(context, WelcomeView.routeName);
+    Navigator.pushNamed(context, GetWiFiUpView.routeName);
   }
 }

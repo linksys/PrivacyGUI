@@ -9,33 +9,28 @@ class NegativeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return icon != null ?
-    ElevatedButton.icon(
-      icon: icon!,
-      label: const Text('Elevated Button'),
-      style: ElevatedButton.styleFrom(
-        primary: Theme.of(context).colorScheme.onSecondary,
-        onPrimary: Theme.of(context).colorScheme.secondary,
-        textStyle: Theme.of(context).textTheme.button,
-        elevation: 0,
-        minimumSize: const Size.fromHeight(50),
-      ),
-      onPressed: () => print('Tap Elevated Button'),
-    )
-        :
-    ElevatedButton(
-      child: Text(text ?? ''),
-      style: ElevatedButton.styleFrom(
-        primary: Theme.of(context).colorScheme.onSecondary,
-        onPrimary: Theme.of(context).colorScheme.secondary,
-        textStyle: Theme.of(context).textTheme.button,
-        elevation: 0,
-        minimumSize: const Size.fromHeight(50),
-      ),
-      onPressed: onPress ?? () {
-        print('NegativeButton onPress');
-      },
+    final buttonTitle = Text(text ?? '');
+    final buttonStyle = ElevatedButton.styleFrom(
+      primary: Theme.of(context).colorScheme.secondary,
+      onPrimary: Theme.of(context).colorScheme.onSecondary,
+      textStyle: Theme.of(context).textTheme.button,
+      minimumSize: const Size.fromHeight(56),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      elevation: 0,
     );
-  }
+    final action = onPress ?? () => print('NegativeButton onPressed');
 
+    return icon != null
+        ? ElevatedButton.icon(
+            icon: icon!,
+            label: buttonTitle,
+            style: buttonStyle,
+            onPressed: action,
+          )
+        : ElevatedButton(
+            child: buttonTitle,
+            style: buttonStyle,
+            onPressed: action,
+          );
+  }
 }

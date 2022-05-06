@@ -15,10 +15,14 @@ class BasePageView extends StatelessWidget {
     return Scaffold(
       appBar: appBar ?? AppBar(
         backgroundColor: Colors.transparent,
-        elevation: 0,),
+        iconTheme: IconThemeData(
+          color: Theme.of(context).colorScheme.primary
+        ),
+        elevation: 0,
+      ),
       body: SafeArea(
         child: Container(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 30),
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 30),
           child: child,
         ),),
     );

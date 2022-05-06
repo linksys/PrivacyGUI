@@ -9,31 +9,27 @@ class PositiveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return icon != null ?
-    ElevatedButton.icon(
-      icon: icon!,
-      label: const Text('Elevated Button'),
-      style: ElevatedButton.styleFrom(
-        primary: Theme.of(context).colorScheme.onPrimary,
-        onPrimary: Theme.of(context).colorScheme.primary,
-        textStyle: Theme.of(context).textTheme.button,
-        minimumSize: const Size.fromHeight(50),
-      ),
-      onPressed: () => print('Tap Elevated Button'),
-    )
-    :
-    ElevatedButton(
-      child: Text(text ?? ''),
-      style: ElevatedButton.styleFrom(
-        primary: Theme.of(context).colorScheme.onPrimary,
-        onPrimary: Theme.of(context).colorScheme.primary,
-        textStyle: Theme.of(context).textTheme.button,
-        minimumSize: const Size.fromHeight(50),
-      ),
-      onPressed: onPress ?? () {
-        print('PositiveButton onPress');
-      },
+    final buttonTitle = Text(text ?? '');
+    final buttonStyle = ElevatedButton.styleFrom(
+      primary: Theme.of(context).colorScheme.primary,
+      onPrimary: Theme.of(context).colorScheme.onPrimary,
+      textStyle: Theme.of(context).textTheme.button,
+      minimumSize: const Size.fromHeight(56),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
     );
-  }
+    final action = onPress ?? () => print('PositiveButton onPressed');
 
+    return icon != null
+        ? ElevatedButton.icon(
+            icon: icon!,
+            label: buttonTitle,
+            style: buttonStyle,
+            onPressed: action,
+          )
+        : ElevatedButton(
+            child: buttonTitle,
+            style: buttonStyle,
+            onPressed: action,
+          );
+  }
 }
