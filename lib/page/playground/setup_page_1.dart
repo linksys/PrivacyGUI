@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/themes.dart';
-import 'package:moab_poc/page/home/setup_page_2.dart';
+import 'package:moab_poc/page/playground/setup_page_2.dart';
 
 class SetupPage1 extends StatelessWidget {
   const SetupPage1({Key? key}) : super(key: key);
