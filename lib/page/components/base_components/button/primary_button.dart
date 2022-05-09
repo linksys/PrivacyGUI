@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-class PositiveButton extends StatelessWidget {
+class PrimaryButton extends StatelessWidget {
   final String? text;
   final Icon? icon;
   final void Function()? onPress;
 
-  const PositiveButton({Key? key, this.text, this.icon, this.onPress}) : super(key: key);
+  const PrimaryButton({Key? key, this.text, this.icon, this.onPress}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +17,7 @@ class PositiveButton extends StatelessWidget {
       minimumSize: const Size.fromHeight(56),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
     );
-    final action = onPress ?? () => print('PositiveButton onPressed');
+    final action = onPress ?? () => print('PrimaryButton onPressed');
 
     return icon != null
         ? ElevatedButton.icon(

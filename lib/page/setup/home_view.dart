@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/page/components/base_components/button/negative_button.dart';
-import 'package:moab_poc/page/components/base_components/button/positive_button.dart';
+import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
+import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
 
@@ -31,9 +31,9 @@ class HomeView extends StatelessWidget {
   Widget _footer(BuildContext context) {
     return Column(
       children: [
-        const PositiveButton(text: 'Log in',),
+        const PrimaryButton(text: 'Log in',),
         const SizedBox(height: 24,),
-        NegativeButton(text: 'Set up new WiFi', onPress: () => _goToSetUpWifi(context),),
+        SecondaryButton(text: 'Set up new WiFi', onPress: () => _goToSetUpWifi(context),),
       ],
     );
   }

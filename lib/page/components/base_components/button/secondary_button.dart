@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-class NegativeButton extends StatelessWidget {
+class SecondaryButton extends StatelessWidget {
   final String? text;
   final Icon? icon;
   final void Function()? onPress;
 
-  const NegativeButton({Key? key, this.text, this.icon, this.onPress}) : super(key: key);
+  const SecondaryButton({Key? key, this.text, this.icon, this.onPress}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +18,7 @@ class NegativeButton extends StatelessWidget {
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       elevation: 0,
     );
-    final action = onPress ?? () => print('NegativeButton onPressed');
+    final action = onPress ?? () => print('SecondaryButton onPressed');
 
     return icon != null
         ? ElevatedButton.icon(
