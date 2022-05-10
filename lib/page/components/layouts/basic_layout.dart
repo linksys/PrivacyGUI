@@ -17,14 +17,14 @@ class BasicLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    List<Widget> widgets = [];
+    if (header != null) widgets.add(header!);
+    if (content != null) widgets.add(Expanded(child: content!));
+    if (footer != null) widgets.add(footer!);
+
     return Column(
       crossAxisAlignment: alignment ?? CrossAxisAlignment.center,
-      children: [
-        header ?? Container(),
-        content ?? Container(),
-        const Spacer(),
-        footer ?? Container(),
-      ],
+      children: widgets,
     );
   }
 

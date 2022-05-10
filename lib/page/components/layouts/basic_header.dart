@@ -20,7 +20,7 @@ class BasicHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: alignment ?? CrossAxisAlignment.center,
+      crossAxisAlignment: alignment ?? CrossAxisAlignment.start,
       children: [
         TitleText(text: title ?? ''),
         SizedBox(height: spacing ?? 15,),

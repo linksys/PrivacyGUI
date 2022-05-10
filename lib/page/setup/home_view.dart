@@ -7,7 +7,14 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
 
 class HomeView extends StatelessWidget {
-  HomeView({Key? key}) : super(key: key);
+  HomeView({
+    Key? key,
+    this.goToLoginPage,
+    this.goToSetWifiUpPage,
+  }) : super(key: key);
+
+  final Function(BuildContext context)? goToLoginPage;
+  final Function(BuildContext context)? goToSetWifiUpPage;
 
   // static const routeName = '/home';
 
@@ -21,10 +28,16 @@ class HomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BasePageView(
       child: BasicLayout(
-        content: logoImage,
+        content: _content(context),
         footer: _footer(context),
-        alignment: CrossAxisAlignment.end,
       ),
+    );
+  }
+
+  Widget _content(BuildContext context) {
+    return Container(
+      alignment: Alignment.topRight,
+      child: logoImage,
     );
   }
 

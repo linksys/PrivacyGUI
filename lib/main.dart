@@ -6,6 +6,8 @@ import 'package:moab_poc/page/login/view.dart';
 import 'package:moab_poc/page/mesh/view.dart';
 import 'package:moab_poc/page/setup/home_view.dart';
 import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
+import 'package:moab_poc/page/setup/plug_node_view.dart';
+import 'package:moab_poc/page/setup/start_parent_node_view.dart';
 
 void main() {
   runApp(const MoabApp());
@@ -25,6 +27,8 @@ class MoabApp extends StatelessWidget {
         // DashboardPage.routeName: (context) => const DashboardPage(),
         // MeshPage.routeName: (context) => const MeshPage(),
         GetWiFiUpView.routeName: (context) => GetWiFiUpView(),
+        StartParentNodeView.routeName: (context) => StartParentNodeView(),
+        PlugNodeView.routeName: (context) => PlugNodeView(),
       },
       theme: MoabTheme.setupModuleLightModeData,
       darkTheme: MoabTheme.setupModuleDarkModeData,
