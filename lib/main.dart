@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/themes.dart';
-import 'package:moab_poc/page/home/entry_page.dart';
-import 'package:moab_poc/page/home/setup_page_1.dart';
-import 'package:moab_poc/page/home/setup_page_2.dart';
-import 'package:moab_poc/page/dashboard/view.dart';
-import 'package:moab_poc/page/landing_page/view.dart';
-import 'package:moab_poc/page/login/view.dart';
-import 'package:moab_poc/page/mesh/view.dart';
+import 'package:moab_poc/page/playground/entry_page.dart';
+import 'package:moab_poc/page/playground/setup_page_1.dart';
+import 'package:moab_poc/page/playground/setup_page_2.dart';
 
 void main() {
   runApp(const MoabApp());

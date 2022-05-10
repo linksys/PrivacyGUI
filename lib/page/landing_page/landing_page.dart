@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/page/login/view.dart';
+import 'package:moab_poc/util/connectivity.dart';
 import 'package:moab_poc/util/permission.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -77,7 +78,9 @@ class _LandingPageState extends State<LandingView> with Permissions {
       child = Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
-          leading: BackButton(onPressed: () => context.read<LandingBloc>().add(StopScanningQrCode())),
+          leading: BackButton(
+              onPressed: () =>
+                  context.read<LandingBloc>().add(StopScanningQrCode())),
           backgroundColor: Colors.transparent,
           elevation: 0,
         ),
@@ -85,18 +88,17 @@ class _LandingPageState extends State<LandingView> with Permissions {
           log('QR code: ${code.code}');
         }, onFinish: (code) async {
           log('QR: onFinish: ${code.code}');
-          final token = code.code!.split(';');
-          final ssid = token[1].replaceAll('S:', '');
-          final password = token[2].replaceAll('P:', '');
-          log('Parsed WiFI: $ssid, $password');
-          await NativeConnectWiFiChannel().connectToWiFi(ssid, password);
+          final creds = WiFiCredential.parse(code.code ?? "");
+          log('Parsed WiFI: ${creds.ssid}, ${creds.password}');
+          await NativeConnectWiFiChannel()
+              .connectToWiFi(creds.ssid, creds.password);
         }),
       );
     } else {
       child = Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('You are not connect to a Kauai device!'),
+          const Text('You are not connecting to a Kauai device!'),
           Text("SSID: ${state.ssid.isEmpty ? 'unknown' : state.ssid}"),
           const SizedBox(
             height: 32,

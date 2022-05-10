@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moab_poc/design/colors.dart';
-import 'package:moab_poc/page/home/setup_page_1.dart';
+import 'package:moab_poc/page/playground/setup_page_1.dart';
 
 class EntryPage extends StatelessWidget {
   const EntryPage({Key? key}) : super(key: key);
@@ -21,16 +21,16 @@ class EntryPage extends StatelessWidget {
             children: [
               Text(
                 'Entry style=headline1',
-                style: Theme.of(context).textTheme.headline1?.copyWith(
-                    color: Theme.of(context).colorScheme.secondary
-                ),
+                style: Theme.of(context)
+                    .textTheme
+                    .headline1
+                    ?.copyWith(color: Theme.of(context).colorScheme.secondary),
               ),
               Padding(
                 child: Text(
                   'style=headline2',
                   style: Theme.of(context).textTheme.headline2?.copyWith(
-                      color: Theme.of(context).colorScheme.secondary
-                  ),
+                      color: Theme.of(context).colorScheme.secondary),
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 20),
               ),
@@ -38,16 +38,16 @@ class EntryPage extends StatelessWidget {
                 child: Text(
                   'style=headline3',
                   style: Theme.of(context).textTheme.headline3?.copyWith(
-                      color: Theme.of(context).colorScheme.secondary
-                  ),
+                      color: Theme.of(context).colorScheme.secondary),
                 ),
                 padding: const EdgeInsets.only(bottom: 20),
               ),
               Text(
                 'style=headline3 with Alpha_0.7',
-                style: Theme.of(context).textTheme.headline3?.copyWith(
-                    color: Theme.of(context).colorScheme.tertiary
-                ),
+                style: Theme.of(context)
+                    .textTheme
+                    .headline3
+                    ?.copyWith(color: Theme.of(context).colorScheme.tertiary),
               ),
               const Padding(
                 child: LoginForm(),
@@ -57,8 +57,8 @@ class EntryPage extends StatelessWidget {
                 child: Text(
                   'Where do I find this?',
                   style: Theme.of(context).textTheme.button?.copyWith(
-                    color: Theme.of(context).colorScheme.onTertiary,
-                  ),
+                        color: Theme.of(context).colorScheme.onTertiary,
+                      ),
                 ),
                 onPressed: () => print('Tap Find button'),
               ),
@@ -132,27 +132,31 @@ class _LoginFormState extends State<LoginForm> {
         Padding(
           child: Text(
             'Setup WiFi name',
-            style: Theme.of(context).textTheme.headline4?.copyWith(
-                color: Theme.of(context).colorScheme.secondary
-            ),
+            style: Theme.of(context)
+                .textTheme
+                .headline4
+                ?.copyWith(color: Theme.of(context).colorScheme.secondary),
           ),
           padding: const EdgeInsets.only(bottom: 8),
         ),
         TextField(
           controller: emailController,
           style: Theme.of(context).textTheme.bodyText1?.copyWith(
-            color: Theme.of(context).colorScheme.secondary,
-          ),
+                color: Theme.of(context).colorScheme.secondary,
+              ),
           decoration: InputDecoration(
             hintText: 'Enter WiFi name',
-            hintStyle: Theme.of(context).textTheme.bodyText1?.copyWith(
-                color: Theme.of(context).colorScheme.surface
-            ),
+            hintStyle: Theme.of(context)
+                .textTheme
+                .bodyText1
+                ?.copyWith(color: Theme.of(context).colorScheme.surface),
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Theme.of(context).colorScheme.secondary, width: 1),
+              borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.secondary, width: 1),
             ),
             focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Theme.of(context).colorScheme.secondary, width: 1),
+              borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.secondary, width: 1),
             ),
           ),
         ),
