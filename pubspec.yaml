@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   flutter_launcher_icons: ^0.9.2
   flutter_bloc: ^8.0.1
+  flutter_svg: ^1.0.3
   http: ^0.13.4
   qr_code_scanner: ^0.7.0
   flutter_native_splash: ^2.1.5
@@ -72,6 +73,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/icons/
+    - assets/images/
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
 
