@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class SecondaryButton extends StatelessWidget {
   final String? text;
   final Icon? icon;
-  final void Function()? onPress;
+  final VoidCallback? onPress;
 
   const SecondaryButton({Key? key, this.text, this.icon, this.onPress}) : super(key: key);
 

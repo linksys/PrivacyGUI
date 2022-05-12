@@ -4,9 +4,11 @@ import 'package:moab_poc/page/dashboard/view.dart';
 import 'package:moab_poc/page/landing_page/view.dart';
 import 'package:moab_poc/page/login/view.dart';
 import 'package:moab_poc/page/mesh/view.dart';
+import 'package:moab_poc/page/setup/connect_to_modem.dart';
 import 'package:moab_poc/page/setup/home_view.dart';
 import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
 import 'package:moab_poc/page/setup/plug_node_view.dart';
+import 'package:moab_poc/page/setup/show_me_how_view.dart';
 import 'package:moab_poc/page/setup/start_parent_node_view.dart';
 
 void main() {
@@ -19,19 +21,40 @@ class MoabApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: HomeView(),
-      // initialRoute: HomeView.routeName,
+      initialRoute: '/',
       routes: {
         // LandingPage.routeName: (context) => const LandingPage(),
         // LoginPage.routeName: (context) => const LoginPage(),
         // DashboardPage.routeName: (context) => const DashboardPage(),
         // MeshPage.routeName: (context) => const MeshPage(),
-        GetWiFiUpView.routeName: (context) => GetWiFiUpView(),
-        StartParentNodeView.routeName: (context) => StartParentNodeView(),
-        PlugNodeView.routeName: (context) => PlugNodeView(),
+        '/' : (context) => HomeView(
+          onLogin: () {},
+          onSetup: () => _goToGetWifiUp(context),
+        ),
+        GetWiFiUpView.routeName: (context) => GetWiFiUpView(onNext: () => _goToStartParentNode(context),),
+        StartParentNodeView.routeName: (context) => StartParentNodeView(onNext: () => _goToPlugNodeView(context),),
+        PlugNodeView.routeName: (context) => PlugNodeView(onNext: () => _goToConnectToModemView(context),),
+        ConnectToModemView.routeName: (context) => ConnectToModemView(onNext: () {}),
+        ShowMeHowView.routeName: (context) => const ShowMeHowView(),
       },
       theme: MoabTheme.setupModuleLightModeData,
       darkTheme: MoabTheme.setupModuleDarkModeData,
     );
+  }
+
+  void _goToGetWifiUp(BuildContext context) {
+    Navigator.pushNamed(context, GetWiFiUpView.routeName);
+  }
+
+  void _goToStartParentNode(BuildContext context) {
+    Navigator.pushNamed(context, StartParentNodeView.routeName);
+  }
+
+  void _goToPlugNodeView(BuildContext context) {
+    Navigator.pushNamed(context, PlugNodeView.routeName);
+  }
+
+  void _goToConnectToModemView(BuildContext context) {
+    Navigator.pushNamed(context, ConnectToModemView.routeName);
   }
 }

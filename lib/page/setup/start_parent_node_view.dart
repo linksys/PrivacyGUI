@@ -9,7 +9,12 @@ import 'package:moab_poc/page/setup/plug_node_view.dart';
 import '../components/base_components/text/description_text.dart';
 
 class StartParentNodeView extends StatelessWidget {
-  StartParentNodeView({Key? key}) : super(key: key);
+  StartParentNodeView({
+    Key? key,
+    required this.onNext,
+  }) : super(key: key);
+
+  final VoidCallback onNext;
 
   static const routeName = '/start_parent_node';
 
@@ -32,7 +37,7 @@ class StartParentNodeView extends StatelessWidget {
         content: _content(context),
         footer: PrimaryButton(
           text: 'I have the parent node',
-          onPress: () => _goToNextPage(context),
+          onPress: onNext,
         ),
       ),
     );
@@ -52,7 +57,4 @@ class StartParentNodeView extends StatelessWidget {
     );
   }
 
-  void _goToNextPage(BuildContext context) {
-    Navigator.pushNamed(context, PlugNodeView.routeName);
-  }
 }
