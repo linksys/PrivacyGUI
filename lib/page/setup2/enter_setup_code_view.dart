@@ -9,17 +9,17 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 class EnterSetupCodeView extends StatelessWidget {
   const EnterSetupCodeView({
     Key? key,
-    required this.goNextAction,
+    required this.onNext,
   }) : super(key: key);
 
   static const routeName = '/enter_setup_code';
-  final void Function() goNextAction;
+  final void Function() onNext;
 
   @override
   Widget build(BuildContext context) {
     return BasePageView(
       child: PageContent(
-        goNextAction: goNextAction,
+        onNext: onNext,
       ),
     );
   }
@@ -28,10 +28,10 @@ class EnterSetupCodeView extends StatelessWidget {
 class PageContent extends StatefulWidget {
   const PageContent({
     Key? key,
-    required this.goNextAction,
+    required this.onNext,
   }) : super(key: key);
 
-  final void Function() goNextAction;
+  final void Function() onNext;
 
   @override
   _PageContentState createState() => _PageContentState();
@@ -82,7 +82,7 @@ class _PageContentState extends State<PageContent> {
             visible: isValidCode,
             child: PrimaryButton(
               text: 'Next',
-              onPress: widget.goNextAction,
+              onPress: widget.onNext,
             ),
           ),
         ],

@@ -7,11 +7,11 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 class PlaceNodeTipView extends StatelessWidget {
   PlaceNodeTipView({
     Key? key,
-    required this.goNextAction,
+    required this.onNext,
   }) : super(key: key);
 
   static const routeName = '/place_node_tip';
-  final void Function() goNextAction;
+  final void Function() onNext;
 
   //TODO: This svg file does not work
   final Widget image = SvgPicture.asset(
@@ -46,7 +46,7 @@ class PlaceNodeTipView extends StatelessWidget {
         ),
         footer: PrimaryButton(
           text: 'Next',
-          onPress: goNextAction,
+          onPress: onNext,
         ),
       ),
     );
