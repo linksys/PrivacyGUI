@@ -12,15 +12,14 @@ class SetupRouteInformationParser
 
     // Handle '/'
     if (uri.pathSegments.isEmpty) {
-      return SetupRoutePath.setupParent();
-    }
-    if (uri.pathSegments[0] != 'setup') {
-      return SetupRoutePath.unknown();
+      return SetupRoutePath.home();
     }
 
-    final sub = uri.pathSegments[1];
+    final sub = uri.pathSegments[0];
     print('SetupRouteInformationParser::parseRouteInformation:sub: $sub');
     switch (sub) {
+      case SetupRoutePath.setupWelcomeEulaTag:
+        return SetupRoutePath.welcome();
       case SetupRoutePath.setupParentTag:
         return SetupRoutePath.setupParent();
       case SetupRoutePath.setupInternetCheckTag:

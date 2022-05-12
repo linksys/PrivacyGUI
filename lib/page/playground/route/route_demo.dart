@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/design/themes.dart';
 
 import 'setup/setup.dart';
 
@@ -13,8 +14,8 @@ class NavigatorDemo extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Setup Router Demo',
-      routerDelegate: SetupRouterDelegate()
-        ..setInitialRoutePath(SetupRoutePath.setupParent()),
+      theme: MoabTheme.setupModuleLightModeData,
+      routerDelegate: SetupRouterDelegate(),
       routeInformationParser: SetupRouteInformationParser(),
     );
   }

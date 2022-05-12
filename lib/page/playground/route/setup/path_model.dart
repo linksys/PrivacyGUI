@@ -1,20 +1,50 @@
 class SetupRoutePath {
-  static const setupRootTag = 'setup';
-  static const setupParentTag = 'parent';
+  static const setupWelcomeEulaTag = 'welcomeEula';
+  static const setupParentTag = 'parentPlug';
+  static const setupParentWiredTag = 'parentWiredToModem';
+  static const setupParentNotHideTag = 'parentNotHide';
+  static const setupParentPermissionPrimerTag = 'parentPermissionPrimer';
+
   static const setupInternetCheckTag = 'internetCheck';
   static const setupChildTag = 'child';
   static const setupUnknown = 'unknown';
 
-  static const setupRootPrefix = '/$setupRootTag';
-  static const setupParentPrefix = '$setupRootPrefix/$setupParentTag';
-  static const setupInternetCheckPrefix =
-      '$setupRootPrefix/$setupInternetCheckTag';
-  static const setupChildPrefix = '$setupRootPrefix/$setupChildTag';
+  static const setupRootPrefix = '/';
+  static const setupWelcomeEulaPrefix = '/$setupWelcomeEulaTag';
+  static const setupParentPrefix = '/$setupParentTag';
+  static const setupParentWiredPrefix = '/$setupParentWiredTag';
+  static const setupParentNotHidePrefix = '/$setupParentNotHideTag';
+  static const setupParentPermissionPrimerPrefix =
+      '/$setupParentPermissionPrimerTag';
+
+  static const setupInternetCheckPrefix = '/$setupInternetCheckTag';
+  static const setupChildPrefix = '/$setupChildTag';
+  static const setupUnknownPrefix = '/$setupUnknown';
 
   final String path;
+  final String history;
 
-  SetupRoutePath.setupParent() : path = setupParentPrefix;
-  SetupRoutePath.setupInternetCheck() : path = setupInternetCheckPrefix;
-  SetupRoutePath.setupChild() : path = setupChildPrefix;
-  SetupRoutePath.unknown() : path = setupUnknown;
+  SetupRoutePath.home({String? history})
+      : path = setupRootPrefix,
+        history = history ?? '';
+  SetupRoutePath.welcome({String? history})
+      : path = setupWelcomeEulaPrefix,
+        history = history ?? '';
+  SetupRoutePath.setupParent({String? history})
+      : path = setupParentPrefix,
+        history = history ?? '';
+  SetupRoutePath.setupParentWired({String? history})
+      : path = setupParentWiredPrefix,
+        history = history ?? '';
+  SetupRoutePath.setupInternetCheck({String? history})
+      : path = setupInternetCheckPrefix,
+        history = history ?? '';
+
+  SetupRoutePath.setupChild({String? history})
+      : path = setupChildPrefix,
+        history = history ?? '';
+
+  SetupRoutePath.unknown({String? history})
+      : path = setupUnknownPrefix,
+        history = history ?? '';
 }

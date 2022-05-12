@@ -1,6 +1,11 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:moab_poc/page/playground/route/setup/path_model.dart';
+import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
+import 'package:moab_poc/page/setup/home_view.dart';
+import 'package:moab_poc/page/setup/plug_node_view.dart';
+import 'package:moab_poc/page/setup/start_parent_node_view.dart';
 
 class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<SetupRoutePath> {
@@ -17,7 +22,7 @@ class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
   @override
   SetupRoutePath get currentConfiguration {
     print('Get currentConfiguration:: ${_stack.length}');
-    return _stack.isNotEmpty ? _stack.last : SetupRoutePath.setupParent();
+    return _stack.isNotEmpty ? _stack.last : SetupRoutePath.home();
   }
 
   List<String> get stack => List.unmodifiable(_stack);
@@ -28,7 +33,9 @@ class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
   Widget build(BuildContext context) {
     print(
         'SetupRouterDelegate::build:${describeIdentity(this)}.stack: [${_stack.map((e) => e.path).join(',').toString()}]');
-
+    if (_stack.isEmpty) {
+      _stack.add(SetupRoutePath.home());
+    }
     return Navigator(
         key: navigatorKey,
         pages: [
@@ -87,13 +94,22 @@ class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
       required String path,
       required String title}) {
     switch (path) {
+      case SetupRoutePath.setupRootPrefix:
+        return HomeView(
+          goToSetWifiUpPage: (context) {
+            push(SetupRoutePath.welcome());
+          },
+        );
+      case SetupRoutePath.setupWelcomeEulaPrefix:
+        return GetWiFiUpView(
+          onNext: (context) => push(SetupRoutePath.setupParent()),
+        );
       case SetupRoutePath.setupParentPrefix:
-        return _createPage(
-            title: 'Setup Parent',
-            callback: () {
-              SetupRouterDelegate.of(context)
-                  .push(SetupRoutePath.setupInternetCheck());
-            });
+        return StartParentNodeView(
+          onNext: (context) => push(SetupRoutePath.setupParentWired()),
+        );
+      case SetupRoutePath.setupParentWiredPrefix:
+        return PlugNodeView();
       case SetupRoutePath.setupInternetCheckPrefix:
         return _createPage(
             title: 'Internet Check',
@@ -106,6 +122,31 @@ class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
         return _createPage(title: 'Unknown Page', callback: () {});
     }
   }
+
+  // Widget _pageFactory(
+  //     {required BuildContext context,
+  //     required String path,
+  //     required String title}) {
+  //   switch (path) {
+  //     case SetupRoutePath.setupParentPrefix:
+  //       return _createPage(
+  //           title: 'Setup Parent',
+  //           callback: () {
+  //             SetupRouterDelegate.of(context)
+  //                 .push(SetupRoutePath.setupInternetCheck());
+  //           });
+  //     case SetupRoutePath.setupInternetCheckPrefix:
+  //       return _createPage(
+  //           title: 'Internet Check',
+  //           callback: () {
+  //             SetupRouterDelegate.of(context).push(SetupRoutePath.setupChild());
+  //           });
+  //     case SetupRoutePath.setupChildPrefix:
+  //       return _createPage(title: 'Setup Child', callback: () {});
+  //     default:
+  //       return _createPage(title: 'Unknown Page', callback: () {});
+  //   }
+  // }
 
   Widget _createPage({required String title, required VoidCallback callback}) {
     return Scaffold(
