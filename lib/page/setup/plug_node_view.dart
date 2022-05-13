@@ -7,7 +7,12 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import '../components/base_components/button/primary_button.dart';
 
 class PlugNodeView extends StatelessWidget {
-  PlugNodeView({Key? key}) : super(key: key);
+  PlugNodeView({
+    Key? key,
+    required this.onNext,
+  }) : super(key: key);
+
+  final VoidCallback onNext;
 
   static const routeName = '/plug_node';
 
@@ -22,28 +27,18 @@ class PlugNodeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BasePageView(
-      child: _plugNodeView(context),
-    );
-  }
-
-  void _goToNextPage(BuildContext context) {
-    //TODO: Go to next page
-  }
-
-  Widget _plugNodeView(BuildContext context) {
-    return Column(
-      children: [
-        const BasicHeader(title: 'Plug node into a power source',),
-        // const SizedBox(height: 78,),
-        Container(
-          alignment: Alignment.topRight,
+      child: BasicLayout(
+        alignment: CrossAxisAlignment.start,
+        header: const BasicHeader(title: 'Plug node into a power source',),
+        content: Container(
+          alignment: Alignment.bottomRight,
           child: image,
         ),
-        PrimaryButton(
+        footer: PrimaryButton(
           text: 'Next',
-          onPress: () => _goToNextPage(context),
+          onPress: onNext,
         ),
-      ],
+      ),
     );
   }
 
