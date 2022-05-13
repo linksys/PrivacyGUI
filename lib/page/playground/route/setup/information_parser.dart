@@ -22,6 +22,8 @@ class SetupRouteInformationParser
         return SetupRoutePath.welcome();
       case SetupRoutePath.setupParentTag:
         return SetupRoutePath.setupParent();
+      case SetupRoutePath.setupParentConnectToModemTag:
+        return SetupRoutePath.setupConnectToModem();
       case SetupRoutePath.setupInternetCheckTag:
         return SetupRoutePath.setupInternetCheck();
       case SetupRoutePath.setupChildTag:

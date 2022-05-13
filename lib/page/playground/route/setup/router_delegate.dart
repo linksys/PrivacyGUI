@@ -2,10 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:moab_poc/page/playground/route/setup/path_model.dart';
+import 'package:moab_poc/page/setup/connect_to_modem.dart';
 import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
 import 'package:moab_poc/page/setup/home_view.dart';
 import 'package:moab_poc/page/setup/plug_node_view.dart';
-import 'package:moab_poc/page/setup/start_parent_node_view.dart';
 
 class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<SetupRoutePath> {
@@ -96,20 +96,25 @@ class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
     switch (path) {
       case SetupRoutePath.setupRootPrefix:
         return HomeView(
-          goToSetWifiUpPage: (context) {
+          onSetup: () {
             push(SetupRoutePath.welcome());
           },
+          onLogin: () {},
         );
       case SetupRoutePath.setupWelcomeEulaPrefix:
         return GetWiFiUpView(
-          onNext: (context) => push(SetupRoutePath.setupParent()),
+          onNext: () => push(SetupRoutePath.setupParentWired()),
         );
-      case SetupRoutePath.setupParentPrefix:
-        return StartParentNodeView(
-          onNext: (context) => push(SetupRoutePath.setupParentWired()),
-        );
+      // case SetupRoutePath.setupParentPrefix:
+      //   return StartParentNodeView(
+      //     onNext: () => push(SetupRoutePath.setupParentWired()),
+      //   );
       case SetupRoutePath.setupParentWiredPrefix:
-        return PlugNodeView();
+        return PlugNodeView(
+          onNext: () => push(SetupRoutePath.setupConnectToModem()),
+        );
+      case SetupRoutePath.setupParentConnectToModemPrefix:
+        return ConnectToModemView(onNext: () {});
       case SetupRoutePath.setupInternetCheckPrefix:
         return _createPage(
             title: 'Internet Check',

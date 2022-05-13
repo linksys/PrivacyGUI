@@ -1,7 +1,8 @@
 class SetupRoutePath {
   static const setupWelcomeEulaTag = 'welcomeEula';
   static const setupParentTag = 'parentPlug';
-  static const setupParentWiredTag = 'parentWiredToModem';
+  static const setupParentWiredTag = 'parentWired';
+  static const setupParentConnectToModemTag = 'parentConnectToModem';
   static const setupParentNotHideTag = 'parentNotHide';
   static const setupParentPermissionPrimerTag = 'parentPermissionPrimer';
 
@@ -13,6 +14,8 @@ class SetupRoutePath {
   static const setupWelcomeEulaPrefix = '/$setupWelcomeEulaTag';
   static const setupParentPrefix = '/$setupParentTag';
   static const setupParentWiredPrefix = '/$setupParentWiredTag';
+  static const setupParentConnectToModemPrefix =
+      '/$setupParentConnectToModemTag';
   static const setupParentNotHidePrefix = '/$setupParentNotHideTag';
   static const setupParentPermissionPrimerPrefix =
       '/$setupParentPermissionPrimerTag';
@@ -36,6 +39,10 @@ class SetupRoutePath {
   SetupRoutePath.setupParentWired({String? history})
       : path = setupParentWiredPrefix,
         history = history ?? '';
+  SetupRoutePath.setupConnectToModem({String? history})
+      : path = setupParentConnectToModemPrefix,
+        history = history ?? '';
+
   SetupRoutePath.setupInternetCheck({String? history})
       : path = setupInternetCheckPrefix,
         history = history ?? '';
