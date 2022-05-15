@@ -17,13 +17,13 @@ class BasePageView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: appBar ?? AppBar(
-        backgroundColor: Colors.transparent,
-        iconTheme: IconThemeData(
-          color: Theme.of(context).colorScheme.primary
-        ),
-        elevation: 0,
-      ),
+      appBar: appBar ??
+          AppBar(
+            backgroundColor: Colors.transparent,
+            iconTheme:
+                IconThemeData(color: Theme.of(context).colorScheme.primary),
+            elevation: 0,
+          ),
       body: SafeArea(
         child: scrollable! ? _scrollableView() : _view(),
       ),
@@ -41,17 +41,14 @@ class BasePageView extends StatelessWidget {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints viewportConstraints) {
         return SingleChildScrollView(
-            child: Container(
-              padding: padding,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: viewportConstraints.maxHeight,
-                ),
-                child: IntrinsicHeight(
-                  child: child,
-                ),
-              ),
-            )
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: viewportConstraints.maxHeight,
+            ),
+            child: IntrinsicHeight(
+              child: Container(padding: padding, child: child),
+            ),
+          ),
         );
       },
     );

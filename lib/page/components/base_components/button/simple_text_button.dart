@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 class SimpleTextButton extends StatelessWidget {
-
   const SimpleTextButton({
     Key? key,
     required this.text,
@@ -17,8 +16,8 @@ class SimpleTextButton extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.button?.copyWith(
-          color: Theme.of(context).colorScheme.onTertiary,
-        ),
+              color: Theme.of(context).colorScheme.onTertiary,
+            ),
       ),
       onPressed: onPressed,
     );

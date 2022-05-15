@@ -5,7 +5,8 @@ class PrimaryButton extends StatelessWidget {
   final Icon? icon;
   final VoidCallback? onPress;
 
-  const PrimaryButton({Key? key, this.text, this.icon, this.onPress}) : super(key: key);
+  const PrimaryButton({Key? key, this.text, this.icon, this.onPress})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {

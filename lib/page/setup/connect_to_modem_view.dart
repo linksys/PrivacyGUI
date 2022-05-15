@@ -31,7 +31,8 @@ class ConnectToModemView extends StatelessWidget {
       child: BasicLayout(
         header: const BasicHeader(
           title: 'Connect node to modem',
-          description: 'Use the ethernet cable to connect the parent node to your modem or source of internet',
+          description:
+              'Use the ethernet cable to connect the parent node to your modem or source of internet',
         ),
         content: _content(context),
         footer: PrimaryButton(
@@ -47,7 +48,9 @@ class ConnectToModemView extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         image,
-        const SizedBox(height: 104,),
+        const SizedBox(
+          height: 104,
+        ),
         SimpleTextButton(
           text: 'Show me how',
           onPressed: () => _goToShowMeHowPage(context),
@@ -61,7 +64,6 @@ class ConnectToModemView extends StatelessWidget {
         context: context,
         builder: (context) {
           return const ShowMeHowView();
-        }
-    );
+        });
   }
 }

@@ -4,12 +4,12 @@ class IndeterminateProgressBar extends StatefulWidget {
   const IndeterminateProgressBar({Key? key}) : super(key: key);
 
   @override
-  _IndeterminateProgressBarState createState() => _IndeterminateProgressBarState();
+  _IndeterminateProgressBarState createState() =>
+      _IndeterminateProgressBarState();
 }
 
 class _IndeterminateProgressBarState extends State<IndeterminateProgressBar>
     with SingleTickerProviderStateMixin {
-
   late AnimationController _controller;
 
   @override

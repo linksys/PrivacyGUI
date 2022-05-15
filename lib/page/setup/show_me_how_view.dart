@@ -15,8 +15,10 @@ class ShowMeHowView extends StatelessWidget {
       child: BasicLayout(
         header: Text(
           'Remove any old router and cables in your setup area.',
-          style: Theme.of(context).textTheme.headline3?.copyWith(
-              color: Theme.of(context).colorScheme.primary),
+          style: Theme.of(context)
+              .textTheme
+              .headline3
+              ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
         content: _content(context),
       ),
@@ -26,9 +28,7 @@ class ShowMeHowView extends StatelessWidget {
   AppBar _appBar(BuildContext context) {
     return AppBar(
       backgroundColor: Colors.transparent,
-      iconTheme: IconThemeData(
-          color: Theme.of(context).colorScheme.primary
-      ),
+      iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
       elevation: 0,
       automaticallyImplyLeading: false,
       actions: [
@@ -43,29 +43,36 @@ class ShowMeHowView extends StatelessWidget {
   Widget _content(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: 19,),
+        const SizedBox(
+          height: 19,
+        ),
         StepView(
           stepIcon: _stepIcon(context, '1'),
-          text: 'On your parent node, use the port labeled “Internet” to connect one end of the ethernet cable',
+          text:
+              'On your parent node, use the port labeled “Internet” to connect one end of the ethernet cable',
           image: Container(
             alignment: Alignment.centerLeft,
             child: Image.asset('assets/images/step_1.png'),
           ),
         ),
-        const SizedBox(height: 24,),
+        const SizedBox(
+          height: 24,
+        ),
         StepView(
           stepIcon: _stepIcon(context, '2'),
-          text: 'Connect the other end of the ethernet cable to any open port on your modem. Make sure your modem has power.',
+          text:
+              'Connect the other end of the ethernet cable to any open port on your modem. Make sure your modem has power.',
           image: Container(
             alignment: Alignment.centerRight,
             child: Image.asset('assets/images/step_2.png'),
           ),
         ),
-        const SizedBox(height: 24,),
-        StepView(
-          stepIcon: _stepIcon(context, '3'),
-          text: 'Be sure the cables are secure and snapped in place'
+        const SizedBox(
+          height: 24,
         ),
+        StepView(
+            stepIcon: _stepIcon(context, '3'),
+            text: 'Be sure the cables are secure and snapped in place'),
       ],
     );
   }
@@ -81,20 +88,19 @@ class ShowMeHowView extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: Theme.of(context).textTheme.headline2?.copyWith(
-            color: Theme.of(context).colorScheme.background),
+        style: Theme.of(context)
+            .textTheme
+            .headline2
+            ?.copyWith(color: Theme.of(context).colorScheme.background),
       ),
     );
   }
 }
 
 class StepView extends StatelessWidget {
-  const StepView({
-    Key? key,
-    required this.stepIcon,
-    required this.text,
-    this.image
-  }) : super(key: key);
+  const StepView(
+      {Key? key, required this.stepIcon, required this.text, this.image})
+      : super(key: key);
 
   final Widget stepIcon;
   final String text;
@@ -106,7 +112,9 @@ class StepView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         stepIcon,
-        const SizedBox(width: 8,),
+        const SizedBox(
+          width: 8,
+        ),
         _content(context, text),
       ],
     );
@@ -118,10 +126,16 @@ class StepView extends StatelessWidget {
         children: [
           Text(
             text,
-            style: Theme.of(context).textTheme.headline3?.copyWith(
-                color: Theme.of(context).colorScheme.primary),
+            style: Theme.of(context)
+                .textTheme
+                .headline3
+                ?.copyWith(color: Theme.of(context).colorScheme.primary),
           ),
-          image ?? Container(),
+          Visibility(
+            maintainSize: false,
+            visible: (image != null),
+              child: Container(child: image,)
+          ),
         ],
       ),
     );

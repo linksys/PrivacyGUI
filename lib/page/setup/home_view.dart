@@ -41,11 +41,18 @@ class HomeView extends StatelessWidget {
   Widget _footer(BuildContext context) {
     return Column(
       children: [
-        PrimaryButton(text: 'Log in', onPress: onLogin,),
-        const SizedBox(height: 24,),
-        SecondaryButton(text: 'Set up new WiFi', onPress: onSetup,),
+        PrimaryButton(
+          text: 'Log in',
+          onPress: onLogin,
+        ),
+        const SizedBox(
+          height: 24,
+        ),
+        SecondaryButton(
+          text: 'Set up new WiFi',
+          onPress: onSetup,
+        ),
       ],
     );
   }
-
 }
