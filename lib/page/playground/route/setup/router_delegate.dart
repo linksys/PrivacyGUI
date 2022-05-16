@@ -1,11 +1,11 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:moab_poc/page/playground/route/setup/path_model.dart';
-import 'package:moab_poc/page/setup/connect_to_modem.dart';
 import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
 import 'package:moab_poc/page/setup/home_view.dart';
 import 'package:moab_poc/page/setup/plug_node_view.dart';
+
+import '../../../setup/connect_to_modem_view.dart';
 
 class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<SetupRoutePath> {
