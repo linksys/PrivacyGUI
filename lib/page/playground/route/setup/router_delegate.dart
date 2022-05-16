@@ -3,17 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:moab_poc/page/playground/route/setup/path_model.dart';
 import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
 import 'package:moab_poc/page/setup/home_view.dart';
+import 'package:moab_poc/page/setup/parent_scan_qrcode_view.dart';
 import 'package:moab_poc/page/setup/plug_node_view.dart';
 
 import '../../../setup/check_node_finished_view.dart';
 import '../../../setup/check_node_internet_view.dart';
 import '../../../setup/connect_to_modem_view.dart';
 import '../../../setup/manual_enter_ssid_view.dart';
-import '../../../setup/parent_scan_qrcode_view.dart';
 import '../../../setup/permissions_primer_view.dart';
 import '../../../setup/place_node_view.dart';
 import '../../../setup2/add_child_connected_view.dart';
 import '../../../setup2/add_child_finished_view.dart';
+import '../../../setup2/add_child_scan_qrcode_view.dart';
 import '../../../setup2/add_child_searching_view.dart';
 import '../../../setup2/add_child_set_location_view.dart';
 import '../../../setup2/create_account_finished_view.dart';
@@ -142,13 +143,15 @@ class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
         return PermissionsPrimerView(
             onNext: () => push(SetupRoutePath.setupManualParentSSID()));
       case SetupRoutePath.setupParentScanQRCodePrefix:
-        return AddChildScanQRCodeView(onNext: () => push(SetupRoutePath.setupInternetCheck()));
+        return ParentScanQRCodeView(
+            onNext: () => push(SetupRoutePath.setupInternetCheck()));
       case SetupRoutePath.setupParentManualSSIDPrefix:
         return ManualEnterSSIDView(
           onNext: () => push(SetupRoutePath.setupParentLocation()),
         );
       case SetupRoutePath.setupParentLocationPrefix:
-        return SetLocationView(onNext: () => push(SetupRoutePath.setupNthChild()));
+        return SetLocationView(
+            onNext: () => push(SetupRoutePath.setupNthChild()));
       case SetupRoutePath.setupNthChildPrefix:
         return AddChildFinishedView(
           onAddMore: () => push(SetupRoutePath.setupPlugNthChild()),
