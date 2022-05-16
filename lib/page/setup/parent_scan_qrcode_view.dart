@@ -10,8 +10,8 @@ import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 import '../components/base_components/button/simple_text_button.dart';
 
-class AddChildScanQRCodeView extends StatelessWidget {
-  const AddChildScanQRCodeView({
+class ParentScanQRCodeView extends StatelessWidget {
+  const ParentScanQRCodeView({
     Key? key,
     required this.onNext,
   }) : super(key: key);
