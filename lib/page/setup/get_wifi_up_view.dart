@@ -30,10 +30,12 @@ class GetWiFiUpView extends StatelessWidget {
     return BasePageView(
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
-        header: const BasicHeader(title: 'Let’s get your WiFi up and running',),
+        header: const BasicHeader(
+          title: 'Let’s get your WiFi up and running',
+        ),
         content: _content(context),
         footer: PrimaryButton(
-          text: 'I’m ready',
+          text: 'Continue',
           onPress: onNext,
         ),
       ),
@@ -43,15 +45,18 @@ class GetWiFiUpView extends StatelessWidget {
   Widget _content(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: 38,),
-        image,
-        const SizedBox(height: 39,),
-        const DescriptionText(
-          // TODO: Use rich text here
-            text: 'First things first, by continuing with setup, you agree to our Terms and License Agreement. Take a few minutes to read them.'
+        const SizedBox(
+          height: 38,
         ),
+        image,
+        const SizedBox(
+          height: 39,
+        ),
+        const DescriptionText(
+            // TODO: Use rich text here
+            text:
+                'First things first, by continuing with setup, you agree to our Terms and License Agreement. Take a few minutes to read them.'),
       ],
     );
   }
-
 }

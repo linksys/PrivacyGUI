@@ -27,5 +27,4 @@ class BasicLayout extends StatelessWidget {
       children: widgets,
     );
   }
-
 }

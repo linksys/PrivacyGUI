@@ -4,13 +4,9 @@ import 'package:moab_poc/page/components/base_components/text/description_text.d
 import 'package:moab_poc/page/components/base_components/text/title_text.dart';
 
 class BasicHeader extends StatelessWidget {
-  const BasicHeader({
-    Key? key,
-    this.title,
-    this.description,
-    this.spacing,
-    this.alignment
-  }) : super(key: key);
+  const BasicHeader(
+      {Key? key, this.title, this.description, this.spacing, this.alignment})
+      : super(key: key);
 
   final String? title;
   final String? description;
@@ -23,10 +19,11 @@ class BasicHeader extends StatelessWidget {
       crossAxisAlignment: alignment ?? CrossAxisAlignment.start,
       children: [
         TitleText(text: title ?? ''),
-        SizedBox(height: spacing ?? 15,),
+        SizedBox(
+          height: spacing ?? 15,
+        ),
         DescriptionText(text: description ?? ''),
       ],
     );
   }
-
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 class PrimaryTextField extends StatefulWidget {
-
   const PrimaryTextField({
     Key? key,
     required this.controller,
@@ -15,11 +14,9 @@ class PrimaryTextField extends StatefulWidget {
 
   @override
   _PrimaryTextFieldState createState() => _PrimaryTextFieldState();
-
 }
 
 class _PrimaryTextFieldState extends State<PrimaryTextField> {
-
   @override
   void dispose() {
     widget.controller.dispose();
@@ -37,24 +34,24 @@ class _PrimaryTextFieldState extends State<PrimaryTextField> {
     return TextField(
       controller: widget.controller,
       style: Theme.of(context).textTheme.bodyText1?.copyWith(
-        color: Theme.of(context).colorScheme.primary,
-      ),
+            color: Theme.of(context).colorScheme.primary,
+          ),
       decoration: InputDecoration(
         hintText: widget.hintText,
-        hintStyle: Theme.of(context).textTheme.bodyText1?.copyWith(
-            color: Theme.of(context).colorScheme.surface
-        ),
+        hintStyle: Theme.of(context)
+            .textTheme
+            .bodyText1
+            ?.copyWith(color: Theme.of(context).colorScheme.surface),
         enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1),
-            borderRadius: BorderRadius.zero
-        ),
+            borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary, width: 1),
+            borderRadius: BorderRadius.zero),
         focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1),
-            borderRadius: BorderRadius.zero
-        ),
+            borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary, width: 1),
+            borderRadius: BorderRadius.zero),
       ),
       onChanged: _onChanged,
     );
   }
-
 }

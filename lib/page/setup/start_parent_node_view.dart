@@ -32,7 +32,8 @@ class StartParentNodeView extends StatelessWidget {
       child: BasicLayout(
         header: const BasicHeader(
           title: 'Start with the parent node',
-          description: 'If your bundle came with multiple nodes, grab the parent node. ',
+          description:
+              'If your bundle came with multiple nodes, grab the parent node. ',
         ),
         content: _content(context),
         footer: PrimaryButton(
@@ -46,15 +47,19 @@ class StartParentNodeView extends StatelessWidget {
   Widget _content(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: 29,),
+        const SizedBox(
+          height: 29,
+        ),
         image,
-        const SizedBox(height: 45,),
+        const SizedBox(
+          height: 45,
+        ),
         const DescriptionText(
           // TODO: Use rich text here
-          text: 'The parent is your main router and connects to the internet. Child nodes are satellites, expanding WiFi coverage throughout your home. How to tell them apart',
+          text:
+              'The parent is your main router and connects to the internet. Child nodes are satellites, expanding WiFi coverage throughout your home. How to tell them apart',
         ),
       ],
     );
   }
-
 }
