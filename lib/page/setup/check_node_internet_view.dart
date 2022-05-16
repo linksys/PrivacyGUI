@@ -19,6 +19,7 @@ class CheckNodeInternetView extends StatelessWidget {
     semanticsLabel: 'Setup Finished',
   );
 
+
   @override
   Widget build(BuildContext context) {
     return BasePageView(

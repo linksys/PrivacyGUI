@@ -4,7 +4,7 @@ import 'package:moab_poc/page/dashboard/view.dart';
 import 'package:moab_poc/page/landing_page/view.dart';
 import 'package:moab_poc/page/login/view.dart';
 import 'package:moab_poc/page/mesh/view.dart';
-import 'package:moab_poc/page/setup/connect_to_modem.dart';
+import 'package:moab_poc/page/setup/connect_to_modem_view.dart';
 import 'package:moab_poc/page/setup/home_view.dart';
 import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
 import 'package:moab_poc/page/setup/plug_node_view.dart';

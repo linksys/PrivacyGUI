@@ -22,8 +22,18 @@ class SetupRouteInformationParser
         return SetupRoutePath.welcome();
       case SetupRoutePath.setupParentTag:
         return SetupRoutePath.setupParent();
+      case SetupRoutePath.setupParentWiredTag:
+        return SetupRoutePath.setupParentWired();
       case SetupRoutePath.setupParentConnectToModemTag:
         return SetupRoutePath.setupConnectToModem();
+      case SetupRoutePath.placeParentNodeTag:
+        return SetupRoutePath.placeParentNode();
+      case SetupRoutePath.setupParentPermissionPrimerTag:
+        return SetupRoutePath.permissionPrimer();
+      case SetupRoutePath.setupParentManualSSIDTag:
+        return SetupRoutePath.setupManualParentSSID();
+      case SetupRoutePath.setupNthChildTag:
+        return SetupRoutePath.setupNthChild();
       case SetupRoutePath.setupInternetCheckTag:
         return SetupRoutePath.setupInternetCheck();
       case SetupRoutePath.setupChildTag:

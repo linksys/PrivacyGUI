@@ -36,7 +36,7 @@ class AddChildFinishedView extends StatelessWidget {
           children: [
             PrimaryButton(
               text: 'Yes, let’s do it',
-              onPress: onAddDone,
+              onPress: onAddMore,
             ),
             const SizedBox(
               height: 20,
