@@ -5,13 +5,28 @@ import 'package:moab_poc/page/components/base_components/progress_bars/indetermi
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 
-class AddChildSearchingView extends StatelessWidget {
-  AddChildSearchingView({
+import '../../design/colors.dart';
+
+class AddChildSearchingView extends StatefulWidget {
+  const AddChildSearchingView({
     Key? key,
     required this.onNext,
   }) : super(key: key);
 
   final void Function() onNext;
+
+  @override
+  State<AddChildSearchingView> createState() => _AddChildSearchingViewState();
+}
+
+class _AddChildSearchingViewState extends State<AddChildSearchingView> {
+  bool _hasFound = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fakeInternetChecking();
+  }
 
   //TODO: The svg image must be replaced
   final Widget image = SvgPicture.asset(
@@ -19,21 +34,42 @@ class AddChildSearchingView extends StatelessWidget {
     semanticsLabel: 'Setup Finished',
   );
 
+  _fakeInternetChecking() async {
+    await Future.delayed(const Duration(seconds: 5));
+    setState(() {
+      _hasFound = true;
+    });
+    await Future.delayed(const Duration(seconds: 3));
+    widget.onNext();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BasePageView(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
+        elevation: 0,
+      ),
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'Looking for your node…',
+        header: BasicHeader(
+          title: _hasFound ? 'Found it' : 'Looking for your node…',
         ),
         content: Center(
           child: Column(
             children: [
-              image,
+              _hasFound
+                  ? const Icon(
+                      Icons.check,
+                      color: MoabColor.listItemCheck,
+                      size: 200,
+                    )
+                  : image,
               const SizedBox(
                 height: 130,
               ),
-              const IndeterminateProgressBar(),
+              if (!_hasFound) const IndeterminateProgressBar(),
             ],
             mainAxisAlignment: MainAxisAlignment.center,
           ),

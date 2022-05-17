@@ -6,17 +6,15 @@ import 'package:moab_poc/page/setup/home_view.dart';
 import 'package:moab_poc/page/setup/parent_scan_qrcode_view.dart';
 import 'package:moab_poc/page/setup/plug_node_view.dart';
 
-import '../../../setup/check_node_finished_view.dart';
 import '../../../setup/check_node_internet_view.dart';
 import '../../../setup/connect_to_modem_view.dart';
 import '../../../setup/manual_enter_ssid_view.dart';
 import '../../../setup/permissions_primer_view.dart';
 import '../../../setup/place_node_view.dart';
-import '../../../setup2/add_child_connected_view.dart';
 import '../../../setup2/add_child_finished_view.dart';
+import '../../../setup2/add_child_plug_view.dart';
 import '../../../setup2/add_child_scan_qrcode_view.dart';
 import '../../../setup2/add_child_searching_view.dart';
-import '../../../setup2/add_child_set_location_view.dart';
 import '../../../setup2/create_account_finished_view.dart';
 import '../../../setup2/create_account_password_view.dart';
 import '../../../setup2/create_account_view.dart';
@@ -25,6 +23,7 @@ import '../../../setup2/customize_wifi_view.dart';
 import '../../../setup2/nodes_success_view.dart';
 import '../../../setup2/otp_code_input_view.dart';
 import '../../../setup2/save_settings_view.dart';
+import '../../../setup2/set_location_view.dart';
 import '../../../setup2/setup_finished_view.dart';
 
 class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
@@ -87,6 +86,7 @@ class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
   }
 
   void push(SetupRoutePath newRoute) {
+    _stack.removeWhere((element) => element.removeFromHistory);
     _stack.add(newRoute);
     notifyListeners();
   }
@@ -94,6 +94,13 @@ class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
   void pop() {
     if (_stack.isNotEmpty) {
       _stack.remove(_stack.last);
+    }
+    notifyListeners();
+  }
+
+  void popTo(SetupRoutePath route) {
+    if (_stack.isNotEmpty) {
+      while (_stack.removeLast().path != route.path) {}
     }
     notifyListeners();
   }
@@ -125,10 +132,6 @@ class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
         return GetWiFiUpView(
           onNext: () => push(SetupRoutePath.setupParentWired()),
         );
-      // case SetupRoutePath.setupParentPrefix:
-      //   return StartParentNodeView(
-      //     onNext: () => push(SetupRoutePath.setupParentWired()),
-      //   );
       case SetupRoutePath.setupParentWiredPrefix:
         return PlugNodeView(
           onNext: () => push(SetupRoutePath.setupConnectToModem()),
@@ -141,7 +144,7 @@ class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
             onNext: () => push(SetupRoutePath.permissionPrimer()));
       case SetupRoutePath.setupParentPermissionPrimerPrefix:
         return PermissionsPrimerView(
-            onNext: () => push(SetupRoutePath.setupManualParentSSID()));
+            onNext: () => push(SetupRoutePath.parentScan()));
       case SetupRoutePath.setupParentScanQRCodePrefix:
         return ParentScanQRCodeView(
             onNext: () => push(SetupRoutePath.setupInternetCheck()));
@@ -154,23 +157,21 @@ class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
             onNext: () => push(SetupRoutePath.setupNthChild()));
       case SetupRoutePath.setupNthChildPrefix:
         return AddChildFinishedView(
-          onAddMore: () => push(SetupRoutePath.setupPlugNthChild()),
+          onAddMore: () => push(SetupRoutePath.setupNthChildScanQRCode()),
           onAddDone: () => push(SetupRoutePath.setupCustomizeWifiSettings()),
         );
       case SetupRoutePath.setupNthchildScanQRCodePrefix:
         return AddChildScanQRCodeView(
-          onNext: () {},
+          onNext: () {
+            push(SetupRoutePath.setupPlugNthChild());
+          },
         );
       case SetupRoutePath.setupNthChildPlugPrefix:
-        return PlugNodeView(
+        return AddChildPlugView(
             onNext: () => push(SetupRoutePath.setupNthChildLooking()));
       case SetupRoutePath.setupNthChildLookingPrefix:
         return AddChildSearchingView(
-            onNext: () => push(SetupRoutePath.setupNthChildFounded()));
-      case SetupRoutePath.setupNthChildFoundedPrefix:
-        return AddChildConnectedView(
-          onNext: () => push(SetupRoutePath.setupNthChild()),
-        );
+            onNext: () => popTo(SetupRoutePath.setupNthChild()));
       case SetupRoutePath.setupNthChildLocationPrefix:
         return SetLocationView(onNext: () {});
       case SetupRoutePath.setupNthChildSuccessPrefix:
@@ -209,53 +210,9 @@ class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
         );
       case SetupRoutePath.setupInternetCheckPrefix:
         return CheckNodeInternetView(
-            onNext: () => push(SetupRoutePath.setupInternetCheckFinished()));
-      case SetupRoutePath.setupInternetCheckFinishedPrefix:
-        return CheckNodeFinishedView(
-            onNext: () => push(SetupRoutePath.setupNthChild()));
-      case SetupRoutePath.setupChildPrefix:
-        return _createPage(title: 'Setup Child', callback: () {});
+            onNext: () => push(SetupRoutePath.setupParentLocation()));
       default:
-        return _createPage(title: 'Unknown Page', callback: () {});
+        return const Center();
     }
-  }
-
-  // Widget _pageFactory(
-  //     {required BuildContext context,
-  //     required String path,
-  //     required String title}) {
-  //   switch (path) {
-  //     case SetupRoutePath.setupParentPrefix:
-  //       return _createPage(
-  //           title: 'Setup Parent',
-  //           callback: () {
-  //             SetupRouterDelegate.of(context)
-  //                 .push(SetupRoutePath.setupInternetCheck());
-  //           });
-  //     case SetupRoutePath.setupInternetCheckPrefix:
-  //       return _createPage(
-  //           title: 'Internet Check',
-  //           callback: () {
-  //             SetupRouterDelegate.of(context).push(SetupRoutePath.setupChild());
-  //           });
-  //     case SetupRoutePath.setupChildPrefix:
-  //       return _createPage(title: 'Setup Child', callback: () {});
-  //     default:
-  //       return _createPage(title: 'Unknown Page', callback: () {});
-  //   }
-  // }
-
-  Widget _createPage({required String title, required VoidCallback callback}) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: callback,
-          child: const Text('Next'),
-        ),
-      ),
-    );
   }
 }

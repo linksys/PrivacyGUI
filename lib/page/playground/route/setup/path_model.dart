@@ -71,6 +71,7 @@ class SetupRoutePath {
 
   final String path;
   final String history;
+  bool removeFromHistory = false;
 
   SetupRoutePath.home({String? history})
       : path = setupRootPrefix,
@@ -126,7 +127,8 @@ class SetupRoutePath {
 
   SetupRoutePath.setupNthChildLooking({String? history})
       : path = setupNthChildLookingPrefix,
-        history = history ?? '';
+        history = history ?? '',
+        removeFromHistory = true;
 
   SetupRoutePath.setupNthChildFounded({String? history})
       : path = setupNthChildFoundedPrefix,
@@ -166,7 +168,8 @@ class SetupRoutePath {
 
   SetupRoutePath.setupSaveSettings({String? history})
       : path = setupSaveSettingsPrefix,
-        history = history ?? '';
+        history = history ?? '',
+        removeFromHistory = true;
 
   SetupRoutePath.setupFinished({String? history})
       : path = setupFinishedPrefix,
@@ -174,7 +177,8 @@ class SetupRoutePath {
 
   SetupRoutePath.setupInternetCheck({String? history})
       : path = setupInternetCheckPrefix,
-        history = history ?? '';
+        history = history ?? '',
+        removeFromHistory = true;
 
   SetupRoutePath.setupInternetCheckFinished({String? history})
       : path = setupInternetCheckFinishedPrefix,

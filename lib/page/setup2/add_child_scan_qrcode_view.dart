@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/colors.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
@@ -8,6 +6,7 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/qr_view.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
+import '../components/base_components/button/primary_button.dart';
 import '../components/base_components/button/simple_text_button.dart';
 
 class AddChildScanQRCodeView extends StatelessWidget {
@@ -20,10 +19,6 @@ class AddChildScanQRCodeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO a timer to go next
-    Future.delayed(const Duration(seconds: 10), () {
-      onNext();
-    });
     return BasePageView(
       child: BasicLayout(
         header: const BasicHeader(
@@ -56,6 +51,14 @@ class AddChildScanQRCodeView extends StatelessWidget {
               )
             ],
           ),
+        ),
+        footer: Column(
+          children: [
+            PrimaryButton(
+              text: 'Next',
+              onPress: onNext,
+            ),
+          ],
         ),
         alignment: CrossAxisAlignment.start,
       ),

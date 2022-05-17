@@ -19,16 +19,22 @@ class SetLocationView extends StatefulWidget {
 }
 
 class _SetLocationViewState extends State<SetLocationView> {
-  int selected = -1;
+  int _selected = -1;
   final List<String> data = locationList;
+
+  @override
+  void initState() {
+    super.initState();
+    print('Set Location: initState!');
+  }
 
   @override
   Widget build(BuildContext context) {
     return BasePageView(
       child: BasicLayout(
         header: const BasicHeader(
-          title: 'Scan child node QR code',
-          description: 'The code is on the bottom of your child node',
+          title: 'Give your node a name',
+          description: 'This helps when telling your nodes apart.',
         ),
         content: Padding(
           padding: const EdgeInsets.fromLTRB(0, 24.0, 0, 0),
@@ -37,10 +43,11 @@ class _SetLocationViewState extends State<SetLocationView> {
         ),
         footer: Column(
           children: [
-            PrimaryButton(
-              text: 'Next',
-              onPress: selected >= 0 ? widget.onNext : null,
-            ),
+            if (_selected >= 0)
+              PrimaryButton(
+                text: 'Next',
+                onPress: _selected >= 0 ? widget.onNext : null,
+              ),
           ],
         ),
         alignment: CrossAxisAlignment.start,
@@ -52,10 +59,10 @@ class _SetLocationViewState extends State<SetLocationView> {
     return ListTile(
       onTap: () {
         setState(() {
-          if (index == selected) {
-            selected = -1;
+          if (index == _selected) {
+            _selected = -1;
           } else {
-            selected = index;
+            _selected = index;
           }
         });
       },
@@ -67,7 +74,7 @@ class _SetLocationViewState extends State<SetLocationView> {
             padding: const EdgeInsets.symmetric(vertical: 24.0),
             child: Text(data[index]),
           )),
-          index == selected
+          index == _selected
               ? const Icon(
                   Icons.check,
                   color: MoabColor.listItemCheck,
@@ -76,6 +83,12 @@ class _SetLocationViewState extends State<SetLocationView> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    print('Set Location: dispose!');
   }
 }
 

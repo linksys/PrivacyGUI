@@ -5,7 +5,7 @@ import 'package:moab_poc/page/components/base_components/progress_bars/indetermi
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 
-class SaveSettingsView extends StatelessWidget {
+class SaveSettingsView extends StatefulWidget {
   SaveSettingsView({
     Key? key,
     required this.onNext,
@@ -13,15 +13,37 @@ class SaveSettingsView extends StatelessWidget {
 
   final void Function() onNext;
 
+  @override
+  State<SaveSettingsView> createState() => _SaveSettingsViewState();
+}
+
+class _SaveSettingsViewState extends State<SaveSettingsView> {
+  @override
+  void initState() {
+    super.initState();
+    _fakeInternetChecking();
+  }
+
   //TODO: The svg image must be replaced
   final Widget image = SvgPicture.asset(
     'assets/images/linksys_logo_large_white.svg',
     semanticsLabel: 'Setup Finished',
   );
 
+  _fakeInternetChecking() async {
+    await Future.delayed(const Duration(seconds: 5));
+    widget.onNext();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BasePageView(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
+        elevation: 0,
+      ),
       child: BasicLayout(
         header: const BasicHeader(
           title: 'Saving settings...',
