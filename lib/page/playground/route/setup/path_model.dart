@@ -1,194 +1,295 @@
-class SetupRoutePath {
-  static const setupWelcomeEulaTag = 'welcomeEula';
-  static const setupParentTag = 'parentPlug';
-  static const setupParentWiredTag = 'parentWired';
-  static const setupParentConnectToModemTag = 'parentConnectToModem';
-  static const placeParentNodeTag = 'placeParentNode';
-  static const setupParentNotHideTag = 'parentNotHide';
-  static const setupParentPermissionPrimerTag = 'parentPermissionPrimer';
-  static const setupParentScanQRCodeTag = 'parentScanQRCode';
-  static const setupParentManualSSIDTag = 'parentManualSSID';
-  static const setupParentLocationTag = 'parentLocation';
+import 'package:flutter/material.dart';
+import 'package:moab_poc/page/playground/route/setup/router_delegate.dart';
+import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
+import 'package:moab_poc/page/setup/home_view.dart';
+import 'package:moab_poc/page/setup/parent_scan_qrcode_view.dart';
+import 'package:moab_poc/page/setup/permissions_primer_view.dart';
+import 'package:moab_poc/page/setup/place_node_view.dart';
+import 'package:moab_poc/page/setup2/add_child_plug_view.dart';
+import 'package:moab_poc/page/setup2/add_child_scan_qrcode_view.dart';
+import 'package:moab_poc/page/setup2/add_child_searching_view.dart';
+import 'package:moab_poc/page/setup2/create_account_view.dart';
+import 'package:moab_poc/page/setup2/nodes_success_view.dart';
+import 'package:moab_poc/page/setup2/otp_code_input_view.dart';
+import 'package:moab_poc/page/setup2/save_settings_view.dart';
+import 'package:moab_poc/page/setup2/set_location_view.dart';
+import 'package:moab_poc/page/setup2/setup_finished_view.dart';
 
-  static const setupNthChildTag = 'setupNthChild';
-  static const setupChildScanQRCode = 'childScanQRCode';
-  static const setupNthChildPlugTag = 'nthChildPlug';
-  static const setupNthChildLookingTag = 'nthChildLooking';
-  static const setupNthChildFoundedTag = 'nthChildFounded';
-  static const setupNthChildLocationTag = 'nthChildLocation';
-  static const setupNthChildSuccessTag = 'nthChildSuccess';
-  static const setupCustomizeWifiSettingsTag = 'customizeWifiSettings';
-  static const setupCreateCloudAccountTag = 'createCloudAccount';
-  static const setupEnterOTPTag = 'enterOTP';
-  static const setupCreateCloudPasswordTag = 'createCloudPassword';
-  static const setupCreateCloudAccountSuccessTag = 'createCloudAccountSuccess';
-  static const setupCreateAdminPasswordTag = 'createAdminPassword';
-  static const setupSaveSettingsTag = 'saveSettings';
-  static const setupFinishedTag = 'yourWifiReady';
+import '../../../setup/check_node_internet_view.dart';
+import '../../../setup/connect_to_modem_view.dart';
+import '../../../setup/plug_node_view.dart';
+import '../../../setup2/add_child_finished_view.dart';
+import '../../../setup2/create_admin_password_view.dart';
+import '../../../setup2/customize_wifi_view.dart';
 
-  static const setupInternetCheckTag = 'internetCheck';
-  static const setupInternetCheckFinishedTag = 'internetCheckFinished';
-  static const setupChildTag = 'child';
-  static const setupUnknown = 'unknown';
+enum PageNavigationType { back, close, none }
 
-  static const setupRootPrefix = '/';
-  static const setupWelcomeEulaPrefix = '/$setupWelcomeEulaTag';
-  static const setupParentPrefix = '/$setupParentTag';
-  static const setupParentWiredPrefix = '/$setupParentWiredTag';
-  static const setupParentConnectToModemPrefix =
-      '/$setupParentConnectToModemTag';
-  static const setupPlaceParentNodePrefix = '/$placeParentNodeTag';
-  static const setupParentNotHidePrefix = '/$setupParentNotHideTag';
-  static const setupParentPermissionPrimerPrefix =
-      '/$setupParentPermissionPrimerTag';
-  static const setupParentManualSSIDPrefix = '/$setupParentManualSSIDTag';
-  static const setupParentScanQRCodePrefix = '/$setupParentScanQRCodeTag';
-  static const setupParentLocationPrefix = '/$setupParentLocationTag';
-
-  static const setupNthChildPrefix = '/$setupNthChildTag';
-  static const setupNthchildScanQRCodePrefix = '/$setupChildScanQRCode';
-  static const setupNthChildPlugPrefix = '/$setupNthChildPlugTag';
-  static const setupNthChildLookingPrefix = '/$setupNthChildLookingTag';
-  static const setupNthChildFoundedPrefix = '/$setupNthChildFoundedTag';
-  static const setupNthChildLocationPrefix = '/$setupNthChildLocationTag';
-  static const setupNthChildSuccessPrefix = '/$setupNthChildSuccessTag';
-  static const setupCustomizeWifiSettingsPrefix =
-      '/$setupCustomizeWifiSettingsTag';
-  static const setupCreateCloudAccountPrefix = '/$setupCreateCloudAccountTag';
-  static const setupEnterOTPPrefix = '/$setupEnterOTPTag';
-  static const setupCreateCloudPasswordPrefix = '/$setupCreateCloudPasswordTag';
-  static const setupCreateAdminPasswordPrefix = '/$setupCreateAdminPasswordTag';
-  static const setupCreateCloudAccountSuccessPrefix =
-      '/$setupCreateCloudAccountSuccessTag';
-  static const setupSaveSettingsPrefix = '/$setupSaveSettingsTag';
-  static const setupFinishedPrefix = '/$setupFinishedTag';
-
-  static const setupInternetCheckPrefix = '/$setupInternetCheckTag';
-  static const setupInternetCheckFinishedPrefix =
-      '/$setupInternetCheckFinishedTag';
-  static const setupChildPrefix = '/$setupChildTag';
-  static const setupUnknownPrefix = '/$setupUnknown';
-
-  final String path;
-  final String history;
-  bool removeFromHistory = false;
-
-  SetupRoutePath.home({String? history})
-      : path = setupRootPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.welcome({String? history})
-      : path = setupWelcomeEulaPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupParent({String? history})
-      : path = setupParentPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupParentWired({String? history})
-      : path = setupParentWiredPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupConnectToModem({String? history})
-      : path = setupParentConnectToModemPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.placeParentNode({String? history})
-      : path = setupPlaceParentNodePrefix,
-        history = history ?? '';
-
-  SetupRoutePath.permissionPrimer({String? history})
-      : path = setupParentPermissionPrimerPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.parentScan({String? history})
-      : path = setupParentScanQRCodePrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupManualParentSSID({String? history})
-      : path = setupParentManualSSIDPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupParentLocation({String? history})
-      : path = setupParentLocationPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupNthChild({String? history})
-      : path = setupNthChildPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupNthChildScanQRCode({String? history})
-      : path = setupNthchildScanQRCodePrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupPlugNthChild({String? history})
-      : path = setupNthChildPlugPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupNthChildLooking({String? history})
-      : path = setupNthChildLookingPrefix,
-        history = history ?? '',
-        removeFromHistory = true;
-
-  SetupRoutePath.setupNthChildFounded({String? history})
-      : path = setupNthChildFoundedPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupNthChildLocation({String? history})
-      : path = setupNthChildLocationPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupNthChildSuccess({String? history})
-      : path = setupNthChildSuccessPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupCustomizeWifiSettings({String? history})
-      : path = setupCustomizeWifiSettingsPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupCreateCloudAccount({String? history})
-      : path = setupCreateCloudAccountPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupEnterOTP({String? history})
-      : path = setupEnterOTPPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupCreateCloudPassword({String? history})
-      : path = setupCreateCloudPasswordPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupCreateCloudAccountSuccess({String? history})
-      : path = setupCreateCloudAccountSuccessPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupCreateAdminPassword({String? history})
-      : path = setupCreateAdminPasswordPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupSaveSettings({String? history})
-      : path = setupSaveSettingsPrefix,
-        history = history ?? '',
-        removeFromHistory = true;
-
-  SetupRoutePath.setupFinished({String? history})
-      : path = setupFinishedPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupInternetCheck({String? history})
-      : path = setupInternetCheckPrefix,
-        history = history ?? '',
-        removeFromHistory = true;
-
-  SetupRoutePath.setupInternetCheckFinished({String? history})
-      : path = setupInternetCheckFinishedPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.setupChild({String? history})
-      : path = setupChildPrefix,
-        history = history ?? '';
-
-  SetupRoutePath.unknown({String? history})
-      : path = setupUnknownPrefix,
-        history = history ?? '';
+class PathConfig {
+  bool removeFromFactory = false;
 }
+
+class PageConfig {
+  PageNavigationType navType = PageNavigationType.back;
+}
+
+/// BasePath is the top level path class for providing to get a generic name
+/// and some interfaces -
+/// BasePath.buildPage() this better to implement on the sub abstract path,
+/// this is because we can easy to understand the whole route in the setup.
+abstract class BasePath<P> {
+  String get name => P.toString();
+
+  PathConfig get pathConfig => PathConfig();
+
+  PageConfig get pageConfig => PageConfig();
+
+  Widget buildPage(SetupRouterDelegate delegate) {
+    print('BasePath:: buildPage: $P');
+    switch (P) {
+      case HomePath:
+        return HomeView(
+          onLogin: () {},
+          onSetup: () {
+            delegate.push(SetupWelcomeEulaPath());
+          },
+        );
+      case UnknownPath:
+        return Center(
+          child: Text("Unknown Path"),
+        );
+      default:
+        return Center();
+    }
+  }
+}
+
+class HomePath extends BasePath<HomePath> {}
+
+class UnknownPath extends BasePath<UnknownPath> {}
+
+abstract class SetupPath<P> extends BasePath<P> {
+  @override
+  Widget buildPage(SetupRouterDelegate delegate) {
+    print('SetupPath:: buildPage: $P');
+    switch (P) {
+      case SetupWelcomeEulaPath:
+        return GetWiFiUpView(onNext: () {
+          delegate.push(SetupParentPlugPath());
+        });
+      case SetupCustomizeSSIDPath:
+        return CustomizeWifiView(
+          onNext: () {
+            delegate.push(CreateCloudAccountPath());
+          },
+          onSkip: () {
+            delegate.push(CreateCloudAccountPath());
+          },
+        );
+      case SetupNodesDonePath:
+        return NodesSuccessView(onNext: () {
+          delegate.push(SetupCustomizeSSIDPath());
+        });
+      case SetupFinishPath:
+        return SetupFinishedView(
+            wifiSsid: '',
+            wifiPassword: '',
+            onNext: () {
+              delegate.popTo(HomePath());
+            });
+      default:
+        return Center();
+    }
+  }
+}
+
+class SetupWelcomeEulaPath extends SetupPath<SetupWelcomeEulaPath> {}
+
+class SetupCustomizeSSIDPath extends SetupPath<SetupCustomizeSSIDPath> {}
+
+class SetupNodesDonePath extends SetupPath<SetupNodesDonePath> {}
+
+class SetupFinishPath extends SetupPath<SetupFinishPath> {}
+
+// Setup Parent Flow
+abstract class SetupParentPath<P> extends SetupPath<P> {
+  @override
+  Widget buildPage(SetupRouterDelegate delegate) {
+    print('SetupParentPath:: buildPage: $P');
+    switch (P) {
+      case SetupParentPlugPath:
+        return PlugNodeView(onNext: () {
+          delegate.push(SetupParentWiredPath());
+        });
+      case SetupParentWiredPath:
+        return ConnectToModemView(onNext: () {
+          delegate.push(SetupParentPlacePath());
+        });
+      case SetupParentPlacePath:
+        return PlaceNodeView(onNext: () {
+          delegate.push(SetupParentPermissionPath());
+        });
+      case SetupParentPermissionPath:
+        return PermissionsPrimerView(onNext: () {
+          delegate.push(SetupParentQrCodeScanPath());
+        });
+      case SetupParentLocationPath:
+        return SetLocationView(onNext: () {
+          delegate.push(SetupNthChildPath());
+        });
+      case SetupParentQrCodeScanPath:
+        return ParentScanQRCodeView(onNext: () {
+          delegate.push(InternetCheckingPath());
+        });
+      default:
+        return Center();
+    }
+  }
+}
+
+class SetupParentPlugPath extends SetupParentPath<SetupParentPlugPath> {}
+
+class SetupParentWiredPath extends SetupParentPath<SetupParentWiredPath> {}
+
+class SetupParentPlacePath extends SetupParentPath<SetupParentPlacePath> {}
+
+// TODO revisit - can this being a common page, not for setup specific
+class SetupParentPermissionPath
+    extends SetupParentPath<SetupParentPermissionPath> {}
+
+class SetupParentQrCodeScanPath
+    extends SetupParentPath<SetupParentQrCodeScanPath> {}
+
+class SetupParentManualPath extends SetupParentPath<SetupParentManualPath> {}
+
+class SetupParentLocationPath extends SetupParentPath<SetupParentLocationPath> {
+}
+
+// Internet Check Flow
+abstract class InternetCheckPath<P> extends SetupPath<P> {
+  @override
+  Widget buildPage(SetupRouterDelegate delegate) {
+    switch (P) {
+      case InternetCheckingPath:
+        return CheckNodeInternetView(
+          onNext: () {
+            delegate.push(SetupParentLocationPath());
+          },
+        );
+
+      default:
+        return const Center();
+    }
+  }
+}
+
+class InternetCheckingPath extends InternetCheckPath<InternetCheckingPath> {
+  @override
+  PathConfig get pathConfig => super.pathConfig..removeFromFactory = true;
+
+  @override
+  PageConfig get pageConfig =>
+      super.pageConfig..navType = PageNavigationType.none;
+}
+
+abstract class SetupChildPath<P> extends SetupPath<P> {
+  @override
+  Widget buildPage(SetupRouterDelegate delegate) {
+    switch (P) {
+      case SetupNthChildPath:
+        return AddChildFinishedView(onAddMore: () {
+          delegate.push(SetupNthChildQrCodePath());
+        }, onAddDone: () {
+          delegate.push(SetupNodesDonePath());
+        });
+      case SetupNthChildQrCodePath:
+        return AddChildScanQRCodeView(onNext: () {
+          delegate.push(SetupNthChildPlugPath());
+        });
+      case SetupNthChildPlugPath:
+        return AddChildPlugView(onNext: () {
+          delegate.push(SetupNthChildSearchingPath());
+        });
+      case SetupNthChildSearchingPath:
+        return AddChildSearchingView(onNext: () {
+          delegate.push(SetupNthChildLocationPath());
+        });
+      case SetupNthChildLocationPath:
+        return SetLocationView(onNext: () {
+          delegate.popTo(SetupNthChildPath());
+        });
+      default:
+        return const Center();
+    }
+  }
+}
+
+class SetupNthChildPath extends SetupChildPath<SetupNthChildPath> {}
+
+class SetupNthChildQrCodePath extends SetupChildPath<SetupNthChildQrCodePath> {}
+
+class SetupNthChildPlugPath extends SetupChildPath<SetupNthChildPlugPath> {}
+
+class SetupNthChildSearchingPath
+    extends SetupChildPath<SetupNthChildSearchingPath> {
+  @override
+  PathConfig get pathConfig => super.pathConfig..removeFromFactory = true;
+
+  @override
+  PageConfig get pageConfig =>
+      super.pageConfig..navType = PageNavigationType.none;
+}
+
+class SetupNthChildLocationPath
+    extends SetupChildPath<SetupNthChildLocationPath> {}
+
+abstract class CreateAccountPath<P> extends BasePath<P> {
+  @override
+  Widget buildPage(SetupRouterDelegate delegate) {
+    switch (P) {
+      case CreateCloudAccountPath:
+        return CreateAccountView(
+          onNext: () {
+            delegate.push(EnterOtpPath());
+          },
+          onSkip: () {
+            delegate.push(CreateAdminPasswordPath());
+          },
+        );
+      case CreateAdminPasswordPath:
+        return CreateAdminPasswordView(onNext: () {
+          delegate.push(SaveCloudSettingsPath());
+        });
+      case EnterOtpPath:
+        return OtpCodeInputView(
+          onNext: () {
+            delegate.push(CreateCloudAccountSuccessPath());
+          },
+          onSkip: () {
+            delegate.push(CreateCloudPasswordPath());
+          },
+        );
+      case SaveCloudSettingsPath:
+        return SaveSettingsView(onNext: () {
+          delegate.push(SetupFinishPath());
+        });
+      default:
+        return const Center();
+    }
+  }
+}
+
+class CreateCloudAccountPath extends CreateAccountPath<CreateCloudAccountPath> {
+}
+
+class CreateAdminPasswordPath
+    extends CreateAccountPath<CreateAdminPasswordPath> {}
+
+class EnterOtpPath extends CreateAccountPath<EnterOtpPath> {}
+
+class CreateCloudPasswordPath
+    extends CreateAccountPath<CreateCloudPasswordPath> {}
+
+class CreateCloudAccountSuccessPath
+    extends CreateAccountPath<CreateCloudAccountSuccessPath> {}
+
+class SaveCloudSettingsPath extends CreateAccountPath<SaveCloudSettingsPath> {}

@@ -1,36 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:moab_poc/page/playground/route/setup/path_model.dart';
-import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
-import 'package:moab_poc/page/setup/home_view.dart';
-import 'package:moab_poc/page/setup/parent_scan_qrcode_view.dart';
-import 'package:moab_poc/page/setup/plug_node_view.dart';
 
-import '../../../setup/check_node_internet_view.dart';
-import '../../../setup/connect_to_modem_view.dart';
-import '../../../setup/manual_enter_ssid_view.dart';
-import '../../../setup/permissions_primer_view.dart';
-import '../../../setup/place_node_view.dart';
-import '../../../setup2/add_child_finished_view.dart';
-import '../../../setup2/add_child_plug_view.dart';
-import '../../../setup2/add_child_scan_qrcode_view.dart';
-import '../../../setup2/add_child_searching_view.dart';
-import '../../../setup2/create_account_finished_view.dart';
-import '../../../setup2/create_account_password_view.dart';
-import '../../../setup2/create_account_view.dart';
-import '../../../setup2/create_admin_password_view.dart';
-import '../../../setup2/customize_wifi_view.dart';
-import '../../../setup2/nodes_success_view.dart';
-import '../../../setup2/otp_code_input_view.dart';
-import '../../../setup2/save_settings_view.dart';
-import '../../../setup2/set_location_view.dart';
-import '../../../setup2/setup_finished_view.dart';
-
-class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
-    with ChangeNotifier, PopNavigatorRouterDelegateMixin<SetupRoutePath> {
+class SetupRouterDelegate extends RouterDelegate<BasePath>
+    with ChangeNotifier, PopNavigatorRouterDelegateMixin<BasePath> {
   SetupRouterDelegate() : navigatorKey = GlobalKey();
 
-  final _stack = <SetupRoutePath>[];
+  final _stack = <BasePath>[];
 
   static SetupRouterDelegate of(BuildContext context) {
     final delegate = Router.of(context).routerDelegate;
@@ -39,9 +15,9 @@ class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
   }
 
   @override
-  SetupRoutePath get currentConfiguration {
+  BasePath get currentConfiguration {
     print('Get currentConfiguration:: ${_stack.length}');
-    return _stack.isNotEmpty ? _stack.last : SetupRoutePath.home();
+    return _stack.isNotEmpty ? _stack.last : HomePath();
   }
 
   List<String> get stack => List.unmodifiable(_stack);
@@ -51,43 +27,40 @@ class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
   @override
   Widget build(BuildContext context) {
     print(
-        'SetupRouterDelegate::build:${describeIdentity(this)}.stack: [${_stack.map((e) => e.path).join(',').toString()}]');
+        'SetupRouterDelegate::build:${describeIdentity(this)}.stack: [${_stack.map((e) => e.name).join(',').toString()}]');
     if (_stack.isEmpty) {
-      _stack.add(SetupRoutePath.home());
+      _stack.add(HomePath());
     }
     return Navigator(
         key: navigatorKey,
         pages: [
-          for (final configuration in _stack)
+          for (final path in _stack)
             MaterialPage(
-              name: configuration.path,
-              key: ValueKey(configuration.path),
-              child: _pageFactory(
-                  context: context,
-                  path: configuration.path,
-                  title: configuration.path),
+              name: path.name,
+              key: ValueKey(path.name),
+              child: path.buildPage(this),
             ),
         ],
         onPopPage: _onPopPage);
   }
 
   @override
-  Future<void> setInitialRoutePath(SetupRoutePath configuration) {
+  Future<void> setInitialRoutePath(BasePath configuration) {
     return setNewRoutePath(configuration);
   }
 
   @override
-  Future<void> setNewRoutePath(SetupRoutePath configuration) async {
-    print('SetupRouterDelegate::setNewRoutePath:${configuration.path}');
+  Future<void> setNewRoutePath(BasePath configuration) async {
+    print('SetupRouterDelegate::setNewRoutePath:${configuration.name}');
     _stack
       ..clear()
       ..add(configuration);
     return SynchronousFuture<void>(null);
   }
 
-  void push(SetupRoutePath newRoute) {
-    _stack.removeWhere((element) => element.removeFromHistory);
-    _stack.add(newRoute);
+  void push(BasePath path) {
+    _stack.removeWhere((element) => element.pathConfig.removeFromFactory);
+    _stack.add(path);
     notifyListeners();
   }
 
@@ -98,121 +71,22 @@ class SetupRouterDelegate extends RouterDelegate<SetupRoutePath>
     notifyListeners();
   }
 
-  void popTo(SetupRoutePath route) {
+  void popTo(BasePath path) {
     if (_stack.isNotEmpty) {
-      while (_stack.removeLast().path != route.path) {}
+      while (_stack.last.name != path.name) {
+        _stack.removeLast();
+      }
     }
     notifyListeners();
   }
 
   bool _onPopPage(Route<dynamic> route, dynamic result) {
     if (_stack.isNotEmpty) {
-      if (_stack.last.path == route.settings.name) {
-        _stack.removeWhere((element) => element.path == route.settings.name);
+      if (_stack.last.name == route.settings.name) {
+        _stack.removeWhere((element) => element.name == route.settings.name);
         notifyListeners();
       }
     }
     return route.didPop(result);
-  }
-
-  // Mock UI pages
-  Widget _pageFactory(
-      {required BuildContext context,
-      required String path,
-      required String title}) {
-    switch (path) {
-      case SetupRoutePath.setupRootPrefix:
-        return HomeView(
-          onSetup: () {
-            push(SetupRoutePath.welcome());
-          },
-          onLogin: () {},
-        );
-      case SetupRoutePath.setupWelcomeEulaPrefix:
-        return GetWiFiUpView(
-          onNext: () => push(SetupRoutePath.setupParentWired()),
-        );
-      case SetupRoutePath.setupParentWiredPrefix:
-        return PlugNodeView(
-          onNext: () => push(SetupRoutePath.setupConnectToModem()),
-        );
-      case SetupRoutePath.setupParentConnectToModemPrefix:
-        return ConnectToModemView(
-            onNext: () => push(SetupRoutePath.placeParentNode()));
-      case SetupRoutePath.setupPlaceParentNodePrefix:
-        return PlaceNodeView(
-            onNext: () => push(SetupRoutePath.permissionPrimer()));
-      case SetupRoutePath.setupParentPermissionPrimerPrefix:
-        return PermissionsPrimerView(
-            onNext: () => push(SetupRoutePath.parentScan()));
-      case SetupRoutePath.setupParentScanQRCodePrefix:
-        return ParentScanQRCodeView(
-            onNext: () => push(SetupRoutePath.setupInternetCheck()));
-      case SetupRoutePath.setupParentManualSSIDPrefix:
-        return ManualEnterSSIDView(
-          onNext: () => push(SetupRoutePath.setupParentLocation()),
-        );
-      case SetupRoutePath.setupParentLocationPrefix:
-        return SetLocationView(
-            onNext: () => push(SetupRoutePath.setupNthChild()));
-      case SetupRoutePath.setupNthChildPrefix:
-        return AddChildFinishedView(
-          onAddMore: () => push(SetupRoutePath.setupNthChildScanQRCode()),
-          onAddDone: () => push(SetupRoutePath.setupCustomizeWifiSettings()),
-        );
-      case SetupRoutePath.setupNthchildScanQRCodePrefix:
-        return AddChildScanQRCodeView(
-          onNext: () {
-            push(SetupRoutePath.setupPlugNthChild());
-          },
-        );
-      case SetupRoutePath.setupNthChildPlugPrefix:
-        return AddChildPlugView(
-            onNext: () => push(SetupRoutePath.setupNthChildLooking()));
-      case SetupRoutePath.setupNthChildLookingPrefix:
-        return AddChildSearchingView(
-            onNext: () => popTo(SetupRoutePath.setupNthChild()));
-      case SetupRoutePath.setupNthChildLocationPrefix:
-        return SetLocationView(onNext: () {});
-      case SetupRoutePath.setupNthChildSuccessPrefix:
-        return NodesSuccessView(onNext: () {});
-      case SetupRoutePath.setupCustomizeWifiSettingsPrefix:
-        return CustomizeWifiView(
-            onNext: () => push(SetupRoutePath.setupCreateCloudAccount()),
-            onSkip: () => push(SetupRoutePath.setupCreateCloudAccount()));
-      case SetupRoutePath.setupCreateCloudAccountPrefix:
-        return CreateAccountView(
-            onNext: () => push(SetupRoutePath.setupEnterOTP()),
-            onSkip: () => push(SetupRoutePath.setupCreateAdminPassword()));
-      case SetupRoutePath.setupCreateCloudPasswordPrefix:
-        return CreateAccountPasswordView(
-            onNext: () => push(SetupRoutePath.setupSaveSettings()));
-      case SetupRoutePath.setupEnterOTPPrefix:
-        return OtpCodeInputView(
-          onNext: () => push(SetupRoutePath.setupCreateCloudAccountSuccess()),
-          onSkip: () => push(SetupRoutePath.setupCreateCloudPassword()),
-        );
-      case SetupRoutePath.setupCreateCloudAccountSuccessPrefix:
-        return CreateAccountFinishedView(
-          onNext: () => push(SetupRoutePath.setupSaveSettings()),
-        );
-      case SetupRoutePath.setupCreateAdminPasswordPrefix:
-        return CreateAdminPasswordView(
-            onNext: () => push(SetupRoutePath.setupSaveSettings()));
-      case SetupRoutePath.setupSaveSettingsPrefix:
-        return SaveSettingsView(
-            onNext: () => push(SetupRoutePath.setupFinished()));
-      case SetupRoutePath.setupFinishedPrefix:
-        return SetupFinishedView(
-          onNext: () => push(SetupRoutePath.home()),
-          wifiSsid: '',
-          wifiPassword: '',
-        );
-      case SetupRoutePath.setupInternetCheckPrefix:
-        return CheckNodeInternetView(
-            onNext: () => push(SetupRoutePath.setupParentLocation()));
-      default:
-        return const Center();
-    }
   }
 }
