@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:moab_poc/page/playground/route/setup/router_delegate.dart';
+import 'package:moab_poc/design/themes.dart';
 import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
 import 'package:moab_poc/page/setup/home_view.dart';
+import 'package:moab_poc/page/setup/login_cloud_account_view.dart';
 import 'package:moab_poc/page/setup/parent_scan_qrcode_view.dart';
 import 'package:moab_poc/page/setup/permissions_primer_view.dart';
 import 'package:moab_poc/page/setup/place_node_view.dart';
@@ -14,13 +15,15 @@ import 'package:moab_poc/page/setup2/otp_code_input_view.dart';
 import 'package:moab_poc/page/setup2/save_settings_view.dart';
 import 'package:moab_poc/page/setup2/set_location_view.dart';
 import 'package:moab_poc/page/setup2/setup_finished_view.dart';
+import 'package:moab_poc/route/route.dart';
 
-import '../../../setup/check_node_internet_view.dart';
-import '../../../setup/connect_to_modem_view.dart';
-import '../../../setup/plug_node_view.dart';
-import '../../../setup2/add_child_finished_view.dart';
-import '../../../setup2/create_admin_password_view.dart';
-import '../../../setup2/customize_wifi_view.dart';
+import '../page/setup/check_node_internet_view.dart';
+import '../page/setup/connect_to_modem_view.dart';
+import '../page/setup/login_cloud_account_otp_view.dart';
+import '../page/setup/plug_node_view.dart';
+import '../page/setup2/add_child_finished_view.dart';
+import '../page/setup2/create_admin_password_view.dart';
+import '../page/setup2/customize_wifi_view.dart';
 
 enum PageNavigationType { back, close, none }
 
@@ -30,6 +33,7 @@ class PathConfig {
 
 class PageConfig {
   PageNavigationType navType = PageNavigationType.back;
+  ThemeData themeData = MoabTheme.setupModuleLightModeData;
 }
 
 /// BasePath is the top level path class for providing to get a generic name
@@ -48,7 +52,9 @@ abstract class BasePath<P> {
     switch (P) {
       case HomePath:
         return HomeView(
-          onLogin: () {},
+          onLogin: () {
+            delegate.push(AuthInputAccountPath());
+          },
           onSetup: () {
             delegate.push(SetupWelcomeEulaPath());
           },
@@ -68,6 +74,10 @@ class HomePath extends BasePath<HomePath> {}
 class UnknownPath extends BasePath<UnknownPath> {}
 
 abstract class SetupPath<P> extends BasePath<P> {
+  @override
+  PageConfig get pageConfig =>
+      super.pageConfig..themeData = MoabTheme.setupModuleLightModeData;
+
   @override
   Widget buildPage(SetupRouterDelegate delegate) {
     print('SetupPath:: buildPage: $P');
@@ -293,3 +303,29 @@ class CreateCloudAccountSuccessPath
     extends CreateAccountPath<CreateCloudAccountSuccessPath> {}
 
 class SaveCloudSettingsPath extends CreateAccountPath<SaveCloudSettingsPath> {}
+
+abstract class AuthenticatePath<P> extends BasePath<P> {
+  @override
+  PageConfig get pageConfig =>
+      super.pageConfig..themeData = MoabTheme.AuthModuleLightModeData;
+
+  @override
+  Widget buildPage(SetupRouterDelegate delegate) {
+    switch (P) {
+      case AuthInputAccountPath:
+        return LoginCloudAccountView(onNext: () {
+          delegate.push(AuthInputOtpPath());
+        });
+      case AuthInputOtpPath:
+        return LoginCloudAccountWithOtpView(
+          onNext: () {},
+        );
+      default:
+        return Center();
+    }
+  }
+}
+
+class AuthInputAccountPath extends AuthenticatePath<AuthInputAccountPath> {}
+
+class AuthInputOtpPath extends AuthenticatePath<AuthInputOtpPath> {}

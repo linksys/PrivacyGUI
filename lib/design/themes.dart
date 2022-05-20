@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:moab_poc/design/colors.dart';
 
 class MoabTheme {
-
   static final mainLightModeData = ThemeData.from(
     colorScheme: _mainLightColorTheme,
     textTheme: _textTheme,
@@ -15,15 +14,15 @@ class MoabTheme {
 
   static final _mainLightColorTheme = const ColorScheme.light().copyWith(
     brightness: Brightness.light,
-    primary: MoabColor.white,//文字,輸入外框,主按鈕背景等主色調
-    secondary: MoabColor.black,//次按鈕背景色
-    tertiary: MoabColor.blackAlpha70,//透明文字
+    primary: MoabColor.white, //文字,輸入外框,主按鈕背景等主色調
+    secondary: MoabColor.black, //次按鈕背景色
+    tertiary: MoabColor.blackAlpha70, //透明文字
     primaryContainer: MoabColor.progressBarBlue,
-    surface: MoabColor.placeholderGrey,//placeHolder文字
-    background: MoabColor.white,//背景
-    onPrimary: MoabColor.primaryBlue,//主按鈕文字
-    onSecondary: MoabColor.primaryBlueAlpha10,//次按鈕文字
-    onTertiary: MoabColor.textButtonBlue,//TextBtn文字
+    surface: MoabColor.placeholderGrey, //placeHolder文字
+    background: MoabColor.white, //背景
+    onPrimary: MoabColor.primaryBlue, //主按鈕文字
+    onSecondary: MoabColor.primaryBlueAlpha10, //次按鈕文字
+    onTertiary: MoabColor.textButtonBlue, //TextBtn文字
     onPrimaryContainer: MoabColor.progressBarGreen,
   );
 
@@ -53,17 +52,37 @@ class MoabTheme {
     textTheme: _textTheme,
   );
 
+  ///////Auth
+  static final AuthModuleLightModeData = ThemeData.from(
+    colorScheme: _authModuleLightColorTheme,
+    textTheme: _textTheme,
+  );
+
+  static final _authModuleLightColorTheme = const ColorScheme.light().copyWith(
+    brightness: Brightness.light,
+    primary: MoabColor.white, //文字,輸入外框,主按鈕背景等主色調
+    secondary: MoabColor.whiteAlpha10, //次按鈕背景色
+    tertiary: MoabColor.whiteAlpha70, //透明文字
+    primaryContainer: MoabColor.progressBarBlue,
+    surface: MoabColor.placeholderGrey, //placeHolder文字
+    background: MoabColor.authBackground, //背景
+    onPrimary: MoabColor.black, //主按鈕文字
+    onSecondary: MoabColor.white, //次按鈕文字
+    onTertiary: MoabColor.white, //TextBtn文字
+    onPrimaryContainer: MoabColor.progressBarGreen,
+  );
+
   static final _setupModuleLightColorTheme = const ColorScheme.light().copyWith(
     brightness: Brightness.light,
-    primary: MoabColor.white,//文字,輸入外框,主按鈕背景等主色調
-    secondary: MoabColor.whiteAlpha10,//次按鈕背景色
-    tertiary: MoabColor.whiteAlpha70,//透明文字
+    primary: MoabColor.white, //文字,輸入外框,主按鈕背景等主色調
+    secondary: MoabColor.whiteAlpha10, //次按鈕背景色
+    tertiary: MoabColor.whiteAlpha70, //透明文字
     primaryContainer: MoabColor.progressBarBlue,
-    surface: MoabColor.placeholderGrey,//placeHolder文字
-    background: MoabColor.primaryBlue,//背景
-    onPrimary: MoabColor.black,//主按鈕文字
-    onSecondary: MoabColor.white,//次按鈕文字
-    onTertiary: MoabColor.textButtonBlue,//TextBtn文字
+    surface: MoabColor.placeholderGrey, //placeHolder文字
+    background: MoabColor.primaryBlue, //背景
+    onPrimary: MoabColor.black, //主按鈕文字
+    onSecondary: MoabColor.white, //次按鈕文字
+    onTertiary: MoabColor.textButtonBlue, //TextBtn文字
     onPrimaryContainer: MoabColor.progressBarGreen,
   );
 
@@ -82,36 +101,35 @@ class MoabTheme {
   );
 
   static final _textTheme = Typography().white.copyWith(
-    headline1: const TextStyle(
-      fontSize: 22,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400,
-    ),
-    headline2: const TextStyle(
-      fontSize: 18,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400,
-    ),
-    headline3: const TextStyle(
-      fontSize: 15,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400,
-    ),
-    headline4: const TextStyle(
-      fontSize: 13,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400,
-    ),
-    button: const TextStyle(
-      fontSize: 16,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400,
-    ),
-    bodyText1: const TextStyle(
-      fontSize: 14,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400,
-    ),
-  );
-
+        headline1: const TextStyle(
+          fontSize: 22,
+          fontStyle: FontStyle.normal,
+          fontWeight: FontWeight.w400,
+        ),
+        headline2: const TextStyle(
+          fontSize: 18,
+          fontStyle: FontStyle.normal,
+          fontWeight: FontWeight.w400,
+        ),
+        headline3: const TextStyle(
+          fontSize: 15,
+          fontStyle: FontStyle.normal,
+          fontWeight: FontWeight.w400,
+        ),
+        headline4: const TextStyle(
+          fontSize: 13,
+          fontStyle: FontStyle.normal,
+          fontWeight: FontWeight.w400,
+        ),
+        button: const TextStyle(
+          fontSize: 16,
+          fontStyle: FontStyle.normal,
+          fontWeight: FontWeight.w400,
+        ),
+        bodyText1: const TextStyle(
+          fontSize: 14,
+          fontStyle: FontStyle.normal,
+          fontWeight: FontWeight.w400,
+        ),
+      );
 }

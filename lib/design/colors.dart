@@ -18,4 +18,6 @@ class MoabColor {
 
   static const scannerBoarder = Color.fromRGBO(0xfd, 0xc1, 0x27, 1.0);
   static const listItemCheck = Color.fromRGBO(0x79, 0xc5, 0xff, 1.0);
+
+  static const authBackground = Color(0xff555252);
 }

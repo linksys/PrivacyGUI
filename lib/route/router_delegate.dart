@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:moab_poc/page/playground/route/setup/path_model.dart';
+import 'package:moab_poc/route/route.dart';
 
 class SetupRouterDelegate extends RouterDelegate<BasePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<BasePath> {
@@ -38,7 +38,8 @@ class SetupRouterDelegate extends RouterDelegate<BasePath>
             MaterialPage(
               name: path.name,
               key: ValueKey(path.name),
-              child: path.buildPage(this),
+              child: Theme(
+                  data: path.pageConfig.themeData, child: path.buildPage(this)),
             ),
         ],
         onPopPage: _onPopPage);
