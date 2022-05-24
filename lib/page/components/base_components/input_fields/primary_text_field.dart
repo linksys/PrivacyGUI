@@ -5,11 +5,13 @@ class PrimaryTextField extends StatefulWidget {
     Key? key,
     required this.controller,
     this.hintText = '',
+    this.inputType = TextInputType.text,
     this.onChanged,
   }) : super(key: key);
 
   final TextEditingController controller;
   final String hintText;
+  final TextInputType inputType;
   final void Function(String text)? onChanged;
 
   @override
@@ -52,6 +54,7 @@ class _PrimaryTextFieldState extends State<PrimaryTextField> {
             borderRadius: BorderRadius.zero),
       ),
       onChanged: _onChanged,
+      keyboardType: widget.inputType,
     );
   }
 }

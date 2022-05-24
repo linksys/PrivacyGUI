@@ -6,13 +6,16 @@ class InputField extends StatelessWidget {
     Key? key,
     required this.titleText,
     required this.controller,
+    this.inputType = TextInputType.text,
     this.hintText = '',
+
     this.onChanged,
   }) : super(key: key);
 
   final String titleText;
   final TextEditingController controller;
   final String hintText;
+  final TextInputType inputType;
   final void Function(String text)? onChanged;
 
   @override
@@ -32,6 +35,7 @@ class InputField extends StatelessWidget {
         PrimaryTextField(
           controller: controller,
           hintText: hintText,
+          inputType: inputType,
           onChanged: onChanged,
         )
       ],
