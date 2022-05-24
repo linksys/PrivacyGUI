@@ -48,6 +48,9 @@ dependencies:
   permission_handler: ^9.2.0
   device_info_plus: ^3.2.3
   pin_code_fields: ^7.4.0
+  mqtt_client: ^9.6.8
+  uuid: ^3.0.6
+  logger: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -75,6 +78,8 @@ flutter:
   assets:
     - assets/icons/
     - assets/images/
+    - assets/keys/
+    - assets/keys/local/
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
 
