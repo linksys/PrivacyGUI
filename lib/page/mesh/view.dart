@@ -14,7 +14,7 @@ class MeshPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String ip = ConnectivityUtil.info.gatewayIp;
+    String ip = ConnectivityUtil.latest.gatewayIp;
 
     return BlocProvider<MeshBloc>(
       create: (BuildContext context) => MeshBloc(

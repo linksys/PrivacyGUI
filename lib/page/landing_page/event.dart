@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:moab_poc/util/connectivity.dart';
 
 abstract class LandingEvent extends Equatable {
   const LandingEvent();
@@ -9,7 +10,12 @@ abstract class LandingEvent extends Equatable {
 
 class Initial extends LandingEvent {}
 
-class CheckingConnection extends LandingEvent {}
+class CheckingConnection extends LandingEvent {
+
+  const CheckingConnection({required this.info});
+
+  final ConnectivityInfo info;
+}
 
 class ScanQrCode extends LandingEvent {}
 

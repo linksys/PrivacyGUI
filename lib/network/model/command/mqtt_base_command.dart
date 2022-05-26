@@ -21,6 +21,10 @@ abstract class BaseMqttCommand<D, R> with CommandCompleter {
 
   String get responseTopic;
 
+  Duration pubackTimeout = const Duration(seconds: 1);
+
+  Duration responseTimeout = const Duration(seconds: 30);
+
   late final D _data;
 
   D get data => _data;
@@ -31,12 +35,12 @@ abstract class BaseMqttCommand<D, R> with CommandCompleter {
     try {
       _data = data;
       await client.send(this);
-      await waitForPuback(const Duration(seconds: 1));
-      final payload = await waitForResponse(const Duration(seconds: 5));
+      await waitForPuback(pubackTimeout);
+      final payload = await waitForResponse(responseTimeout);
       logger.i('MQTT Command:: response!');
       return createResponse(payload);
     } on MqttTimeoutException catch(e) {
-      logger.e('MQTT timeout! $e');
+      logger.e('MQTT timeout! ${e.message}');
       rethrow;
     } catch (e) {
       logger.d('Unhandled exception: $e}');

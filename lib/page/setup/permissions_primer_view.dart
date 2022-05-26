@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
@@ -33,10 +36,12 @@ class PermissionsPrimerView extends StatelessWidget {
             const SizedBox(
               height: 49,
             ),
-            CheckPermissionView(
+            if (Platform.isIOS) CheckPermissionView(
                 checkIcon: checkIcon, text: 'Allow camera access'),
             CheckPermissionView(
                 checkIcon: checkIcon, text: 'Connect to Linksys network'),
+            if (Platform.isIOS) CheckPermissionView(
+                checkIcon: checkIcon, text: 'Local network access')
           ],
         ),
         footer: PrimaryButton(

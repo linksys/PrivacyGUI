@@ -12,6 +12,9 @@ class CounterCommand extends MqttCommand {
   String get topic => 'immediately';
 
   @override
+  Duration get responseTimeout => const Duration(seconds: 5);
+
+  @override
   Map<String, dynamic> createResponse(String payload) {
     logger.d('CounterCommand: create response');
     return json.decode(payload) as Map<String, dynamic>;

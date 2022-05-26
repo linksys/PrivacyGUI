@@ -55,7 +55,7 @@ class LocalDeviceRepository extends DeviceRepository {
 
   @override
   Future<bool> sendBootstrap(String bootstrap) async {
-    String ip = ConnectivityUtil.info.gatewayIp;
+    String ip = ConnectivityUtil.latest.gatewayIp;
 
     try {
       Socket socket = await Socket.connect(ip, 8000);
