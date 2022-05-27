@@ -4,6 +4,7 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class HomeView extends StatelessWidget {
   HomeView({
@@ -42,14 +43,14 @@ class HomeView extends StatelessWidget {
     return Column(
       children: [
         PrimaryButton(
-          text: 'Log in',
+          text: AppLocalizations.of(context)!.login,
           onPress: onLogin,
         ),
         const SizedBox(
           height: 24,
         ),
         SecondaryButton(
-          text: 'Set up new WiFi',
+          text: AppLocalizations.of(context)!.setup_new_router,
           onPress: onSetup,
         ),
       ],
