@@ -45,18 +45,30 @@ class MoabTheme {
   static final setupModuleLightModeData = ThemeData.from(
     colorScheme: _setupModuleLightColorTheme,
     textTheme: _textTheme,
-  );
+  ).copyWith(
+      elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+  )));
 
   static final setupModuleDarkModeData = ThemeData.from(
     colorScheme: _setupModuleDarkColorTheme,
     textTheme: _textTheme,
-  );
+  ).copyWith(
+      elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+  )));
 
   ///////Auth
   static final AuthModuleLightModeData = ThemeData.from(
     colorScheme: _authModuleLightColorTheme,
     textTheme: _textTheme,
-  );
+  ).copyWith(
+      elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+  )));
 
   static final _authModuleLightColorTheme = const ColorScheme.light().copyWith(
     brightness: Brightness.light,
