@@ -3,6 +3,8 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 
+import '../../route/route.dart';
+
 class RegionPickerView extends StatefulWidget {
   const RegionPickerView({Key? key}) : super(key: key);
 
@@ -20,7 +22,7 @@ class _RegionPickerViewState extends State<RegionPickerView> {
       actions: [
         IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => MoabRouter.pop(context),
         )
       ],
     );
@@ -81,7 +83,9 @@ class _RegionPickerViewState extends State<RegionPickerView> {
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 15),
               ),
-              onTap: () => Navigator.pop(context, _items[index]),
+              onTap: () {
+                MoabRouter.returnResult(context, _items[index]);
+              },
             )
         ),
       ),

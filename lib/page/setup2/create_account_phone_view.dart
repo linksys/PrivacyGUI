@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
@@ -10,6 +9,8 @@ import 'package:moab_poc/page/components/base_components/button/secondary_button
 import 'package:moab_poc/page/components/base_components/input_fields/primary_text_field.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+
+import '../../route/route.dart';
 
 class CreateAccountPhoneView extends StatefulWidget {
   const CreateAccountPhoneView({
@@ -75,6 +76,7 @@ class _CreateAccountPhoneViewState extends State<CreateAccountPhoneView> {
   @override
   Widget build(BuildContext context) {
     return BasePageView(
+      scrollable: true,
       child: BasicLayout(
         header: const BasicHeader(
           title: 'Send a code to your phone next time?',
@@ -90,14 +92,11 @@ class _CreateAccountPhoneViewState extends State<CreateAccountPhoneView> {
                 children: [
                   GestureDetector(
                     onTap: () async {
-                      PhoneRegion? selectedRegion = await showCupertinoModalPopup(
-                          context: context,
-                          builder: (context) {
-                            return const RegionPickerView();
-                          });
+                      final selectedRegion = await showPopup(context: context, path: SelectPhoneRegionCodePath());
                       if (selectedRegion != null) {
                         updateRegion(selectedRegion);
                       }
+                      print('region picker result: $selectedRegion');
                     },
                     child: Container(
                       width: 60,

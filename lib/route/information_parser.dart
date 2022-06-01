@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/route/route.dart';
 
-class SetupRouteInformationParser extends RouteInformationParser<BasePath> {
+class MoabRouteInformationParser extends RouteInformationParser<BasePath> {
   @override
   Future<BasePath> parseRouteInformation(
       RouteInformation routeInformation) async {

@@ -14,10 +14,10 @@ class NavigatorDemo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Setup Router Demo',
+      title: 'Moab app Demo',
       theme: MoabTheme.setupModuleLightModeData,
-      routerDelegate: SetupRouterDelegate(),
-      routeInformationParser: SetupRouteInformationParser(),
+      routerDelegate: MoabRouterDelegate(),
+      routeInformationParser: MoabRouteInformationParser(),
     );
   }
 }

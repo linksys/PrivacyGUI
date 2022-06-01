@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/themes.dart';
 import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
@@ -9,6 +11,7 @@ import 'package:moab_poc/page/setup/place_node_view.dart';
 import 'package:moab_poc/page/setup2/add_child_plug_view.dart';
 import 'package:moab_poc/page/setup2/add_child_scan_qrcode_view.dart';
 import 'package:moab_poc/page/setup2/add_child_searching_view.dart';
+import 'package:moab_poc/page/setup2/create_account_phone_view.dart';
 import 'package:moab_poc/page/setup2/create_account_view.dart';
 import 'package:moab_poc/page/setup2/nodes_success_view.dart';
 import 'package:moab_poc/page/setup2/otp_code_input_view.dart';
@@ -24,6 +27,7 @@ import '../page/setup/plug_node_view.dart';
 import '../page/setup2/add_child_finished_view.dart';
 import '../page/setup2/create_admin_password_view.dart';
 import '../page/setup2/customize_wifi_view.dart';
+import '../page/setup2/region_picker_view.dart';
 
 enum PageNavigationType { back, close, none }
 
@@ -34,6 +38,7 @@ class PathConfig {
 class PageConfig {
   PageNavigationType navType = PageNavigationType.back;
   ThemeData themeData = MoabTheme.setupModuleLightModeData;
+  bool isFullScreenDialog = false;
 }
 
 /// BasePath is the top level path class for providing to get a generic name
@@ -47,7 +52,7 @@ abstract class BasePath<P> {
 
   PageConfig get pageConfig => PageConfig();
 
-  Widget buildPage(SetupRouterDelegate delegate) {
+  Widget buildPage(MoabRouterDelegate delegate) {
     print('BasePath:: buildPage: $P');
     switch (P) {
       case HomePath:
@@ -79,7 +84,7 @@ abstract class SetupPath<P> extends BasePath<P> {
       super.pageConfig..themeData = MoabTheme.setupModuleLightModeData;
 
   @override
-  Widget buildPage(SetupRouterDelegate delegate) {
+  Widget buildPage(MoabRouterDelegate delegate) {
     print('SetupPath:: buildPage: $P');
     switch (P) {
       case SetupWelcomeEulaPath:
@@ -123,7 +128,7 @@ class SetupFinishPath extends SetupPath<SetupFinishPath> {}
 // Setup Parent Flow
 abstract class SetupParentPath<P> extends SetupPath<P> {
   @override
-  Widget buildPage(SetupRouterDelegate delegate) {
+  Widget buildPage(MoabRouterDelegate delegate) {
     print('SetupParentPath:: buildPage: $P');
     switch (P) {
       case SetupParentPlugPath:
@@ -177,7 +182,7 @@ class SetupParentLocationPath extends SetupParentPath<SetupParentLocationPath> {
 // Internet Check Flow
 abstract class InternetCheckPath<P> extends SetupPath<P> {
   @override
-  Widget buildPage(SetupRouterDelegate delegate) {
+  Widget buildPage(MoabRouterDelegate delegate) {
     switch (P) {
       case InternetCheckingPath:
         return CheckNodeInternetView(
@@ -203,7 +208,7 @@ class InternetCheckingPath extends InternetCheckPath<InternetCheckingPath> {
 
 abstract class SetupChildPath<P> extends SetupPath<P> {
   @override
-  Widget buildPage(SetupRouterDelegate delegate) {
+  Widget buildPage(MoabRouterDelegate delegate) {
     switch (P) {
       case SetupNthChildPath:
         return AddChildFinishedView(onAddMore: () {
@@ -254,7 +259,7 @@ class SetupNthChildLocationPath
 
 abstract class CreateAccountPath<P> extends BasePath<P> {
   @override
-  Widget buildPage(SetupRouterDelegate delegate) {
+  Widget buildPage(MoabRouterDelegate delegate) {
     switch (P) {
       case CreateCloudAccountPath:
         return CreateAccountView(
@@ -310,7 +315,7 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
       super.pageConfig..themeData = MoabTheme.AuthModuleLightModeData;
 
   @override
-  Widget buildPage(SetupRouterDelegate delegate) {
+  Widget buildPage(MoabRouterDelegate delegate) {
     switch (P) {
       case AuthInputAccountPath:
         return LoginCloudAccountView(onNext: () {
@@ -318,8 +323,17 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
         });
       case AuthInputOtpPath:
         return LoginCloudAccountWithOtpView(
-          onNext: () {},
+          onNext: () {
+            delegate.push(AuthCreateAccountPhonePath());
+          },
         );
+      case AuthCreateAccountPhonePath:
+        return CreateAccountPhoneView(
+          onSave: () {},
+          onSkip: () {},
+        );
+      case SelectPhoneRegionCodePath:
+        return RegionPickerView();
       default:
         return Center();
     }
@@ -329,3 +343,25 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
 class AuthInputAccountPath extends AuthenticatePath<AuthInputAccountPath> {}
 
 class AuthInputOtpPath extends AuthenticatePath<AuthInputOtpPath> {}
+
+class AuthCreateAccountPhonePath
+    extends AuthenticatePath<AuthCreateAccountPhonePath> {}
+
+class SelectPhoneRegionCodePath
+    extends AuthenticatePath<SelectPhoneRegionCodePath> with ReturnablePath<PhoneRegion> {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
+}
+
+mixin ReturnablePath<T> {
+  final Completer<T?> _completer = Completer();
+
+  void complete(T? data) {
+    _completer.complete(data);
+  }
+  bool isComplete() => _completer.isCompleted;
+
+  Future<T?> waitForComplete() {
+    return _completer.future;
+  }
+}
