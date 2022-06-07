@@ -22,6 +22,10 @@ if (flutterVersionName == null) {
 }
 
 apply plugin: 'com.android.application'
+// START: FlutterFire Configuration
+apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'
+// END: FlutterFire Configuration
 apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
@@ -48,6 +52,15 @@ android {
         targetSdkVersion localProperties.getProperty('flutter.targetSdkVersion').toInteger()
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file("../debug_keystore.keystore")
+            storePassword "Linksys123!"
+            keyAlias "LinksysDebug"
+            keyPassword "Linksys123!"
+        }
     }
 
     buildTypes {

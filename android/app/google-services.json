@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "1088152750789",
+    "project_id": "moab-poc",
+    "storage_bucket": "moab-poc.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1088152750789:android:709a0cc71267bad594beac",
+        "android_client_info": {
+          "package_name": "com.linksys.moab.poc.moab_poc"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1088152750789-0ju2qesnjg5q7t5o1s7k4p0m46djovsn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBbmdFleHRNLNCjTrEvno_x2gVsMprhBMg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1088152750789-0ju2qesnjg5q7t5o1s7k4p0m46djovsn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1088152750789-ussp34ea7l49u7crdps34p9g1loqp31m.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.linksys.moab.poc"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

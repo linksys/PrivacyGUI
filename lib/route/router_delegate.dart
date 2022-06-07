@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/util/analytics.dart';
+import 'package:moab_poc/util/logger.dart';
 
 class MoabRouterDelegate extends RouterDelegate<BasePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<BasePath> {
@@ -16,7 +18,6 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
 
   @override
   BasePath get currentConfiguration {
-    print('Get currentConfiguration:: ${_stack.length}');
     return _stack.isNotEmpty ? _stack.last : HomePath();
   }
 
@@ -26,9 +27,10 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
 
   @override
   Widget build(BuildContext context) {
-    print(
-        'MoabRouterDelegate::build:${describeIdentity(this)}.stack: [${_stack.map((e) => e.name).join(',').toString()}]');
+    logger.d(
+        'MoabRouterDelegate::${describeIdentity(this)}.stack: [${_stack.map((e) => e.name).join(',').toString()}]');
     if (_stack.isEmpty) {
+      screenInfoLog(context); // TODO re-visit is there has more suitable place to log screen info
       _stack.add(HomePath());
     }
     return Navigator(
@@ -62,6 +64,11 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
 
   Future<dynamic> push(BasePath path) async {
     _stack.removeWhere((element) => element.pathConfig.removeFromFactory);
+    logger.d('Navigation Push:: ${path.name}');
+    logEvent(eventName: "NavigationPush", parameters: {
+      'currentPage': currentConfiguration.name,
+      'nextPage': path.name,
+    });
     _stack.add(path);
     notifyListeners();
     if (currentConfiguration is ReturnablePath) {
@@ -76,6 +83,10 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
       _completePath(_stack.last, null);
       _stack.remove(_stack.last);
     }
+    logger.d('Navigation Pop:: current:${currentConfiguration.name}');
+    logEvent(eventName: "NavigationPop", parameters: {
+      'currentPage': currentConfiguration.name,
+    });
     notifyListeners();
   }
 
@@ -85,6 +96,10 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
         _stack.removeLast();
       }
     }
+    logEvent(eventName: "NavigationPopTo", parameters: {
+      'currentPage': currentConfiguration.name,
+      'nextPage': path.name,
+    });
     notifyListeners();
   }
 
@@ -111,6 +126,10 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
         notifyListeners();
       }
     }
+    logger.d('Navigation Back:: current:${currentConfiguration.name}');
+    logEvent(eventName: "NavigationBack", parameters: {
+      'currentPage': currentConfiguration.name,
+    });
     return route.didPop(result);
   }
 }

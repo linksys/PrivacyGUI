@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/themes.dart';
+import 'package:moab_poc/page/setup/debug_tools_view.dart';
 import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
 import 'package:moab_poc/page/setup/home_view.dart';
 import 'package:moab_poc/page/setup/login_cloud_account_view.dart';
@@ -53,7 +54,6 @@ abstract class BasePath<P> {
   PageConfig get pageConfig => PageConfig();
 
   Widget buildPage(MoabRouterDelegate delegate) {
-    print('BasePath:: buildPage: $P');
     switch (P) {
       case HomePath:
         return HomeView(
@@ -85,7 +85,6 @@ abstract class SetupPath<P> extends BasePath<P> {
 
   @override
   Widget buildPage(MoabRouterDelegate delegate) {
-    print('SetupPath:: buildPage: $P');
     switch (P) {
       case SetupWelcomeEulaPath:
         return GetWiFiUpView(onNext: () {
@@ -129,7 +128,6 @@ class SetupFinishPath extends SetupPath<SetupFinishPath> {}
 abstract class SetupParentPath<P> extends SetupPath<P> {
   @override
   Widget buildPage(MoabRouterDelegate delegate) {
-    print('SetupParentPath:: buildPage: $P');
     switch (P) {
       case SetupParentPlugPath:
         return PlugNodeView(onNext: () {
@@ -365,3 +363,20 @@ mixin ReturnablePath<T> {
     return _completer.future;
   }
 }
+abstract class DebugToolsPath<P> extends BasePath<P> {
+  @override
+  PageConfig get pageConfig =>
+      super.pageConfig..themeData = MoabTheme.AuthModuleLightModeData;
+
+  @override
+  Widget buildPage(SetupRouterDelegate delegate) {
+    switch (P) {
+      case DebugToolsMainPath:
+        return const DebugToolsView();
+      default:
+        return Center();
+    }
+  }
+}
+
+class DebugToolsMainPath extends DebugToolsPath<DebugToolsMainPath> {}

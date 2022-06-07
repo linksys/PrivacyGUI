@@ -4,8 +4,12 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:moab_poc/route/route.dart';
 
-class HomeView extends StatelessWidget {
+import '../../util/logger.dart';
+
+class HomeView extends StatefulWidget {
   HomeView({
     Key? key,
     required this.onLogin,
@@ -15,6 +19,12 @@ class HomeView extends StatelessWidget {
   final VoidCallback onLogin;
   final VoidCallback onSetup;
 
+  @override
+  State<HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<HomeView> {
+  bool _isOpenDebug = false;
   final Widget logoImage = SvgPicture.asset(
     'assets/images/linksys_logo_large_white.svg',
     semanticsLabel: 'Linksys Logo',
@@ -34,25 +44,48 @@ class HomeView extends StatelessWidget {
   Widget _content(BuildContext context) {
     return Container(
       alignment: Alignment.topRight,
-      child: logoImage,
+      child: GestureDetector(
+          onLongPress: () {
+            setState(() {
+              _isOpenDebug = !_isOpenDebug;
+            });
+          },
+          child: logoImage),
     );
   }
 
   Widget _footer(BuildContext context) {
-    return Column(
-      children: [
-        PrimaryButton(
-          text: 'Log in',
-          onPress: onLogin,
-        ),
+    return Column(children: [
+      PrimaryButton(
+        text: AppLocalizations.of(context)!.login,
+        onPress: widget.onLogin,
+      ),
+      const SizedBox(
+        height: 24,
+      ),
+      SecondaryButton(
+        text: AppLocalizations.of(context)!.setup_new_router,
+        onPress: widget.onSetup,
+      ),
+      ...showDebugButton()
+    ]);
+  }
+
+  List<Widget> showDebugButton() {
+    if (_isOpenDebug) {
+      return [
         const SizedBox(
           height: 24,
         ),
         SecondaryButton(
-          text: 'Set up new WiFi',
-          onPress: onSetup,
+          text: 'Debug Tools',
+          onPress: () {
+            SetupRouterDelegate.of(context).push(DebugToolsMainPath());
+          },
         ),
-      ],
-    );
+      ];
+    } else {
+      return [];
+    }
   }
 }
