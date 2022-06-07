@@ -5,11 +5,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/page/login/view.dart';
-import 'package:moab_poc/util/connectivity.dart';
 import 'package:moab_poc/util/permission.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../channel/wifi_connect_channel.dart';
+import '../../util/wifi_credential.dart';
 import '../components/qr_view.dart';
 import 'bloc.dart';
 import 'event.dart';
@@ -32,11 +32,11 @@ class _LandingPageState extends State<LandingView> with Permissions {
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> _initConnectivity() async {
     await checkLocationPermissions().then((value) {
-      BlocProvider.of<LandingBloc>(context).start();
+      BlocProvider.of<LandingBloc>(context).startListen();
       if (!value) {
         openAppSettings();
       } else {
-        BlocProvider.of<LandingBloc>(context).start();
+        BlocProvider.of<LandingBloc>(context).startListen();
       }
     });
   }

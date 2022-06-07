@@ -20,8 +20,9 @@ enum LandingStatus {
   loading
 }
 
-class LandingBloc extends Bloc<LandingEvent, LandingState>
-    with ConnectivityListener {
+class LandingBloc extends Bloc<LandingEvent, LandingState> {
+  StreamSubscription? _streamSubscription;
+  
   LandingBloc() : super(const LandingState.init()) {
     on<Initial>(_init);
     on<CheckingConnection>(_checkConnection);
@@ -31,16 +32,22 @@ class LandingBloc extends Bloc<LandingEvent, LandingState>
     add(Initial());
   }
 
+  void startListen() {
+    _streamSubscription = ConnectivityUtil.stream.listen((info) {
+      add(CheckingConnection(info: info));
+    });
+  }
+
   @override
   Future<void> close() async {
-    stop();
+    _streamSubscription?.cancel();
     return super.close();
   }
 
   FutureOr<void> _checkConnection(
-      LandingEvent event, Emitter<LandingState> emit) async {
-    String ip = connectivityInfo.gatewayIp;
-    String ssid = connectivityInfo.ssid;
+      CheckingConnection event, Emitter<LandingState> emit) async {
+    String ip = event.info.gatewayIp;
+    String ssid = event.info.ssid;
     if (ip.isEmpty) {
       return;
     }
@@ -62,14 +69,7 @@ class LandingBloc extends Bloc<LandingEvent, LandingState>
   }
 
   FutureOr<void> _init(LandingEvent event, Emitter<LandingState> emit) {
-    return _checkConnection(event, emit);
-  }
-
-  @override
-  Future onConnectivityChanged(
-      ConnectivityResult result, ConnectivityInfo info) async {
-    log("onConnectivityChanged:: $result, $info");
-    add(CheckingConnection());
+    return _checkConnection(CheckingConnection(info: ConnectivityUtil.latest), emit);
   }
 
   @override

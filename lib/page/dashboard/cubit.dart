@@ -13,7 +13,7 @@ class DashboardCubit extends Cubit<DashboardState> {
 
   Future<String> getSSID() async {
     // WirelessInfoList? wifiInfo = await _repository.getWirelessInfo();
-    final ssid = ConnectivityUtil.info.ssid;
+    final ssid = ConnectivityUtil.latest.ssid;
     emit(DashboardState.ssidFetched(ssid));
     return ssid;
   }

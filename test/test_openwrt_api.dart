@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:moab_poc/packages/openwrt/model/command_reply/wan_status_reply.dart';
 import 'package:moab_poc/packages/openwrt/openwrt.dart';
 import 'package:moab_poc/util/connectivity.dart';
+import 'package:moab_poc/util/wifi_credential.dart';
 import 'package:test/test.dart';
 
 void main() {

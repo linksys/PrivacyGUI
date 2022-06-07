@@ -9,18 +9,51 @@ import 'package:moab_poc/packages/openwrt/model/identity.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
 class ConnectivityInfo {
-  const ConnectivityInfo({required this.gatewayIp, required this.ssid});
-
+  const ConnectivityInfo({this.type = ConnectivityResult.none, required this.gatewayIp, required this.ssid});
+  final ConnectivityResult type;
   final String gatewayIp;
   final String ssid;
 }
 
-class ConnectivityUtil {
-  static Identity? identity;
-  static ConnectivityInfo info =
-      const ConnectivityInfo(gatewayIp: '', ssid: '');
 
-  static Future<ConnectivityInfo> updateNetworkInfo() async {
+class ConnectivityUtil with ConnectivityListener {
+  static Identity? identity;
+  static ConnectivityInfo latest =
+      const ConnectivityInfo(gatewayIp: '', ssid: '');
+  static final StreamController<ConnectivityInfo> _streamController = StreamController();
+  static Stream<ConnectivityInfo> get stream => _streamController.stream;
+
+  @override
+  Future onConnectivityChanged(ConnectivityInfo info) async {
+    latest = info;
+    _streamController.add(info);
+  }
+}
+
+mixin ConnectivityListener {
+
+  final Connectivity _connectivity = Connectivity();
+  late StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+
+  void start() {
+    if (_connectivitySubscription != null) {
+      return;
+    }
+    _connectivitySubscription =
+        _connectivity.onConnectivityChanged.listen(_updateConnectivity);
+  }
+
+  void stop() {
+    _connectivitySubscription?.cancel();
+  }
+
+  _updateConnectivity(ConnectivityResult result) async {
+    final connectivityInfo = await _updateNetworkInfo(result);
+
+    onConnectivityChanged(connectivityInfo);
+  }
+
+  Future<ConnectivityInfo> _updateNetworkInfo(ConnectivityResult result) async {
     final _networkInfo = NetworkInfo();
 
     String? wifiName, wifiGatewayIP;
@@ -52,95 +85,11 @@ class ConnectivityUtil {
       wifiGatewayIP = 'Failed to get Wifi gateway address';
     }
 
-    info =
-        ConnectivityInfo(gatewayIp: wifiGatewayIP ?? "", ssid: wifiName ?? "");
+    final info =
+        ConnectivityInfo(type: result, gatewayIp: wifiGatewayIP ?? "", ssid: wifiName ?? "");
 
     return info;
   }
-}
 
-mixin ConnectivityListener {
-  ConnectivityResult connectionStatus = ConnectivityResult.none;
-  ConnectivityInfo connectivityInfo =
-      const ConnectivityInfo(gatewayIp: '', ssid: '');
-  final Connectivity _connectivity = Connectivity();
-  late StreamSubscription<ConnectivityResult>? _connectivitySubscription;
-
-  void start() {
-    _connectivitySubscription =
-        _connectivity.onConnectivityChanged.listen(_updateConnectivity);
-  }
-
-  void stop() {
-    _connectivitySubscription?.cancel();
-  }
-
-  _updateConnectivity(ConnectivityResult result) async {
-    connectionStatus = result;
-    connectivityInfo = await ConnectivityUtil.updateNetworkInfo();
-
-    onConnectivityChanged(connectionStatus, connectivityInfo);
-  }
-
-  Future onConnectivityChanged(
-      ConnectivityResult result, ConnectivityInfo info);
-}
-
-enum SecurityType { wpa, wep, none }
-
-class WiFiCredential {
-  const WiFiCredential._(
-      {this.ssid = '',
-      this.password = '',
-      this.type = SecurityType.none,
-      this.isHidden = false});
-
-  factory WiFiCredential.parse(String raw) {
-    String ssid = '', password = '';
-    bool isHidden = false;
-    SecurityType type = SecurityType.none;
-
-    RegExp regex =
-        RegExp(r"([(?=S|T|P|H):]{1}:[\S\s]*?(?=;T:|;H:|;P:|;S:|;;$))");
-    regex.allMatches(raw).forEach((element) {
-      final data = element.group(0) ?? "";
-      print(data);
-      RegExp regex = RegExp(r"([(?=S|T|P|H):]{1}):([\S\s]*)");
-      regex.allMatches(data).forEach((element) {
-        switch (element.group(1)) {
-          case 'S':
-            ssid = element.group(2) ?? '';
-            break;
-          case 'T':
-            type = SecurityType.values.firstWhere(
-                (e) => e.toString() == (element.group(2) ?? 'none'),
-                orElse: () => SecurityType.none);
-            break;
-          case 'P':
-            password = element.group(2) ?? '';
-            break;
-          case 'H':
-            isHidden = (element.group(2) ?? '') == 'true';
-            break;
-        }
-      });
-    });
-
-    return WiFiCredential._(
-        ssid: ssid, password: password, type: type, isHidden: isHidden);
-  }
-
-  WiFiCredential copyWith(
-      {String? ssid, String? password, bool? isHidden, SecurityType? type}) {
-    return WiFiCredential._(
-        ssid: ssid ?? this.ssid,
-        password: password ?? this.password,
-        isHidden: isHidden ?? this.isHidden,
-        type: type ?? this.type);
-  }
-
-  final String ssid;
-  final String password;
-  final SecurityType type;
-  final bool isHidden;
+  Future onConnectivityChanged(ConnectivityInfo info);
 }
