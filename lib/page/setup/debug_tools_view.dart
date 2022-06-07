@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
@@ -11,7 +12,10 @@ import 'package:moab_poc/page/components/base_components/button/secondary_button
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/util/logger.dart';
+import 'package:share_plus/share_plus.dart';
 
+import '../../util/storage.dart';
 import '../components/base_components/button/primary_button.dart';
 
 class DebugToolsView extends StatefulWidget {
@@ -52,73 +56,76 @@ class _DebugToolsViewState extends State<DebugToolsView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Push Notification:',
-          style: Theme.of(context)
-              .textTheme
-              .headline2
-              ?.copyWith(color: Theme.of(context).colorScheme.primary),
-        ),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  alignment: WrapAlignment.start,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    const Text('FCM Token:'),
-                    Visibility(
-                      visible: _fcmToken != null,
-                      child: GestureDetector(
-                          onTap: _fcmToken != null
-                              ? () {
-                                  _copyToClipboard(_fcmToken!);
-                                }
-                              : null,
-                          child: const Icon(Icons.paste)),
-                    ),
-                    Text(_fcmToken ?? 'No FCM Token'),
-                  ],
-                ),
-                const SizedBox(
-                  height: 8,
-                ),
-                Wrap(
-                  alignment: WrapAlignment.start,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    const Text('APNS Token:'),
-                    Text(_apnsToken ?? 'No APNS Token'),
-                    Visibility(
-                      visible: _apnsToken != null,
-                      child: GestureDetector(
-                          onTap: _apnsToken != null
-                              ? () {
-                                  _copyToClipboard(_apnsToken!);
-                                }
-                              : null,
-                          child: const Icon(Icons.paste)),
-                    ),
-                  ],
-                ),
-                const SizedBox(
-                  height: 16,
-                ),
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                  const Text('Foreground Push Notification'),
-                  Switch(value: _streamSubscription != null, onChanged: (value) {
-                    _toggleForegroundNotification(value);
-                  })
-                ],)
-              ],
-            ),
-          ),
-        ),
+        // Text(
+        //   'Push Notification:',
+        //   style: Theme.of(context)
+        //       .textTheme
+        //       .headline2
+        //       ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        // ),
+        // Card(
+        //   child: Padding(
+        //     padding: const EdgeInsets.all(8.0),
+        //     child: Column(
+        //       crossAxisAlignment: CrossAxisAlignment.start,
+        //       children: [
+        //         Wrap(
+        //           alignment: WrapAlignment.start,
+        //           crossAxisAlignment: WrapCrossAlignment.center,
+        //           children: [
+        //             const Text('FCM Token:'),
+        //             Visibility(
+        //               visible: _fcmToken != null,
+        //               child: GestureDetector(
+        //                   onTap: _fcmToken != null
+        //                       ? () {
+        //                           _copyToClipboard(_fcmToken!);
+        //                         }
+        //                       : null,
+        //                   child: const Icon(Icons.paste)),
+        //             ),
+        //             Text(_fcmToken ?? 'No FCM Token'),
+        //           ],
+        //         ),
+        //         const SizedBox(
+        //           height: 8,
+        //         ),
+        //         Wrap(
+        //           alignment: WrapAlignment.start,
+        //           crossAxisAlignment: WrapCrossAlignment.center,
+        //           children: [
+        //             const Text('APNS Token:'),
+        //             Text(_apnsToken ?? 'No APNS Token'),
+        //             Visibility(
+        //               visible: _apnsToken != null,
+        //               child: GestureDetector(
+        //                   onTap: _apnsToken != null
+        //                       ? () {
+        //                           _copyToClipboard(_apnsToken!);
+        //                         }
+        //                       : null,
+        //                   child: const Icon(Icons.paste)),
+        //             ),
+        //           ],
+        //         ),
+        //         const SizedBox(
+        //           height: 16,
+        //         ),
+        //         Wrap(
+        //           crossAxisAlignment: WrapCrossAlignment.center,
+        //           children: [
+        //             const Text('Foreground Push Notification'),
+        //             Switch(
+        //                 value: _streamSubscription != null,
+        //                 onChanged: (value) {
+        //                   _toggleForegroundNotification(value);
+        //                 })
+        //           ],
+        //         )
+        //       ],
+        //     ),
+        //   ),
+        // ),
         const SizedBox(
           height: 16,
         ),
@@ -132,9 +139,39 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Raise an Exception!',
           onPress: () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text('Throw a test exception!!')));
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Throw a test exception!!')));
             throw Exception('Throw a test exception!!');
+          },
+        ),
+        const SizedBox(
+          height: 16,
+        ),
+        Text(
+          'Log:',
+          style: Theme.of(context)
+              .textTheme
+              .headline2
+              ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        ),
+        SecondaryButton(
+          text: 'Export log file',
+          onPress: () async {
+            // Share.shareFiles(['${Storage.logFileUri.path}'], text: 'Log file');
+            final box = context.findRenderObject() as RenderBox?;
+            final result = await Share.shareFilesWithResult(
+                [Storage.logFileUri.path],
+                text: 'Log',
+                subject: 'Log file',
+                sharePositionOrigin:
+                    box!.localToGlobal(Offset.zero) & box.size);
+            print('Share result: $result');
+            if (result.status == ShareResultStatus.success) {
+              Storage.deleteFile(Storage.logFileUri);
+            }
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text("Share result: ${result.status}"),
+            ));
           },
         )
       ],
@@ -162,11 +199,13 @@ class _DebugToolsViewState extends State<DebugToolsView> {
   _toggleForegroundNotification(bool value) {
     setState(() {
       if (value) {
-        _streamSubscription = FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        _streamSubscription =
+            FirebaseMessaging.onMessage.listen((RemoteMessage message) {
           final title = message.notification?.title ?? '';
           final msg = message.notification?.body ?? '';
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('Receive notification: title: $title, body: $msg')));
+              content:
+                  Text('Receive notification: title: $title, body: $msg')));
         });
       } else {
         _streamSubscription?.cancel();

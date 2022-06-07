@@ -5,8 +5,8 @@ class SetupRouteInformationParser extends RouteInformationParser<BasePath> {
   @override
   Future<BasePath> parseRouteInformation(
       RouteInformation routeInformation) async {
-    print(
-        'SetupRouteInformationParser::parseRouteInformation: ${routeInformation.location}');
+    // print(
+    //     'SetupRouteInformationParser::parseRouteInformation: ${routeInformation.location}');
     final uri = Uri.parse(routeInformation.location ?? '');
 
     // Handle '/'
@@ -19,8 +19,8 @@ class SetupRouteInformationParser extends RouteInformationParser<BasePath> {
 
   @override
   RouteInformation? restoreRouteInformation(BasePath configuration) {
-    print(
-        'SetupRouteInformationParser::restoreRouteInformation: ${configuration.name}');
+    // print(
+    //     'SetupRouteInformationParser::restoreRouteInformation: ${configuration.name}');
     return null;
   }
 }

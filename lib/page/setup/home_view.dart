@@ -7,6 +7,8 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/route/route.dart';
 
+import '../../util/logger.dart';
+
 class HomeView extends StatefulWidget {
   HomeView({
     Key? key,

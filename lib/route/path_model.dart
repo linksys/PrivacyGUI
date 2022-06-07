@@ -49,7 +49,6 @@ abstract class BasePath<P> {
   PageConfig get pageConfig => PageConfig();
 
   Widget buildPage(SetupRouterDelegate delegate) {
-    print('BasePath:: buildPage: $P');
     switch (P) {
       case HomePath:
         return HomeView(
@@ -81,7 +80,6 @@ abstract class SetupPath<P> extends BasePath<P> {
 
   @override
   Widget buildPage(SetupRouterDelegate delegate) {
-    print('SetupPath:: buildPage: $P');
     switch (P) {
       case SetupWelcomeEulaPath:
         return GetWiFiUpView(onNext: () {
@@ -125,7 +123,6 @@ class SetupFinishPath extends SetupPath<SetupFinishPath> {}
 abstract class SetupParentPath<P> extends SetupPath<P> {
   @override
   Widget buildPage(SetupRouterDelegate delegate) {
-    print('SetupParentPath:: buildPage: $P');
     switch (P) {
       case SetupParentPlugPath:
         return PlugNodeView(onNext: () {

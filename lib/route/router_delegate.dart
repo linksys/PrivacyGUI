@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/analytics.dart';
+import 'package:moab_poc/util/logger.dart';
 
 class SetupRouterDelegate extends RouterDelegate<BasePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<BasePath> {
@@ -17,7 +18,6 @@ class SetupRouterDelegate extends RouterDelegate<BasePath>
 
   @override
   BasePath get currentConfiguration {
-    print('Get currentConfiguration:: ${_stack.length}');
     return _stack.isNotEmpty ? _stack.last : HomePath();
   }
 
@@ -27,9 +27,10 @@ class SetupRouterDelegate extends RouterDelegate<BasePath>
 
   @override
   Widget build(BuildContext context) {
-    print(
-        'SetupRouterDelegate::build:${describeIdentity(this)}.stack: [${_stack.map((e) => e.name).join(',').toString()}]');
+    logger.d(
+        'RouterDelegate::${describeIdentity(this)}.stack: [${_stack.map((e) => e.name).join(',').toString()}]');
     if (_stack.isEmpty) {
+      screenInfoLog(context); // TODO re-visit is there has more suitable place to log screen info
       _stack.add(HomePath());
     }
     return Navigator(
@@ -53,7 +54,7 @@ class SetupRouterDelegate extends RouterDelegate<BasePath>
 
   @override
   Future<void> setNewRoutePath(BasePath configuration) async {
-    print('SetupRouterDelegate::setNewRoutePath:${configuration.name}');
+    logger.d('RouterDelegate::setNewRoutePath:${configuration.name}');
     _stack
       ..clear()
       ..add(configuration);
@@ -62,6 +63,7 @@ class SetupRouterDelegate extends RouterDelegate<BasePath>
 
   void push(BasePath path) {
     _stack.removeWhere((element) => element.pathConfig.removeFromFactory);
+    logger.d('Navigation Push:: ${path.name}');
     logEvent(eventName: "NavigationPush", parameters: {
       'currentPage': currentConfiguration.name,
       'nextPage': path.name,
@@ -74,6 +76,7 @@ class SetupRouterDelegate extends RouterDelegate<BasePath>
     if (_stack.isNotEmpty) {
       _stack.remove(_stack.last);
     }
+    logger.d('Navigation Pop:: current:${currentConfiguration.name}');
     logEvent(eventName: "NavigationPop", parameters: {
       'currentPage': currentConfiguration.name,
     });
@@ -100,6 +103,7 @@ class SetupRouterDelegate extends RouterDelegate<BasePath>
         notifyListeners();
       }
     }
+    logger.d('Navigation Back:: current:${currentConfiguration.name}');
     logEvent(eventName: "NavigationBack", parameters: {
       'currentPage': currentConfiguration.name,
     });
