@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/util/analytics.dart';
 
 class SetupRouterDelegate extends RouterDelegate<BasePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<BasePath> {
@@ -61,6 +62,10 @@ class SetupRouterDelegate extends RouterDelegate<BasePath>
 
   void push(BasePath path) {
     _stack.removeWhere((element) => element.pathConfig.removeFromFactory);
+    logEvent(eventName: "NavigationPush", parameters: {
+      'currentPage': currentConfiguration.name,
+      'nextPage': path.name,
+    });
     _stack.add(path);
     notifyListeners();
   }
@@ -69,6 +74,9 @@ class SetupRouterDelegate extends RouterDelegate<BasePath>
     if (_stack.isNotEmpty) {
       _stack.remove(_stack.last);
     }
+    logEvent(eventName: "NavigationPop", parameters: {
+      'currentPage': currentConfiguration.name,
+    });
     notifyListeners();
   }
 
@@ -78,6 +86,10 @@ class SetupRouterDelegate extends RouterDelegate<BasePath>
         _stack.removeLast();
       }
     }
+    logEvent(eventName: "NavigationPopTo", parameters: {
+      'currentPage': currentConfiguration.name,
+      'nextPage': path.name,
+    });
     notifyListeners();
   }
 
@@ -88,6 +100,9 @@ class SetupRouterDelegate extends RouterDelegate<BasePath>
         notifyListeners();
       }
     }
+    logEvent(eventName: "NavigationBack", parameters: {
+      'currentPage': currentConfiguration.name,
+    });
     return route.didPop(result);
   }
 }

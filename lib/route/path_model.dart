@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/themes.dart';
+import 'package:moab_poc/page/setup/debug_tools_view.dart';
 import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
 import 'package:moab_poc/page/setup/home_view.dart';
 import 'package:moab_poc/page/setup/login_cloud_account_view.dart';
@@ -329,3 +330,21 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
 class AuthInputAccountPath extends AuthenticatePath<AuthInputAccountPath> {}
 
 class AuthInputOtpPath extends AuthenticatePath<AuthInputOtpPath> {}
+
+abstract class DebugToolsPath<P> extends BasePath<P> {
+  @override
+  PageConfig get pageConfig =>
+      super.pageConfig..themeData = MoabTheme.AuthModuleLightModeData;
+
+  @override
+  Widget buildPage(SetupRouterDelegate delegate) {
+    switch (P) {
+      case DebugToolsMainPath:
+        return const DebugToolsView();
+      default:
+        return Center();
+    }
+  }
+}
+
+class DebugToolsMainPath extends DebugToolsPath<DebugToolsMainPath> {}
