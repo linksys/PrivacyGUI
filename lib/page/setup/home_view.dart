@@ -80,7 +80,7 @@ class _HomeViewState extends State<HomeView> {
         SecondaryButton(
           text: 'Debug Tools',
           onPress: () {
-            SetupRouterDelegate.of(context).push(DebugToolsMainPath());
+            MoabRouterDelegate.of(context).push(DebugToolsMainPath());
           },
         ),
       ];

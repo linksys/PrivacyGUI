@@ -42,6 +42,19 @@ class PageConfig {
   bool isFullScreenDialog = false;
 }
 
+mixin ReturnablePath<T> {
+  final Completer<T?> _completer = Completer();
+
+  void complete(T? data) {
+    _completer.complete(data);
+  }
+  bool isComplete() => _completer.isCompleted;
+
+  Future<T?> waitForComplete() {
+    return _completer.future;
+  }
+}
+
 /// BasePath is the top level path class for providing to get a generic name
 /// and some interfaces -
 /// BasePath.buildPage() this better to implement on the sub abstract path,
@@ -351,25 +364,13 @@ class SelectPhoneRegionCodePath
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
 
-mixin ReturnablePath<T> {
-  final Completer<T?> _completer = Completer();
-
-  void complete(T? data) {
-    _completer.complete(data);
-  }
-  bool isComplete() => _completer.isCompleted;
-
-  Future<T?> waitForComplete() {
-    return _completer.future;
-  }
-}
 abstract class DebugToolsPath<P> extends BasePath<P> {
   @override
   PageConfig get pageConfig =>
       super.pageConfig..themeData = MoabTheme.AuthModuleLightModeData;
 
   @override
-  Widget buildPage(SetupRouterDelegate delegate) {
+  Widget buildPage(MoabRouterDelegate delegate) {
     switch (P) {
       case DebugToolsMainPath:
         return const DebugToolsView();
