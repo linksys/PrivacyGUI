@@ -1,6 +1,7 @@
 import UIKit
 import Flutter
 import NetworkExtension
+import FirebaseCore
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
@@ -8,7 +9,7 @@ import NetworkExtension
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-      
+      FirebaseApp.configure()
       let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
       let connectWiFiChannel = FlutterMethodChannel(name: "com.linksys.native.channel.wifi.connect",
                                                 binaryMessenger: controller.binaryMessenger)
