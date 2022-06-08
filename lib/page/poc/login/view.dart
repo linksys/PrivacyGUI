@@ -8,7 +8,6 @@ import 'package:moab_poc/page/dashboard/view.dart';
 import 'package:moab_poc/page/login/login.dart';
 import 'package:moab_poc/page/login/login_page.dart';
 
-import 'cubit.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({Key? key}) : super(key: key);

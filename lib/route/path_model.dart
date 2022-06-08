@@ -5,7 +5,7 @@ import 'package:moab_poc/design/themes.dart';
 import 'package:moab_poc/page/setup/debug_tools_view.dart';
 import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
 import 'package:moab_poc/page/setup/home_view.dart';
-import 'package:moab_poc/page/setup/login_cloud_account_view.dart';
+import 'package:moab_poc/page/login/login_cloud_account_view.dart';
 import 'package:moab_poc/page/setup/parent_scan_qrcode_view.dart';
 import 'package:moab_poc/page/setup/permissions_primer_view.dart';
 import 'package:moab_poc/page/setup/place_node_view.dart';
@@ -23,7 +23,7 @@ import 'package:moab_poc/route/route.dart';
 
 import '../page/setup/check_node_internet_view.dart';
 import '../page/setup/connect_to_modem_view.dart';
-import '../page/setup/login_cloud_account_otp_view.dart';
+import '../page/login/login_cloud_account_otp_view.dart';
 import '../page/setup/plug_node_view.dart';
 import '../page/setup2/add_child_finished_view.dart';
 import '../page/setup2/create_admin_password_view.dart';

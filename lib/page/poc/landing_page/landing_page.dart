@@ -8,9 +8,9 @@ import 'package:moab_poc/page/login/view.dart';
 import 'package:moab_poc/util/permission.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../channel/wifi_connect_channel.dart';
-import '../../util/wifi_credential.dart';
-import '../components/qr_view.dart';
+import '../../../channel/wifi_connect_channel.dart';
+import '../../../util/connectivity.dart';
+import '../../components/qr_view.dart';
 import 'bloc.dart';
 import 'event.dart';
 import 'state.dart';

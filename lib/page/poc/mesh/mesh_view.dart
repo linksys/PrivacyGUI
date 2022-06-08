@@ -9,7 +9,7 @@ import 'package:moab_poc/util/permission.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
-import '../components/qr_view.dart';
+import '../../components/qr_view.dart';
 
 class MeshView extends StatelessWidget {
   const MeshView({Key? key}) : super(key: key);
