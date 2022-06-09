@@ -70,6 +70,15 @@ android {
             signingConfig signingConfigs.debug
         }
     }
+
+    signingConfigs {
+    debug {
+        storeFile file("../debug_keystore.keystore")
+        storePassword "Linksys123!"
+        keyAlias "LinksysDebug"
+        keyPassword "Linksys123!"
+    }
+}
 }
 
 flutter {

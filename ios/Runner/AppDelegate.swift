@@ -46,4 +46,23 @@ import FirebaseCore
             }
         }
     }
+    
+    override func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
+
+        guard let url = userActivity.webpageURL,
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+              userActivity.activityType == NSUserActivityTypeBrowsingWeb else { return false }
+        
+        var code: String?
+        if components.path.contains("otp") {
+            for item in components.queryItems ?? [] {
+                if item.name == "code" {
+                    code = item.value
+                }
+            }
+        }
+        print("Universal link: Code=\(code ?? "None")")
+        
+        return false
+    }
 }
