@@ -14,8 +14,8 @@ import '../model/dummy_model.dart';
 abstract class AuthRepository {
   Future<DummyModel> testUsername(String username);
   Future<DummyModel> login(String username, String password);
-  Future<void> passwordLessLogin(int method);
-  Future<DummyModel> validatePasswordLessCode(String code);
+  Future<void> passwordLessLogin(String username, int method);
+  Future<DummyModel> validatePasswordLessCode(String token, String code);
   Future<void> resendPasswordLessCode();
   Future<void> loginChallenge(int method);
   Future<DummyModel> validateChallenge(String code);
