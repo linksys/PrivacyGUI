@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
 import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 
-class OtpCodeInputView extends StatelessWidget {
-  OtpCodeInputView({
+class OtpCodeInputView extends StatefulWidget {
+  const OtpCodeInputView({
     Key? key,
     required this.onNext,
     required this.onSkip,
@@ -14,11 +15,34 @@ class OtpCodeInputView extends StatelessWidget {
 
   final void Function() onNext;
   final void Function() onSkip;
+
+  @override
+  _OtpCodeInputViewState createState() => _OtpCodeInputViewState();
+}
+
+class _OtpCodeInputViewState extends State<OtpCodeInputView> {
   final TextEditingController codeController = TextEditingController();
+  static const eventChannel = EventChannel('otp.code.input.view/deeplink');
+
+  @override
+  void initState() {
+    eventChannel.receiveBroadcastStream().listen(_onData, onError: _onError);
+    super.initState();
+  }
+
+  void _onData(Object? data) {
+    setState(() {
+      codeController.text = '$data';
+    });
+  }
+
+  void _onError(Object error) {
+    //TODO: Log error
+  }
 
   void _checkOtpCode(String text) {
     if (text.length >= 6) {
-      onNext();
+      widget.onNext();
     }
   }
 
@@ -40,7 +64,7 @@ class OtpCodeInputView extends StatelessWidget {
         ),
         footer: SecondaryButton(
           text: 'Create a password instead',
-          onPress: onSkip,
+          onPress: widget.onSkip,
         ),
       ),
     );
