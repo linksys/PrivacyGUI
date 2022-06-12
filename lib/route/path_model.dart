@@ -48,6 +48,7 @@ mixin ReturnablePath<T> {
   void complete(T? data) {
     _completer.complete(data);
   }
+
   bool isComplete() => _completer.isCompleted;
 
   Future<T?> waitForComplete() {
@@ -329,9 +330,13 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
   Widget buildPage(MoabRouterDelegate delegate) {
     switch (P) {
       case AuthInputAccountPath:
-        return LoginCloudAccountView(onNext: () {
-          delegate.push(AuthInputOtpPath());
-        });
+        return LoginCloudAccountView(
+          onNext: () {
+            delegate.push(AuthInputOtpPath());
+          },
+          onLocalLogin: () {},
+          onForgotEmail: () {},
+        );
       case AuthInputOtpPath:
         return LoginCloudAccountWithOtpView(
           onNext: () {
@@ -359,7 +364,8 @@ class AuthCreateAccountPhonePath
     extends AuthenticatePath<AuthCreateAccountPhonePath> {}
 
 class SelectPhoneRegionCodePath
-    extends AuthenticatePath<SelectPhoneRegionCodePath> with ReturnablePath<PhoneRegion> {
+    extends AuthenticatePath<SelectPhoneRegionCodePath>
+    with ReturnablePath<PhoneRegion> {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }

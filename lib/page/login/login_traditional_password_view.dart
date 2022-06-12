@@ -20,6 +20,7 @@ class LoginTraditionalPasswordView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BasePageView(
+      scrollable: true,
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
         header: const BasicHeader(

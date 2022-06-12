@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
-import 'package:moab_poc/page/components/base_components/button/selectable_item.dart';
+import 'package:moab_poc/page/components/base_components/selectable_item.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 
@@ -20,7 +20,13 @@ class _ChooseOTPMethodsState extends State<ChooseOTPMethodsView> {
     'Text',
     'Email',
   ];
-  String selectedMethod = 'Text';
+  late String selectedMethod;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedMethod = _methods.first;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +40,7 @@ class _ChooseOTPMethodsState extends State<ChooseOTPMethodsView> {
           children: [
             ListView.builder(
                 shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
                 itemCount: _methods.length,
                 itemBuilder: (context, index) => GestureDetector(
                       child: Container(

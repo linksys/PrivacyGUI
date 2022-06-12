@@ -12,9 +12,13 @@ class LoginCloudAccountView extends StatefulWidget {
   const LoginCloudAccountView({
     Key? key,
     required this.onNext,
+    required this.onForgotEmail,
+    required this.onLocalLogin,
   }) : super(key: key);
 
   final void Function() onNext;
+  final void Function() onForgotEmail;
+  final void Function() onLocalLogin;
 
   @override
   _LoginCloudAccountState createState() => _LoginCloudAccountState();
@@ -49,7 +53,8 @@ class _LoginCloudAccountState extends State<LoginCloudAccountView> {
               ),
               Row(
                 children: [
-                  SimpleTextButton(text: 'Forgot email', onPressed: () {}),
+                  SimpleTextButton(
+                      text: 'Forgot email', onPressed: widget.onForgotEmail),
                 ],
               ),
               Padding(
@@ -60,7 +65,8 @@ class _LoginCloudAccountState extends State<LoginCloudAccountView> {
                 ),
               ),
               SimpleTextButton(
-                  text: 'Log in with router password', onPressed: () {}),
+                  text: 'Log in with router password',
+                  onPressed: widget.onLocalLogin),
               const Spacer(),
             ],
           ),
