@@ -5,17 +5,19 @@ import 'package:moab_poc/page/components/base_components/selectable_item.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 
-class ChooseOTPMethodsView extends StatefulWidget {
-  const ChooseOTPMethodsView({Key? key, required this.onNext})
+class LoginOTPMethodsView extends StatefulWidget {
+  const LoginOTPMethodsView(
+      {Key? key, required this.onTextNext, required this.onEmailNext})
       : super(key: key);
 
-  final void Function() onNext;
+  final void Function() onTextNext;
+  final void Function() onEmailNext;
 
   @override
   _ChooseOTPMethodsState createState() => _ChooseOTPMethodsState();
 }
 
-class _ChooseOTPMethodsState extends State<ChooseOTPMethodsView> {
+class _ChooseOTPMethodsState extends State<LoginOTPMethodsView> {
   final List<String> _methods = [
     'Text',
     'Email',
@@ -62,7 +64,9 @@ class _ChooseOTPMethodsState extends State<ChooseOTPMethodsView> {
             ),
             PrimaryButton(
               text: 'Send',
-              onPress: widget.onNext,
+              onPress: selectedMethod == _methods.first
+                  ? widget.onTextNext
+                  : widget.onEmailNext,
             )
           ],
         ),

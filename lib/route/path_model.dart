@@ -2,6 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/themes.dart';
+import 'package:moab_poc/page/create_account/add_account_view.dart';
+import 'package:moab_poc/page/create_account/choose_login_type_view.dart';
+import 'package:moab_poc/page/create_account/choose_otp_method_view.dart';
+import 'package:moab_poc/page/create_account/enable_2sv_view.dart';
+import 'package:moab_poc/page/create_account/have_old_account_view.dart';
+import 'package:moab_poc/page/create_account/otp_view.dart';
+import 'package:moab_poc/page/login/enter_router_password_view.dart';
+import 'package:moab_poc/page/login/forgot_email_view.dart';
+import 'package:moab_poc/page/login/login_otp_methods_view.dart';
+import 'package:moab_poc/page/login/no_router_view.dart';
 import 'package:moab_poc/page/setup/debug_tools_view.dart';
 import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
 import 'package:moab_poc/page/setup/home_view.dart';
@@ -274,9 +284,9 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
   Widget buildPage(MoabRouterDelegate delegate) {
     switch (P) {
       case CreateCloudAccountPath:
-        return CreateAccountView(
+        return AddAccountView(
           onNext: () {
-            delegate.push(EnterOtpPath());
+            delegate.push(ChooseLoginMethodPath());
           },
           onSkip: () {
             delegate.push(CreateAdminPasswordPath());
@@ -286,19 +296,50 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
         return CreateAdminPasswordView(onNext: () {
           delegate.push(SaveCloudSettingsPath());
         });
+      case ChooseLoginMethodPath:
+        return ChooseLoginTypeView(
+            onCodeNext: () {
+              delegate.push(ChooseLoginOtpMethodPath());
+            },
+            onPasswordNext: () {
+              delegate.push(EnableTwoSVPath());
+            },
+            onSkip: () {
+              delegate.push(AlreadyHaveOldAccountPath());
+            },
+        );
+      case ChooseLoginOtpMethodPath:
+        return ChooseOTPMethodView(
+            email: 'moabuser@email.com',
+            onTextNext: () {
+              delegate.push(EnterOtpPath());
+            },
+            onEmailNext: () {
+              delegate.push(EnterOtpPath());
+            },
+        );
       case EnterOtpPath:
-        return OtpCodeInputView(
+        return OtpView(
           onNext: () {
-            delegate.push(CreateCloudAccountSuccessPath());
+            delegate.push(SaveCloudSettingsPath());
           },
-          onSkip: () {
-            delegate.push(CreateCloudPasswordPath());
-          },
+          useSMS: true,
+          destination: '(123)-456-7890',
         );
       case SaveCloudSettingsPath:
         return SaveSettingsView(onNext: () {
           delegate.push(SetupFinishPath());
         });
+      case AlreadyHaveOldAccountPath:
+        return const HaveOldAccountView();
+      case EnableTwoSVPath:
+        return EnableTwoSVView(
+            onNext: () {
+              delegate.push(ChooseLoginOtpMethodPath());
+            },
+            onSkip: () {
+              delegate.push(SaveCloudSettingsPath());
+            });
       default:
         return const Center();
     }
@@ -311,6 +352,10 @@ class CreateCloudAccountPath extends CreateAccountPath<CreateCloudAccountPath> {
 class CreateAdminPasswordPath
     extends CreateAccountPath<CreateAdminPasswordPath> {}
 
+class ChooseLoginMethodPath extends CreateAccountPath<ChooseLoginMethodPath> {}
+
+class ChooseLoginOtpMethodPath extends CreateAccountPath<ChooseLoginOtpMethodPath> {}
+
 class EnterOtpPath extends CreateAccountPath<EnterOtpPath> {}
 
 class CreateCloudPasswordPath
@@ -320,6 +365,13 @@ class CreateCloudAccountSuccessPath
     extends CreateAccountPath<CreateCloudAccountSuccessPath> {}
 
 class SaveCloudSettingsPath extends CreateAccountPath<SaveCloudSettingsPath> {}
+
+class AlreadyHaveOldAccountPath extends CreateAccountPath<AlreadyHaveOldAccountPath> {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
+}
+
+class EnableTwoSVPath extends CreateAccountPath<EnableTwoSVPath> {}
 
 abstract class AuthenticatePath<P> extends BasePath<P> {
   @override
@@ -332,33 +384,69 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
       case AuthInputAccountPath:
         return LoginCloudAccountView(
           onNext: () {
+            delegate.push(AuthChooseOtpPath());
+          },
+          onLocalLogin: () {
+            delegate.push(AuthLocalLoginPath());
+          },
+          onForgotEmail: () {
+            delegate.push(AuthForgotEmailPath());
+          },
+        );
+      case AuthChooseOtpPath:
+        return LoginOTPMethodsView(
+          onTextNext: () {
             delegate.push(AuthInputOtpPath());
           },
-          onLocalLogin: () {},
-          onForgotEmail: () {},
-        );
-      case AuthInputOtpPath:
-        return LoginCloudAccountWithOtpView(
-          onNext: () {
-            delegate.push(AuthCreateAccountPhonePath());
+          onEmailNext: () {
+            delegate.push(AuthInputOtpPath());
           },
         );
+      case AuthInputOtpPath:
+        return OtpView(
+          onNext: () {
+            delegate.push(NoRouterPath());
+          },
+          useSMS: true,
+          destination: '(123)-456-7890',
+        );
+      case AuthForgotEmailPath:
+        return const ForgotEmailView();
+      case NoRouterPath:
+        return NoRouterView(onNext: () {}, onLogout: () {});
       case AuthCreateAccountPhonePath:
         return CreateAccountPhoneView(
           onSave: () {},
           onSkip: () {},
         );
       case SelectPhoneRegionCodePath:
-        return RegionPickerView();
+        return const RegionPickerView();
+      case AuthLocalLoginPath:
+        return EnterRouterPasswordView(
+            onNext: () {
+              delegate.push(NoRouterPath());
+            },
+            onForgot: () {
+
+            });
       default:
-        return Center();
+        return const Center();
     }
   }
 }
 
 class AuthInputAccountPath extends AuthenticatePath<AuthInputAccountPath> {}
 
+class AuthChooseOtpPath extends AuthenticatePath<AuthChooseOtpPath> {}
+
 class AuthInputOtpPath extends AuthenticatePath<AuthInputOtpPath> {}
+
+class NoRouterPath extends AuthenticatePath<NoRouterPath> {}
+
+class AuthForgotEmailPath extends AuthenticatePath<AuthForgotEmailPath> {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
+}
 
 class AuthCreateAccountPhonePath
     extends AuthenticatePath<AuthCreateAccountPhonePath> {}
@@ -369,6 +457,8 @@ class SelectPhoneRegionCodePath
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
+
+class AuthLocalLoginPath extends AuthenticatePath<AuthLocalLoginPath> {}
 
 abstract class DebugToolsPath<P> extends BasePath<P> {
   @override

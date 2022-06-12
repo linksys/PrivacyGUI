@@ -16,10 +16,14 @@ import '../setup2/region_picker_view.dart';
 
 class ChooseOTPMethodView extends StatefulWidget {
   final String email;
-  final void Function() onNext;
+  final void Function() onTextNext;
+  final void Function() onEmailNext;
 
   const ChooseOTPMethodView(
-      {Key? key, required this.email, required this.onNext})
+      {Key? key,
+      required this.email,
+      required this.onTextNext,
+      required this.onEmailNext})
       : super(key: key);
 
   @override
@@ -77,7 +81,7 @@ class _ChooseOTPMethodState extends State<ChooseOTPMethodView> {
                   ),
                   PrimaryButton(
                     text: 'Send',
-                    onPress: widget.onNext,
+                    onPress: widget.onEmailNext,
                   ),
                 ],
               ),
@@ -85,7 +89,7 @@ class _ChooseOTPMethodState extends State<ChooseOTPMethodView> {
             Visibility(
               visible: selectedMethod == 'Text',
               child: PhoneNumberView(
-                onNext: widget.onNext,
+                onNext: widget.onTextNext,
               ),
             ),
           ],

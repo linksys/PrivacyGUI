@@ -4,12 +4,26 @@ import 'package:moab_poc/page/components/base_components/button/primary_button.d
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 
+import '../../route/moab_router.dart';
+
 class ForgotEmailView extends StatelessWidget {
   const ForgotEmailView({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return BasePageView(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => MoabRouter.pop(context),
+          )
+        ],
+      ),
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
         header: const BasicHeader(

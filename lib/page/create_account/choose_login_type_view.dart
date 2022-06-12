@@ -9,10 +9,14 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 
 class ChooseLoginTypeView extends StatefulWidget {
   const ChooseLoginTypeView(
-      {Key? key, required this.onNext, required this.onSkip})
+      {Key? key,
+      required this.onCodeNext,
+      required this.onPasswordNext,
+      required this.onSkip})
       : super(key: key);
 
-  final void Function() onNext;
+  final void Function() onCodeNext;
+  final void Function() onPasswordNext;
   final void Function() onSkip;
 
   @override
@@ -74,7 +78,9 @@ class _ChooseLoginTypeState extends State<ChooseLoginTypeView> {
             ),
             PrimaryButton(
               text: 'Next',
-              onPress: widget.onNext,
+              onPress: selectedMethod == 'Password'
+                  ? widget.onPasswordNext
+                  : widget.onCodeNext,
             )
           ],
         ),
@@ -206,7 +212,8 @@ extension StringValidators on String {
   }
 
   containOneSpecialCharacter() {
-    RegExp regEx = RegExp(r"(?=.*?[\x20-\x29\x2A-\x2F\x3A-\x3F\x40\x5B-\x5F\x60\x7D-\x7E])\w+");
+    RegExp regEx = RegExp(
+        r"(?=.*?[\x20-\x29\x2A-\x2F\x3A-\x3F\x40\x5B-\x5F\x60\x7D-\x7E])\w+");
     return regEx.hasMatch(this);
   }
 }
