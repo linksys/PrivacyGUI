@@ -2,43 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/themes.dart';
-import 'package:moab_poc/page/create_account/add_account_view.dart';
-import 'package:moab_poc/page/create_account/choose_login_type_view.dart';
-import 'package:moab_poc/page/create_account/choose_otp_method_view.dart';
-import 'package:moab_poc/page/create_account/enable_2sv_view.dart';
-import 'package:moab_poc/page/create_account/have_old_account_view.dart';
-import 'package:moab_poc/page/create_account/otp_view.dart';
-import 'package:moab_poc/page/login/enter_router_password_view.dart';
-import 'package:moab_poc/page/login/forgot_email_view.dart';
-import 'package:moab_poc/page/login/login_otp_methods_view.dart';
-import 'package:moab_poc/page/login/no_router_view.dart';
-import 'package:moab_poc/page/setup/debug_tools_view.dart';
-import 'package:moab_poc/page/setup/get_wifi_up_view.dart';
-import 'package:moab_poc/page/setup/home_view.dart';
-import 'package:moab_poc/page/login/login_cloud_account_view.dart';
-import 'package:moab_poc/page/setup/parent_scan_qrcode_view.dart';
-import 'package:moab_poc/page/setup/permissions_primer_view.dart';
-import 'package:moab_poc/page/setup/place_node_view.dart';
-import 'package:moab_poc/page/setup2/add_child_plug_view.dart';
-import 'package:moab_poc/page/setup2/add_child_scan_qrcode_view.dart';
-import 'package:moab_poc/page/setup2/add_child_searching_view.dart';
-import 'package:moab_poc/page/setup2/create_account_phone_view.dart';
-import 'package:moab_poc/page/setup2/create_account_view.dart';
-import 'package:moab_poc/page/setup2/nodes_success_view.dart';
-import 'package:moab_poc/page/setup2/otp_code_input_view.dart';
-import 'package:moab_poc/page/setup2/save_settings_view.dart';
-import 'package:moab_poc/page/setup2/set_location_view.dart';
-import 'package:moab_poc/page/setup2/setup_finished_view.dart';
-import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/page/create_account/view/view.dart';
+import 'package:moab_poc/page/landing/view/view.dart';
+import 'package:moab_poc/page/login/view/view.dart';
+import 'package:moab_poc/page/setup/view/view.dart';
 
-import '../page/setup/check_node_internet_view.dart';
-import '../page/setup/connect_to_modem_view.dart';
-import '../page/login/login_cloud_account_otp_view.dart';
-import '../page/setup/plug_node_view.dart';
-import '../page/setup2/add_child_finished_view.dart';
-import '../page/setup2/create_admin_password_view.dart';
-import '../page/setup2/customize_wifi_view.dart';
-import '../page/setup2/region_picker_view.dart';
+import 'route.dart';
 
 enum PageNavigationType { back, close, none }
 

@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/themes.dart';
-
-import '../login/forgot_email_view.dart';
-import '../login/forgot_password_view.dart';
-import '../login/login_cloud_account_view.dart';
-import '../login/login_traditional_password_view.dart';
-import '../login/no_router_view.dart';
+import 'package:moab_poc/page/create_account/view/view.dart';
 
 
 void main() {
@@ -24,8 +19,8 @@ class MoabApp extends StatelessWidget {
         // LoginPage.routeName: (context) => const LoginPage(),
         // DashboardPage.routeName: (context) => const DashboardPage(),
         // MeshPage.routeName: (context) => const MeshPage(),
-        '/' : (context) => ChooseOTPMethodsView(
-          onNext: () {  },
+        '/' : (context) => OtpCodeInputView(
+          onNext: () {  }, onSkip: () {  },
           // onForgotPassword: () {},
         ),
         // GetWiFiUpView.routeName: (context) => GetWiFiUpView(onNext: () => _goToStartParentNode(context),),
