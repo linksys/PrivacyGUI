@@ -12,9 +12,13 @@ class LoginCloudAccountView extends StatefulWidget {
   const LoginCloudAccountView({
     Key? key,
     required this.onNext,
+    required this.onForgotEmail,
+    required this.onLocalLogin,
   }) : super(key: key);
 
   final void Function() onNext;
+  final void Function() onForgotEmail;
+  final void Function() onLocalLogin;
 
   @override
   _LoginCloudAccountState createState() => _LoginCloudAccountState();
@@ -35,22 +39,23 @@ class _LoginCloudAccountState extends State<LoginCloudAccountView> {
     return BasePageView(
         scrollable: true,
         child: BasicLayout(
+          alignment: CrossAxisAlignment.start,
           header: const BasicHeader(
-            title: 'Log in or create your Linksys account',
+            title: 'Log in to your Linksys account',
           ),
           content: Column(
             children: [
               InputField(
-                titleText: 'Mobile number or email',
-                hintText: 'Mobile number or email',
+                titleText: 'Email',
+                hintText: 'Email',
                 controller: _accountController,
                 onChanged: _checkFilledInfo,
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24.0),
-                child: DescriptionText(
-                    text:
-                        'We\'ll send you a confirmation code. Standard message and data rates apply.'),
+              Row(
+                children: [
+                  SimpleTextButton(
+                      text: 'Forgot email', onPressed: widget.onForgotEmail),
+                ],
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24.0),
@@ -60,7 +65,8 @@ class _LoginCloudAccountState extends State<LoginCloudAccountView> {
                 ),
               ),
               SimpleTextButton(
-                  text: 'Skip and use router password only', onPressed: () {}),
+                  text: 'Log in with router password',
+                  onPressed: widget.onLocalLogin),
               const Spacer(),
             ],
           ),

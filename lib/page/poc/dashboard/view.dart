@@ -4,7 +4,7 @@ import 'package:moab_poc/packages/openwrt/openwrt.dart';
 import 'package:moab_poc/packages/repository/device_repository/device_repository.dart';
 import 'package:moab_poc/page/dashboard/dashboard_view.dart';
 
-import '../../util/connectivity.dart';
+import '../../../util/connectivity.dart';
 import 'cubit.dart';
 
 class DashboardPage extends StatelessWidget {
