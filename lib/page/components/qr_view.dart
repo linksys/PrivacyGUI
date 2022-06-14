@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -20,7 +18,7 @@ class CustomQRView extends StatefulWidget {
 class _QRViewState extends State<CustomQRView> {
   Barcode? result;
   MobileScannerController? controller =
-      MobileScannerController(facing: CameraFacing.front, torchEnabled: true);
+      MobileScannerController(facing: CameraFacing.back, torchEnabled: false);
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QRCode');
 
   @override
@@ -36,7 +34,7 @@ class _QRViewState extends State<CustomQRView> {
 
   Widget _buildQrView(BuildContext context) {
     // To ensure the Scanner view is properly sizes after rotation
-    // we need to listen for Flutter SizeChanged notification and update controller
+    // we need to listen for Flutter SizeChanged notification and update controllerSetupParentQrCodeScanPath
     // return QRView(
     //   key: qrKey,
     //   onQRViewCreated: _onQRViewCreated,
@@ -50,7 +48,7 @@ class _QRViewState extends State<CustomQRView> {
           if (barcode.rawValue == null) {
             debugPrint('Failed to scan Barcode');
           } else {
-            debugPrint('Barcode found: ${barcode.toString()}');
+            debugPrint('Barcode found: ${barcode.rawValue}');
           }
           widget.onResult?.call(barcode);
         });

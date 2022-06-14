@@ -28,14 +28,15 @@ class ParentScanQRCodeView extends StatelessWidget {
           child: Stack(
             children: [
               Container(
+                margin: EdgeInsets.only(top: 30),
                 width: double.infinity,
                 height: 300,
                 alignment: Alignment.center,
                 child: SizedBox(
-                  width: 200,
-                  height: 200,
+                  width: 300,
+                  height: 300,
                   child: CustomQRView(
-                    onResult: (Barcode code) => _handleScanResult,
+                    onResult: (Barcode code) => _handleScanResult(code),
                   ),
                 ),
               ),
