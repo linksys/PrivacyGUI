@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/themes.dart';
+import 'package:moab_poc/page/components/customs/customs.dart';
 import 'package:moab_poc/page/create_account/view/view.dart';
 import 'package:moab_poc/page/landing/view/view.dart';
 import 'package:moab_poc/page/login/view/view.dart';

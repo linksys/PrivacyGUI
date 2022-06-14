@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
-import 'package:moab_poc/page/components/qr_view.dart';
+import 'package:moab_poc/page/components/customs/qr_view.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../components/base_components/button/primary_button.dart';

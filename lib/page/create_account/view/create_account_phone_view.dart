@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
+import 'package:moab_poc/page/components/customs/customs.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
 import 'package:moab_poc/route/route.dart';
 import 'dart:convert';
 
 import 'package:phone_number/phone_number.dart';
 
-import 'view.dart';
 
 class CreateAccountPhoneView extends StatefulWidget {
   const CreateAccountPhoneView({

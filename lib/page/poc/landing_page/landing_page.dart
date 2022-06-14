@@ -11,7 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../../channel/wifi_connect_channel.dart';
 import '../../../util/connectivity.dart';
-import '../../components/qr_view.dart';
+import '../../components/customs/qr_view.dart';
 import 'bloc.dart';
 import 'event.dart';
 import 'state.dart';

@@ -2,12 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moab_poc/page/components/base_components/base_components.dart';
+import 'package:moab_poc/page/components/customs/customs.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
+import 'package:moab_poc/route/route.dart';
 import 'package:phone_number/phone_number.dart';
 
-import '../../../route/route.dart';
-import '../../components/base_components/base_components.dart';
-import 'view.dart';
 
 
 class ChooseOTPMethodView extends StatefulWidget {
