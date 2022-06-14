@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/themes.dart';
-import 'package:moab_poc/page/login/choose_otp_methods_view.dart';
 
 import '../login/forgot_email_view.dart';
 import '../login/forgot_password_view.dart';

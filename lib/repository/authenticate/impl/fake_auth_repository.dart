@@ -32,7 +32,7 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<void> passwordLessLogin(int method) async {
+  Future<void> passwordLessLogin(String username, int method) async {
     await Future.delayed(waitDuration);
   }
 
@@ -61,7 +61,7 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<DummyModel> validatePasswordLessCode(String code) async {
+  Future<DummyModel> validatePasswordLessCode(String token, String code) async {
     await Future.delayed(waitDuration);
     return {};
   }

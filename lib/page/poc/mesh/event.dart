@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:moab_poc/page/mesh/state.dart';
+import 'package:moab_poc/page/poc/mesh/state.dart';
 
 @immutable
 abstract class MeshEvent {

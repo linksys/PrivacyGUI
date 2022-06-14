@@ -2,10 +2,9 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:bloc/bloc.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:moab_poc/packages/openwrt/openwrt.dart';
 import 'package:moab_poc/packages/repository/test_repository/local_test_repository.dart';
-import 'package:moab_poc/page/landing_page/event.dart';
+import 'package:moab_poc/page/poc/landing_page/event.dart';
 import 'package:moab_poc/util/connectivity.dart';
 
 import 'state.dart';

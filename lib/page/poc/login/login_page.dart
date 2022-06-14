@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/design/dimensions.dart';
-import 'package:moab_poc/page/login/login.dart';
+import 'package:moab_poc/page/poc/login/cubit.dart';
 
 class LoginView extends StatelessWidget {
   const LoginView({Key? key}) : super(key: key);

@@ -2,9 +2,9 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:moab_poc/page/mesh/event.dart';
-import 'package:moab_poc/page/mesh/mesh.dart';
-import 'package:moab_poc/page/mesh/spinner_page.dart';
+import 'package:moab_poc/page/poc/mesh/event.dart';
+import 'package:moab_poc/page/poc/mesh/mesh.dart';
+import 'package:moab_poc/page/poc/mesh/spinner_page.dart';
 import 'package:moab_poc/util/permission.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';

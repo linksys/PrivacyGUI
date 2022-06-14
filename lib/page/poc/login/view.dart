@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/packages/openwrt/openwrt.dart';
 import 'package:moab_poc/packages/repository/device_repository/device_repository.dart';
-import 'package:moab_poc/page/dashboard/view.dart';
-import 'package:moab_poc/page/login/login.dart';
-import 'package:moab_poc/page/login/login_page.dart';
+import 'package:moab_poc/page/poc/dashboard/view.dart';
+import 'package:moab_poc/page/poc/login/cubit.dart';
+import 'package:moab_poc/page/poc/login/state.dart';
+
+import 'login_page.dart';
+
 
 
 class LoginPage extends StatelessWidget {

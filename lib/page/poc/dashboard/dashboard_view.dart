@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:moab_poc/page/mesh/view.dart';
+import 'package:moab_poc/page/poc/mesh/view.dart';
 
 class DashboardView extends StatelessWidget {
   const DashboardView({Key? key}) : super(key: key);
