@@ -39,7 +39,7 @@ dependencies:
   flutter_bloc: ^8.0.1
   flutter_svg: ^1.0.3
   http: ^0.13.4
-  qr_code_scanner: ^1.0.0
+  mobile_scanner: ^2.0.0
   flutter_native_splash: ^2.1.5
   test: ^1.19.5
   bloc_test: ^9.0.0

@@ -85,11 +85,9 @@ class _LandingPageState extends State<LandingView> with Permissions {
           backgroundColor: Colors.transparent,
           elevation: 0,
         ),
-        body: CustomQRView(callback: (code) {
-          log('QR code: ${code.code}');
-        }, onFinish: (code) async {
-          log('QR: onFinish: ${code.code}');
-          final creds = WiFiCredential.parse(code.code ?? "");
+        body: CustomQRView(onResult: (code) async {
+          log('QR: onFinish: ${code.rawValue}');
+          final creds = WiFiCredential.parse(code.rawValue ?? "");
           log('Parsed WiFI: ${creds.ssid}, ${creds.password}');
           await NativeConnectWiFiChannel()
               .connectToWiFi(creds.ssid, creds.password);

@@ -6,8 +6,8 @@ import 'package:moab_poc/page/poc/mesh/event.dart';
 import 'package:moab_poc/page/poc/mesh/mesh.dart';
 import 'package:moab_poc/page/poc/mesh/spinner_page.dart';
 import 'package:moab_poc/util/permission.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 import '../../components/qr_view.dart';
 
@@ -71,7 +71,7 @@ class _QRCodeScannerState extends State<QRCodeScanner> with Permissions {
           case MeshLoading:
             return const SpinnerPage();
           case QRCodeScanner:
-            return CustomQRView(onFinish: handleScannerResult);
+            return CustomQRView(onResult: handleScannerResult);
           default:
             return Container();
         }
@@ -80,9 +80,9 @@ class _QRCodeScannerState extends State<QRCodeScanner> with Permissions {
   }
 
   void handleScannerResult(Barcode result) {
-    if (result.code != null) {
-      log('QR code result: ' + result.code.toString());
-      var dpp = parseDpp(result.code!);
+    if (result.rawValue != null) {
+      log('QR code result: ' + result.rawValue!);
+      var dpp = parseDpp(result.rawValue!);
       context.read<MeshBloc>().add(SyncDPPWithChild(dpp: dpp));
     }
   }
