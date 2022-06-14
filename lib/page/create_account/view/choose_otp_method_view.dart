@@ -8,8 +8,6 @@ import 'package:moab_poc/page/components/layouts/layout.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:phone_number/phone_number.dart';
 
-
-
 class ChooseOTPMethodView extends StatefulWidget {
   final String email;
   final void Function() onTextNext;
@@ -42,32 +40,35 @@ class _ChooseOTPMethodState extends State<ChooseOTPMethodView> {
   @override
   Widget build(BuildContext context) {
     return BasePageView(
-      // scrollable: true,
+      scrollable: true,
       child: BasicLayout(
         header: const BasicHeader(
           title: 'Where should we send your code?',
         ),
         content: Column(
           children: [
-            ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _methods.length,
-                itemBuilder: (context, index) => GestureDetector(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 7),
-                        child: SelectableItem(
-                          text: _methods[index],
-                          isSelected: selectedMethod == _methods[index],
-                          height: 66,
+            SizedBox(
+              height: 80.0 * _methods.length,
+              child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _methods.length,
+                  itemBuilder: (context, index) => GestureDetector(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 7),
+                          child: SelectableItem(
+                            text: _methods[index],
+                            isSelected: selectedMethod == _methods[index],
+                            height: 66,
+                          ),
                         ),
-                      ),
-                      onTap: () {
-                        setState(() {
-                          selectedMethod = _methods[index];
-                        });
-                      },
-                    )),
+                        onTap: () {
+                          setState(() {
+                            selectedMethod = _methods[index];
+                          });
+                        },
+                      )),
+            ),
             Visibility(
               visible: selectedMethod == widget.email,
               child: Column(
@@ -220,18 +221,20 @@ class _PhoneNumberViewState extends State<PhoneNumberView> {
           maintainAnimation: true,
           maintainSize: true,
           visible: hasInput,
-          child: PrimaryButton(
-            text: 'Send',
-            onPress: widget.onNext,
+          child: Column(
+            children: [
+              const SizedBox(
+                height: 23,
+              ),
+              PrimaryButton(
+                text: 'Send',
+                onPress: widget.onNext,
+              )
+            ],
           ),
         ),
       ],
       crossAxisAlignment: CrossAxisAlignment.start,
     );
   }
-}
-
-enum OTPType {
-  text,
-  email,
 }
