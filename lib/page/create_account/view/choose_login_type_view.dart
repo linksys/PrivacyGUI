@@ -216,4 +216,10 @@ extension StringValidators on String {
         r"(?=.*?[\x20-\x29\x2A-\x2F\x3A-\x3F\x40\x5B-\x5F\x60\x7D-\x7E])\w+");
     return regEx.hasMatch(this);
   }
+
+  isValidEmailFormat() {
+    RegExp regEx = RegExp(
+        r"^[a-zA-Z0-9.!#$%&‘*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$");
+    return regEx.hasMatch(this);
+  }
 }
