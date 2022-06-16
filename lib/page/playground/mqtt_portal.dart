@@ -171,11 +171,8 @@ class _MqttPageState extends State<MqttPage> {
             ElevatedButton(
                 onPressed: _isConnected && _isInputValid
                     ? () {
-                        final command = CounterCommand();
-                        command.publish(_client, {
-                          'id': command.uuid,
-                          'counter': int.parse(_inputCounterController.value.text)
-                        }).onError((error, stackTrace) {
+                        final command = CounterCommand(counter: int.parse(_inputCounterController.value.text));
+                        command.publish(_client).onError((error, stackTrace) {
                           logger.i('VIEW:: receive error: $error');
                           return {};
                         }).then((value) {
@@ -188,11 +185,8 @@ class _MqttPageState extends State<MqttPage> {
             ElevatedButton(
                 onPressed: _isConnected && _isInputValid
                     ? () {
-                        final command = CounterDelay5Command();
-                        command.publish(_client, {
-                          'id': command.uuid,
-                          'counter': int.parse(_inputCounterController.value.text)
-                        }).onError((error, stackTrace) {
+                        final command = CounterDelay5Command(counter: int.parse(_inputCounterController.value.text));
+                        command.publish(_client).onError((error, stackTrace) {
                           logger.i('VIEW:: receive error: $error');
                           return {};
                         }).then((value) {
@@ -205,11 +199,8 @@ class _MqttPageState extends State<MqttPage> {
             ElevatedButton(
                 onPressed: _isConnected && _isInputValid
                     ? () {
-                        final command = CounterDelay10Command();
-                        command.publish(_client, {
-                          'id': command.uuid,
-                          'counter': int.parse(_inputCounterController.value.text)
-                        }).onError((error, stackTrace) {
+                        final command = CounterDelay10Command(counter: int.parse(_inputCounterController.value.text));
+                        command.publish(_client).onError((error, stackTrace) {
                           logger.i('VIEW:: receive error: $error');
                           return {};
                         }).then((value) {
