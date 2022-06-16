@@ -4,11 +4,11 @@ import 'package:flutter/services.dart';
 
 class NativeConnectWiFiChannel {
   static const _platform =
-      MethodChannel('com.linksys.native.channel.wifi.connect');
+  MethodChannel('com.linksys.native.channel.wifi.connect');
 
   // Singleton
   static final NativeConnectWiFiChannel _singleton =
-      NativeConnectWiFiChannel._internal();
+  NativeConnectWiFiChannel._internal();
 
   factory NativeConnectWiFiChannel() {
     return _singleton;
@@ -16,19 +16,9 @@ class NativeConnectWiFiChannel {
 
   NativeConnectWiFiChannel._internal();
 
-  connectToWiFi(String ssid, String password) async {
+  connectToWiFi({required String ssid, required String password, String security = "OPEN"}) async {
     return await _platform
-        .invokeMethod('connectToWiFi', {'ssid': ssid, 'password': password});
-  }
-
-  Future<bool> wifiSuggestion(String ssid, String password) async {
-    try {
-      return await _platform
-          .invokeMethod('wifiSuggestion', {'ssid': ssid, 'password': password});
-    } on PlatformException catch (e) {
-      log("wifiSuggestion: ${e.message ?? " "}");
-      return false;
-    }
+        .invokeMethod('connectToWiFi', {'ssid': ssid, 'password': password, 'security': security});
   }
 
   openWifiPanel() async {

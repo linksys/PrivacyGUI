@@ -1,31 +1,31 @@
 package com.linksys.moab.poc.moab_poc
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.annotation.TargetApi
 import android.app.Activity
 import android.content.*
+import android.content.pm.PackageManager
+import android.net.wifi.WifiConfiguration
 import android.net.wifi.WifiManager
 import android.net.wifi.WifiNetworkSuggestion
 import android.os.Build
-import android.provider.Settings.ACTION_WIFI_ADD_NETWORKS
-import android.provider.Settings.EXTRA_WIFI_NETWORK_LIST
 import android.util.Log
 import androidx.annotation.NonNull
 import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.phone.SmsRetriever
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.common.api.Status
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
-import java.util.regex.Matcher
 
 class MainActivity : FlutterActivity() {
 
     private val CHANNEL = "com.linksys.native.channel.wifi.connect"
     private val OTP_CHANNEL = "com.linksys.native.channel.otp"
+    private val WIFI_TAG = "WIFI CHANNEL"
 
     private var otpResult: MethodChannel.Result? = null
 
@@ -37,13 +37,20 @@ class MainActivity : FlutterActivity() {
             CHANNEL
         ).setMethodCallHandler { call, result ->
             if (call.method == "connectToWiFi") {
-                startWifiQRCodeScanner(this, result)
-            } else if (call.method == "wifiSuggestion") {
                 val ssid = call.argument<String>("ssid") ?: ""
                 val password = call.argument<String>("password") ?: ""
-                startWifiSuggestion(this, ssid, password, result)
+                val security = call.argument<String>("security") ?: "OPEN"
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    startWifiQRCodeScanner(this, ssid, password, result)
+                } else {
+                    startWifiConfiguration(this, ssid, password, security, result)
+                }
             } else if (call.method == "openWiFiPanel") {
-                openWiFiPanel(this, result)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    openWiFiPanel(this, result)
+                } else {
+                    Log.e(WIFI_TAG, "The OS Version does not support WiFi Panel")
+                }
             } else {
                 result.notImplemented()
             }
@@ -74,7 +81,7 @@ class MainActivity : FlutterActivity() {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    private fun startWifiQRCodeScanner(context: Context, result: MethodChannel.Result) {
+    private fun startWifiQRCodeScanner(context: Context, ssid: String, password: String, result: MethodChannel.Result) {
         val INTENT_ACTION_WIFI_QR_SCANNER = "android.settings.WIFI_DPP_ENROLLEE_QR_CODE_SCANNER"
         val wifiManager: WifiManager =
             context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
@@ -83,9 +90,9 @@ class MainActivity : FlutterActivity() {
             startActivityForResult(intent, 5000)
             result.success(true)
         } else {
-            result.error("-1", "Not Support Easy Connect", null)
+            Log.d(WIFI_TAG, "Not Support Easy Connect, fall back to wifi suggestion")
+            startWifiSuggestion(context, ssid, password, result)
         }
-
     }
 
     @SuppressLint("MissingPermission")
@@ -116,7 +123,9 @@ class MainActivity : FlutterActivity() {
         val builder = WifiNetworkSuggestion.Builder()
             .setSsid(ssid)
             .setIsUserInteractionRequired(true)
-            .setIsInitialAutojoinEnabled(true)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            builder.setIsInitialAutojoinEnabled(true)
         if (password.isNotEmpty()) {
             builder.setWpa2Passphrase(password)
         }
@@ -132,6 +141,120 @@ class MainActivity : FlutterActivity() {
         } else {
             result.success(true)
         }
+    }
+
+    private fun startWifiConfiguration(
+        context: Context,
+        ssid: String,
+        password: String,
+        security: String,
+        result: MethodChannel.Result
+    ) {
+        var networks: List<WifiConfiguration>? = null
+        var conf: WifiConfiguration? = null
+        var found = false
+        var netId = -1
+        var maxPriority = 0
+        val wifiManager =
+            context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        if (!wifiManager.isWifiEnabled) {
+            Log.d(WIFI_TAG, "Enabling Wi-Fi")
+            if (!wifiManager.setWifiEnabled(true)) {
+                result.error("-1", "Can't not enable Wi-Fi", null)
+                return
+            }
+            Thread.sleep(3000)
+        }
+        try {
+            if (ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                networks = wifiManager.configuredNetworks
+
+            }
+        } catch (e: SecurityException) {
+            e.message?.let { Log.e(WIFI_TAG, it) }
+        }
+
+        if (null != networks) {
+            for (network in networks) {
+                if (network.SSID != null && network.SSID == "\"" + ssid + "\"") {
+                    conf = network
+                    found = true
+                    netId = network.networkId
+                    if (network.priority > maxPriority) {
+                        maxPriority = network.priority
+                    }
+                }
+            }
+        }
+
+        if (conf == null) {
+            conf = WifiConfiguration()
+        } else {
+            conf.allowedAuthAlgorithms.clear()
+            conf.allowedGroupCiphers.clear()
+            conf.allowedKeyManagement.clear()
+            conf.allowedPairwiseCiphers.clear()
+            conf.allowedProtocols.clear()
+        }
+        conf.SSID = "\"" + ssid + "\""
+        conf.priority = maxPriority + 1
+
+        if ("WEP".equals(security)) {
+            conf.wepKeys[0] = password
+            conf.wepTxKeyIndex = 0
+            conf.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.SHARED)
+            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP40)
+            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP104)
+            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP)
+            conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE)
+        } else if ("WPA".equals(security)) {
+            conf.preSharedKey = "\"" + password + "\""
+            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP)
+            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP)
+            conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK)
+            conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_EAP)
+            conf.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP)
+            conf.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP)
+            conf.allowedProtocols.set(WifiConfiguration.Protocol.RSN)
+            conf.allowedProtocols.set(WifiConfiguration.Protocol.WPA)
+        } else if ("OPEN".equals(security)) {
+            conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE)
+        }
+
+        conf.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.OPEN)
+        conf.status = WifiConfiguration.Status.ENABLED
+
+        if (!found) {
+            Log.d(WIFI_TAG, "Adding new network \"$ssid\"")
+            netId = wifiManager.addNetwork(conf)
+        }
+        if (netId == -1) {
+            Log.d(WIFI_TAG, "Updating network configuration for \"$ssid\"")
+            netId = wifiManager.updateNetwork(conf)
+        }
+        if (netId == -1) {
+            Log.d(WIFI_TAG, "Exiting, we can't find a network id")
+            result.error("-1", "Can't find a network id", null)
+            return
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) { // API 26
+            wifiManager.disableNetwork(netId);
+        }
+
+        wifiManager.enableNetwork(netId, true)
+        if (!wifiManager.saveConfiguration()) {
+            result.error("-2", "Can't save wifi configuration", null)
+            return
+        }
+        if (!wifiManager.reconnect()) {
+            result.error("-2", "Can't reconnect to the wifi that set", null)
+            return
+        }
+        result.success(true)
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)

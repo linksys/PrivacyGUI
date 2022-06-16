@@ -90,7 +90,7 @@ class _LandingPageState extends State<LandingView> with Permissions {
           final creds = WiFiCredential.parse(code.rawValue ?? "");
           log('Parsed WiFI: ${creds.ssid}, ${creds.password}');
           await NativeConnectWiFiChannel()
-              .connectToWiFi(creds.ssid, creds.password);
+              .connectToWiFi(ssid:creds.ssid, password: creds.password);
         }),
       );
     } else {
@@ -105,7 +105,7 @@ class _LandingPageState extends State<LandingView> with Permissions {
           ElevatedButton(
               onPressed: () {
                 if (Platform.isAndroid) {
-                  NativeConnectWiFiChannel().connectToWiFi('', '');
+                  NativeConnectWiFiChannel().connectToWiFi(ssid: '', password: '');
                 } else {
                   context.read<LandingBloc>().add(ScanQrCode());
                 }
