@@ -39,7 +39,7 @@ class _ChooseLoginTypeState extends State<ChooseLoginTypeView> {
   @override
   Widget build(BuildContext context) {
     return BasePageView(
-      // scrollable: true,
+      scrollable: true,
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
         header: const BasicHeader(
@@ -47,26 +47,29 @@ class _ChooseLoginTypeState extends State<ChooseLoginTypeView> {
         ),
         content: Column(
           children: [
-            ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _methods.length,
-                itemBuilder: (context, index) => GestureDetector(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 7),
-                        child: SelectableItem(
-                          text: _methods[index].name,
-                          description: _methods[index].description,
-                          isSelected: selectedMethod == _methods[index].name,
-                          height: 79,
+            SizedBox(
+              height: 93.0 * _methods.length,
+              child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _methods.length,
+                  itemBuilder: (context, index) => GestureDetector(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 7),
+                          child: SelectableItem(
+                            text: _methods[index].name,
+                            description: _methods[index].description,
+                            isSelected: selectedMethod == _methods[index].name,
+                            height: 79,
+                          ),
                         ),
-                      ),
-                      onTap: () {
-                        setState(() {
-                          selectedMethod = _methods[index].name;
-                        });
-                      },
-                    )),
+                        onTap: () {
+                          setState(() {
+                            selectedMethod = _methods[index].name;
+                          });
+                        },
+                      )),
+            ),
             SizedBox(
               height: selectedMethod == 'Password' ? 27 : 35,
             ),
@@ -155,38 +158,41 @@ class _PasswordValidationState extends State<PasswordValidationView> {
         const SizedBox(
           height: 2,
         ),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _passwordValidations.length,
-          itemBuilder: (context, index) {
-            return Container(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  (_passwordValidations[index].validation
-                      ? Image.asset('assets/images/icon_ellipse_green.png')
-                      : Image.asset('assets/images/icon_ellipse.png')),
-                  const SizedBox(
-                    width: 7,
-                  ),
-                  Text(
-                    _passwordValidations[index].text,
-                    style: _textStyle,
-                  ),
-                ],
-              ),
-            );
-          },
+        SizedBox(
+          height: 23.0 * _passwordValidations.length,
+          child: ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _passwordValidations.length,
+            itemBuilder: (context, index) {
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    (_passwordValidations[index].validation
+                        ? Image.asset('assets/images/icon_ellipse_green.png')
+                        : Image.asset('assets/images/icon_ellipse.png')),
+                    const SizedBox(
+                      width: 7,
+                    ),
+                    Text(
+                      _passwordValidations[index].text,
+                      style: _textStyle,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
         const SizedBox(
-          height: 20,
+          height: 29,
         ),
         SimpleTextButton(
             text: 'I already have a Linksys account password',
             onPressed: widget.onSkip),
         const SizedBox(
-          height: 15,
+          height: 42,
         ),
       ],
     );
@@ -214,6 +220,12 @@ extension StringValidators on String {
   containOneSpecialCharacter() {
     RegExp regEx = RegExp(
         r"(?=.*?[\x20-\x29\x2A-\x2F\x3A-\x3F\x40\x5B-\x5F\x60\x7D-\x7E])\w+");
+    return regEx.hasMatch(this);
+  }
+
+  isValidEmailFormat() {
+    RegExp regEx = RegExp(
+        r"^[a-zA-Z0-9.!#$%&‘*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$");
     return regEx.hasMatch(this);
   }
 }

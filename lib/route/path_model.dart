@@ -293,7 +293,6 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
           onNext: () {
             delegate.push(SaveCloudSettingsPath());
           },
-          useSMS: true,
           destination: '(123)-456-7890',
         );
       case SaveCloudSettingsPath:
@@ -377,7 +376,6 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
           onNext: () {
             delegate.push(NoRouterPath());
           },
-          useSMS: true,
           destination: '(123)-456-7890',
         );
       case AuthForgotEmailPath:

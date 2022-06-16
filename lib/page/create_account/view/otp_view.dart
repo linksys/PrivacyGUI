@@ -7,17 +7,16 @@ import 'package:moab_poc/page/components/base_components/button/primary_button.d
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/page/create_account/view/view.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 class OtpView extends StatefulWidget {
   const OtpView({
     Key? key,
-    required this.useSMS,
     required this.destination,
     required this.onNext,
   }) : super(key: key);
 
-  final bool useSMS;
   final String destination;
   final void Function() onNext;
 
@@ -53,9 +52,9 @@ class _OtpViewState extends State<OtpView> {
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
         header: BasicHeader(
-          title: widget.useSMS
-              ? 'Enter the code we texted to ${widget.destination}'
-              : 'Enter the code we sent to ${widget.destination}',
+          title: widget.destination.isValidEmailFormat()
+              ? 'Enter the code we sent to ${widget.destination}'
+              : 'Enter the code we texted to ${widget.destination}',
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
