@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:moab_poc/network/model/command/command_spec.dart';
+import 'package:moab_poc/network/model/command_spec/command_spec.dart';
 import 'package:moab_poc/network/model/exception.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 

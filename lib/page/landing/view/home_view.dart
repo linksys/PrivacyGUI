@@ -6,6 +6,7 @@ import 'package:moab_poc/page/components/base_components/button/primary_button.d
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/util/logger.dart';
 
 class HomeView extends StatefulWidget {
   HomeView({
@@ -31,6 +32,7 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
+    logger.d('DEBUG:: HomeView: build');
     return BasePageView(
       child: BasicLayout(
         content: _content(context),

@@ -51,7 +51,7 @@ class FakeAuthRepository extends AuthRepository {
   @override
   Future<DummyModel> testUsername(String username) async {
     await Future.delayed(waitDuration);
-    return {};
+    return {'method': [{'text': '+8869123456'}, {'email': 'austin.chang@linksys.com'}]};
   }
 
   @override
