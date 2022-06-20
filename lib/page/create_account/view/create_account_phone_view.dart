@@ -89,7 +89,7 @@ class _CreateAccountPhoneViewState extends State<CreateAccountPhoneView> {
                 children: [
                   GestureDetector(
                     onTap: () async {
-                      final selectedRegion = await showPopup(context: context, path: SelectPhoneRegionCodePath());
+                      final selectedRegion = await showPopup(context: context, config: SelectPhoneRegionCodePath());
                       if (selectedRegion != null) {
                         updateRegion(selectedRegion);
                       }

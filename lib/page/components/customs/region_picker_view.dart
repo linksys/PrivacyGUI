@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
-import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/route/navigation_cubit.dart';
 
 class RegionPickerView extends StatefulWidget {
   const RegionPickerView({Key? key}) : super(key: key);
@@ -20,7 +21,9 @@ class _RegionPickerViewState extends State<RegionPickerView> {
       actions: [
         IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => MoabRouter.pop(context),
+          onPressed: () {
+            NavigationCubitExts.pop(context);
+          },
         )
       ],
     );
@@ -82,7 +85,7 @@ class _RegionPickerViewState extends State<RegionPickerView> {
                 padding: const EdgeInsets.symmetric(vertical: 15),
               ),
               onTap: () {
-                MoabRouter.returnResult(context, _items[index]);
+                NavigationCubitExts.popWithResult(context, _items[index]);
               },
             )
         ),

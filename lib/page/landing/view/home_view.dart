@@ -7,6 +7,7 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/route/route.dart';
 
+
 class HomeView extends StatefulWidget {
   HomeView({
     Key? key,
@@ -78,7 +79,7 @@ class _HomeViewState extends State<HomeView> {
         SecondaryButton(
           text: 'Debug Tools',
           onPress: () {
-            MoabRouterDelegate.of(context).push(DebugToolsMainPath());
+            NavigationCubitExts.push(context, DebugToolsMainPath());
           },
         ),
       ];

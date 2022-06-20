@@ -5,7 +5,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/design/themes.dart';
+import 'package:moab_poc/route/navigation_cubit.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/util/logger.dart';
@@ -27,15 +29,20 @@ void main() {
     FlutterError.onError = (FlutterErrorDetails details) {
       logger.e('Uncaught Flutter Error:\n', details);
       FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-      if (kReleaseMode) { // Only exit app on release mode
+      if (kReleaseMode) {
+        // Only exit app on release mode
         exit(1);
       }
     };
-    runApp(const NavigatorDemo());
+    runApp(BlocProvider(
+      create: (BuildContext context) => NavigationCubit([HomePath()]),
+        child: const NavigatorDemo())
+    );
   }, (Object error, StackTrace stack) {
     logger.e('Uncaught Error:\n', error);
     FirebaseCrashlytics.instance.recordError(error, stack);
-    if (kReleaseMode) { // Only exit app on release mode
+    if (kReleaseMode) {
+      // Only exit app on release mode
       exit(1);
     }
   });
@@ -69,7 +76,7 @@ class _NavigatorDemoState extends State<NavigatorDemo>
       theme: MoabTheme.setupModuleLightModeData,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      routerDelegate: MoabRouterDelegate(),
+      routerDelegate: MoabRouterDelegate(context.read<NavigationCubit>()),
       routeInformationParser: MoabRouteInformationParser(),
     );
   }

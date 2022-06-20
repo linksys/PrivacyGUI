@@ -170,7 +170,7 @@ class _PhoneNumberViewState extends State<PhoneNumberView> {
               GestureDetector(
                 onTap: () async {
                   final selectedRegion = await showPopup(
-                      context: context, path: SelectPhoneRegionCodePath());
+                      context: context, config: SelectPhoneRegionCodePath());
                   if (selectedRegion != null) {
                     updateRegion(selectedRegion);
                   }

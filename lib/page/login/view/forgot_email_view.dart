@@ -3,8 +3,7 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
-
-import '../../../route/moab_router.dart';
+import 'package:moab_poc/route/navigation_cubit.dart';
 
 class ForgotEmailView extends StatelessWidget {
   const ForgotEmailView({Key? key}) : super(key: key);
@@ -20,7 +19,9 @@ class ForgotEmailView extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.close),
-            onPressed: () => MoabRouter.pop(context),
+            onPressed: () {
+              NavigationCubitExts.pop(context);
+            },
           )
         ],
       ),
