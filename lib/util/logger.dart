@@ -16,12 +16,17 @@ class CustomOutput extends LogOutput {
   @override
   void output(OutputEvent event) async {
     for (var line in event.lines) {
-      print(line);
+      printWrapped(line);
       if (_file.existsSync()) {
         await _file.writeAsString("${line.toString()}\n",
             mode: FileMode.writeOnlyAppend);
       }
     }
+  }
+
+  void printWrapped(String text) {
+    final pattern = RegExp('.{1,800}'); // 800 is the size of each chunk
+    pattern.allMatches(text).forEach((match) => print(match.group(0)));
   }
 }
 

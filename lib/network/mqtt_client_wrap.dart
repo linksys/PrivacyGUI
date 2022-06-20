@@ -137,10 +137,10 @@ class MqttClientWrap {
   }
 
   Future send(BaseMqttCommand command) async {
-    final message = json.encode(command.data);
+    final message = command.data;
     final topic = command.topic;
     final qos = command.qos;
-    final msgId = command.uuid;
+    final msgId = command.spec.uuid;
     final builder = MqttClientPayloadBuilder();
     builder.addString(message);
     _client.publishMessage(topic, qos, builder.payload!);
