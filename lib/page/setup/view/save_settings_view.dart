@@ -4,14 +4,13 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/indeterminate_progressbar.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/route.dart';
 
 class SaveSettingsView extends StatefulWidget {
   SaveSettingsView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
 
-  final void Function() onNext;
 
   @override
   State<SaveSettingsView> createState() => _SaveSettingsViewState();
@@ -32,7 +31,7 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
 
   _fakeInternetChecking() async {
     await Future.delayed(const Duration(seconds: 5));
-    widget.onNext();
+    NavigationCubit.of(context).push(SetupFinishPath());
   }
 
   @override

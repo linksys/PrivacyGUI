@@ -21,7 +21,6 @@ class PrimaryTextField extends StatefulWidget {
 class _PrimaryTextFieldState extends State<PrimaryTextField> {
   @override
   void dispose() {
-    widget.controller.dispose();
     super.dispose();
   }
 

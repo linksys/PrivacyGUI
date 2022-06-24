@@ -4,13 +4,12 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 
+// TODO nobody use this
 class AddChildConnectedView extends StatelessWidget {
   AddChildConnectedView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
 
-  final void Function() onNext;
 
   //TODO: The svg image must be replaced
   final Widget image = SvgPicture.asset(

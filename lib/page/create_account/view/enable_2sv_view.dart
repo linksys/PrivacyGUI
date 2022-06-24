@@ -1,17 +1,14 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/route.dart';
 
 class EnableTwoSVView extends StatelessWidget {
-  const EnableTwoSVView({Key? key, required this.onNext, required this.onSkip})
+  const EnableTwoSVView({Key? key,})
       : super(key: key);
-
-  final void Function() onNext;
-  final void Function() onSkip;
 
   @override
   Widget build(BuildContext context) {
@@ -32,9 +29,9 @@ class EnableTwoSVView extends StatelessWidget {
           children: [
             PrimaryButton(
               text: 'Yes',
-              onPress: onNext,
+              onPress: () {NavigationCubit.of(context).push(ChooseLoginOtpMethodPath());},
             ),
-            SimpleTextButton(text: 'No, use password only', onPressed: onSkip),
+            SimpleTextButton(text: 'No, use password only', onPressed: () {NavigationCubit.of(context).push(SaveCloudSettingsPath());}),
           ],
         ),
       ),

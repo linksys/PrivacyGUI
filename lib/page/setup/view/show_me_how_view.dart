@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 
+// TODO nobody use this
 class ShowMeHowView extends StatelessWidget {
   const ShowMeHowView({Key? key}) : super(key: key);
-
-  static const routeName = '/show_me_how';
 
   @override
   Widget build(BuildContext context) {

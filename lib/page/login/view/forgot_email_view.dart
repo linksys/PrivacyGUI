@@ -20,7 +20,7 @@ class ForgotEmailView extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.close),
             onPressed: () {
-              NavigationCubitExts.pop(context);
+              NavigationCubit.of(context).pop();
             },
           )
         ],

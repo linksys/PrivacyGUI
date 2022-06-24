@@ -6,18 +6,20 @@ import 'package:moab_poc/page/components/base_components/text/description_text.d
 import 'package:moab_poc/page/components/base_components/text/title_text.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/page/components/views/arguments_view.dart';
+import 'package:moab_poc/route/route.dart';
 
-class SetupFinishedView extends StatelessWidget {
+class SetupFinishedView extends ArgumentsStatelessView {
+
   SetupFinishedView({
-    Key? key,
-    required this.wifiSsid,
-    required this.wifiPassword,
-    required this.onNext,
-  }) : super(key: key);
+    Key? key, super.args
+  }) : super(key: key) {
+    _ssid = args!['ssid'];
+    _password = args!['password'];
+  }
 
-  final String wifiSsid;
-  final String wifiPassword;
-  final void Function() onNext;
+  late String _ssid;
+  late String _password;
 
   //TODO: The svg image must be replaced
   final Widget image = SvgPicture.asset(
@@ -42,10 +44,10 @@ class SetupFinishedView extends StatelessWidget {
               const DescriptionText(text: 'Connect your devices to'),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                child: TitleText(text: wifiSsid),
+                child: TitleText(text: _ssid),
               ),
               Text(
-                wifiPassword,
+                _password,
                 style: Theme.of(context).textTheme.headline3?.copyWith(
                   color: Theme.of(context).colorScheme.primary
                 ),
@@ -56,7 +58,7 @@ class SetupFinishedView extends StatelessWidget {
         ),
         footer: PrimaryButton(
           text: 'Go to the dashboard',
-          onPress: onNext,
+          onPress: () => NavigationCubit.of(context).popTo(HomePath()),
         ),
         alignment: CrossAxisAlignment.start,
       ),

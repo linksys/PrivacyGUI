@@ -5,20 +5,17 @@ import 'package:moab_poc/page/components/base_components/button/simple_text_butt
 import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/route.dart';
 
 class CreateAdminPasswordView extends StatelessWidget {
   const CreateAdminPasswordView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
-
-  final void Function() onNext;
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
+    return const BasePageView(
       child: _PageContent(
-        onNext: onNext,
       ),
       scrollable: true,
     );
@@ -28,10 +25,8 @@ class CreateAdminPasswordView extends StatelessWidget {
 class _PageContent extends StatefulWidget {
   const _PageContent({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
 
-  final void Function() onNext;
 
   @override
   _PageContentState createState() => _PageContentState();
@@ -88,7 +83,7 @@ class _PageContentState extends State<_PageContent> {
         visible: isValidData,
         child: PrimaryButton(
           text: 'Next',
-          onPress: widget.onNext,
+          onPress: () { NavigationCubit.of(context).push(SaveCloudSettingsPath());},
         ),
       ),
       alignment: CrossAxisAlignment.start,

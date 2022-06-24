@@ -1,5 +1,8 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/bloc/auth/bloc.dart';
+import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/analytics.dart';
 import 'package:moab_poc/util/logger.dart';
@@ -25,23 +28,25 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
 
   @override
   Widget build(BuildContext context) {
-
-    // TODO MultiBlocListener
-    return BlocConsumer<NavigationCubit, NavigationStack>(
-      builder: (context, stack) => Navigator(
-          key: navigatorKey,
-          pages: [
-            for (final path in stack.configs)
-              MaterialPage(
-                name: path.name,
-                key: ValueKey(path.name),
-                fullscreenDialog: path.pageConfig.isFullScreenDialog,
-                child: Theme(
-                    data: path.pageConfig.themeData, child: path.buildPage(_cubit)),
-              ),
-          ],
-          onPopPage: _onPopPage),
-      listener: (context, stack) {},
+    logger.d("Route Delegate Rebuild!");
+    return MultiBlocListener(
+      listeners: [_listenForAuth()],
+      child: BlocConsumer<NavigationCubit, NavigationStack>(
+        builder: (context, stack) => Navigator(
+            key: navigatorKey,
+            pages: [
+              for (final path in stack.configs)
+                MaterialPage(
+                  name: path.name,
+                  key: ValueKey(path.name),
+                  fullscreenDialog: path.pageConfig.isFullScreenDialog,
+                  child: Theme(
+                      data: path.pageConfig.themeData, child: path.buildPage(_cubit)),
+                ),
+            ],
+            onPopPage: _onPopPage),
+        listener: (context, stack) {},
+      ),
     );
   }
 
@@ -76,11 +81,15 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
   }
 
   BlocListener _listenForAuth() {
-    return BlocListener(
+    return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-
+        logger.d("Auth Listener: $state}");
+        if (state.status != AuthStatus.authorized) {
+          _cubit.clearAndPush(HomePath());
+        } else {
+          _cubit.clearAndPush(EnterOtpPath());
+        }
       },
     );
   }
-
 }

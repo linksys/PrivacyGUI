@@ -5,10 +5,9 @@ import 'package:moab_poc/page/components/base_components/button/primary_button.d
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 
+// TODO nobody use this
 class ForgotPasswordView extends StatelessWidget {
-  const ForgotPasswordView({Key? key, required this.onNext}) : super(key: key);
-
-  final void Function() onNext;
+  const ForgotPasswordView({Key? key,}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +24,7 @@ class ForgotPasswordView extends StatelessWidget {
             const SizedBox(height: 40,),
             PrimaryButton(
               text: 'Send code',
-              onPress: onNext,
+              onPress: () {},
             )
           ],
         ),

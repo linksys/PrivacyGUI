@@ -7,24 +7,32 @@ import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 
 class NoRouterView extends StatelessWidget {
-  const NoRouterView({Key? key, required this.onNext, required this.onLogout})
-      : super(key: key);
-
-  final void Function() onNext;
-  final void Function() onLogout;
+  const NoRouterView({
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return BasePageView(
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
-        header: const BasicHeader(title: 'It’s lonely in here... no Linksys routers are setup with this account',),
+        header: const BasicHeader(
+          title:
+              'It’s lonely in here... no Linksys routers are setup with this account',
+        ),
         content: Column(
           children: [
-            const SizedBox(height: 82,),
-            PrimaryButton(text: 'Setup WiFi', onPress: onNext,),
-            const SizedBox(height: 26,),
-            SimpleTextButton(text: 'Log out', onPressed: onLogout),
+            const SizedBox(
+              height: 82,
+            ),
+            PrimaryButton(
+              text: 'Setup WiFi',
+              onPress: () {},
+            ),
+            const SizedBox(
+              height: 26,
+            ),
+            SimpleTextButton(text: 'Log out', onPressed: () {}),
           ],
         ),
       ),

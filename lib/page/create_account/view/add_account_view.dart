@@ -5,14 +5,14 @@ import 'package:moab_poc/page/components/base_components/button/simple_text_butt
 import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/page/components/views/arguments_view.dart';
+import 'package:moab_poc/route/route.dart';
 
 import '../../components/base_components/button/primary_button.dart';
 
-class AddAccountView extends StatefulWidget {
-  final void Function() onNext;
-  final void Function() onSkip;
-
-  const AddAccountView({Key? key, required this.onNext, required this.onSkip})
+class AddAccountView extends ArgumentsStatefulView {
+  const AddAccountView(
+      {Key? key, super.args})
       : super(key: key);
 
   @override
@@ -48,14 +48,19 @@ class _AddAccountState extends State<AddAccountView> {
               visible: _emailController.text != '',
               child: PrimaryButton(
                 text: 'Continue',
-                onPress: widget.onNext,
+                onPress: () {
+                  NavigationCubit.of(context).push(ChooseLoginMethodPath());
+                },
               ),
             ),
             const SizedBox(
               height: 26,
             ),
             SimpleTextButton(
-                text: 'Skip and use router password', onPressed: widget.onSkip)
+                text: 'Skip and use router password',
+                onPressed: () {
+                  NavigationCubit.of(context).push(CreateAdminPasswordPath());
+                })
           ],
         ),
       ),

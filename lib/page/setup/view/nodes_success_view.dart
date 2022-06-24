@@ -3,6 +3,7 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/text/description_text.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/route.dart';
 
 import '../../components/base_components/button/primary_button.dart';
 import '../../components/base_components/button/simple_text_button.dart';
@@ -10,10 +11,8 @@ import '../../components/base_components/button/simple_text_button.dart';
 class NodesSuccessView extends StatelessWidget {
   const NodesSuccessView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
 
-  final void Function() onNext;
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +51,7 @@ class NodesSuccessView extends StatelessWidget {
           children: [
             PrimaryButton(
               text: 'Let\'s add a WiFi name',
-              onPress: onNext,
+              onPress: () => NavigationCubit.of(context).push(SetupCustomizeSSIDPath()),
             ),
           ],
         ),

@@ -1,57 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/bloc/auth/bloc.dart';
+import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
-import 'package:moab_poc/page/login/bloc.dart';
-import 'package:moab_poc/page/login/event.dart';
-import 'package:moab_poc/page/login/state.dart';
-import 'package:moab_poc/repository/authenticate/impl/fake_auth_repository.dart';
+import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/validator.dart';
 
-class LoginCloudAccountView extends StatelessWidget {
+import '../../components/base_components/progress_bars/full_screen_spinner.dart';
+
+class LoginCloudAccountView extends StatefulWidget {
   const LoginCloudAccountView({
     Key? key,
-    required this.onNext,
-    required this.onForgotEmail,
-    required this.onLocalLogin,
   }) : super(key: key);
 
-  final void Function() onNext;
-  final void Function() onForgotEmail;
-  final void Function() onLocalLogin;
-
   @override
-  Widget build(BuildContext context) {
-    return RepositoryProvider(
-        create: (context) => FakeAuthRepository(),
-        child: BlocProvider<LoginBloc>(
-            create: (context) =>
-                LoginBloc(repo: context.read<FakeAuthRepository>()),
-                child: _LoginCloudAccountView(onLocalLogin: onLocalLogin, onForgotEmail: onForgotEmail, onNext: onNext,),
-        )
-    );
-  }
+  LoginCloudAccountState createState() => LoginCloudAccountState();
 }
 
-class _LoginCloudAccountView extends StatefulWidget {
-  const _LoginCloudAccountView({
-    Key? key,
-    required this.onNext,
-    required this.onForgotEmail,
-    required this.onLocalLogin,
-  }) : super(key: key);
-
-  final void Function() onNext;
-  final void Function() onForgotEmail;
-  final void Function() onLocalLogin;
-
-  @override
-  _LoginCloudAccountState createState() => _LoginCloudAccountState();
-}
-
-class _LoginCloudAccountState extends State<_LoginCloudAccountView> {
+class LoginCloudAccountState extends State<LoginCloudAccountView> {
   bool _isValidEmail = false;
+  bool _isLoading = false;
+
   final _emailValidator = EmailValidator();
   final TextEditingController _accountController = TextEditingController();
 
@@ -61,30 +32,21 @@ class _LoginCloudAccountState extends State<_LoginCloudAccountView> {
   }
 
   @override
+  void dispose() {
+    _accountController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     logger.d('DEBUG:: LoginCloudAccountView: build');
 
-    // return RepositoryProvider(
-    //   create: (context) => FakeAuthRepository(),
-    //   child: BlocProvider<LoginBloc>(
-    //     create: (context) =>
-    //         LoginBloc(repo: context.read<FakeAuthRepository>()),
-    //     child: Builder(builder: (context) {
-    //       return BlocConsumer<LoginBloc, LoginState>(
-    //         listener: (context, state) => _navigation(context, state),
-    //         builder: (context, state) => _contentView(),
-    //       );
-    //     }),
-    //   ),
-    // );
-    context.read<LoginBloc>().add(Initial());
-    return BlocConsumer<LoginBloc, LoginState>(
-      listener: (context, state) => _navigation(context, state),
-      builder: (context, state) => _contentView(),
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) => _isLoading ? const FullScreenSpinner(text: 'processing...') : _contentView(state),
     );
   }
 
-  Widget _contentView() {
+  Widget _contentView(AuthState state) {
     return BasePageView(
         scrollable: true,
         child: BasicLayout(
@@ -105,9 +67,7 @@ class _LoginCloudAccountState extends State<_LoginCloudAccountView> {
                 children: [
                   SimpleTextButton(
                       text: 'Forgot email',
-                      onPressed: () {
-                        _addEvent(GoForgotEmail());
-                      }),
+                      onPressed: () => NavigationCubit.of(context).push(AuthForgotEmailPath())),
                 ],
               ),
               Padding(
@@ -115,43 +75,36 @@ class _LoginCloudAccountState extends State<_LoginCloudAccountView> {
                 child: PrimaryButton(
                   text: 'Continue',
                   onPress: _isValidEmail
-                      ? () {
-                    _addEvent(TestUserName(_accountController.text));
+                      ? () async {
+                    setState(() {
+                      _isLoading = true;
+                    });
+                    await context.read<AuthBloc>().testUsername(
+                        _accountController.text).then((value) => _checkOtpMethod(value));
+                    setState(() {
+                      _isLoading = false;
+                    });
                   }
                       : null,
                 ),
               ),
               SimpleTextButton(
                   text: 'Log in with router password',
-                  onPressed: () {
-                    _addEvent(GoLocalLogin());
-                  }),
+                  onPressed: () => NavigationCubit.of(context).push(AuthLocalLoginPath())),
               const Spacer(),
             ],
           ),
         ));
   }
 
-  void _addEvent(LoginEvent event) {
-    context.read<LoginBloc>().add(event);
-  }
-
-  _navigation(BuildContext context, LoginState state) {
-    logger.d('Cloud Account Login:: navigation: ${state.runtimeType}');
-    if (state is ForgotEmail) {
-      widget.onForgotEmail();
-    } else if (state is LocalLogin) {
-      widget.onLocalLogin();
-    } else if (state is WaitForOTP) {
-      //
-    } else if (state is ChoosePasswordLessMethod) {
-      widget.onNext();
-    }
-  }
-
   _checkFilledInfo(_) {
     setState(() {
       _isValidEmail = _emailValidator.validate(_accountController.text);
     });
+  }
+
+  _checkOtpMethod(List<OtpInfo> list) {
+    logger.d('OTP Methods: ${list.length}, $list');
+    NavigationCubit.of(context).push(AuthChooseOtpPath()..args = {'otpMethod': list});
   }
 }

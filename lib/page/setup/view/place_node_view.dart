@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/route.dart';
 
 import '../../components/base_components/button/primary_button.dart';
 
 class PlaceNodeView extends StatelessWidget {
   PlaceNodeView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
-
-  final VoidCallback onNext;
 
   // Replace this to svg if the svg image is fixed
   final Widget image = Image.asset('assets/images/place_node.png');
@@ -23,7 +21,7 @@ class PlaceNodeView extends StatelessWidget {
         content: image,
         footer: PrimaryButton(
           text: 'Got it',
-          onPress: onNext,
+          onPress: () => NavigationCubit.of(context).push(SetupParentPermissionPath()),
         ),
       ),
     );

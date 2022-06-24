@@ -4,16 +4,15 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/indeterminate_progressbar.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/route.dart';
 
 import '../../../design/colors.dart';
 
 class AddChildSearchingView extends StatefulWidget {
   const AddChildSearchingView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
 
-  final void Function() onNext;
 
   @override
   State<AddChildSearchingView> createState() => _AddChildSearchingViewState();
@@ -40,7 +39,7 @@ class _AddChildSearchingViewState extends State<AddChildSearchingView> {
       _hasFound = true;
     });
     await Future.delayed(const Duration(seconds: 3));
-    widget.onNext();
+    NavigationCubit.of(context).push(SetupNthChildLocationPath());
   }
 
   @override

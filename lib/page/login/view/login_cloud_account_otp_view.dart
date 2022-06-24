@@ -10,13 +10,11 @@ import '../../components/base_components/button/simple_text_button.dart';
 import '../../components/layouts/basic_header.dart';
 import '../../components/layouts/basic_layout.dart';
 
+// TODO Nobody use this
 class LoginCloudAccountWithOtpView extends StatefulWidget {
   const LoginCloudAccountWithOtpView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
-
-  final void Function() onNext;
 
   @override
   _LoginCloudAccountWithOtpState createState() =>
@@ -131,7 +129,9 @@ class _LoginCloudAccountWithOtpState
                 padding: const EdgeInsets.symmetric(vertical: 24.0),
                 child: PrimaryButton(
                   text: 'Next',
-                  onPress: widget.onNext,
+                  onPress: () {
+                    // TODO
+                  },
                 ),
               ),
               const Spacer(),

@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
 
-
+// TODO nobody use this
 class LoginTraditionalPasswordView extends StatelessWidget {
-  LoginTraditionalPasswordView(
-      {Key? key, required this.onNext, required this.onForgotPassword})
-      : super(key: key);
+  LoginTraditionalPasswordView({
+    Key? key,
+  }) : super(key: key);
 
-  final void Function() onNext;
-  final void Function() onForgotPassword;
   final TextEditingController passwordController = TextEditingController();
 
   @override
@@ -31,14 +29,13 @@ class LoginTraditionalPasswordView extends StatelessWidget {
             const SizedBox(
               height: 15,
             ),
-            SimpleTextButton(
-                text: 'Forgot password', onPressed: onForgotPassword),
+            SimpleTextButton(text: 'Forgot password', onPressed: () {}),
             const SizedBox(
               height: 38,
             ),
             PrimaryButton(
               text: 'Continue',
-              onPress: onNext,
+              onPress: () {},
             ),
           ],
         ),

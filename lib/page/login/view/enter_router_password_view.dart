@@ -5,14 +5,12 @@ import 'package:moab_poc/page/components/base_components/button/simple_text_butt
 import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/route.dart';
 
 class EnterRouterPasswordView extends StatefulWidget {
   const EnterRouterPasswordView(
-      {Key? key, required this.onNext, required this.onForgot})
+      {Key? key, })
       : super(key: key);
-
-  final void Function() onNext;
-  final void Function() onForgot;
 
   @override
   _EnterRouterPasswordState createState() => _EnterRouterPasswordState();
@@ -60,13 +58,15 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
           ),
           const ShowHintSection(),
           SimpleTextButton(
-              text: 'Forgot router password', onPressed: widget.onForgot),
+              text: 'Forgot router password', onPressed: () {
+                // TODO TBD
+          }),
           const SizedBox(
             height: 37,
           ),
           PrimaryButton(
             text: 'Continue',
-            onPress: widget.onNext,
+            onPress: () { NavigationCubit.of(context).push(NoRouterPath());},
           ),
         ],
       ),

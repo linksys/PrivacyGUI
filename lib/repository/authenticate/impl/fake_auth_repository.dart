@@ -32,8 +32,9 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<void> passwordLessLogin(String username, int method) async {
+  Future<DummyModel> passwordLessLogin(String username, String method) async {
     await Future.delayed(waitDuration);
+    return {'token': 'DUMMY_PASSWORDLESS_TOKEN'};
   }
 
   @override
@@ -51,7 +52,7 @@ class FakeAuthRepository extends AuthRepository {
   @override
   Future<DummyModel> testUsername(String username) async {
     await Future.delayed(waitDuration);
-    return {'method': [{'text': '+8869123456'}, {'email': 'austin.chang@linksys.com'}]};
+    return {'method': [{'sms': '+8869123456'}, {'email': username}]};
   }
 
   @override
@@ -64,5 +65,10 @@ class FakeAuthRepository extends AuthRepository {
   Future<DummyModel> validatePasswordLessCode(String token, String code) async {
     await Future.delayed(waitDuration);
     return {};
+  }
+
+  @override
+  Future<void> resendCode(String token, String method) async {
+    await Future.delayed(waitDuration);
   }
 }

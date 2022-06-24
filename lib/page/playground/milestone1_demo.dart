@@ -19,10 +19,7 @@ class MoabApp extends StatelessWidget {
         // LoginPage.routeName: (context) => const LoginPage(),
         // DashboardPage.routeName: (context) => const DashboardPage(),
         // MeshPage.routeName: (context) => const MeshPage(),
-        '/' : (context) => OtpCodeInputView(
-          onNext: () {  }, onSkip: () {  },
-          // onForgotPassword: () {},
-        ),
+        '/' : (context) => OtpCodeInputView(),
         // GetWiFiUpView.routeName: (context) => GetWiFiUpView(onNext: () => _goToStartParentNode(context),),
         // StartParentNodeView.routeName: (context) => StartParentNodeView(onNext: () => _goToPlugNodeView(context),),
         // PlugNodeView.routeName: (context) => PlugNodeView(onNext: () => _goToConnectToModemView(context),),

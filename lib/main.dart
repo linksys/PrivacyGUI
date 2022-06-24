@@ -6,13 +6,15 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/bloc/auth/bloc.dart';
+import 'package:moab_poc/bloc/auth/event.dart';
 import 'package:moab_poc/design/themes.dart';
-import 'package:moab_poc/route/navigation_cubit.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/storage.dart';
 import 'firebase_options.dart';
+import 'repository/authenticate/impl/fake_auth_repository.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -34,10 +36,7 @@ void main() {
         exit(1);
       }
     };
-    runApp(BlocProvider(
-      create: (BuildContext context) => NavigationCubit([HomePath()]),
-        child: const NavigatorDemo())
-    );
+    runApp(_app());
   }, (Object error, StackTrace stack) {
     logger.e('Uncaught Error:\n', error);
     FirebaseCrashlytics.instance.recordError(error, stack);
@@ -48,17 +47,35 @@ void main() {
   });
 }
 
-class NavigatorDemo extends StatefulWidget {
-  const NavigatorDemo({Key? key}) : super(key: key);
-
-  @override
-  State<NavigatorDemo> createState() => _NavigatorDemoState();
+Widget _app() {
+  return MultiRepositoryProvider(
+    providers: [
+      RepositoryProvider(create: (context) => FakeAuthRepository()),
+    ],
+    child: MultiBlocProvider(providers: [
+      BlocProvider(
+          create: (BuildContext context) => NavigationCubit([HomePath()])
+      ),
+      BlocProvider(
+          create: (BuildContext context) => AuthBloc(repo: context.read<FakeAuthRepository>())
+      ),
+    ], child: const MoabApp()),
+  );
 }
 
-class _NavigatorDemoState extends State<NavigatorDemo>
+class MoabApp extends StatefulWidget {
+  const MoabApp({Key? key}) : super(key: key);
+
+  @override
+  State<MoabApp> createState() => _MoabAppState();
+}
+
+class _MoabAppState extends State<MoabApp>
     with WidgetsBindingObserver {
   @override
   void initState() {
+    logger.d('Moab App init state');
+    _initAuth();
     WidgetsBinding.instance.addObserver(this);
     super.initState();
   }
@@ -84,5 +101,9 @@ class _NavigatorDemoState extends State<NavigatorDemo>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     logger.v('didChangeAppLifecycleState: ${state.name}');
+  }
+
+  _initAuth() {
+    context.read<AuthBloc>().add(InitAuth());
   }
 }

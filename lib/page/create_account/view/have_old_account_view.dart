@@ -18,7 +18,7 @@ class HaveOldAccountView extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.close),
-            onPressed: () => NavigationCubitExts.pop(context),
+            onPressed: () => NavigationCubit.of(context).pop(),
           )
         ],
       ),

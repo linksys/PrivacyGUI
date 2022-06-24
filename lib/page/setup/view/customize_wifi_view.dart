@@ -5,25 +5,19 @@ import 'package:moab_poc/page/components/base_components/button/secondary_button
 import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/route.dart';
 
 class CustomizeWifiView extends StatelessWidget {
   const CustomizeWifiView({
     Key? key,
-    required this.onNext,
-    required this.onSkip,
   }) : super(key: key);
 
   static const routeName = '/customize_wifi';
-  final void Function() onNext;
-  final void Function() onSkip;
 
   @override
   Widget build(BuildContext context) {
     return BasePageView(
-      child: PageContent(
-        onNext: onNext,
-        onSkip: onSkip,
-      ),
+      child: PageContent(),
       scrollable: true,
     );
   }
@@ -32,13 +26,8 @@ class CustomizeWifiView extends StatelessWidget {
 class PageContent extends StatefulWidget {
   const PageContent({
     Key? key,
-    required this.onNext,
-    required this.onSkip,
   }) : super(key: key);
-
-  final void Function() onNext;
-  final void Function() onSkip;
-
+  
   @override
   _PageContentState createState() => _PageContentState();
 }
@@ -83,11 +72,11 @@ class _PageContentState extends State<PageContent> {
         visible: isValidWifiInfo,
         replacement: SecondaryButton(
           text: 'I’ll do it later',
-          onPress: widget.onSkip,
+          onPress: () => NavigationCubit.of(context).push(CreateCloudAccountPath()),
         ),
         child: PrimaryButton(
           text: 'Next',
-          onPress: widget.onNext,
+          onPress: () => NavigationCubit.of(context).push(CreateCloudAccountPath()),
         ),
       ),
     );

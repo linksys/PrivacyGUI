@@ -22,7 +22,7 @@ class _RegionPickerViewState extends State<RegionPickerView> {
         IconButton(
           icon: const Icon(Icons.close),
           onPressed: () {
-            NavigationCubitExts.pop(context);
+            NavigationCubit.of(context).pop();
           },
         )
       ],
@@ -85,7 +85,7 @@ class _RegionPickerViewState extends State<RegionPickerView> {
                 padding: const EdgeInsets.symmetric(vertical: 15),
               ),
               onTap: () {
-                NavigationCubitExts.popWithResult(context, _items[index]);
+                NavigationCubit.of(context).popWithResult(_items[index]);
               },
             )
         ),

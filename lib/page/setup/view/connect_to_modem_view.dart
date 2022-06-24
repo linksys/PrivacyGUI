@@ -3,6 +3,7 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/setup/view/show_me_how_view.dart';
+import 'package:moab_poc/route/route.dart';
 
 import '../../components/base_components/button/primary_button.dart';
 import '../../components/base_components/button/simple_text_button.dart';
@@ -10,12 +11,7 @@ import '../../components/base_components/button/simple_text_button.dart';
 class ConnectToModemView extends StatelessWidget {
   ConnectToModemView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
-
-  final VoidCallback onNext;
-
-  static const routeName = '/connect_to_modem';
 
   //TODO: This svg file does not work
   // final Widget image = SvgPicture.asset(
@@ -37,7 +33,7 @@ class ConnectToModemView extends StatelessWidget {
         content: _content(context),
         footer: PrimaryButton(
           text: 'Next',
-          onPress: onNext,
+          onPress: () => NavigationCubit.of(context).push(SetupParentPlacePath()),
         ),
       ),
     );

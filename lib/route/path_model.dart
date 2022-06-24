@@ -8,13 +8,15 @@ import 'package:moab_poc/page/create_account/view/view.dart';
 import 'package:moab_poc/page/landing/view/view.dart';
 import 'package:moab_poc/page/login/view/view.dart';
 import 'package:moab_poc/page/setup/view/view.dart';
-import 'package:moab_poc/route/navigation_cubit.dart';
 import 'package:moab_poc/util/logger.dart';
+
+import 'route.dart';
 
 enum PageNavigationType { back, close, none }
 
+
 class PathConfig {
-  bool removeFromFactory = false;
+  bool removeFromHistory = false;
 }
 
 class PageConfig {
@@ -44,6 +46,8 @@ mixin ReturnablePath<T> {
 /// BasePath.buildPage() this better to implement on the sub abstract path,
 /// this is because we can easy to understand the whole route in the setup.
 abstract class BasePath<P> {
+  Map<String, dynamic>? args;
+
   String get name => P.toString();
 
   PathConfig get pathConfig => PathConfig();
@@ -53,15 +57,7 @@ abstract class BasePath<P> {
   Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case HomePath:
-        return HomeView(
-          onLogin: () {
-            // cubit.push(AuthInputAccountPath());
-            cubit.push(AuthCreateAccountPhonePath());
-          },
-          onSetup: () {
-            cubit.push(SetupWelcomeEulaPath());
-          },
-        );
+        return HomeView(args: args,);
       case UnknownPath:
         return Center(
           child: Text("Unknown Path"),
@@ -85,29 +81,13 @@ abstract class SetupPath<P> extends BasePath<P> {
   Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case SetupWelcomeEulaPath:
-        return GetWiFiUpView(onNext: () {
-          cubit.push(SetupParentPlugPath());
-        });
+        return GetWiFiUpView();
       case SetupCustomizeSSIDPath:
-        return CustomizeWifiView(
-          onNext: () {
-            cubit.push(CreateCloudAccountPath());
-          },
-          onSkip: () {
-            cubit.push(CreateCloudAccountPath());
-          },
-        );
+        return CustomizeWifiView();
       case SetupNodesDonePath:
-        return NodesSuccessView(onNext: () {
-          cubit.push(SetupCustomizeSSIDPath());
-        });
+        return NodesSuccessView();
       case SetupFinishPath:
-        return SetupFinishedView(
-            wifiSsid: '',
-            wifiPassword: '',
-            onNext: () {
-              // delegate.popTo(HomePath());
-            });
+        return SetupFinishedView();
       default:
         return Center();
     }
@@ -128,29 +108,17 @@ abstract class SetupParentPath<P> extends SetupPath<P> {
   Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case SetupParentPlugPath:
-        return PlugNodeView(onNext: () {
-          cubit.push(SetupParentWiredPath());
-        });
+        return PlugNodeView();
       case SetupParentWiredPath:
-        return ConnectToModemView(onNext: () {
-          cubit.push(SetupParentPlacePath());
-        });
+        return ConnectToModemView();
       case SetupParentPlacePath:
-        return PlaceNodeView(onNext: () {
-          cubit.push(SetupParentPermissionPath());
-        });
+        return PlaceNodeView();
       case SetupParentPermissionPath:
-        return PermissionsPrimerView(onNext: () {
-          cubit.push(SetupParentQrCodeScanPath());
-        });
+        return PermissionsPrimerView();
       case SetupParentLocationPath:
-        return SetLocationView(onNext: () {
-          cubit.push(SetupNthChildPath());
-        });
+        return SetLocationView();
       case SetupParentQrCodeScanPath:
-        return ParentScanQRCodeView(onNext: () {
-          cubit.push(InternetCheckingPath());
-        });
+        return ParentScanQRCodeView();
       default:
         return Center();
     }
@@ -181,11 +149,7 @@ abstract class InternetCheckPath<P> extends SetupPath<P> {
   Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case InternetCheckingPath:
-        return CheckNodeInternetView(
-          onNext: () {
-            cubit.push(SetupParentLocationPath());
-          },
-        );
+        return CheckNodeInternetView();
 
       default:
         return const Center();
@@ -195,7 +159,7 @@ abstract class InternetCheckPath<P> extends SetupPath<P> {
 
 class InternetCheckingPath extends InternetCheckPath<InternetCheckingPath> {
   @override
-  PathConfig get pathConfig => super.pathConfig..removeFromFactory = true;
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
 
   @override
   PageConfig get pageConfig =>
@@ -207,27 +171,15 @@ abstract class SetupChildPath<P> extends SetupPath<P> {
   Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case SetupNthChildPath:
-        return AddChildFinishedView(onAddMore: () {
-          cubit.push(SetupNthChildQrCodePath());
-        }, onAddDone: () {
-          cubit.push(SetupNodesDonePath());
-        });
+        return AddChildFinishedView();
       case SetupNthChildQrCodePath:
-        return AddChildScanQRCodeView(onNext: () {
-          cubit.push(SetupNthChildPlugPath());
-        });
+        return AddChildScanQRCodeView();
       case SetupNthChildPlugPath:
-        return AddChildPlugView(onNext: () {
-          cubit.push(SetupNthChildSearchingPath());
-        });
+        return AddChildPlugView();
       case SetupNthChildSearchingPath:
-        return AddChildSearchingView(onNext: () {
-          cubit.push(SetupNthChildLocationPath());
-        });
+        return AddChildSearchingView();
       case SetupNthChildLocationPath:
-        return SetLocationView(onNext: () {
-          cubit.popTo(SetupNthChildPath());
-        });
+        return SetLocationView();
       default:
         return const Center();
     }
@@ -243,7 +195,7 @@ class SetupNthChildPlugPath extends SetupChildPath<SetupNthChildPlugPath> {}
 class SetupNthChildSearchingPath
     extends SetupChildPath<SetupNthChildSearchingPath> {
   @override
-  PathConfig get pathConfig => super.pathConfig..removeFromFactory = true;
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
 
   @override
   PageConfig get pageConfig =>
@@ -258,61 +210,24 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
   Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case CreateCloudAccountPath:
-        return AddAccountView(
-          onNext: () {
-            cubit.push(ChooseLoginMethodPath());
-          },
-          onSkip: () {
-            cubit.push(CreateAdminPasswordPath());
-          },
-        );
+        return AddAccountView(args: args,);
       case CreateAdminPasswordPath:
-        return CreateAdminPasswordView(onNext: () {
-          cubit.push(SaveCloudSettingsPath());
-        });
+        return CreateAdminPasswordView();
       case ChooseLoginMethodPath:
-        return ChooseLoginTypeView(
-            onCodeNext: () {
-              cubit.push(ChooseLoginOtpMethodPath());
-            },
-            onPasswordNext: () {
-              cubit.push(EnableTwoSVPath());
-            },
-            onSkip: () {
-              cubit.push(AlreadyHaveOldAccountPath());
-            },
-        );
+        return ChooseLoginTypeView(args: args,);
       case ChooseLoginOtpMethodPath:
-        return ChooseOTPMethodView(
-            email: 'moabuser@email.com',
-            onTextNext: () {
-              cubit.push(EnterOtpPath());
-            },
-            onEmailNext: () {
-              cubit.push(EnterOtpPath());
-            },
-        );
+        return ChooseOTPMethodView(args: args);
       case EnterOtpPath:
-        return OtpView(
-          onNext: () {
-            cubit.push(SaveCloudSettingsPath());
-          },
-          destination: '(123)-456-7890',
-        );
+        if (args != null) {
+          args!['onNext'] = SaveCloudSettingsPath();
+        }
+        return OtpView(args: args,);
       case SaveCloudSettingsPath:
-        return SaveSettingsView(onNext: () {
-          cubit.push(SetupFinishPath());
-        });
+        return SaveSettingsView();
       case AlreadyHaveOldAccountPath:
         return const HaveOldAccountView();
       case EnableTwoSVPath:
-        return EnableTwoSVView(
-            onNext: () {
-              cubit.push(ChooseLoginOtpMethodPath());
-            },
-            onSkip: () {
-              cubit.push(SaveCloudSettingsPath());
-            });
+        return EnableTwoSVView();
       default:
         return const Center();
     }
@@ -327,7 +242,8 @@ class CreateAdminPasswordPath
 
 class ChooseLoginMethodPath extends CreateAccountPath<ChooseLoginMethodPath> {}
 
-class ChooseLoginOtpMethodPath extends CreateAccountPath<ChooseLoginOtpMethodPath> {}
+class ChooseLoginOtpMethodPath
+    extends CreateAccountPath<ChooseLoginOtpMethodPath> {}
 
 class EnterOtpPath extends CreateAccountPath<EnterOtpPath> {}
 
@@ -339,7 +255,8 @@ class CreateCloudAccountSuccessPath
 
 class SaveCloudSettingsPath extends CreateAccountPath<SaveCloudSettingsPath> {}
 
-class AlreadyHaveOldAccountPath extends CreateAccountPath<AlreadyHaveOldAccountPath> {
+class AlreadyHaveOldAccountPath
+    extends CreateAccountPath<AlreadyHaveOldAccountPath> {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
@@ -355,52 +272,24 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
   Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case AuthInputAccountPath:
-        return LoginCloudAccountView(
-          onNext: () {
-            cubit.push(AuthChooseOtpPath());
-          },
-          onLocalLogin: () {
-            cubit.push(AuthLocalLoginPath());
-          },
-          onForgotEmail: () {
-            cubit.push(AuthForgotEmailPath());
-          },
-        );
+        return LoginCloudAccountView();
       case AuthChooseOtpPath:
-        return LoginOTPMethodsView(
-          onTextNext: () {
-            cubit.push(AuthInputOtpPath());
-          },
-          onEmailNext: () {
-            cubit.push(AuthInputOtpPath());
-          },
-        );
+        return LoginOTPMethodsView(args: args,);
       case AuthInputOtpPath:
-        return OtpView(
-          onNext: () {
-            cubit.push(NoRouterPath());
-          },
-          destination: '(123)-456-7890',
-        );
+        if (args != null) {
+          args!['onNext'] = NoRouterPath();
+        }
+        return OtpView(args: args);
       case AuthForgotEmailPath:
         return const ForgotEmailView();
       case NoRouterPath:
-        return NoRouterView(onNext: () {}, onLogout: () {});
+        return NoRouterView();
       case AuthCreateAccountPhonePath:
-        return CreateAccountPhoneView(
-          onSave: () {},
-          onSkip: () {},
-        );
+        return CreateAccountPhoneView(args: args,);
       case SelectPhoneRegionCodePath:
         return const RegionPickerView();
       case AuthLocalLoginPath:
-        return EnterRouterPasswordView(
-            onNext: () {
-              cubit.push(NoRouterPath());
-            },
-            onForgot: () {
-
-            });
+        return EnterRouterPasswordView();
       default:
         return const Center();
     }

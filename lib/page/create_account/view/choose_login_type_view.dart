@@ -6,18 +6,13 @@ import 'package:moab_poc/page/components/base_components/input_fields/input_fiel
 import 'package:moab_poc/page/components/base_components/selectable_item.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/page/components/views/arguments_view.dart';
+import 'package:moab_poc/route/route.dart';
 
-class ChooseLoginTypeView extends StatefulWidget {
+class ChooseLoginTypeView extends ArgumentsStatefulView {
   const ChooseLoginTypeView(
-      {Key? key,
-      required this.onCodeNext,
-      required this.onPasswordNext,
-      required this.onSkip})
+      {Key? key, super.args})
       : super(key: key);
-
-  final void Function() onCodeNext;
-  final void Function() onPasswordNext;
-  final void Function() onSkip;
 
   @override
   _ChooseLoginTypeState createState() => _ChooseLoginTypeState();
@@ -76,14 +71,21 @@ class _ChooseLoginTypeState extends State<ChooseLoginTypeView> {
             Visibility(
               visible: selectedMethod == 'Password',
               child: PasswordValidationView(
-                onSkip: widget.onSkip,
+                onSkip: () {
+                  NavigationCubit.of(context).push(AlreadyHaveOldAccountPath());
+                },
               ),
             ),
             PrimaryButton(
               text: 'Next',
               onPress: selectedMethod == 'Password'
-                  ? widget.onPasswordNext
-                  : widget.onCodeNext,
+                  ? () {
+                      NavigationCubit.of(context).push(EnableTwoSVPath());
+                    }
+                  : () {
+                      NavigationCubit.of(context)
+                          .push(ChooseLoginOtpMethodPath());
+                    },
             )
           ],
         ),

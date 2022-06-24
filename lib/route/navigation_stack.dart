@@ -53,6 +53,8 @@ class NavigationStack {
 
   NavigationStack push(BasePath config) {
     if (_stack.last != config) _stack.add(config);
+    _stack.removeWhere((element) => element.pathConfig.removeFromHistory);
+
     return NavigationStack(_stack);
   }
 
