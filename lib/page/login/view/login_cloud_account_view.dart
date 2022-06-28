@@ -4,6 +4,7 @@ import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
+import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/validator.dart';
@@ -22,6 +23,7 @@ class LoginCloudAccountView extends StatefulWidget {
 class LoginCloudAccountState extends State<LoginCloudAccountView> {
   bool _isValidEmail = false;
   bool _isLoading = false;
+  String _errorReason = '';
 
   final _emailValidator = EmailValidator();
   final TextEditingController _accountController = TextEditingController();
@@ -42,7 +44,9 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
     logger.d('DEBUG:: LoginCloudAccountView: build');
 
     return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) => _isLoading ? const FullScreenSpinner(text: 'processing...') : _contentView(state),
+      builder: (context, state) => _isLoading
+          ? const FullScreenSpinner(text: 'processing...')
+          : _contentView(state),
     );
   }
 
@@ -55,6 +59,7 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
             title: 'Log in to your Linksys account',
           ),
           content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               InputField(
                 titleText: 'Email',
@@ -62,13 +67,33 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
                 controller: _accountController,
                 onChanged: _checkFilledInfo,
                 inputType: TextInputType.emailAddress,
+                isError: !_isValidEmail && _accountController.text.isNotEmpty || _errorReason.isNotEmpty,
               ),
-              Row(
-                children: [
-                  SimpleTextButton(
-                      text: 'Forgot email',
-                      onPressed: () => NavigationCubit.of(context).push(AuthForgotEmailPath())),
-                ],
+              if (!_isValidEmail && _accountController.text.isNotEmpty || _errorReason.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Text(
+                    _checkErrorReason(),
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyText1
+                        ?.copyWith(color: Colors.red),
+                  ),
+                ),
+              if (_errorReason == "NOT_FOUND")
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: SimpleTextButton(
+                      text: 'Did you use this email with another Linksys app?',
+                      onPressed: () => NavigationCubit.of(context)
+                          .push(AlreadyHaveOldAccountPath())),
+                ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: SimpleTextButton(
+                    text: 'Forgot email',
+                    onPressed: () => NavigationCubit.of(context)
+                        .push(AuthForgotEmailPath())),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24.0),
@@ -76,25 +101,41 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
                   text: 'Continue',
                   onPress: _isValidEmail
                       ? () async {
-                    setState(() {
-                      _isLoading = true;
-                    });
-                    await context.read<AuthBloc>().testUsername(
-                        _accountController.text).then((value) => _checkOtpMethod(value));
-                    setState(() {
-                      _isLoading = false;
-                    });
-                  }
+                          setState(() {
+                            _isLoading = true;
+                          });
+                          await context
+                              .read<AuthBloc>()
+                              .testUsername(_accountController.text)
+                              .then((value) => _checkOtpMethod(value))
+                          .onError((error, stackTrace) => _handleError(error as CloudException));
+                          setState(() {
+                            _isLoading = false;
+                          });
+                        }
                       : null,
                 ),
               ),
-              SimpleTextButton(
-                  text: 'Log in with router password',
-                  onPressed: () => NavigationCubit.of(context).push(AuthLocalLoginPath())),
+              Center(
+                child: SimpleTextButton(
+                    text: 'Log in with router password',
+                    onPressed: () =>
+                        NavigationCubit.of(context).push(AuthLocalLoginPath())),
+              ),
               const Spacer(),
             ],
           ),
         ));
+  }
+
+  String _checkErrorReason() {
+    if (_errorReason.isEmpty) {
+      return 'Enter a valid email format';
+    } else if (_errorReason == 'NOT_FOUND') {
+      return 'Email address not found';
+    } else {
+      return 'Unknown error';
+    }
   }
 
   _checkFilledInfo(_) {
@@ -105,6 +146,13 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
 
   _checkOtpMethod(List<OtpInfo> list) {
     logger.d('OTP Methods: ${list.length}, $list');
-    NavigationCubit.of(context).push(AuthChooseOtpPath()..args = {'otpMethod': list});
+    NavigationCubit.of(context)
+        .push(AuthChooseOtpPath()..args = {'otpMethod': list});
+  }
+
+  _handleError(CloudException e) {
+    setState(() {
+      _errorReason = e.code;
+    });
   }
 }

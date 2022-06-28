@@ -10,18 +10,16 @@ class FullScreenSpinner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(color: background ?? Theme.of(context).backgroundColor),
-        child: Center(child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: color ?? Theme.of(context).primaryColor,),
-            const SizedBox(height: 8,),
-            DescriptionText(text: text ?? ''),
-          ],
-        ),),
-      ),
+    return Container(
+      decoration: BoxDecoration(color: background ?? Theme.of(context).backgroundColor),
+      child: Center(child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(color: color ?? Theme.of(context).primaryColor,),
+          const SizedBox(height: 8,),
+          DescriptionText(text: text ?? ''),
+        ],
+      ),),
     );
   }
 }

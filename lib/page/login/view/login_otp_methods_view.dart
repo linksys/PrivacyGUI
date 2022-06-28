@@ -10,7 +10,6 @@ import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/route/route.dart';
-import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/logger.dart';
 
 class LoginOTPMethodsView extends ArgumentsStatefulView {

@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:moab_poc/util/connectivity.dart';
+import 'package:moab_poc/bloc/connectivity/connectivity_info.dart';
 
 abstract class LandingEvent extends Equatable {
   const LandingEvent();

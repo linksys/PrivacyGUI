@@ -87,7 +87,7 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
         if (state.status != AuthStatus.authorized) {
           _cubit.clearAndPush(HomePath());
         } else {
-          _cubit.clearAndPush(EnterOtpPath());
+          _cubit.clearAndPush(DashboardMainPath());
         }
       },
     );

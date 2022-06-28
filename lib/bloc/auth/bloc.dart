@@ -37,9 +37,13 @@ extension AuthBlocExts on AuthBloc {
   Future<String> passwordLessLogin(String username, String method) async {
     return await _repository.passwordLessLogin(username, method).then((value) => value['token']);
   }
+  
+  Future<void> validPasswordLess(String code, String token) async {
+    return await _repository.validatePasswordLessCode(token, code).then((value) => null);
+  }
 
   Future<void> resendCode(String token, String method) async {
-    return await _repository.resendCode(token, method);
+    return await _repository.resendPasswordLessCode(token, method);
   }
 
 

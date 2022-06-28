@@ -6,11 +6,14 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/bloc/app_lifecycle/cubit.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/event.dart';
+import 'package:moab_poc/bloc/connectivity/cubit.dart';
 import 'package:moab_poc/design/themes.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:moab_poc/util/connectivity.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/storage.dart';
 import 'firebase_options.dart';
@@ -48,6 +51,7 @@ void main() {
 }
 
 Widget _app() {
+
   return MultiRepositoryProvider(
     providers: [
       RepositoryProvider(create: (context) => FakeAuthRepository()),
@@ -58,6 +62,12 @@ Widget _app() {
       ),
       BlocProvider(
           create: (BuildContext context) => AuthBloc(repo: context.read<FakeAuthRepository>())
+      ),
+      BlocProvider(
+          create: (BuildContext context) => ConnectivityCubit()
+      ),
+      BlocProvider(
+          create: (BuildContext context) => AppLifecycleCubit()
       ),
     ], child: const MoabApp()),
   );
@@ -77,12 +87,14 @@ class _MoabAppState extends State<MoabApp>
     logger.d('Moab App init state');
     _initAuth();
     WidgetsBinding.instance.addObserver(this);
+    // TODO connectivity start
     super.initState();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    // TODO connectivity stop
     super.dispose();
   }
 
@@ -101,6 +113,7 @@ class _MoabAppState extends State<MoabApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     logger.v('didChangeAppLifecycleState: ${state.name}');
+    context.read<AppLifecycleCubit>().update(state);
   }
 
   _initAuth() {

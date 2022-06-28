@@ -1,9 +1,14 @@
+import 'dart:async';
 
 import 'package:moab_poc/repository/authenticate/auth_repository.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
 
 class FakeAuthRepository extends AuthRepository {
+  Timer? _resendCodeTimer;
+  int _resendCountdown = 0;
+
   final waitDuration = const Duration(seconds: 3);
+
   @override
   Future<void> addPhoneNumber(String phone) async {
     await Future.delayed(waitDuration);
@@ -38,9 +43,15 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<void> resendPasswordLessCode() async {
-    // TODO: implement resendPasswordLessCode
-    throw UnimplementedError();
+  Future<void> resendPasswordLessCode(String token, String method) async {
+    await Future.delayed(waitDuration);
+    if (_resendCodeTimer != null && (_resendCodeTimer!.isActive)) {
+      throw CloudException(
+          'RESEND_CODE_TIMER', 'A new code can be sent in 0:$_resendCountdown');
+    } else {
+      _resendCodeTimer = _createResendCodeTimer();
+      return;
+    }
   }
 
   @override
@@ -52,7 +63,15 @@ class FakeAuthRepository extends AuthRepository {
   @override
   Future<DummyModel> testUsername(String username) async {
     await Future.delayed(waitDuration);
-    return {'method': [{'sms': '+8869123456'}, {'email': username}]};
+    if (!username.endsWith('linksys.com')) {
+      throw CloudException('NOT_FOUND', "Can't find account $username");
+    }
+    return {
+      'method': [
+        {'sms': '+8869123456'},
+        {'email': username}
+      ]
+    };
   }
 
   @override
@@ -64,11 +83,21 @@ class FakeAuthRepository extends AuthRepository {
   @override
   Future<DummyModel> validatePasswordLessCode(String token, String code) async {
     await Future.delayed(waitDuration);
+    if (code == '1111') {
+      throw CloudException('OTP_INVALID_TOO_MANY_TIMES',
+          "You've enter an incorrect code too many times. Resend a code to continue.");
+    }
     return {};
   }
 
-  @override
-  Future<void> resendCode(String token, String method) async {
-    await Future.delayed(waitDuration);
+  Timer _createResendCodeTimer() {
+    _resendCountdown = 60;
+    return Timer.periodic(const Duration(seconds: 1), (timer) {
+      _resendCountdown--;
+      if (_resendCountdown == 0 && (_resendCodeTimer?.isActive ?? false)) {
+        _resendCodeTimer?.cancel();
+        _resendCodeTimer = null;
+      }
+    });
   }
 }

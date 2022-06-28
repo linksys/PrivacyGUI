@@ -7,6 +7,7 @@ import 'package:moab_poc/page/components/customs/customs.dart';
 import 'package:moab_poc/page/create_account/view/view.dart';
 import 'package:moab_poc/page/landing/view/view.dart';
 import 'package:moab_poc/page/login/view/view.dart';
+import 'package:moab_poc/page/poc/dashboard/dashboard_view.dart';
 import 'package:moab_poc/page/setup/view/view.dart';
 import 'package:moab_poc/util/logger.dart';
 
@@ -21,7 +22,7 @@ class PathConfig {
 
 class PageConfig {
   PageNavigationType navType = PageNavigationType.back;
-  ThemeData themeData = MoabTheme.setupModuleLightModeData;
+  ThemeData themeData = MoabTheme.mainLightModeData;
   bool isFullScreenDialog = false;
 }
 
@@ -73,9 +74,6 @@ class HomePath extends BasePath<HomePath> {}
 class UnknownPath extends BasePath<UnknownPath> {}
 
 abstract class SetupPath<P> extends BasePath<P> {
-  @override
-  PageConfig get pageConfig =>
-      super.pageConfig..themeData = MoabTheme.setupModuleLightModeData;
 
   @override
   Widget buildPage(NavigationCubit cubit) {
@@ -264,9 +262,6 @@ class AlreadyHaveOldAccountPath
 class EnableTwoSVPath extends CreateAccountPath<EnableTwoSVPath> {}
 
 abstract class AuthenticatePath<P> extends BasePath<P> {
-  @override
-  PageConfig get pageConfig =>
-      super.pageConfig..themeData = MoabTheme.AuthModuleLightModeData;
 
   @override
   Widget buildPage(NavigationCubit cubit) {
@@ -323,10 +318,6 @@ class AuthLocalLoginPath extends AuthenticatePath<AuthLocalLoginPath> {}
 
 abstract class DebugToolsPath<P> extends BasePath<P> {
   @override
-  PageConfig get pageConfig =>
-      super.pageConfig..themeData = MoabTheme.AuthModuleLightModeData;
-
-  @override
   Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case DebugToolsMainPath:
@@ -338,3 +329,17 @@ abstract class DebugToolsPath<P> extends BasePath<P> {
 }
 
 class DebugToolsMainPath extends DebugToolsPath<DebugToolsMainPath> {}
+
+abstract class DashboardPath<P> extends BasePath<P> {
+  @override
+  Widget buildPage(NavigationCubit cubit) {
+    switch (P) {
+      case DashboardMainPath:
+        return const DashboardView();
+      default:
+        return Center();
+    }
+  }
+}
+
+class DashboardMainPath extends DashboardPath<DashboardMainPath> {}

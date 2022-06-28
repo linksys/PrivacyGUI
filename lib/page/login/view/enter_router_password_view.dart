@@ -3,14 +3,15 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
 import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
+import 'package:moab_poc/page/components/customs/network_check_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/route/route.dart';
 
 class EnterRouterPasswordView extends StatefulWidget {
-  const EnterRouterPasswordView(
-      {Key? key, })
-      : super(key: key);
+  const EnterRouterPasswordView({
+    Key? key,
+  }) : super(key: key);
 
   @override
   _EnterRouterPasswordState createState() => _EnterRouterPasswordState();
@@ -21,12 +22,23 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
   final TextEditingController passwordController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // TODO check is behind router
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BasePageView(
       scrollable: true,
       child: isConnectedToRouter
           ? _enterRouterPasswordView(context)
-          : _notConnectToRouterView(context, checkWifi),
+          : NetworkCheckView(
+              description: 'Connect to your router’s WiFi network to log in',
+              button: PrimaryButton(
+                text: 'Continue',
+                onPress: checkWifi,
+              )),
     );
   }
 
@@ -58,44 +70,18 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
           ),
           const ShowHintSection(),
           SimpleTextButton(
-              text: 'Forgot router password', onPressed: () {
+              text: 'Forgot router password',
+              onPressed: () {
                 // TODO TBD
-          }),
+              }),
           const SizedBox(
             height: 37,
           ),
           PrimaryButton(
             text: 'Continue',
-            onPress: () { NavigationCubit.of(context).push(NoRouterPath());},
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _notConnectToRouterView(BuildContext context, void Function() checkWifi) {
-    return BasicLayout(
-      header: const BasicHeader(title: 'Connect to your router’s WiFi network to log in',),
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Image.asset('assets/images/icon_wifi.png'),
-          const SizedBox(
-            height: 12,
-          ),
-          Text(
-            '{MyHomeWifi}',
-            style: Theme.of(context)
-                .textTheme
-                .headline3
-                ?.copyWith(color: Theme.of(context).colorScheme.primary),
-          ),
-          const SizedBox(
-            height: 30,
-          ),
-          PrimaryButton(
-            text: 'Continue',
-            onPress: checkWifi,
+            onPress: () {
+              NavigationCubit.of(context).push(NoRouterPath());
+            },
           ),
         ],
       ),

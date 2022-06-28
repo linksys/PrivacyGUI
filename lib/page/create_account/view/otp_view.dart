@@ -13,13 +13,12 @@ import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/page/create_account/view/view.dart';
+import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 class OtpView extends ArgumentsStatefulView {
-  const OtpView(
-      {Key? key, super.args})
-      : super(key: key);
+  const OtpView({Key? key, super.args}) : super(key: key);
 
   @override
   _OtpViewState createState() => _OtpViewState();
@@ -30,6 +29,8 @@ class _OtpViewState extends State<OtpView> {
   late OtpInfo _dest;
   late String _token;
   late BasePath _nextPath;
+  String _errorReason = '';
+
   static const otpChannel = MethodChannel('com.linksys.native.channel.otp');
   final TextEditingController _otpController = TextEditingController();
 
@@ -38,7 +39,10 @@ class _OtpViewState extends State<OtpView> {
       final message = await otpChannel.invokeMethod('otp');
       print('receive message: $message');
       RegExp regex = RegExp(r"(\d{4})");
-      final code = regex.allMatches(message).first.group(0);
+      final code = regex
+          .allMatches(message)
+          .first
+          .group(0);
       print('receive code: $code');
       _otpController.text = code ?? '';
     }
@@ -56,9 +60,15 @@ class _OtpViewState extends State<OtpView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) => _isLoading
-          ? const FullScreenSpinner(text: 'processing...')
-          : _contentView(),
+      builder: (context, state) =>
+          Stack(children: [
+            _contentView(),
+            if (_isLoading)
+              const FullScreenSpinner(
+                text: '',
+                background: Colors.transparent,
+              )
+          ]),
     );
   }
 
@@ -82,8 +92,11 @@ class _OtpViewState extends State<OtpView> {
               width: 242,
               child: PinCodeTextField(
                 onChanged: (String value) {
-                  setState(() {});
+                  setState(() {
+                    _errorReason = '';
+                  });
                 },
+                onCompleted: (String? value) => _onNext(value),
                 length: 4,
                 appContext: context,
                 controller: _otpController,
@@ -104,34 +117,76 @@ class _OtpViewState extends State<OtpView> {
             SimpleTextButton(
                 text: 'Resend code',
                 onPressed: () {
+                  _setLoading(true);
                   context
                       .read<AuthBloc>()
-                      .resendCode(_token, _dest.method.name);
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Wrap(children: [
-                      Icon(
-                        Icons.check,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                      const Text('Code resent!')
-                    ]),
-                    duration: const Duration(seconds: 5),
-                  ));
+                      .resendCode(_token, _dest.method.name)
+                      .then((value) => _showCodeResentHint())
+                      .onError((error, stackTrace) =>
+                      _handleError(error as CloudException));
+                  _setLoading(false);
                 }),
+            if (_errorReason.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Text(
+                  _errorReason,
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .bodyText1
+                      ?.copyWith(color: Colors.red),
+                ),
+              ),
             const SizedBox(
               height: 41,
             ),
-            Visibility(
-                visible: _otpController.text.isNotEmpty,
-                child: PrimaryButton(
-                  text: 'Next',
-                  onPress: () {
-                    NavigationCubit.of(context).push(_nextPath);
-                  },
-                )),
           ],
         ),
       ),
     );
+  }
+
+  _onNext(String? value) async {
+    _setLoading(true);
+    await context
+        .read<AuthBloc>()
+        .validPasswordLess(value!, _token)
+        .then((value) => NavigationCubit.of(context).push(_nextPath))
+        .onError((error, stackTrace) => _handleError(error as CloudException));
+    _setLoading(false);
+  }
+
+  _showCodeResentHint() {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Wrap(alignment: WrapAlignment.center, children: [
+        Icon(
+          Icons.check,
+          color: Theme
+              .of(context)
+              .primaryColor,
+        ),
+        const Text('Code resent!')
+      ]),
+      duration: const Duration(seconds: 5),
+    ));
+  }
+
+  _handleError(CloudException exception) {
+    if (exception.code == 'RESEND_CODE_TIMER') {
+      setState(() {
+        _errorReason = exception.message;
+      });
+    } else if (exception.code == 'OTP_INVALID_TOO_MANY_TIMES') {
+      setState(() {
+        _errorReason = exception.message;
+      });
+    }
+  }
+
+  _setLoading(bool isLoading) {
+    setState(() {
+      _isLoading = isLoading;
+    });
   }
 }
