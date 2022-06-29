@@ -285,6 +285,8 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
         return const RegionPickerView();
       case AuthLocalLoginPath:
         return EnterRouterPasswordView();
+      case AuthLoginWithPasswordPath:
+        return LoginTraditionalPasswordView();
       default:
         return const Center();
     }
@@ -315,6 +317,8 @@ class SelectPhoneRegionCodePath
 }
 
 class AuthLocalLoginPath extends AuthenticatePath<AuthLocalLoginPath> {}
+
+class AuthLoginWithPasswordPath extends AuthenticatePath<AuthLoginWithPasswordPath> {}
 
 abstract class DebugToolsPath<P> extends BasePath<P> {
   @override

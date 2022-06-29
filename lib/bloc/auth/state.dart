@@ -6,8 +6,17 @@ enum AuthMethod { none, local, remote }
 
 enum RemoteLoginMethod { none, password, passwordLess }
 
+enum LoginType { otp, password}
+
 enum OtpMethod {
   sms, email
+}
+
+class AccountInfo {
+  final LoginType loginType;
+  final List<OtpInfo> otpInfo;
+
+  const AccountInfo({required this.loginType, required this.otpInfo});
 }
 
 class OtpInfo {

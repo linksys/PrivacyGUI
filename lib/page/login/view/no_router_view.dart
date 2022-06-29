@@ -5,6 +5,8 @@ import 'package:moab_poc/page/components/base_components/button/primary_button.d
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/navigation_cubit.dart';
+import 'package:moab_poc/route/route.dart';
 
 class NoRouterView extends StatelessWidget {
   const NoRouterView({
@@ -27,12 +29,17 @@ class NoRouterView extends StatelessWidget {
             ),
             PrimaryButton(
               text: 'Setup WiFi',
-              onPress: () {},
+              onPress: () {
+                NavigationCubit.of(context).push(SetupWelcomeEulaPath());
+              },
             ),
             const SizedBox(
               height: 26,
             ),
-            SimpleTextButton(text: 'Log out', onPressed: () {}),
+            SimpleTextButton(text: 'Log out', onPressed: () {
+              // TODO
+              NavigationCubit.of(context).clear();
+            }),
           ],
         ),
       ),

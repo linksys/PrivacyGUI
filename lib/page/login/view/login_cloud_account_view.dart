@@ -4,6 +4,7 @@ import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
+import 'package:moab_poc/page/login/view/view.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/logger.dart';
@@ -107,7 +108,7 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
                           await context
                               .read<AuthBloc>()
                               .testUsername(_accountController.text)
-                              .then((value) => _checkOtpMethod(value))
+                              .then((value) => _handleResult(value))
                           .onError((error, stackTrace) => _handleError(error as CloudException));
                           setState(() {
                             _isLoading = false;
@@ -144,10 +145,16 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
     });
   }
 
-  _checkOtpMethod(List<OtpInfo> list) {
-    logger.d('OTP Methods: ${list.length}, $list');
-    NavigationCubit.of(context)
-        .push(AuthChooseOtpPath()..args = {'otpMethod': list});
+  _handleResult(AccountInfo accountInfo) {
+    if (accountInfo.loginType == LoginType.password) {
+      NavigationCubit.of(context).push(AuthLoginWithPasswordPath());
+    } else {
+      logger.d(
+          'OTP Methods: ${accountInfo.otpInfo.length}, ${accountInfo.otpInfo}');
+      NavigationCubit.of(context)
+          .push(AuthChooseOtpPath()
+        ..args = {'otpMethod': accountInfo.otpInfo});
+    }
   }
 
   _handleError(CloudException e) {

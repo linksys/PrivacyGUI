@@ -28,7 +28,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 }
 
 extension AuthBlocExts on AuthBloc {
-  Future<List<OtpInfo>> testUsername(String username) async {
+  Future<AccountInfo> testUsername(String username) async {
     return await _repository
         .testUsername(username)
         .then((value) => _handleTestUsername(value));
@@ -47,8 +47,9 @@ extension AuthBlocExts on AuthBloc {
   }
 
 
-  Future<List<OtpInfo>> _handleTestUsername(DummyModel data) async {
+  Future<AccountInfo> _handleTestUsername(DummyModel data) async {
     logger.d("handle test user name");
+    final LoginType loginType = LoginType.values.firstWhere((element) => element.name == data['type']);
     final List<DummyModel> methodList =
         data['method'] as List<DummyModel>? ?? [];
     List<OtpInfo> list = [];
@@ -58,7 +59,8 @@ extension AuthBlocExts on AuthBloc {
       final String target = data.entries.first.value;
       list.add(OtpInfo(method: method, data: target));
     }
-    return list;
+
+    return AccountInfo(loginType: loginType, otpInfo: list);
   }
 
   _handleError(Object? error, StackTrace stackTrace, emit) {

@@ -63,15 +63,24 @@ class FakeAuthRepository extends AuthRepository {
   @override
   Future<DummyModel> testUsername(String username) async {
     await Future.delayed(waitDuration);
-    if (!username.endsWith('linksys.com')) {
-      throw CloudException('NOT_FOUND', "Can't find account $username");
+    if (username.endsWith('linksys.com')) {
+      return {
+        'type': 'otp',
+        'method': [
+          {'sms': '+8869123456'},
+          {'email': username}
+        ]
+      };
+    } else if(username.endsWith('belkin.com')) {
+      return {
+        'type': 'password',
+        'method': [
+          {'sms': '+8869123456'},
+          {'email': username}
+        ]
+      };
     }
-    return {
-      'method': [
-        {'sms': '+8869123456'},
-        {'email': username}
-      ]
-    };
+    throw CloudException('NOT_FOUND', "Can't find account $username");
   }
 
   @override

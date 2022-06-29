@@ -29,6 +29,10 @@ class NavigationCubit extends Cubit<NavigationStack> {
     emit(state.push(config));
   }
 
+  void clear() {
+    emit(state.clear());
+  }
+
   void clearAndPush(BasePath config) {
     // PageConfig config = PageConfig(location: path, args: args);
     emit(state.clearAndPush(config));

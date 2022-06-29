@@ -22,9 +22,10 @@ class NavigationStack {
   ///is to chain calls as we'll see in navigation_cubit.dart
   //not to go into how a cubit defines a state to be new with lists, I've just returned a new instance
 
-  void clear() {
+  NavigationStack clear() {
     _stack.removeRange(0, _stack.length - 2);
     //pages list in navigator can't be empty, remember
+    return NavigationStack(_stack);
   }
 
   bool canPop() {
