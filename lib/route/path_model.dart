@@ -6,6 +6,7 @@ import 'package:moab_poc/page/components/customs/customs.dart';
 import 'package:moab_poc/page/create_account/view/view.dart';
 import 'package:moab_poc/page/landing/view/view.dart';
 import 'package:moab_poc/page/login/view/view.dart';
+import 'package:moab_poc/page/setup/view/adding_nodes_view.dart';
 import 'package:moab_poc/page/setup/view/view.dart';
 
 import 'route.dart';
@@ -147,6 +148,8 @@ abstract class SetupParentPath<P> extends SetupPath<P> {
         return ParentScanQRCodeView(onNext: () {
           delegate.push(InternetCheckingPath());
         });
+      case SetupAddingNodesPath:
+        return AddingNodesView(onNext: (){});
       default:
         return Center();
     }
@@ -170,6 +173,8 @@ class SetupParentManualPath extends SetupParentPath<SetupParentManualPath> {}
 
 class SetupParentLocationPath extends SetupParentPath<SetupParentLocationPath> {
 }
+
+class SetupAddingNodesPath extends SetupParentPath<SetupAddingNodesPath> {}
 
 // Internet Check Flow
 abstract class InternetCheckPath<P> extends SetupPath<P> {

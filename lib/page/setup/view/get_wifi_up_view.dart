@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/text/description_text.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class GetWiFiUpView extends StatelessWidget {
   GetWiFiUpView({
@@ -30,12 +30,12 @@ class GetWiFiUpView extends StatelessWidget {
     return BasePageView(
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
-        header: const BasicHeader(
-          title: 'Let’s get your WiFi up and running',
+        header: BasicHeader(
+          title: AppLocalizations.of(context)!.welcome_eula_title,
         ),
         content: _content(context),
         footer: PrimaryButton(
-          text: 'Continue',
+          text: AppLocalizations.of(context)!.accept,
           onPress: onNext,
         ),
       ),
@@ -52,10 +52,10 @@ class GetWiFiUpView extends StatelessWidget {
         const SizedBox(
           height: 39,
         ),
-        const DescriptionText(
+        DescriptionText(
             // TODO: Use rich text here
-            text:
-                'First things first, by continuing with setup, you agree to our Terms and License Agreement. Take a few minutes to read them.'),
+            text: AppLocalizations.of(context)!.welcome_eula_content
+        ),
       ],
     );
   }

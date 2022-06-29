@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../components/base_components/button/primary_button.dart';
 
@@ -19,33 +20,34 @@ class PermissionsPrimerView extends StatelessWidget {
 
   // Replace this to svg if the svg image is fixed
   final Widget checkIcon = Image.asset('assets/images/icon_check.png');
+  final Widget imgContent = Image.asset('assets/images/permission_dialog.png');
 
   @override
   Widget build(BuildContext context) {
     return BasePageView(
       child: BasicLayout(
-        header: const BasicHeader(
+        header: BasicHeader(
           spacing: 11,
-          title: 'Allow permissions for quick setup',
-          description:
-              'In the next few screens, your phone will ask a few permissions. Accept them to get through setup quickly.',
+          title: AppLocalizations.of(context)!.permissions_primer_title,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(
-              height: 49,
+              height: 14,
             ),
+            imgContent,
+            const SizedBox(height: 50),
             if (Platform.isIOS) CheckPermissionView(
-                checkIcon: checkIcon, text: 'Allow camera access'),
+                checkIcon: checkIcon, text: AppLocalizations.of(context)!.camera_access),
             CheckPermissionView(
-                checkIcon: checkIcon, text: 'Connect to Linksys network'),
+                checkIcon: checkIcon, text: AppLocalizations.of(context)!.local_network_access),
             if (Platform.isIOS) CheckPermissionView(
-                checkIcon: checkIcon, text: 'Local network access')
+                checkIcon: checkIcon, text: AppLocalizations.of(context)!.location)
           ],
         ),
         footer: PrimaryButton(
-          text: 'Got it',
+          text: AppLocalizations.of(context)!.got_it,
           onPress: onNext,
         ),
       ),

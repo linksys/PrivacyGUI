@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ShowMeHowView extends StatelessWidget {
   const ShowMeHowView({Key? key}) : super(key: key);
@@ -14,7 +15,7 @@ class ShowMeHowView extends StatelessWidget {
       appBar: _appBar(context),
       child: BasicLayout(
         header: Text(
-          'Remove any old router and cables in your setup area.',
+          AppLocalizations.of(context)!.show_me_how_connect_router_modem_title,
           style: Theme.of(context)
               .textTheme
               .headline3
@@ -49,7 +50,7 @@ class ShowMeHowView extends StatelessWidget {
         StepView(
           stepIcon: _stepIcon(context, '1'),
           text:
-              'On your parent node, use the port labeled “Internet” to connect one end of the ethernet cable',
+             AppLocalizations.of(context)!.show_me_how_connect_router_modem_step1,
           image: Container(
             alignment: Alignment.centerLeft,
             child: Image.asset('assets/images/step_1.png'),
@@ -61,7 +62,7 @@ class ShowMeHowView extends StatelessWidget {
         StepView(
           stepIcon: _stepIcon(context, '2'),
           text:
-              'Connect the other end of the ethernet cable to any open port on your modem. Make sure your modem has power.',
+              AppLocalizations.of(context)!.show_me_how_connect_router_modem_step2,
           image: Container(
             alignment: Alignment.centerRight,
             child: Image.asset('assets/images/step_2.png'),
@@ -72,7 +73,8 @@ class ShowMeHowView extends StatelessWidget {
         ),
         StepView(
             stepIcon: _stepIcon(context, '3'),
-            text: 'Be sure the cables are secure and snapped in place'),
+            text: AppLocalizations.of(context)!.show_me_how_connect_router_modem_step3
+        ),
       ],
     );
   }

@@ -4,6 +4,7 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/indeterminate_progressbar.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../../design/colors.dart';
 
@@ -53,8 +54,8 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
         elevation: 0,
       ),
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'Checking for internet...',
+        header: BasicHeader(
+          title: AppLocalizations.of(context)!.check_for_internet,
         ),
         content: Center(
           child: Column(
@@ -74,6 +75,9 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
             mainAxisAlignment: MainAxisAlignment.center,
           ),
         ),
+        footer: !_hasInternet ? Center(
+          child: Text(AppLocalizations.of(context)!.enter_isp_settings),
+        ) : null,
         alignment: CrossAxisAlignment.start,
       ),
     );
