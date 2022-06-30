@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/indeterminate_progressbar.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
@@ -76,7 +77,7 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
           ),
         ),
         footer: !_hasInternet ? Center(
-          child: Text(AppLocalizations.of(context)!.enter_isp_settings),
+          child: SimpleTextButton(text: AppLocalizations.of(context)!.enter_isp_settings, onPressed: (){},),
         ) : null,
         alignment: CrossAxisAlignment.start,
       ),

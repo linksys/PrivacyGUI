@@ -5,6 +5,7 @@ import 'package:moab_poc/page/components/base_components/button/simple_text_butt
 import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class CreateAdminPasswordView extends StatelessWidget {
   const CreateAdminPasswordView({
@@ -52,24 +53,24 @@ class _PageContentState extends State<_PageContent> {
   @override
   Widget build(BuildContext context) {
     return BasicLayout(
-      header: const BasicHeader(
-        title: 'Okay, you’ll need an admin password',
+      header: BasicHeader(
+        title: AppLocalizations.of(context)!.create_router_password_title,
         description:
-            'An admin password will allow you to access your router settings',
+            AppLocalizations.of(context)!.create_router_password_subtitle,
       ),
       content: Column(
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 36, bottom: 37),
             child: InputField(
-              titleText: 'Password',
+              titleText: AppLocalizations.of(context)!.password,
               hintText: 'Enter Password',
               controller: passwordController,
               onChanged: _checkInputData,
             ),
           ),
           InputField(
-            titleText: 'Password hint (optional)',
+            titleText: AppLocalizations.of(context)!.password_hint,
             hintText: 'Add a hint',
             controller: hintController,
             onChanged: _checkInputData,
@@ -78,7 +79,7 @@ class _PageContentState extends State<_PageContent> {
             height: 100,
           ),
           SimpleTextButton(
-              text: 'How do I access my router?',
+              text: AppLocalizations.of(context)!.create_router_password_how_to_access,
               onPressed: () {
                 //TODO: onPressed action
               })
@@ -87,7 +88,7 @@ class _PageContentState extends State<_PageContent> {
       footer: Visibility(
         visible: isValidData,
         child: PrimaryButton(
-          text: 'Next',
+          text: AppLocalizations.of(context)!.next,
           onPress: widget.onNext,
         ),
       ),
