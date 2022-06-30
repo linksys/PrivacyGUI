@@ -4,6 +4,7 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/indeterminate_progressbar.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class SaveSettingsView extends StatefulWidget {
   SaveSettingsView({
@@ -45,8 +46,8 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
         elevation: 0,
       ),
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'Saving settings...',
+        header: BasicHeader(
+          title: AppLocalizations.of(context)!.saving_settings_view_title,
         ),
         content: Center(
           child: Column(
@@ -54,6 +55,13 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
               image,
               const SizedBox(
                 height: 130,
+              ),
+              Center(
+                  child: Text(
+                      AppLocalizations.of(context)!.adding_nodes_more_info)
+              ),
+              const SizedBox(
+                height: 69,
               ),
               const IndeterminateProgressBar(),
             ],

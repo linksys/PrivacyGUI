@@ -9,6 +9,7 @@ import 'package:moab_poc/page/login/view/view.dart';
 import 'package:moab_poc/page/setup/view/adding_nodes_view.dart';
 import 'package:moab_poc/page/setup/view/view.dart';
 
+import '../page/setup/view/cloud_account_double_check_view.dart';
 import 'route.dart';
 
 enum PageNavigationType { back, close, none }
@@ -19,7 +20,7 @@ class PathConfig {
 
 class PageConfig {
   PageNavigationType navType = PageNavigationType.back;
-  ThemeData themeData = MoabTheme.setupModuleLightModeData;
+  ThemeData themeData = MoabTheme.AuthModuleLightModeData;
   bool isFullScreenDialog = false;
 }
 
@@ -76,7 +77,7 @@ class UnknownPath extends BasePath<UnknownPath> {}
 abstract class SetupPath<P> extends BasePath<P> {
   @override
   PageConfig get pageConfig =>
-      super.pageConfig..themeData = MoabTheme.setupModuleLightModeData;
+      super.pageConfig..themeData = MoabTheme.AuthModuleLightModeData;
 
   @override
   Widget buildPage(MoabRouterDelegate delegate) {

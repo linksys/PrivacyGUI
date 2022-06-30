@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/colors.dart';
+import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
-
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../components/base_components/button/primary_button.dart';
 
 class SetLocationView extends StatefulWidget {
@@ -21,6 +22,13 @@ class SetLocationView extends StatefulWidget {
 class _SetLocationViewState extends State<SetLocationView> {
   int _selected = -1;
   final List<String> data = locationList;
+  final TextEditingController nameController = TextEditingController();
+
+  void _nameOnChange(_) {
+    setState(() {
+      //TODO update select or custom name
+    });
+  }
 
   @override
   void initState() {
@@ -31,28 +39,52 @@ class _SetLocationViewState extends State<SetLocationView> {
   @override
   Widget build(BuildContext context) {
     return BasePageView(
-      child: BasicLayout(
-        header: const BasicHeader(
-          title: 'Give your node a name',
-          description: 'This helps when telling your nodes apart.',
-        ),
-        content: Padding(
-          padding: const EdgeInsets.fromLTRB(0, 24.0, 0, 0),
-          child: ListView.builder(
-              itemCount: data.length, itemBuilder: _buildListItem),
-        ),
-        footer: Column(
-          children: [
-            if (_selected >= 0)
-              PrimaryButton(
-                text: 'Next',
-                onPress: _selected >= 0 ? widget.onNext : null,
-              ),
-          ],
-        ),
-        alignment: CrossAxisAlignment.start,
-      ),
-    );
+        child: _selected != 8
+            ? BasicLayout(
+                header: BasicHeader(
+                  title: AppLocalizations.of(context)!.name_node_view_title,
+                  description: AppLocalizations.of(context)!
+                      .name_node_view_title_description,
+                ),
+                content: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 24.0, 0, 0),
+                  child: ListView.builder(
+                      itemCount: data.length, itemBuilder: _buildListItem),
+                ),
+                footer: Column(
+                  children: [
+                    if (_selected >= 0)
+                      PrimaryButton(
+                        text: AppLocalizations.of(context)!.next,
+                        onPress: _selected >= 0 ? widget.onNext : null,
+                      ),
+                  ],
+                ),
+                alignment: CrossAxisAlignment.start,
+              )
+            : BasicLayout(
+                header: BasicHeader(
+                  title: AppLocalizations.of(context)!.name_node_view_title,
+                ),
+                content: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 24.0, 0, 0),
+                  child: InputField(
+                    titleText: AppLocalizations.of(context)!.name_node_view_custom_name,
+                    hintText: AppLocalizations.of(context)!.name_node_view_hint_text,
+                    controller: nameController,
+                    onChanged: _nameOnChange,
+                  ),
+                ),
+                footer: Column(
+                  children: [
+                      PrimaryButton(
+                        text: AppLocalizations.of(context)!.save,
+                        onPress: _selected >= 0 ? widget.onNext : null,
+                      ),
+                  ],
+                ),
+                alignment: CrossAxisAlignment.start,
+              ));
   }
 
   Widget _buildListItem(BuildContext context, int index) {

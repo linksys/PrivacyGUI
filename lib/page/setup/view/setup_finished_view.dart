@@ -3,9 +3,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/text/description_text.dart';
-import 'package:moab_poc/page/components/base_components/text/title_text.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class SetupFinishedView extends StatelessWidget {
   SetupFinishedView({
@@ -25,41 +25,60 @@ class SetupFinishedView extends StatelessWidget {
     semanticsLabel: 'Setup Finished',
   );
 
+  final Widget wifiIcon = Image.asset('assets/images/wifi_logo_grey.png');
+  final Widget lockIcon = Image.asset('assets/images/lock_icon.png');
+  final Widget portraitIcon = Image.asset('assets/images/portrait_icon.png');
+
   @override
   Widget build(BuildContext context) {
     return BasePageView(
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'Your WiFi is ready',
+        header: BasicHeader(
+          title: AppLocalizations.of(context)!.wifi_ready_view_title,
         ),
-        content: Center(
-          child: Column(
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              image,
               const SizedBox(
-                height: 45,
+                height: 48,
               ),
-              const DescriptionText(text: 'Connect your devices to'),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: TitleText(text: wifiSsid),
-              ),
-              Text(
-                wifiPassword,
-                style: Theme.of(context).textTheme.headline3?.copyWith(
-                  color: Theme.of(context).colorScheme.primary
-                ),
-              )
+              DescriptionText(text: AppLocalizations.of(context)!.wifi_ready_view_connect_to),
+              const SizedBox( height: 8),
+              infoCard(context, wifiIcon, AppLocalizations.of(context)!.wifi_name, "MyHomeWiFi"),
+              const SizedBox( height: 8),
+              infoCard(context, lockIcon, AppLocalizations.of(context)!.wifi_password, "ThisIsMyStrongPassword123"),
+              const SizedBox( height: 58),
+              DescriptionText(text: AppLocalizations.of(context)!.wifi_ready_view_login_info),
+              const SizedBox(height: 8),
+              infoCard(context, portraitIcon, AppLocalizations.of(context)!.linksys_account, "myemail@email.com"),
             ],
-            mainAxisAlignment: MainAxisAlignment.center,
-          ),
         ),
         footer: PrimaryButton(
-          text: 'Go to the dashboard',
+          text: AppLocalizations.of(context)!.go_to_dashboard,
           onPress: onNext,
         ),
         alignment: CrossAxisAlignment.start,
       ),
     );
   }
+}
+
+Widget infoCard(BuildContext context, Widget image, String title, String content){
+  return Container(
+    padding: const EdgeInsets.all(19),
+    color: Theme.of(context).colorScheme.secondary,
+    child: Row(
+      children: [
+        image,
+        const SizedBox(width: 14),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.headline4?.copyWith(color: Colors.white)),
+            DescriptionText(text: content)
+          ],
+        )
+      ],
+    ),
+  );
 }
