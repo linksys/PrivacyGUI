@@ -6,6 +6,31 @@ class BasePageView extends StatelessWidget {
   final EdgeInsets? padding;
   final bool? scrollable;
 
+  BasePageView.noNavigationBar(
+      {Key? key, this.child, this.padding = const EdgeInsets.fromLTRB(24, 0, 24, 30), this.scrollable = false})
+      : appBar = AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ), super(key: key);
+
+  BasePageView.withCloseButton(BuildContext context,
+      {Key? key, this.child, this.padding = const EdgeInsets.fromLTRB(24, 0, 24, 30), this.scrollable = false})
+      : appBar = AppBar(
+          backgroundColor: Colors.transparent,
+          iconTheme:
+              IconThemeData(color: Theme.of(context).colorScheme.primary),
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(context),
+            )
+          ],
+        ),
+        super(key: key);
+
   const BasePageView({
     Key? key,
     this.appBar,

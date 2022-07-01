@@ -57,4 +57,8 @@ class NavigationCubit extends Cubit<NavigationStack> {
   void pushBeneathCurrent(BasePath config) {
     emit(state.pushBeneathCurrent(config));
   }
+
+  void replace(BasePath config) {
+    emit(state.replace(config));
+  }
 }

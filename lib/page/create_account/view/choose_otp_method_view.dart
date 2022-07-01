@@ -74,7 +74,7 @@ class _ChooseOTPMethodState extends State<ChooseOTPMethodView> {
                   PrimaryButton(
                     text: 'Send',
                     onPress: () {
-                      NavigationCubit.of(context).push(EnterOtpPath());
+                      NavigationCubit.of(context).push(CreateAccountOtpPath());
                     },
                   ),
                 ],
@@ -84,7 +84,7 @@ class _ChooseOTPMethodState extends State<ChooseOTPMethodView> {
               visible: selectedMethod.method == OtpMethod.sms,
               child: PhoneNumberView(
                 onNext: () {
-                  NavigationCubit.of(context).push(EnterOtpPath());
+                  NavigationCubit.of(context).push(CreateAccountOtpPath());
                 },
               ),
             ),

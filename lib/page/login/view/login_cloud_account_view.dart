@@ -108,7 +108,7 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
                           await context
                               .read<AuthBloc>()
                               .testUsername(_accountController.text)
-                              .then((value) => _handleResult(value))
+                              .then((value) => _handleResult(_accountController.text, value))
                           .onError((error, stackTrace) => _handleError(error as CloudException));
                           setState(() {
                             _isLoading = false;
@@ -145,15 +145,14 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
     });
   }
 
-  _handleResult(AccountInfo accountInfo) {
+  _handleResult(String username, AccountInfo accountInfo) {
     if (accountInfo.loginType == LoginType.password) {
       NavigationCubit.of(context).push(AuthLoginWithPasswordPath());
     } else {
-      logger.d(
-          'OTP Methods: ${accountInfo.otpInfo.length}, ${accountInfo.otpInfo}');
+
       NavigationCubit.of(context)
-          .push(AuthChooseOtpPath()
-        ..args = {'otpMethod': accountInfo.otpInfo});
+          .push(AuthCloudLoginOtpPath()
+        ..args = {'username': username});
     }
   }
 

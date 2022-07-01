@@ -38,7 +38,7 @@ class NoRouterView extends StatelessWidget {
             ),
             SimpleTextButton(text: 'Log out', onPressed: () {
               // TODO
-              NavigationCubit.of(context).clear();
+              NavigationCubit.of(context).clearAndPush(HomePath());
             }),
           ],
         ),

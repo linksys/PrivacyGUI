@@ -5,12 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:moab_poc/design/themes.dart';
 import 'package:moab_poc/page/components/customs/customs.dart';
 import 'package:moab_poc/page/create_account/view/view.dart';
+import 'package:moab_poc/page/dashboard/view/dashboard_view.dart';
 import 'package:moab_poc/page/landing/view/view.dart';
 import 'package:moab_poc/page/login/view/view.dart';
-import 'package:moab_poc/page/poc/dashboard/dashboard_view.dart';
 import 'package:moab_poc/page/setup/view/view.dart';
 import 'package:moab_poc/util/logger.dart';
 
+import '../page/components/customs/otp_flow/otp_view.dart';
 import 'route.dart';
 
 enum PageNavigationType { back, close, none }
@@ -215,11 +216,11 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
         return ChooseLoginTypeView(args: args,);
       case ChooseLoginOtpMethodPath:
         return ChooseOTPMethodView(args: args);
-      case EnterOtpPath:
+      case CreateAccountOtpPath:
         if (args != null) {
           args!['onNext'] = SaveCloudSettingsPath();
         }
-        return OtpView(args: args,);
+        return OtpFlowView(args: args,);
       case SaveCloudSettingsPath:
         return SaveSettingsView();
       case AlreadyHaveOldAccountPath:
@@ -243,7 +244,7 @@ class ChooseLoginMethodPath extends CreateAccountPath<ChooseLoginMethodPath> {}
 class ChooseLoginOtpMethodPath
     extends CreateAccountPath<ChooseLoginOtpMethodPath> {}
 
-class EnterOtpPath extends CreateAccountPath<EnterOtpPath> {}
+class CreateAccountOtpPath extends CreateAccountPath<CreateAccountOtpPath> {}
 
 class CreateCloudPasswordPath
     extends CreateAccountPath<CreateCloudPasswordPath> {}
@@ -268,13 +269,11 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
     switch (P) {
       case AuthInputAccountPath:
         return LoginCloudAccountView();
-      case AuthChooseOtpPath:
-        return LoginOTPMethodsView(args: args,);
-      case AuthInputOtpPath:
+      case AuthCloudLoginOtpPath:
         if (args != null) {
           args!['onNext'] = NoRouterPath();
         }
-        return OtpView(args: args);
+        return OtpFlowView(args: args);
       case AuthForgotEmailPath:
         return const ForgotEmailView();
       case NoRouterPath:
@@ -287,17 +286,24 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
         return EnterRouterPasswordView();
       case AuthLoginWithPasswordPath:
         return LoginTraditionalPasswordView();
+      case AuthLocalResetPasswordPath:
+        return LocalResetRouterPasswordView();
+      case AuthResetLocalOtpPath:
+        if (args != null) {
+          args!['onNext'] = DashboardMainPath();
+        }
+        return OtpFlowView(args: args,);
       default:
         return const Center();
     }
   }
 }
 
+class AuthResetLocalOtpPath extends AuthenticatePath<AuthResetLocalOtpPath> {}
+
 class AuthInputAccountPath extends AuthenticatePath<AuthInputAccountPath> {}
 
-class AuthChooseOtpPath extends AuthenticatePath<AuthChooseOtpPath> {}
-
-class AuthInputOtpPath extends AuthenticatePath<AuthInputOtpPath> {}
+class AuthCloudLoginOtpPath extends AuthenticatePath<AuthCloudLoginOtpPath> {}
 
 class NoRouterPath extends AuthenticatePath<NoRouterPath> {}
 
@@ -319,6 +325,8 @@ class SelectPhoneRegionCodePath
 class AuthLocalLoginPath extends AuthenticatePath<AuthLocalLoginPath> {}
 
 class AuthLoginWithPasswordPath extends AuthenticatePath<AuthLoginWithPasswordPath> {}
+
+class AuthLocalResetPasswordPath extends AuthenticatePath<AuthLocalResetPasswordPath> {}
 
 abstract class DebugToolsPath<P> extends BasePath<P> {
   @override

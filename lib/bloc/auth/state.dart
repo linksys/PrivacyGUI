@@ -26,6 +26,12 @@ class OtpInfo {
 
 }
 
+class AdminPasswordInfo {
+  final bool hasAdminPassword;
+  final String hint;
+  const AdminPasswordInfo({required this.hasAdminPassword, required this.hint});
+}
+
 class AuthState extends Equatable {
   final AuthStatus status;
   final AuthMethod method;

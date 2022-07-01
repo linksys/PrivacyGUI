@@ -11,13 +11,14 @@ import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/event.dart';
 import 'package:moab_poc/bloc/connectivity/cubit.dart';
 import 'package:moab_poc/design/themes.dart';
+import 'package:moab_poc/repository/authenticate/local_auth_repository.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:moab_poc/util/connectivity.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/storage.dart';
 import 'firebase_options.dart';
 import 'repository/authenticate/impl/fake_auth_repository.dart';
+import 'repository/authenticate/impl/fake_local_auth_repository.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -51,24 +52,23 @@ void main() {
 }
 
 Widget _app() {
-
   return MultiRepositoryProvider(
     providers: [
       RepositoryProvider(create: (context) => FakeAuthRepository()),
+      RepositoryProvider(create: (context) => FakeLocalAuthRepository()),
     ],
     child: MultiBlocProvider(providers: [
       BlocProvider(
-          create: (BuildContext context) => NavigationCubit([HomePath()])
+        create: (BuildContext context) => NavigationCubit([HomePath()]),
       ),
       BlocProvider(
-          create: (BuildContext context) => AuthBloc(repo: context.read<FakeAuthRepository>())
+        create: (BuildContext context) => AuthBloc(
+          repo: context.read<FakeAuthRepository>(),
+          localRepo: context.read<FakeLocalAuthRepository>(),
+        ),
       ),
-      BlocProvider(
-          create: (BuildContext context) => ConnectivityCubit()
-      ),
-      BlocProvider(
-          create: (BuildContext context) => AppLifecycleCubit()
-      ),
+      BlocProvider(create: (BuildContext context) => ConnectivityCubit()),
+      BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
     ], child: const MoabApp()),
   );
 }
@@ -80,8 +80,7 @@ class MoabApp extends StatefulWidget {
   State<MoabApp> createState() => _MoabAppState();
 }
 
-class _MoabAppState extends State<MoabApp>
-    with WidgetsBindingObserver {
+class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
   @override
   void initState() {
     logger.d('Moab App init state');

@@ -6,47 +6,38 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:moab_poc/page/components/base_components/selectable_item.dart';
+import 'package:moab_poc/page/components/customs/otp_flow/otp_cubit.dart';
+import 'package:moab_poc/page/components/customs/otp_flow/otp_state.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/logger.dart';
 
-class LoginOTPMethodsView extends ArgumentsStatefulView {
-  const LoginOTPMethodsView(
+class OTPMethodSelectorView extends ArgumentsStatefulView {
+  const OTPMethodSelectorView(
       {Key? key, super.args})
       : super(key: key);
 
   @override
-  _ChooseOTPMethodsState createState() => _ChooseOTPMethodsState();
+  _OTPMethodSelectorViewState createState() => _OTPMethodSelectorViewState();
 }
 
-class _ChooseOTPMethodsState extends State<LoginOTPMethodsView> {
-  late List<OtpInfo> _methods;
-  late OtpInfo selectedMethod;
-  bool _isLoading = false;
+class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
 
   @override
   void initState() {
-    super.initState();
-    logger.d('LoginOTPMethodsView: ${widget.args}');
-    setState(() {
-      _methods = widget.args!['otpMethod'] as List<OtpInfo>;
-    });
-    selectedMethod = _methods.first;
+
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) =>
-      _isLoading
-          ? const FullScreenSpinner(text: 'processing...')
-          : _contentView(),
+    return BlocBuilder<OtpCubit, OtpState>(
+      builder: (context, state) => _contentView(state),
     );
   }
 
-  Widget _contentView() {
+  Widget _contentView(OtpState state) {
     return BasePageView(
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
@@ -58,23 +49,21 @@ class _ChooseOTPMethodsState extends State<LoginOTPMethodsView> {
             ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: _methods.length,
+                itemCount: state.methods.length,
                 itemBuilder: (context, index) =>
                     GestureDetector(
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: SelectableItem(
-                          text: _methods[index].method == OtpMethod.email
-                              ? _methods[index].data
-                              : _methods[index].method.name.toUpperCase(),
-                          isSelected: selectedMethod == _methods[index],
+                          text: state.methods[index].method == OtpMethod.email
+                              ? state.methods[index].data
+                              : state.methods[index].method.name.toUpperCase(),
+                          isSelected: state.selectedMethod == state.methods[index],
                           height: 66,
                         ),
                       ),
                       onTap: () {
-                        setState(() {
-                          selectedMethod = _methods[index];
-                        });
+                        context.read<OtpCubit>().selectOtpMethod(state.methods[index]);
                       },
                     )),
             const SizedBox(
@@ -82,7 +71,7 @@ class _ChooseOTPMethodsState extends State<LoginOTPMethodsView> {
             ),
             PrimaryButton(
               text: 'Send',
-              onPress: _onSend,
+              onPress: () { _onSend(state.selectedMethod!);},
             )
           ],
         ),
@@ -90,17 +79,16 @@ class _ChooseOTPMethodsState extends State<LoginOTPMethodsView> {
     );
   }
 
-  _onSend() async {
-    setState(() {
-      _isLoading = true;
-    });
+  _onSend(OtpInfo method) async {
+    _setLoading(true);
     await context.read<AuthBloc>().passwordLessLogin(
-        selectedMethod.data, selectedMethod.method.name).then((value) =>
-        NavigationCubit.of(context).push(AuthInputOtpPath()
-          ..args = {'dest': selectedMethod, 'token': value})
+        method.data, method.method.name).then((value) =>
+        context.read<OtpCubit>().updateToken(value)
     );
-    setState(() {
-      _isLoading = false;
-    });
+    _setLoading(false);
+  }
+
+  _setLoading(bool isLoading) {
+    context.read<OtpCubit>().setLoading(isLoading);
   }
 }
