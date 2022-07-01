@@ -9,7 +9,6 @@ import 'package:moab_poc/page/login/view/view.dart';
 import 'package:moab_poc/page/setup/view/adding_nodes_view.dart';
 import 'package:moab_poc/page/setup/view/view.dart';
 
-import '../page/setup/view/cloud_account_double_check_view.dart';
 import 'route.dart';
 
 enum PageNavigationType { back, close, none }
@@ -98,7 +97,20 @@ abstract class SetupPath<P> extends BasePath<P> {
       case SetupNodesDonePath:
         return NodesSuccessView(onNext: () {
           delegate.push(SetupCustomizeSSIDPath());
+        }, onAddNode: () {
+          delegate.push(SetupNthChildPlacePath());
+        }, onLocation: () {
+          delegate.push(SetupParentLocationPath());
         });
+      case SetupNodesDoneUnFoundPath:
+        return NodesSuccessView(
+          onNext: () {
+            delegate.push(SetupCustomizeSSIDPath());
+          },
+          onAddNode: () {
+            delegate.push(SetupNthChildPlacePath());
+          },
+        );
       case SetupFinishPath:
         return SetupFinishedView(
             wifiSsid: '',
@@ -106,6 +118,10 @@ abstract class SetupPath<P> extends BasePath<P> {
             onNext: () {
               delegate.popTo(HomePath());
             });
+      case SetupAddingNodesPath:
+        return AddingNodesView(onNext: () {
+          delegate.push(SetupNodesDonePath());
+        });
       default:
         return Center();
     }
@@ -118,7 +134,11 @@ class SetupCustomizeSSIDPath extends SetupPath<SetupCustomizeSSIDPath> {}
 
 class SetupNodesDonePath extends SetupPath<SetupNodesDonePath> {}
 
+class SetupNodesDoneUnFoundPath extends SetupPath<SetupNodesDoneUnFoundPath> {}
+
 class SetupFinishPath extends SetupPath<SetupFinishPath> {}
+
+class SetupAddingNodesPath extends SetupPath<SetupAddingNodesPath> {}
 
 // Setup Parent Flow
 abstract class SetupParentPath<P> extends SetupPath<P> {
@@ -143,14 +163,12 @@ abstract class SetupParentPath<P> extends SetupPath<P> {
         });
       case SetupParentLocationPath:
         return SetLocationView(onNext: () {
-          delegate.push(SetupNthChildPath());
+          delegate.push(SetupCustomizeSSIDPath());
         });
       case SetupParentQrCodeScanPath:
         return ParentScanQRCodeView(onNext: () {
           delegate.push(InternetCheckingPath());
         });
-      case SetupAddingNodesPath:
-        return AddingNodesView(onNext: (){});
       default:
         return Center();
     }
@@ -175,8 +193,6 @@ class SetupParentManualPath extends SetupParentPath<SetupParentManualPath> {}
 class SetupParentLocationPath extends SetupParentPath<SetupParentLocationPath> {
 }
 
-class SetupAddingNodesPath extends SetupParentPath<SetupAddingNodesPath> {}
-
 // Internet Check Flow
 abstract class InternetCheckPath<P> extends SetupPath<P> {
   @override
@@ -185,7 +201,7 @@ abstract class InternetCheckPath<P> extends SetupPath<P> {
       case InternetCheckingPath:
         return CheckNodeInternetView(
           onNext: () {
-            delegate.push(SetupParentLocationPath());
+            delegate.push(SetupNodesDoneUnFoundPath());
           },
         );
 
@@ -224,12 +240,18 @@ abstract class SetupChildPath<P> extends SetupPath<P> {
         });
       case SetupNthChildSearchingPath:
         return AddChildSearchingView(onNext: () {
-          delegate.push(SetupNthChildLocationPath());
+          delegate.push(SetupAddingNodesPath());
         });
       case SetupNthChildLocationPath:
         return SetLocationView(onNext: () {
           delegate.popTo(SetupNthChildPath());
         });
+      case SetupNthChildPlacePath:
+        return PlaceNodeView(
+            isAddOnNodes: true,
+            onNext: () {
+              delegate.push(SetupNthChildSearchingPath());
+            });
       default:
         return const Center();
     }
@@ -255,6 +277,8 @@ class SetupNthChildSearchingPath
 class SetupNthChildLocationPath
     extends SetupChildPath<SetupNthChildLocationPath> {}
 
+class SetupNthChildPlacePath extends SetupChildPath<SetupNthChildPlacePath> {}
+
 abstract class CreateAccountPath<P> extends BasePath<P> {
   @override
   Widget buildPage(MoabRouterDelegate delegate) {
@@ -274,25 +298,25 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
         });
       case ChooseLoginMethodPath:
         return ChooseLoginTypeView(
-            onCodeNext: () {
-              delegate.push(ChooseLoginOtpMethodPath());
-            },
-            onPasswordNext: () {
-              delegate.push(EnableTwoSVPath());
-            },
-            onSkip: () {
-              delegate.push(AlreadyHaveOldAccountPath());
-            },
+          onCodeNext: () {
+            delegate.push(ChooseLoginOtpMethodPath());
+          },
+          onPasswordNext: () {
+            delegate.push(EnableTwoSVPath());
+          },
+          onSkip: () {
+            delegate.push(AlreadyHaveOldAccountPath());
+          },
         );
       case ChooseLoginOtpMethodPath:
         return ChooseOTPMethodView(
-            email: 'moabuser@email.com',
-            onTextNext: () {
-              delegate.push(EnterOtpPath());
-            },
-            onEmailNext: () {
-              delegate.push(EnterOtpPath());
-            },
+          email: 'moabuser@email.com',
+          onTextNext: () {
+            delegate.push(EnterOtpPath());
+          },
+          onEmailNext: () {
+            delegate.push(EnterOtpPath());
+          },
         );
       case EnterOtpPath:
         return OtpView(
@@ -308,13 +332,11 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
       case AlreadyHaveOldAccountPath:
         return const HaveOldAccountView();
       case EnableTwoSVPath:
-        return EnableTwoSVView(
-            onNext: () {
-              delegate.push(ChooseLoginOtpMethodPath());
-            },
-            onSkip: () {
-              delegate.push(SaveCloudSettingsPath());
-            });
+        return EnableTwoSVView(onNext: () {
+          delegate.push(ChooseLoginOtpMethodPath());
+        }, onSkip: () {
+          delegate.push(SaveCloudSettingsPath());
+        });
       default:
         return const Center();
     }
@@ -329,7 +351,8 @@ class CreateAdminPasswordPath
 
 class ChooseLoginMethodPath extends CreateAccountPath<ChooseLoginMethodPath> {}
 
-class ChooseLoginOtpMethodPath extends CreateAccountPath<ChooseLoginOtpMethodPath> {}
+class ChooseLoginOtpMethodPath
+    extends CreateAccountPath<ChooseLoginOtpMethodPath> {}
 
 class EnterOtpPath extends CreateAccountPath<EnterOtpPath> {}
 
@@ -341,7 +364,8 @@ class CreateCloudAccountSuccessPath
 
 class SaveCloudSettingsPath extends CreateAccountPath<SaveCloudSettingsPath> {}
 
-class AlreadyHaveOldAccountPath extends CreateAccountPath<AlreadyHaveOldAccountPath> {
+class AlreadyHaveOldAccountPath
+    extends CreateAccountPath<AlreadyHaveOldAccountPath> {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
@@ -400,9 +424,7 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
             onNext: () {
               delegate.push(NoRouterPath());
             },
-            onForgot: () {
-
-            });
+            onForgot: () {});
       default:
         return const Center();
     }

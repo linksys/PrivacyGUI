@@ -8,12 +8,13 @@ import '../../components/base_components/button/primary_button.dart';
 import '../../components/base_components/button/simple_text_button.dart';
 
 class NodesSuccessView extends StatelessWidget {
-  const NodesSuccessView({
-    Key? key,
-    required this.onNext,
-  }) : super(key: key);
+  const NodesSuccessView(
+      {Key? key, required this.onNext, required this.onAddNode, this.onLocation})
+      : super(key: key);
 
-  final void Function() onNext;
+  final VoidCallback onNext;
+  final VoidCallback onAddNode;
+  final VoidCallback? onLocation;
 
   @override
   Widget build(BuildContext context) {
@@ -28,30 +29,35 @@ class NodesSuccessView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
-                child: Image.asset(
-                  'assets/images/nodes_topology.png',
-                  width: width,
-                ),
-              ),
+                  child: GestureDetector(
+                      onTap: () {
+                        if (onLocation != null){
+                          onLocation!();
+                        }
+                      },
+                      child: Image.asset(
+                        'assets/images/nodes_topology.png',
+                        width: width,
+                      ))),
               Padding(
                 padding: const EdgeInsets.fromLTRB(0, 48, 0, 48), // TODO
                 child: Center(
                   child: SimpleTextButton(
                       text: AppLocalizations.of(context)!.add_a_node,
-                      onPressed: () {
-                        //TODO: onPressed Action
-                      }),
+                      onPressed: onAddNode),
                 ),
               ),
               DescriptionText(
-                  text: AppLocalizations.of(context)!.nodes_success_multi_description),
+                  text: AppLocalizations.of(context)!
+                      .nodes_success_multi_description),
             ],
           ),
         ),
         footer: Column(
           children: [
             PrimaryButton(
-              text: AppLocalizations.of(context)!.nodes_success_multi_add_wifi_name_button_text,
+              text: AppLocalizations.of(context)!
+                  .nodes_success_multi_add_wifi_name_button_text,
               onPress: onNext,
             ),
           ],
