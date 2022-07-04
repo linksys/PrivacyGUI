@@ -7,18 +7,22 @@ import 'otp_state.dart';
 class OtpCubit extends Cubit<OtpState> {
   OtpCubit() : super(OtpState.init());
 
-  void updateOtpMethods(List<OtpInfo> methods) {
-    final selected = methods.length > 1 ? null : methods[0];
+  void updateOtpMethods(List<OtpInfo> methods, isSettingLoginType) {
+    var selected = methods.length > 1 ? null : isSettingLoginType ? null : methods[0];
     final step = selected == null ? OtpStep.chooseOtpMethod : OtpStep.inputOtp;
-    emit(state.copyWith(step: step, methods:  methods, selectedMethod: selected, token: ''));
+    emit(state.copyWith(step: step, methods:  methods, selectedMethod: selected, token: '', isSettingLoginType: isSettingLoginType));
   }
 
   void selectOtpMethod(OtpInfo method) {
     emit(state.copyWith(selectedMethod: method));
   }
 
-  void updateToken(String token) {
-    emit(state.copyWith(step: OtpStep.inputOtp, token: token));
+  void addPhone() {
+    emit(state.copyWith(step: OtpStep.addPhone));
+  }
+
+  void updateToken(String token, {OtpInfo? info}) {
+    emit(state.copyWith(step: OtpStep.inputOtp, token: token, selectedMethod: info ?? state.selectedMethod));
   }
 
   void setLoading(bool isLoading) {
@@ -27,7 +31,10 @@ class OtpCubit extends Cubit<OtpState> {
 
   void processBack() {
     if (state.step == OtpStep.inputOtp) {
+      emit(state.copyWith(step: state.isSettingLoginType ? OtpStep.addPhone : OtpStep.chooseOtpMethod, selectedMethod: null));
+    } else if (state.step == OtpStep.addPhone) {
       emit(state.copyWith(step: OtpStep.chooseOtpMethod, selectedMethod: null));
+
     }
   }
 }

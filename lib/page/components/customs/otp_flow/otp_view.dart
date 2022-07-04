@@ -4,6 +4,7 @@ import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/full_screen_spinner.dart';
+import 'package:moab_poc/page/components/customs/otp_flow/otp_add_phone.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_code_input.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_cubit.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_method_selector_view.dart';
@@ -41,7 +42,11 @@ class _ContentViewState extends State<_ContentView> {
     super.initState();
     _nextPath = widget.args!['onNext'] as BasePath;
     _username = widget.args!['username'] as String;
-    _fetchOtpInfo();
+    var isSettingLoginType = false;
+    if (widget.args!.containsKey('isSettingLoginType') ){
+      isSettingLoginType = widget.args!['isSettingLoginType'] as bool;
+    }
+    _fetchOtpInfo(isSettingLoginType);
   }
 
   @override
@@ -52,7 +57,7 @@ class _ContentViewState extends State<_ContentView> {
             onWillPop: () async {
               if (state.isLoading) {
                 return false;
-              } else if (state.step == OtpStep.inputOtp){
+              } else if (state.step != OtpStep.chooseOtpMethod){
                 context.read<OtpCubit>().processBack();
                 return false;
               } else {
@@ -74,6 +79,8 @@ class _ContentViewState extends State<_ContentView> {
       return OTPMethodSelectorView();
     } else if (state.step == OtpStep.inputOtp) {
       return OtpCodeInputView(nextPath: _nextPath,);
+    } else if (state.step == OtpStep.addPhone) {
+      return OtpAddPhoneView();
     } else {
       return BasePageView.noNavigationBar();
     }
@@ -83,16 +90,16 @@ class _ContentViewState extends State<_ContentView> {
     context.read<OtpCubit>().setLoading(isLoading);
   }
 
-  _fetchOtpInfo() async {
+  _fetchOtpInfo(bool isSettingLoginType) async {
     _setLoading(true);
     await context
         .read<AuthBloc>()
         .testUsername(_username)
-        .then((value) => _handleAccountInfo(value));
+        .then((value) => _handleAccountInfo(value, isSettingLoginType));
     _setLoading(false);
   }
 
-  _handleAccountInfo(AccountInfo info) {
-    context.read<OtpCubit>().updateOtpMethods(info.otpInfo);
+  _handleAccountInfo(AccountInfo info, bool isSettingLoginType) {
+    context.read<OtpCubit>().updateOtpMethods(info.otpInfo, isSettingLoginType);
   }
 }
