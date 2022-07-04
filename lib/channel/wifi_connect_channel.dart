@@ -24,4 +24,12 @@ class NativeConnectWiFiChannel {
   openWifiPanel() async {
     await _platform.invokeMethod('openWiFiPanel');
   }
+
+  isAndroidVersionUnderTen() async {
+    return await _platform.invokeMethod('checkAndroidVersionUnderTen');
+  }
+
+  isAndroidTenAndSupportEasyConnect() async {
+    return await _platform.invokeMethod('isAndroidTenAndSupportEasyConnect');
+  }
 }

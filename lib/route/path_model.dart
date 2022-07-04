@@ -9,6 +9,9 @@ import 'package:moab_poc/page/login/view/view.dart';
 import 'package:moab_poc/page/setup/view/adding_nodes_view.dart';
 import 'package:moab_poc/page/setup/view/view.dart';
 
+import '../page/setup/view/android_location_permission_denied_view.dart';
+import '../page/setup/view/android_manually_connect_view.dart';
+import '../page/setup/view/android_qr_choice_view.dart';
 import 'route.dart';
 
 enum PageNavigationType { back, close, none }
@@ -160,13 +163,37 @@ abstract class SetupParentPath<P> extends SetupPath<P> {
       case SetupParentPermissionPath:
         return PermissionsPrimerView(onNext: () {
           delegate.push(SetupParentQrCodeScanPath());
-        });
+        },
+            onAndroidNineNext: () {
+              delegate.push(SetupParentLocationPermissionDeniedPath());
+            },
+            onAndroidManuallyConnect: () {
+              delegate.push(SetupParentLocationPermissionDeniedPath());
+            },
+            onAndroidEasyConnect: () {},
+            onAndroidManuallyNext: () {});
       case SetupParentLocationPath:
         return SetLocationView(onNext: () {
           delegate.push(SetupCustomizeSSIDPath());
         });
       case SetupParentQrCodeScanPath:
         return ParentScanQRCodeView(onNext: () {
+          delegate.push(InternetCheckingPath());
+        });
+      case SetupParentConnectWIFIPath:
+        return AndroidManuallyConnectView(onConnected: () {
+          delegate.push(SetupParentLocationPermissionDeniedPath());
+        });
+      case SetupParentEasyConnectWIFIPath:
+        return AndroidQRChoiceView(onEasyConnected: () {
+          delegate.push(SetupParentLocationPermissionDeniedPath());
+        }, onManuallyAdd: () {});
+      case SetupParentLocationPermissionDeniedPath:
+        return AndroidLocationPermissionDenied(onNext: (){
+          delegate.push(InternetCheckingPath());
+        }, onQuit: (){
+          delegate.popTo(HomePath());
+        }, onSuccess: () {
           delegate.push(InternetCheckingPath());
         });
       default:
@@ -192,6 +219,13 @@ class SetupParentManualPath extends SetupParentPath<SetupParentManualPath> {}
 
 class SetupParentLocationPath extends SetupParentPath<SetupParentLocationPath> {
 }
+
+class SetupParentConnectWIFIPath
+    extends SetupParentPath<SetupParentConnectWIFIPath> {}
+
+class SetupParentEasyConnectWIFIPath
+    extends SetupParentPath<SetupParentEasyConnectWIFIPath> {}
+class SetupParentLocationPermissionDeniedPath extends SetupParentPath<SetupParentLocationPermissionDeniedPath>{}
 
 // Internet Check Flow
 abstract class InternetCheckPath<P> extends SetupPath<P> {

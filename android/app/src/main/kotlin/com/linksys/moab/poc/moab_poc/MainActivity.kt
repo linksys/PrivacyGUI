@@ -29,6 +29,7 @@ class MainActivity : FlutterActivity() {
 
     private var otpResult: MethodChannel.Result? = null
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
@@ -51,6 +52,14 @@ class MainActivity : FlutterActivity() {
                 } else {
                     Log.e(WIFI_TAG, "The OS Version does not support WiFi Panel")
                 }
+            } else if (call.method == "checkAndroidVersionUnderTen") {
+                result.success(Build.VERSION.SDK_INT < Build.VERSION_CODES.Q)
+            } else if (call.method == "isAndroidTenAndSupportEasyConnect") {
+                var isAndroidTen = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                val wifiManager: WifiManager =
+                    this.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                var supportEasyConnect = wifiManager.isEasyConnectSupported
+                result.success(isAndroidTen && supportEasyConnect)
             } else {
                 result.notImplemented()
             }
