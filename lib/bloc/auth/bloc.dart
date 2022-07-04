@@ -101,4 +101,8 @@ extension AuthBlocLocal on AuthBloc {
   Future<DummyModel> getAccountInfo() async {
     return await _localAuthRepository.getCloudAccount();
   }
+
+  Future<DummyModel> createPassword(String password, String hint) async {
+    return await _localAuthRepository.createPassword(password, hint);
+  }
 }

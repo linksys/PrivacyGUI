@@ -48,4 +48,10 @@ class FakeLocalAuthRepository implements LocalAuthRepository {
     // TODO: implement verifyRecoveryKey
     throw UnimplementedError();
   }
+
+  @override
+  Future<DummyModel> createPassword(String password, String hint) async {
+    await Future.delayed(waitDuration);
+    return {};
+  }
 }
