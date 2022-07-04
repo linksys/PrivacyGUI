@@ -43,13 +43,7 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
-        elevation: 0,
-      ),
+    return BasePageView.noNavigationBar(
       child: BasicLayout(
         header: const BasicHeader(
           title: 'Checking for internet...',

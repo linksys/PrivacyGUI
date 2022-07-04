@@ -6,29 +6,28 @@ import 'package:moab_poc/page/components/base_components/button/simple_text_butt
 import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/in_app_browser.dart';
 
-class CreateAdminPasswordView extends StatelessWidget {
+class CreateAdminPasswordView extends ArgumentsStatelessView {
   const CreateAdminPasswordView({
-    Key? key,
+    Key? key, super.args
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return const BasePageView(
-      child: _PageContent(
-      ),
+    return BasePageView(
+      child: _PageContent(args: args,),
       scrollable: true,
     );
   }
 }
 
-class _PageContent extends StatefulWidget {
+class _PageContent extends ArgumentsStatefulView {
   const _PageContent({
-    Key? key,
+    Key? key, super.args
   }) : super(key: key);
-
 
   @override
   _PageContentState createState() => _PageContentState();
@@ -42,8 +41,15 @@ class _PageContentState extends State<_PageContent> {
   void _checkInputData(_) {
     setState(() {
       isValidData =
-          passwordController.text.isNotEmpty && hintController.text.isNotEmpty;
+          passwordController.text.isNotEmpty;
     });
+  }
+
+
+  @override
+  void initState() {
+    super.initState();
+
   }
 
   @override
@@ -85,7 +91,7 @@ class _PageContentState extends State<_PageContent> {
         visible: isValidData,
         child: PrimaryButton(
           text: 'Next',
-          onPress: () { NavigationCubit.of(context).push(SaveCloudSettingsPath());},
+          onPress: () { NavigationCubit.of(context).clearAndPush(DashboardMainPath());},
         ),
       ),
       alignment: CrossAxisAlignment.start,

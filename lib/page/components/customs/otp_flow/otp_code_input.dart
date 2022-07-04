@@ -143,7 +143,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     await context
         .read<AuthBloc>()
         .validPasswordLess(value!, token)
-        .then((value) => NavigationCubit.of(context).push(widget.nextPath))
+        .then((value) => NavigationCubit.of(context).replace(widget.nextPath))
         .onError((error, stackTrace) => _handleError(error as CloudException));
     _setLoading(false);
   }

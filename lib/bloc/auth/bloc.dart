@@ -95,7 +95,7 @@ extension AuthBlocLocal on AuthBloc {
     return await _localAuthRepository.getAdminPasswordInfo().then((value) =>
         AdminPasswordInfo(
             hasAdminPassword: value['hasAdminPassword'] ?? false,
-            hint: value['hint']));
+            hint: value['hint'] ?? ''));
   }
 
   Future<DummyModel> getAccountInfo() async {

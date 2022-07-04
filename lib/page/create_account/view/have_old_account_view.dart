@@ -9,19 +9,8 @@ class HaveOldAccountView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => NavigationCubit.of(context).pop(),
-          )
-        ],
-      ),
+    return BasePageView.withCloseButton(
+      context,
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
         content: Column(

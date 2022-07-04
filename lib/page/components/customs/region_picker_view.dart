@@ -12,22 +12,6 @@ class RegionPickerView extends StatefulWidget {
 }
 
 class _RegionPickerViewState extends State<RegionPickerView> {
-  AppBar _appBar(BuildContext context) {
-    return AppBar(
-      automaticallyImplyLeading: false,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () {
-            NavigationCubit.of(context).pop();
-          },
-        )
-      ],
-    );
-  }
 
   //TODO: Remove the hard-code region list
   final List<PhoneRegion> _items = [
@@ -52,8 +36,8 @@ class _RegionPickerViewState extends State<RegionPickerView> {
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
-      appBar: _appBar(context),
+    return BasePageView.withCloseButton(
+      context,
       child: BasicLayout(
         header: const BasicHeader(
           title: 'Select region',

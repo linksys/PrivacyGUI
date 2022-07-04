@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
 class BasePageView extends StatelessWidget {
+  static const _containerPadding = EdgeInsets.fromLTRB(24, 0, 24, 30);
+
   final AppBar? appBar;
   final Widget? child;
   final EdgeInsets? padding;
   final bool? scrollable;
 
   BasePageView.noNavigationBar(
-      {Key? key, this.child, this.padding = const EdgeInsets.fromLTRB(24, 0, 24, 30), this.scrollable = false})
+      {Key? key, this.child, this.padding = _containerPadding, this.scrollable = false})
       : appBar = AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: Colors.transparent,
@@ -15,7 +17,7 @@ class BasePageView extends StatelessWidget {
         ), super(key: key);
 
   BasePageView.withCloseButton(BuildContext context,
-      {Key? key, this.child, this.padding = const EdgeInsets.fromLTRB(24, 0, 24, 30), this.scrollable = false})
+      {Key? key, this.child, this.padding = _containerPadding, this.scrollable = false})
       : appBar = AppBar(
           backgroundColor: Colors.transparent,
           iconTheme:
@@ -35,7 +37,7 @@ class BasePageView extends StatelessWidget {
     Key? key,
     this.appBar,
     this.child,
-    this.padding = const EdgeInsets.fromLTRB(24, 0, 24, 30),
+    this.padding = _containerPadding,
     this.scrollable = false,
   }) : super(key: key);
 

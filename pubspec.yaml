@@ -62,6 +62,7 @@ dependencies:
   mqtt_client: ^9.6.8
   uuid: ^3.0.6
   flutter_inappwebview: ^5.4.3+7
+  shared_preferences: ^2.0.15
 
 dev_dependencies:
   flutter_test:

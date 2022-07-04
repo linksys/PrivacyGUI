@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:moab_poc/repository/authenticate/auth_repository.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeAuthRepository extends AuthRepository {
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
   Timer? _resendCodeTimer;
   int _resendCountdown = 0;
 

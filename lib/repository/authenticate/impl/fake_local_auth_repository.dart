@@ -1,7 +1,10 @@
 import 'package:moab_poc/repository/authenticate/local_auth_repository.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeLocalAuthRepository implements LocalAuthRepository {
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
+
   final waitDuration = const Duration(seconds: 2);
 
   @override
@@ -30,7 +33,8 @@ class FakeLocalAuthRepository implements LocalAuthRepository {
     // has admin password : false -> create admin password
     // has admin password : true -> local login
     await Future.delayed(waitDuration);
-    return {'hasAdminPassword': true, 'hint': 'linksys'};
+    return {'hasAdminPassword': false};
+    // return {'hasAdminPassword': true, 'hint': 'linksys'};
   }
 
   @override
