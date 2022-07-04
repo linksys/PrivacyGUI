@@ -33,8 +33,8 @@ class FakeLocalAuthRepository implements LocalAuthRepository {
     // has admin password : false -> create admin password
     // has admin password : true -> local login
     await Future.delayed(waitDuration);
-    return {'hasAdminPassword': false};
-    // return {'hasAdminPassword': true, 'hint': 'linksys'};
+    // return {'hasAdminPassword': false};
+    return {'hasAdminPassword': true, 'hint': 'linksys'};
   }
 
   @override

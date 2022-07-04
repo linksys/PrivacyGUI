@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
+import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/full_screen_spinner.dart';
@@ -45,6 +46,7 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
           title: 'Where should we send your code?',
         ),
         content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ListView.builder(
                 shrinkWrap: true,
@@ -67,18 +69,30 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
                       },
                     )),
             const SizedBox(
-              height: 61,
+              height: 60,
             ),
             PrimaryButton(
               text: 'Send',
-              onPress: () { _onSend(state.selectedMethod!);},
-            )
+              onPress: () { state.isSettingLoginType ? _checkPhoneExist(state.selectedMethod!) : _onSend(state.selectedMethod!);},
+            ),
+            const SizedBox(
+              height: 60,
+            ),
+            if (state.isSettingLoginType)
+              SimpleTextButton(text: 'I want to create a password instead', onPressed: () {}),
           ],
         ),
       ),
     );
   }
 
+  _checkPhoneExist(OtpInfo method) {
+    if (method.method == OtpMethod.sms) {
+      context.read<OtpCubit>().addPhone();
+    } else {
+      _onSend(method);
+    }
+  }
   _onSend(OtpInfo method) async {
     _setLoading(true);
     await context.read<AuthBloc>().passwordLessLogin(
