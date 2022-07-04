@@ -98,7 +98,7 @@ abstract class SetupPath<P> extends BasePath<P> {
         return NodesSuccessView(onNext: () {
           delegate.push(SetupCustomizeSSIDPath());
         }, onAddNode: () {
-          delegate.push(SetupNthChildPlacePath());
+          delegate.popTo(SetupNthChildPlacePath());
         }, onLocation: () {
           delegate.push(SetupParentLocationPath());
         });

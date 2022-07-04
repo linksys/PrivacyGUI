@@ -6,7 +6,7 @@ import 'package:moab_poc/page/components/customs/qr_view.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../components/base_components/button/primary_button.dart';
-import '../../components/base_components/button/simple_text_button.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ParentScanQRCodeView extends StatelessWidget {
   const ParentScanQRCodeView({
@@ -20,8 +20,8 @@ class ParentScanQRCodeView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BasePageView(
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'Scan QR code',
+        header: BasicHeader(
+          title: AppLocalizations.of(context)!.scan_qrcode_view_title,
           description: 'The code is on the bottom of your node',
         ),
         content: Center(
@@ -40,23 +40,13 @@ class ParentScanQRCodeView extends StatelessWidget {
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(0, 200, 0, 0), // TODO
-                child: Center(
-                  child: SimpleTextButton(
-                      text: 'Use a different method',
-                      onPressed: () {
-                        //TODO: onPressed Action
-                      }),
-                ),
-              )
             ],
           ),
         ),
         footer: Column(
           children: [
             PrimaryButton(
-              text: 'Next',
+              text: AppLocalizations.of(context)!.scan_qrcode_view_button_text,
               onPress: onNext,
             ),
           ],

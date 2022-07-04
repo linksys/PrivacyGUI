@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:moab_poc/design/colors.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/text/description_text.dart';
@@ -66,7 +67,7 @@ class SetupFinishedView extends StatelessWidget {
 Widget infoCard(BuildContext context, Widget image, String title, String content){
   return Container(
     padding: const EdgeInsets.all(19),
-    color: Theme.of(context).colorScheme.secondary,
+    color: MoabColor.setupFinishCardBackground,
     child: Row(
       children: [
         image,

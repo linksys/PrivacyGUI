@@ -20,4 +20,6 @@ class MoabColor {
   static const listItemCheck = Color.fromRGBO(0x79, 0xc5, 0xff, 1.0);
 
   static const authBackground = Color(0xff555252);
+
+  static const setupFinishCardBackground = Color.fromRGBO(138, 138, 138, 1.0);
 }
