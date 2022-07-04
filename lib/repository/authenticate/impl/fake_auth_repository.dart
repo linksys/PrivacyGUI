@@ -30,7 +30,21 @@ class FakeAuthRepository extends AuthRepository {
   @override
   Future<DummyModel> login(String username, String password) async {
     await Future.delayed(waitDuration);
-    return {};
+    if (password == 'email') {
+      return {
+        'method': [
+          {'email': username},
+        ]
+      };
+    } else if (password == 'emailandphone') {
+      return {
+        'method': [
+          {'sms': '+8869123456'},
+          {'email': username},
+        ]
+      };
+    }
+    throw CloudException('INCORRECT_PASSWORD', "Incorrect password");
   }
 
   @override

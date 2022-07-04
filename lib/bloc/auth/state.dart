@@ -4,26 +4,24 @@ enum AuthStatus { unknownAuth, unAuthorized, authorized }
 
 enum AuthMethod { none, local, remote }
 
-enum RemoteLoginMethod { none, password, passwordLess }
+enum LoginType { otp, password }
 
-enum LoginType { otp, password}
-
-enum OtpMethod {
-  sms, email
-}
+enum OtpMethod { sms, email }
 
 class AccountInfo {
+  final String username;
   final LoginType loginType;
   final List<OtpInfo> otpInfo;
 
-  const AccountInfo({required this.loginType, required this.otpInfo});
+  const AccountInfo(
+      {required this.username, required this.loginType, required this.otpInfo});
 }
 
 class OtpInfo {
   final OtpMethod method;
   final String data;
-  const OtpInfo({required this.method, required this.data});
 
+  const OtpInfo({required this.method, required this.data});
 }
 
 class AdminPasswordInfo {
@@ -35,26 +33,15 @@ class AdminPasswordInfo {
 class AuthState extends Equatable {
   final AuthStatus status;
   final AuthMethod method;
-  final RemoteLoginMethod remoteLoginMethod;
-  final String username;
-  final String password;
-  final List<OtpInfo>? otpSupported;
-  final String otpCode;
-  final OtpMethod otpMethod;
-  final String otpTarget;
+  final AccountInfo accountInfo;
 
   // token? cert?
 
   const AuthState({
     required this.status,
     this.method = AuthMethod.none,
-    this.remoteLoginMethod = RemoteLoginMethod.none,
-    this.username = '',
-    this.password = '',
-    this.otpCode = '',
-    this.otpMethod = OtpMethod.email,
-    this.otpTarget = '',
-    this.otpSupported,
+    this.accountInfo =
+        const AccountInfo(username: '', loginType: LoginType.otp, otpInfo: []),
   });
 
   factory AuthState.unknownAuth() {
@@ -65,39 +52,26 @@ class AuthState extends Equatable {
     return const AuthState(status: AuthStatus.unAuthorized);
   }
 
-  factory AuthState.authorized(
-      {required AuthMethod method,
-      RemoteLoginMethod remoteLoginMethod = RemoteLoginMethod.none}) {
-    return AuthState(
-        status: AuthStatus.authorized,
-        method: method,
-        remoteLoginMethod: remoteLoginMethod);
+  factory AuthState.authorized({required AuthMethod method}) {
+    return AuthState(status: AuthStatus.authorized, method: method);
   }
 
   @override
-  List<Object?> get props => [status, method, remoteLoginMethod, username, password, otpCode, otpMethod, otpTarget, otpSupported];
+  List<Object?> get props => [
+        status,
+        method,
+        accountInfo,
+      ];
 
   AuthState copyWith({
     AuthStatus? status,
     AuthMethod? method,
-    RemoteLoginMethod? remoteLoginMethod,
-    String? username,
-    String? password,
-    String? otpCode,
-    OtpMethod? otpMethod,
-    String? otpTarget,
-    List<OtpInfo>? otpSupported,
+    AccountInfo? accountInfo,
   }) {
     return AuthState(
       status: status ?? this.status,
       method: method ?? this.method,
-      remoteLoginMethod: remoteLoginMethod ?? this.remoteLoginMethod,
-      username: username ?? this.username,
-      password: password ?? this.password,
-      otpCode: otpCode ?? this.otpCode,
-      otpMethod: otpMethod ?? this.otpMethod,
-      otpTarget: otpTarget ?? this.otpTarget,
-      otpSupported:  otpSupported ?? this.otpSupported,
+      accountInfo: accountInfo ?? this.accountInfo,
     );
   }
 }

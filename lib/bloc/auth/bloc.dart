@@ -35,7 +35,7 @@ extension AuthBlocCloud on AuthBloc {
   Future<AccountInfo> testUsername(String username) async {
     return await _repository
         .testUsername(username)
-        .then((value) => _handleTestUsername(value));
+        .then((value) => _handleTestUsername(username, value));
   }
 
   Future<String> passwordLessLogin(String username, String method) async {
@@ -54,10 +54,16 @@ extension AuthBlocCloud on AuthBloc {
     return await _repository.resendPasswordLessCode(token, method);
   }
 
-  Future<AccountInfo> _handleTestUsername(DummyModel data) async {
+  Future<List<OtpInfo>> login(String username, String password) async {
+    return await _repository
+        .login(username, password)
+        .then((value) => _handleLogin(value));
+  }
+
+  Future<AccountInfo> _handleTestUsername(String username, DummyModel data) async {
     logger.d("handle test user name: $data");
     final LoginType loginType =
-        LoginType.values.firstWhere((element) => element.name == data['type']);
+    LoginType.values.firstWhere((element) => element.name == data['type']);
     final List<DummyModel> methodList =
         data['method'] as List<DummyModel>? ?? [];
     List<OtpInfo> list = [];
@@ -68,7 +74,24 @@ extension AuthBlocCloud on AuthBloc {
       list.add(OtpInfo(method: method, data: target));
     }
 
-    return AccountInfo(loginType: loginType, otpInfo: list);
+    AccountInfo accountInfo = AccountInfo(username: username, loginType: loginType, otpInfo: list);
+    emit(state.copyWith(accountInfo: accountInfo));
+    return accountInfo;
+  }
+
+  Future<List<OtpInfo>> _handleLogin(DummyModel data) async {
+    logger.d("handle login");
+
+    final List<DummyModel> methodList =
+        data['method'] as List<DummyModel>? ?? [];
+    List<OtpInfo> list = [];
+    for (var data in methodList) {
+      final method = OtpMethod.values
+          .firstWhere((element) => element.name == data.entries.first.key);
+      final String target = data.entries.first.value;
+      list.add(OtpInfo(method: method, data: target));
+    }
+    return list;
   }
 
   _handleError(Object? error, StackTrace stackTrace, emit) {
