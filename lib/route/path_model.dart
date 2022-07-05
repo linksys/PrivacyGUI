@@ -10,6 +10,7 @@ import 'package:moab_poc/page/dashboard/view/dashboard_view.dart';
 import 'package:moab_poc/page/landing/view/view.dart';
 import 'package:moab_poc/page/login/view/view.dart';
 import 'package:moab_poc/page/setup/view/adding_nodes_view.dart';
+import 'package:moab_poc/page/setup/view/no_use_account_confirm_view.dart';
 import 'package:moab_poc/page/setup/view/view.dart';
 import 'package:moab_poc/util/logger.dart';
 
@@ -284,6 +285,8 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
         return SaveSettingsView();
       case AlreadyHaveOldAccountPath:
         return const HaveOldAccountView();
+      case NoUseCloudAccountPath:
+        return const NoUseAccountConfirmView();
       case EnableTwoSVPath:
         return const EnableTwoSVView();
       default:
@@ -315,6 +318,8 @@ class AlreadyHaveOldAccountPath
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
+
+class NoUseCloudAccountPath extends CreateAccountPath<NoUseCloudAccountPath> {}
 
 class EnableTwoSVPath extends CreateAccountPath<EnableTwoSVPath> {}
 
