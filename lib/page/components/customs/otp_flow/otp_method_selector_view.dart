@@ -39,8 +39,8 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
         header: BasicHeader(
-          title: state.isSettingLoginType ? 'Choose how to receive log in codes' : 'Where should we send your code?',
-          description: state.isSettingLoginType ? 'We\'ll send you a one-time passcode that expires' : '',
+          title: _createTitle(state),
+          description: _createDescription(state),
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,13 +69,13 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
               height: 60,
             ),
             PrimaryButton(
-              text: 'Send',
-              onPress: () { state.isSettingLoginType ? _checkPhoneExist(state.selectedMethod!) : _onSend(state.selectedMethod!);},
+              text: !state.isSendFunction() ? 'Add phone number' : 'Continue',
+              onPress: () { !state.isSendFunction() ? _checkPhoneExist(state.selectedMethod!) : _onSend(state.selectedMethod!);},
             ),
             const SizedBox(
               height: 60,
             ),
-            if (state.isSettingLoginType)
+            if (state.isSettingFunction())
               SimpleTextButton(text: 'I want to create a password instead', onPressed: () {
                 NavigationCubit.of(context).push(CreateCloudPasswordPath());
               }),
@@ -83,6 +83,29 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
         ),
       ),
     );
+  }
+
+  String _createTitle(OtpState state) {
+    if (state.isSendFunction()) {
+      return 'Where should we send your code?';
+    } else if (state.isSettingFunction()) {
+      return 'Choose how to receive log in codes';
+    } else if (state.isSetting2svFunction()) {
+      return 'Choose how to receive 2SV code';
+    } else {
+      return '';
+    }
+  }
+  String _createDescription(OtpState state) {
+    if (state.isSendFunction()) {
+      return '';
+    } else if (state.isSettingFunction()) {
+      return 'We\'ll send you a one-time passcode that expires' ;
+    } else if (state.isSetting2svFunction()) {
+      return 'We\'ll send you a one-time passcode that expires';
+    } else {
+      return '';
+    }
   }
 
   _checkPhoneExist(OtpInfo method) {

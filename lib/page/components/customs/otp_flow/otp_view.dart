@@ -37,6 +37,7 @@ class _ContentView extends ArgumentsStatefulView {
 class _ContentViewState extends State<_ContentView> {
   late BasePath _nextPath;
   late String _username;
+  late OtpFunction _function;
 
   @override
   initState() {
@@ -44,11 +45,11 @@ class _ContentViewState extends State<_ContentView> {
     _nextPath = widget.args!['onNext'] as BasePath;
     _username = widget.args!['username'] as String;
     logger.d('OTP flow: $_username');
-    var isSettingLoginType = false;
-    if (widget.args!.containsKey('isSettingLoginType')) {
-      isSettingLoginType = widget.args!['isSettingLoginType'] as bool;
+    OtpFunction _function = OtpFunction.send;
+    if (widget.args!.containsKey('function')) {
+      _function = widget.args!['function'] as OtpFunction;
     }
-    _fetchOtpInfo(isSettingLoginType);
+    _fetchOtpInfo(_function);
   }
 
   @override
@@ -97,16 +98,16 @@ class _ContentViewState extends State<_ContentView> {
     context.read<OtpCubit>().setLoading(isLoading);
   }
 
-  _fetchOtpInfo(bool isSettingLoginType) async {
+  _fetchOtpInfo(OtpFunction function) async {
     _setLoading(true);
     await context
         .read<AuthBloc>()
         .testUsername(_username)
-        .then((value) => _handleAccountInfo(value, isSettingLoginType));
+        .then((value) => _handleAccountInfo(value, function));
     _setLoading(false);
   }
 
-  _handleAccountInfo(AccountInfo info, bool isSettingLoginType) {
-    context.read<OtpCubit>().updateOtpMethods(info.otpInfo, isSettingLoginType);
+  _handleAccountInfo(AccountInfo info, OtpFunction function) {
+    context.read<OtpCubit>().updateOtpMethods(info.otpInfo, function);
   }
 }

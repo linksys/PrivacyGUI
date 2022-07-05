@@ -1,7 +1,10 @@
 import 'package:equatable/equatable.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
+import 'package:moab_poc/page/components/customs/otp_flow/otp_view.dart';
 
 enum OtpStep { init, chooseOtpMethod, inputOtp, addPhone, finish }
+
+enum OtpFunction { send, setting, setting2sv }
 
 class OtpState extends Equatable {
   const OtpState({
@@ -9,8 +12,7 @@ class OtpState extends Equatable {
     required this.methods,
     required this.token,
     required this.selectedMethod,
-    required this.isSettingLoginType,
-
+    required this.function,
     required this.isLoading,
   });
 
@@ -19,7 +21,7 @@ class OtpState extends Equatable {
         methods = [],
         token = '',
         selectedMethod = null,
-        isSettingLoginType = false,
+        function = OtpFunction.send,
         isLoading = false;
 
   OtpState copyWith({
@@ -27,7 +29,7 @@ class OtpState extends Equatable {
     List<OtpInfo>? methods,
     String? token,
     OtpInfo? selectedMethod,
-    bool? isSettingLoginType,
+    OtpFunction? function,
     bool? isLoading,
   }) {
     return OtpState(
@@ -35,7 +37,7 @@ class OtpState extends Equatable {
       methods: methods ?? this.methods,
       token: token ?? this.token,
       selectedMethod: selectedMethod ?? this.selectedMethod,
-      isSettingLoginType: isSettingLoginType ?? this.isSettingLoginType,
+      function: function ?? this.function,
       isLoading: isLoading ?? this.isLoading,
     );
   }
@@ -44,10 +46,20 @@ class OtpState extends Equatable {
   final List<OtpInfo> methods;
   final String token;
   final OtpInfo? selectedMethod;
-  final bool isSettingLoginType;
+  final OtpFunction function;
   final bool isLoading;
 
   @override
-  List<Object?> get props =>
-      [step, methods, token, selectedMethod, isSettingLoginType, isLoading];
+  List<Object?> get props => [
+        step,
+        methods,
+        token,
+        selectedMethod,
+        function,
+        isLoading,
+      ];
+
+  bool isSendFunction() => function == OtpFunction.send;
+  bool isSettingFunction() => function == OtpFunction.setting;
+  bool isSetting2svFunction() => function == OtpFunction.setting2sv;
 }

@@ -295,6 +295,11 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
         return CreateAccountPasswordView();
       case SameAccountPromptPath:
         return UseSameAccountPromptView();
+      case CreateAccount2SVPath:
+        if (args != null) {
+          args!['onNext'] = SaveCloudSettingsPath();
+        }
+        return OtpFlowView(args: args,);
       default:
         return const Center();
     }
@@ -303,7 +308,8 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
 
 class CreateCloudAccountPath extends CreateAccountPath<CreateCloudAccountPath> {
 }
-
+class CreateAccount2SVPath
+    extends CreateAccountPath<CreateAccount2SVPath> {}
 class SameAccountPromptPath extends CreateAccountPath<SameAccountPromptPath> {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;

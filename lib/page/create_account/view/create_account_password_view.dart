@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
+import 'package:moab_poc/page/components/customs/otp_flow/otp_state.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/create_account/view/view.dart';
@@ -23,7 +24,11 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
     if (hasError) {
       setState(() {});
     } else {
-      //TODO: Go to next page
+      NavigationCubit.of(context).push(CreateAccount2SVPath()
+        ..args = {
+          'username': 'test@linksys.com',
+          'function': OtpFunction.setting2sv
+        });
     }
   }
 
@@ -51,9 +56,11 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
               ),
             ),
             PasswordValidityWidget(passwordText: passwordController.text),
-            SimpleTextButton(text: 'I already have a Linksys account password', onPressed: () {
-              NavigationCubit.of(context).push(SameAccountPromptPath());
-            }),
+            SimpleTextButton(
+                text: 'I already have a Linksys account password',
+                onPressed: () {
+                  NavigationCubit.of(context).push(SameAccountPromptPath());
+                }),
             const SizedBox(
               height: 30,
             ),
@@ -104,8 +111,9 @@ class PasswordValidityWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    TextStyle? _textStyle = Theme.of(context).textTheme.headline4
+    TextStyle? _textStyle = Theme.of(context)
+        .textTheme
+        .headline4
         ?.copyWith(color: Theme.of(context).colorScheme.surface);
 
     List<Widget> _columnList = [

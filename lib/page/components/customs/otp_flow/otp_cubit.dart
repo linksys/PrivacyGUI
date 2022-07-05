@@ -7,10 +7,10 @@ import 'otp_state.dart';
 class OtpCubit extends Cubit<OtpState> {
   OtpCubit() : super(OtpState.init());
 
-  void updateOtpMethods(List<OtpInfo> methods, isSettingLoginType) {
-    var selected = methods.length > 1 ? null : isSettingLoginType ? null : methods[0];
+  void updateOtpMethods(List<OtpInfo> methods, OtpFunction function) {
+    var selected = methods.length > 1 ? null : function == OtpFunction.setting ? null : methods[0];
     final step = selected == null ? OtpStep.chooseOtpMethod : OtpStep.inputOtp;
-    emit(state.copyWith(step: step, methods:  methods, selectedMethod: selected, token: '', isSettingLoginType: isSettingLoginType));
+    emit(state.copyWith(step: step, methods:  methods, selectedMethod: selected, token: '', function: function));
   }
 
   void selectOtpMethod(OtpInfo method) {
@@ -35,10 +35,9 @@ class OtpCubit extends Cubit<OtpState> {
 
   void processBack() {
     if (state.step == OtpStep.inputOtp) {
-      emit(state.copyWith(step: state.isSettingLoginType ? OtpStep.addPhone : OtpStep.chooseOtpMethod, selectedMethod: null));
+      emit(state.copyWith(step: !state.isSendFunction() ? OtpStep.addPhone : OtpStep.chooseOtpMethod, selectedMethod: null));
     } else if (state.step == OtpStep.addPhone) {
       emit(state.copyWith(step: OtpStep.chooseOtpMethod, selectedMethod: null));
-
     }
   }
 }

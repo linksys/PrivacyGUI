@@ -84,7 +84,7 @@ class _ChooseLoginTypeState extends State<ChooseLoginTypeView> {
                     }
                   : () {
                       NavigationCubit.of(context)
-                          .push(CreateAccountOtpPath()..args = {'username': 'test@linksys.com', 'isSettingLoginType': true});
+                          .push(CreateAccountOtpPath()..args = {'username': 'test@linksys.com'});
                     },
             )
           ],
