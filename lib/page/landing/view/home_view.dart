@@ -5,17 +5,15 @@ import 'package:moab_poc/page/components/base_components/button/secondary_button
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/util/logger.dart';
 
-class HomeView extends StatefulWidget {
-  HomeView({
-    Key? key,
-    required this.onLogin,
-    required this.onSetup,
+
+class HomeView extends ArgumentsStatefulView {
+  const HomeView({
+    Key? key, super.args
   }) : super(key: key);
-
-  final VoidCallback onLogin;
-  final VoidCallback onSetup;
 
   @override
   State<HomeView> createState() => _HomeViewState();
@@ -31,6 +29,7 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
+    logger.d('DEBUG:: HomeView: build');
     return BasePageView(
       child: BasicLayout(
         content: _content(context),
@@ -56,14 +55,14 @@ class _HomeViewState extends State<HomeView> {
     return Column(children: [
       PrimaryButton(
         text: AppLocalizations.of(context)!.login,
-        onPress: widget.onLogin,
+        onPress: () { NavigationCubit.of(context).push(AuthInputAccountPath()); },
       ),
       const SizedBox(
         height: 24,
       ),
       SecondaryButton(
         text: AppLocalizations.of(context)!.setup_new_router,
-        onPress: widget.onSetup,
+        onPress: () { NavigationCubit.of(context).push(SetupWelcomeEulaPath()); },
       ),
       ...showDebugButton()
     ]);
@@ -78,7 +77,7 @@ class _HomeViewState extends State<HomeView> {
         SecondaryButton(
           text: 'Debug Tools',
           onPress: () {
-            MoabRouterDelegate.of(context).push(DebugToolsMainPath());
+            NavigationCubit.of(context).push(DebugToolsMainPath());
           },
         ),
       ];

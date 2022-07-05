@@ -6,15 +6,12 @@ import 'package:moab_poc/page/components/base_components/input_fields/input_fiel
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 
+// TODO nobody use this
 class OtpCodeInputView extends StatefulWidget {
   const OtpCodeInputView({
     Key? key,
-    required this.onNext,
-    required this.onSkip,
   }) : super(key: key);
 
-  final void Function() onNext;
-  final void Function() onSkip;
 
   @override
   _OtpCodeInputViewState createState() => _OtpCodeInputViewState();
@@ -42,7 +39,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
 
   void _checkOtpCode(String text) {
     if (text.length >= 6) {
-      widget.onNext();
+      // TODO
     }
   }
 
@@ -64,7 +61,9 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
         ),
         footer: SecondaryButton(
           text: 'Create a password instead',
-          onPress: widget.onSkip,
+          onPress: () {
+            // TODO
+          },
         ),
       ),
     );

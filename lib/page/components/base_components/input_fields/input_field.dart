@@ -8,7 +8,8 @@ class InputField extends StatelessWidget {
     required this.controller,
     this.inputType = TextInputType.text,
     this.hintText = '',
-
+    this.isError = false,
+    this.errorColor = Colors.red,
     this.onChanged,
   }) : super(key: key);
 
@@ -17,6 +18,8 @@ class InputField extends StatelessWidget {
   final String hintText;
   final TextInputType inputType;
   final void Function(String text)? onChanged;
+  final bool isError;
+  final Color errorColor;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +31,7 @@ class InputField extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .headline4
-                ?.copyWith(color: Theme.of(context).colorScheme.primary),
+                ?.copyWith(color: isError ? errorColor : Theme.of(context).colorScheme.primary),
           ),
           padding: const EdgeInsets.only(bottom: 8),
         ),
@@ -37,6 +40,7 @@ class InputField extends StatelessWidget {
           hintText: hintText,
           inputType: inputType,
           onChanged: onChanged,
+          isError: isError,
         )
       ],
       crossAxisAlignment: CrossAxisAlignment.start,

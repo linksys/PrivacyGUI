@@ -6,6 +6,8 @@ class PrimaryTextField extends StatefulWidget {
     required this.controller,
     this.hintText = '',
     this.inputType = TextInputType.text,
+    this.isError = false,
+    this.errorColor = Colors.red,
     this.onChanged,
   }) : super(key: key);
 
@@ -13,6 +15,8 @@ class PrimaryTextField extends StatefulWidget {
   final String hintText;
   final TextInputType inputType;
   final void Function(String text)? onChanged;
+  final bool isError;
+  final Color errorColor;
 
   @override
   _PrimaryTextFieldState createState() => _PrimaryTextFieldState();
@@ -21,7 +25,6 @@ class PrimaryTextField extends StatefulWidget {
 class _PrimaryTextFieldState extends State<PrimaryTextField> {
   @override
   void dispose() {
-    widget.controller.dispose();
     super.dispose();
   }
 
@@ -36,7 +39,7 @@ class _PrimaryTextFieldState extends State<PrimaryTextField> {
     return TextField(
       controller: widget.controller,
       style: Theme.of(context).textTheme.bodyText1?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
+            color: widget.isError ? widget.errorColor : Theme.of(context).colorScheme.primary,
           ),
       decoration: InputDecoration(
         hintText: widget.hintText,
@@ -46,11 +49,11 @@ class _PrimaryTextFieldState extends State<PrimaryTextField> {
             ?.copyWith(color: Theme.of(context).colorScheme.surface),
         enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.primary, width: 1),
+                color: widget.isError ? widget.errorColor : Theme.of(context).colorScheme.primary, width: 1),
             borderRadius: BorderRadius.zero),
         focusedBorder: OutlineInputBorder(
             borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.primary, width: 1),
+                color: widget.isError ? widget.errorColor : Theme.of(context).colorScheme.primary, width: 1),
             borderRadius: BorderRadius.zero),
       ),
       onChanged: _onChanged,

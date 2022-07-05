@@ -3,16 +3,15 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+// TODO nobody use this
 class ShowMeHowView extends StatelessWidget {
   const ShowMeHowView({Key? key}) : super(key: key);
 
-  static const routeName = '/show_me_how';
-
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
+    return BasePageView.withCloseButton(
+      context,
       scrollable: true,
-      appBar: _appBar(context),
       child: BasicLayout(
         header: Text(
           AppLocalizations.of(context)!.show_me_how_connect_router_modem_title,
@@ -23,21 +22,6 @@ class ShowMeHowView extends StatelessWidget {
         ),
         content: _content(context),
       ),
-    );
-  }
-
-  AppBar _appBar(BuildContext context) {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
-      elevation: 0,
-      automaticallyImplyLeading: false,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-        )
-      ],
     );
   }
 

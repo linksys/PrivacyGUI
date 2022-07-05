@@ -7,24 +7,17 @@ import 'package:moab_poc/page/components/base_components/input_fields/input_fiel
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 
+// TODO nobody use this
 class CreateAccountView extends StatelessWidget {
   const CreateAccountView({
     Key? key,
-    required this.onNext,
-    required this.onSkip,
   }) : super(key: key);
 
-  static const routeName = '/create_account';
-  final void Function() onNext;
-  final void Function() onSkip;
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
-      child: _PageContent(
-        onNext: onNext,
-        onSkip: onSkip,
-      ),
+    return const BasePageView(
+      child: _PageContent(),
       scrollable: true,
     );
   }
@@ -33,12 +26,8 @@ class CreateAccountView extends StatelessWidget {
 class _PageContent extends StatefulWidget {
   const _PageContent({
     Key? key,
-    required this.onNext,
-    required this.onSkip,
   }) : super(key: key);
 
-  final void Function() onNext;
-  final void Function() onSkip;
 
   @override
   _PageContentState createState() => _PageContentState();
@@ -106,7 +95,7 @@ class _PageContentState extends State<_PageContent> {
             visible: isValidData,
             child: PrimaryButton(
               text: 'Create account',
-              onPress: widget.onNext,
+              onPress: () {},
             ),
           ),
           const SizedBox(
@@ -114,7 +103,7 @@ class _PageContentState extends State<_PageContent> {
           ),
           SecondaryButton(
             text: 'Not now',
-            onPress: widget.onSkip,
+            onPress: () {},
           )
         ],
       ),

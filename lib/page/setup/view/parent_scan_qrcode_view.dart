@@ -3,6 +3,7 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/customs/qr_view.dart';
+import 'package:moab_poc/route/route.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../components/base_components/button/primary_button.dart';
@@ -11,10 +12,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 class ParentScanQRCodeView extends StatelessWidget {
   const ParentScanQRCodeView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
 
-  final void Function() onNext;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +35,7 @@ class ParentScanQRCodeView extends StatelessWidget {
                   width: 300,
                   height: 300,
                   child: CustomQRView(
-                    onResult: (Barcode code) => _handleScanResult(code),
+                    onResult: (Barcode code) => _handleScanResult(context, code),
                   ),
                 ),
               ),
@@ -47,7 +46,7 @@ class ParentScanQRCodeView extends StatelessWidget {
           children: [
             PrimaryButton(
               text: AppLocalizations.of(context)!.scan_qrcode_view_button_text,
-              onPress: onNext,
+              onPress: () => NavigationCubit.of(context).push(InternetCheckingPath()),
             ),
           ],
         ),
@@ -56,8 +55,8 @@ class ParentScanQRCodeView extends StatelessWidget {
     );
   }
 
-  _handleScanResult(Barcode code) {
+  _handleScanResult(BuildContext context, Barcode code) {
     print('Scanned code: ${code.rawValue ?? ''}');
-    onNext();
+    NavigationCubit.of(context).push(InternetCheckingPath());
   }
 }

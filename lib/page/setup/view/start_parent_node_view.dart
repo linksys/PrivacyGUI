@@ -8,15 +8,11 @@ import 'package:moab_poc/page/setup/view/plug_node_view.dart';
 
 import '../../components/base_components/text/description_text.dart';
 
+// TODO nobody use this
 class StartParentNodeView extends StatelessWidget {
   StartParentNodeView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
-
-  final VoidCallback onNext;
-
-  static const routeName = '/start_parent_node';
 
   //TODO: This svg file does not work
   // final Widget image = SvgPicture.asset(
@@ -38,7 +34,7 @@ class StartParentNodeView extends StatelessWidget {
         content: _content(context),
         footer: PrimaryButton(
           text: 'I have the parent node',
-          onPress: onNext,
+          onPress: () {},
         ),
       ),
     );

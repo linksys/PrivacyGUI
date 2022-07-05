@@ -3,21 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/customs/customs.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
+import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/route/route.dart';
 import 'dart:convert';
 
 import 'package:phone_number/phone_number.dart';
 
 
-class CreateAccountPhoneView extends StatefulWidget {
+class CreateAccountPhoneView extends ArgumentsStatefulView {
   const CreateAccountPhoneView({
-    Key? key,
-    required this.onSave,
-    required this.onSkip,
+    Key? key, super.args
   }) : super(key: key);
-
-  final void Function() onSave;
-  final void Function() onSkip;
 
   @override
   _CreateAccountPhoneViewState createState() => _CreateAccountPhoneViewState();
@@ -89,7 +85,7 @@ class _CreateAccountPhoneViewState extends State<CreateAccountPhoneView> {
                 children: [
                   GestureDetector(
                     onTap: () async {
-                      final selectedRegion = await showPopup(context: context, path: SelectPhoneRegionCodePath());
+                      final selectedRegion = await showPopup(context: context, config: SelectPhoneRegionCodePath());
                       if (selectedRegion != null) {
                         updateRegion(selectedRegion);
                       }
@@ -137,7 +133,9 @@ class _CreateAccountPhoneViewState extends State<CreateAccountPhoneView> {
               visible: hasInput,
               child: PrimaryButton(
                 text: 'Save',
-                onPress: widget.onSave,
+                onPress: () {
+                  // TODO TBD
+                },
               ),
             ),
             const SizedBox(
@@ -145,7 +143,9 @@ class _CreateAccountPhoneViewState extends State<CreateAccountPhoneView> {
             ),
             SecondaryButton(
               text: 'No thanks',
-              onPress: widget.onSkip,
+              onPress: () {
+                // TODO TBD
+              },
             ),
           ],
         ),

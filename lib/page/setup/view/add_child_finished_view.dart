@@ -5,16 +5,12 @@ import 'package:moab_poc/page/components/base_components/button/primary_button.d
 import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/route.dart';
 
 class AddChildFinishedView extends StatelessWidget {
   AddChildFinishedView({
     Key? key,
-    required this.onAddMore,
-    required this.onAddDone,
   }) : super(key: key);
-
-  final void Function() onAddMore;
-  final void Function() onAddDone;
 
   //TODO: The svg image must be replaced
   final Widget image = SvgPicture.asset(
@@ -36,14 +32,14 @@ class AddChildFinishedView extends StatelessWidget {
           children: [
             PrimaryButton(
               text: 'Yes, let’s do it',
-              onPress: onAddMore,
+              onPress: () => NavigationCubit.of(context).push(SetupNthChildQrCodePath()),
             ),
             const SizedBox(
               height: 20,
             ),
             SecondaryButton(
               text: 'No, I’m done',
-              onPress: onAddDone,
+              onPress: () => NavigationCubit.of(context).push(SetupNodesDonePath()),
             ),
           ],
         ),

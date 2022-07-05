@@ -2,38 +2,33 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/customs/customs.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
+import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:phone_number/phone_number.dart';
 
-class ChooseOTPMethodView extends StatefulWidget {
-  final String email;
-  final void Function() onTextNext;
-  final void Function() onEmailNext;
-
-  const ChooseOTPMethodView(
-      {Key? key,
-      required this.email,
-      required this.onTextNext,
-      required this.onEmailNext})
-      : super(key: key);
+class ChooseOTPMethodView extends ArgumentsStatefulView {
+  const ChooseOTPMethodView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   _ChooseOTPMethodState createState() => _ChooseOTPMethodState();
 }
 
 class _ChooseOTPMethodState extends State<ChooseOTPMethodView> {
-  final List<String> _methods = [];
-  late String selectedMethod;
+  late List<OtpInfo> _methods = [];
+  late OtpInfo selectedMethod;
 
   @override
   void initState() {
     super.initState();
+    _methods = widget.args!['optMethods'] as List<OtpInfo>;
 
-    _methods.add('Text');
-    _methods.add(widget.email);
     selectedMethod = _methods.first;
   }
 
@@ -57,7 +52,7 @@ class _ChooseOTPMethodState extends State<ChooseOTPMethodView> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 7),
                           child: SelectableItem(
-                            text: _methods[index],
+                            text: _methods[index].method.name,
                             isSelected: selectedMethod == _methods[index],
                             height: 66,
                           ),
@@ -70,7 +65,7 @@ class _ChooseOTPMethodState extends State<ChooseOTPMethodView> {
                       )),
             ),
             Visibility(
-              visible: selectedMethod == widget.email,
+              visible: selectedMethod.method == OtpMethod.email,
               child: Column(
                 children: [
                   const SizedBox(
@@ -78,15 +73,19 @@ class _ChooseOTPMethodState extends State<ChooseOTPMethodView> {
                   ),
                   PrimaryButton(
                     text: 'Send',
-                    onPress: widget.onEmailNext,
+                    onPress: () {
+                      NavigationCubit.of(context).push(CreateAccountOtpPath());
+                    },
                   ),
                 ],
               ),
             ),
             Visibility(
-              visible: selectedMethod == 'Text',
+              visible: selectedMethod.method == OtpMethod.sms,
               child: PhoneNumberView(
-                onNext: widget.onTextNext,
+                onNext: () {
+                  NavigationCubit.of(context).push(CreateAccountOtpPath());
+                },
               ),
             ),
           ],
@@ -170,7 +169,7 @@ class _PhoneNumberViewState extends State<PhoneNumberView> {
               GestureDetector(
                 onTap: () async {
                   final selectedRegion = await showPopup(
-                      context: context, path: SelectPhoneRegionCodePath());
+                      context: context, config: SelectPhoneRegionCodePath());
                   if (selectedRegion != null) {
                     updateRegion(selectedRegion);
                   }

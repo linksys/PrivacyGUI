@@ -5,14 +5,13 @@ import 'package:moab_poc/page/components/base_components/progress_bars/indetermi
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:moab_poc/route/route.dart';
 
 class SaveSettingsView extends StatefulWidget {
   SaveSettingsView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
 
-  final void Function() onNext;
 
   @override
   State<SaveSettingsView> createState() => _SaveSettingsViewState();
@@ -33,18 +32,12 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
 
   _fakeInternetChecking() async {
     await Future.delayed(const Duration(seconds: 5));
-    widget.onNext();
+    NavigationCubit.of(context).push(SetupFinishPath());
   }
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
-        elevation: 0,
-      ),
+    return BasePageView.noNavigationBar(
       child: BasicLayout(
         header: BasicHeader(
           title: AppLocalizations.of(context)!.saving_settings_view_title,

@@ -4,14 +4,13 @@ import 'package:moab_poc/page/components/base_components/button/primary_button.d
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/route.dart';
 
 class AddChildPlugView extends StatelessWidget {
   AddChildPlugView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
 
-  final void Function() onNext;
 
   //TODO: This svg file does not work
   // final Widget image = SvgPicture.asset(
@@ -53,7 +52,7 @@ class AddChildPlugView extends StatelessWidget {
           children: [
             PrimaryButton(
               text: 'Next',
-              onPress: onNext,
+              onPress: () => NavigationCubit.of(context).push(SetupNthChildSearchingPath()),
             ),
           ],
         ),

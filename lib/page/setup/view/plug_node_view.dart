@@ -3,18 +3,14 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:moab_poc/route/route.dart';
 
 import '../../components/base_components/button/primary_button.dart';
 
 class PlugNodeView extends StatelessWidget {
   PlugNodeView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
-
-  final VoidCallback onNext;
-
-  static const routeName = '/plug_node';
 
   //TODO: This svg file does not work
   // final Widget image = SvgPicture.asset(
@@ -35,7 +31,7 @@ class PlugNodeView extends StatelessWidget {
         content: _content(),
         footer: PrimaryButton(
           text: AppLocalizations.of(context)!.next,
-          onPress: onNext,
+          onPress: () => NavigationCubit.of(context).push(SetupParentWiredPath()),
         ),
       ),
     );

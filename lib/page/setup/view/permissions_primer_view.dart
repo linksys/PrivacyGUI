@@ -10,51 +10,19 @@ import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/page/setup/view/parent_scan_qrcode_view.dart';
+import 'package:moab_poc/route/route.dart';
 
 import '../../components/base_components/button/primary_button.dart';
 import 'android_manually_connect_view.dart';
 import 'android_qr_choice_view.dart';
 
-class PermissionsPrimerView extends StatefulWidget {
-  PermissionsPrimerView({Key? key,
-    required this.onNext,
-    required this.onAndroidNineNext,
-    required this.onAndroidManuallyNext,
-    required this.onAndroidEasyConnect,
-    required this.onAndroidManuallyConnect})
-      : super(key: key);
+class PermissionsPrimerView extends StatelessWidget {
+  PermissionsPrimerView({
+    Key? key,
+  }) : super(key: key);
 
-  final VoidCallback onNext;
-  final VoidCallback onAndroidNineNext;
-  final VoidCallback onAndroidManuallyNext;
-  final VoidCallback onAndroidEasyConnect;
-  final VoidCallback onAndroidManuallyConnect;
-
-  @override
-  State<PermissionsPrimerView> createState() => _PermissionsPrimerViewState();
-}
-
-class _PermissionsPrimerViewState extends State<PermissionsPrimerView> {
   // Replace this to svg if the svg image is fixed
   final Widget checkIcon = Image.asset('assets/images/icon_check.png');
-  final Widget imgContent = Image.asset('assets/images/permission_dialog.png');
-
-  bool isUnderAndroidTen = false;
-  bool isSupportEasyConnect = false;
-
-  Future<void> _initAndroidSupport() async {
-    isUnderAndroidTen =
-    await NativeConnectWiFiChannel().isAndroidVersionUnderTen();
-    isSupportEasyConnect =
-    await NativeConnectWiFiChannel().isAndroidTenAndSupportEasyConnect();
-  }
-
-
-  @override
-  void initState() {
-    super.initState();
-    _initAndroidSupport();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +56,7 @@ class _PermissionsPrimerViewState extends State<PermissionsPrimerView> {
           ),
           footer: PrimaryButton(
             text: AppLocalizations.of(context)!.got_it,
-            onPress: widget.onNext,
+            onPress: () => NavigationCubit.of(context).push(SetupParentQrCodeScanPath()),
           ),
         ),
       );
@@ -104,6 +72,7 @@ class _PermissionsPrimerViewState extends State<PermissionsPrimerView> {
       }
     }
   }
+
 }
 
 class CheckPermissionView extends StatelessWidget {

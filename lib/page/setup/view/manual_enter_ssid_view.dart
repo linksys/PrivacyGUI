@@ -6,20 +6,16 @@ import 'package:moab_poc/page/components/base_components/input_fields/input_fiel
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 
+// TODO nobody use this
 class ManualEnterSSIDView extends StatelessWidget {
   const ManualEnterSSIDView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
-
-  final void Function() onNext;
 
   @override
   Widget build(BuildContext context) {
     return BasePageView(
-      child: _PageContent(
-        onNext: onNext,
-      ),
+      child: _PageContent(),
       scrollable: true,
     );
   }
@@ -28,10 +24,7 @@ class ManualEnterSSIDView extends StatelessWidget {
 class _PageContent extends StatefulWidget {
   const _PageContent({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
-
-  final void Function() onNext;
 
   @override
   _PageContentState createState() => _PageContentState();
@@ -53,7 +46,8 @@ class _PageContentState extends State<_PageContent> {
   Widget build(BuildContext context) {
     return BasicLayout(
       header: const BasicHeader(
-        title: 'Okay, enter the setup WiFi and password located at the bottom of your parent node',
+        title:
+            'Okay, enter the setup WiFi and password located at the bottom of your parent node',
       ),
       content: Column(
         children: [
@@ -82,7 +76,7 @@ class _PageContentState extends State<_PageContent> {
         visible: isValidWifiInfo,
         child: PrimaryButton(
           text: 'Next',
-          onPress: widget.onNext,
+          onPress: () {},
         ),
       ),
     );

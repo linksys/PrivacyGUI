@@ -6,25 +6,19 @@ import 'package:moab_poc/page/components/base_components/input_fields/input_fiel
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:moab_poc/route/route.dart';
 
 class CustomizeWifiView extends StatelessWidget {
   const CustomizeWifiView({
     Key? key,
-    required this.onNext,
-    required this.onSkip,
   }) : super(key: key);
 
   static const routeName = '/customize_wifi';
-  final void Function() onNext;
-  final void Function() onSkip;
 
   @override
   Widget build(BuildContext context) {
     return BasePageView(
-      child: PageContent(
-        onNext: onNext,
-        onSkip: onSkip,
-      ),
+      child: PageContent(),
       scrollable: true,
     );
   }
@@ -33,12 +27,7 @@ class CustomizeWifiView extends StatelessWidget {
 class PageContent extends StatefulWidget {
   const PageContent({
     Key? key,
-    required this.onNext,
-    required this.onSkip,
   }) : super(key: key);
-
-  final void Function() onNext;
-  final void Function() onSkip;
 
   @override
   _PageContentState createState() => _PageContentState();
@@ -84,11 +73,11 @@ class _PageContentState extends State<PageContent> {
         visible: isValidWifiInfo,
         replacement: SecondaryButton(
           text: AppLocalizations.of(context)!.keep_defaults,
-          onPress: widget.onSkip,
+          onPress: () => NavigationCubit.of(context).push(CreateCloudAccountPath()),
         ),
         child: PrimaryButton(
           text: AppLocalizations.of(context)!.next,
-          onPress: widget.onNext,
+          onPress: () => NavigationCubit.of(context).push(CreateCloudAccountPath()),
         ),
       ),
     );

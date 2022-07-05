@@ -15,13 +15,13 @@ class MoabTheme {
   static final _mainLightColorTheme = const ColorScheme.light().copyWith(
     brightness: Brightness.light,
     primary: MoabColor.white, //文字,輸入外框,主按鈕背景等主色調
-    secondary: MoabColor.black, //次按鈕背景色
-    tertiary: MoabColor.blackAlpha70, //透明文字
+    secondary: MoabColor.whiteAlpha10, //次按鈕背景色
+    tertiary: MoabColor.whiteAlpha70, //透明文字
     primaryContainer: MoabColor.progressBarBlue,
     surface: MoabColor.placeholderGrey, //placeHolder文字
-    background: MoabColor.white, //背景
-    onPrimary: MoabColor.primaryBlue, //主按鈕文字
-    onSecondary: MoabColor.primaryBlueAlpha10, //次按鈕文字
+    background: MoabColor.authBackground, //背景
+    onPrimary: MoabColor.black, //主按鈕文字
+    onSecondary: MoabColor.white, //次按鈕文字
     onTertiary: MoabColor.textButtonBlue, //TextBtn文字
     onPrimaryContainer: MoabColor.progressBarGreen,
   );

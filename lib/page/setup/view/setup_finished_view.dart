@@ -7,18 +7,20 @@ import 'package:moab_poc/page/components/base_components/text/description_text.d
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:moab_poc/page/components/views/arguments_view.dart';
+import 'package:moab_poc/route/route.dart';
 
-class SetupFinishedView extends StatelessWidget {
+class SetupFinishedView extends ArgumentsStatelessView {
+
   SetupFinishedView({
-    Key? key,
-    required this.wifiSsid,
-    required this.wifiPassword,
-    required this.onNext,
-  }) : super(key: key);
+    Key? key, super.args
+  }) : super(key: key) {
+    _ssid = args!['ssid'];
+    _password = args!['password'];
+  }
 
-  final String wifiSsid;
-  final String wifiPassword;
-  final void Function() onNext;
+  late String _ssid;
+  late String _password;
 
   //TODO: The svg image must be replaced
   final Widget image = SvgPicture.asset(
@@ -56,7 +58,7 @@ class SetupFinishedView extends StatelessWidget {
         ),
         footer: PrimaryButton(
           text: AppLocalizations.of(context)!.go_to_dashboard,
-          onPress: onNext,
+          onPress: () => NavigationCubit.of(context).popTo(HomePath()),
         ),
         alignment: CrossAxisAlignment.start,
       ),

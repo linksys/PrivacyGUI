@@ -1,19 +1,18 @@
 import 'dart:convert';
 
+import 'package:moab_poc/network/model/command_spec/command_spec.dart';
 import 'package:moab_poc/network/model/exception.dart';
 import 'package:mqtt_client/mqtt_client.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../../util/logger.dart';
 import '../../mqtt_client_wrap.dart';
 import 'mqtt_command_mixin.dart';
 
-abstract class BaseMqttCommand<D, R> with CommandCompleter {
-  static const Uuid _uuid = Uuid();
+abstract class BaseMqttCommand<R> with CommandCompleter {
 
-  BaseMqttCommand({String? id}) : uuid = id ?? _uuid.v1();
+  BaseMqttCommand({required this.spec});
 
-  final String uuid;
+  final CommandSpec<R> spec;
 
   final qos = MqttQos.atLeastOnce;
 
@@ -25,15 +24,14 @@ abstract class BaseMqttCommand<D, R> with CommandCompleter {
 
   Duration responseTimeout = const Duration(seconds: 30);
 
-  late final D _data;
+  String _data = '';
+  String get data => _data;
 
-  D get data => _data;
+  R createResponse(String payload) => spec.response(payload);
 
-  R createResponse(String payload);
-
-  Future<R> publish(MqttClientWrap client, D data) async {
+  Future<R> publish(MqttClientWrap client) async {
     try {
-      _data = data;
+      _data = spec.payload();
       await client.send(this);
       await waitForPuback(pubackTimeout);
       final payload = await waitForResponse(responseTimeout);
@@ -46,7 +44,7 @@ abstract class BaseMqttCommand<D, R> with CommandCompleter {
       logger.d('Unhandled exception: $e}');
       rethrow;
     } finally {
-      client.dropCommand(uuid);
+      client.dropCommand(spec.uuid);
     }
   }
 
@@ -61,4 +59,4 @@ abstract class BaseMqttCommand<D, R> with CommandCompleter {
   }
 }
 
-typedef MqttCommand = BaseMqttCommand<Map<String, dynamic>, Map<String, dynamic>>;
+typedef MqttCommand = BaseMqttCommand<Map<String, dynamic>>;

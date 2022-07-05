@@ -4,15 +4,13 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/text/description_text.dart';
+import 'package:moab_poc/route/route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class GetWiFiUpView extends StatelessWidget {
   GetWiFiUpView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
-
-  final VoidCallback onNext;
 
   static const routeName = '/get_wifi_up';
 
@@ -36,7 +34,7 @@ class GetWiFiUpView extends StatelessWidget {
         content: _content(context),
         footer: PrimaryButton(
           text: AppLocalizations.of(context)!.accept,
-          onPress: onNext,
+          NavigationCubit.of(context).push(SetupParentPlugPath()),
         ),
       ),
     );

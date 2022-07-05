@@ -5,15 +5,14 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:moab_poc/route/route.dart';
+
 import '../../components/base_components/button/primary_button.dart';
 
 class SetLocationView extends StatefulWidget {
   const SetLocationView({
     Key? key,
-    required this.onNext,
   }) : super(key: key);
-
-  final void Function() onNext;
 
   @override
   State<SetLocationView> createState() => _SetLocationViewState();
@@ -56,7 +55,10 @@ class _SetLocationViewState extends State<SetLocationView> {
                     if (_selected >= 0)
                       PrimaryButton(
                         text: AppLocalizations.of(context)!.next,
-                        onPress: _selected >= 0 ? widget.onNext : null,
+                        onPress: _selected >= 0
+                            ? () =>
+                            NavigationCubit.of(context).push(SetupNthChildPath())
+                            : null,
                       ),
                   ],
                 ),
@@ -79,7 +81,10 @@ class _SetLocationViewState extends State<SetLocationView> {
                   children: [
                       PrimaryButton(
                         text: AppLocalizations.of(context)!.save,
-                        onPress: _selected >= 0 ? widget.onNext : null,
+                        onPress: _selected >= 0
+                            ? () =>
+                            NavigationCubit.of(context).push(SetupNthChildPath())
+                            : null,
                       ),
                   ],
                 ),

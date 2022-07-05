@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
-import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/route/navigation_cubit.dart';
 
 class RegionPickerView extends StatefulWidget {
   const RegionPickerView({Key? key}) : super(key: key);
@@ -11,20 +12,6 @@ class RegionPickerView extends StatefulWidget {
 }
 
 class _RegionPickerViewState extends State<RegionPickerView> {
-  AppBar _appBar(BuildContext context) {
-    return AppBar(
-      automaticallyImplyLeading: false,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => MoabRouter.pop(context),
-        )
-      ],
-    );
-  }
 
   //TODO: Remove the hard-code region list
   final List<PhoneRegion> _items = [
@@ -49,8 +36,8 @@ class _RegionPickerViewState extends State<RegionPickerView> {
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
-      appBar: _appBar(context),
+    return BasePageView.withCloseButton(
+      context,
       child: BasicLayout(
         header: const BasicHeader(
           title: 'Select region',
@@ -82,7 +69,7 @@ class _RegionPickerViewState extends State<RegionPickerView> {
                 padding: const EdgeInsets.symmetric(vertical: 15),
               ),
               onTap: () {
-                MoabRouter.returnResult(context, _items[index]);
+                NavigationCubit.of(context).popWithResult(_items[index]);
               },
             )
         ),

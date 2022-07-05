@@ -1,13 +1,16 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/themes.dart';
 import 'package:moab_poc/page/components/customs/customs.dart';
 import 'package:moab_poc/page/create_account/view/view.dart';
+import 'package:moab_poc/page/dashboard/view/dashboard_view.dart';
 import 'package:moab_poc/page/landing/view/view.dart';
 import 'package:moab_poc/page/login/view/view.dart';
 import 'package:moab_poc/page/setup/view/adding_nodes_view.dart';
 import 'package:moab_poc/page/setup/view/view.dart';
+import 'package:moab_poc/util/logger.dart';
 
 import '../page/setup/view/android_location_permission_denied_view.dart';
 import '../page/setup/view/android_manually_connect_view.dart';
@@ -16,26 +19,31 @@ import 'route.dart';
 
 enum PageNavigationType { back, close, none }
 
+
 class PathConfig {
-  bool removeFromFactory = false;
+  bool removeFromHistory = false;
 }
 
 class PageConfig {
   PageNavigationType navType = PageNavigationType.back;
-  ThemeData themeData = MoabTheme.AuthModuleLightModeData;
+  ThemeData themeData = MoabTheme.mainLightModeData;
   bool isFullScreenDialog = false;
+  bool ignoreAuthChanged = false;
+  bool ignoreConnectivityChanged = false;
 }
 
 mixin ReturnablePath<T> {
   final Completer<T?> _completer = Completer();
 
   void complete(T? data) {
+    logger.d("${describeIdentity(this)} complete with data $data");
     _completer.complete(data);
   }
 
   bool isComplete() => _completer.isCompleted;
 
   Future<T?> waitForComplete() {
+    logger.d("${describeIdentity(this)} is waiting for complete...");
     return _completer.future;
   }
 }
@@ -45,23 +53,18 @@ mixin ReturnablePath<T> {
 /// BasePath.buildPage() this better to implement on the sub abstract path,
 /// this is because we can easy to understand the whole route in the setup.
 abstract class BasePath<P> {
+  Map<String, dynamic>? args;
+
   String get name => P.toString();
 
   PathConfig get pathConfig => PathConfig();
 
   PageConfig get pageConfig => PageConfig();
 
-  Widget buildPage(MoabRouterDelegate delegate) {
+  Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case HomePath:
-        return HomeView(
-          onLogin: () {
-            delegate.push(AuthInputAccountPath());
-          },
-          onSetup: () {
-            delegate.push(SetupWelcomeEulaPath());
-          },
-        );
+        return HomeView(args: args,);
       case UnknownPath:
         return Center(
           child: Text("Unknown Path"),
@@ -77,26 +80,18 @@ class HomePath extends BasePath<HomePath> {}
 class UnknownPath extends BasePath<UnknownPath> {}
 
 abstract class SetupPath<P> extends BasePath<P> {
-  @override
-  PageConfig get pageConfig =>
-      super.pageConfig..themeData = MoabTheme.AuthModuleLightModeData;
 
   @override
-  Widget buildPage(MoabRouterDelegate delegate) {
+  Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case SetupWelcomeEulaPath:
-        return GetWiFiUpView(onNext: () {
-          delegate.push(SetupParentPlugPath());
-        });
+        return GetWiFiUpView();
       case SetupCustomizeSSIDPath:
-        return CustomizeWifiView(
-          onNext: () {
-            delegate.push(CreateCloudAccountPath());
-          },
-          onSkip: () {
-            delegate.push(CreateCloudAccountPath());
-          },
-        );
+        return CustomizeWifiView();
+      case SetupNodesDonePath:
+        return NodesSuccessView();
+      case SetupFinishPath:
+        return SetupFinishedView();
       case SetupNodesDonePath:
         return NodesSuccessView(onNext: () {
           delegate.push(SetupCustomizeSSIDPath());
@@ -146,40 +141,20 @@ class SetupAddingNodesPath extends SetupPath<SetupAddingNodesPath> {}
 // Setup Parent Flow
 abstract class SetupParentPath<P> extends SetupPath<P> {
   @override
-  Widget buildPage(MoabRouterDelegate delegate) {
+  Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case SetupParentPlugPath:
-        return PlugNodeView(onNext: () {
-          delegate.push(SetupParentWiredPath());
-        });
+        return PlugNodeView();
       case SetupParentWiredPath:
-        return ConnectToModemView(onNext: () {
-          delegate.push(SetupParentPlacePath());
-        });
+        return ConnectToModemView();
       case SetupParentPlacePath:
-        return PlaceNodeView(onNext: () {
-          delegate.push(SetupParentPermissionPath());
-        });
+        return PlaceNodeView();
       case SetupParentPermissionPath:
-        return PermissionsPrimerView(onNext: () {
-          delegate.push(SetupParentQrCodeScanPath());
-        },
-            onAndroidNineNext: () {
-              delegate.push(SetupParentLocationPermissionDeniedPath());
-            },
-            onAndroidManuallyConnect: () {
-              delegate.push(SetupParentLocationPermissionDeniedPath());
-            },
-            onAndroidEasyConnect: () {},
-            onAndroidManuallyNext: () {});
+        return PermissionsPrimerView();
       case SetupParentLocationPath:
-        return SetLocationView(onNext: () {
-          delegate.push(SetupCustomizeSSIDPath());
-        });
+        return SetLocationView();
       case SetupParentQrCodeScanPath:
-        return ParentScanQRCodeView(onNext: () {
-          delegate.push(InternetCheckingPath());
-        });
+        return ParentScanQRCodeView();
       case SetupParentConnectWIFIPath:
         return AndroidManuallyConnectView(onConnected: () {
           delegate.push(SetupParentLocationPermissionDeniedPath());
@@ -230,14 +205,10 @@ class SetupParentLocationPermissionDeniedPath extends SetupParentPath<SetupParen
 // Internet Check Flow
 abstract class InternetCheckPath<P> extends SetupPath<P> {
   @override
-  Widget buildPage(MoabRouterDelegate delegate) {
+  Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case InternetCheckingPath:
-        return CheckNodeInternetView(
-          onNext: () {
-            delegate.push(SetupNodesDoneUnFoundPath());
-          },
-        );
+        return CheckNodeInternetView();
 
       default:
         return const Center();
@@ -247,7 +218,7 @@ abstract class InternetCheckPath<P> extends SetupPath<P> {
 
 class InternetCheckingPath extends InternetCheckPath<InternetCheckingPath> {
   @override
-  PathConfig get pathConfig => super.pathConfig..removeFromFactory = true;
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
 
   @override
   PageConfig get pageConfig =>
@@ -256,30 +227,18 @@ class InternetCheckingPath extends InternetCheckPath<InternetCheckingPath> {
 
 abstract class SetupChildPath<P> extends SetupPath<P> {
   @override
-  Widget buildPage(MoabRouterDelegate delegate) {
+  Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case SetupNthChildPath:
-        return AddChildFinishedView(onAddMore: () {
-          delegate.push(SetupNthChildQrCodePath());
-        }, onAddDone: () {
-          delegate.push(SetupNodesDonePath());
-        });
+        return AddChildFinishedView();
       case SetupNthChildQrCodePath:
-        return AddChildScanQRCodeView(onNext: () {
-          delegate.push(SetupNthChildPlugPath());
-        });
+        return AddChildScanQRCodeView();
       case SetupNthChildPlugPath:
-        return AddChildPlugView(onNext: () {
-          delegate.push(SetupNthChildSearchingPath());
-        });
+        return AddChildPlugView();
       case SetupNthChildSearchingPath:
-        return AddChildSearchingView(onNext: () {
-          delegate.push(SetupAddingNodesPath());
-        });
+        return AddChildSearchingView();
       case SetupNthChildLocationPath:
-        return SetLocationView(onNext: () {
-          delegate.popTo(SetupNthChildPath());
-        });
+        return SetLocationView();
       case SetupNthChildPlacePath:
         return PlaceNodeView(
             isAddOnNodes: true,
@@ -301,7 +260,7 @@ class SetupNthChildPlugPath extends SetupChildPath<SetupNthChildPlugPath> {}
 class SetupNthChildSearchingPath
     extends SetupChildPath<SetupNthChildSearchingPath> {
   @override
-  PathConfig get pathConfig => super.pathConfig..removeFromFactory = true;
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
 
   @override
   PageConfig get pageConfig =>
@@ -315,62 +274,27 @@ class SetupNthChildPlacePath extends SetupChildPath<SetupNthChildPlacePath> {}
 
 abstract class CreateAccountPath<P> extends BasePath<P> {
   @override
-  Widget buildPage(MoabRouterDelegate delegate) {
+  Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case CreateCloudAccountPath:
-        return AddAccountView(
-          onNext: () {
-            delegate.push(ChooseLoginMethodPath());
-          },
-          onSkip: () {
-            delegate.push(CreateAdminPasswordPath());
-          },
-        );
+        return AddAccountView(args: args,);
       case CreateAdminPasswordPath:
-        return CreateAdminPasswordView(onNext: () {
-          delegate.push(SaveCloudSettingsPath());
-        });
+        return CreateAdminPasswordView();
       case ChooseLoginMethodPath:
-        return ChooseLoginTypeView(
-          onCodeNext: () {
-            delegate.push(ChooseLoginOtpMethodPath());
-          },
-          onPasswordNext: () {
-            delegate.push(EnableTwoSVPath());
-          },
-          onSkip: () {
-            delegate.push(AlreadyHaveOldAccountPath());
-          },
-        );
+        return ChooseLoginTypeView(args: args,);
       case ChooseLoginOtpMethodPath:
-        return ChooseOTPMethodView(
-          email: 'moabuser@email.com',
-          onTextNext: () {
-            delegate.push(EnterOtpPath());
-          },
-          onEmailNext: () {
-            delegate.push(EnterOtpPath());
-          },
-        );
-      case EnterOtpPath:
-        return OtpView(
-          onNext: () {
-            delegate.push(SaveCloudSettingsPath());
-          },
-          destination: '(123)-456-7890',
-        );
+        return ChooseOTPMethodView(args: args);
+      case CreateAccountOtpPath:
+        if (args != null) {
+          args!['onNext'] = SaveCloudSettingsPath();
+        }
+        return OtpFlowView(args: args,);
       case SaveCloudSettingsPath:
-        return SaveSettingsView(onNext: () {
-          delegate.push(SetupFinishPath());
-        });
+        return SaveSettingsView();
       case AlreadyHaveOldAccountPath:
         return const HaveOldAccountView();
       case EnableTwoSVPath:
-        return EnableTwoSVView(onNext: () {
-          delegate.push(ChooseLoginOtpMethodPath());
-        }, onSkip: () {
-          delegate.push(SaveCloudSettingsPath());
-        });
+        return EnableTwoSVView();
       default:
         return const Center();
     }
@@ -388,7 +312,7 @@ class ChooseLoginMethodPath extends CreateAccountPath<ChooseLoginMethodPath> {}
 class ChooseLoginOtpMethodPath
     extends CreateAccountPath<ChooseLoginOtpMethodPath> {}
 
-class EnterOtpPath extends CreateAccountPath<EnterOtpPath> {}
+class CreateAccountOtpPath extends CreateAccountPath<CreateAccountOtpPath> {}
 
 class CreateCloudPasswordPath
     extends CreateAccountPath<CreateCloudPasswordPath> {}
@@ -407,69 +331,47 @@ class AlreadyHaveOldAccountPath
 class EnableTwoSVPath extends CreateAccountPath<EnableTwoSVPath> {}
 
 abstract class AuthenticatePath<P> extends BasePath<P> {
-  @override
-  PageConfig get pageConfig =>
-      super.pageConfig..themeData = MoabTheme.AuthModuleLightModeData;
 
   @override
-  Widget buildPage(MoabRouterDelegate delegate) {
+  Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case AuthInputAccountPath:
-        return LoginCloudAccountView(
-          onNext: () {
-            delegate.push(AuthChooseOtpPath());
-          },
-          onLocalLogin: () {
-            delegate.push(AuthLocalLoginPath());
-          },
-          onForgotEmail: () {
-            delegate.push(AuthForgotEmailPath());
-          },
-        );
-      case AuthChooseOtpPath:
-        return LoginOTPMethodsView(
-          onTextNext: () {
-            delegate.push(AuthInputOtpPath());
-          },
-          onEmailNext: () {
-            delegate.push(AuthInputOtpPath());
-          },
-        );
-      case AuthInputOtpPath:
-        return OtpView(
-          onNext: () {
-            delegate.push(NoRouterPath());
-          },
-          destination: '(123)-456-7890',
-        );
+        return LoginCloudAccountView();
+      case AuthCloudLoginOtpPath:
+        if (args != null) {
+          args!['onNext'] = NoRouterPath();
+        }
+        return OtpFlowView(args: args);
       case AuthForgotEmailPath:
         return const ForgotEmailView();
       case NoRouterPath:
-        return NoRouterView(onNext: () {}, onLogout: () {});
+        return NoRouterView();
       case AuthCreateAccountPhonePath:
-        return CreateAccountPhoneView(
-          onSave: () {},
-          onSkip: () {},
-        );
+        return CreateAccountPhoneView(args: args,);
       case SelectPhoneRegionCodePath:
         return const RegionPickerView();
       case AuthLocalLoginPath:
-        return EnterRouterPasswordView(
-            onNext: () {
-              delegate.push(NoRouterPath());
-            },
-            onForgot: () {});
+        return EnterRouterPasswordView();
+      case AuthLoginWithPasswordPath:
+        return LoginTraditionalPasswordView();
+      case AuthLocalResetPasswordPath:
+        return LocalResetRouterPasswordView();
+      case AuthResetLocalOtpPath:
+        if (args != null) {
+          args!['onNext'] = DashboardMainPath();
+        }
+        return OtpFlowView(args: args,);
       default:
         return const Center();
     }
   }
 }
 
+class AuthResetLocalOtpPath extends AuthenticatePath<AuthResetLocalOtpPath> {}
+
 class AuthInputAccountPath extends AuthenticatePath<AuthInputAccountPath> {}
 
-class AuthChooseOtpPath extends AuthenticatePath<AuthChooseOtpPath> {}
-
-class AuthInputOtpPath extends AuthenticatePath<AuthInputOtpPath> {}
+class AuthCloudLoginOtpPath extends AuthenticatePath<AuthCloudLoginOtpPath> {}
 
 class NoRouterPath extends AuthenticatePath<NoRouterPath> {}
 
@@ -490,13 +392,13 @@ class SelectPhoneRegionCodePath
 
 class AuthLocalLoginPath extends AuthenticatePath<AuthLocalLoginPath> {}
 
+class AuthLoginWithPasswordPath extends AuthenticatePath<AuthLoginWithPasswordPath> {}
+
+class AuthLocalResetPasswordPath extends AuthenticatePath<AuthLocalResetPasswordPath> {}
+
 abstract class DebugToolsPath<P> extends BasePath<P> {
   @override
-  PageConfig get pageConfig =>
-      super.pageConfig..themeData = MoabTheme.AuthModuleLightModeData;
-
-  @override
-  Widget buildPage(MoabRouterDelegate delegate) {
+  Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case DebugToolsMainPath:
         return const DebugToolsView();
@@ -507,3 +409,17 @@ abstract class DebugToolsPath<P> extends BasePath<P> {
 }
 
 class DebugToolsMainPath extends DebugToolsPath<DebugToolsMainPath> {}
+
+abstract class DashboardPath<P> extends BasePath<P> {
+  @override
+  Widget buildPage(NavigationCubit cubit) {
+    switch (P) {
+      case DashboardMainPath:
+        return const DashboardView();
+      default:
+        return Center();
+    }
+  }
+}
+
+class DashboardMainPath extends DashboardPath<DashboardMainPath> {}

@@ -4,17 +4,16 @@ import 'package:moab_poc/page/components/base_components/text/description_text.d
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:moab_poc/route/route.dart';
+
 import '../../components/base_components/button/primary_button.dart';
 import '../../components/base_components/button/simple_text_button.dart';
 
 class NodesSuccessView extends StatelessWidget {
-  const NodesSuccessView(
-      {Key? key, required this.onNext, required this.onAddNode, this.onLocation})
-      : super(key: key);
+  const NodesSuccessView({
+    Key? key,
+  }) : super(key: key);
 
-  final VoidCallback onNext;
-  final VoidCallback onAddNode;
-  final VoidCallback? onLocation;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +57,7 @@ class NodesSuccessView extends StatelessWidget {
             PrimaryButton(
               text: AppLocalizations.of(context)!
                   .nodes_success_multi_add_wifi_name_button_text,
-              onPress: onNext,
+              onPress: () => NavigationCubit.of(context).push(SetupCustomizeSSIDPath()),
             ),
           ],
         ),
