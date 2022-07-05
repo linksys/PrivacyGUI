@@ -60,10 +60,19 @@ extension AuthBlocCloud on AuthBloc {
         .then((value) => _handleLogin(value));
   }
 
-  Future<AccountInfo> _handleTestUsername(String username, DummyModel data) async {
+  Future<void> forgotPassword() async {
+    return await _repository.forgotPassword();
+  }
+
+  Future<DummyModel> resetPassword(String password) async {
+    return await _repository.resetPassword(password);
+  }
+
+  Future<AccountInfo> _handleTestUsername(
+      String username, DummyModel data) async {
     logger.d("handle test user name: $data");
     final LoginType loginType =
-    LoginType.values.firstWhere((element) => element.name == data['type']);
+        LoginType.values.firstWhere((element) => element.name == data['type']);
     final List<DummyModel> methodList =
         data['method'] as List<DummyModel>? ?? [];
     List<OtpInfo> list = [];
@@ -74,7 +83,8 @@ extension AuthBlocCloud on AuthBloc {
       list.add(OtpInfo(method: method, data: target));
     }
 
-    AccountInfo accountInfo = AccountInfo(username: username, loginType: loginType, otpInfo: list);
+    AccountInfo accountInfo =
+        AccountInfo(username: username, loginType: loginType, otpInfo: list);
     emit(state.copyWith(accountInfo: accountInfo));
     return accountInfo;
   }
