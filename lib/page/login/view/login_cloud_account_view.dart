@@ -147,7 +147,7 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
 
   _handleResult(String username, AccountInfo accountInfo) {
     if (accountInfo.loginType == LoginType.password) {
-      NavigationCubit.of(context).push(AuthLoginWithPasswordPath());
+      NavigationCubit.of(context).push(AuthCloudLoginWithPasswordPath());
     } else {
 
       NavigationCubit.of(context)

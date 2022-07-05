@@ -345,8 +345,12 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
         return const RegionPickerView();
       case AuthLocalLoginPath:
         return const EnterRouterPasswordView();
-      case AuthLoginWithPasswordPath:
+      case AuthCloudLoginWithPasswordPath:
         return const LoginTraditionalPasswordView();
+      case AuthCloudForgotPasswordPath:
+        return const CloudForgotPasswordView();
+      case AuthCloudResetPasswordPath:
+        return const CloudResetPasswordView();
       case AuthLocalResetPasswordPath:
         return const LocalResetRouterPasswordView();
       case AuthResetLocalOtpPath:
@@ -359,6 +363,8 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
     }
   }
 }
+
+// Cloud Login
 
 class AuthResetLocalOtpPath extends AuthenticatePath<AuthResetLocalOtpPath> {}
 
@@ -383,9 +389,15 @@ class SelectPhoneRegionCodePath
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
 
-class AuthLocalLoginPath extends AuthenticatePath<AuthLocalLoginPath> {}
+class AuthCloudLoginWithPasswordPath extends AuthenticatePath<AuthCloudLoginWithPasswordPath> {}
 
-class AuthLoginWithPasswordPath extends AuthenticatePath<AuthLoginWithPasswordPath> {}
+class AuthCloudForgotPasswordPath extends AuthenticatePath<AuthCloudForgotPasswordPath> {}
+
+class AuthCloudResetPasswordPath extends AuthenticatePath<AuthCloudResetPasswordPath> {}
+
+// Local Login
+
+class AuthLocalLoginPath extends AuthenticatePath<AuthLocalLoginPath> {}
 
 class AuthLocalResetPasswordPath extends AuthenticatePath<AuthLocalResetPasswordPath> {}
 

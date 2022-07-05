@@ -77,7 +77,9 @@ class _LoginTraditionalPasswordViewState
             const SizedBox(
               height: 15,
             ),
-            SimpleTextButton(text: 'Forgot password', onPressed: () {}),
+            SimpleTextButton(text: 'Forgot password', onPressed: () {
+              NavigationCubit.of(context).push(AuthCloudForgotPasswordPath());
+            }),
             const SizedBox(
               height: 38,
             ),

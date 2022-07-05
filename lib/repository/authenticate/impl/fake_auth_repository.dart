@@ -73,7 +73,10 @@ class FakeAuthRepository extends AuthRepository {
   @override
   Future<DummyModel> resetPassword(String password) async {
     await Future.delayed(waitDuration);
-    return {};
+    if (password == 'Belkin123!') {
+      return {};
+    }
+    throw CloudException('OLD_PASSWORD', "You cannot use an old password.");
   }
 
   @override
