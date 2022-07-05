@@ -33,13 +33,7 @@ class _LoginTraditionalPasswordViewState
   Widget build(BuildContext context) {
     logger.d('DEBUG:: LoginCloudAccountView: build');
 
-    return BlocConsumer<AuthBloc, AuthState>(
-      listenWhen: (context, state) {
-        return state.accountInfo.username.isNotEmpty;
-      },
-      listener: (context, state) {
-        _username = state.accountInfo.username;
-      },
+    return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) => _isLoading
           ? const FullScreenSpinner(text: 'processing...')
           : _contentView(state),
@@ -47,6 +41,7 @@ class _LoginTraditionalPasswordViewState
   }
 
   Widget _contentView(AuthState state) {
+    _username = state.accountInfo.username;
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
