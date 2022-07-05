@@ -9,10 +9,11 @@ import '../../components/base_components/button/primary_button.dart';
 import '../../components/layouts/basic_header.dart';
 
 class PlaceNodeView extends StatelessWidget {
+  var isAddOnNodes;
+
   PlaceNodeView({
     Key? key,
     this.isAddOnNodes = false,
-    required this.onNext,
   }) : super(key: key);
 
   // Replace this to svg if the svg image is fixed
@@ -77,7 +78,13 @@ class PlaceNodeView extends StatelessWidget {
         ),
         PrimaryButton(
           text: AppLocalizations.of(context)!.next,
-          onPress: () => NavigationCubit.of(context).push(SetupParentPermissionPath()),
+          onPress: () {
+            if (isAddOnNodes) {
+              NavigationCubit.of(context).push(SetupNthChildSearchingPath());
+            } else {
+              NavigationCubit.of(context).push(SetupParentPermissionPath());
+            }
+          },
         )
       ],
     );

@@ -14,31 +14,12 @@ import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/in_app_browser.dart';
 
-class CreateAdminPasswordView extends StatelessWidget {
-  const CreateAdminPasswordView({
-    Key? key,
-    required this.onNext,
-  }) : super(key: key);
-
-// class CreateAdminPasswordView extends ArgumentsStatelessView {
-//   const CreateAdminPasswordView({Key? key, super.args}) : super(key: key);
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return BasePageView(
-//       child: _PageContent(
-//         args: args,
-//       ),
-//       scrollable: true,
-//     );
-//   }
-// }
-
 class CreateAdminPasswordView extends ArgumentsStatefulView {
   const CreateAdminPasswordView({Key? key, super.args}) : super(key: key);
 
   @override
-  _CreateAdminPasswordViewState createState() => _CreateAdminPasswordViewState();
+  _CreateAdminPasswordViewState createState() =>
+      _CreateAdminPasswordViewState();
 }
 
 class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
@@ -60,17 +41,22 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
 
   @override
   Widget build(BuildContext context) {
-    return _isLoading ? BasePageView.noNavigationBar(child: const FullScreenSpinner(text: 'Processing',)) : _contentView();
+    return _isLoading
+        ? BasePageView.noNavigationBar(
+            child: const FullScreenSpinner(
+            text: 'Processing',
+          ))
+        : _contentView();
   }
 
   Widget _contentView() {
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
-        header: const BasicHeader(
+        header: BasicHeader(
           title: AppLocalizations.of(context)!.create_router_password_title,
           description:
-  AppLocalizations.of(context)!.create_router_password_subtitle,
+              AppLocalizations.of(context)!.create_router_password_subtitle,
         ),
         content: Column(
           children: [
@@ -93,7 +79,8 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
               height: 100,
             ),
             SimpleTextButton(
-                text: AppLocalizations.of(context)!.create_router_password_how_to_access,
+                text: AppLocalizations.of(context)!
+                    .create_router_password_how_to_access,
                 onPressed: () {
                   MoabInAppBrowser.withDefaultOption().openUrlRequest(
                       urlRequest: URLRequest(
@@ -114,12 +101,11 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
       ),
     );
   }
+
   _createPassword(String password, String hint) async {
     _setLoading(true);
-    await context
-        .read<AuthBloc>()
-        .createPassword(password, hint)
-        .then((value) =>
+    await context.read<AuthBloc>().createPassword(password, hint).then(
+        (value) =>
             NavigationCubit.of(context).clearAndPush(DashboardMainPath()));
     _setLoading(false);
   }

@@ -4,17 +4,35 @@ import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/customs/qr_view.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/util/permission.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../components/base_components/button/primary_button.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-class ParentScanQRCodeView extends StatelessWidget {
+class ParentScanQRCodeView extends StatefulWidget {
   const ParentScanQRCodeView({
     Key? key,
   }) : super(key: key);
 
+  @override
+  State<ParentScanQRCodeView> createState() => _ParentScanQRCodeViewState();
+}
 
+class _ParentScanQRCodeViewState extends State<ParentScanQRCodeView> with Permissions{
+  @override
+  void initState() {
+    _checkCameraPermission();
+  }
+  
+  Future<void> _checkCameraPermission() async{
+    await checkCameraPermissions().then((value) {
+      if(!value) {
+        NavigationCubit.of(context).push(SetupParentManualEnterSSIDPath());
+      }
+    });
+  }
+  
   @override
   Widget build(BuildContext context) {
     return BasePageView(
@@ -46,7 +64,7 @@ class ParentScanQRCodeView extends StatelessWidget {
           children: [
             PrimaryButton(
               text: AppLocalizations.of(context)!.scan_qrcode_view_button_text,
-              onPress: () => NavigationCubit.of(context).push(InternetCheckingPath()),
+              onPress: () => NavigationCubit.of(context).push(AndroidLocationPermissionPrimerPath()),
             ),
           ],
         ),
@@ -57,6 +75,6 @@ class ParentScanQRCodeView extends StatelessWidget {
 
   _handleScanResult(BuildContext context, Barcode code) {
     print('Scanned code: ${code.rawValue ?? ''}');
-    NavigationCubit.of(context).push(InternetCheckingPath());
+    NavigationCubit.of(context).push(AndroidLocationPermissionPrimerPath());
   }
 }

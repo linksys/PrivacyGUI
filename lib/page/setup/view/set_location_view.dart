@@ -57,7 +57,7 @@ class _SetLocationViewState extends State<SetLocationView> {
                         text: AppLocalizations.of(context)!.next,
                         onPress: _selected >= 0
                             ? () =>
-                            NavigationCubit.of(context).push(SetupNthChildPath())
+                            NavigationCubit.of(context).push(SetupCustomizeSSIDPath())
                             : null,
                       ),
                   ],
@@ -83,7 +83,7 @@ class _SetLocationViewState extends State<SetLocationView> {
                         text: AppLocalizations.of(context)!.save,
                         onPress: _selected >= 0
                             ? () =>
-                            NavigationCubit.of(context).push(SetupNthChildPath())
+                            NavigationCubit.of(context).push(SetupCustomizeSSIDPath())
                             : null,
                       ),
                   ],

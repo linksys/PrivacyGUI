@@ -5,18 +5,15 @@ import 'package:moab_poc/page/components/base_components/text/description_text.d
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:moab_poc/route/route.dart';
 
 import '../../../util/permission.dart';
 import '../../components/base_components/button/primary_button.dart';
 
 class AndroidLocationPermissionDenied extends StatefulWidget {
-  AndroidLocationPermissionDenied(
-      {Key? key, required this.onNext, required this.onQuit, required this.onSuccess})
+  const AndroidLocationPermissionDenied(
+      {Key? key})
       : super(key: key);
-
-  final VoidCallback onNext;
-  final VoidCallback onQuit;
-  final VoidCallback onSuccess;
 
   @override
   State<AndroidLocationPermissionDenied> createState() =>
@@ -39,7 +36,7 @@ class _AndroidLocationPermissionDeniedState
         isLocationPermissionGranted = value;
       });
       if (isLocationPermissionGranted) {
-        widget.onSuccess();
+        NavigationCubit.of(context).push(InternetCheckingPath());
       }
     });
   }
@@ -76,11 +73,15 @@ class _AndroidLocationPermissionDeniedState
           children: [
             PrimaryButton(
                 text: AppLocalizations.of(context)!.enable_location,
-                onPress: widget.onNext),
+                onPress: (){
+                  _checkLocationPermission();
+                }),
             const SizedBox(height: 11),
             SecondaryButton(
                 text: AppLocalizations.of(context)!.quit_setup,
-                onPress: widget.onQuit)
+                onPress: (){
+                  NavigationCubit.of(context).popTo(HomePath());
+                })
           ],
         ),
       ),

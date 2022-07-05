@@ -34,7 +34,7 @@ class GetWiFiUpView extends StatelessWidget {
         content: _content(context),
         footer: PrimaryButton(
           text: AppLocalizations.of(context)!.accept,
-          NavigationCubit.of(context).push(SetupParentPlugPath()),
+          onPress: () => NavigationCubit.of(context).push(SetupParentPlugPath()),
         ),
       ),
     );

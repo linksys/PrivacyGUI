@@ -1,10 +1,6 @@
-import 'dart:ffi';
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:moab_poc/channel/wifi_connect_channel.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
@@ -12,17 +8,40 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/page/setup/view/parent_scan_qrcode_view.dart';
 import 'package:moab_poc/route/route.dart';
 
+import '../../../channel/wifi_connect_channel.dart';
 import '../../components/base_components/button/primary_button.dart';
 import 'android_manually_connect_view.dart';
 import 'android_qr_choice_view.dart';
 
-class PermissionsPrimerView extends StatelessWidget {
+class PermissionsPrimerView extends StatefulWidget {
   PermissionsPrimerView({
     Key? key,
   }) : super(key: key);
 
+  @override
+  State<PermissionsPrimerView> createState() => _PermissionsPrimerViewState();
+}
+
+class _PermissionsPrimerViewState extends State<PermissionsPrimerView> {
   // Replace this to svg if the svg image is fixed
   final Widget checkIcon = Image.asset('assets/images/icon_check.png');
+  final Widget imgContent = Image.asset('assets/images/permission_dialog.png');
+
+  bool isUnderAndroidTen = false;
+  bool isSupportEasyConnect = false;
+
+  Future<void> _initAndroidSupport() async {
+    isUnderAndroidTen =
+    await NativeConnectWiFiChannel().isAndroidVersionUnderTen();
+    isSupportEasyConnect =
+    await NativeConnectWiFiChannel().isAndroidTenAndSupportEasyConnect();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _initAndroidSupport();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,17 +81,14 @@ class PermissionsPrimerView extends StatelessWidget {
       );
     } else {
       if (isUnderAndroidTen) {
-        return ParentScanQRCodeView(onNext: widget.onAndroidNineNext);
+        return const ParentScanQRCodeView();
       } else if (isSupportEasyConnect) {
-        return AndroidQRChoiceView(
-            onEasyConnected: widget.onAndroidEasyConnect, onManuallyAdd: widget.onAndroidManuallyNext);
+        return AndroidQRChoiceView();
       } else {
-        return AndroidManuallyConnectView(
-            onConnected: widget.onAndroidManuallyConnect);
+        return AndroidManuallyConnectView();
       }
     }
   }
-
 }
 
 class CheckPermissionView extends StatelessWidget {

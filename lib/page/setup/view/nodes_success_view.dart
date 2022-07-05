@@ -14,7 +14,6 @@ class NodesSuccessView extends StatelessWidget {
     Key? key,
   }) : super(key: key);
 
-
   @override
   Widget build(BuildContext context) {
     double width = 220;
@@ -30,9 +29,7 @@ class NodesSuccessView extends StatelessWidget {
               Center(
                   child: GestureDetector(
                       onTap: () {
-                        if (onLocation != null){
-                          onLocation!();
-                        }
+                          NavigationCubit.of(context).push(SetupParentLocationPath());
                       },
                       child: Image.asset(
                         'assets/images/nodes_topology.png',
@@ -43,7 +40,9 @@ class NodesSuccessView extends StatelessWidget {
                 child: Center(
                   child: SimpleTextButton(
                       text: AppLocalizations.of(context)!.add_a_node,
-                      onPressed: onAddNode),
+                      onPressed: (){
+                          NavigationCubit.of(context).push(SetupNthChildPlacePath());
+                      }),
                 ),
               ),
               DescriptionText(

@@ -5,6 +5,7 @@ import 'package:moab_poc/page/components/base_components/progress_bars/indetermi
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../../design/colors.dart';
 
@@ -39,7 +40,7 @@ class _AddChildSearchingViewState extends State<AddChildSearchingView> {
       _hasFound = true;
     });
     await Future.delayed(const Duration(seconds: 3));
-    NavigationCubit.of(context).push(SetupNthChildLocationPath());
+    NavigationCubit.of(context).push(SetupAddingNodesPath());
   }
 
   @override
@@ -47,7 +48,7 @@ class _AddChildSearchingViewState extends State<AddChildSearchingView> {
     return BasePageView.noNavigationBar(
       child: BasicLayout(
         header: BasicHeader(
-          title: _hasFound ? 'Found it' : 'Looking for your node…',
+          title: _hasFound ? AppLocalizations.of(context)!.found_it : AppLocalizations.of(context)!.looking_for_your_node,
         ),
         content: Center(
           child: Column(

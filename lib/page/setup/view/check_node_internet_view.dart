@@ -40,7 +40,7 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
       _hasInternet = true;
     });
     await Future.delayed(const Duration(seconds: 3));
-    NavigationCubit.of(context).push(SetupParentLocationPath());
+    NavigationCubit.of(context).push(SetupNodesDoneUnFoundPath());
   }
 
   @override

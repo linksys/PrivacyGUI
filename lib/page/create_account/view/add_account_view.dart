@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
@@ -12,9 +11,7 @@ import 'package:moab_poc/route/route.dart';
 import '../../components/base_components/button/primary_button.dart';
 
 class AddAccountView extends ArgumentsStatefulView {
-  const AddAccountView(
-      {Key? key, super.args})
-      : super(key: key);
+  const AddAccountView({Key? key, super.args}) : super(key: key);
 
   @override
   _AddAccountState createState() => _AddAccountState();
@@ -64,7 +61,7 @@ class _AddAccountState extends State<AddAccountView> {
             SimpleTextButton(
                 text: AppLocalizations.of(context)!
                     .add_cloud_account_skip_use_router_password,
-                onPressed: widget.onSkip)
+                onPressed: () => NavigationCubit.of(context).push(CreateAdminPasswordPath()))
           ],
         ),
         footer: Column(
@@ -75,9 +72,9 @@ class _AddAccountState extends State<AddAccountView> {
               maintainSize: true,
               visible: _emailController.text != '',
               child: PrimaryButton(
-                text: AppLocalizations.of(context)!.next,
-                  NavigationCubit.of(context).push(ChooseLoginMethodPath());
-              ),
+                  text: AppLocalizations.of(context)!.next,
+                  onPress: () => NavigationCubit.of(context)
+                      .push(ChooseLoginMethodPath())),
             ),
             const SizedBox(
               height: 26,

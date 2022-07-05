@@ -192,7 +192,7 @@ class _PasswordValidationState extends State<PasswordValidationView> {
         ),
         SimpleTextButton(
             text: 'I already have a Linksys account password',
-            onPressed: widget.onSkip),
+            onPressed: (){}),
         const SizedBox(
           height: 42,
         ),
