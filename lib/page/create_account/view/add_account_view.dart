@@ -103,7 +103,7 @@ class _AddAccountState extends State<AddAccountView> {
             SimpleTextButton(
                 text: AppLocalizations.of(context)!.add_cloud_account_skip_use_router_password,
                 onPressed: () {
-                  NavigationCubit.of(context).push(CreateAdminPasswordPath());
+                  NavigationCubit.of(context).push(NoUseCloudAccountPath());
                 })
           ],
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
+import 'package:moab_poc/route/route.dart';
 
 class NoUseAccountConfirmView extends StatelessWidget {
   const NoUseAccountConfirmView({Key? key}) : super(key: key);
@@ -49,7 +50,7 @@ class NoUseAccountConfirmView extends StatelessWidget {
             PrimaryButton(
               text: 'Create account',
               onPress: () {
-                //TODO: Go to next
+                NavigationCubit.of(context).pop();
               },
             ),
             const SizedBox(
@@ -58,7 +59,7 @@ class NoUseAccountConfirmView extends StatelessWidget {
             SecondaryButton(
               text: 'I do not want an account',
               onPress: () {
-                //TODO: Go to next
+                NavigationCubit.of(context).push(CreateAdminPasswordPath());
               },
             )
           ],
