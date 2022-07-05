@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/themes.dart';
 import 'package:moab_poc/page/components/customs/customs.dart';
+import 'package:moab_poc/page/components/customs/no_network_bottom_modal.dart';
 import 'package:moab_poc/page/create_account/view/view.dart';
 import 'package:moab_poc/page/dashboard/view/dashboard_view.dart';
 import 'package:moab_poc/page/landing/view/view.dart';
@@ -32,6 +33,7 @@ class PageConfig {
   bool isFullScreenDialog = false;
   bool ignoreAuthChanged = false;
   bool ignoreConnectivityChanged = false;
+  bool isOpaque = true;
 }
 
 mixin ReturnablePath<T> {
@@ -80,6 +82,23 @@ abstract class BasePath<P> {
 class HomePath extends BasePath<HomePath> {}
 
 class UnknownPath extends BasePath<UnknownPath> {}
+
+abstract class PopUpPath<P> extends BasePath<P> {
+  @override
+  Widget buildPage(NavigationCubit cubit) {
+    switch (P) {
+      case NoInternetConnectionPath:
+        return NoInternetConnectionModal();
+      default:
+        return Center();
+    }
+  }
+}
+class NoInternetConnectionPath extends PopUpPath<NoInternetConnectionPath> {
+  @override
+  PageConfig get pageConfig =>
+      super.pageConfig..isFullScreenDialog = true..isOpaque = false;
+}
 
 abstract class SetupPath<P> extends BasePath<P> {
 

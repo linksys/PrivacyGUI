@@ -1,17 +1,18 @@
-
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/bloc/connectivity/connectivity_info.dart';
 import 'package:moab_poc/bloc/connectivity/cubit.dart';
+import 'package:moab_poc/page/components/customs/no_network_bottom_modal.dart';
+import 'package:moab_poc/route/moab_page.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/analytics.dart';
 import 'package:moab_poc/util/logger.dart';
 
 class MoabRouterDelegate extends RouterDelegate<BasePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<BasePath> {
-
   MoabRouterDelegate(this._cubit) : navigatorKey = GlobalKey();
 
   final NavigationCubit _cubit;
@@ -38,12 +39,14 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
             key: navigatorKey,
             pages: [
               for (final path in stack.configs)
-                MaterialPage(
+                MoabPage(
                   name: path.name,
                   key: ValueKey(path.name),
                   fullscreenDialog: path.pageConfig.isFullScreenDialog,
+                  opaque: path.pageConfig.isOpaque,
                   child: Theme(
-                      data: path.pageConfig.themeData, child: path.buildPage(_cubit)),
+                      data: path.pageConfig.themeData,
+                      child: path.buildPage(_cubit)),
                 ),
             ],
             onPopPage: _onPopPage),
@@ -65,7 +68,7 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
 
   bool _onPopPage(Route<dynamic> route, dynamic result) {
     logger.d('MoabRouterDelegate:: onPopPage: $result');
-    
+
     bool didPop = route.didPop(result);
     if (didPop) {
       if (_cubit.canPop()) {
@@ -84,7 +87,9 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
 
   BlocListener _listenForAuth() {
     return BlocListener<AuthBloc, AuthState>(
-      listenWhen: (previous, current) => previous.status != current.status && !currentConfiguration.pageConfig.ignoreAuthChanged,
+      listenWhen: (previous, current) =>
+          previous.status != current.status &&
+          !currentConfiguration.pageConfig.ignoreAuthChanged,
       listener: (context, state) {
         logger.d("Auth Listener: $state}");
         if (state.status != AuthStatus.authorized) {
@@ -98,10 +103,13 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
 
   BlocListener _listenForConnectivity() {
     return BlocListener<ConnectivityCubit, ConnectivityInfo>(
-      listenWhen: (previous, current) => !currentConfiguration.pageConfig.ignoreConnectivityChanged,
+      listenWhen: (previous, current) =>
+          !currentConfiguration.pageConfig.ignoreConnectivityChanged,
       listener: (context, state) {
         logger.d("Connectivity Listener: ${state.type}, ${state.ssid}");
-
+        if (state.type == ConnectivityResult.none) {
+          _cubit.push(NoInternetConnectionPath());
+        }
       },
     );
   }

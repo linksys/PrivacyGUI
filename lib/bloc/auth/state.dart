@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum AuthStatus { unknownAuth, unAuthorized, authorized }
+enum AuthStatus { unknownAuth, unAuthorized, authorized, pending }
 
 enum AuthMethod { none, local, remote }
 

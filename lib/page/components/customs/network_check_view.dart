@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/connectivity/connectivity_info.dart';
 import 'package:moab_poc/bloc/connectivity/cubit.dart';
-import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/route/navigation_cubit.dart';
 import 'package:moab_poc/util/permission.dart';
 import 'package:permission_handler/permission_handler.dart';

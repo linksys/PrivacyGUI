@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 class BasePageView extends StatelessWidget {
@@ -7,17 +9,26 @@ class BasePageView extends StatelessWidget {
   final Widget? child;
   final EdgeInsets? padding;
   final bool? scrollable;
+  final Widget? bottomSheet;
 
   BasePageView.noNavigationBar(
-      {Key? key, this.child, this.padding = _containerPadding, this.scrollable = false})
+      {Key? key,
+      this.child,
+      this.padding = _containerPadding,
+      this.scrollable = false})
       : appBar = AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: Colors.transparent,
           elevation: 0,
-        ), super(key: key);
+        ),
+        bottomSheet = null,
+        super(key: key);
 
   BasePageView.withCloseButton(BuildContext context,
-      {Key? key, this.child, this.padding = _containerPadding, this.scrollable = false})
+      {Key? key,
+      this.child,
+      this.padding = _containerPadding,
+      this.scrollable = false})
       : appBar = AppBar(
           backgroundColor: Colors.transparent,
           iconTheme:
@@ -31,6 +42,22 @@ class BasePageView extends StatelessWidget {
             )
           ],
         ),
+        bottomSheet = null,
+        super(key: key);
+
+  BasePageView.bottomSheetModal(
+      {Key? key,
+      required this.bottomSheet,
+      this.padding = _containerPadding,
+      this.scrollable = false})
+      : appBar = AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        child = BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        ),
         super(key: key);
 
   const BasePageView({
@@ -38,12 +65,14 @@ class BasePageView extends StatelessWidget {
     this.appBar,
     this.child,
     this.padding = _containerPadding,
+    this.bottomSheet,
     this.scrollable = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: bottomSheet == null ? Theme.of(context).scaffoldBackgroundColor : Colors.transparent,
       appBar: appBar ??
           AppBar(
             backgroundColor: Colors.transparent,
@@ -54,6 +83,7 @@ class BasePageView extends StatelessWidget {
       body: SafeArea(
         child: scrollable! ? _scrollableView() : _view(),
       ),
+      bottomSheet: bottomSheet,
     );
   }
 
