@@ -100,7 +100,7 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
     return BlocListener<ConnectivityCubit, ConnectivityInfo>(
       listenWhen: (previous, current) => !currentConfiguration.pageConfig.ignoreConnectivityChanged,
       listener: (context, state) {
-        logger.d("Connectivity Listener: ${state.type}");
+        logger.d("Connectivity Listener: ${state.type}, ${state.ssid}");
 
       },
     );

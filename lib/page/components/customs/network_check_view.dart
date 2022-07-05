@@ -19,8 +19,6 @@ class NetworkCheckView extends StatefulWidget {
 
 class _NetworkCheckViewState extends State<NetworkCheckView> with Permissions {
 
-  ConnectivityCubit? _cubit;
-
   @override
   void initState() {
     super.initState();
@@ -30,7 +28,6 @@ class _NetworkCheckViewState extends State<NetworkCheckView> with Permissions {
 
   @override
   void dispose() {
-    _cubit?.stop();
     super.dispose();
   }
 
@@ -41,8 +38,7 @@ class _NetworkCheckViewState extends State<NetworkCheckView> with Permissions {
         openAppSettings();
         NavigationCubit.of(context).pop();
       } else {
-        _cubit = context.read<ConnectivityCubit>();
-        _cubit?.start();
+        context.read<ConnectivityCubit>().forceUpdate();
       }
     });
   }

@@ -20,6 +20,10 @@ class ConnectivityCubit extends Cubit<ConnectivityInfo> with ConnectivityListene
   Future onConnectivityChanged(ConnectivityInfo info) async {
     emit(info);
   }
+
+  void forceUpdate() async {
+    _updateConnectivity(await _connectivity.checkConnectivity());
+  }
 }
 
 mixin ConnectivityListener {
