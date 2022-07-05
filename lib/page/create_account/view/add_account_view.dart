@@ -6,6 +6,7 @@ import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
+import 'package:moab_poc/page/create_account/view/view.dart';
 import 'package:moab_poc/route/route.dart';
 
 import '../../components/base_components/button/primary_button.dart';
@@ -19,6 +20,48 @@ class AddAccountView extends ArgumentsStatefulView {
 
 class _AddAccountState extends State<AddAccountView> {
   final TextEditingController _emailController = TextEditingController();
+  var isEmailInvalid = false;
+
+  void _onNextAction() {
+    isEmailInvalid = !_emailController.text.isValidEmailFormat();
+    if (!isEmailInvalid) {
+      NavigationCubit.of(context).push(ChooseLoginMethodPath());
+    } else {
+      setState(() {});
+    }
+  }
+
+  Widget _buildAccountTipsWidget() {
+    List<String> tips = [
+      AppLocalizations.of(context)!.add_cloud_account_bullet_1,
+      AppLocalizations.of(context)!.add_cloud_account_bullet_2,
+      AppLocalizations.of(context)!.add_cloud_account_bullet_3,
+      AppLocalizations.of(context)!.add_cloud_account_bullet_4,
+      AppLocalizations.of(context)!.add_cloud_account_bullet_5,
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 26),
+      child: Column(
+        children: List.generate(tips.length, (index) {
+          return Row(
+            children: [
+              Image.asset('assets/images/icon_check_green.png'),
+              const SizedBox(
+                width: 8,
+              ),
+              Text(
+                tips[index],
+                style: Theme.of(context).textTheme.headline4?.copyWith(
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,72 +73,52 @@ class _AddAccountState extends State<AddAccountView> {
           title: AppLocalizations.of(context)!.add_cloud_account_header_title,
         ),
         content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InputField(
-              titleText:
-                  AppLocalizations.of(context)!.add_cloud_account_input_title,
-              hintText:
-                  AppLocalizations.of(context)!.add_cloud_account_input_title,
+              titleText: AppLocalizations.of(context)!.add_cloud_account_input_title,
               controller: _emailController,
+              isError: isEmailInvalid,
               onChanged: (value) {
-                setState(() {});
+                setState(() {
+                  isEmailInvalid = false;
+                });
               },
             ),
             const SizedBox(
-              height: 39,
+              height: 8,
             ),
-            BulletPoint(context,
-                AppLocalizations.of(context)!.add_cloud_account_bullet_1),
-            BulletPoint(context,
-                AppLocalizations.of(context)!.add_cloud_account_bullet_2),
-            BulletPoint(context,
-                AppLocalizations.of(context)!.add_cloud_account_bullet_3),
-            BulletPoint(context,
-                AppLocalizations.of(context)!.add_cloud_account_bullet_4),
-            BulletPoint(context,
-                AppLocalizations.of(context)!.add_cloud_account_bullet_5),
-            const SizedBox(
-              height: 30,
-            ),
-            SimpleTextButton(
-                text: AppLocalizations.of(context)!
-                    .add_cloud_account_skip_use_router_password,
-                onPressed: () => NavigationCubit.of(context).push(CreateAdminPasswordPath()))
-          ],
-        ),
-        footer: Column(
-          children: [
             Visibility(
               maintainState: true,
               maintainAnimation: true,
               maintainSize: true,
-              visible: _emailController.text != '',
-              child: PrimaryButton(
-                  text: AppLocalizations.of(context)!.next,
-                  onPress: () => NavigationCubit.of(context)
-                      .push(ChooseLoginMethodPath())),
+              visible: isEmailInvalid,
+              child: Text(
+                'Enter a valid email format',
+                style: Theme.of(context).textTheme.headline4?.copyWith(
+                      color: Colors.red,
+                    ),
+              ),
             ),
-            const SizedBox(
-              height: 26,
-            ),
+            _buildAccountTipsWidget(),
+            SimpleTextButton(
+                text: AppLocalizations.of(context)!.add_cloud_account_skip_use_router_password,
+                onPressed: () {
+                  NavigationCubit.of(context).push(CreateAdminPasswordPath());
+                })
           ],
+          crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+        footer: Visibility(
+          maintainState: true,
+          maintainAnimation: true,
+          maintainSize: true,
+          visible: _emailController.text.isNotEmpty,
+          child: PrimaryButton(
+            text: AppLocalizations.of(context)!.next,
+            onPress: _onNextAction,
+          ),
         ),
       ),
     );
   }
 }
-
-Widget BulletPoint(BuildContext context, String title) => Row(
-      children: [
-        Image.asset('assets/images/icon_check_green.png'),
-        const SizedBox(width: 12),
-        Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5),
-            child: Text(title,
-                style: Theme.of(context)
-                    .textTheme
-                    .headline4
-                    ?.copyWith(color: Colors.white)))
-      ],
-    );
