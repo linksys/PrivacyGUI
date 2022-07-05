@@ -7,8 +7,9 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/route/route.dart';
 
 class EnableTwoSVView extends StatelessWidget {
-  const EnableTwoSVView({Key? key,})
-      : super(key: key);
+  const EnableTwoSVView({
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -29,9 +30,19 @@ class EnableTwoSVView extends StatelessWidget {
           children: [
             PrimaryButton(
               text: 'Yes',
-              onPress: () {NavigationCubit.of(context).push(ChooseLoginOtpMethodPath());},
+              onPress: () {
+                NavigationCubit.of(context).push(CreateAccountOtpPath()
+                  ..args = {
+                    'username': 'test@linksys.com',
+                    'isSettingLoginType': true
+                  });
+              },
             ),
-            SimpleTextButton(text: 'No, use password only', onPressed: () {NavigationCubit.of(context).push(SaveCloudSettingsPath());}),
+            SimpleTextButton(
+                text: 'No, use password only',
+                onPressed: () {
+                  NavigationCubit.of(context).push(SaveCloudSettingsPath());
+                }),
           ],
         ),
       ),

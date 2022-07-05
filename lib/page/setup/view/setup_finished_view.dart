@@ -14,13 +14,8 @@ class SetupFinishedView extends ArgumentsStatelessView {
 
   SetupFinishedView({
     Key? key, super.args
-  }) : super(key: key) {
-    _ssid = args!['ssid'];
-    _password = args!['password'];
-  }
+  }) : super(key: key);
 
-  late String _ssid;
-  late String _password;
 
   //TODO: The svg image must be replaced
   final Widget image = SvgPicture.asset(
@@ -58,7 +53,7 @@ class SetupFinishedView extends ArgumentsStatelessView {
         ),
         footer: PrimaryButton(
           text: AppLocalizations.of(context)!.go_to_dashboard,
-          onPress: () => NavigationCubit.of(context).popTo(HomePath()),
+          onPress: () => NavigationCubit.of(context).popTo(DashboardMainPath()),
         ),
         alignment: CrossAxisAlignment.start,
       ),

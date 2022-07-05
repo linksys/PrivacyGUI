@@ -112,7 +112,7 @@ abstract class SetupPath<P> extends BasePath<P> {
       case SetupNodesDonePath:
         return const NodesSuccessView();
       case SetupFinishPath:
-        return SetupFinishedView();
+        return SetupFinishedView(args: args,);
       case SetupNodesDoneUnFoundPath:
         return const NodesSuccessView();
       case SetupAddingNodesPath:
@@ -275,8 +275,6 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
         return const CreateAdminPasswordView();
       case ChooseLoginMethodPath:
         return ChooseLoginTypeView(args: args,);
-      case ChooseLoginOtpMethodPath:
-        return ChooseOTPMethodView(args: args);
       case CreateAccountOtpPath:
         if (args != null) {
           args!['onNext'] = SaveCloudSettingsPath();
@@ -301,9 +299,6 @@ class CreateAdminPasswordPath
     extends CreateAccountPath<CreateAdminPasswordPath> {}
 
 class ChooseLoginMethodPath extends CreateAccountPath<ChooseLoginMethodPath> {}
-
-class ChooseLoginOtpMethodPath
-    extends CreateAccountPath<ChooseLoginOtpMethodPath> {}
 
 class CreateAccountOtpPath extends CreateAccountPath<CreateAccountOtpPath> {}
 

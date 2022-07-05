@@ -33,7 +33,7 @@ class _PermissionsPrimerViewState extends State<PermissionsPrimerView> {
   Future<void> _initAndroidSupport() async {
     isUnderAndroidTen =
     await NativeConnectWiFiChannel().isAndroidVersionUnderTen();
-    isSupportEasyConnect =
+    isSupportEasyConnect = isUnderAndroidTen ? false :
     await NativeConnectWiFiChannel().isAndroidTenAndSupportEasyConnect();
   }
 
