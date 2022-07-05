@@ -25,6 +25,8 @@ class PageConfig {
   PageNavigationType navType = PageNavigationType.back;
   ThemeData themeData = MoabTheme.mainLightModeData;
   bool isFullScreenDialog = false;
+  bool ignoreAuthChanged = false;
+  bool ignoreConnectivityChanged = false;
 }
 
 mixin ReturnablePath<T> {

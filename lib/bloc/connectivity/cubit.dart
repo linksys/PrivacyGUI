@@ -7,6 +7,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/util/logger.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
 import 'connectivity_info.dart';
@@ -65,15 +66,15 @@ mixin ConnectivityListener {
         wifiName = await _networkInfo.getWifiName();
       }
     } on PlatformException catch (e) {
-      log('Failed to get Wifi Name', error: e);
+      logger.e('Failed to get Wifi Name', e);
       wifiName = 'Unknown SSID';
     }
 
     try {
       wifiGatewayIP = await _networkInfo.getWifiGatewayIP();
     } on PlatformException catch (e) {
-      log('Failed to get Wifi gateway address', error: e);
-      wifiGatewayIP = 'Failed to get Wifi gateway address';
+      logger.e('Failed to get Wifi gateway address', e);
+      wifiGatewayIP = 'Unknown Gateway IP';
     }
 
     final info =

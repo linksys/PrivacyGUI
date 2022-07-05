@@ -10,6 +10,7 @@ import 'package:moab_poc/page/components/customs/otp_flow/otp_cubit.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_method_selector_view.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/util/logger.dart';
 
 import 'otp_state.dart';
 
@@ -42,6 +43,7 @@ class _ContentViewState extends State<_ContentView> {
     super.initState();
     _nextPath = widget.args!['onNext'] as BasePath;
     _username = widget.args!['username'] as String;
+    logger.d('OTP flow: $_username');
     var isSettingLoginType = false;
     if (widget.args!.containsKey('isSettingLoginType') ){
       isSettingLoginType = widget.args!['isSettingLoginType'] as bool;

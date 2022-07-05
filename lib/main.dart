@@ -81,19 +81,23 @@ class MoabApp extends StatefulWidget {
 }
 
 class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
+
+  late ConnectivityCubit _cubit;
+
   @override
   void initState() {
     logger.d('Moab App init state');
     _initAuth();
     WidgetsBinding.instance.addObserver(this);
-    // TODO connectivity start
+    _cubit = context.read<ConnectivityCubit>();
+    _cubit.start();
     super.initState();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // TODO connectivity stop
+    _cubit.stop();
     super.dispose();
   }
 

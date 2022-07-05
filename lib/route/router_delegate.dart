@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
+import 'package:moab_poc/bloc/connectivity/connectivity_info.dart';
+import 'package:moab_poc/bloc/connectivity/cubit.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/analytics.dart';
 import 'package:moab_poc/util/logger.dart';
@@ -30,7 +32,7 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
   Widget build(BuildContext context) {
     logger.d("Route Delegate Rebuild!");
     return MultiBlocListener(
-      listeners: [_listenForAuth()],
+      listeners: [_listenForAuth(), _listenForConnectivity()],
       child: BlocConsumer<NavigationCubit, NavigationStack>(
         builder: (context, stack) => Navigator(
             key: navigatorKey,
@@ -82,6 +84,7 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
 
   BlocListener _listenForAuth() {
     return BlocListener<AuthBloc, AuthState>(
+      listenWhen: (previous, current) => previous.status != current.status && !currentConfiguration.pageConfig.ignoreAuthChanged,
       listener: (context, state) {
         logger.d("Auth Listener: $state}");
         if (state.status != AuthStatus.authorized) {
@@ -89,6 +92,16 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
         } else {
           _cubit.clearAndPush(DashboardMainPath());
         }
+      },
+    );
+  }
+
+  BlocListener _listenForConnectivity() {
+    return BlocListener<ConnectivityCubit, ConnectivityInfo>(
+      listenWhen: (previous, current) => !currentConfiguration.pageConfig.ignoreConnectivityChanged,
+      listener: (context, state) {
+        logger.d("Connectivity Listener: ${state.type}");
+
       },
     );
   }
