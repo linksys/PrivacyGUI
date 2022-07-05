@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/indeterminate_progressbar.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/route/route.dart';
 
 import '../../../design/colors.dart';
@@ -38,15 +40,15 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
       _hasInternet = true;
     });
     await Future.delayed(const Duration(seconds: 3));
-    NavigationCubit.of(context).push(SetupParentLocationPath());
+    NavigationCubit.of(context).push(SetupNodesDoneUnFoundPath());
   }
 
   @override
   Widget build(BuildContext context) {
     return BasePageView.noNavigationBar(
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'Checking for internet...',
+        header: BasicHeader(
+          title: AppLocalizations.of(context)!.check_for_internet,
         ),
         content: Center(
           child: Column(
@@ -66,6 +68,9 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
             mainAxisAlignment: MainAxisAlignment.center,
           ),
         ),
+        footer: !_hasInternet ? Center(
+          child: SimpleTextButton(text: AppLocalizations.of(context)!.enter_isp_settings, onPressed: (){},),
+        ) : null,
         alignment: CrossAxisAlignment.start,
       ),
     );

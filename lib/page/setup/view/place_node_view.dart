@@ -1,29 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
+import 'package:moab_poc/page/components/base_components/text/description_text.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/route/route.dart';
 
 import '../../components/base_components/button/primary_button.dart';
+import '../../components/layouts/basic_header.dart';
 
 class PlaceNodeView extends StatelessWidget {
+  var isAddOnNodes;
+
   PlaceNodeView({
     Key? key,
+    this.isAddOnNodes = false,
   }) : super(key: key);
 
   // Replace this to svg if the svg image is fixed
-  final Widget image = Image.asset('assets/images/place_node.png');
+  final Widget image = Image.asset('assets/images/nodes_position.png');
 
   @override
   Widget build(BuildContext context) {
     return BasePageView(
       child: BasicLayout(
-        header: _header(context),
-        content: image,
-        footer: PrimaryButton(
-          text: 'Got it',
-          onPress: () => NavigationCubit.of(context).push(SetupParentPermissionPath()),
-        ),
-      ),
+          header: _header(context),
+          content: _content(context),
+          footer: _footer(context)),
     );
   }
 
@@ -31,23 +33,59 @@ class PlaceNodeView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'TIP',
-          style: Theme.of(context)
-              .textTheme
-              .headline4
-              ?.copyWith(color: const Color.fromRGBO(255, 255, 255, 0.3)),
+        BasicHeader(
+          title: isAddOnNodes
+              ? AppLocalizations.of(context)!.place_node_view_addOnNodes_title
+              : AppLocalizations.of(context)!.place_node_view_title,
         ),
         const SizedBox(
           height: 6,
         ),
+        DescriptionText(
+            text: isAddOnNodes
+                ? AppLocalizations.of(context)!
+                    .place_node_view_addOnNodes_subtitle
+                : AppLocalizations.of(context)!.place_node_view_subtitle)
+      ],
+    );
+  }
+
+  Widget _content(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        image,
+        const SizedBox(height: 14),
         Text(
-          'Place nodes out in the open, not inside or behind furniture, and away from large appliances',
+          AppLocalizations.of(context)!.placement_tips,
           style: Theme.of(context)
               .textTheme
               .headline4
-              ?.copyWith(color: Theme.of(context).colorScheme.primary),
+              ?.copyWith(color: Theme.of(context).colorScheme.onTertiary),
+        )
+      ],
+    );
+  }
+
+  Widget _footer(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        isAddOnNodes? const SizedBox(height: 0) : DescriptionText(text: AppLocalizations.of(context)!.place_node_view_content),
+        const SizedBox(
+          height: 27,
         ),
+        PrimaryButton(
+          text: AppLocalizations.of(context)!.next,
+          onPress: () {
+            if (isAddOnNodes) {
+              NavigationCubit.of(context).push(SetupNthChildSearchingPath());
+            } else {
+              NavigationCubit.of(context).push(SetupParentPermissionPath());
+            }
+          },
+        )
       ],
     );
   }

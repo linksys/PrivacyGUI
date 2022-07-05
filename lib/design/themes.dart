@@ -80,7 +80,7 @@ class MoabTheme {
     background: MoabColor.authBackground, //背景
     onPrimary: MoabColor.black, //主按鈕文字
     onSecondary: MoabColor.white, //次按鈕文字
-    onTertiary: MoabColor.white, //TextBtn文字
+    onTertiary: MoabColor.textButtonBlue, //TextBtn文字
     onPrimaryContainer: MoabColor.progressBarGreen,
   );
 

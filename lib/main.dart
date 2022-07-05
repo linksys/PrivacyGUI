@@ -105,7 +105,7 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context)!.app_title,
-      theme: MoabTheme.setupModuleLightModeData,
+      theme: MoabTheme.AuthModuleLightModeData,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       routerDelegate: MoabRouterDelegate(context.read<NavigationCubit>()),

@@ -8,10 +8,15 @@ import 'package:moab_poc/page/create_account/view/view.dart';
 import 'package:moab_poc/page/dashboard/view/dashboard_view.dart';
 import 'package:moab_poc/page/landing/view/view.dart';
 import 'package:moab_poc/page/login/view/view.dart';
+import 'package:moab_poc/page/setup/view/adding_nodes_view.dart';
 import 'package:moab_poc/page/setup/view/view.dart';
 import 'package:moab_poc/util/logger.dart';
 
 import '../page/components/customs/otp_flow/otp_view.dart';
+import '../page/setup/view/android_location_permission_denied_view.dart';
+import '../page/setup/view/android_location_permission_view.dart';
+import '../page/setup/view/android_manually_connect_view.dart';
+import '../page/setup/view/android_qr_choice_view.dart';
 import 'route.dart';
 
 enum PageNavigationType { back, close, none }
@@ -63,11 +68,11 @@ abstract class BasePath<P> {
       case HomePath:
         return HomeView(args: args,);
       case UnknownPath:
-        return Center(
+        return const Center(
           child: Text("Unknown Path"),
         );
       default:
-        return Center();
+        return const Center();
     }
   }
 }
@@ -84,13 +89,17 @@ abstract class SetupPath<P> extends BasePath<P> {
       case SetupWelcomeEulaPath:
         return GetWiFiUpView();
       case SetupCustomizeSSIDPath:
-        return CustomizeWifiView();
+        return const CustomizeWifiView();
       case SetupNodesDonePath:
-        return NodesSuccessView();
+        return const NodesSuccessView();
       case SetupFinishPath:
         return SetupFinishedView();
+      case SetupNodesDoneUnFoundPath:
+        return const NodesSuccessView();
+      case SetupAddingNodesPath:
+        return const AddingNodesView();
       default:
-        return Center();
+        return const Center();
     }
   }
 }
@@ -101,7 +110,11 @@ class SetupCustomizeSSIDPath extends SetupPath<SetupCustomizeSSIDPath> {}
 
 class SetupNodesDonePath extends SetupPath<SetupNodesDonePath> {}
 
+class SetupNodesDoneUnFoundPath extends SetupPath<SetupNodesDoneUnFoundPath> {}
+
 class SetupFinishPath extends SetupPath<SetupFinishPath> {}
+
+class SetupAddingNodesPath extends SetupPath<SetupAddingNodesPath> {}
 
 // Setup Parent Flow
 abstract class SetupParentPath<P> extends SetupPath<P> {
@@ -117,11 +130,21 @@ abstract class SetupParentPath<P> extends SetupPath<P> {
       case SetupParentPermissionPath:
         return PermissionsPrimerView();
       case SetupParentLocationPath:
-        return SetLocationView();
+        return const SetLocationView();
       case SetupParentQrCodeScanPath:
-        return ParentScanQRCodeView();
+        return const ParentScanQRCodeView();
+      case SetupParentConnectWIFIPath:
+        return AndroidManuallyConnectView();
+      case SetupParentEasyConnectWIFIPath:
+        return AndroidQRChoiceView();
+      case SetupParentLocationPermissionDeniedPath:
+        return const AndroidLocationPermissionDenied();
+      case SetupParentManualEnterSSIDPath:
+        return const ManualEnterSSIDView();
+      case AndroidLocationPermissionPrimerPath:
+        return AndroidLocationPermissionPrimer();
       default:
-        return Center();
+        return const Center();
     }
   }
 }
@@ -144,13 +167,24 @@ class SetupParentManualPath extends SetupParentPath<SetupParentManualPath> {}
 class SetupParentLocationPath extends SetupParentPath<SetupParentLocationPath> {
 }
 
+class SetupParentManualEnterSSIDPath extends SetupParentPath<SetupParentManualEnterSSIDPath>{}
+
+class SetupParentConnectWIFIPath
+    extends SetupParentPath<SetupParentConnectWIFIPath> {}
+
+class SetupParentEasyConnectWIFIPath
+    extends SetupParentPath<SetupParentEasyConnectWIFIPath> {}
+class SetupParentLocationPermissionDeniedPath extends SetupParentPath<SetupParentLocationPermissionDeniedPath>{}
+
+class AndroidLocationPermissionPrimerPath extends SetupParentPath<AndroidLocationPermissionPrimerPath>{}
+
 // Internet Check Flow
 abstract class InternetCheckPath<P> extends SetupPath<P> {
   @override
   Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case InternetCheckingPath:
-        return CheckNodeInternetView();
+        return const CheckNodeInternetView();
 
       default:
         return const Center();
@@ -174,13 +208,17 @@ abstract class SetupChildPath<P> extends SetupPath<P> {
       case SetupNthChildPath:
         return AddChildFinishedView();
       case SetupNthChildQrCodePath:
-        return AddChildScanQRCodeView();
+        return const AddChildScanQRCodeView();
       case SetupNthChildPlugPath:
         return AddChildPlugView();
       case SetupNthChildSearchingPath:
-        return AddChildSearchingView();
+        return const AddChildSearchingView();
       case SetupNthChildLocationPath:
-        return SetLocationView();
+        return const SetLocationView();
+      case SetupNthChildPlacePath:
+        return PlaceNodeView(
+            isAddOnNodes: true,
+            );
       default:
         return const Center();
     }
@@ -206,6 +244,8 @@ class SetupNthChildSearchingPath
 class SetupNthChildLocationPath
     extends SetupChildPath<SetupNthChildLocationPath> {}
 
+class SetupNthChildPlacePath extends SetupChildPath<SetupNthChildPlacePath> {}
+
 abstract class CreateAccountPath<P> extends BasePath<P> {
   @override
   Widget buildPage(NavigationCubit cubit) {
@@ -213,7 +253,7 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
       case CreateCloudAccountPath:
         return AddAccountView(args: args,);
       case CreateAdminPasswordPath:
-        return CreateAdminPasswordView();
+        return const CreateAdminPasswordView();
       case ChooseLoginMethodPath:
         return ChooseLoginTypeView(args: args,);
       case ChooseLoginOtpMethodPath:
@@ -228,7 +268,7 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
       case AlreadyHaveOldAccountPath:
         return const HaveOldAccountView();
       case EnableTwoSVPath:
-        return EnableTwoSVView();
+        return const EnableTwoSVView();
       default:
         return const Center();
     }
@@ -270,7 +310,7 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
   Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case AuthInputAccountPath:
-        return LoginCloudAccountView();
+        return const LoginCloudAccountView();
       case AuthCloudLoginOtpPath:
         if (args != null) {
           args!['onNext'] = NoRouterPath();
@@ -279,17 +319,17 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
       case AuthForgotEmailPath:
         return const ForgotEmailView();
       case NoRouterPath:
-        return NoRouterView();
+        return const NoRouterView();
       case AuthCreateAccountPhonePath:
         return CreateAccountPhoneView(args: args,);
       case SelectPhoneRegionCodePath:
         return const RegionPickerView();
       case AuthLocalLoginPath:
-        return EnterRouterPasswordView();
+        return const EnterRouterPasswordView();
       case AuthLoginWithPasswordPath:
-        return LoginTraditionalPasswordView();
+        return const LoginTraditionalPasswordView();
       case AuthLocalResetPasswordPath:
-        return LocalResetRouterPasswordView();
+        return const LocalResetRouterPasswordView();
       case AuthResetLocalOtpPath:
         if (args != null) {
           args!['onNext'] = DashboardMainPath();
@@ -337,7 +377,7 @@ abstract class DebugToolsPath<P> extends BasePath<P> {
       case DebugToolsMainPath:
         return const DebugToolsView();
       default:
-        return Center();
+        return const Center();
     }
   }
 }
@@ -351,7 +391,7 @@ abstract class DashboardPath<P> extends BasePath<P> {
       case DashboardMainPath:
         return const DashboardView();
       default:
-        return Center();
+        return const Center();
     }
   }
 }

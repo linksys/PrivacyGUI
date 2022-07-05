@@ -5,6 +5,7 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/setup/view/show_me_how_view.dart';
 import 'package:moab_poc/route/route.dart';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../components/base_components/button/primary_button.dart';
 import '../../components/base_components/button/simple_text_button.dart';
 
@@ -25,14 +26,14 @@ class ConnectToModemView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BasePageView(
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'Connect node to modem',
+        header: BasicHeader(
+          title: AppLocalizations.of(context)!.connect_to_modem_view_title,
           description:
-              'Use the ethernet cable to connect the parent node to your modem or source of internet',
+              AppLocalizations.of(context)!.connect_to_modem_view_description,
         ),
         content: _content(context),
         footer: PrimaryButton(
-          text: 'Next',
+          text: AppLocalizations.of(context)!.next,
           onPress: () => NavigationCubit.of(context).push(SetupParentPlacePath()),
         ),
       ),
@@ -47,10 +48,13 @@ class ConnectToModemView extends StatelessWidget {
         const SizedBox(
           height: 104,
         ),
-        SimpleTextButton(
-          text: 'Show me how',
-          onPressed: () => _goToShowMeHowPage(context),
-        ),
+        Align(
+          alignment: Alignment.topLeft,
+          child: SimpleTextButton(
+            text: AppLocalizations.of(context)!.show_me_how,
+            onPressed: () => _goToShowMeHowPage(context),
+          ),
+        )
       ],
     );
   }

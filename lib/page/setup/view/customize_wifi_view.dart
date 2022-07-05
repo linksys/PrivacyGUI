@@ -5,6 +5,7 @@ import 'package:moab_poc/page/components/base_components/button/secondary_button
 import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/route/route.dart';
 
 class CustomizeWifiView extends StatelessWidget {
@@ -27,7 +28,7 @@ class PageContent extends StatefulWidget {
   const PageContent({
     Key? key,
   }) : super(key: key);
-  
+
   @override
   _PageContentState createState() => _PageContentState();
 }
@@ -35,8 +36,8 @@ class PageContent extends StatefulWidget {
 class _PageContentState extends State<PageContent> {
 
   bool isValidWifiInfo = false;
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController nameController = TextEditingController(text: "namedefault");
+  final TextEditingController passwordController = TextEditingController(text: "passworddefault");
 
   void _checkFilledInfo(_) {
     setState(() {
@@ -47,22 +48,22 @@ class _PageContentState extends State<PageContent> {
   @override
   Widget build(BuildContext context) {
     return BasicLayout(
-      header: const BasicHeader(
-        title: 'Customize WiFi name and password',
-        description: 'Make it memorable. This is what devices will use to connect to your WiFi network.',
+      header: BasicHeader(
+        title: AppLocalizations.of(context)!.create_ssid_view_title,
+        description: AppLocalizations.of(context)!.create_ssid_view_header_description,
       ),
       content: Column(
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 36, bottom: 24),
             child: InputField(
-              titleText: 'WiFi name',
+              titleText: AppLocalizations.of(context)!.wifi_name,
               controller: nameController,
               onChanged: _checkFilledInfo,
             ),
           ),
           InputField(
-            titleText: 'Password',
+            titleText: AppLocalizations.of(context)!.password,
             controller: passwordController,
             onChanged: _checkFilledInfo,
           ),
@@ -71,11 +72,11 @@ class _PageContentState extends State<PageContent> {
       footer: Visibility(
         visible: isValidWifiInfo,
         replacement: SecondaryButton(
-          text: 'I’ll do it later',
+          text: AppLocalizations.of(context)!.keep_defaults,
           onPress: () => NavigationCubit.of(context).push(CreateCloudAccountPath()),
         ),
         child: PrimaryButton(
-          text: 'Next',
+          text: AppLocalizations.of(context)!.next,
           onPress: () => NavigationCubit.of(context).push(CreateCloudAccountPath()),
         ),
       ),
