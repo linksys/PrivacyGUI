@@ -3,6 +3,8 @@ import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/create_account/view/view.dart';
+import 'package:moab_poc/route/navigation_cubit.dart';
+import 'package:moab_poc/route/route.dart';
 
 class CreateAccountPasswordView extends StatefulWidget {
   const CreateAccountPasswordView({Key? key}) : super(key: key);
@@ -28,6 +30,7 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
   @override
   Widget build(BuildContext context) {
     return BasePageView(
+      scrollable: true,
       child: BasicLayout(
         header: const BasicHeader(
           title: 'Create a password',
@@ -48,7 +51,9 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
               ),
             ),
             PasswordValidityWidget(passwordText: passwordController.text),
-            SimpleTextButton(text: 'Forgot password', onPressed: () {}),
+            SimpleTextButton(text: 'I already have a Linksys account password', onPressed: () {
+              NavigationCubit.of(context).push(SameAccountPromptPath());
+            }),
             const SizedBox(
               height: 30,
             ),

@@ -11,6 +11,7 @@ import 'package:moab_poc/page/landing/view/view.dart';
 import 'package:moab_poc/page/login/view/view.dart';
 import 'package:moab_poc/page/setup/view/adding_nodes_view.dart';
 import 'package:moab_poc/page/setup/view/no_use_account_confirm_view.dart';
+import 'package:moab_poc/page/setup/view/use_same_account_prompt_view.dart';
 import 'package:moab_poc/page/setup/view/view.dart';
 import 'package:moab_poc/util/logger.dart';
 
@@ -35,6 +36,7 @@ class PageConfig {
   bool ignoreAuthChanged = false;
   bool ignoreConnectivityChanged = false;
   bool isOpaque = true;
+  bool isBackDisable = false;
 }
 
 mixin ReturnablePath<T> {
@@ -289,6 +291,10 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
         return const NoUseAccountConfirmView();
       case EnableTwoSVPath:
         return const EnableTwoSVView();
+      case CreateCloudPasswordPath:
+        return CreateAccountPasswordView();
+      case SameAccountPromptPath:
+        return UseSameAccountPromptView();
       default:
         return const Center();
     }
@@ -298,6 +304,10 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
 class CreateCloudAccountPath extends CreateAccountPath<CreateCloudAccountPath> {
 }
 
+class SameAccountPromptPath extends CreateAccountPath<SameAccountPromptPath> {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
+}
 class CreateAdminPasswordPath
     extends CreateAccountPath<CreateAdminPasswordPath> {}
 

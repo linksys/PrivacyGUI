@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 
-enum OtpStep { init, chooseOtpMethod, inputOtp, addPhone }
+enum OtpStep { init, chooseOtpMethod, inputOtp, addPhone, finish }
 
 class OtpState extends Equatable {
   const OtpState({

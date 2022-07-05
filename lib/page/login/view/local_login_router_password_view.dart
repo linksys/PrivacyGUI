@@ -151,7 +151,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     await context
         .read<AuthBloc>()
         .localLogin(_passwordController.text)
-        .then((value) => NavigationCubit.of(context).push(DashboardMainPath()))
+        .then((value) => NavigationCubit.of(context).clearAndPush(DashboardMainPath()))
         .onError((error, stackTrace) => _handleError(error as CloudException));
     setState(() {
       _isLoading = false;

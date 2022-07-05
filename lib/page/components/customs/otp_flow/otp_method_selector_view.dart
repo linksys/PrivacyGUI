@@ -3,17 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
-import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
-import 'package:moab_poc/page/components/base_components/progress_bars/full_screen_spinner.dart';
-import 'package:moab_poc/page/components/base_components/selectable_item.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_cubit.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_state.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
+import 'package:moab_poc/route/navigation_cubit.dart';
 import 'package:moab_poc/route/route.dart';
-import 'package:moab_poc/util/logger.dart';
 
 class OTPMethodSelectorView extends ArgumentsStatefulView {
   const OTPMethodSelectorView(
@@ -42,8 +38,9 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
     return BasePageView(
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
-        header: const BasicHeader(
-          title: 'Where should we send your code?',
+        header: BasicHeader(
+          title: state.isSettingLoginType ? 'Choose how to receive log in codes' : 'Where should we send your code?',
+          description: state.isSettingLoginType ? 'We\'ll send you a one-time passcode that expires' : '',
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,7 +76,9 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
               height: 60,
             ),
             if (state.isSettingLoginType)
-              SimpleTextButton(text: 'I want to create a password instead', onPressed: () {}),
+              SimpleTextButton(text: 'I want to create a password instead', onPressed: () {
+                NavigationCubit.of(context).push(CreateCloudPasswordPath());
+              }),
           ],
         ),
       ),

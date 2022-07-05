@@ -25,7 +25,7 @@ class _AddAccountState extends State<AddAccountView> {
   void _onNextAction() {
     isEmailInvalid = !_emailController.text.isValidEmailFormat();
     if (!isEmailInvalid) {
-      NavigationCubit.of(context).push(ChooseLoginMethodPath());
+      NavigationCubit.of(context).push(CreateAccountOtpPath()..args = {'username': 'test@linksys.com', 'isSettingLoginType': true});
     } else {
       setState(() {});
     }

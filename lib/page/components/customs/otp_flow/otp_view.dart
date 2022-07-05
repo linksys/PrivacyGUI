@@ -45,7 +45,7 @@ class _ContentViewState extends State<_ContentView> {
     _username = widget.args!['username'] as String;
     logger.d('OTP flow: $_username');
     var isSettingLoginType = false;
-    if (widget.args!.containsKey('isSettingLoginType') ){
+    if (widget.args!.containsKey('isSettingLoginType')) {
       isSettingLoginType = widget.args!['isSettingLoginType'] as bool;
     }
     _fetchOtpInfo(isSettingLoginType);
@@ -53,13 +53,18 @@ class _ContentViewState extends State<_ContentView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<OtpCubit, OtpState>(
+    return BlocConsumer<OtpCubit, OtpState>(
+      listener: (context, state) {
+        if (state.step == OtpStep.finish) {
+          NavigationCubit.of(context).clearAndPush(_nextPath);
+        }
+      },
       builder: (context, state) => Stack(children: [
         WillPopScope(
             onWillPop: () async {
               if (state.isLoading) {
                 return false;
-              } else if (state.step != OtpStep.chooseOtpMethod){
+              } else if (state.step != OtpStep.chooseOtpMethod) {
                 context.read<OtpCubit>().processBack();
                 return false;
               } else {
@@ -80,7 +85,7 @@ class _ContentViewState extends State<_ContentView> {
     if (state.step == OtpStep.chooseOtpMethod) {
       return OTPMethodSelectorView();
     } else if (state.step == OtpStep.inputOtp) {
-      return OtpCodeInputView(nextPath: _nextPath,);
+      return OtpCodeInputView();
     } else if (state.step == OtpStep.addPhone) {
       return OtpAddPhoneView();
     } else {

@@ -6,24 +6,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
-import 'package:moab_poc/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_cubit.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
-import 'package:moab_poc/page/components/views/arguments_view.dart';
-import 'package:moab_poc/page/create_account/view/view.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
-import 'package:moab_poc/route/route.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 import 'otp_state.dart';
 
 class OtpCodeInputView extends StatefulWidget {
-  const OtpCodeInputView({Key? key, required this.nextPath}) : super(key: key);
-
-  final BasePath nextPath;
+  const OtpCodeInputView({Key? key}) : super(key: key);
 
   @override
   _OtpCodeInputViewState createState() => _OtpCodeInputViewState();
@@ -143,7 +136,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     await context
         .read<AuthBloc>()
         .validPasswordLess(value!, token)
-        .then((value) => NavigationCubit.of(context).replace(widget.nextPath))
+        .then((value) => context.read<OtpCubit>().finish())
         .onError((error, stackTrace) => _handleError(error as CloudException));
     _setLoading(false);
   }

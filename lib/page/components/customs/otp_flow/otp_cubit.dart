@@ -21,6 +21,10 @@ class OtpCubit extends Cubit<OtpState> {
     emit(state.copyWith(step: OtpStep.addPhone));
   }
 
+  void finish() {
+    emit(state.copyWith(step: OtpStep.finish));
+  }
+
   void updateToken(String token, {OtpInfo? info}) {
     emit(state.copyWith(step: OtpStep.inputOtp, token: token, selectedMethod: info ?? state.selectedMethod));
   }
