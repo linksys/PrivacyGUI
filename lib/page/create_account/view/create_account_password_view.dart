@@ -1,76 +1,137 @@
 import 'package:flutter/material.dart';
-import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
-import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
+import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/page/create_account/view/view.dart';
 
-// TODO nobody use this
-class CreateAccountPasswordView extends StatelessWidget {
-  const CreateAccountPasswordView({
-    Key? key,
-    required this.onNext,
-  }) : super(key: key);
+class CreateAccountPasswordView extends StatefulWidget {
+  const CreateAccountPasswordView({Key? key}) : super(key: key);
 
-  final void Function() onNext;
+  @override
+  _CreateAccountPasswordViewState createState() =>
+      _CreateAccountPasswordViewState();
+}
+
+class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
+  final TextEditingController passwordController = TextEditingController();
+  bool hasError = false;
+
+  void _onNextAction() {
+    hasError = passwordController.text.isEmpty;
+    if (hasError) {
+      setState(() {});
+    } else {
+      //TODO: Go to next page
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return BasePageView(
-      child: PageContent(
-        onNext: onNext,
-      )
+      child: BasicLayout(
+        header: const BasicHeader(
+          title: 'Create a password',
+        ),
+        content: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              child: InputField(
+                titleText: 'Password',
+                controller: passwordController,
+                isError: hasError,
+                onChanged: (value) {
+                  setState(() {
+                    hasError = false;
+                  });
+                },
+              ),
+            ),
+            PasswordValidityWidget(passwordText: passwordController.text),
+            SimpleTextButton(text: 'Forgot password', onPressed: () {}),
+            const SizedBox(
+              height: 30,
+            ),
+            PrimaryButton(
+              text: 'Next',
+              onPress: _onNextAction,
+            ),
+          ],
+          crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+        alignment: CrossAxisAlignment.start,
+      ),
     );
   }
 }
 
+//TODO: Move to the Common Widget directory
+class PasswordValidityWidget extends StatelessWidget {
+  final List<PasswordValidation> _validityList = [
+    PasswordValidation('At least 10 characters', false),
+    PasswordValidation('Upper and lowercase letters', false),
+    PasswordValidation('1 number', false),
+    PasswordValidation('1 special character', false),
+  ];
+  final String passwordText;
 
-class PageContent extends StatefulWidget {
-  const PageContent({
+  PasswordValidityWidget({
     Key? key,
-    required this.onNext,
-  }) : super(key: key);
-
-  final void Function() onNext;
-
-  @override
-  _PageContentState createState() => _PageContentState();
-}
-
-class _PageContentState extends State<PageContent> {
-
-  bool isValidPassword = false;
-  final TextEditingController passwordController = TextEditingController();
-
-  void _checkPassword(String text) {
-    setState(() {
-      isValidPassword = text.isNotEmpty;
-    });
+    required this.passwordText,
+  }) : super(key: key) {
+    _validityList.map((element) {
+      switch (_validityList.indexOf(element)) {
+        case 0:
+          element.validation = passwordText.length >= 10;
+          break;
+        case 1:
+          element.validation = passwordText.containUpperAndLowercaseLetters();
+          break;
+        case 2:
+          element.validation = passwordText.containOneNumber();
+          break;
+        case 3:
+          element.validation = passwordText.containOneSpecialCharacter();
+          break;
+      }
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BasicLayout(
-      header: const BasicHeader(
-        title: 'Create a password',
-        description: 'You’ll use this password to log in to the app',
+
+    TextStyle? _textStyle = Theme.of(context).textTheme.headline4
+        ?.copyWith(color: Theme.of(context).colorScheme.surface);
+
+    List<Widget> _columnList = [
+      Text(
+        'Password must have',
+        style: _textStyle,
       ),
-      content: Padding(
-        padding: const EdgeInsets.only(top: 50),
-        child: InputField(
-          titleText: 'Enter password',
-          controller: passwordController,
-          onChanged: _checkPassword,
-        ),
+      const SizedBox(
+        height: 4,
       ),
-      footer: Visibility(
-        visible: isValidPassword,
-        child: PrimaryButton(
-          text: 'Next',
-          onPress: widget.onNext,
-        ),
-      ),
-      alignment: CrossAxisAlignment.start,
+      ...List.generate(_validityList.length, (index) {
+        return Row(
+          children: [
+            _validityList[index].validation
+                ? Image.asset('assets/images/icon_ellipse_green.png')
+                : Image.asset('assets/images/icon_ellipse.png'),
+            const SizedBox(
+              width: 8,
+            ),
+            Text(
+              _validityList[index].text,
+              style: _textStyle,
+            ),
+          ],
+        );
+      }),
+    ];
+
+    return Column(
+      children: _columnList,
+      crossAxisAlignment: CrossAxisAlignment.start,
     );
   }
 }
