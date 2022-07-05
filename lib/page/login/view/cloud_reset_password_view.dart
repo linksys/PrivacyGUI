@@ -47,6 +47,7 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
   Widget _setNewPasswordView() {
     return BasePageView.withCloseButton(
       context,
+      scrollable: true,
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
         header: const BasicHeader(
