@@ -12,7 +12,6 @@ import '../../../bloc/auth/bloc.dart';
 import '../../../bloc/auth/state.dart';
 import '../../../repository/model/dummy_model.dart';
 import '../../../route/navigation_cubit.dart';
-import '../../../route/model/path_model.dart';
 import '../../components/base_components/input_fields/input_field.dart';
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 import '../../create_account/view/create_account_password_view.dart';
