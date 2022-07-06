@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/themes.dart';
 import 'package:moab_poc/page/create_account/view/view.dart';
+import 'package:moab_poc/page/landing/view/view.dart';
 
 
 void main() {
@@ -19,7 +20,7 @@ class MoabApp extends StatelessWidget {
         // LoginPage.routeName: (context) => const LoginPage(),
         // DashboardPage.routeName: (context) => const DashboardPage(),
         // MeshPage.routeName: (context) => const MeshPage(),
-        '/' : (context) => OtpCodeInputView(),
+        '/' : (context) => HomeView(),
         // GetWiFiUpView.routeName: (context) => GetWiFiUpView(onNext: () => _goToStartParentNode(context),),
         // StartParentNodeView.routeName: (context) => StartParentNodeView(onNext: () => _goToPlugNodeView(context),),
         // PlugNodeView.routeName: (context) => PlugNodeView(onNext: () => _goToConnectToModemView(context),),

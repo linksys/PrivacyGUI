@@ -24,8 +24,6 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
         return const ForgotEmailView();
       case NoRouterPath:
         return const NoRouterView();
-      case AuthCreateAccountPhonePath:
-        return CreateAccountPhoneView(args: args,);
       case SelectPhoneRegionCodePath:
         return const RegionPickerView();
       case AuthLocalLoginPath:
@@ -65,9 +63,6 @@ class AuthForgotEmailPath extends AuthenticatePath<AuthForgotEmailPath> {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
-
-class AuthCreateAccountPhonePath
-    extends AuthenticatePath<AuthCreateAccountPhonePath> {}
 
 class SelectPhoneRegionCodePath
     extends AuthenticatePath<SelectPhoneRegionCodePath>
