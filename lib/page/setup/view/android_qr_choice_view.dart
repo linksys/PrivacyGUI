@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/channel/wifi_connect_channel.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
@@ -27,17 +28,17 @@ class AndroidQRChoiceView extends StatelessWidget {
     return BasePageView(
       child: BasicLayout(
         header: BasicHeader(
-            title: AppLocalizations.of(context)!.android_qr_choice_view_title),
+            title: getAppLocalizations(context).android_qr_choice_view_title),
         content: Center(child: img),
         footer: Column(
           children: [
             PrimaryButton(
-                text: AppLocalizations.of(context)!
+                text: getAppLocalizations(context)
                     .android_qr_choice_view_primary_button_text,
                 onPress: () => _connectToWIFI(context)),
             const SizedBox(height: 11),
             SecondaryButton(
-                text: AppLocalizations.of(context)!
+                text: getAppLocalizations(context)
                     .android_qr_choice_view_secondary_button_text,
                 onPress: (){})
           ],

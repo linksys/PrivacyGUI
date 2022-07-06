@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
@@ -38,33 +39,33 @@ class _EnterSetupSSIDViewState extends State<EnterSetupSSIDView> {
     return BasePageView(
       child: BasicLayout(
           header: BasicHeader(
-            title: AppLocalizations.of(context)!.enter_setup_ssid_view_title,
+            title: getAppLocalizations(context).enter_setup_ssid_view_title,
           ),
           content: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.only(top: 36, bottom: 24),
                 child: InputField(
-                  titleText: AppLocalizations.of(context)!.setup_wifi_name,
+                  titleText: getAppLocalizations(context).setup_wifi_name,
                   controller: ssidController,
                   onChanged: _checkFilledInfo,
                 ),
               ),
               InputField(
-                titleText: AppLocalizations.of(context)!.setup_password,
+                titleText: getAppLocalizations(context).setup_password,
                 controller: passwordController,
                 onChanged: _checkFilledInfo,
               ),
               const SizedBox(
                 height: 150,
               ),
-              SimpleTextButton(text: AppLocalizations.of(context)!.where_do_i_find_this, onPressed: () => _goToShowMePage(context)),
+              SimpleTextButton(text: getAppLocalizations(context).where_do_i_find_this, onPressed: () => _goToShowMePage(context)),
             ],
           ),
           footer: Visibility(
             visible: isValidWifiInfo,
             child: PrimaryButton(
-              text: AppLocalizations.of(context)!.next,
+              text: getAppLocalizations(context).next,
               onPress: widget.onNext,
             ),
           )),

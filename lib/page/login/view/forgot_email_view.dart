@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/customs/network_check_view.dart';
@@ -31,16 +32,16 @@ class _ForgotEmailViewState extends State<ForgotEmailView> {
       context,
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
-        header: const BasicHeader(
-          title: 'Forgot email',
+        header: BasicHeader(
+          title: getAppLocalizations(context).forgot_email,
         ),
         content: _isBehindRouter
             ? _contentViewBehindRouter('{a***********ng@b*******m}')
             : NetworkCheckView(
                 description:
-                    'No problem, we’ll give you a hint. But first, connect to your router’s WiFi',
+                    getAppLocalizations(context).cloud_forgot_email_connect_to_your_router,
                 button: PrimaryButton(
-                  text: 'I’m connected',
+                  text: getAppLocalizations(context).am_connected,
                   onPress: () {
                     // TODO router API
                     setState(() {
@@ -57,7 +58,7 @@ class _ForgotEmailViewState extends State<ForgotEmailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'The router you\'re connected to is associate with',
+          getAppLocalizations(context).cloud_forgot_email_router_connected_to,
           style: Theme.of(context)
               .textTheme
               .headline3

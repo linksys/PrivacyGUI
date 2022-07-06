@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/indeterminate_progressbar.dart';
@@ -49,7 +50,7 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
     return BasePageView.noNavigationBar(
       child: BasicLayout(
         header: BasicHeader(
-          title: AppLocalizations.of(context)!.check_for_internet,
+          title: getAppLocalizations(context).check_for_internet,
         ),
         content: Center(
           child: Column(
@@ -70,7 +71,7 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
           ),
         ),
         footer: !_hasInternet ? Center(
-          child: SimpleTextButton(text: AppLocalizations.of(context)!.enter_isp_settings, onPressed: (){},),
+          child: SimpleTextButton(text: getAppLocalizations(context).enter_isp_settings, onPressed: (){},),
         ) : null,
         alignment: CrossAxisAlignment.start,
       ),

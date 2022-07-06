@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
@@ -64,7 +65,7 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
     return BasePageView.noNavigationBar(
       child: BasicLayout(
         header: BasicHeader(
-          title: AppLocalizations.of(context)!
+          title: getAppLocalizations(context)
               .create_router_password_reset_success,
         ),
         content: Column(
@@ -73,7 +74,7 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
               height: 64,
             ),
             PrimaryButton(
-              text: AppLocalizations.of(context)!.go_to_dashboard,
+              text: getAppLocalizations(context).go_to_dashboard,
               onPress: () {
                 NavigationCubit.of(context).clearAndPush(DashboardMainPath());
               },
@@ -90,24 +91,24 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
       child: BasicLayout(
         header: BasicHeader(
           title: _type == AdminPasswordType.reset
-              ? AppLocalizations.of(context)!.create_router_password_reset_title
-              : AppLocalizations.of(context)!.create_router_password_title,
+              ? getAppLocalizations(context).create_router_password_reset_title
+              : getAppLocalizations(context).create_router_password_title,
           description:
-              AppLocalizations.of(context)!.create_router_password_subtitle,
+              getAppLocalizations(context).create_router_password_subtitle,
         ),
         content: Column(
           children: [
             Padding(
               padding: const EdgeInsets.only(top: 36, bottom: 37),
               child: InputField(
-                titleText: AppLocalizations.of(context)!.password,
+                titleText: getAppLocalizations(context).password,
                 hintText: 'Enter Password',
                 controller: passwordController,
                 onChanged: _checkInputData,
               ),
             ),
             InputField(
-              titleText: AppLocalizations.of(context)!.password_hint,
+              titleText: getAppLocalizations(context).password_hint,
               hintText: 'Add a hint',
               controller: hintController,
               onChanged: _checkInputData,
@@ -116,7 +117,7 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
               height: 100,
             ),
             SimpleTextButton(
-                text: AppLocalizations.of(context)!
+                text: getAppLocalizations(context)
                     .create_router_password_how_to_access,
                 onPressed: () {
                   MoabInAppBrowser.withDefaultOption().openUrlRequest(
@@ -128,7 +129,7 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
         footer: Visibility(
           visible: _isValidData,
           child: PrimaryButton(
-            text: AppLocalizations.of(context)!.next,
+            text: getAppLocalizations(context).next,
             onPress: () {
               _createPassword(passwordController.text, hintController.text);
             },

@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -22,17 +23,17 @@ class AndroidManuallyConnectView extends StatelessWidget {
       child: BasicLayout(
         header: BasicHeader(
           title:
-              AppLocalizations.of(context)!.android_manually_connect_view_title,
+              getAppLocalizations(context).android_manually_connect_view_title,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             DescriptionText(
-                text: AppLocalizations.of(context)!
+                text: getAppLocalizations(context)
                     .android_manually_connect_view_description),
             const SizedBox(height: 18),
             SimpleTextButton(
-                text: AppLocalizations.of(context)!.show_me,
+                text: getAppLocalizations(context).show_me,
                 onPressed: () => _goToShowMePage(context)),
 
             Row(
@@ -44,7 +45,7 @@ class AndroidManuallyConnectView extends StatelessWidget {
           ],
         ),
         footer: PrimaryButton(
-            text: AppLocalizations.of(context)!.am_connected,
+            text: getAppLocalizations(context).am_connected,
             onPress: (){
               NavigationCubit.of(context).push(AndroidLocationPermissionPrimerPath());
             }),

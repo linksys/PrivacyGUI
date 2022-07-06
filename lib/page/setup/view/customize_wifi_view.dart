@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
@@ -50,21 +51,21 @@ class _PageContentState extends State<PageContent> {
   Widget build(BuildContext context) {
     return BasicLayout(
       header: BasicHeader(
-        title: AppLocalizations.of(context)!.create_ssid_view_title,
-        description: AppLocalizations.of(context)!.create_ssid_view_header_description,
+        title: getAppLocalizations(context).create_ssid_view_title,
+        description: getAppLocalizations(context).create_ssid_view_header_description,
       ),
       content: Column(
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 36, bottom: 24),
             child: InputField(
-              titleText: AppLocalizations.of(context)!.wifi_name,
+              titleText: getAppLocalizations(context).wifi_name,
               controller: nameController,
               onChanged: _checkFilledInfo,
             ),
           ),
           InputField(
-            titleText: AppLocalizations.of(context)!.password,
+            titleText: getAppLocalizations(context).password,
             controller: passwordController,
             onChanged: _checkFilledInfo,
           ),
@@ -73,11 +74,11 @@ class _PageContentState extends State<PageContent> {
       footer: Visibility(
         visible: isValidWifiInfo,
         replacement: SecondaryButton(
-          text: AppLocalizations.of(context)!.keep_defaults,
+          text: getAppLocalizations(context).keep_defaults,
           onPress: () => NavigationCubit.of(context).push(CreateCloudAccountPath()),
         ),
         child: PrimaryButton(
-          text: AppLocalizations.of(context)!.next,
+          text: getAppLocalizations(context).next,
           onPress: () => NavigationCubit.of(context).push(CreateCloudAccountPath()),
         ),
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/indeterminate_progressbar.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
@@ -41,7 +42,7 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
     return BasePageView.noNavigationBar(
       child: BasicLayout(
         header: BasicHeader(
-          title: AppLocalizations.of(context)!.saving_settings_view_title,
+          title: getAppLocalizations(context).saving_settings_view_title,
         ),
         content: Center(
           child: Column(
@@ -52,7 +53,7 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
               ),
               Center(
                   child: Text(
-                      AppLocalizations.of(context)!.adding_nodes_more_info)
+                      getAppLocalizations(context).adding_nodes_more_info)
               ),
               const SizedBox(
                 height: 69,

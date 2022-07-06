@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
@@ -35,7 +36,7 @@ class _LocalResetRouterPasswordState
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) => _isLoading
-          ? const FullScreenSpinner(text: 'processing...')
+          ? FullScreenSpinner(text: getAppLocalizations(context).processing)
           : _contentView(),
     );
   }
@@ -44,8 +45,8 @@ class _LocalResetRouterPasswordState
     return BasePageView(
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
-        header: const BasicHeader(
-          title: 'Reset router password',
+        header: BasicHeader(
+          title: getAppLocalizations(context).reset_router_password,
         ),
         content: Column(
           children: [

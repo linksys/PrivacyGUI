@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
@@ -8,6 +9,7 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/route/navigation_cubit.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/route/model/model.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class NoRouterView extends StatelessWidget {
   const NoRouterView({
@@ -19,9 +21,9 @@ class NoRouterView extends StatelessWidget {
     return BasePageView(
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
-        header: const BasicHeader(
+        header: BasicHeader(
           title:
-              'It’s lonely in here... no Linksys routers are setup with this account',
+              getAppLocalizations(context).no_router_title,
         ),
         content: Column(
           children: [
@@ -29,7 +31,7 @@ class NoRouterView extends StatelessWidget {
               height: 82,
             ),
             PrimaryButton(
-              text: 'Setup WiFi',
+              text: getAppLocalizations(context).setup_wifi,
               onPress: () {
                 NavigationCubit.of(context).push(SetupWelcomeEulaPath());
               },
@@ -37,7 +39,7 @@ class NoRouterView extends StatelessWidget {
             const SizedBox(
               height: 26,
             ),
-            SimpleTextButton(text: 'Log out', onPressed: () {
+            SimpleTextButton(text: getAppLocalizations(context).logout, onPressed: () {
               // TODO
               NavigationCubit.of(context).clearAndPush(HomePath());
             }),

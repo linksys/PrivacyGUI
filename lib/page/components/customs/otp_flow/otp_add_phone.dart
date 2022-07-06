@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/customs/customs.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_cubit.dart';
@@ -13,7 +14,7 @@ import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'dart:convert';
-
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:phone_number/phone_number.dart';
 
 
@@ -68,7 +69,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
     if (phoneSample != null) {
       phoneHint = await phoneNumberUtil.format(phoneSample, currentRegion.countryCode);
     } else {
-      phoneHint = 'Phone';
+      phoneHint = getAppLocalizations(context).phone;
     }
     setState(() {});
   }
@@ -79,14 +80,14 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
       builder: (context, state) => BasePageView(
         scrollable: true,
         child: BasicLayout(
-          header: const BasicHeader(
-            title: 'Add phone number?',
+          header: BasicHeader(
+            title: getAppLocalizations(context).otp_add_phone_number,
           ),
           content: Column(
             children: [
-              const Padding(
-                padding: EdgeInsets.only(top: 63, bottom: 7),
-                child: Text('Phone'),
+              Padding(
+                padding: const EdgeInsets.only(top: 63, bottom: 7),
+                child: Text(getAppLocalizations(context).phone),
               ),
               IntrinsicHeight(
                 child: Row(
@@ -97,7 +98,6 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
                         if (selectedRegion != null) {
                           updateRegion(selectedRegion);
                         }
-                        print('region picker result: $selectedRegion');
                       },
                       child: Container(
                         width: 60,
@@ -140,7 +140,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
                 maintainSize: true,
                 visible: hasInput,
                 child: PrimaryButton(
-                  text: 'Send code',
+                  text: getAppLocalizations(context).otp_send_code,
                   onPress: () {
                     _onSend(OtpInfo(method: OtpMethod.sms, data: '+${currentRegion.callingCode}${phoneController.text}'));
                   },

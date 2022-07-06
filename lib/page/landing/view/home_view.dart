@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
@@ -55,14 +56,14 @@ class _HomeViewState extends State<HomeView> {
   Widget _footer(BuildContext context) {
     return Column(children: [
       PrimaryButton(
-        text: AppLocalizations.of(context)!.login,
+        text: getAppLocalizations(context).login,
         onPress: () { NavigationCubit.of(context).push(AuthInputAccountPath()); },
       ),
       const SizedBox(
         height: 24,
       ),
       SecondaryButton(
-        text: AppLocalizations.of(context)!.setup_new_router,
+        text: getAppLocalizations(context).setup_new_router,
         onPress: () { NavigationCubit.of(context).push(SetupWelcomeEulaPath()); },
       ),
       ...showDebugButton()

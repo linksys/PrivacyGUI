@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
@@ -30,11 +31,11 @@ class GetWiFiUpView extends StatelessWidget {
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
         header: BasicHeader(
-          title: AppLocalizations.of(context)!.welcome_eula_title,
+          title: getAppLocalizations(context).welcome_eula_title,
         ),
         content: _content(context),
         footer: PrimaryButton(
-          text: AppLocalizations.of(context)!.accept,
+          text: getAppLocalizations(context).accept,
           onPress: () => NavigationCubit.of(context).push(SetupParentPlugPath()),
         ),
       ),
@@ -53,7 +54,7 @@ class GetWiFiUpView extends StatelessWidget {
         ),
         DescriptionText(
             // TODO: Use rich text here
-            text: AppLocalizations.of(context)!.welcome_eula_content
+            text: getAppLocalizations(context).welcome_eula_content
         ),
       ],
     );

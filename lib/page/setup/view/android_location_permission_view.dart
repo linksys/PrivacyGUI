@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
@@ -49,13 +50,13 @@ class _AndroidLocationPermissionPrimerState
     return BasePageView(
       child: BasicLayout(
         header: BasicHeader(
-            title: AppLocalizations.of(context)!
+            title: getAppLocalizations(context)
                 .android_location_permission_view_title),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             DescriptionText(
-                text: AppLocalizations.of(context)!
+                text: getAppLocalizations(context)
                     .android_location_permission_view_description),
             const SizedBox(height: 27),
             img
@@ -64,13 +65,13 @@ class _AndroidLocationPermissionPrimerState
         footer: Column(
           children: [
             PrimaryButton(
-                text: AppLocalizations.of(context)!.text_continue,
+                text: getAppLocalizations(context).text_continue,
                 onPress: () {
                   _checkLocationPermission();
                 }),
             const SizedBox(height: 11),
             SecondaryButton(
-                text: AppLocalizations.of(context)!.quit_setup,
+                text: getAppLocalizations(context).quit_setup,
                 onPress: () => NavigationCubit.of(context).popTo(HomePath()))
           ],
         ),

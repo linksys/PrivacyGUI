@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/text/description_text.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
@@ -36,17 +37,17 @@ class PlaceNodeView extends StatelessWidget {
       children: [
         BasicHeader(
           title: isAddOnNodes
-              ? AppLocalizations.of(context)!.place_node_view_addOnNodes_title
-              : AppLocalizations.of(context)!.place_node_view_title,
+              ? getAppLocalizations(context).place_node_view_addOnNodes_title
+              : getAppLocalizations(context).place_node_view_title,
         ),
         const SizedBox(
           height: 6,
         ),
         DescriptionText(
             text: isAddOnNodes
-                ? AppLocalizations.of(context)!
+                ? getAppLocalizations(context)
                     .place_node_view_addOnNodes_subtitle
-                : AppLocalizations.of(context)!.place_node_view_subtitle)
+                : getAppLocalizations(context).place_node_view_subtitle)
       ],
     );
   }
@@ -59,7 +60,7 @@ class PlaceNodeView extends StatelessWidget {
         image,
         const SizedBox(height: 14),
         Text(
-          AppLocalizations.of(context)!.placement_tips,
+          getAppLocalizations(context).placement_tips,
           style: Theme.of(context)
               .textTheme
               .headline4
@@ -73,12 +74,12 @@ class PlaceNodeView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        isAddOnNodes? const SizedBox(height: 0) : DescriptionText(text: AppLocalizations.of(context)!.place_node_view_content),
+        isAddOnNodes? const SizedBox(height: 0) : DescriptionText(text: getAppLocalizations(context).place_node_view_content),
         const SizedBox(
           height: 27,
         ),
         PrimaryButton(
-          text: AppLocalizations.of(context)!.next,
+          text: getAppLocalizations(context).next,
           onPress: () {
             if (isAddOnNodes) {
               NavigationCubit.of(context).push(SetupNthChildSearchingPath());

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
@@ -35,7 +36,7 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) => _isLoading
-          ? const FullScreenSpinner(text: 'processing...')
+          ?  FullScreenSpinner(text: getAppLocalizations(context).processing)
           : _isLinkExpired
               ? _linkExpiredView()
               : (_isNewPasswordSet
@@ -50,8 +51,8 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
       scrollable: true,
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
-        header: const BasicHeader(
-          title: 'Enter your new password',
+        header: BasicHeader(
+          title: getAppLocalizations(context).enter_your_new_password,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,7 +61,7 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
               height: 37,
             ),
             InputField(
-              titleText: 'Enter password',
+              titleText: getAppLocalizations(context).enter_password,
               isError: _errorReason.isNotEmpty,
               controller: _passwordController,
               onChanged: (value) {
@@ -88,7 +89,7 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
               height: 23,
             ),
             PrimaryButton(
-              text: 'Continue',
+              text: getAppLocalizations(context).text_continue,
               onPress: _localValidatePassword(_passwordController.text)
                   ? () async {
                       setState(() {
@@ -116,8 +117,8 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
     return BasePageView.noNavigationBar(
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
-        header: const BasicHeader(
-          title: 'New password set',
+        header: BasicHeader(
+          title: getAppLocalizations(context).new_password_set,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,8 +140,8 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
       context,
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
-        header: const BasicHeader(
-          title: 'Uh oh, your reset password link expired.',
+        header: BasicHeader(
+          title: getAppLocalizations(context).error_reset_password_link_expired,
         ),
         content: Column(
           children: [
@@ -148,7 +149,7 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
               height: 67,
             ),
             PrimaryButton(
-              text: 'Back to login',
+              text: getAppLocalizations(context).back_to_login,
               onPress: () {
                 NavigationCubit.of(context).clearAndPush(HomePath());
               },
@@ -161,9 +162,9 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
 
   String _checkErrorReason() {
     if (_errorReason == 'OLD_PASSWORD') {
-      return 'You cannot use an old password.';
+      return getAppLocalizations(context).error_reset_password_use_old_password;
     } else {
-      return 'Unknown error';
+      return getAppLocalizations(context).unknown_error;
     }
   }
 

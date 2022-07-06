@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/text/description_text.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
@@ -21,7 +22,7 @@ class NodesSuccessView extends StatelessWidget {
     return BasePageView(
       child: BasicLayout(
         header: BasicHeader(
-          title: AppLocalizations.of(context)!.good_work,
+          title: getAppLocalizations(context).good_work,
         ),
         content: Center(
           child: Column(
@@ -40,14 +41,14 @@ class NodesSuccessView extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(0, 48, 0, 48), // TODO
                 child: Center(
                   child: SimpleTextButton(
-                      text: AppLocalizations.of(context)!.add_a_node,
+                      text: getAppLocalizations(context).add_a_node,
                       onPressed: (){
                           NavigationCubit.of(context).push(SetupNthChildPlacePath());
                       }),
                 ),
               ),
               DescriptionText(
-                  text: AppLocalizations.of(context)!
+                  text: getAppLocalizations(context)
                       .nodes_success_multi_description),
             ],
           ),
@@ -55,7 +56,7 @@ class NodesSuccessView extends StatelessWidget {
         footer: Column(
           children: [
             PrimaryButton(
-              text: AppLocalizations.of(context)!
+              text: getAppLocalizations(context)
                   .nodes_success_multi_add_wifi_name_button_text,
               onPress: () => NavigationCubit.of(context).push(SetupCustomizeSSIDPath()),
             ),

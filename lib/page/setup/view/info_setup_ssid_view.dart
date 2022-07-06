@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
@@ -16,7 +17,7 @@ class InfoSetupSSIDView extends StatelessWidget {
       appBar: _appBar(context),
       child: BasicLayout(
         header: BasicHeader(
-          title: AppLocalizations.of(context)!.info_setup_ssid_view_title,
+          title: getAppLocalizations(context).info_setup_ssid_view_title,
         ),
         content: Center(
           child: img,

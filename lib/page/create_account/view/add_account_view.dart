@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
 import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
@@ -35,11 +36,11 @@ class _AddAccountState extends State<AddAccountView> {
 
   Widget _buildAccountTipsWidget() {
     List<String> tips = [
-      AppLocalizations.of(context)!.add_cloud_account_bullet_1,
-      AppLocalizations.of(context)!.add_cloud_account_bullet_2,
-      AppLocalizations.of(context)!.add_cloud_account_bullet_3,
-      AppLocalizations.of(context)!.add_cloud_account_bullet_4,
-      AppLocalizations.of(context)!.add_cloud_account_bullet_5,
+      getAppLocalizations(context).add_cloud_account_bullet_1,
+      getAppLocalizations(context).add_cloud_account_bullet_2,
+      getAppLocalizations(context).add_cloud_account_bullet_3,
+      getAppLocalizations(context).add_cloud_account_bullet_4,
+      getAppLocalizations(context).add_cloud_account_bullet_5,
     ];
 
     return Padding(
@@ -72,12 +73,12 @@ class _AddAccountState extends State<AddAccountView> {
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
         header: BasicHeader(
-          title: AppLocalizations.of(context)!.add_cloud_account_header_title,
+          title: getAppLocalizations(context).add_cloud_account_header_title,
         ),
         content: Column(
           children: [
             InputField(
-              titleText: AppLocalizations.of(context)!.add_cloud_account_input_title,
+              titleText: getAppLocalizations(context).add_cloud_account_input_title,
               controller: _emailController,
               isError: isEmailInvalid,
               onChanged: (value) {
@@ -103,7 +104,7 @@ class _AddAccountState extends State<AddAccountView> {
             ),
             _buildAccountTipsWidget(),
             SimpleTextButton(
-                text: AppLocalizations.of(context)!.add_cloud_account_skip_use_router_password,
+                text: getAppLocalizations(context).add_cloud_account_skip_use_router_password,
                 onPressed: () {
                   NavigationCubit.of(context).push(NoUseCloudAccountPath());
                 })
@@ -116,7 +117,7 @@ class _AddAccountState extends State<AddAccountView> {
           maintainSize: true,
           visible: _emailController.text.isNotEmpty,
           child: PrimaryButton(
-            text: AppLocalizations.of(context)!.next,
+            text: getAppLocalizations(context).next,
             onPress: _onNextAction,
           ),
         ),

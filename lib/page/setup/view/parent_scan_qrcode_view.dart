@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
@@ -39,7 +40,7 @@ class _ParentScanQRCodeViewState extends State<ParentScanQRCodeView> with Permis
     return BasePageView(
       child: BasicLayout(
         header: BasicHeader(
-          title: AppLocalizations.of(context)!.scan_qrcode_view_title,
+          title: getAppLocalizations(context).scan_qrcode_view_title,
           description: 'The code is on the bottom of your node',
         ),
         content: Center(
@@ -64,7 +65,7 @@ class _ParentScanQRCodeViewState extends State<ParentScanQRCodeView> with Permis
         footer: Column(
           children: [
             PrimaryButton(
-              text: AppLocalizations.of(context)!.scan_qrcode_view_button_text,
+              text: getAppLocalizations(context).scan_qrcode_view_button_text,
               onPress: () => NavigationCubit.of(context).push(AndroidLocationPermissionPrimerPath()),
             ),
           ],

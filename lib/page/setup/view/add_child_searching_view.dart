@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/indeterminate_progressbar.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
@@ -49,7 +50,7 @@ class _AddChildSearchingViewState extends State<AddChildSearchingView> {
     return BasePageView.noNavigationBar(
       child: BasicLayout(
         header: BasicHeader(
-          title: _hasFound ? AppLocalizations.of(context)!.found_it : AppLocalizations.of(context)!.looking_for_your_node,
+          title: _hasFound ? getAppLocalizations(context).found_it : getAppLocalizations(context).looking_for_your_node,
         ),
         content: Center(
           child: Column(

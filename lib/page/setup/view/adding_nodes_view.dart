@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
@@ -27,11 +28,11 @@ class _AddingNodesViewState extends State<AddingNodesView> {
     return BasePageView(
       child: BasicLayout(
         header: BasicHeader(
-          title: AppLocalizations.of(context)!.adding_nodes,
-          description: AppLocalizations.of(context)!.adding_nodes_description,
+          title: getAppLocalizations(context).adding_nodes,
+          description: getAppLocalizations(context).adding_nodes_description,
         ),
         content: Flex(direction: Axis.vertical),
-        footer: Text(AppLocalizations.of(context)!.adding_nodes_more_info),
+        footer: Text(getAppLocalizations(context).adding_nodes_more_info),
       ),
     );
   }

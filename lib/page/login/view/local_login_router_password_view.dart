@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
@@ -50,9 +51,9 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
                 ? _enterRouterPasswordView(context)
                 : NetworkCheckView(
                     description:
-                        'Connect to your router’s WiFi network to log in',
+                        getAppLocalizations(context).local_login_connect_to_your_router,
                     button: PrimaryButton(
-                      text: 'Continue',
+                      text: getAppLocalizations(context).text_continue,
                       onPress: checkWifi,
                     )),
           );
@@ -76,8 +77,8 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
   Widget _enterRouterPasswordView(BuildContext context) {
     return BasicLayout(
       alignment: CrossAxisAlignment.start,
-      header: const BasicHeader(
-        title: 'Enter your router password',
+      header: BasicHeader(
+        title: getAppLocalizations(context).local_login_title,
       ),
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,8 +87,8 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
             height: 44,
           ),
           InputField(
-            titleText: 'Router password',
-            hintText: 'Router password',
+            titleText: getAppLocalizations(context).router_password,
+            hintText: getAppLocalizations(context).router_password,
             controller: _passwordController,
             onChanged: _verifyPassword,
             isError: _errorReason.isNotEmpty,
@@ -111,7 +112,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
               data:
                   Theme.of(context).copyWith(dividerColor: Colors.transparent),
               child: ExpansionTile(
-                title: const Text('Show hint'),
+                title: Text(getAppLocalizations(context).show_hint),
                 collapsedTextColor: Theme.of(context).colorScheme.onTertiary,
                 textColor: Theme.of(context).colorScheme.onTertiary,
                 tilePadding: EdgeInsets.zero,
@@ -123,7 +124,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
               ),
             ),
           SimpleTextButton(
-              text: 'Forgot router password',
+              text: getAppLocalizations(context).forgot_router_password,
               onPressed: () {
                 NavigationCubit.of(context).push(AuthLocalRecoveryKeyPath());
               }),
@@ -131,7 +132,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
             height: 37,
           ),
           PrimaryButton(
-            text: 'Continue',
+            text: getAppLocalizations(context).text_continue,
             onPress: _isPasswordValidate ? _localLogin : null,
           ),
         ],

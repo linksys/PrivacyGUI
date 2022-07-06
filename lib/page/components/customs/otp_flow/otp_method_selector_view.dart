@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_cubit.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_state.dart';
@@ -11,6 +12,7 @@ import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/navigation_cubit.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class OTPMethodSelectorView extends ArgumentsStatefulView {
   const OTPMethodSelectorView(
@@ -70,14 +72,14 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
               height: 60,
             ),
             PrimaryButton(
-              text: !state.isSendFunction() && state.selectedMethod?.method == OtpMethod.sms ? 'Add phone number' : 'Continue',
+              text: !state.isSendFunction() && state.selectedMethod?.method == OtpMethod.sms ? getAppLocalizations(context).add_phone_number : getAppLocalizations(context).text_continue,
               onPress: () { !state.isSendFunction() ? _checkPhoneExist(state.selectedMethod!) : _onSend(state.selectedMethod!);},
             ),
             const SizedBox(
               height: 60,
             ),
             if (state.isSettingFunction())
-              SimpleTextButton(text: 'I want to create a password instead', onPressed: () {
+              SimpleTextButton(text: getAppLocalizations(context).otp_create_password_instead, onPressed: () {
                 NavigationCubit.of(context).push(CreateCloudPasswordPath());
               }),
           ],
@@ -88,11 +90,11 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
 
   String _createTitle(OtpState state) {
     if (state.isSendFunction()) {
-      return 'Where should we send your code?';
+      return getAppLocalizations(context).otp_send_method_choice_title;
     } else if (state.isSettingFunction()) {
-      return 'Choose how to receive log in codes';
+      return getAppLocalizations(context).otp_setting_method_choice_title;
     } else if (state.isSetting2svFunction()) {
-      return 'Choose how to receive 2SV code';
+      return getAppLocalizations(context).otp_2sv_setting_method_choice_title;
     } else {
       return '';
     }
@@ -101,9 +103,9 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
     if (state.isSendFunction()) {
       return '';
     } else if (state.isSettingFunction()) {
-      return 'We\'ll send you a one-time passcode that expires' ;
+      return getAppLocalizations(context).otp_method_choice_description;
     } else if (state.isSetting2svFunction()) {
-      return 'We\'ll send you a one-time passcode that expires';
+      return getAppLocalizations(context).otp_method_choice_description;
     } else {
       return '';
     }

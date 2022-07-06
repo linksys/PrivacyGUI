@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
@@ -28,13 +29,13 @@ class ConnectToModemView extends StatelessWidget {
     return BasePageView(
       child: BasicLayout(
         header: BasicHeader(
-          title: AppLocalizations.of(context)!.connect_to_modem_view_title,
+          title: getAppLocalizations(context).connect_to_modem_view_title,
           description:
-              AppLocalizations.of(context)!.connect_to_modem_view_description,
+              getAppLocalizations(context).connect_to_modem_view_description,
         ),
         content: _content(context),
         footer: PrimaryButton(
-          text: AppLocalizations.of(context)!.next,
+          text: getAppLocalizations(context).next,
           onPress: () => NavigationCubit.of(context).push(SetupParentPlacePath()),
         ),
       ),
@@ -52,7 +53,7 @@ class ConnectToModemView extends StatelessWidget {
         Align(
           alignment: Alignment.topLeft,
           child: SimpleTextButton(
-            text: AppLocalizations.of(context)!.show_me_how,
+            text: getAppLocalizations(context).show_me_how,
             onPressed: () => _goToShowMeHowPage(context),
           ),
         )

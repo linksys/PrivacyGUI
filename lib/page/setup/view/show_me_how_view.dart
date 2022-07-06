@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -14,7 +15,7 @@ class ShowMeHowView extends StatelessWidget {
       scrollable: true,
       child: BasicLayout(
         header: Text(
-          AppLocalizations.of(context)!.show_me_how_connect_router_modem_title,
+          getAppLocalizations(context).show_me_how_connect_router_modem_title,
           style: Theme.of(context)
               .textTheme
               .headline3
@@ -34,7 +35,7 @@ class ShowMeHowView extends StatelessWidget {
         StepView(
           stepIcon: _stepIcon(context, '1'),
           text:
-             AppLocalizations.of(context)!.show_me_how_connect_router_modem_step1,
+             getAppLocalizations(context).show_me_how_connect_router_modem_step1,
           image: Container(
             alignment: Alignment.centerLeft,
             child: Image.asset('assets/images/step_1.png'),
@@ -46,7 +47,7 @@ class ShowMeHowView extends StatelessWidget {
         StepView(
           stepIcon: _stepIcon(context, '2'),
           text:
-              AppLocalizations.of(context)!.show_me_how_connect_router_modem_step2,
+              getAppLocalizations(context).show_me_how_connect_router_modem_step2,
           image: Container(
             alignment: Alignment.centerRight,
             child: Image.asset('assets/images/step_2.png'),
@@ -57,7 +58,7 @@ class ShowMeHowView extends StatelessWidget {
         ),
         StepView(
             stepIcon: _stepIcon(context, '3'),
-            text: AppLocalizations.of(context)!.show_me_how_connect_router_modem_step3
+            text: getAppLocalizations(context).show_me_how_connect_router_modem_step3
         ),
       ],
     );

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
@@ -51,7 +52,7 @@ class _PermissionsPrimerViewState extends State<PermissionsPrimerView> {
         child: BasicLayout(
           header: BasicHeader(
             spacing: 11,
-            title: AppLocalizations.of(context)!.permissions_primer_title,
+            title: getAppLocalizations(context).permissions_primer_title,
           ),
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -64,18 +65,18 @@ class _PermissionsPrimerViewState extends State<PermissionsPrimerView> {
               if (Platform.isIOS)
                 CheckPermissionView(
                     checkIcon: checkIcon,
-                    text: AppLocalizations.of(context)!.camera_access),
+                    text: getAppLocalizations(context).camera_access),
               CheckPermissionView(
                   checkIcon: checkIcon,
-                  text: AppLocalizations.of(context)!.local_network_access),
+                  text: getAppLocalizations(context).local_network_access),
               if (Platform.isIOS)
                 CheckPermissionView(
                     checkIcon: checkIcon,
-                    text: AppLocalizations.of(context)!.location)
+                    text: getAppLocalizations(context).location)
             ],
           ),
           footer: PrimaryButton(
-            text: AppLocalizations.of(context)!.got_it,
+            text: getAppLocalizations(context).got_it,
             onPress: () => NavigationCubit.of(context).push(SetupParentQrCodeScanPath()),
           ),
         ),

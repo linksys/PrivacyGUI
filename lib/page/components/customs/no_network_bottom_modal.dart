@@ -1,8 +1,10 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class NoInternetConnectionModal extends StatelessWidget {
   const NoInternetConnectionModal({Key? key}) : super(key: key);
@@ -25,14 +27,14 @@ class NoInternetConnectionModal extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'No internet connection',
+                      getAppLocalizations(context).prompt_no_internet_connection,
                       style: Theme.of(context).textTheme.headline1,
                     ),
                     const SizedBox(
                       height: 36,
                     ),
                     Text(
-                      'Make sure you\'re connected to your new WiFi network or enable cellular data.',
+                      getAppLocalizations(context).prompt_no_internet_connection_description,
                       style: Theme.of(context).textTheme.bodyText1,
                     )
                   ],

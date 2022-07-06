@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
@@ -20,26 +21,26 @@ class IOSLocationPermissionDenied extends StatelessWidget {
     return BasePageView(
       child: BasicLayout(
         header: BasicHeader(
-          title: AppLocalizations.of(context)!.local_permission_denied_title,
+          title: getAppLocalizations(context).local_permission_denied_title,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 27),
-            DescriptionText(text: AppLocalizations.of(context)!.local_permission_denied_subtitle),
+            DescriptionText(text: getAppLocalizations(context).local_permission_denied_subtitle),
             const SizedBox(height: 21),
-            DescriptionText(text: AppLocalizations.of(context)!.local_permission_denied_step1),
+            DescriptionText(text: getAppLocalizations(context).local_permission_denied_step1),
             const SizedBox(height: 3),
-            DescriptionText(text: AppLocalizations.of(context)!.local_permission_denied_step2),
+            DescriptionText(text: getAppLocalizations(context).local_permission_denied_step2),
             const SizedBox(height: 3),
-            DescriptionText(text: AppLocalizations.of(context)!.local_permission_denied_step3),
+            DescriptionText(text: getAppLocalizations(context).local_permission_denied_step3),
           ],
         ),
         footer: Column(
           children: [
-            PrimaryButton(text: AppLocalizations.of(context)!.enabled_local_access, onPress: onNext),
+            PrimaryButton(text: getAppLocalizations(context).enabled_local_access, onPress: onNext),
             const SizedBox(height: 11),
-            SecondaryButton(text: AppLocalizations.of(context)!.quit_setup, onPress: onQuit)
+            SecondaryButton(text: getAppLocalizations(context).quit_setup, onPress: onQuit)
           ],
         ),
       ),

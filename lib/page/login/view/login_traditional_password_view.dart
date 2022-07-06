@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
 
@@ -35,7 +36,7 @@ class _LoginTraditionalPasswordViewState
 
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) => _isLoading
-          ? const FullScreenSpinner(text: 'processing...')
+          ? FullScreenSpinner(text: getAppLocalizations(context).processing)
           : _contentView(state),
     );
   }
@@ -46,15 +47,15 @@ class _LoginTraditionalPasswordViewState
       scrollable: true,
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
-        header: const BasicHeader(
-          title: 'Enter password',
+        header: BasicHeader(
+          title: getAppLocalizations(context).enter_password,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InputField(
-              titleText: 'Password',
-              hintText: 'Password',
+              titleText: getAppLocalizations(context).password,
+              hintText: getAppLocalizations(context).password,
               isError: _errorReason.isNotEmpty,
               controller: passwordController,
               onChanged: (value) {
@@ -77,14 +78,14 @@ class _LoginTraditionalPasswordViewState
             const SizedBox(
               height: 15,
             ),
-            SimpleTextButton(text: 'Forgot password', onPressed: () {
+            SimpleTextButton(text: getAppLocalizations(context).forgot_password, onPressed: () {
               NavigationCubit.of(context).push(AuthCloudForgotPasswordPath());
             }),
             const SizedBox(
               height: 38,
             ),
             PrimaryButton(
-              text: 'Continue',
+              text: getAppLocalizations(context).text_continue,
               onPress: passwordController.text.isEmpty
                   ? null
                   : () async {
@@ -110,9 +111,9 @@ class _LoginTraditionalPasswordViewState
 
   String _checkErrorReason() {
     if (_errorReason == 'INCORRECT_PASSWORD') {
-      return 'Incorrect password';
+      return getAppLocalizations(context).error_incorrect_password;
     } else {
-      return 'Unknown error';
+      return getAppLocalizations(context).unknown_error;
     }
   }
 

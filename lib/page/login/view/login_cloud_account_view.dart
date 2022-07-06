@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
 import 'package:moab_poc/page/login/view/view.dart';
@@ -47,7 +48,7 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
 
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) => _isLoading
-          ? const FullScreenSpinner(text: 'processing...')
+          ? FullScreenSpinner(text: getAppLocalizations(context).processing)
           : _contentView(state),
     );
   }
@@ -57,15 +58,15 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
         scrollable: true,
         child: BasicLayout(
           alignment: CrossAxisAlignment.start,
-          header: const BasicHeader(
-            title: 'Log in to your Linksys account',
+          header: BasicHeader(
+            title: getAppLocalizations(context).cloud_account_login_title,
           ),
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               InputField(
-                titleText: 'Email',
-                hintText: 'Email',
+                titleText: getAppLocalizations(context).email,
+                hintText: getAppLocalizations(context).email,
                 controller: _accountController,
                 onChanged: _checkFilledInfo,
                 inputType: TextInputType.emailAddress,
@@ -86,21 +87,21 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: SimpleTextButton(
-                      text: 'Did you use this email with another Linksys app?',
+                      text: getAppLocalizations(context).cloud_account_login_email_with_linksys_app,
                       onPressed: () => NavigationCubit.of(context)
                           .push(AlreadyHaveOldAccountPath())),
                 ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: SimpleTextButton(
-                    text: 'Forgot email',
+                    text: getAppLocalizations(context).forgot_email,
                     onPressed: () => NavigationCubit.of(context)
                         .push(AuthForgotEmailPath())),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24.0),
                 child: PrimaryButton(
-                  text: 'Continue',
+                  text: getAppLocalizations(context).text_continue,
                   onPress: _isValidEmail
                       ? () async {
                           setState(() {
@@ -120,7 +121,7 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
               ),
               Center(
                 child: SimpleTextButton(
-                    text: 'Log in with router password',
+                    text: getAppLocalizations(context).cloud_account_login_with_router_password,
                     onPressed: () =>
                         NavigationCubit.of(context).push(AuthLocalLoginPath())),
               ),
@@ -132,11 +133,11 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
 
   String _checkErrorReason() {
     if (_errorReason.isEmpty) {
-      return 'Enter a valid email format';
+      return getAppLocalizations(context).error_enter_a_valid_email_format;
     } else if (_errorReason == 'NOT_FOUND') {
-      return 'Email address not found';
+      return getAppLocalizations(context).error_email_address_not_fount;
     } else {
-      return 'Unknown error';
+      return getAppLocalizations(context).unknown_error;
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
@@ -33,7 +34,7 @@ class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) => _isLoading
-          ? const FullScreenSpinner(text: 'processing...')
+          ? FullScreenSpinner(text: getAppLocalizations(context).processing)
           : _contentView(state),
     );
   }
@@ -49,9 +50,9 @@ class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
       context,
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
-        header: const BasicHeader(
-          title: 'We’ll send you a link to reset your password.',
-          description: 'This link will expire in 15 minutes.',
+        header: BasicHeader(
+          title: getAppLocalizations(context).cloud_forgot_password_title,
+          description: getAppLocalizations(context).cloud_forgot_password_description,
           spacing: 12,
         ),
         content: Column(
@@ -61,7 +62,7 @@ class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
               height: _hasPhoneNumber ? 32 : 71,
             ),
             PrimaryButton(
-              text: 'Send link',
+              text: getAppLocalizations(context).send_link,
               onPress: () async {
                 setState(() {
                   _isLoading = true;
@@ -93,7 +94,7 @@ class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
         ),
         GestureDetector(
           child: SelectableItem(
-            text: 'SMS',
+            text: getAppLocalizations(context).sms,
             height: 66,
             isSelected: !_sendLinkViaEmail,
           ),
@@ -127,10 +128,10 @@ class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
         header: BasicHeader(
-          title: 'Link sent!',
+          title: getAppLocalizations(context).link_sent,
           description: _sendLinkViaEmail
               ? ''
-              : 'If you didn’t receive an email, remember to check your spam folder.',
+              : getAppLocalizations(context).cloud_forgot_password_not_receive_email,
         ),
         content: Column(
           children: [
@@ -138,7 +139,7 @@ class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
               height: _sendLinkViaEmail ? 123 : 71,
             ),
             PrimaryButton(
-              text: 'Back to login',
+              text: getAppLocalizations(context).back_to_login,
               onPress: () {
                 // TODO: need universal link after sending link, keep go on next page for now
                 NavigationCubit.of(context).push(AuthCloudResetPasswordPath());

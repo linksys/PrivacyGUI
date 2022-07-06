@@ -11,6 +11,7 @@ import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/event.dart';
 import 'package:moab_poc/bloc/connectivity/cubit.dart';
 import 'package:moab_poc/design/themes.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/repository/authenticate/local_auth_repository.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -106,7 +107,7 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       scaffoldMessengerKey: GlobalKey<ScaffoldMessengerState>(),
-      onGenerateTitle: (context) => AppLocalizations.of(context)!.app_title,
+      onGenerateTitle: (context) => getAppLocalizations(context).app_title,
       theme: MoabTheme.AuthModuleLightModeData,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,

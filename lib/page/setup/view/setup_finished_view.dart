@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:moab_poc/design/colors.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/text/description_text.dart';
@@ -33,7 +34,7 @@ class SetupFinishedView extends ArgumentsStatelessView {
     return BasePageView(
       child: BasicLayout(
         header: BasicHeader(
-          title: AppLocalizations.of(context)!.wifi_ready_view_title,
+          title: getAppLocalizations(context).wifi_ready_view_title,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,19 +42,19 @@ class SetupFinishedView extends ArgumentsStatelessView {
               const SizedBox(
                 height: 48,
               ),
-              DescriptionText(text: AppLocalizations.of(context)!.wifi_ready_view_connect_to),
+              DescriptionText(text: getAppLocalizations(context).wifi_ready_view_connect_to),
               const SizedBox( height: 8),
-              infoCard(context, wifiIcon, AppLocalizations.of(context)!.wifi_name, "MyHomeWiFi"),
+              infoCard(context, wifiIcon, getAppLocalizations(context).wifi_name, "MyHomeWiFi"),
               const SizedBox( height: 8),
-              infoCard(context, lockIcon, AppLocalizations.of(context)!.wifi_password, "ThisIsMyStrongPassword123"),
+              infoCard(context, lockIcon, getAppLocalizations(context).wifi_password, "ThisIsMyStrongPassword123"),
               const SizedBox( height: 58),
-              DescriptionText(text: AppLocalizations.of(context)!.wifi_ready_view_login_info),
+              DescriptionText(text: getAppLocalizations(context).wifi_ready_view_login_info),
               const SizedBox(height: 8),
-              infoCard(context, portraitIcon, AppLocalizations.of(context)!.linksys_account, "myemail@email.com"),
+              infoCard(context, portraitIcon, getAppLocalizations(context).linksys_account, "myemail@email.com"),
             ],
         ),
         footer: PrimaryButton(
-          text: AppLocalizations.of(context)!.go_to_dashboard,
+          text: getAppLocalizations(context).go_to_dashboard,
           onPress: () => NavigationCubit.of(context).popTo(DashboardMainPath()),
         ),
         alignment: CrossAxisAlignment.start,

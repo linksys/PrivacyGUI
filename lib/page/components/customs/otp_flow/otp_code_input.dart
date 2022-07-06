@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_cubit.dart';
@@ -12,6 +13,7 @@ import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'otp_state.dart';
 
@@ -63,8 +65,8 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
         alignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: state.selectedMethod?.method == OtpMethod.email
-              ? 'Enter the code we sent to ${state.selectedMethod?.data}'
-              : 'Enter the code we texted to ${state.selectedMethod?.data}',
+              ? getAppLocalizations(context).otp_enter_code_sms_title(state.selectedMethod?.data ?? '')
+              : getAppLocalizations(context).otp_enter_code_email_title(state.selectedMethod?.data ?? ''),
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,7 +101,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
               height: 25,
             ),
             SimpleTextButton(
-                text: 'Resend code',
+                text: getAppLocalizations(context).otp_resend_code,
                 onPressed: () {
                   _setLoading(true);
                   context
@@ -150,7 +152,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
               .of(context)
               .primaryColor,
         ),
-        const Text('Code resent!')
+        Text(getAppLocalizations(context).otp_code_resent)
       ]),
       duration: const Duration(seconds: 5),
     ));

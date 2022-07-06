@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
@@ -27,11 +28,11 @@ class PlugNodeView extends StatelessWidget {
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
         header: BasicHeader(
-          title: AppLocalizations.of(context)!.plug_node_view_title,
+          title: getAppLocalizations(context).plug_node_view_title,
         ),
         content: _content(),
         footer: PrimaryButton(
-          text: AppLocalizations.of(context)!.next,
+          text: getAppLocalizations(context).next,
           onPress: () => NavigationCubit.of(context).push(SetupParentWiredPath()),
         ),
       ),

@@ -2,7 +2,10 @@
   "@@locale": "en",
   "app_title": "Moab PoC",
   "login": "Log in",
+  "logout": "Log out",
+  "back_to_login": "Back to login",
   "setup_new_router": "Set up new WiFi",
+  "setup_wifi": "Setup WiFi",
   "accept": "I accept",
   "next": "Next",
   "text_continue": "Continue",
@@ -21,7 +24,24 @@
   "add_a_node": "Add a node",
   "wifi_name": "WiFi name",
   "wifi_password": "WiFi password",
+  "email": "Email",
+  "sms": "SMS",
+  "forgot_email": "Forgot email",
   "password": "Password",
+  "enter_password": "Enter password",
+  "enter_your_new_password": "Enter your new password",
+  "forgot_password": "Forgot password",
+  "router_password": "Router password",
+  "forgot_router_password": "Forgot router password",
+  "reset_router_password": "Reset router password",
+  "new_password_set": "New password set",
+  "show_hint": "Show hint",
+  "send_link": "Send link",
+  "link_sent": "Link sent!",
+  "phone": "Phone",
+  "processing": "Processing...",
+  "unknown_error": "Unknown error",
+  "add_phone_number": "Add phone number",
   "password_hint": "Password hint (optional)",
   "keep_defaults": "Keep defaults",
   "go_to_dashboard": "Go to the dashboard",
@@ -106,6 +126,50 @@
   "android_location_permission_denied_view_description": "Your phone needs this to check the SSID status of your router.\n\nWe do not record or use your location data for any other purposes.",
   "android_location_permission_denied_view_step1": "1. Go to System Settings",
   "android_location_permission_denied_view_step2": "2. Tap on Biometrics and security",
-  "android_location_permission_denied_view_step3": "3. Turn Location On"
-
+  "android_location_permission_denied_view_step3": "3. Turn Location On",
+  "otp_add_phone_number": "Add phone number",
+  "otp_send_code": "Send code",
+  "otp_resend_code": "Resend code",
+  "otp_code_resent": "Code resent!",
+  "otp_enter_code_sms_title": "Enter the code we sent to {phone}",
+  "@otp_enter_code_sms_title": {
+    "placeholders": {
+      "phone": {
+        "type": "String",
+        "example": "+886912345678"
+      }
+    }
+  },
+  "otp_enter_code_email_title": "Enter the code we texted to {email}",
+  "@otp_enter_code_email_title": {
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "user@linksys.com"
+      }
+    }
+  },
+  "otp_create_password_instead": "I want to create a password instead",
+  "otp_send_method_choice_title": "Where should we send your code?",
+  "otp_setting_method_choice_title": "Choose how to receive login codes",
+  "otp_2sv_setting_method_choice_title": "Choose hot to receive 2SV code",
+  "otp_method_choice_description": "We'll send you a one-time passcode that expires",
+  "prompt_no_internet_connection": "No internet connection",
+  "prompt_no_internet_connection_description": "Make sure you're connected to your new WiFi network or enable cellular data.",
+  "no_router_title": "It’s lonely in here... no Linksys routers are setup with this account",
+  "cloud_account_login_title": "Log in to your Linksys account",
+  "cloud_account_login_email_with_linksys_app": "Did you use this email with another Linksys app?",
+  "cloud_account_login_with_router_password": "Log in with router password",
+  "local_login_connect_to_your_router": "Connect to your router’s WiFi network to log in",
+  "local_login_title": "Enter your router password",
+  "cloud_forgot_email_connect_to_your_router": "No problem, we’ll give you a hint. But first, connect to your router’s WiFi",
+  "cloud_forgot_email_router_connected_to": "The router you're connected to is associate with",
+  "cloud_forgot_password_title": "We’ll send you a link to reset your password.",
+  "cloud_forgot_password_description": "This link will expire in 15 minutes.",
+  "cloud_forgot_password_not_receive_email": "If you didn’t receive an email, remember to check your spam folder.",
+  "error_incorrect_password": "Incorrect password",
+  "error_enter_a_valid_email_format": "Enter a valid email format",
+  "error_email_address_not_fount": "Email address not found",
+  "error_reset_password_link_expired": "Un oh, your reset password link expired",
+  "error_reset_password_use_old_password": "You cannot use an old password."
 }
