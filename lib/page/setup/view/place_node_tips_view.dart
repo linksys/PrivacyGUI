@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../components/layouts/basic_layout.dart';
 
 class PlaceNodeTipsView extends StatefulWidget {
@@ -36,7 +36,7 @@ class _PlaceNodeTipsViewState extends State<PlaceNodeTipsView> {
           context,
           scrollable: true,
           child: BasicLayout(
-            header: BasicHeader(title: AppLocalizations.of(context)!
+            header: BasicHeader(title: getAppLocalizations(context)
                 .place_node_tips_first_view_title),
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -52,7 +52,7 @@ class _PlaceNodeTipsViewState extends State<PlaceNodeTipsView> {
             context,
           scrollable: true,
           child: BasicLayout(
-            header: BasicHeader(title: AppLocalizations.of(context)!.place_node_tips_second_view_title),
+            header: BasicHeader(title: getAppLocalizations(context).place_node_tips_second_view_title),
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
