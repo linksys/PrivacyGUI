@@ -1,9 +1,12 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
+import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
 import 'package:moab_poc/page/components/base_components/text/description_text.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:moab_poc/page/setup/view/place_node_tips_view.dart';
 import 'package:moab_poc/route/route.dart';
 
 import '../../components/base_components/button/primary_button.dart';
@@ -59,12 +62,11 @@ class PlaceNodeView extends StatelessWidget {
       children: [
         image,
         const SizedBox(height: 14),
-        Text(
-          getAppLocalizations(context).placement_tips,
-          style: Theme.of(context)
-              .textTheme
-              .headline4
-              ?.copyWith(color: Theme.of(context).colorScheme.onTertiary),
+        SimpleTextButton(
+          text: getAppLocalizations(context).placement_tips,
+          onPressed: () {
+            _goToPlacementTipsPage(context);
+          },
         )
       ],
     );
@@ -74,7 +76,10 @@ class PlaceNodeView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        isAddOnNodes? const SizedBox(height: 0) : DescriptionText(text: getAppLocalizations(context).place_node_view_content),
+        isAddOnNodes
+            ? const SizedBox(height: 0)
+            : DescriptionText(
+                text: getAppLocalizations(context).place_node_view_content),
         const SizedBox(
           height: 27,
         ),
@@ -90,5 +95,13 @@ class PlaceNodeView extends StatelessWidget {
         )
       ],
     );
+  }
+
+  void _goToPlacementTipsPage(BuildContext context) {
+    showCupertinoModalPopup(
+        context: context,
+        builder: (context) {
+          return const PlaceNodeTipsView();
+        });
   }
 }

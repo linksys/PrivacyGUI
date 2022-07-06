@@ -43,7 +43,14 @@ class NodesSuccessView extends StatelessWidget {
                   child: SimpleTextButton(
                       text: getAppLocalizations(context).add_a_node,
                       onPressed: (){
-                          NavigationCubit.of(context).push(SetupNthChildPlacePath());
+                        int index = NavigationCubit.of(context).state.configs.indexWhere((element) => element.name == "SetupNthChildPlacePath");
+                        if (index >= 0) {
+                          NavigationCubit.of(context).popTo(
+                              SetupNthChildPlacePath());
+                        } else {
+                          NavigationCubit.of(context).push(
+                              SetupNthChildPlacePath());
+                        }
                       }),
                 ),
               ),

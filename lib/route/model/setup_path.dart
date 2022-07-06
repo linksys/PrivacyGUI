@@ -83,7 +83,10 @@ class SetupParentPermissionPath
     extends SetupParentPath<SetupParentPermissionPath> {}
 
 class SetupParentQrCodeScanPath
-    extends SetupParentPath<SetupParentQrCodeScanPath> {}
+    extends SetupParentPath<SetupParentQrCodeScanPath> {
+  @override
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
+}
 
 class SetupParentManualPath extends SetupParentPath<SetupParentManualPath> {}
 

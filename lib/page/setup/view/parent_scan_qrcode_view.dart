@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
@@ -21,20 +23,21 @@ class ParentScanQRCodeView extends StatefulWidget {
   State<ParentScanQRCodeView> createState() => _ParentScanQRCodeViewState();
 }
 
-class _ParentScanQRCodeViewState extends State<ParentScanQRCodeView> with Permissions{
+class _ParentScanQRCodeViewState extends State<ParentScanQRCodeView>
+    with Permissions {
   @override
   void initState() {
     _checkCameraPermission();
   }
-  
-  Future<void> _checkCameraPermission() async{
+
+  Future<void> _checkCameraPermission() async {
     await checkCameraPermissions().then((value) {
-      if(!value) {
+      if (!value) {
         NavigationCubit.of(context).push(SetupParentManualEnterSSIDPath());
       }
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return BasePageView(
@@ -55,7 +58,8 @@ class _ParentScanQRCodeViewState extends State<ParentScanQRCodeView> with Permis
                   width: 300,
                   height: 300,
                   child: CustomQRView(
-                    onResult: (Barcode code) => _handleScanResult(context, code),
+                    onResult: (Barcode code) =>
+                        _handleScanResult(context, code),
                   ),
                 ),
               ),
@@ -66,7 +70,14 @@ class _ParentScanQRCodeViewState extends State<ParentScanQRCodeView> with Permis
           children: [
             PrimaryButton(
               text: getAppLocalizations(context).scan_qrcode_view_button_text,
-              onPress: () => NavigationCubit.of(context).push(AndroidLocationPermissionPrimerPath()),
+              onPress: () {
+                if (Platform.isAndroid) {
+                  NavigationCubit.of(context).push(
+                      AndroidLocationPermissionPrimerPath());
+                } else if (Platform.isIOS) {
+                  NavigationCubit.of(context).push(InternetCheckingPath());
+                }
+              },
             ),
           ],
         ),
@@ -77,6 +88,11 @@ class _ParentScanQRCodeViewState extends State<ParentScanQRCodeView> with Permis
 
   _handleScanResult(BuildContext context, Barcode code) {
     print('Scanned code: ${code.rawValue ?? ''}');
-    NavigationCubit.of(context).push(AndroidLocationPermissionPrimerPath());
+    if (Platform.isAndroid) {
+      NavigationCubit.of(context).push(
+          AndroidLocationPermissionPrimerPath());
+    } else if (Platform.isIOS) {
+      NavigationCubit.of(context).push(InternetCheckingPath());
+    }
   }
 }

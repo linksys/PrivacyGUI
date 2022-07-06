@@ -127,6 +127,10 @@
   "android_location_permission_denied_view_step1": "1. Go to System Settings",
   "android_location_permission_denied_view_step2": "2. Tap on Biometrics and security",
   "android_location_permission_denied_view_step3": "3. Turn Location On",
+  "place_node_tips_first_view_title": "Place nodes 1 to 2 rooms apart, with no more than 1 floor between them",
+  "place_node_tips_second_view_title": "Place your router and nodes out in the open and keep them away from large appliances."
+
+  "android_location_permission_denied_view_step3": "3. Turn Location On",
   "otp_add_phone_number": "Add phone number",
   "otp_send_code": "Send code",
   "otp_resend_code": "Resend code",
