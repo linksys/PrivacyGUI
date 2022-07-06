@@ -4,6 +4,7 @@ import 'package:moab_poc/page/components/customs/otp_flow/otp_state.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/create_account/view/view.dart';
+import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/navigation_cubit.dart';
 import 'package:moab_poc/route/route.dart';
 

@@ -12,6 +12,7 @@ import '../../../channel/wifi_connect_channel.dart';
 import '../../components/base_components/button/primary_button.dart';
 import 'android_manually_connect_view.dart';
 import 'android_qr_choice_view.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 class PermissionsPrimerView extends StatefulWidget {
   PermissionsPrimerView({

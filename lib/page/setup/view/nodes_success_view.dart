@@ -8,6 +8,7 @@ import 'package:moab_poc/route/route.dart';
 
 import '../../components/base_components/button/primary_button.dart';
 import '../../components/base_components/button/simple_text_button.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 class NodesSuccessView extends StatelessWidget {
   const NodesSuccessView({

@@ -8,6 +8,7 @@ import 'package:moab_poc/route/route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../../design/colors.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 class AddChildSearchingView extends StatefulWidget {
   const AddChildSearchingView({

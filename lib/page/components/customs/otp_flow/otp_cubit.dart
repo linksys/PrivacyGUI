@@ -8,8 +8,8 @@ class OtpCubit extends Cubit<OtpState> {
   OtpCubit() : super(OtpState.init());
 
   void updateOtpMethods(List<OtpInfo> methods, OtpFunction function) {
-    var selected = methods.length > 1 ? null : function == OtpFunction.setting ? null : methods[0];
-    final step = selected == null ? OtpStep.chooseOtpMethod : OtpStep.inputOtp;
+    var selected = methods.length > 1 ? methods.firstWhere((element) => element.method == OtpMethod.sms) : methods[0];
+    final step = (function == OtpFunction.send && methods.length == 1) ? OtpStep.inputOtp : OtpStep.chooseOtpMethod;
     emit(state.copyWith(step: step, methods:  methods, selectedMethod: selected, token: '', function: function));
   }
 

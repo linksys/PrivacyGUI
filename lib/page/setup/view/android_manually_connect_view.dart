@@ -7,6 +7,7 @@ import 'package:moab_poc/route/route.dart';
 
 import '../../components/layouts/basic_header.dart';
 import 'info_setup_ssid_view.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 class AndroidManuallyConnectView extends StatelessWidget {
   AndroidManuallyConnectView({Key? key})

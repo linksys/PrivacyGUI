@@ -5,13 +5,14 @@ import 'package:moab_poc/page/components/base_components/button/primary_button.d
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
+import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/util/validator.dart';
 
 import '../../../bloc/auth/bloc.dart';
 import '../../../bloc/auth/state.dart';
 import '../../../repository/model/dummy_model.dart';
 import '../../../route/navigation_cubit.dart';
-import '../../../route/path_model.dart';
+import '../../../route/model/path_model.dart';
 import '../../components/base_components/input_fields/input_field.dart';
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 import '../../create_account/view/create_account_password_view.dart';

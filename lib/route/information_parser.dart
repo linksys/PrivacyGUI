@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 class MoabRouteInformationParser extends RouteInformationParser<BasePath> {
   @override

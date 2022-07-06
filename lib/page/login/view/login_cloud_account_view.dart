@@ -9,6 +9,7 @@ import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/validator.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 

@@ -4,6 +4,7 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 class AddingNodesView extends StatefulWidget {
   const AddingNodesView({Key? key}) : super(key: key);

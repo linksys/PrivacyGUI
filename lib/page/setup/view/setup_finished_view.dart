@@ -9,6 +9,7 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 class SetupFinishedView extends ArgumentsStatelessView {
 

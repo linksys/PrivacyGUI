@@ -1,22 +1,19 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/full_screen_spinner.dart';
-import 'package:moab_poc/page/components/base_components/selectable_item.dart';
-import 'package:moab_poc/page/components/customs/otp_flow/otp_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
+import 'package:moab_poc/page/create_account/view/view.dart';
+import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/route.dart';
-import 'package:moab_poc/util/logger.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
-class LocalResetRouterPasswordView extends ArgumentsStatefulView {
-  const LocalResetRouterPasswordView({Key? key, super.args}) : super(key: key);
+class LocalRecoveryKeyView extends ArgumentsStatefulView {
+  const LocalRecoveryKeyView({Key? key, super.args}) : super(key: key);
 
   @override
   _LocalResetRouterPasswordState createState() =>
@@ -24,7 +21,7 @@ class LocalResetRouterPasswordView extends ArgumentsStatefulView {
 }
 
 class _LocalResetRouterPasswordState
-    extends State<LocalResetRouterPasswordView> {
+    extends State<LocalRecoveryKeyView> {
   bool _isLoading = false;
   final TextEditingController _otpController = TextEditingController();
   String _errorReason = '';
@@ -93,10 +90,10 @@ class _LocalResetRouterPasswordState
   }
 
   _onNext(String? value) {
-    // NavigationCubit.of(context).clearAndPush(DashboardMainPath());
-    NavigationCubit.of(context).push(AuthResetLocalOtpPath()
-      ..args = {
-        'username': 'austin.chang@linksys.com', // TODO
-      });
+    NavigationCubit.of(context).push(AuthLocalResetPasswordPath()..args = {'type': AdminPasswordType.reset});
+    // NavigationCubit.of(context).push(AuthResetLocalOtpPath()
+    //   ..args = {
+    //     'username': 'austin.chang@linksys.com', // TODO
+    //   });
   }
 }

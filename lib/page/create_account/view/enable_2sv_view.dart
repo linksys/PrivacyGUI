@@ -5,6 +5,7 @@ import 'package:moab_poc/page/components/base_components/button/simple_text_butt
 import 'package:moab_poc/page/components/customs/otp_flow/otp_state.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/route.dart';
 
 class EnableTwoSVView extends StatelessWidget {

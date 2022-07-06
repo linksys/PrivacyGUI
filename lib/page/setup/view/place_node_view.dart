@@ -7,6 +7,7 @@ import 'package:moab_poc/route/route.dart';
 
 import '../../components/base_components/button/primary_button.dart';
 import '../../components/layouts/basic_header.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 class PlaceNodeView extends StatelessWidget {
   var isAddOnNodes;

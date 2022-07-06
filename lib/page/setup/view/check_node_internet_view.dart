@@ -9,6 +9,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/route/route.dart';
 
 import '../../../design/colors.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 class CheckNodeInternetView extends StatefulWidget {
   const CheckNodeInternetView({

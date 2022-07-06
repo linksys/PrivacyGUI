@@ -8,6 +8,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../components/base_components/button/primary_button.dart';
 import '../../components/base_components/button/simple_text_button.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 class AddChildScanQRCodeView extends StatelessWidget {
   const AddChildScanQRCodeView({

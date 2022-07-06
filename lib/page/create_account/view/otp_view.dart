@@ -14,6 +14,7 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/page/create_account/view/view.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
+import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 

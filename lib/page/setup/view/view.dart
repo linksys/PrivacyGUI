@@ -22,3 +22,8 @@ export 'set_location_view.dart';
 export 'setup_finished_view.dart';
 export 'show_me_how_view.dart';
 export 'start_parent_node_view.dart';
+export 'adding_nodes_view.dart';
+export 'android_manually_connect_view.dart';
+export 'android_qr_choice_view.dart';
+export 'android_location_permission_view.dart';
+export 'android_location_permission_denied_view.dart';

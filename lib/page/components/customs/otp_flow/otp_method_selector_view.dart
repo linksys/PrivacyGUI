@@ -8,6 +8,7 @@ import 'package:moab_poc/page/components/customs/otp_flow/otp_state.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
+import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/navigation_cubit.dart';
 import 'package:moab_poc/route/route.dart';
 
@@ -69,7 +70,7 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
               height: 60,
             ),
             PrimaryButton(
-              text: !state.isSendFunction() ? 'Add phone number' : 'Continue',
+              text: !state.isSendFunction() && state.selectedMethod?.method == OtpMethod.sms ? 'Add phone number' : 'Continue',
               onPress: () { !state.isSendFunction() ? _checkPhoneExist(state.selectedMethod!) : _onSend(state.selectedMethod!);},
             ),
             const SizedBox(

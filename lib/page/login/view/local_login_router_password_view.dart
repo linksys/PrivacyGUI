@@ -11,6 +11,7 @@ import 'package:moab_poc/page/components/customs/network_check_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
+import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/logger.dart';
 
@@ -124,7 +125,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
           SimpleTextButton(
               text: 'Forgot router password',
               onPressed: () {
-                NavigationCubit.of(context).push(AuthLocalResetPasswordPath());
+                NavigationCubit.of(context).push(AuthLocalRecoveryKeyPath());
               }),
           const SizedBox(
             height: 37,

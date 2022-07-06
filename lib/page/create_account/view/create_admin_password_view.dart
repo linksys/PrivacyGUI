@@ -11,8 +11,11 @@ import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
+import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/in_app_browser.dart';
+
+enum AdminPasswordType { create, reset }
 
 class CreateAdminPasswordView extends ArgumentsStatefulView {
   const CreateAdminPasswordView({Key? key, super.args}) : super(key: key);
@@ -23,20 +26,26 @@ class CreateAdminPasswordView extends ArgumentsStatefulView {
 }
 
 class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
-  bool isValidData = false;
+  bool _isValidData = false;
   bool _isLoading = false;
+  bool _isSuccess = false;
+  AdminPasswordType _type = AdminPasswordType.create;
+
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController hintController = TextEditingController();
 
   void _checkInputData(_) {
     setState(() {
-      isValidData = passwordController.text.isNotEmpty;
+      _isValidData = passwordController.text.isNotEmpty;
     });
   }
 
   @override
   void initState() {
     super.initState();
+    if (widget.args!.containsKey('type')) {
+      _type = widget.args!['type'];
+    }
   }
 
   @override
@@ -46,7 +55,33 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
             child: const FullScreenSpinner(
             text: 'Processing',
           ))
-        : _contentView();
+        : _isSuccess
+            ? _SuccessView()
+            : _contentView();
+  }
+
+  Widget _SuccessView() {
+    return BasePageView.noNavigationBar(
+      child: BasicLayout(
+        header: BasicHeader(
+          title: AppLocalizations.of(context)!
+              .create_router_password_reset_success,
+        ),
+        content: Column(
+          children: [
+            SizedBox(
+              height: 64,
+            ),
+            PrimaryButton(
+              text: AppLocalizations.of(context)!.go_to_dashboard,
+              onPress: () {
+                NavigationCubit.of(context).clearAndPush(DashboardMainPath());
+              },
+            )
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _contentView() {
@@ -54,7 +89,9 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
       scrollable: true,
       child: BasicLayout(
         header: BasicHeader(
-          title: AppLocalizations.of(context)!.create_router_password_title,
+          title: _type == AdminPasswordType.reset
+              ? AppLocalizations.of(context)!.create_router_password_reset_title
+              : AppLocalizations.of(context)!.create_router_password_title,
           description:
               AppLocalizations.of(context)!.create_router_password_subtitle,
         ),
@@ -89,7 +126,7 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
           ],
         ),
         footer: Visibility(
-          visible: isValidData,
+          visible: _isValidData,
           child: PrimaryButton(
             text: AppLocalizations.of(context)!.next,
             onPress: () {
@@ -104,9 +141,15 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
 
   _createPassword(String password, String hint) async {
     _setLoading(true);
-    await context.read<AuthBloc>().createPassword(password, hint).then(
-        (value) =>
-            NavigationCubit.of(context).clearAndPush(DashboardMainPath()));
+    await context.read<AuthBloc>().createPassword(password, hint).then((value) {
+      if (_type == AdminPasswordType.create) {
+        NavigationCubit.of(context).clearAndPush(DashboardMainPath());
+      } else {
+        setState(() {
+          _isSuccess = true;
+        });
+      }
+    });
     _setLoading(false);
   }
 

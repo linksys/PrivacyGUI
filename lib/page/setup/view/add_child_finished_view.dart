@@ -6,6 +6,7 @@ import 'package:moab_poc/page/components/base_components/button/secondary_button
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 class AddChildFinishedView extends StatelessWidget {
   AddChildFinishedView({

@@ -9,6 +9,7 @@ import 'package:moab_poc/page/components/customs/otp_flow/otp_cubit.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_state.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
+import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'dart:convert';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 // TODO rename
 Future<dynamic> showPopup({required BuildContext context, required BasePath config}) {

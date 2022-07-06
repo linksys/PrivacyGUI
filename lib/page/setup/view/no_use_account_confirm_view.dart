@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 class NoUseAccountConfirmView extends StatelessWidget {
   const NoUseAccountConfirmView({Key? key}) : super(key: key);

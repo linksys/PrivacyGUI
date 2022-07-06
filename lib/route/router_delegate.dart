@@ -10,6 +10,7 @@ import 'package:moab_poc/route/moab_page.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/analytics.dart';
 import 'package:moab_poc/util/logger.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 class MoabRouterDelegate extends RouterDelegate<BasePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<BasePath> {

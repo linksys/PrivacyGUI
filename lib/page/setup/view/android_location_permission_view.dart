@@ -8,6 +8,7 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/permission.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 class AndroidLocationPermissionPrimer extends StatefulWidget {
   AndroidLocationPermissionPrimer({Key? key}) : super(key: key);

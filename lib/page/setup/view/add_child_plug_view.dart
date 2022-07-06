@@ -5,6 +5,7 @@ import 'package:moab_poc/page/components/base_components/button/simple_text_butt
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 class AddChildPlugView extends StatelessWidget {
   AddChildPlugView({

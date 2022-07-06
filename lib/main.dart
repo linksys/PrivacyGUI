@@ -19,6 +19,7 @@ import 'package:moab_poc/util/storage.dart';
 import 'firebase_options.dart';
 import 'repository/authenticate/impl/fake_auth_repository.dart';
 import 'repository/authenticate/impl/fake_local_auth_repository.dart';
+import 'package:moab_poc/route/model/model.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -104,6 +105,7 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+      scaffoldMessengerKey: GlobalKey<ScaffoldMessengerState>(),
       onGenerateTitle: (context) => AppLocalizations.of(context)!.app_title,
       theme: MoabTheme.AuthModuleLightModeData,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
