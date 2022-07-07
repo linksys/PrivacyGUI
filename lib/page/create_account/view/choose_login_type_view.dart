@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
@@ -38,8 +39,8 @@ class _ChooseLoginTypeState extends State<ChooseLoginTypeView> {
       scrollable: true,
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
-        header: const BasicHeader(
-          title: 'Choose login method',
+        header: BasicHeader(
+          title: getAppLocalizations(context).create_account_choose_login_type,
         ),
         content: Column(
           children: [

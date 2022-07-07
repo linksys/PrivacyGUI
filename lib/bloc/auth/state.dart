@@ -10,11 +10,12 @@ enum OtpMethod { sms, email }
 
 class AccountInfo {
   final String username;
+  final String password;
   final LoginType loginType;
   final List<OtpInfo> otpInfo;
 
   const AccountInfo(
-      {required this.username, required this.loginType, required this.otpInfo});
+      {required this.username, required this.loginType, required this.otpInfo, this.password = ''});
 }
 
 class OtpInfo {
