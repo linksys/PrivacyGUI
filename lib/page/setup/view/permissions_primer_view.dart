@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/page/setup/view/parent_scan_qrcode_view.dart';
 import 'package:moab_poc/route/route.dart';
 
+import '../../../bloc/connectivity/cubit.dart';
 import '../../../channel/wifi_connect_channel.dart';
 import '../../components/base_components/button/primary_button.dart';
 import 'android_manually_connect_view.dart';
@@ -33,10 +35,8 @@ class _PermissionsPrimerViewState extends State<PermissionsPrimerView> {
   bool isSupportEasyConnect = false;
 
   Future<void> _initAndroidSupport() async {
-    isUnderAndroidTen =
-    await NativeConnectWiFiChannel().isAndroidVersionUnderTen();
-    isSupportEasyConnect = isUnderAndroidTen ? false :
-    await NativeConnectWiFiChannel().isAndroidTenAndSupportEasyConnect();
+    isUnderAndroidTen = context.read<ConnectivityCubit>().isAndroid9;
+    isSupportEasyConnect = context.read<ConnectivityCubit>().isAndroid10AndSupportEasyConnect;
   }
 
   @override

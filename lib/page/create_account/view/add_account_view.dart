@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/bloc/auth/bloc.dart';
+import 'package:moab_poc/bloc/auth/event.dart';
+import 'package:moab_poc/bloc/setup/bloc.dart';
+import 'package:moab_poc/bloc/setup/event.dart';
+import 'package:moab_poc/bloc/setup/state.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
@@ -28,10 +34,18 @@ class _AddAccountState extends State<AddAccountView> {
   void _onNextAction() {
     isEmailInvalid = !_emailController.text.isValidEmailFormat();
     if (!isEmailInvalid) {
+      context.read<AuthBloc>().add(SetEmail(email: _emailController.text));
       NavigationCubit.of(context).push(CreateAccountOtpPath()..args = {'username': 'test@linksys.com', 'function': OtpFunction.setting,});
     } else {
       setState(() {});
     }
+  }
+
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<SetupBloc>().add(const ResumePointChanged(status: SetupResumePoint.CREATECLOUDACCOUNT));
   }
 
   Widget _buildAccountTipsWidget() {

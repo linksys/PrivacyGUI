@@ -31,13 +31,18 @@ class SetupWelcomeEulaPath extends SetupPath<SetupWelcomeEulaPath> {}
 
 class SetupCustomizeSSIDPath extends SetupPath<SetupCustomizeSSIDPath> {}
 
-class SetupNodesDonePath extends SetupPath<SetupNodesDonePath> {}
+class SetupNodesDonePath extends SetupPath<SetupNodesDonePath> {
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
+}
 
 class SetupNodesDoneUnFoundPath extends SetupPath<SetupNodesDoneUnFoundPath> {}
 
 class SetupFinishPath extends SetupPath<SetupFinishPath> {}
 
-class SetupAddingNodesPath extends SetupPath<SetupAddingNodesPath> {}
+class SetupAddingNodesPath extends SetupPath<SetupAddingNodesPath> {
+  @override
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
+}
 
 // Setup Parent Flow
 abstract class SetupParentPath<P> extends SetupPath<P> {

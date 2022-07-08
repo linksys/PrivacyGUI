@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/bloc/setup/bloc.dart';
+import 'package:moab_poc/bloc/setup/event.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
@@ -9,6 +12,8 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/route/model/model.dart';
+
+import '../../../bloc/setup/state.dart';
 
 class CustomizeWifiView extends StatelessWidget {
   const CustomizeWifiView({
@@ -36,15 +41,25 @@ class PageContent extends StatefulWidget {
 }
 
 class _PageContentState extends State<PageContent> {
-
   bool isValidWifiInfo = false;
-  final TextEditingController nameController = TextEditingController(text: "namedefault");
-  final TextEditingController passwordController = TextEditingController(text: "passworddefault");
+  final TextEditingController nameController =
+      TextEditingController(text: "namedefault");
+  final TextEditingController passwordController =
+      TextEditingController(text: "passworddefault");
 
   void _checkFilledInfo(_) {
     setState(() {
-      isValidWifiInfo = nameController.text.isNotEmpty && passwordController.text.isNotEmpty;
+      isValidWifiInfo =
+          nameController.text.isNotEmpty && passwordController.text.isNotEmpty;
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    context
+        .read<SetupBloc>()
+        .add(const ResumePointChanged(status: SetupResumePoint.SETSSID));
   }
 
   @override
@@ -52,7 +67,8 @@ class _PageContentState extends State<PageContent> {
     return BasicLayout(
       header: BasicHeader(
         title: getAppLocalizations(context).create_ssid_view_title,
-        description: getAppLocalizations(context).create_ssid_view_header_description,
+        description:
+            getAppLocalizations(context).create_ssid_view_header_description,
       ),
       content: Column(
         children: [
@@ -75,11 +91,19 @@ class _PageContentState extends State<PageContent> {
         visible: isValidWifiInfo,
         replacement: SecondaryButton(
           text: getAppLocalizations(context).keep_defaults,
-          onPress: () => NavigationCubit.of(context).push(CreateCloudAccountPath()),
+          onPress: () {
+            context.read<SetupBloc>().add(SetWIFISSIDAndPassword(
+                ssid: nameController.text, password: passwordController.text));
+            NavigationCubit.of(context).push(CreateCloudAccountPath());
+          },
         ),
         child: PrimaryButton(
           text: getAppLocalizations(context).next,
-          onPress: () => NavigationCubit.of(context).push(CreateCloudAccountPath()),
+          onPress: () {
+            context.read<SetupBloc>().add(SetWIFISSIDAndPassword(
+                ssid: nameController.text, password: passwordController.text));
+            NavigationCubit.of(context).push(CreateCloudAccountPath());
+          },
         ),
       ),
     );

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:moab_poc/bloc/setup/bloc.dart';
+import 'package:moab_poc/bloc/setup/state.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
@@ -8,7 +11,9 @@ import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:permission_handler/permission_handler.dart';
 
+import '../../../bloc/setup/event.dart';
 import '../../../design/colors.dart';
 import 'package:moab_poc/route/model/model.dart';
 
@@ -37,12 +42,13 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
   }
 
   _fakeInternetChecking() async {
+    context.read<SetupBloc>().add(const ResumePointChanged(status: SetupResumePoint.INTERNETCHECK));
     await Future.delayed(const Duration(seconds: 5));
     setState(() {
       _hasInternet = true;
     });
     await Future.delayed(const Duration(seconds: 3));
-    NavigationCubit.of(context).push(SetupNodesDoneUnFoundPath());
+    NavigationCubit.of(context).push(SetupAddingNodesPath());
   }
 
   @override

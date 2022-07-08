@@ -10,11 +10,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
+import '../../channel/wifi_connect_channel.dart';
 import 'connectivity_info.dart';
 
 class ConnectivityCubit extends Cubit<ConnectivityInfo> with ConnectivityListener {
 
   ConnectivityCubit(): super(const ConnectivityInfo(gatewayIp: '', ssid: ''));
+  late bool isAndroid9;
+  late bool isAndroid10AndSupportEasyConnect;
 
   @override
   Future onConnectivityChanged(ConnectivityInfo info) async {
@@ -22,7 +25,13 @@ class ConnectivityCubit extends Cubit<ConnectivityInfo> with ConnectivityListene
   }
 
   void forceUpdate() async {
+    _checkAndroidVersionAndEasyConnect();
     _updateConnectivity(await _connectivity.checkConnectivity());
+  }
+
+  void _checkAndroidVersionAndEasyConnect() async {
+    isAndroid9 = await NativeConnectWiFiChannel().isAndroidVersionUnderTen();
+    isAndroid10AndSupportEasyConnect = isAndroid9 ? false : await NativeConnectWiFiChannel().isAndroidTenAndSupportEasyConnect();
   }
 }
 
