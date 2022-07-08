@@ -60,7 +60,7 @@ class NoUseAccountConfirmView extends StatelessWidget {
             SecondaryButton(
               text: 'I do not want an account',
               onPress: () {
-                NavigationCubit.of(context).push(CreateAdminPasswordPath());
+                NavigationCubit.of(context).push(CreateAdminPasswordPath()..args = {});
               },
             )
           ],
