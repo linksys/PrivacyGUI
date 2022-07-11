@@ -1,6 +1,12 @@
+import 'dart:io';
 import 'dart:math';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
+import 'package:moab_poc/network/http/model/cloud_app.dart';
+import 'package:moab_poc/util/logger.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class Utils
 {
@@ -73,5 +79,41 @@ class Utils
   }
   static double getSafeAreaHeight(BuildContext context) {
     return getScreenHeight(context) - getTopSafeAreaPadding(context) - getBottomSafeAreaPadding(context);
+  }
+
+  static Future<DeviceInfo> fetchDeviceInfo() async {
+    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    final os = Platform.operatingSystem;
+    final infoMap = await _deviceInfoMap(deviceInfo);
+    infoMap['os'] = os;
+    infoMap['systemLocale'] = Intl.systemLocale;
+    return DeviceInfo.fromJson(infoMap);
+  }
+
+  static Future<Map<String, dynamic>> _deviceInfoMap(DeviceInfoPlugin deviceInfo) async {
+    if (Platform.isIOS) {
+      return _iosDeviceMap(await deviceInfo.iosInfo);
+    } else if (Platform.isAndroid) {
+      return _androidDeviceMap(await deviceInfo.androidInfo);
+    } else {
+      return {};
+    }
+
+  }
+
+  static Future<Map<String, dynamic>> _androidDeviceMap(AndroidDeviceInfo build) async {
+    return {
+      'osVersion': build.version.release,
+      'mobileManufacturer': build.manufacturer,
+      'mobileModel': build.model,
+    };
+  }
+
+  static Future<Map<String, dynamic>> _iosDeviceMap(IosDeviceInfo data) async {
+    return {
+      'osVersion': data.systemVersion,
+      'mobileModel': data.utsname.machine,
+      'mobileManufacturer': 'Apple'
+    };
   }
 }

@@ -12,11 +12,13 @@ import 'package:moab_poc/bloc/auth/event.dart';
 import 'package:moab_poc/bloc/connectivity/cubit.dart';
 import 'package:moab_poc/design/themes.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
-import 'package:moab_poc/repository/authenticate/local_auth_repository.dart';
+import 'package:moab_poc/network/http/http_client.dart';
+import 'package:moab_poc/repository/config/config_repository.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/storage.dart';
+import 'package:moab_poc/utils.dart';
 import 'firebase_options.dart';
 import 'repository/authenticate/impl/fake_auth_repository.dart';
 import 'repository/authenticate/impl/fake_local_auth_repository.dart';
@@ -58,6 +60,7 @@ Widget _app() {
     providers: [
       RepositoryProvider(create: (context) => FakeAuthRepository()),
       RepositoryProvider(create: (context) => FakeLocalAuthRepository()),
+      RepositoryProvider(create: (context) => MoabConfigRepository(MoabHttpClient()))
     ],
     child: MultiBlocProvider(providers: [
       BlocProvider(
@@ -88,7 +91,7 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
 
   @override
   void initState() {
-    logger.d('Moab App init state');
+    logger.d('Moab App init state: ${describeIdentity(this)}');
     _initAuth();
     WidgetsBinding.instance.addObserver(this);
     _cubit = context.read<ConnectivityCubit>();
@@ -105,8 +108,8 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    logger.d('Moab App build: ${describeIdentity(this)}');
     return MaterialApp.router(
-      scaffoldMessengerKey: GlobalKey<ScaffoldMessengerState>(),
       onGenerateTitle: (context) => getAppLocalizations(context).app_title,
       theme: MoabTheme.AuthModuleLightModeData,
       localizationsDelegates: AppLocalizations.localizationsDelegates,

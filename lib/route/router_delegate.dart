@@ -1,4 +1,5 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
@@ -32,7 +33,7 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
 
   @override
   Widget build(BuildContext context) {
-    logger.d("Route Delegate Rebuild!");
+    logger.d("Route Delegate Rebuild! ${describeIdentity(this)}");
     return MultiBlocListener(
       listeners: [_listenForAuth(), _listenForConnectivity()],
       child: BlocConsumer<NavigationCubit, NavigationStack>(
@@ -64,7 +65,8 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
   @override
   Future<void> setNewRoutePath(BasePath configuration) async {
     print('MoabRouterDelegate::setNewRoutePath:${configuration.name}');
-    _cubit.clearAndPush(configuration);
+    // _cubit.clearAndPush(configuration);
+    return SynchronousFuture(null);
   }
 
   bool _onPopPage(Route<dynamic> route, dynamic result) {

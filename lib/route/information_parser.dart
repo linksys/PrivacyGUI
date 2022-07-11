@@ -1,21 +1,22 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/route/model/model.dart';
+import 'package:moab_poc/util/logger.dart';
 
 class MoabRouteInformationParser extends RouteInformationParser<BasePath> {
   @override
   Future<BasePath> parseRouteInformation(
       RouteInformation routeInformation) async {
-    // print(
-    //     'SetupRouteInformationParser::parseRouteInformation: ${routeInformation.location}');
+    logger.d(
+        'SetupRouteInformationParser::parseRouteInformation: ${routeInformation.location}');
     final uri = Uri.parse(routeInformation.location ?? '');
 
     // Handle '/'
     if (uri.pathSegments.isEmpty) {
-      return HomePath();
+      return SynchronousFuture(HomePath());
     }
 
-    return UnknownPath();
+    return SynchronousFuture(UnknownPath());
   }
 
   @override

@@ -1,22 +1,20 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:moab_poc/design/colors.dart';
-import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
-import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/network/http/model/cloud_config.dart';
+import 'package:moab_poc/config/cloud_config_manager.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
+import 'package:moab_poc/page/components/base_components/base_components.dart';
+import 'package:moab_poc/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../util/storage.dart';
-import '../../components/base_components/button/primary_button.dart';
 
 class DebugToolsView extends StatefulWidget {
   const DebugToolsView({
@@ -31,6 +29,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
   StreamSubscription? _streamSubscription;
   String? _fcmToken;
   String? _apnsToken;
+  CloudEnvironment _selectedEnv = cloudEnvTarget;
 
   @override
   void initState() {
@@ -173,7 +172,11 @@ class _DebugToolsViewState extends State<DebugToolsView> {
               content: Text("Share result: ${result.status}"),
             ));
           },
-        )
+        ),
+        const SizedBox(
+          height: 16,
+        ),
+        _buildEnvPickerTile(),
       ],
     );
   }
@@ -211,6 +214,93 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         _streamSubscription?.cancel();
         _streamSubscription = null;
       }
+    });
+  }
+
+  Widget _buildEnvPickerTile() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Env picker: ${_selectedEnv.name}',
+          style: Theme.of(context)
+              .textTheme
+              .headline2
+              ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        ),
+        SecondaryButton(
+          text: 'Select environment',
+          onPress: () async {
+            final result = await showModalBottomSheet(
+                enableDrag: false,
+                context: context,
+                builder: (context) => _createEnvPicker());
+            setState(() {
+              _selectedEnv = result;
+            });
+          },
+        )
+      ],
+    );
+  }
+
+  Widget _createEnvPicker() {
+    bool _isLoading = false;
+    return StatefulBuilder(builder: (context, setState) {
+      return _isLoading
+          ? FullScreenSpinner(text: getAppLocalizations(context).processing)
+          : Column(
+              children: [
+                ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: CloudEnvironment.values.length,
+                    itemBuilder: (context, index) => GestureDetector(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: SelectableItem(
+                              text: CloudEnvironment.values[index].name,
+                              isSelected: _selectedEnv ==
+                                  CloudEnvironment.values[index],
+                              height: 66,
+                            ),
+                          ),
+                          onTap: () {
+                            setState(() {
+                              _selectedEnv = CloudEnvironment.values[index];
+                            });
+                          },
+                        )),
+                const Spacer(),
+                PrimaryButton(
+                  text: 'Save',
+                  onPress: () async {
+                    setState(() {
+                      _isLoading = true;
+                    });
+                    final temp = cloudEnvTarget;
+                    cloudEnvTarget = _selectedEnv;
+                    await CloudConfigManager()
+                        .fetchCloudConfig()
+                        .then(
+                            (value) => Navigator.of(context).pop(_selectedEnv))
+                        .onError((error, stackTrace) {
+                      logger.e(
+                          'fetch cloud config error! $cloudEnvTarget}', error);
+                      setState(() {
+                        _selectedEnv = temp;
+                      });
+                      cloudEnvTarget = temp;
+                    }).whenComplete(() {
+                      setState(() {
+                        _isLoading = false;
+                      });
+                    });
+                  },
+                ),
+                const SizedBox(height: 24,)
+              ],
+            );
     });
   }
 }
