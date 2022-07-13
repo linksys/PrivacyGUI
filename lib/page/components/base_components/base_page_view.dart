@@ -38,7 +38,7 @@ class BasePageView extends StatelessWidget {
           actions: [
             IconButton(
               icon: const Icon(Icons.close),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(context), // TODO use NavigationCubit
             )
           ],
         ),

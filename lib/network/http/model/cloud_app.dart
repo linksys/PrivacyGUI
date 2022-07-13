@@ -53,6 +53,16 @@ class DeviceInfo extends Equatable {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'mobileManufacturer': mobileManufacturer,
+      'mobileModel': mobileModel,
+      'os': os,
+      'osVersion': osVersion,
+      'systemLocale': systemLocale,
+    };
+  }
+
   final String mobileManufacturer;
   final String mobileModel;
   final String os;

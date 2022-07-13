@@ -12,6 +12,18 @@ import 'package:test/test.dart';
 
 void main() {
   group('test login prepare in dev', () {
+    test('get masked communication methods', () async {
+      const host = 'https://dev-as1-api.moab.xvelop.com';
+      final client = MoabHttpClient();
+      final header = {
+        moabSiteIdKey: moabRetailSiteId,
+        HttpHeaders.contentTypeHeader: ContentType.json.value,
+        HttpHeaders.acceptHeader: ContentType.json.value
+      };
+      final url = Uri.encodeFull('$host$endpointGetMaskedCommunicationMethod'.replaceAll(varAccountId, Uri.encodeFull('app@integrationtests.belkin.com')));
+      final response = await client.get(Uri.parse(url), headers: header);
+    });
+
     test('login prepare', () async {
       const host = 'https://dev-as1-api.moab.xvelop.com';
       final client = MoabHttpClient();
@@ -20,8 +32,7 @@ void main() {
         HttpHeaders.contentTypeHeader: ContentType.json.value,
         HttpHeaders.acceptHeader: ContentType.json.value
       };
-      final mockDeviceInfo =
-      {
+      final mockDeviceInfo = {
         'mobileManufacturer': 'samsung',
         'mobileModel': 'GF855',
         'os': 'Android',
@@ -41,11 +52,12 @@ void main() {
       expect(cloudApp.deviceInfo.systemLocale.isNotEmpty, true);
 
       const loginPrepareUrl = '$host$endpointAuthLoginPrepare';
-      final loginPrepareHeaders = header..addAll(
-          {moabAppIdKey: cloudApp.id, moabAppSecretKey: cloudApp.appSecret});
-      final loginPrepareResponse = await client.post(
-          Uri.parse(loginPrepareUrl), headers: loginPrepareHeaders, body: jsonEncode({'username': 'austin.chang@linksys.com'}));
-
+      final loginPrepareHeaders = header
+        ..addAll(
+            {moabAppIdKey: cloudApp.id, moabAppSecretKey: cloudApp.appSecret});
+      final loginPrepareResponse = await client.post(Uri.parse(loginPrepareUrl),
+          headers: loginPrepareHeaders,
+          body: jsonEncode({'username': 'austin.chang@linksys.com'}));
     });
   });
 }

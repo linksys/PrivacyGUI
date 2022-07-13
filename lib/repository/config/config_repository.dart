@@ -2,6 +2,8 @@
 import 'dart:convert';
 
 import 'package:http/http.dart';
+import 'package:moab_poc/network/http/extension_requests.dart';
+import 'package:moab_poc/network/http/http_client.dart';
 import 'package:moab_poc/network/http/model/cloud_app.dart';
 import 'package:moab_poc/network/http/model/cloud_config.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
@@ -11,9 +13,9 @@ import '../../network/http/constant.dart';
 
 abstract class ConfigRepository {
 
-  ConfigRepository(BaseClient client): _client = client;
+  ConfigRepository(MoabHttpClient client): _client = client;
 
-  final BaseClient _client;
+  final MoabHttpClient _client;
 
   Future<CloudConfig> fetchCloudConfig();
   Future<List<CloudConfig>> fetchAllCloudConfig();
@@ -27,8 +29,7 @@ class MoabConfigRepository extends ConfigRepository {
 
   @override
   Future<List<CloudConfig>> fetchAllCloudConfig() async {
-    final url = allCloudConfigUrl;
-    return await _client.get(Uri.parse(url)).then((response) {
+    return await _client.fetchCloudConfig().then((response) {
       final statusCode = response.statusCode;
       final body = response.body;
       if (statusCode != 200) {
@@ -46,9 +47,7 @@ class MoabConfigRepository extends ConfigRepository {
 
   @override
   Future<CloudConfig> fetchCloudConfig() async {
-    final url = cloudConfigUrl;
-    logger.d('Fetch cloud config: ${cloudEnvTarget.name}, $url');
-    return await _client.get(Uri.parse(url)).then((response) {
+    return await _client.fetchAllCloudConfig().then((response) {
       final statusCode = response.statusCode;
       final body = response.body;
       if (statusCode != 200) {

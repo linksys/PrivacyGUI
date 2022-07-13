@@ -65,7 +65,7 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
   @override
   Future<void> setNewRoutePath(BasePath configuration) async {
     print('MoabRouterDelegate::setNewRoutePath:${configuration.name}');
-    // _cubit.clearAndPush(configuration);
+    _cubit.clearAndPush(configuration);
     return SynchronousFuture(null);
   }
 

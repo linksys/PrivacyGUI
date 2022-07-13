@@ -107,7 +107,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
                   context
                       .read<AuthBloc>()
                       .resendCode(state.token, state.selectedMethod?.method.name ?? '')
-                      .then((value) => _showCodeResentHint())
+                      .then((_) => _showCodeResentHint())
                       .onError((error, stackTrace) =>
                       _handleError(error as CloudException));
                   _setLoading(false);

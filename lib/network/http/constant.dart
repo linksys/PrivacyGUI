@@ -1,5 +1,9 @@
 import 'package:moab_poc/network/http/model/cloud_config.dart';
 
+// Moab Share Preferences keys
+const moabPrefAppIdKey = 'MoabAppId';
+const moabPrefAppSecretKey = 'MoabAppSecret';
+
 // Moab header keys
 const moabSiteIdKey = 'X-Linksys-Moab-Site-Id';
 const moabAppIdKey = 'X-Linksys-Moab-App-Id';
@@ -24,7 +28,18 @@ const version = '/v1';
 const accountPath = '/accounts';
 const authPath = '/auth';
 
+// Cloud endpoints variables
+const varAccountId = '{accountId}';
+const varVerifyToken = '{verifyToken}';
+
 // Cloud endpoints
 const endpointCreateApps = '$version/apps';
-const endpointAccountPreparations = '$version$accountPath/verified-first/preparations';
+const endpointGetMaskedCommunicationMethod = '$version$accountPath/{accountId}/masked-communication-methods';
+const endpointPostAccountPreparations = '$version$accountPath/verified-first/preparations';
+const endpointPutAccountPreparations = '$version$accountPath/verified-first/preparations/$varVerifyToken';
+const endpointPostCreateAccount = '$version$accountPath/verified-first/';
+
+const endpointPostAuthChallenges = '$version$authPath/challenges';
+const endpointPutAuthChallenges = '$version$authPath/challenges/verifications/$varVerifyToken';
+
 const endpointAuthLoginPrepare = '$version$authPath/login/prepare';

@@ -1,11 +1,35 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
+import 'package:moab_poc/config/cloud_config_manager.dart';
+import 'package:moab_poc/network/http/constant.dart';
 import 'package:moab_poc/util/logger.dart';
 
+
 class MoabHttpClient extends http.BaseClient {
-  final _inner = http.Client();
+
+  MoabHttpClient({http.Client? client}): _inner = client ??http.Client();
+
+  final http.Client _inner;
+
+  final Map<String, String> defaultHeader = {
+    moabSiteIdKey: moabRetailSiteId,
+    HttpHeaders.contentTypeHeader: ContentType.json.value,
+    HttpHeaders.acceptHeader: ContentType.json.value
+  };
+
+  String getHost() => CloudConfigManager().currentConfig?.apiBase ?? '';
+  String combineUrl(String endpoint, {Map<String, String>? args}) {
+    String url = '${getHost()}$endpoint';
+    if (args != null) {
+      args.forEach((key, value) {
+        url = url.replaceFirst(key, value);
+      });
+    }
+    return url;
+  }
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
@@ -68,7 +92,7 @@ class MoabHttpClient extends http.BaseClient {
     logger.i('\nREQUEST---------------------------------------------------\n'
         'URL: ${request.url}, METHOD: ${request.method}\n'
         'HEADERS: ${request.headers}\n'
-        '${request is http.Request ? 'BODY: ${request.body}': ''}\n'
+        '${request is http.Request ? 'BODY: ${request.body}' : ''}\n'
         '---------------------------------------------------REQUEST END\n');
   }
 
@@ -78,7 +102,7 @@ class MoabHttpClient extends http.BaseClient {
       logger.i('\nRESPONSE---------------------------------------------------\n'
           'URL: ${request.url}, METHOD: ${request.method}\n'
           'HEADERS: ${request.headers}\n'
-          '${request is http.Request ? 'BODY: ${request.body}': ''}\n'
+          '${request is http.Request ? 'BODY: ${request.body}' : ''}\n'
           'RESPONSE: ${response.statusCode}, ${response.body}\n'
           '---------------------------------------------------RESPONSE END\n');
     }
