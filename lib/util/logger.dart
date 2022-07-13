@@ -35,98 +35,77 @@ initLog() async {
 }
 
 Future<String> getAppInfoLogs() async {
-  final info = await PackageInfo.fromPlatform();
-  DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-  return [
-    '\n-------------------------------------------------------------------------------------------------',
-    'App Name: ${info.appName}',
-    'App Version: ${info.version}',
-    'OS: ${Platform.operatingSystem}, version: ${Platform.operatingSystemVersion}',
-    'Device Info:',
-    '${ await _deviceLog(deviceInfo)}',
-    '-------------------------------------------------------------------------------------------------',
-  ].join('\n');
+  final packageInfo = await PackageInfo.fromPlatform();
+  List<String> appInfo = [
+    '\n----------- App Info ------------',
+    'App name: ${packageInfo.appName}',
+    'App version: ${packageInfo.version}',
+    'Platform OS: ${Platform.operatingSystem}',
+    'OS version: ${Platform.operatingSystemVersion}',
+  ];
+
+  final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
+  appInfo.add('---------- Device Info ----------');
+  appInfo.add(await _getDeviceInfo(deviceInfoPlugin));
+  appInfo.add('---------------------------------');
+
+  return appInfo.join('\n');
 }
 
-// Future<List<String>> getAppInfoLogs(BuildContext context) async {
-//   final info = await PackageInfo.fromPlatform();
-//   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-//   return [
-//     '\n-------------------------------------------------------------------------------------------------',
-//     'App Name: ${info.appName}',
-//     'App Version: ${info.version}',
-//     'OS: ${Platform.operatingSystem}, version: ${Platform.operatingSystemVersion}',
-//     'Device Info:\n',
-//     '-------------------------------------------------------------------------\n',
-//     '${ await _deviceLog(deviceInfo)}\n',
-//     '-------------------------------------------------------------------------',
-//     'Screen Info:\n',
-//     '-------------------------------------------------------------------------\n',
-//     '${_screenLog(context)}\n',
-//     '-------------------------------------------------------------------------',
-//     '-------------------------------------------------------------------------------------------------\n',
-//   ];
-// }
-
-screenInfoLog(BuildContext context) {
-  logger.i(
-      'Screen Info:\n'
-          '-------------------------------------------------------------------------\n'
-          '${_screenLog(context)}\n'
-          '-------------------------------------------------------------------------');
-}
-
-Map<String, dynamic> _screenLog(BuildContext context) {
-  return {
-    'screen size': Utils.getScreenSize(context),
-    'screen size physical': Utils.getPhysicalScreenSize(context),
-    'screen ratio': Utils.getScreenRatio(context),
-    'font scale': Utils.getTextScaleFactor(context),
-    'safe area top padding': Utils.getTopSafeAreaPadding(context),
-    'safe area bottom padding': Utils.getBottomSafeAreaPadding(context),
-  };
-}
-
-Future<Map<String, dynamic>> _deviceLog(DeviceInfoPlugin deviceInfo) async {
+Future<String> _getDeviceInfo(DeviceInfoPlugin plugin) async {
   if (Platform.isIOS) {
-    return _iosDeviceLog(await deviceInfo.iosInfo);
+    return _getIosDeviceInfo(await plugin.iosInfo).join('\n');
   } else if (Platform.isAndroid) {
-    return _androidDeviceLog(await deviceInfo.androidInfo);
+    return _getAndroidDeviceInfo(await plugin.androidInfo).join('\n');
   } else {
-    return {};
+    return '';
   }
 }
 
-Future<Map<String, dynamic>> _androidDeviceLog(AndroidDeviceInfo build) async {
-  return {
-    'version.securityPatch': build.version.securityPatch,
-    'version.sdkInt': build.version.sdkInt,
-    'version.release': build.version.release,
-    'brand': build.brand,
-    'device': build.device,
-    'hardware': build.hardware,
-    'host': build.host,
-    'id': build.id,
-    'manufacturer': build.manufacturer,
-    'model': build.model,
-    'product': build.product,
-    'isPhysicalDevice': build.isPhysicalDevice,
-  };
+List<String> _getIosDeviceInfo(IosDeviceInfo info) {
+  return [
+    'Phone name: ${info.name}',
+    'System name: ${info.systemName}',
+    'System version: ${info.systemVersion}',
+    'Model: ${info.model}',
+    'Localized model: ${info.localizedModel}',
+    'Vendor identifier: ${info.identifierForVendor}',
+    'isPhysicalDevice: ${info.isPhysicalDevice}',
+    '(Utsname) System name: ${info.utsname.sysname}',
+    '(Utsname) Network node name: ${info.utsname.nodename}',
+    '(Utsname) Release level: ${info.utsname.release}',
+    '(Utsname) Version level: ${info.utsname.version}',
+    '(Utsname) Hardware type: ${info.utsname.machine}',
+  ];
 }
 
-Future<Map<String, dynamic>> _iosDeviceLog(IosDeviceInfo data) async {
-  return {
-    'name': data.name,
-    'systemName': data.systemName,
-    'systemVersion': data.systemVersion,
-    'model': data.model,
-    'localizedModel': data.localizedModel,
-    'identifierForVendor': data.identifierForVendor,
-    'isPhysicalDevice': data.isPhysicalDevice,
-    'utsname.sysname:': data.utsname.sysname,
-    'utsname.nodename:': data.utsname.nodename,
-    'utsname.release:': data.utsname.release,
-    'utsname.version:': data.utsname.version,
-    'utsname.machine:': data.utsname.machine,
-  };
+List<String> _getAndroidDeviceInfo(AndroidDeviceInfo info) {
+  return [
+    'version.securityPatch: ${info.version.securityPatch}',
+    'version.sdkInt: ${info.version.sdkInt}',
+    'version.release: ${info.version.release}',
+    'brand: ${info.brand}',
+    'device: ${info.device}',
+    'hardware: ${info.hardware}',
+    'host: ${info.host}',
+    'id: ${info.id}',
+    'manufacturer: ${info.manufacturer}',
+    'model: ${info.model}',
+    'product: ${info.product}',
+    'isPhysicalDevice: ${info.isPhysicalDevice}',
+  ];
+}
+
+String getScreenInfo(BuildContext context) {
+  final List data = [
+    '---------- Screen info ----------',
+    'Screen size: ${Utils.getScreenSize(context)}',
+    'Physical Screen size: ${Utils.getScreenSize(context)}',
+    'Screen pixel ratio: ${Utils.getScreenRatio(context)}',
+    'Font scale: ${Utils.getTextScaleFactor(context)}',
+    'Top padding of safe area: ${Utils.getTopSafeAreaPadding(context)}',
+    'Bottom padding of safe area: ${Utils.getBottomSafeAreaPadding(context)}',
+    '---------------------------------',
+  ];
+  return data.join('\n');
 }

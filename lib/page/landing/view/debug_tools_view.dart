@@ -1,22 +1,15 @@
 import 'dart:async';
-import 'dart:io';
-
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:moab_poc/design/colors.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
-import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
-import 'package:moab_poc/util/logger.dart';
+import 'package:moab_poc/page/landing/view/debug_device_info_view.dart';
 import 'package:share_plus/share_plus.dart';
-
 import '../../../util/storage.dart';
-import '../../components/base_components/button/primary_button.dart';
 
 class DebugToolsView extends StatefulWidget {
   const DebugToolsView({
@@ -173,6 +166,20 @@ class _DebugToolsViewState extends State<DebugToolsView> {
               content: Text("Share result: ${result.status}"),
             ));
           },
+        ),
+        const SizedBox(
+          height: 16,
+        ),
+        Text(
+          'Information:',
+          style: Theme.of(context)
+              .textTheme
+              .headline2
+              ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        ),
+        SecondaryButton(
+          text: 'Read device information',
+          onPress: () => _goToDeviceInfoPage(context),
         )
       ],
     );
@@ -212,5 +219,14 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         _streamSubscription = null;
       }
     });
+  }
+
+  void _goToDeviceInfoPage(BuildContext context) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) {
+        return const DebugDeviceInfoView();
+      }
+    );
   }
 }
