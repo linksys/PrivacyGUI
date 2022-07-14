@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
+import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
@@ -50,8 +51,8 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
             child: _isConnectedToRouter
                 ? _enterRouterPasswordView(context)
                 : NetworkCheckView(
-                    description:
-                        getAppLocalizations(context).local_login_connect_to_your_router,
+                    description: getAppLocalizations(context)
+                        .local_login_connect_to_your_router,
                     button: PrimaryButton(
                       text: getAppLocalizations(context).text_continue,
                       onPress: checkWifi,
@@ -86,24 +87,14 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
           const SizedBox(
             height: 44,
           ),
-          InputField(
+          PasswordInputField(
             titleText: getAppLocalizations(context).router_password,
-            hintText: getAppLocalizations(context).router_password,
             controller: _passwordController,
+            hintText: getAppLocalizations(context).router_password,
             onChanged: _verifyPassword,
             isError: _errorReason.isNotEmpty,
+            errorText: _errorReason,
           ),
-          if (_errorReason.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Text(
-                _errorReason,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyText1
-                    ?.copyWith(color: Colors.red),
-              ),
-            ),
           const SizedBox(
             height: 26,
           ),
@@ -153,7 +144,8 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     await context
         .read<AuthBloc>()
         .localLogin(_passwordController.text)
-        .then((value) => NavigationCubit.of(context).clearAndPush(DashboardMainPath()))
+        .then((value) =>
+            NavigationCubit.of(context).clearAndPush(DashboardMainPath()))
         .onError((error, stackTrace) => _handleError(error as CloudException));
     setState(() {
       _isLoading = false;

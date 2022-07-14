@@ -18,6 +18,7 @@ import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/in_app_browser.dart';
 
 import '../../../bloc/setup/state.dart';
+import '../../components/base_components/input_fields/password_input_field.dart';
 
 enum AdminPasswordType { create, reset }
 
@@ -50,7 +51,9 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
     if (widget.args!.containsKey('type')) {
       _type = widget.args!['type'];
     }
-    context.read<SetupBloc>().add(const ResumePointChanged(status: SetupResumePoint.ROUTERPASSWORD));
+    context
+        .read<SetupBloc>()
+        .add(const ResumePointChanged(status: SetupResumePoint.ROUTERPASSWORD));
   }
 
   @override
@@ -69,8 +72,8 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
     return BasePageView.noNavigationBar(
       child: BasicLayout(
         header: BasicHeader(
-          title: getAppLocalizations(context)
-              .create_router_password_reset_success,
+          title:
+              getAppLocalizations(context).create_router_password_reset_success,
         ),
         content: Column(
           children: [
@@ -104,7 +107,7 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
           children: [
             Padding(
               padding: const EdgeInsets.only(top: 36, bottom: 37),
-              child: InputField(
+              child: PasswordInputField(
                 titleText: getAppLocalizations(context).password,
                 hintText: 'Enter Password',
                 controller: passwordController,

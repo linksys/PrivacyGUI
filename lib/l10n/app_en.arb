@@ -155,7 +155,7 @@
   "otp_create_password_instead": "No thanks, I prefer to log in with a password",
   "otp_send_method_choice_title": "Where should we send your code?",
   "otp_setting_method_choice_title": "Never forget a password again. We'll send you a verification code to log in",
-  "otp_2sv_setting_method_choice_title": "Choose hot to receive 2SV code",
+  "otp_2sv_setting_method_choice_title": "Choose how to receive 2SV code",
   "otp_method_choice_description": "We'll send you a one-time passcode that expires",
   "prompt_no_internet_connection": "No internet connection",
   "prompt_no_internet_connection_description": "Make sure you're connected to your new WiFi network or enable cellular data.",

@@ -57,6 +57,7 @@ class SameAccountPromptPath extends CreateAccountPath<SameAccountPromptPath> {
 class CreateAdminPasswordPath
     extends CreateAccountPath<CreateAdminPasswordPath> {}
 
+// TODO: nobody use this
 class ChooseLoginMethodPath extends CreateAccountPath<ChooseLoginMethodPath> {}
 
 class CreateAccountOtpPath extends CreateAccountPath<CreateAccountOtpPath> {}

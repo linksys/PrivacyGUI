@@ -15,9 +15,9 @@ import 'package:moab_poc/page/components/customs/otp_flow/otp_state.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
-import 'package:moab_poc/page/create_account/view/view.dart';
 import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/util/validator.dart';
 
 import '../../components/base_components/button/primary_button.dart';
 
@@ -33,7 +33,7 @@ class _AddAccountState extends State<AddAccountView> {
   var isEmailInvalid = false;
 
   void _onNextAction() {
-    isEmailInvalid = !_emailController.text.isValidEmailFormat();
+    isEmailInvalid = !EmailValidator().validate(_emailController.text);
     if (!isEmailInvalid) {
       context.read<AuthBloc>().add(SetEmail(email: _emailController.text));
       NavigationCubit.of(context).push(CreateAccountOtpPath()..args = {'username': 'test@linksys.com', 'function': OtpFunction.setting,});
@@ -96,6 +96,7 @@ class _AddAccountState extends State<AddAccountView> {
               titleText: getAppLocalizations(context).add_cloud_account_input_title,
               controller: _emailController,
               isError: isEmailInvalid,
+              errorText: 'Enter a valid email format',
               onChanged: (value) {
                 setState(() {
                   isEmailInvalid = false;

@@ -31,7 +31,9 @@ class LengthRule extends ValidationRule {
 
   @override
   bool validate(String input) {
-    return input.length >= min && max > 0 ? input.length < max : true;
+    return max > 0
+        ? input.length >= min && input.length <= max
+        : input.length >= min;
   }
 }
 
@@ -43,7 +45,6 @@ class HybridCaseRule extends ValidationRule {
   bool validate(String input) {
     return input != input.toUpperCase() && input != input.toLowerCase();
   }
-
 }
 
 class DigitalCheckRule extends RegExValidationRule {
@@ -60,6 +61,9 @@ class SpecialCharCheckRule extends RegExValidationRule {
 
   @override
   RegExp get _rule => RegExp(r".*[^a-zA-Z0-9 ]+.*");
+// From current linksys app
+// RegExp regEx = RegExp(
+//     r"(?=.*?[\x20-\x29\x2A-\x2F\x3A-\x3F\x40\x5B-\x5F\x60\x7D-\x7E])\w+");
 }
 
 class WiFiPasswordRule extends RegExValidationRule {
@@ -78,7 +82,6 @@ class WiFiSsidRule extends RegExValidationRule {
   RegExp get _rule => RegExp(r"^(?! ).{1,32}(?<! )$");
 }
 
-
 class InputValidator {
   final List<ValidationRule> rules;
 
@@ -91,15 +94,21 @@ class InputValidator {
   Map<String, bool> validateDetail(String input, {bool onlyFailed = false}) {
     return rules
         .map((rule) => {rule.name: rule.validate(input)})
-        .where((pair) => onlyFailed? !pair.values.first : true)
+        .where((pair) => onlyFailed ? !pair.values.first : true)
         .reduce((value, element) => value..addAll(element));
   }
 }
 
 class ComplexPasswordValidator extends InputValidator {
-  ComplexPasswordValidator(): super([LengthRule(), HybridCaseRule(), DigitalCheckRule(), SpecialCharCheckRule()]);
+  ComplexPasswordValidator()
+      : super([
+          LengthRule(),
+          HybridCaseRule(),
+          DigitalCheckRule(),
+          SpecialCharCheckRule()
+        ]);
 }
 
 class EmailValidator extends InputValidator {
-  EmailValidator(): super([EmailRule()]);
+  EmailValidator() : super([EmailRule()]);
 }

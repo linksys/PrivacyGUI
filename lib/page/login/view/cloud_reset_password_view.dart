@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
+import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
@@ -15,6 +16,7 @@ import '../../../repository/model/dummy_model.dart';
 import '../../../route/navigation_cubit.dart';
 import '../../components/base_components/input_fields/input_field.dart';
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
+import '../../components/customs/password_validity_widget.dart';
 import '../../create_account/view/create_account_password_view.dart';
 
 class CloudResetPasswordView extends ArgumentsStatefulView {
@@ -36,7 +38,7 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) => _isLoading
-          ?  FullScreenSpinner(text: getAppLocalizations(context).processing)
+          ? FullScreenSpinner(text: getAppLocalizations(context).processing)
           : _isLinkExpired
               ? _linkExpiredView()
               : (_isNewPasswordSet
@@ -60,31 +62,17 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
             const SizedBox(
               height: 37,
             ),
-            InputField(
+            PasswordInputField.withValidator(
               titleText: getAppLocalizations(context).enter_password,
-              isError: _errorReason.isNotEmpty,
               controller: _passwordController,
+              isError: _errorReason.isNotEmpty,
+              errorText: _checkErrorReason(),
               onChanged: (value) {
                 setState(() {
                   _errorReason = '';
                 });
               },
             ),
-            if (_errorReason.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Text(
-                  _checkErrorReason(),
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyText1
-                      ?.copyWith(color: Colors.red),
-                ),
-              ),
-            const SizedBox(
-              height: 23,
-            ),
-            PasswordValidityWidget(passwordText: _passwordController.text),
             const SizedBox(
               height: 23,
             ),
@@ -124,7 +112,10 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             IconButton(
-              icon: const Icon(Icons.check, color: Colors.white,),
+              icon: const Icon(
+                Icons.check,
+                color: Colors.white,
+              ),
               onPressed: () {
                 NavigationCubit.of(context).clearAndPush(HomePath());
               },
