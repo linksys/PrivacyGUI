@@ -35,7 +35,7 @@ class ConnectToModemView extends StatelessWidget {
         ),
         content: _content(context),
         footer: PrimaryButton(
-          text: getAppLocalizations(context).next,
+          text: getAppLocalizations(context).its_connected,
           onPress: () => NavigationCubit.of(context).push(SetupParentPlacePath()),
         ),
       ),
@@ -48,7 +48,7 @@ class ConnectToModemView extends StatelessWidget {
       children: [
         image,
         const SizedBox(
-          height: 104,
+          height: 46,
         ),
         Align(
           alignment: Alignment.topLeft,

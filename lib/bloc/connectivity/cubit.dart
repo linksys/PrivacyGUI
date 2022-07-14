@@ -16,8 +16,8 @@ import 'connectivity_info.dart';
 class ConnectivityCubit extends Cubit<ConnectivityInfo> with ConnectivityListener {
 
   ConnectivityCubit(): super(const ConnectivityInfo(gatewayIp: '', ssid: ''));
-  late bool isAndroid9;
-  late bool isAndroid10AndSupportEasyConnect;
+  bool isAndroid9 = false;
+  bool isAndroid10AndSupportEasyConnect = false;
 
   @override
   Future onConnectivityChanged(ConnectivityInfo info) async {

@@ -7,12 +7,13 @@ import 'package:moab_poc/bloc/setup/event.dart';
 import 'package:moab_poc/bloc/setup/state.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
+import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
 import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
+import 'package:moab_poc/page/components/base_components/text/description_text.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_state.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/page/create_account/view/view.dart';
 import 'package:moab_poc/route/model/model.dart';
@@ -99,8 +100,10 @@ class _AddAccountState extends State<AddAccountView> {
                 setState(() {
                   isEmailInvalid = false;
                 });
-              },
+              }
             ),
+            const SizedBox(height: 31),
+            DescriptionText(text: getAppLocalizations(context).add_cloud_account_input_description),
             const SizedBox(
               height: 8,
             ),
@@ -118,23 +121,28 @@ class _AddAccountState extends State<AddAccountView> {
             ),
             _buildAccountTipsWidget(),
             SimpleTextButton(
-                text: getAppLocalizations(context).add_cloud_account_skip_use_router_password,
+                text: getAppLocalizations(context).already_have_an_account,
                 onPressed: () {
                   NavigationCubit.of(context).push(NoUseCloudAccountPath());
                 })
           ],
           crossAxisAlignment: CrossAxisAlignment.start,
         ),
-        footer: Visibility(
-          maintainState: true,
-          maintainAnimation: true,
-          maintainSize: true,
-          visible: _emailController.text.isNotEmpty,
-          child: PrimaryButton(
-            text: getAppLocalizations(context).next,
-            onPress: _onNextAction,
-          ),
-        ),
+        footer: Column(
+          children: [
+            PrimaryButton(
+              text: getAppLocalizations(context).next,
+              onPress: _onNextAction,
+            ),
+            const SizedBox(height: 8),
+            SimpleTextButton(
+              text: getAppLocalizations(context).do_this_later,
+              onPressed: (){
+                NavigationCubit.of(context).push(NoUseCloudAccountPath());
+              },
+            )
+          ],
+        )
       ),
     );
   }

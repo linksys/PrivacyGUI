@@ -6,12 +6,10 @@ import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/page/setup/view/parent_scan_qrcode_view.dart';
 import 'package:moab_poc/route/route.dart';
 
 import '../../../bloc/connectivity/cubit.dart';
-import '../../../channel/wifi_connect_channel.dart';
 import '../../components/base_components/button/primary_button.dart';
 import 'android_manually_connect_view.dart';
 import 'android_qr_choice_view.dart';
@@ -49,6 +47,7 @@ class _PermissionsPrimerViewState extends State<PermissionsPrimerView> {
   Widget build(BuildContext context) {
     if (Platform.isIOS) {
       return BasePageView(
+        scrollable: true,
         child: BasicLayout(
           header: BasicHeader(
             spacing: 11,
@@ -57,11 +56,6 @@ class _PermissionsPrimerViewState extends State<PermissionsPrimerView> {
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(
-                height: 14,
-              ),
-              imgContent,
-              const SizedBox(height: 50),
               if (Platform.isIOS)
                 CheckPermissionView(
                     checkIcon: checkIcon,
@@ -72,7 +66,11 @@ class _PermissionsPrimerViewState extends State<PermissionsPrimerView> {
               if (Platform.isIOS)
                 CheckPermissionView(
                     checkIcon: checkIcon,
-                    text: getAppLocalizations(context).location)
+                    text: getAppLocalizations(context).location),
+              const SizedBox(
+                height: 24,
+              ),
+              imgContent,
             ],
           ),
           footer: PrimaryButton(
@@ -110,7 +108,7 @@ class CheckPermissionView extends StatelessWidget {
         children: [
           checkIcon,
           const SizedBox(
-            width: 8.5,
+            width: 13,
           ),
           _content(context, text),
         ],
@@ -122,9 +120,6 @@ class CheckPermissionView extends StatelessWidget {
     return Flexible(
       child: Column(
         children: [
-          const SizedBox(
-            height: 9,
-          ),
           Text(
             text,
             style: Theme

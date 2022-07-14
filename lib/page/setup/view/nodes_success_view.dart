@@ -38,11 +38,13 @@ class _NodesSuccessViewState extends State<NodesSuccessView> {
       child: BasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).good_work,
+          description: getAppLocalizations(context).nodes_success_multi_description,
         ),
         content: Center(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 57),
               Center(
                   child: GestureDetector(
                       onTap: () {
@@ -69,9 +71,6 @@ class _NodesSuccessViewState extends State<NodesSuccessView> {
                       }),
                 ),
               ),
-              DescriptionText(
-                  text: getAppLocalizations(context)
-                      .nodes_success_multi_description),
             ],
           ),
         ),
