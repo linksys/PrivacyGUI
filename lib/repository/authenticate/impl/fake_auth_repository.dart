@@ -4,6 +4,7 @@ import 'package:moab_poc/network/http/model/cloud_account_info.dart';
 import 'package:moab_poc/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/network/http/model/cloud_create_account_verified.dart';
+import 'package:moab_poc/network/http/model/cloud_login_state.dart';
 import 'package:moab_poc/repository/authenticate/auth_repository.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -160,6 +161,30 @@ class FakeAuthRepository extends AuthRepository {
   @override
   Future<CloudAccountInfo> createVerifiedAccount(String token, CreateAccountVerified verified) {
     // TODO: implement createVerifiedAccount
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<CommunicationMethod>> getMaskedCommunicationMethods(String username) {
+    // TODO: implement getMaskedCommunicationMethods
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<CloudLoginState> login2(String token, String? certToken) {
+    // TODO: implement login2
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<CloudLoginState> loginPassword(String token, String password) {
+    // TODO: implement loginPassword
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<CloudLoginState> loginPrepare(CommunicationMethod method) {
+    // TODO: implement loginPrepare
     throw UnimplementedError();
   }
 }

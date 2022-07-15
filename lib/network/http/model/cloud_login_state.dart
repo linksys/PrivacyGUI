@@ -9,14 +9,14 @@ import 'package:equatable/equatable.dart';
 ///   }
 /// }
 ///
-class CloudLoginPrepareState extends Equatable {
-  const CloudLoginPrepareState({
+class CloudLoginState extends Equatable {
+  const CloudLoginState({
     required this.state,
     required this.data,
   });
 
-  factory CloudLoginPrepareState.fromJson(Map<String, dynamic> json) {
-    return CloudLoginPrepareState(
+  factory CloudLoginState.fromJson(Map<String, dynamic> json) {
+    return CloudLoginState(
       state: json['state'],
       data: CloudLoginPrepareData.fromJson(json),
     );
