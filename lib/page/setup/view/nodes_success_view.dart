@@ -33,7 +33,7 @@ class _NodesSuccessViewState extends State<NodesSuccessView> {
 
   @override
   Widget build(BuildContext context) {
-    double width = 220;
+    double width = 200;
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
@@ -54,6 +54,7 @@ class _NodesSuccessViewState extends State<NodesSuccessView> {
                       child: Image.asset(
                         'assets/images/nodes_topology.png',
                         width: width,
+                        height: width,
                       ))),
               Padding(
                 padding: const EdgeInsets.fromLTRB(0, 48, 0, 48), // TODO

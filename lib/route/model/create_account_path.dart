@@ -32,7 +32,7 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
       case EnableTwoSVPath:
         return const EnableTwoSVView();
       case CreateCloudPasswordPath:
-        return CreateAccountPasswordView();
+        return CreateAccountPasswordView(args: args,);
       case SameAccountPromptPath:
         return UseSameAccountPromptView();
       case CreateAccount2SVPath:

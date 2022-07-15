@@ -80,7 +80,8 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
             ),
             if (state.isSettingFunction())
               SimpleTextButton(text: getAppLocalizations(context).otp_create_password_instead, onPressed: () {
-                NavigationCubit.of(context).push(CreateCloudPasswordPath());
+                final username = context.read<AuthBloc>().state.accountInfo.username;
+                NavigationCubit.of(context).push(CreateCloudPasswordPath()..args = {'username' : username});
               }),
           ],
         ),

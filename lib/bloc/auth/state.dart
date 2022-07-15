@@ -15,7 +15,22 @@ class AccountInfo {
   final List<OtpInfo> otpInfo;
 
   const AccountInfo(
-      {required this.username, required this.loginType, required this.otpInfo, this.password = ''});
+      {required this.username,
+      required this.loginType,
+      required this.otpInfo,
+      this.password = ''});
+
+  AccountInfo copyWith(
+      {String? username,
+      String? password,
+      LoginType? loginType,
+      List<OtpInfo>? otpInfo}) {
+    return AccountInfo(
+      username: username ?? this.username,
+      loginType: loginType ?? this.loginType,
+      otpInfo: otpInfo ?? this.otpInfo,
+    );
+  }
 }
 
 class OtpInfo {
@@ -23,11 +38,22 @@ class OtpInfo {
   final String data;
 
   const OtpInfo({required this.method, required this.data});
+
+  OtpInfo copyWith({
+    OtpMethod? method,
+    String? data,
+  }) {
+    return OtpInfo(
+      method: method ?? this.method,
+      data: data ?? this.data,
+    );
+  }
 }
 
 class AdminPasswordInfo {
   final bool hasAdminPassword;
   final String hint;
+
   const AdminPasswordInfo({required this.hasAdminPassword, required this.hint});
 }
 

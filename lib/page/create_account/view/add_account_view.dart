@@ -36,7 +36,7 @@ class _AddAccountState extends State<AddAccountView> {
     isEmailInvalid = !EmailValidator().validate(_emailController.text);
     if (!isEmailInvalid) {
       context.read<AuthBloc>().add(SetEmail(email: _emailController.text));
-      NavigationCubit.of(context).push(CreateAccountOtpPath()..args = {'username': 'test@linksys.com', 'function': OtpFunction.setting,});
+      NavigationCubit.of(context).push(CreateAccountOtpPath()..args = {'username': _emailController.text, 'function': OtpFunction.setting,});
     } else {
       setState(() {});
     }
@@ -97,6 +97,7 @@ class _AddAccountState extends State<AddAccountView> {
               controller: _emailController,
               isError: isEmailInvalid,
               errorText: 'Enter a valid email format',
+              inputType: TextInputType.emailAddress,
               onChanged: (value) {
                 setState(() {
                   isEmailInvalid = false;
