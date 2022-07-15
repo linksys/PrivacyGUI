@@ -108,18 +108,6 @@ class _AddAccountState extends State<AddAccountView> {
             const SizedBox(
               height: 8,
             ),
-            Visibility(
-              maintainState: true,
-              maintainAnimation: true,
-              maintainSize: true,
-              visible: isEmailInvalid,
-              child: Text(
-                'Enter a valid email format',
-                style: Theme.of(context).textTheme.headline4?.copyWith(
-                      color: Colors.red,
-                    ),
-              ),
-            ),
             _buildAccountTipsWidget(),
             SimpleTextButton(
                 text: getAppLocalizations(context).already_have_an_account,
