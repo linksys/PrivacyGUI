@@ -9,6 +9,9 @@ class PrimaryTextField extends StatefulWidget {
     this.isError = false,
     this.errorColor = Colors.red,
     this.onChanged,
+    this.secured = false,
+    this.prefixIcon,
+    this.suffixIcon,
   }) : super(key: key);
 
   final TextEditingController controller;
@@ -17,6 +20,9 @@ class PrimaryTextField extends StatefulWidget {
   final void Function(String text)? onChanged;
   final bool isError;
   final Color errorColor;
+  final bool secured;
+  final Widget? prefixIcon;
+  final Widget? suffixIcon;
 
   @override
   _PrimaryTextFieldState createState() => _PrimaryTextFieldState();
@@ -37,11 +43,16 @@ class _PrimaryTextFieldState extends State<PrimaryTextField> {
   @override
   Widget build(BuildContext context) {
     return TextField(
+      obscureText: widget.secured,
       controller: widget.controller,
       style: Theme.of(context).textTheme.bodyText1?.copyWith(
-            color: widget.isError ? widget.errorColor : Theme.of(context).colorScheme.primary,
+            color: widget.isError
+                ? widget.errorColor
+                : Theme.of(context).colorScheme.primary,
           ),
       decoration: InputDecoration(
+        prefixIcon: widget.prefixIcon,
+        suffixIcon: widget.suffixIcon,
         hintText: widget.hintText,
         hintStyle: Theme.of(context)
             .textTheme
@@ -49,11 +60,17 @@ class _PrimaryTextFieldState extends State<PrimaryTextField> {
             ?.copyWith(color: Theme.of(context).colorScheme.surface),
         enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(
-                color: widget.isError ? widget.errorColor : Theme.of(context).colorScheme.primary, width: 1),
+                color: widget.isError
+                    ? widget.errorColor
+                    : Theme.of(context).colorScheme.primary,
+                width: 1),
             borderRadius: BorderRadius.zero),
         focusedBorder: OutlineInputBorder(
             borderSide: BorderSide(
-                color: widget.isError ? widget.errorColor : Theme.of(context).colorScheme.primary, width: 1),
+                color: widget.isError
+                    ? widget.errorColor
+                    : Theme.of(context).colorScheme.primary,
+                width: 1),
             borderRadius: BorderRadius.zero),
       ),
       onChanged: _onChanged,

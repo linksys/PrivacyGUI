@@ -53,10 +53,11 @@ class _LoginTraditionalPasswordViewState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            InputField(
+            PasswordInputField(
               titleText: getAppLocalizations(context).password,
               hintText: getAppLocalizations(context).password,
               isError: _errorReason.isNotEmpty,
+              errorText: _checkErrorReason(),
               controller: passwordController,
               onChanged: (value) {
                 setState(() {
@@ -64,17 +65,6 @@ class _LoginTraditionalPasswordViewState
                 });
               },
             ),
-            if (_errorReason.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Text(
-                  _checkErrorReason(),
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyText1
-                      ?.copyWith(color: Colors.red),
-                ),
-              ),
             const SizedBox(
               height: 15,
             ),

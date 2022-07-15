@@ -16,12 +16,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         _localAuthRepository = localRepo,
         super(AuthState.unknownAuth()) {
     on<InitAuth>(_onInitAuth);
+    on<SetEmail>(_onSetEmail);
   }
 
   _onInitAuth(InitAuth event, Emitter<AuthState> emit) {
     // TODO check authorize from local
     emit(AuthState.unAuthorized());
     // emit(AuthState.authorized(method: AuthMethod.remote));
+  }
+
+  void _onSetEmail(SetEmail event, Emitter<AuthState> emit) {
+    emit(state.copyWith(accountInfo: AccountInfo(username: event.email, loginType: LoginType.otp, otpInfo: [])));
   }
 
   @override

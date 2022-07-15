@@ -5,7 +5,6 @@ import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
-import 'package:moab_poc/page/login/view/view.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/logger.dart';
@@ -71,18 +70,8 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
                 onChanged: _checkFilledInfo,
                 inputType: TextInputType.emailAddress,
                 isError: !_isValidEmail && _accountController.text.isNotEmpty || _errorReason.isNotEmpty,
+                errorText: _checkErrorReason(),
               ),
-              if (!_isValidEmail && _accountController.text.isNotEmpty || _errorReason.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: Text(
-                    _checkErrorReason(),
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyText1
-                        ?.copyWith(color: Colors.red),
-                  ),
-                ),
               if (_errorReason == "NOT_FOUND")
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -144,6 +133,7 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
   _checkFilledInfo(_) {
     setState(() {
       _isValidEmail = _emailValidator.validate(_accountController.text);
+      _errorReason = '';
     });
   }
 

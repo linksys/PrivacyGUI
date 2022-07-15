@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/network/http/model/cloud_config.dart';
 import 'package:moab_poc/config/cloud_config_manager.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
@@ -11,10 +11,10 @@ import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/page/landing/view/debug_device_info_view.dart';
 import 'package:moab_poc/util/logger.dart';
+import 'package:moab_poc/util/storage.dart';
 import 'package:share_plus/share_plus.dart';
-
-import '../../../util/storage.dart';
 
 class DebugToolsView extends StatefulWidget {
   const DebugToolsView({
@@ -176,6 +176,20 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         const SizedBox(
           height: 16,
         ),
+        Text(
+          'Information:',
+          style: Theme.of(context)
+              .textTheme
+              .headline2
+              ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        ),
+        SecondaryButton(
+          text: 'Read device information',
+          onPress: () => _goToDeviceInfoPage(context),
+        ),
+        const SizedBox(
+          height: 16,
+        ),
         _buildEnvPickerTile(),
       ],
     );
@@ -215,6 +229,15 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         _streamSubscription = null;
       }
     });
+  }
+
+  void _goToDeviceInfoPage(BuildContext context) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) {
+        return const DebugDeviceInfoView();
+      }
+    );
   }
 
   Widget _buildEnvPickerTile() {

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
+import 'package:moab_poc/bloc/setup/bloc.dart';
+import 'package:moab_poc/bloc/setup/event.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
@@ -10,11 +12,13 @@ import 'package:moab_poc/page/components/base_components/input_fields/input_fiel
 import 'package:moab_poc/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/in_app_browser.dart';
+
+import '../../../bloc/setup/state.dart';
+import '../../components/base_components/input_fields/password_input_field.dart';
 
 enum AdminPasswordType { create, reset }
 
@@ -47,6 +51,9 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
     if (widget.args!.containsKey('type')) {
       _type = widget.args!['type'];
     }
+    context
+        .read<SetupBloc>()
+        .add(const ResumePointChanged(status: SetupResumePoint.ROUTERPASSWORD));
   }
 
   @override
@@ -65,8 +72,8 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
     return BasePageView.noNavigationBar(
       child: BasicLayout(
         header: BasicHeader(
-          title: getAppLocalizations(context)
-              .create_router_password_reset_success,
+          title:
+              getAppLocalizations(context).create_router_password_reset_success,
         ),
         content: Column(
           children: [
@@ -100,7 +107,7 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
           children: [
             Padding(
               padding: const EdgeInsets.only(top: 36, bottom: 37),
-              child: InputField(
+              child: PasswordInputField(
                 titleText: getAppLocalizations(context).password,
                 hintText: 'Enter Password',
                 controller: passwordController,

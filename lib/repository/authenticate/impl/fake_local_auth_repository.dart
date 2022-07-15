@@ -10,7 +10,7 @@ class FakeLocalAuthRepository implements LocalAuthRepository {
   @override
   Future<DummyModel> localLogin(String password) async {
     await Future.delayed(waitDuration);
-    if (password == 'showmeerror') {
+    if (password == 'Showmeerror123!') {
       throw CloudException('LOCAL_LOGIN_FAILED', 'Incorrect password');
     }
     return {};

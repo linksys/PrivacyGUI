@@ -16,14 +16,13 @@ class RouterInfo {
 }
 
 enum SetupResumePoint {
-  none,
-  internetCheck,
-  setSsid,
-  addChildNode,
-  routerPassword,
-  createCloudAccount,
-  cloudAccountVerification,
-  finish
+  NONE,
+  INTERNETCHECK,
+  LOCATION,
+  SETSSID,
+  ADDCHILDNODE,
+  ROUTERPASSWORD,
+  CREATECLOUDACCOUNT,
 }
 
 class SetupState extends Equatable {
@@ -41,7 +40,7 @@ class SetupState extends Equatable {
       required this.accountInfo});
 
   const SetupState.init()
-      : resumePoint = SetupResumePoint.none,
+      : resumePoint = SetupResumePoint.NONE,
         wifiSSID = '',
         wifiPassword = '',
         adminPassword = '',

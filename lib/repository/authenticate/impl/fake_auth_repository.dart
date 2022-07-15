@@ -35,13 +35,9 @@ class FakeAuthRepository extends AuthRepository {
   @override
   Future<DummyModel> login(String username, String password) async {
     await Future.delayed(waitDuration);
-    if (password == 'email') {
-      return {
-        'method': [
-          {'email': username},
-        ]
-      };
-    } else if (password == 'emailandphone') {
+    if (password == 'Showmeerror123!') {
+      throw CloudException('INCORRECT_PASSWORD', "Incorrect password");
+    } else {
       return {
         'method': [
           {'sms': '+8869123456'},
@@ -49,7 +45,6 @@ class FakeAuthRepository extends AuthRepository {
         ]
       };
     }
-    throw CloudException('INCORRECT_PASSWORD', "Incorrect password");
   }
 
   @override
@@ -78,10 +73,10 @@ class FakeAuthRepository extends AuthRepository {
   @override
   Future<DummyModel> resetPassword(String password) async {
     await Future.delayed(waitDuration);
-    if (password == 'Linksys123!') {
-      return {};
+    if (password == 'Showmeerror123!') {
+      throw CloudException('OLD_PASSWORD', "You cannot use an old password.");
     }
-    throw CloudException('OLD_PASSWORD', "You cannot use an old password.");
+    return {};
   }
 
   @override

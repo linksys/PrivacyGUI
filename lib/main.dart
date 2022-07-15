@@ -19,6 +19,7 @@ import 'package:moab_poc/route/route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/storage.dart';
+import 'bloc/setup/bloc.dart';
 import 'package:moab_poc/utils.dart';
 import 'firebase_options.dart';
 import 'repository/authenticate/impl/fake_auth_repository.dart';
@@ -75,6 +76,7 @@ Widget _app() {
       ),
       BlocProvider(create: (BuildContext context) => ConnectivityCubit()),
       BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
+      BlocProvider(create: (BuildContext context) => SetupBloc())
     ], child: const MoabApp()),
   );
 }
@@ -97,6 +99,7 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _cubit = context.read<ConnectivityCubit>();
     _cubit.start();
+    _cubit.forceUpdate();
     super.initState();
   }
 

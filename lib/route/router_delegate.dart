@@ -110,8 +110,12 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
           !currentConfiguration.pageConfig.ignoreConnectivityChanged,
       listener: (context, state) {
         logger.d("Connectivity Listener: ${state.type}, ${state.ssid}");
-        if (state.type == ConnectivityResult.none) {
+        if (state.type == ConnectivityResult.none && currentConfiguration is! NoInternetConnectionPath) {
           _cubit.push(NoInternetConnectionPath());
+        } else {
+          if (currentConfiguration is NoInternetConnectionPath) {
+            _cubit.pop();
+          }
         }
       },
     );

@@ -39,18 +39,13 @@ class PlaceNodeView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         BasicHeader(
-          title: isAddOnNodes
-              ? getAppLocalizations(context).place_node_view_addOnNodes_title
-              : getAppLocalizations(context).place_node_view_title,
+          title: getAppLocalizations(context).place_node_view_title,
         ),
         const SizedBox(
           height: 6,
         ),
         DescriptionText(
-            text: isAddOnNodes
-                ? getAppLocalizations(context)
-                    .place_node_view_addOnNodes_subtitle
-                : getAppLocalizations(context).place_node_view_subtitle)
+            text: getAppLocalizations(context).place_node_view_subtitle)
       ],
     );
   }
@@ -76,10 +71,6 @@ class PlaceNodeView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        isAddOnNodes
-            ? const SizedBox(height: 0)
-            : DescriptionText(
-                text: getAppLocalizations(context).place_node_view_content),
         const SizedBox(
           height: 27,
         ),
