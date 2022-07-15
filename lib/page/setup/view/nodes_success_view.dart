@@ -35,6 +35,7 @@ class _NodesSuccessViewState extends State<NodesSuccessView> {
   Widget build(BuildContext context) {
     double width = 220;
     return BasePageView(
+      scrollable: true,
       child: BasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).good_work,
@@ -60,7 +61,7 @@ class _NodesSuccessViewState extends State<NodesSuccessView> {
                   child: SimpleTextButton(
                       text: getAppLocalizations(context).add_a_node,
                       onPressed: (){
-                        int index = NavigationCubit.of(context).state.configs.indexWhere((element) => element.name == "SetupNthChildPlacePath");
+                        int index = NavigationCubit.of(context).state.configs.indexWhere((element) => element is SetupNthChildPlacePath);
                         if (index >= 0) {
                           NavigationCubit.of(context).popTo(
                               SetupNthChildPlacePath());

@@ -154,7 +154,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
 
   _handleAdminPasswordInfo(AdminPasswordInfo info) {
     if (!info.hasAdminPassword) {
-      NavigationCubit.of(context).replace(CreateAdminPasswordPath());
+      NavigationCubit.of(context).replace(CreateAdminPasswordPath()..args = {});
     } else {
       setState(() {
         _hint = info.hint;

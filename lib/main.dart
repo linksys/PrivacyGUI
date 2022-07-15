@@ -109,7 +109,7 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      scaffoldMessengerKey: GlobalKey<ScaffoldMessengerState>(),
+      // scaffoldMessengerKey: GlobalKey<ScaffoldMessengerState>(),
       onGenerateTitle: (context) => getAppLocalizations(context).app_title,
       theme: MoabTheme.AuthModuleLightModeData,
       localizationsDelegates: AppLocalizations.localizationsDelegates,

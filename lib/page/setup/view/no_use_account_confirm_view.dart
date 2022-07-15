@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
 import 'package:moab_poc/route/route.dart';
@@ -49,7 +50,7 @@ class NoUseAccountConfirmView extends StatelessWidget {
         footer: Column(
           children: [
             PrimaryButton(
-              text: 'Create account',
+              text: getAppLocalizations(context).create_account,
               onPress: () {
                 NavigationCubit.of(context).pop();
               },
@@ -58,9 +59,9 @@ class NoUseAccountConfirmView extends StatelessWidget {
               height: 24,
             ),
             SecondaryButton(
-              text: 'I do not want an account',
+              text: getAppLocalizations(context).dont_want_cloud_account,
               onPress: () {
-                NavigationCubit.of(context).push(CreateAdminPasswordPath());
+                NavigationCubit.of(context).push(CreateAdminPasswordPath()..args = {});
               },
             )
           ],
