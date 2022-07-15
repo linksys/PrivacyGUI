@@ -1,11 +1,16 @@
+import 'dart:convert';
 
+import 'package:moab_poc/network/http/extension_requests/auth_requests.dart';
 import 'package:moab_poc/network/http/http_client.dart';
+import 'package:moab_poc/network/http/model/cloud_account_info.dart';
+import 'package:moab_poc/network/http/model/cloud_auth_clallenge_method.dart';
+import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
+import 'package:moab_poc/network/http/model/cloud_create_account_verified.dart';
 import 'package:moab_poc/repository/authenticate/auth_repository.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
 
 class CloudAuthRepository extends AuthRepository {
-
-  CloudAuthRepository(MoabHttpClient httpClient): _httpClient = httpClient;
+  CloudAuthRepository(MoabHttpClient httpClient) : _httpClient = httpClient;
 
   final MoabHttpClient _httpClient;
 
@@ -75,4 +80,37 @@ class CloudAuthRepository extends AuthRepository {
     throw UnimplementedError();
   }
 
+  @override
+  Future<void> authChallenge(
+      String id, String secret, AuthChallengeMethod method) {
+    // TODO: implement authChallenge
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> authChallengeVerify(String token, String code) {
+    // TODO: implement authChallengeVerify
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<String> createAccountPreparation(String email) async {
+    return _httpClient
+        .createAccountPreparation(email)
+        .then((response) => json.decode(response.body)['token']);
+  }
+
+  @override
+  Future<void> createAccountPreparationUpdateMethod(
+      String token, CommunicationMethod method) {
+    // TODO: implement createAccountPreparationUpdateMethod
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<CloudAccountInfo> createVerifiedAccount(
+      String token, CreateAccountVerified verified) {
+    // TODO: implement createVerifiedAccount
+    throw UnimplementedError();
+  }
 }

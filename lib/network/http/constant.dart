@@ -31,10 +31,10 @@ const authPath = '/auth';
 // Cloud endpoints variables
 const varAccountId = '{accountId}';
 const varVerifyToken = '{verifyToken}';
+const varUsername = '{username}';
 
 // Cloud endpoints
 const endpointCreateApps = '$version/apps';
-const endpointGetMaskedCommunicationMethod = '$version$accountPath/{accountId}/masked-communication-methods';
 const endpointPostAccountPreparations = '$version$accountPath/verified-first/preparations';
 const endpointPutAccountPreparations = '$version$accountPath/verified-first/preparations/$varVerifyToken';
 const endpointPostCreateAccount = '$version$accountPath/verified-first/';
@@ -42,4 +42,7 @@ const endpointPostCreateAccount = '$version$accountPath/verified-first/';
 const endpointPostAuthChallenges = '$version$authPath/challenges';
 const endpointPutAuthChallenges = '$version$authPath/challenges/verifications/$varVerifyToken';
 
-const endpointAuthLoginPrepare = '$version$authPath/login/prepare';
+const endpointPostLoginPrepare = '$version$authPath/login/prepare';
+const endpointGetMaskedCommunicationMethods = '$version$accountPath/$varUsername/masked-communication-methods';
+const endpointPostLoginPassword = '$version$authPath/login/password';
+const endpointPostLogin = '$version$authPath/login';

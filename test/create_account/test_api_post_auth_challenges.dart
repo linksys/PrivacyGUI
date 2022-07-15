@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:moab_poc/network/http/constant.dart';
-import 'package:moab_poc/network/http/extension_requests.dart';
+import 'package:moab_poc/network/http/extension_requests/extension_requests.dart';
 import 'package:moab_poc/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test/test.dart';

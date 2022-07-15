@@ -7,6 +7,8 @@ import 'package:moab_poc/config/cloud_config_manager.dart';
 import 'package:moab_poc/network/http/constant.dart';
 import 'package:moab_poc/util/logger.dart';
 
+import 'model/base_response.dart';
+
 
 class MoabHttpClient extends http.BaseClient {
 
@@ -42,7 +44,7 @@ class MoabHttpClient extends http.BaseClient {
   Future<Response> delete(Uri url,
       {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
     final response = await super
-        .delete(url, headers: headers, body: body, encoding: encoding);
+        .delete(url, headers: headers, body: body, encoding: encoding).then((response) => _handleResponse(response));
     _logResponse(response);
     return response;
   }
@@ -51,7 +53,7 @@ class MoabHttpClient extends http.BaseClient {
   Future<Response> patch(Uri url,
       {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
     final response = await super
-        .patch(url, headers: headers, body: body, encoding: encoding);
+        .patch(url, headers: headers, body: body, encoding: encoding).then((response) => _handleResponse(response));
     _logResponse(response);
     return response;
   }
@@ -60,7 +62,7 @@ class MoabHttpClient extends http.BaseClient {
   Future<Response> put(Uri url,
       {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
     final response =
-        await super.put(url, headers: headers, body: body, encoding: encoding);
+        await super.put(url, headers: headers, body: body, encoding: encoding).then((response) => _handleResponse(response));
     _logResponse(response);
     return response;
   }
@@ -69,21 +71,21 @@ class MoabHttpClient extends http.BaseClient {
   Future<Response> post(Uri url,
       {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
     final response =
-        await super.post(url, headers: headers, body: body, encoding: encoding);
+        await super.post(url, headers: headers, body: body, encoding: encoding).then((response) => _handleResponse(response));
     _logResponse(response);
     return response;
   }
 
   @override
   Future<Response> get(Uri url, {Map<String, String>? headers}) async {
-    final response = await super.get(url, headers: headers);
+    final response = await super.get(url, headers: headers).then((response) => _handleResponse(response));
     _logResponse(response);
     return response;
   }
 
   @override
   Future<Response> head(Uri url, {Map<String, String>? headers}) async {
-    final response = await super.head(url, headers: headers);
+    final response = await super.head(url, headers: headers).then((response) => _handleResponse(response));
     _logResponse(response);
     return response;
   }
@@ -106,5 +108,19 @@ class MoabHttpClient extends http.BaseClient {
           'RESPONSE: ${response.statusCode}, ${response.body}\n'
           '---------------------------------------------------RESPONSE END\n');
     }
+  }
+
+  ///
+  /// Handling Cloud Error Response
+  /// 400 -
+  /// 500 -
+  ///
+  Response _handleResponse(Response response) {
+    logger.i('Cloud Error: ${response.statusCode}, ${response.body}');
+    // TODO Revisit - needs to considering about 500 internal server error, 502/503 bad requests
+    if (response.statusCode >= 400) {
+      throw ErrorResponse.fromJson(json.decode(response.body));
+    }
+    return response;
   }
 }

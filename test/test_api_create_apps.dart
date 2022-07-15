@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:intl/intl.dart';
-import 'package:moab_poc/network/http/extension_requests.dart';
+import 'package:moab_poc/network/http/extension_requests/extension_requests.dart';
 import 'package:moab_poc/network/http/model/cloud_app.dart';
 import 'package:moab_poc/network/http/model/cloud_config.dart';
 import 'package:moab_poc/network/http/constant.dart';

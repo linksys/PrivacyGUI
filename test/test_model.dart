@@ -1,3 +1,5 @@
+import 'package:moab_poc/network/http/model/base_response.dart';
+import 'package:moab_poc/network/http/model/cloud_account_info.dart';
 import 'package:moab_poc/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/network/http/model/cloud_create_account_verified.dart';
@@ -115,7 +117,6 @@ void main() {
       expect(convertBack.preferences.isoLanguageCode, 'zh');
       expect(convertBack.preferences.isoCountryCode, 'TW');
       expect(convertBack.preferences.timeZone, 'Asia/Taipei');
-
     });
 
     test('test CreateAccountVerified - PASSWORD', () async {
@@ -145,6 +146,103 @@ void main() {
       expect(convertBack.preferences.isoLanguageCode, 'zh');
       expect(convertBack.preferences.isoCountryCode, 'TW');
       expect(convertBack.preferences.timeZone, 'Asia/Taipei');
+    });
+
+    test('test CloudAccountInfo', () async {
+      const CloudAccountInfo method = CloudAccountInfo(
+        id: 'id-for-account-info',
+        username: 'austin.chang@linksys.com',
+        usernames: ['austin.chang@linksys.com'],
+        status: 'ACTIVE',
+        type: 'NORMAL',
+        authenticationMode: 'PASSWORD',
+        createAt: '2022-07-13T09:37:01.665063052Z',
+        updateAt: '2022-07-13T09:37:01.665063052Z',
+      );
+
+      final jsonObj = method.toJson();
+      expect(jsonObj['id'], 'id-for-account-info');
+      expect(jsonObj['username'], 'austin.chang@linksys.com');
+      expect(jsonObj['usernames'][0], 'austin.chang@linksys.com');
+      expect(jsonObj['status'], 'ACTIVE');
+      expect(jsonObj['type'], 'NORMAL');
+      expect(jsonObj['authenticationMode'], 'PASSWORD');
+      expect(jsonObj['createAt'], '2022-07-13T09:37:01.665063052Z');
+      expect(jsonObj['updateAt'], '2022-07-13T09:37:01.665063052Z');
+
+      final convertBack = CloudAccountInfo.fromJson(jsonObj);
+      expect(convertBack.id, 'id-for-account-info');
+      expect(convertBack.username, 'austin.chang@linksys.com');
+      expect(convertBack.usernames.first, 'austin.chang@linksys.com');
+      expect(convertBack.status, 'ACTIVE');
+      expect(convertBack.type, 'NORMAL');
+      expect(convertBack.authenticationMode, 'PASSWORD');
+      expect(convertBack.createAt, '2022-07-13T09:37:01.665063052Z');
+      expect(convertBack.updateAt, '2022-07-13T09:37:01.665063052Z');
+    });
+
+    test('test ErrorResponse #1', () async {
+      const ErrorResponse method = ErrorResponse(
+        code: 'USERNAME_ALREADY_EXISTS',
+        errorMessage: 'Error',
+        parameters: [
+          {'name': 'username', 'value': 'austin.chang@linksys.com'},
+        ],
+      );
+      final jsonObj = method.toJson();
+      expect(jsonObj['code'], 'USERNAME_ALREADY_EXISTS');
+      expect(jsonObj['errorMessage'], 'Error');
+      expect((jsonObj['parameters'] as List).length, 1);
+      expect((jsonObj['parameters'] as List<Map<String, dynamic>>)[0]['name'], 'username');
+      expect((jsonObj['parameters'] as List<Map<String, dynamic>>)[0]['value'], 'austin.chang@linksys.com');
+
+      final convertBack = ErrorResponse.fromJson(jsonObj);
+      expect(convertBack.code, 'USERNAME_ALREADY_EXISTS');
+      expect(convertBack.errorMessage, 'Error');
+      expect(convertBack.parameters?.length, 1);
+      expect(convertBack.parameters?[0]['name'], 'username');
+      expect(convertBack.parameters?[0]['value'], 'austin.chang@linksys.com');
+
+
+    });
+    test('test ErrorResponse #2', () async {
+      const ErrorResponse method = ErrorResponse(
+        code: 'USERNAME_ALREADY_EXISTS',
+        parameters: [
+          {'name': 'username', 'value': 'austin.chang@linksys.com'},
+        ],
+      );
+      final jsonObj = method.toJson();
+      expect(jsonObj['code'], 'USERNAME_ALREADY_EXISTS');
+      expect(jsonObj['errorMessage'], null);
+      expect((jsonObj['parameters'] as List).length, 1);
+      expect((jsonObj['parameters'] as List<Map<String, dynamic>>)[0]['name'], 'username');
+      expect((jsonObj['parameters'] as List<Map<String, dynamic>>)[0]['value'], 'austin.chang@linksys.com');
+
+      final convertBack = ErrorResponse.fromJson(jsonObj);
+      expect(convertBack.code, 'USERNAME_ALREADY_EXISTS');
+      expect(convertBack.errorMessage, null);
+      expect(convertBack.parameters?.length, 1);
+      expect(convertBack.parameters?[0]['name'], 'username');
+      expect(convertBack.parameters?[0]['value'], 'austin.chang@linksys.com');
+
+
+    });
+    test('test ErrorResponse #3', () async {
+      const ErrorResponse method = ErrorResponse(
+        code: 'USERNAME_ALREADY_EXISTS',
+        errorMessage: 'Error',
+      );
+      final jsonObj = method.toJson();
+      expect(jsonObj['code'], 'USERNAME_ALREADY_EXISTS');
+      expect(jsonObj['errorMessage'], 'Error');
+      expect((jsonObj['parameters']), null);
+
+      final convertBack = ErrorResponse.fromJson(jsonObj);
+      expect(convertBack.code, 'USERNAME_ALREADY_EXISTS');
+      expect(convertBack.errorMessage, 'Error');
+      expect(convertBack.parameters, null);
+
 
     });
   });

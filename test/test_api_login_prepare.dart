@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:intl/intl.dart';
+import 'package:moab_poc/network/http/extension_requests/extension_requests.dart';
 import 'package:moab_poc/network/http/model/cloud_app.dart';
 import 'package:moab_poc/network/http/model/cloud_config.dart';
 import 'package:moab_poc/network/http/constant.dart';
@@ -10,18 +11,15 @@ import 'package:moab_poc/repository/config/config_repository.dart';
 import 'package:moab_poc/utils.dart';
 import 'package:test/test.dart';
 
+import 'dev_testable_client.dart';
+
 void main() {
   group('test login prepare in dev', () {
     test('get masked communication methods', () async {
       const host = 'https://dev-as1-api.moab.xvelop.com';
-      final client = MoabHttpClient();
-      final header = {
-        moabSiteIdKey: moabRetailSiteId,
-        HttpHeaders.contentTypeHeader: ContentType.json.value,
-        HttpHeaders.acceptHeader: ContentType.json.value
-      };
-      final url = Uri.encodeFull('$host$endpointGetMaskedCommunicationMethod'.replaceAll(varAccountId, Uri.encodeFull('app@integrationtests.belkin.com')));
-      final response = await client.get(Uri.parse(url), headers: header);
+      final client = DevTestableClient();
+
+      final response = await client.getMaskedCommunicationMethods('austin.chang@linksys.com');
     });
 
     test('login prepare', () async {
@@ -51,7 +49,7 @@ void main() {
       expect(cloudApp.deviceInfo.os.isNotEmpty, true);
       expect(cloudApp.deviceInfo.systemLocale.isNotEmpty, true);
 
-      const loginPrepareUrl = '$host$endpointAuthLoginPrepare';
+      const loginPrepareUrl = '$host$endpointPostLoginPrepare';
       final loginPrepareHeaders = header
         ..addAll(
             {moabAppIdKey: cloudApp.id, moabAppSecretKey: cloudApp.appSecret});

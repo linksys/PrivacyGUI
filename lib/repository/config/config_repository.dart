@@ -1,8 +1,7 @@
 
 import 'dart:convert';
 
-import 'package:http/http.dart';
-import 'package:moab_poc/network/http/extension_requests.dart';
+import 'package:moab_poc/network/http/extension_requests/extension_requests.dart';
 import 'package:moab_poc/network/http/http_client.dart';
 import 'package:moab_poc/network/http/model/cloud_app.dart';
 import 'package:moab_poc/network/http/model/cloud_config.dart';
@@ -55,7 +54,7 @@ class MoabConfigRepository extends ConfigRepository {
       }
       try {
         final jsonArray = json.decode(body) as List<dynamic>;
-        return CloudConfig.fromJson(jsonArray[0]);
+        return CloudConfig.fromJson(jsonArray.first);
       } catch (e) {
         logger.e('fetchCloudConfig error', e);
         throw CloudException('JSON_ERROR', "Parsing cloud config error, $body");

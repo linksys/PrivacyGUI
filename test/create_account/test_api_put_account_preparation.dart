@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:moab_poc/network/http/extension_requests.dart';
+import 'package:moab_poc/network/http/extension_requests/extension_requests.dart';
 import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:test/test.dart';
 
