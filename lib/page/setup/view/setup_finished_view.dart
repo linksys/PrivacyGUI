@@ -96,7 +96,7 @@ Widget infoCard(
     BuildContext context, Widget image, String title, String content) {
   return Container(
     padding: const EdgeInsets.all(19),
-    color: MoabColor.setupFinishCardBackground,
+    color: MoabColor.cardBackground,
     child: Row(
       children: [
         image,
