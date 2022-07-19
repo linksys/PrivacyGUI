@@ -13,7 +13,10 @@ class PlugModemBackView extends StatelessWidget {
         header: const BasicHeader(
           title: 'Plug your modem back in',
         ),
-        content: const Center(), //TODO: Add the central picture
+        content: Image.asset(
+          'assets/images/plug_modem_back.png',
+          alignment: Alignment.topLeft,
+        ),
         footer: PrimaryButton(
           text: 'Next',
           onPress: () {

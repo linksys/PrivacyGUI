@@ -13,7 +13,10 @@ class UnplugModemView extends StatelessWidget {
         header: const BasicHeader(
           title: 'Unplug your modem and wait until the lights are off',
         ),
-        content: const Center(), //TODO: Add the central picture
+        content: Image.asset(
+          'assets/images/unplug_modem.png',
+          alignment: Alignment.topLeft,
+        ),
         footer: Column(
           children: [
             SimpleTextButton(

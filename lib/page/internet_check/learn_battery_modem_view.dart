@@ -8,16 +8,20 @@ class LearnBatteryModemView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
+    return BasePageView.withCloseButton(
+      context,
       child: BasicLayout(
         header: const BasicHeader(
           title: 'You may have a battery-powered modem that requires a different way to reset',
         ),
         content: Column(
           children: [
-            //TODO: Add the central picture
+            Image.asset(
+              'assets/images/battery_powered.png',
+              alignment: Alignment.centerLeft,
+            ),
             const SizedBox(
-              height: 16,
+              height: 28,
             ),
             SimpleTextButton(
               text: 'Learn more about restarting battery-powered modems',
@@ -26,8 +30,8 @@ class LearnBatteryModemView extends StatelessWidget {
               },
             ),
           ],
+          crossAxisAlignment: CrossAxisAlignment.start,
         ),
-        alignment: CrossAxisAlignment.start,
       ),
     );
   }

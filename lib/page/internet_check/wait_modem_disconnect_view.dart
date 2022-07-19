@@ -8,7 +8,7 @@ class WaitModemDisconnectView extends StatefulWidget {
   const WaitModemDisconnectView({Key? key}): super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _WaitModemDisconnectViewState();
+  State<WaitModemDisconnectView> createState() => _WaitModemDisconnectViewState();
 }
 
 class _WaitModemDisconnectViewState extends State<WaitModemDisconnectView> {

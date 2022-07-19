@@ -8,15 +8,16 @@ class NoInternetOptionsView extends StatefulWidget {
   const NoInternetOptionsView({Key? key}): super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _NoInternetOptionsViewState();
+  State<NoInternetOptionsView> createState() => _NoInternetOptionsViewState();
 }
 
 class _NoInternetOptionsViewState extends State<NoInternetOptionsView> {
-  bool isSecondFailure = true;
+  bool isSecondFailure = false;
 
   @override
   Widget build(BuildContext context) {
     return BasePageView(
+      scrollable: true,
       child: BasicLayout(
         header: const BasicHeader(
           title: 'No internet connection',
@@ -83,5 +84,4 @@ class _NoInternetOptionsViewState extends State<NoInternetOptionsView> {
       ),
     );
   }
-
 }
