@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:moab_poc/network/http/extension_requests/auth_requests.dart';
+import 'package:moab_poc/config/cloud_environment_manager.dart';
+import 'package:moab_poc/network/http/extension_requests/extension_requests.dart';
 import 'package:moab_poc/network/http/http_client.dart';
 import 'package:moab_poc/network/http/model/cloud_account_info.dart';
 import 'package:moab_poc/network/http/model/cloud_auth_clallenge_method.dart';
@@ -15,12 +16,14 @@ class CloudAuthRepository extends AuthRepository {
 
   final MoabHttpClient _httpClient;
 
+  @deprecated
   @override
   Future<void> addPhoneNumber(String phone) {
     // TODO: implement addPhoneNumber
     throw UnimplementedError();
   }
 
+  @deprecated
   @override
   Future<DummyModel> createAccount(String username) {
     // TODO: implement createAccount
@@ -33,24 +36,28 @@ class CloudAuthRepository extends AuthRepository {
     throw UnimplementedError();
   }
 
+  @deprecated
   @override
   Future<DummyModel> login(String username, String password) {
     // TODO: implement login
     throw UnimplementedError();
   }
 
+  @deprecated
   @override
   Future<void> loginChallenge(int method) {
     // TODO: implement loginChallenge
     throw UnimplementedError();
   }
 
+  @deprecated
   @override
   Future<DummyModel> passwordLessLogin(String username, String method) {
     // TODO: implement passwordLessLogin
     throw UnimplementedError();
   }
 
+  @deprecated
   @override
   Future<void> resendPasswordLessCode(String token, String method) {
     // TODO: implement resendPasswordLessCode
@@ -63,18 +70,21 @@ class CloudAuthRepository extends AuthRepository {
     throw UnimplementedError();
   }
 
+  @deprecated
   @override
   Future<DummyModel> testUsername(String username) {
     // TODO: implement testUsername
     throw UnimplementedError();
   }
 
+  @deprecated
   @override
   Future<DummyModel> validateChallenge(String code) {
     // TODO: implement validateChallenge
     throw UnimplementedError();
   }
 
+  @deprecated
   @override
   Future<DummyModel> validatePasswordLessCode(String token, String code) {
     // TODO: implement validatePasswordLessCode
@@ -82,20 +92,19 @@ class CloudAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<void> authChallenge(
-      String id, String secret, AuthChallengeMethod method) {
-    // TODO: implement authChallenge
-    throw UnimplementedError();
+  Future<void> authChallenge(AuthChallengeMethod method) {
+    return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
+        _httpClient.authChallenge(method,
+            id: cloudApp.id, secret: cloudApp.appSecret));
   }
 
   @override
   Future<void> authChallengeVerify(String token, String code) {
-    // TODO: implement authChallengeVerify
-    throw UnimplementedError();
+    return _httpClient.authChallengeVerify(token: token, code: code);
   }
 
   @override
-  Future<String> createAccountPreparation(String email) async {
+  Future<String> createAccountPreparation(String email) {
     return _httpClient
         .createAccountPreparation(email)
         .then((response) => json.decode(response.body)['token']);
@@ -104,38 +113,51 @@ class CloudAuthRepository extends AuthRepository {
   @override
   Future<void> createAccountPreparationUpdateMethod(
       String token, CommunicationMethod method) {
-    // TODO: implement createAccountPreparationUpdateMethod
-    throw UnimplementedError();
+    return _httpClient.createAccountVerifyPreparation(token, method);
   }
 
   @override
   Future<CloudAccountInfo> createVerifiedAccount(
-      String token, CreateAccountVerified verified) {
-    // TODO: implement createVerifiedAccount
-    throw UnimplementedError();
+      CreateAccountVerified verified) {
+    return _httpClient.createAccount(verified).then(
+        (response) => CloudAccountInfo.fromJson(json.decode(response.body)));
   }
 
   @override
-  Future<List<CommunicationMethod>> getMaskedCommunicationMethods(String username) {
-    // TODO: implement getMaskedCommunicationMethods
-    throw UnimplementedError();
+  Future<List<CommunicationMethod>> getMaskedCommunicationMethods(
+      String username) {
+    return _httpClient.getMaskedCommunicationMethods(username).then((response) {
+      return List.from((json.decode(response.body) as List)
+          .map((e) => CommunicationMethod.fromJson(e)));
+    });
   }
 
   @override
   Future<CloudLoginState> login2(String token, String? certToken) {
-    // TODO: implement login2
-    throw UnimplementedError();
+    return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
+        _httpClient
+            .login(token, certToken,
+                id: cloudApp.id, secret: cloudApp.appSecret)
+            .then((response) =>
+                CloudLoginState.fromJson(json.decode(response.body))));
   }
 
   @override
   Future<CloudLoginState> loginPassword(String token, String password) {
-    // TODO: implement loginPassword
-    throw UnimplementedError();
+    return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
+        _httpClient
+            .loginPassword(token, password,
+                id: cloudApp.id, secret: cloudApp.appSecret)
+            .then((response) =>
+                CloudLoginState.fromJson(json.decode(response.body))));
   }
 
   @override
   Future<CloudLoginState> loginPrepare(CommunicationMethod method) {
-    // TODO: implement loginPrepare
-    throw UnimplementedError();
+    return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
+        _httpClient
+            .loginPrepare(method, id: cloudApp.id, secret: cloudApp.appSecret)
+            .then((response) =>
+                CloudLoginState.fromJson(json.decode(response.body))));
   }
 }

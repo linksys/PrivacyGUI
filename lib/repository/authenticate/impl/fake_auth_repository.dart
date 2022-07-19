@@ -130,7 +130,7 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<void> authChallenge(String id, String secret, AuthChallengeMethod method) {
+  Future<void> authChallenge(AuthChallengeMethod method) {
     // TODO: implement authChallenge
     throw UnimplementedError();
   }
@@ -154,7 +154,7 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<CloudAccountInfo> createVerifiedAccount(String token, CreateAccountVerified verified) {
+  Future<CloudAccountInfo> createVerifiedAccount(CreateAccountVerified verified) {
     // TODO: implement createVerifiedAccount
     throw UnimplementedError();
   }

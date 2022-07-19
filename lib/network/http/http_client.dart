@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
-import 'package:moab_poc/config/cloud_config_manager.dart';
+import 'package:moab_poc/config/cloud_environment_manager.dart';
 import 'package:moab_poc/network/http/constant.dart';
 import 'package:moab_poc/util/logger.dart';
 
@@ -22,7 +22,7 @@ class MoabHttpClient extends http.BaseClient {
     HttpHeaders.acceptHeader: ContentType.json.value
   };
 
-  String getHost() => CloudConfigManager().currentConfig?.apiBase ?? '';
+  String getHost() => CloudEnvironmentManager().currentConfig?.apiBase ?? '';
   String combineUrl(String endpoint, {Map<String, String>? args}) {
     String url = '${getHost()}$endpoint';
     if (args != null) {

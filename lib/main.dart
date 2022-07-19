@@ -13,14 +13,12 @@ import 'package:moab_poc/bloc/connectivity/cubit.dart';
 import 'package:moab_poc/design/themes.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/network/http/http_client.dart';
-import 'package:moab_poc/page/components/customs/otp_flow/otp_cubit.dart';
-import 'package:moab_poc/repository/config/config_repository.dart';
+import 'package:moab_poc/repository/config/environment_repository.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/storage.dart';
 import 'bloc/setup/bloc.dart';
-import 'package:moab_poc/utils.dart';
 import 'firebase_options.dart';
 import 'repository/authenticate/impl/fake_auth_repository.dart';
 import 'repository/authenticate/impl/fake_local_auth_repository.dart';
@@ -62,7 +60,7 @@ Widget _app() {
     providers: [
       RepositoryProvider(create: (context) => FakeAuthRepository()),
       RepositoryProvider(create: (context) => FakeLocalAuthRepository()),
-      RepositoryProvider(create: (context) => MoabConfigRepository(MoabHttpClient()))
+      RepositoryProvider(create: (context) => MoabEnvironmentRepository(MoabHttpClient()))
     ],
     child: MultiBlocProvider(providers: [
       BlocProvider(

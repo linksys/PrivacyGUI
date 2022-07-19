@@ -6,7 +6,6 @@ import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/network/http/model/cloud_create_account_verified.dart';
 import '../constant.dart';
 import '../http_client.dart';
-import '../model/cloud_app.dart';
 
 extension MoabAuthRequests on MoabHttpClient {
   ///

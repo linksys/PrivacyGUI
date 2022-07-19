@@ -26,6 +26,14 @@ class CloudApp extends Equatable {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'appSecret': appSecret,
+      'deviceInfo': deviceInfo.toJson(),
+    };
+  }
+
   final String id;
   final String appSecret;
   final DeviceInfo deviceInfo;

@@ -71,11 +71,9 @@ abstract class AuthRepository {
   ///
   /// Initiate OTP Verify via EMAIL/SMS, OR resend code
   /// * Input: [AuthChallengeMethod]
-  /// * Input: App Id
-  /// * Input: App Secret
   /// * return: void
   /// * error: INVALID_PARAMETER
-  Future<void> authChallenge(String id, String secret, AuthChallengeMethod method);
+  Future<void> authChallenge(AuthChallengeMethod method);
   ///
   /// Verify OTP code received from EMAIL/SMS
   /// * Input: token
@@ -86,11 +84,10 @@ abstract class AuthRepository {
 
   ///
   /// Do create account actually
-  /// * Input: token
   /// * Input: [CreateAccountVerified]
   /// * return: [CloudAccountInfo]
   /// * error: ?????
-  Future<CloudAccountInfo> createVerifiedAccount(String token, CreateAccountVerified verified);
+  Future<CloudAccountInfo> createVerifiedAccount(CreateAccountVerified verified);
 
   ///
   /// * state = PASSWORD_REQUIRED

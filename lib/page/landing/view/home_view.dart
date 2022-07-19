@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:moab_poc/config/cloud_config_manager.dart';
+import 'package:moab_poc/config/cloud_environment_manager.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
@@ -110,8 +110,9 @@ class _HomeViewState extends State<HomeView> {
     setState(() {
       _isLoading = true;
     });
-    await CloudConfigManager().fetchCloudConfig();
-    await CloudConfigManager().fetchAllCloudConfigs();
+    // TODO what if there has no network???
+    await CloudEnvironmentManager().fetchCloudConfig();
+    await CloudEnvironmentManager().fetchAllCloudConfigs();
     setState(() {
       _isLoading = false;
     });

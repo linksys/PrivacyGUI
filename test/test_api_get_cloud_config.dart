@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:moab_poc/network/http/model/cloud_config.dart';
 import 'package:moab_poc/network/http/constant.dart';
 import 'package:moab_poc/network/http/http_client.dart';
-import 'package:moab_poc/repository/config/config_repository.dart';
+import 'package:moab_poc/repository/config/environment_repository.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -61,7 +61,7 @@ void main() {
 
   group('test get cloud env config via repository', () {
     test('get env config', () async {
-      ConfigRepository _repository = MoabConfigRepository(MoabHttpClient());
+      EnvironmentRepository _repository = MoabEnvironmentRepository(MoabHttpClient());
       final config = await _repository.fetchCloudConfig();
       expect(config.region.isNotEmpty, true);
       expect(config.env.isNotEmpty, true);
@@ -71,7 +71,7 @@ void main() {
       expect(config.transport.mqttBroker.isNotEmpty, true);
     });
     test('get all env configs', () async {
-      ConfigRepository _repository = MoabConfigRepository(MoabHttpClient());
+      EnvironmentRepository _repository = MoabEnvironmentRepository(MoabHttpClient());
       final configList = await _repository.fetchAllCloudConfig();
       configList.map((config) {
         expect(config.region.isNotEmpty, true);

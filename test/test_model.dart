@@ -193,8 +193,10 @@ void main() {
       expect(jsonObj['code'], 'USERNAME_ALREADY_EXISTS');
       expect(jsonObj['errorMessage'], 'Error');
       expect((jsonObj['parameters'] as List).length, 1);
-      expect((jsonObj['parameters'] as List<Map<String, dynamic>>)[0]['name'], 'username');
-      expect((jsonObj['parameters'] as List<Map<String, dynamic>>)[0]['value'], 'austin.chang@linksys.com');
+      expect((jsonObj['parameters'] as List<Map<String, dynamic>>)[0]['name'],
+          'username');
+      expect((jsonObj['parameters'] as List<Map<String, dynamic>>)[0]['value'],
+          'austin.chang@linksys.com');
 
       final convertBack = ErrorResponse.fromJson(jsonObj);
       expect(convertBack.code, 'USERNAME_ALREADY_EXISTS');
@@ -202,8 +204,6 @@ void main() {
       expect(convertBack.parameters?.length, 1);
       expect(convertBack.parameters?[0]['name'], 'username');
       expect(convertBack.parameters?[0]['value'], 'austin.chang@linksys.com');
-
-
     });
     test('test ErrorResponse #2', () async {
       const ErrorResponse method = ErrorResponse(
@@ -216,8 +216,10 @@ void main() {
       expect(jsonObj['code'], 'USERNAME_ALREADY_EXISTS');
       expect(jsonObj['errorMessage'], null);
       expect((jsonObj['parameters'] as List).length, 1);
-      expect((jsonObj['parameters'] as List<Map<String, dynamic>>)[0]['name'], 'username');
-      expect((jsonObj['parameters'] as List<Map<String, dynamic>>)[0]['value'], 'austin.chang@linksys.com');
+      expect((jsonObj['parameters'] as List<Map<String, dynamic>>)[0]['name'],
+          'username');
+      expect((jsonObj['parameters'] as List<Map<String, dynamic>>)[0]['value'],
+          'austin.chang@linksys.com');
 
       final convertBack = ErrorResponse.fromJson(jsonObj);
       expect(convertBack.code, 'USERNAME_ALREADY_EXISTS');
@@ -225,8 +227,6 @@ void main() {
       expect(convertBack.parameters?.length, 1);
       expect(convertBack.parameters?[0]['name'], 'username');
       expect(convertBack.parameters?[0]['value'], 'austin.chang@linksys.com');
-
-
     });
     test('test ErrorResponse #3', () async {
       const ErrorResponse method = ErrorResponse(
@@ -242,8 +242,6 @@ void main() {
       expect(convertBack.code, 'USERNAME_ALREADY_EXISTS');
       expect(convertBack.errorMessage, 'Error');
       expect(convertBack.parameters, null);
-
-
     });
   });
 }

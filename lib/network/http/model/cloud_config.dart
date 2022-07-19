@@ -4,13 +4,20 @@ enum CloudEnvironment { dev, qa, prod }
 
 CloudEnvironment cloudEnvTarget = CloudEnvironment.dev;
 
-class CloudTransportConfig extends Equatable{
+class CloudTransportConfig extends Equatable {
   const CloudTransportConfig(
       {required this.protocol, required this.mqttBroker});
 
   factory CloudTransportConfig.fromJson(Map<String, dynamic> json) {
     return CloudTransportConfig(
         protocol: json['protocol'], mqttBroker: json['mqttBroker']);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'protocol': protocol,
+      'mqttBroker': mqttBroker,
+    };
   }
 
   final String protocol;
@@ -20,7 +27,7 @@ class CloudTransportConfig extends Equatable{
   List<Object?> get props => [protocol, mqttBroker];
 }
 
-class CloudConfig extends Equatable{
+class CloudConfig extends Equatable {
   const CloudConfig({
     required this.region,
     required this.env,
@@ -38,6 +45,16 @@ class CloudConfig extends Equatable{
         transport: CloudTransportConfig.fromJson(json['transport']));
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'region': region,
+      'env': env,
+      'apiBase': apiBase,
+      'cloudConfigBaseUrl': cloudConfigBaseUrl,
+      'transport': transport.toJson(),
+    };
+  }
+
   final String region;
   final String env;
   final String apiBase;
@@ -45,5 +62,6 @@ class CloudConfig extends Equatable{
   final CloudTransportConfig transport;
 
   @override
-  List<Object?> get props => [region, env, apiBase, cloudConfigBaseUrl, transport];
+  List<Object?> get props =>
+      [region, env, apiBase, cloudConfigBaseUrl, transport];
 }

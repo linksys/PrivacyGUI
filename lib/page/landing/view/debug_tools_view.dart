@@ -4,8 +4,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moab_poc/config/cloud_environment_manager.dart';
 import 'package:moab_poc/network/http/model/cloud_config.dart';
-import 'package:moab_poc/config/cloud_config_manager.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/base_components/progress_bars/full_screen_spinner.dart';
@@ -303,7 +303,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                     });
                     final temp = cloudEnvTarget;
                     cloudEnvTarget = _selectedEnv;
-                    await CloudConfigManager()
+                    await CloudEnvironmentManager()
                         .fetchCloudConfig()
                         .then(
                             (value) => Navigator.of(context).pop(_selectedEnv))
