@@ -133,11 +133,10 @@ class CloudAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<CloudLoginState> login2(String token, String? certToken) {
+  Future<CloudLoginState> login2(String token) {
     return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
         _httpClient
-            .login(token, certToken,
-                id: cloudApp.id, secret: cloudApp.appSecret)
+            .login(token, id: cloudApp.id, secret: cloudApp.appSecret)
             .then((response) =>
                 CloudLoginState.fromJson(json.decode(response.body))));
   }
@@ -153,10 +152,10 @@ class CloudAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<CloudLoginState> loginPrepare(CommunicationMethod method) {
+  Future<CloudLoginState> loginPrepare(String username) {
     return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
         _httpClient
-            .loginPrepare(method, id: cloudApp.id, secret: cloudApp.appSecret)
+            .loginPrepare(username, id: cloudApp.id, secret: cloudApp.appSecret)
             .then((response) =>
                 CloudLoginState.fromJson(json.decode(response.body))));
   }

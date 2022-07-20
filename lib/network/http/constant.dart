@@ -43,6 +43,6 @@ const endpointPostAuthChallenges = '$version$authPath/challenges';
 const endpointPutAuthChallenges = '$version$authPath/challenges/verifications/$varVerifyToken';
 
 const endpointPostLoginPrepare = '$version$authPath/login/prepare';
-const endpointGetMaskedCommunicationMethods = '$version$accountPath/$varUsername/masked-communication-methods';
+const endpointGetMaskedCommunicationMethods = '$version$accountPath/masked-communication-methods?username=$varUsername';
 const endpointPostLoginPassword = '$version$authPath/login/password';
 const endpointPostLogin = '$version$authPath/login';

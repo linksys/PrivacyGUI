@@ -18,12 +18,19 @@ class CloudLoginState extends Equatable {
   factory CloudLoginState.fromJson(Map<String, dynamic> json) {
     return CloudLoginState(
       state: json['state'],
-      data: CloudLoginPrepareData.fromJson(json),
+      data: CloudLoginStateData.fromJson(json['data']),
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'state': state,
+      'data': data.toJson(),
+    };
+  }
+
   final String state;
-  final CloudLoginPrepareData data;
+  final CloudLoginStateData data;
 
   @override
   List<Object?> get props => [state, data];
@@ -33,17 +40,16 @@ class CloudLoginState extends Equatable {
 ///     "token": "string",
 ///     "authenticationMode": "PASSWORDLESS"
 ///   }
-class CloudLoginPrepareData extends Equatable {
-  const CloudLoginPrepareData({
+class CloudLoginStateData extends Equatable {
+  const CloudLoginStateData({
     required this.token,
     required this.authenticationMode,
   });
 
-  factory CloudLoginPrepareData.fromJson(Map<String, dynamic> json) {
-    return CloudLoginPrepareData(
+  factory CloudLoginStateData.fromJson(Map<String, dynamic> json) {
+    return CloudLoginStateData(
       token: json['token'],
       authenticationMode: json['authenticationMode'],
-
     );
   }
 
@@ -57,8 +63,6 @@ class CloudLoginPrepareData extends Equatable {
   final String token;
   final String authenticationMode;
 
-
   @override
-  List<Object?> get props =>
-      [token, authenticationMode];
+  List<Object?> get props => [token, authenticationMode];
 }

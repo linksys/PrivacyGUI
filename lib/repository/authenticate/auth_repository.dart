@@ -92,7 +92,7 @@ abstract class AuthRepository {
   ///
   /// * state = PASSWORD_REQUIRED
   /// * state = REQUIRE_2SV
-  Future<CloudLoginState> loginPrepare(CommunicationMethod method);
+  Future<CloudLoginState> loginPrepare(String username);
 
   ///
   Future<List<CommunicationMethod>> getMaskedCommunicationMethods(String username);
@@ -106,5 +106,5 @@ abstract class AuthRepository {
   /// TODO Please rename back to login after integrate the latest interface
   /// * state = ACCEPTED
   ///
-  Future<CloudLoginState> login2(String token, String? certToken);
+  Future<CloudLoginState> login2(String token);
 }

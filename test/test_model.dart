@@ -3,6 +3,7 @@ import 'package:moab_poc/network/http/model/cloud_account_info.dart';
 import 'package:moab_poc/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/network/http/model/cloud_create_account_verified.dart';
+import 'package:moab_poc/network/http/model/cloud_login_state.dart';
 import 'package:moab_poc/network/http/model/cloud_phone.dart';
 import 'package:moab_poc/network/http/model/cloud_preferences.dart';
 import 'package:test/test.dart';
@@ -179,6 +180,25 @@ void main() {
       expect(convertBack.authenticationMode, 'PASSWORD');
       expect(convertBack.createAt, '2022-07-13T09:37:01.665063052Z');
       expect(convertBack.updateAt, '2022-07-13T09:37:01.665063052Z');
+    });
+
+    test('test CloudLoginState', () async {
+      const CloudLoginState method = CloudLoginState(
+        state: 'PASSWORD_REQUIRED',
+        data: CloudLoginStateData(token: 'token-for-login-state', authenticationMode: 'PASSWORD')
+      );
+
+      final jsonObj = method.toJson();
+      expect(jsonObj['state'], 'PASSWORD_REQUIRED');
+      expect(jsonObj['data']['token'], 'token-for-login-state');
+      expect(jsonObj['data']['authenticationMode'], 'PASSWORD');
+
+
+      final convertBack = CloudLoginState.fromJson(jsonObj);
+      expect(convertBack.state, 'PASSWORD_REQUIRED');
+      expect(convertBack.data.token, 'token-for-login-state');
+      expect(convertBack.data.authenticationMode, 'PASSWORD');
+
     });
 
     test('test ErrorResponse #1', () async {

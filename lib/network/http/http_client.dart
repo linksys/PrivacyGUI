@@ -71,7 +71,10 @@ class MoabHttpClient extends http.BaseClient {
   Future<Response> post(Uri url,
       {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
     final response =
-        await super.post(url, headers: headers, body: body, encoding: encoding).then((response) => _handleResponse(response));
+        await super.post(url, headers: headers, body: body, encoding: encoding).then((response) {
+          logger.d('post');
+             return _handleResponse(response);
+        });
     _logResponse(response);
     return response;
   }

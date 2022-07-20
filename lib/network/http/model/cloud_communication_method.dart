@@ -17,9 +17,16 @@ import 'cloud_phone.dart';
 ///     }
 ///   ]
 /// }
+/// OR
+///   {
+///     "id": "00000000-0000-0000-0000-000000000001",
+///     "method": "EMAIL",
+///     "targetValue": "foo***@example.com"
+///   }
 ///
 class CommunicationMethod extends Equatable {
   const CommunicationMethod({
+    this.id,
     required this.method,
     required this.targetValue,
     this.phone,
@@ -27,6 +34,7 @@ class CommunicationMethod extends Equatable {
 
   factory CommunicationMethod.fromJson(Map<String, dynamic> json) {
     return CommunicationMethod(
+        id: json['id'],
         method: json['method'],
         targetValue: json['targetValue'],
         phone: json['phone'] == null ? null : CloudPhoneModel.fromJson(json['phone']));
@@ -37,16 +45,20 @@ class CommunicationMethod extends Equatable {
       'method': method,
       'targetValue': targetValue,
     };
+    if (id != null) {
+      json.addAll({'id': id});
+    }
     if (phone != null) {
       json.addAll({'phone': phone!.toJson()});
     }
     return json;
   }
 
+  final String? id;
   final String method;
   final String targetValue;
   final CloudPhoneModel? phone;
 
   @override
-  List<Object?> get props => [method, targetValue, phone];
+  List<Object?> get props => [id, method, targetValue, phone];
 }

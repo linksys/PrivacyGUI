@@ -166,7 +166,7 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<CloudLoginState> login2(String token, String? certToken) {
+  Future<CloudLoginState> login2(String token) {
     // TODO: implement login2
     throw UnimplementedError();
   }
@@ -178,7 +178,7 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<CloudLoginState> loginPrepare(CommunicationMethod method) {
+  Future<CloudLoginState> loginPrepare(String username) {
     // TODO: implement loginPrepare
     throw UnimplementedError();
   }
