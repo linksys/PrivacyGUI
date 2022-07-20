@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:moab_poc/design/themes.dart';
+import 'package:moab_poc/page/dashboard/view/dashboard_home_view.dart';
+import 'package:moab_poc/page/dashboard/view/dashboard_view.dart';
 import 'package:moab_poc/page/landing/view/view.dart';
+import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/logger.dart';
 
@@ -56,7 +59,9 @@ abstract class BasePath<P> {
   Widget buildPage(NavigationCubit cubit) {
     switch (P) {
       case HomePath:
-        return HomeView(args: args,);
+        // return HomeView(args: args,);
+        return DashboardView();
+
       case UnknownPath:
         return const Center(
           child: Text("Unknown Path"),

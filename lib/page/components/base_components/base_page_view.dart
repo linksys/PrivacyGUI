@@ -10,26 +10,29 @@ class BasePageView extends StatelessWidget {
   final EdgeInsets? padding;
   final bool? scrollable;
   final Widget? bottomSheet;
+  final Widget? bottomNavigationBar;
 
-  BasePageView.noNavigationBar(
-      {Key? key,
-      this.child,
-      this.padding = _containerPadding,
-      this.scrollable = false})
-      : appBar = AppBar(
+  BasePageView.noNavigationBar({
+    Key? key,
+    this.child,
+    this.padding = _containerPadding,
+    this.scrollable = false,
+  })  : appBar = AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: Colors.transparent,
           elevation: 0,
         ),
         bottomSheet = null,
+        bottomNavigationBar = null,
         super(key: key);
 
-  BasePageView.withCloseButton(BuildContext context,
-      {Key? key,
-      this.child,
-      this.padding = _containerPadding,
-      this.scrollable = false})
-      : appBar = AppBar(
+  BasePageView.withCloseButton(
+    BuildContext context, {
+    Key? key,
+    this.child,
+    this.padding = _containerPadding,
+    this.scrollable = false,
+  })  : appBar = AppBar(
           backgroundColor: Colors.transparent,
           iconTheme:
               IconThemeData(color: Theme.of(context).colorScheme.primary),
@@ -38,19 +41,21 @@ class BasePageView extends StatelessWidget {
           actions: [
             IconButton(
               icon: const Icon(Icons.close),
-              onPressed: () => Navigator.pop(context), // TODO use NavigationCubit
+              onPressed: () =>
+                  Navigator.pop(context), // TODO use NavigationCubit
             )
           ],
         ),
         bottomSheet = null,
+        bottomNavigationBar = null,
         super(key: key);
 
-  BasePageView.bottomSheetModal(
-      {Key? key,
-      required this.bottomSheet,
-      this.padding = _containerPadding,
-      this.scrollable = false})
-      : appBar = AppBar(
+  BasePageView.bottomSheetModal({
+    Key? key,
+    required this.bottomSheet,
+    this.padding = _containerPadding,
+    this.scrollable = false,
+  })  : appBar = AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -58,6 +63,7 @@ class BasePageView extends StatelessWidget {
         child = BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         ),
+        bottomNavigationBar = null,
         super(key: key);
 
   const BasePageView({
@@ -66,13 +72,16 @@ class BasePageView extends StatelessWidget {
     this.child,
     this.padding = _containerPadding,
     this.bottomSheet,
+    this.bottomNavigationBar,
     this.scrollable = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bottomSheet == null ? Theme.of(context).scaffoldBackgroundColor : Colors.transparent,
+      backgroundColor: bottomSheet == null
+          ? Theme.of(context).scaffoldBackgroundColor
+          : Colors.transparent,
       appBar: appBar ??
           AppBar(
             backgroundColor: Colors.transparent,
@@ -84,6 +93,7 @@ class BasePageView extends StatelessWidget {
         child: scrollable! ? _scrollableView() : _view(),
       ),
       bottomSheet: bottomSheet,
+      bottomNavigationBar: bottomNavigationBar,
     );
   }
 

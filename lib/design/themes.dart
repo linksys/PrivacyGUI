@@ -60,9 +60,9 @@ class MoabTheme {
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
   )));
 
-  ///////Auth
-  static final AuthModuleLightModeData = ThemeData.from(
-    colorScheme: _authModuleLightColorTheme,
+  ///////Dashboard
+  static final dashboardLightModeData = ThemeData.from(
+    colorScheme: _dashboardLightColorTheme,
     textTheme: _textTheme,
   ).copyWith(
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -70,14 +70,14 @@ class MoabTheme {
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
   )));
 
-  static final _authModuleLightColorTheme = const ColorScheme.light().copyWith(
+  static final _dashboardLightColorTheme = const ColorScheme.light().copyWith(
     brightness: Brightness.light,
     primary: MoabColor.white, //文字,輸入外框,主按鈕背景等主色調
     secondary: MoabColor.whiteAlpha10, //次按鈕背景色
     tertiary: MoabColor.whiteAlpha70, //透明文字
     primaryContainer: MoabColor.progressBarBlue,
     surface: MoabColor.placeholderGrey, //placeHolder文字
-    background: MoabColor.authBackground, //背景
+    background: MoabColor.dashboardBackground, //背景
     onPrimary: MoabColor.black, //主按鈕文字
     onSecondary: MoabColor.white, //次按鈕文字
     onTertiary: MoabColor.textButtonBlue, //TextBtn文字
