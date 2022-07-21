@@ -4,10 +4,10 @@ import 'package:moab_poc/route/route.dart';
 
 import 'base_path.dart';
 
-abstract class DashboardPath<P> extends BasePath<P> {
+abstract class DashboardPath extends BasePath {
   @override
   Widget buildPage(NavigationCubit cubit) {
-    switch (P) {
+    switch (runtimeType) {
       case DashboardMainPath:
         return const DashboardView();
       default:
@@ -16,4 +16,4 @@ abstract class DashboardPath<P> extends BasePath<P> {
   }
 }
 
-class DashboardMainPath extends DashboardPath<DashboardMainPath> {}
+class DashboardMainPath extends DashboardPath {}

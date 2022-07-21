@@ -8,11 +8,10 @@ import '../../page/create_account/view/view.dart';
 import 'base_path.dart';
 import 'dashboard_path.dart';
 
-abstract class AuthenticatePath<P> extends BasePath<P> {
-
+abstract class AuthenticatePath extends BasePath {
   @override
   Widget buildPage(NavigationCubit cubit) {
-    switch (P) {
+    switch (runtimeType) {
       case AuthInputAccountPath:
         return const LoginCloudAccountView();
       case AuthCloudLoginOtpPath:
@@ -40,9 +39,13 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
         if (args != null) {
           args!['onNext'] = DashboardMainPath();
         }
-        return OtpFlowView(args: args,);
+        return OtpFlowView(
+          args: args,
+        );
       case AuthLocalResetPasswordPath:
-        return CreateAdminPasswordView(args: args,);
+        return CreateAdminPasswordView(
+          args: args,
+        );
       default:
         return const Center();
     }
@@ -51,34 +54,34 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
 
 // Cloud Login
 
-class AuthResetLocalOtpPath extends AuthenticatePath<AuthResetLocalOtpPath> {}
+class AuthResetLocalOtpPath extends AuthenticatePath {}
 
-class AuthInputAccountPath extends AuthenticatePath<AuthInputAccountPath> {}
+class AuthInputAccountPath extends AuthenticatePath {}
 
-class AuthCloudLoginOtpPath extends AuthenticatePath<AuthCloudLoginOtpPath> {}
+class AuthCloudLoginOtpPath extends AuthenticatePath {}
 
-class NoRouterPath extends AuthenticatePath<NoRouterPath> {}
+class NoRouterPath extends AuthenticatePath {}
 
-class AuthForgotEmailPath extends AuthenticatePath<AuthForgotEmailPath> {
+class AuthForgotEmailPath extends AuthenticatePath {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
 
-class SelectPhoneRegionCodePath
-    extends AuthenticatePath<SelectPhoneRegionCodePath>
-    with ReturnablePath<PhoneRegion> {
+class SelectPhoneRegionCodePath extends AuthenticatePath with ReturnablePath {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
 
-class AuthCloudLoginWithPasswordPath extends AuthenticatePath<AuthCloudLoginWithPasswordPath> {}
+class AuthCloudLoginWithPasswordPath extends AuthenticatePath {}
 
-class AuthCloudForgotPasswordPath extends AuthenticatePath<AuthCloudForgotPasswordPath> {}
+class AuthCloudForgotPasswordPath extends AuthenticatePath {}
 
-class AuthCloudResetPasswordPath extends AuthenticatePath<AuthCloudResetPasswordPath> {}
+class AuthCloudResetPasswordPath extends AuthenticatePath {}
 
 // Local Login
 
-class AuthLocalLoginPath extends AuthenticatePath<AuthLocalLoginPath> {}
-class AuthLocalRecoveryKeyPath extends AuthenticatePath<AuthLocalRecoveryKeyPath> {}
-class AuthLocalResetPasswordPath extends AuthenticatePath<AuthLocalResetPasswordPath> {}
+class AuthLocalLoginPath extends AuthenticatePath {}
+
+class AuthLocalRecoveryKeyPath extends AuthenticatePath {}
+
+class AuthLocalResetPasswordPath extends AuthenticatePath {}

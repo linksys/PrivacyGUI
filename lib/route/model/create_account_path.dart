@@ -8,21 +8,29 @@ import '../../page/setup/view/save_settings_view.dart';
 import '../../page/setup/view/use_same_account_prompt_view.dart';
 import 'base_path.dart';
 
-abstract class CreateAccountPath<P> extends BasePath<P> {
+abstract class CreateAccountPath extends BasePath {
   @override
   Widget buildPage(NavigationCubit cubit) {
-    switch (P) {
+    switch (runtimeType) {
       case CreateCloudAccountPath:
-        return AddAccountView(args: args,);
+        return AddAccountView(
+          args: args,
+        );
       case CreateAdminPasswordPath:
-        return CreateAdminPasswordView(args: args,);
+        return CreateAdminPasswordView(
+          args: args,
+        );
       case ChooseLoginMethodPath:
-        return ChooseLoginTypeView(args: args,);
+        return ChooseLoginTypeView(
+          args: args,
+        );
       case CreateAccountOtpPath:
         if (args != null) {
           args!['onNext'] = SaveCloudSettingsPath();
         }
-        return OtpFlowView(args: args,);
+        return OtpFlowView(
+          args: args,
+        );
       case SaveCloudSettingsPath:
         return SaveSettingsView();
       case AlreadyHaveOldAccountPath:
@@ -32,50 +40,51 @@ abstract class CreateAccountPath<P> extends BasePath<P> {
       case EnableTwoSVPath:
         return const EnableTwoSVView();
       case CreateCloudPasswordPath:
-        return CreateAccountPasswordView(args: args,);
+        return CreateAccountPasswordView(
+          args: args,
+        );
       case SameAccountPromptPath:
         return UseSameAccountPromptView();
       case CreateAccount2SVPath:
         if (args != null) {
           args!['onNext'] = SaveCloudSettingsPath();
         }
-        return OtpFlowView(args: args,);
+        return OtpFlowView(
+          args: args,
+        );
       default:
         return const Center();
     }
   }
 }
 
-class CreateCloudAccountPath extends CreateAccountPath<CreateCloudAccountPath> {
-}
-class CreateAccount2SVPath
-    extends CreateAccountPath<CreateAccount2SVPath> {}
-class SameAccountPromptPath extends CreateAccountPath<SameAccountPromptPath> {
+class CreateCloudAccountPath extends CreateAccountPath {}
+
+class CreateAccount2SVPath extends CreateAccountPath {}
+
+class SameAccountPromptPath extends CreateAccountPath {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
-class CreateAdminPasswordPath
-    extends CreateAccountPath<CreateAdminPasswordPath> {}
+
+class CreateAdminPasswordPath extends CreateAccountPath {}
 
 // TODO: nobody use this
-class ChooseLoginMethodPath extends CreateAccountPath<ChooseLoginMethodPath> {}
+class ChooseLoginMethodPath extends CreateAccountPath {}
 
-class CreateAccountOtpPath extends CreateAccountPath<CreateAccountOtpPath> {}
+class CreateAccountOtpPath extends CreateAccountPath {}
 
-class CreateCloudPasswordPath
-    extends CreateAccountPath<CreateCloudPasswordPath> {}
+class CreateCloudPasswordPath extends CreateAccountPath {}
 
-class CreateCloudAccountSuccessPath
-    extends CreateAccountPath<CreateCloudAccountSuccessPath> {}
+class CreateCloudAccountSuccessPath extends CreateAccountPath {}
 
-class SaveCloudSettingsPath extends CreateAccountPath<SaveCloudSettingsPath> {}
+class SaveCloudSettingsPath extends CreateAccountPath {}
 
-class AlreadyHaveOldAccountPath
-    extends CreateAccountPath<AlreadyHaveOldAccountPath> {
+class AlreadyHaveOldAccountPath extends CreateAccountPath {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
 
-class NoUseCloudAccountPath extends CreateAccountPath<NoUseCloudAccountPath> {}
+class NoUseCloudAccountPath extends CreateAccountPath {}
 
-class EnableTwoSVPath extends CreateAccountPath<EnableTwoSVPath> {}
+class EnableTwoSVPath extends CreateAccountPath {}
