@@ -93,9 +93,9 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
           !currentConfiguration.pageConfig.ignoreAuthChanged,
       listener: (context, state) {
         logger.d("Auth Listener: $state}");
-        if (state.status != AuthStatus.authorized) {
+        if (state.status == AuthStatus.unAuthorized) {
           _cubit.clearAndPush(HomePath());
-        } else {
+        } else if (state.status == AuthStatus.authorized) {
           _cubit.clearAndPush(DashboardMainPath());
         }
       },
@@ -108,7 +108,8 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
           !currentConfiguration.pageConfig.ignoreConnectivityChanged,
       listener: (context, state) {
         logger.d("Connectivity Listener: ${state.type}, ${state.ssid}");
-        if (state.type == ConnectivityResult.none && currentConfiguration is! NoInternetConnectionPath) {
+        if (state.type == ConnectivityResult.none &&
+            currentConfiguration is! NoInternetConnectionPath) {
           _cubit.push(NoInternetConnectionPath());
         } else {
           if (currentConfiguration is NoInternetConnectionPath) {
