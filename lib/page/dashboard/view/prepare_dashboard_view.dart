@@ -47,7 +47,6 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
     // TODO: Need to be modified
     AuthState authState = context.read<AuthBloc>().state;
     if (authState.status == AuthStatus.onLogin) {
-      print('XXXX _continueLogin ${authState.vToken}');
       await context
           .read<AuthBloc>()
           .login(authState.vToken)
@@ -68,7 +67,7 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
   }
 
   _checkSelfNetworks() {
-    print('XXXX _checkSelfNetworks');
+    // TODO: Need to be modified
     NavigationCubit.of(context).clearAndPush(NoRouterPath());
     // NavigationCubit.of(context).clearAndPush(RouterPickerPath());
     // NavigationCubit.of(context).clearAndPush(DashboardMainPath());

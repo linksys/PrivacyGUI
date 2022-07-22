@@ -65,8 +65,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 extension AuthBlocCloud on AuthBloc {
   Future<AccountInfo> loginPrepare(String username) async {
     return await _repository
-        .loginPrepare(
-            CommunicationMethod(method: 'method', targetValue: username))
+        .loginPrepare(username)
         .then((value) => _handleLoginPrepare(username, value));
   }
 
@@ -77,11 +76,8 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<void> authChallenge(OtpInfo method, String token) async {
-    return await _repository.authChallenge(
-        'appId',
-        'sercert',
-        AuthChallengeMethod(
-            token: token, method: method.method.name, target: method.data));
+    return await _repository.authChallenge(AuthChallengeMethod(
+        token: token, method: method.method.name, target: method.data));
   }
 
   Future<void> authChallengeVerify(String token, String code) async {
@@ -97,7 +93,7 @@ extension AuthBlocCloud on AuthBloc {
   Future<void> login(String token) async {
     // TODO: Need to be modified
     try {
-      await _repository.login(token, null).then((value) => _handleLogin(value));
+      return await _repository.login(token).then((value) => _handleLogin(value));
     } catch (e) {
       print('error: $e');
     }
