@@ -5,29 +5,58 @@ import FirebaseCore
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
+    var deviceToken: String?
+    
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
       FirebaseApp.configure()
+      UNUserNotificationCenter.current().delegate = self
+      UIApplication.shared.registerForRemoteNotifications()
+      
       let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
       
       let connectWiFiChannel = FlutterMethodChannel(name: "com.linksys.native.channel.wifi.connect",
                                                     binaryMessenger: controller.binaryMessenger)
       connectWiFiChannel.setMethodCallHandler({
-        (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+        [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
         
           if call.method == "connectToWiFi" {
               guard let args = call.arguments as? [String : Any] else {return}
               let ssid = args["ssid"] as? String
               let password = args["password"] as? String
               if #available(iOS 11.0, *) {
-                  self.connectToWiFi(result: result, ssid: ssid!, password: password!)
+                  self?.connectToWiFi(result: result, ssid: ssid!, password: password!)
               } else {
                   // Fallback on earlier versions
               }
           }
       })
+      
+      let deviceTokenChannel = FlutterMethodChannel(name: "otp.view/device.token",
+                                                    binaryMessenger: controller.binaryMessenger)
+      deviceTokenChannel.setMethodCallHandler { [weak self] call, result in
+          guard call.method == "readDeviceToken" else {
+              result(FlutterMethodNotImplemented)
+              return
+          }
+          if let deviceToken = self?.deviceToken {
+              result(deviceToken)
+          } else {
+              result(FlutterError(code: "Failed", message: "Device token is nil", details: nil))
+          }
+      }
+      
+      let notificationAuthChannel = FlutterMethodChannel(name: "otp.view/notification.auth",
+                                                         binaryMessenger: controller.binaryMessenger)
+      notificationAuthChannel.setMethodCallHandler{ [weak self] call, result in
+          guard call.method == "requestNotificationAuthorization" else {
+              result(FlutterMethodNotImplemented)
+              return
+          }
+          self?.requestNotificationAuthorization(result: result)
+      }
       
       let universalLinkChannel = FlutterEventChannel(name: "otp.code.input.view/deeplink",
                                                      binaryMessenger: controller.binaryMessenger)
@@ -71,6 +100,37 @@ import FirebaseCore
         }
         
         return false
+    }
+    
+    override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        print("AppDelegate: Register APNs succeeded")
+        let tokenComponents = deviceToken.map{ data in String(format: "%02.2hhx", data)}
+        self.deviceToken = tokenComponents.joined()
+    }
+    
+    override func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        print("AppDelegate: Register APNs failed: \(error.localizedDescription)")
+    }
+    
+    override func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        print("AppDelegate: willPresent notification: userInfo=\(notification.request.content.userInfo)")
+        completionHandler(UNNotificationPresentationOptions.banner)
+    }
+    
+    override func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        let userInfo = response.notification.request.content.userInfo
+        print("AppDelegate: didReceive response: userInfo=\(userInfo)")
+        completionHandler()
+    }
+    
+    private func requestNotificationAuthorization(result: @escaping FlutterResult) {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { grant, error in
+            if let _ = error {
+                result(FlutterError(code: "Failed", message: error.debugDescription, details: nil))
+            } else {
+                result(grant)
+            }
+        }
     }
 }
 
