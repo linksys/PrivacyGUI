@@ -12,25 +12,28 @@ import 'package:equatable/equatable.dart';
 class CloudLoginState extends Equatable {
   const CloudLoginState({
     required this.state,
-    required this.data,
+    this.data,
   });
 
   factory CloudLoginState.fromJson(Map<String, dynamic> json) {
     return CloudLoginState(
       state: json['state'],
-      data: CloudLoginStateData.fromJson(json['data']),
+      data: json['data'] == null ? null : CloudLoginStateData.fromJson(json['data']),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    final Map<String, dynamic> result = {
       'state': state,
-      'data': data.toJson(),
     };
+    if (data != null) {
+      result.addAll({'data': data!.toJson()});
+    }
+    return result;
   }
 
   final String state;
-  final CloudLoginStateData data;
+  final CloudLoginStateData? data;
 
   @override
   List<Object?> get props => [state, data];

@@ -77,7 +77,7 @@ extension AuthBlocCloud on AuthBloc {
 
   Future<void> authChallenge(OtpInfo method, String token) async {
     return await _repository.authChallenge(AuthChallengeMethod(
-        token: token, method: method.method.name, target: method.data));
+        token: token, method: method.method.name.toUpperCase(), target: method.data));
   }
 
   Future<void> authChallengeVerify(String token, String code) async {
@@ -109,7 +109,7 @@ extension AuthBlocCloud on AuthBloc {
     AccountInfo accountInfo =
         state.accountInfo.copyWith(username: username, loginType: loginType);
     emit(state.copyWith(
-        accountInfo: accountInfo, vToken: cloudLoginState.data.token));
+        accountInfo: accountInfo, vToken: cloudLoginState.data?.token));
     return accountInfo;
   }
 

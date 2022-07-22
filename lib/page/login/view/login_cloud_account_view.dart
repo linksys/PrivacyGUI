@@ -103,8 +103,7 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
                               .read<AuthBloc>()
                               .loginPrepare(_accountController.text)
                               .then((value) => _handleResult(value))
-                              .onError((error, stackTrace) =>
-                                  _handleError(error as CloudException));
+                              .onError((error, stackTrace) {logger.d('Error occur: $error');});
                           setState(() {
                             _isLoading = false;
                           });

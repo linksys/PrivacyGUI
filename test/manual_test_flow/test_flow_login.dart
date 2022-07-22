@@ -44,7 +44,7 @@ void main() {
       final response =
           await client.loginPrepare(username, id: id, secret: secret);
       final loginState = CloudLoginState.fromJson(json.decode(response.body));
-      token = loginState.data.token;
+      token = loginState.data!.token;
     });
 
     test('STEP 2 - login password', () async {

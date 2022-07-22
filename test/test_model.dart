@@ -199,8 +199,23 @@ void main() {
 
       final convertBack = CloudLoginState.fromJson(jsonObj);
       expect(convertBack.state, 'PASSWORD_REQUIRED');
-      expect(convertBack.data.token, 'token-for-login-state');
-      expect(convertBack.data.authenticationMode, 'PASSWORD');
+      expect(convertBack.data?.token, 'token-for-login-state');
+      expect(convertBack.data?.authenticationMode, 'PASSWORD');
+
+    });
+
+    test('test CloudLoginState state only', () async {
+      const CloudLoginState method = CloudLoginState(
+          state: 'PASSWORD_REQUIRED',
+      );
+
+      final jsonObj = method.toJson();
+      expect(jsonObj['state'], 'PASSWORD_REQUIRED');
+
+
+
+      final convertBack = CloudLoginState.fromJson(jsonObj);
+      expect(convertBack.state, 'PASSWORD_REQUIRED');
 
     });
 

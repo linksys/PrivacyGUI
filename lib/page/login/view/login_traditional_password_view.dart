@@ -86,8 +86,9 @@ class _LoginTraditionalPasswordViewState
                           .read<AuthBloc>()
                           .loginPassword(state.vToken, passwordController.text)
                           .then((value) => _handleResult(value))
-                          .onError((error, stackTrace) =>
-                              _handleError(error as CloudException));
+                          .onError((error, stackTrace) {
+                            logger.d('Error: $error');
+                      });
                       setState(() {
                         _isLoading = false;
                       });

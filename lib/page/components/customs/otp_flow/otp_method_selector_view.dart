@@ -133,6 +133,7 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
         .read<AuthBloc>()
         .authChallenge(method, token)
         .then((_) => context.read<OtpCubit>().onInputOtp());
+
     _setLoading(false);
   }
 

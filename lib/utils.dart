@@ -86,7 +86,7 @@ class Utils
     final os = Platform.operatingSystem;
     final infoMap = await _deviceInfoMap(deviceInfo);
     infoMap['os'] = os;
-    infoMap['systemLocale'] = Intl.systemLocale;
+    infoMap['systemLocale'] = Intl.systemLocale.replaceFirst('_', '-');
     return DeviceInfo.fromJson(infoMap);
   }
 

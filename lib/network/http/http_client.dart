@@ -42,7 +42,7 @@ class MoabHttpClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) {
     _logRequest(request);
     // TODO set client id, client secret, etc...
-    return _inner.send(request).timeout(const Duration(seconds: 3));
+    return _inner.send(request).timeout(const Duration(seconds: 10));
   }
 
   @override
