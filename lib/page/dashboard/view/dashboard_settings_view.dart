@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
-import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -107,9 +105,10 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
       children: [
         Text(title, style: Theme.of(context).textTheme.headline4,),
         const SizedBox(height: 4,),
-        ...items.map((e) => GestureDetector(
+        ...items.map((e) => InkWell(
           onTap: () => onItemClick(items.indexOf(e)),
-          child: Padding(
+          child: Container(
+            width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Text(e, style: Theme.of(context).textTheme.button,),
           ),
