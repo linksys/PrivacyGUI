@@ -3,6 +3,8 @@ import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/model/internet_check_path.dart';
+import 'package:moab_poc/route/navigation_cubit.dart';
 
 class EnterIspSettingsView extends StatefulWidget {
   const EnterIspSettingsView({Key? key}): super(key: key);
@@ -16,6 +18,16 @@ class _EnterIspSettingsViewState extends State<EnterIspSettingsView> {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController vLandIdController = TextEditingController();
   bool hasError = false;
+
+  void _checkCredentials() {
+    if (accountController.text.isEmpty || passwordController.text.isEmpty) {
+      setState(() {
+        hasError = true;
+      });
+    } else {
+      NavigationCubit.of(context).push(InternetConnectedPath());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,9 +86,7 @@ class _EnterIspSettingsViewState extends State<EnterIspSettingsView> {
         ),
         footer: PrimaryButton(
           text: getAppLocalizations(context).next,
-          onPress: () {
-            //TODO: Go to next page
-          },
+          onPress: _checkCredentials,
         ),
         alignment: CrossAxisAlignment.start,
       ),

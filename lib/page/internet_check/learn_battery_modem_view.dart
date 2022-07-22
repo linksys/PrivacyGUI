@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/util/in_app_browser.dart';
 
 class LearnBatteryModemView extends StatelessWidget {
   const LearnBatteryModemView({Key? key}): super(key: key);
@@ -26,7 +28,11 @@ class LearnBatteryModemView extends StatelessWidget {
             SimpleTextButton(
               text: 'Learn more about restarting battery-powered modems',
               onPressed: () {
-                //TODO: Go to next page
+                MoabInAppBrowser.withDefaultOption().openUrlRequest(
+                    urlRequest: URLRequest(
+                        url: Uri.parse('https://www.linksys.com/us/support-article?articleNum=302834')
+                    )
+                );
               },
             ),
           ],

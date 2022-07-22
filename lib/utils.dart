@@ -31,6 +31,13 @@ class Utils
     return tokens.join(' ');
   }
 
+  static String formatTimeMSS(int timeInSecond) {
+    final Duration timeAmount = Duration(seconds: timeInSecond);
+    final String m = timeAmount.inMinutes.remainder(60).toString();
+    final String s = timeAmount.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
   static String formatBytes(int bytes, {int decimals = 0}) {
     if (bytes <= 0) return "0 B";
     const suffixes = ["B", "Kb", "Mb", "Gb", "Tb", "Pb"];

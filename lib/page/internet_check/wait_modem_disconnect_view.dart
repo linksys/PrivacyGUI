@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/model/internet_check_path.dart';
+import 'package:moab_poc/route/navigation_cubit.dart';
+import 'package:moab_poc/utils.dart';
 
 class WaitModemDisconnectView extends StatefulWidget {
   const WaitModemDisconnectView({Key? key}): super(key: key);
@@ -15,14 +18,12 @@ class _WaitModemDisconnectViewState extends State<WaitModemDisconnectView> {
   String timeText = '';
 
   void _startTimer() {
-    int remainingTime = 12;
+    int remainingTime = 120;
     Timer.periodic(const Duration(seconds: 1), (timer) {
       if (remainingTime > 0) {
         setState(() {
           remainingTime--;
-          Duration time = Duration(seconds: remainingTime);
-          timeText =
-              '${time.inMinutes.remainder(60).toString()}:${time.inSeconds.remainder(60).toString().padLeft(2, '0')}';
+          timeText = Utils.formatTimeMSS(remainingTime);
         });
       } else {
         timer.cancel();
@@ -33,6 +34,7 @@ class _WaitModemDisconnectViewState extends State<WaitModemDisconnectView> {
 
   void goToNext() {
     //TODO: Go to next page
+    NavigationCubit.of(context).push(PlugModemBackPath());
   }
 
   @override

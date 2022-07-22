@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/model/internet_check_path.dart';
+import 'package:moab_poc/route/navigation_cubit.dart';
 
 class UnplugModemView extends StatelessWidget {
   const UnplugModemView({Key? key}): super(key: key);
@@ -22,7 +24,7 @@ class UnplugModemView extends StatelessWidget {
             SimpleTextButton(
               text: 'My modem lights are on after unplugging',
               onPressed: () {
-                //TODO: Go to next page
+                NavigationCubit.of(context).push(LearnBatteryModemPath());
               },
             ),
             const SizedBox(
@@ -31,7 +33,7 @@ class UnplugModemView extends StatelessWidget {
             PrimaryButton(
               text: 'Next',
               onPress: () {
-                //TODO: Go to next page
+                NavigationCubit.of(context).push(WaitModemDisconnectPath());
               },
             ),
           ],

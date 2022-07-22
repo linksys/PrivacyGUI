@@ -6,6 +6,7 @@ import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/customs/qr_view.dart';
+import 'package:moab_poc/route/model/internet_check_path.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/permission.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -75,7 +76,7 @@ class _ParentScanQRCodeViewState extends State<ParentScanQRCodeView>
                   NavigationCubit.of(context).push(
                       AndroidLocationPermissionPrimerPath());
                 } else if (Platform.isIOS) {
-                  NavigationCubit.of(context).push(InternetCheckingPath());
+                  NavigationCubit.of(context).push(CheckNodeInternetPath());
                 }
               },
             ),
@@ -92,7 +93,7 @@ class _ParentScanQRCodeViewState extends State<ParentScanQRCodeView>
       NavigationCubit.of(context).push(
           AndroidLocationPermissionPrimerPath());
     } else if (Platform.isIOS) {
-      NavigationCubit.of(context).push(InternetCheckingPath());
+      NavigationCubit.of(context).push(CheckNodeInternetPath());
     }
   }
 }

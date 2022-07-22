@@ -107,29 +107,6 @@ class SetupParentLocationPermissionDeniedPath extends SetupParentPath {}
 
 class AndroidLocationPermissionPrimerPath extends SetupParentPath {}
 
-// Internet Check Flow
-abstract class InternetCheckPath<P> extends SetupPath {
-  @override
-  Widget buildPage(NavigationCubit cubit) {
-    switch (P) {
-      case InternetCheckingPath:
-        return const CheckNodeInternetView();
-
-      default:
-        return const Center();
-    }
-  }
-}
-
-class InternetCheckingPath extends InternetCheckPath<InternetCheckingPath> {
-  @override
-  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
-
-  @override
-  PageConfig get pageConfig =>
-      super.pageConfig..navType = PageNavigationType.none;
-}
-
 abstract class SetupChildPath extends SetupPath {
   @override
   Widget buildPage(NavigationCubit cubit) {

@@ -26,7 +26,7 @@ class PermissionsPrimerView extends StatefulWidget {
 
 class _PermissionsPrimerViewState extends State<PermissionsPrimerView> {
   // Replace this to svg if the svg image is fixed
-  final Widget checkIcon = Image.asset('assets/images/icon_check.png');
+  final Widget checkIcon = Image.asset('assets/images/permission_check.png');
   final Widget imgContent = Image.asset('assets/images/permission_dialog.png');
 
   bool isUnderAndroidTen = false;

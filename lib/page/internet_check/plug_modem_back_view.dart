@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/model/internet_check_path.dart';
+import 'package:moab_poc/route/navigation_cubit.dart';
 
 class PlugModemBackView extends StatelessWidget {
   const PlugModemBackView({Key? key}): super(key: key);
@@ -20,7 +22,7 @@ class PlugModemBackView extends StatelessWidget {
         footer: PrimaryButton(
           text: 'Next',
           onPress: () {
-            //TODO: Go to next page
+            NavigationCubit.of(context).push(CheckNodeInternetPath());
           },
         ),
         alignment: CrossAxisAlignment.start,
