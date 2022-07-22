@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
@@ -30,8 +33,29 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
   final _emailValidator = EmailValidator();
   final TextEditingController _accountController = TextEditingController();
 
+  //TODO: Move to another place
+  static const notificationAuthChannel = MethodChannel('otp.view/notification.auth');
+  static const deviceTokenChannel = MethodChannel('otp.view/device.token');
+
+  Future<void> _readDeviceToken() async {
+    if (Platform.isIOS) {
+      final deviceToken = await deviceTokenChannel.invokeMethod('readDeviceToken');
+      print('Receive device token=$deviceToken');
+    }
+  }
+
+  Future<void> _getNotificationAuth() async {
+    if (Platform.isIOS) {
+      final isGrant = await notificationAuthChannel.invokeMethod('requestNotificationAuthorization');
+      print('Receive Notification authorization result: isGrant=$isGrant');
+    }
+  }
+
   @override
   void initState() {
+    //TODO: Move to another place
+    _readDeviceToken();
+    _getNotificationAuth();
     super.initState();
   }
 
