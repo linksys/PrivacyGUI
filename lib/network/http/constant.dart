@@ -3,12 +3,14 @@ import 'package:moab_poc/network/http/model/cloud_config.dart';
 // Moab Share Preferences keys
 const moabPrefAppKey = 'MoabApp';
 const moabPrefConfigKey = 'MoabConfigKey';
+const moabPrefCloudCertDataKey = 'MoabCloudCertData';
 
 // Moab header keys
 const moabSiteIdKey = 'X-Linksys-Moab-Site-Id';
 const moabAppIdKey = 'X-Linksys-Moab-App-Id';
 const moabAppSecretKey = 'X-Linksys-Moab-App-Secret';
 const moabClientIdKey = ''; // TODO TBD
+const moabTaskSecretKey = 'X-Linksys-Moab-Task-Secret';
 
 // Moab header values
 const moabRetailSiteId = 'b6b70875-9ec4-45eb-9792-2545ccc2bc5d';
@@ -27,11 +29,14 @@ String get allCloudConfigUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$all
 const version = '/v1';
 const accountPath = '/accounts';
 const authPath = '/auth';
+const tasksPath = '/tasks';
 
 // Cloud endpoints variables
 const varAccountId = '{accountId}';
 const varVerifyToken = '{verifyToken}';
 const varUsername = '{username}';
+const varTaskId = '{taskId}';
+const varToken = '{token}';
 
 // Cloud endpoints
 const endpointCreateApps = '$version/apps';
@@ -46,3 +51,6 @@ const endpointPostLoginPrepare = '$version$authPath/login/prepare';
 const endpointGetMaskedCommunicationMethods = '$version$accountPath/masked-communication-methods?username=$varUsername';
 const endpointPostLoginPassword = '$version$authPath/login/password';
 const endpointPostLogin = '$version$authPath/login';
+const endpointGetTasks = '$version$tasksPath/$varTaskId?token=$varToken';
+
+const endpointGetAccountSelf = '$version$accountPath/self';

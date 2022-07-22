@@ -3,6 +3,7 @@ import 'package:moab_poc/network/http/model/cloud_account_info.dart';
 import 'package:moab_poc/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/network/http/model/cloud_create_account_verified.dart';
+import 'package:moab_poc/network/http/model/cloud_login_certs.dart';
 import 'package:moab_poc/network/http/model/cloud_login_state.dart';
 
 import '../model/dummy_model.dart';
@@ -107,4 +108,9 @@ abstract class AuthRepository {
   /// * state = ACCEPTED
   ///
   Future<CloudLoginState> login2(String token);
+
+  ///
+  ///
+  ///
+  Future<void> downloadCloudCert(String taskId, {required token, required secret});
 }

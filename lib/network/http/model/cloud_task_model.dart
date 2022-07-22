@@ -20,7 +20,7 @@ class CloudLoginAcceptState extends Equatable {
   factory CloudLoginAcceptState.fromJson(Map<String, dynamic> json) {
     return CloudLoginAcceptState(
       state: json['state'],
-      data: CloudLoginAcceptDataV1.fromJson(json['data']),
+      data: CloudLoginAcceptData.fromJson(json['data']),
     );
   }
 
@@ -32,45 +32,10 @@ class CloudLoginAcceptState extends Equatable {
   }
 
   final String state;
-  final CloudLoginAcceptDataV1 data;
+  final CloudLoginAcceptData data;
 
   @override
   List<Object?> get props => [state, data];
-}
-
-///   {
-///     "downloadUrl": "string",
-///     "certSecret": "string",
-///     "downloadTime": "string"
-///   }
-class CloudLoginAcceptDataV1 extends Equatable {
-  const CloudLoginAcceptDataV1(
-      {required this.downloadUrl,
-      required this.certSecret,
-      required this.downloadTime});
-
-  factory CloudLoginAcceptDataV1.fromJson(Map<String, dynamic> json) {
-    return CloudLoginAcceptDataV1(
-      downloadUrl: json['downloadUrl'],
-      certSecret: json['certSecret'],
-      downloadTime: json['downloadTime'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'downloadUrl': downloadUrl,
-      'certSecret': certSecret,
-      'downloadTime': downloadTime,
-    };
-  }
-
-  final String downloadUrl;
-  final String certSecret;
-  final String downloadTime;
-
-  @override
-  List<Object?> get props => [downloadUrl, certSecret, downloadTime];
 }
 
 ///   {
@@ -78,15 +43,17 @@ class CloudLoginAcceptDataV1 extends Equatable {
 ///     "certSecret": "string",
 ///     "downloadTime": "string"
 ///   }
-class CloudLoginAcceptDataV2 extends Equatable {
-  const CloudLoginAcceptDataV2(
+class CloudLoginAcceptData extends Equatable {
+  const CloudLoginAcceptData(
       {required this.taskId,
+      required this.certToken,
       required this.certSecret,
       required this.downloadTime});
 
-  factory CloudLoginAcceptDataV2.fromJson(Map<String, dynamic> json) {
-    return CloudLoginAcceptDataV2(
+  factory CloudLoginAcceptData.fromJson(Map<String, dynamic> json) {
+    return CloudLoginAcceptData(
       taskId: json['taskId'],
+      certToken: json['certToken'],
       certSecret: json['certSecret'],
       downloadTime: json['downloadTime'],
     );
@@ -95,14 +62,16 @@ class CloudLoginAcceptDataV2 extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'taskId': taskId,
+      'certToken': certToken,
       'certSecret': certSecret,
       'downloadTime': downloadTime,
     };
   }
 
   final String taskId;
+  final String certToken;
   final String certSecret;
-  final String downloadTime;
+  final int downloadTime;
 
   @override
   List<Object?> get props => [taskId, certSecret, downloadTime];

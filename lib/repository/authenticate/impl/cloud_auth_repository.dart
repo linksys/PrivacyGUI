@@ -1,15 +1,19 @@
 import 'dart:convert';
 
 import 'package:moab_poc/config/cloud_environment_manager.dart';
+import 'package:moab_poc/network/http/constant.dart';
 import 'package:moab_poc/network/http/extension_requests/extension_requests.dart';
 import 'package:moab_poc/network/http/http_client.dart';
 import 'package:moab_poc/network/http/model/cloud_account_info.dart';
 import 'package:moab_poc/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/network/http/model/cloud_create_account_verified.dart';
+import 'package:moab_poc/network/http/model/cloud_login_certs.dart';
 import 'package:moab_poc/network/http/model/cloud_login_state.dart';
 import 'package:moab_poc/repository/authenticate/auth_repository.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
+import 'package:moab_poc/util/storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CloudAuthRepository extends AuthRepository {
   CloudAuthRepository(MoabHttpClient httpClient) : _httpClient = httpClient;
@@ -158,5 +162,22 @@ class CloudAuthRepository extends AuthRepository {
             .loginPrepare(username, id: cloudApp.id, secret: cloudApp.appSecret)
             .then((response) =>
                 CloudLoginState.fromJson(json.decode(response.body))));
+  }
+
+  @override
+  Future<void> downloadCloudCert(String taskId,
+      {required token, required secret}) {
+    return _httpClient
+        .downloadCloudCerts(taskId, token: token, secret: secret)
+        .then((response) {
+      final task = CloudDownloadCertTask.fromJson(json.decode(response.body));
+      SharedPreferences.getInstance().then((pref) {
+        pref.setString(moabPrefCloudCertDataKey, jsonEncode(task.data.toJson()));
+      });
+      Future.wait([
+        Storage.saveFile(Storage.appPublicKeyUri, task.data.publicKey),
+        Storage.saveFile(Storage.appPrivateKeyUri, task.data.privateKey),
+      ]);
+    });
   }
 }

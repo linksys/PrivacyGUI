@@ -1,20 +1,25 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:moab_poc/config/cloud_environment_manager.dart';
 import 'package:moab_poc/network/http/constant.dart';
 import 'package:moab_poc/util/logger.dart';
-
+import 'package:http/io_client.dart';
 import 'model/base_response.dart';
 
 
 class MoabHttpClient extends http.BaseClient {
 
-  MoabHttpClient({http.Client? client}): _inner = client ??http.Client();
+  MoabHttpClient({IOClient? client}): _inner = client ?? IOClient();
 
-  final http.Client _inner;
+  factory MoabHttpClient.withCert(SecurityContext context) {
+    return MoabHttpClient(client: IOClient(HttpClient(context: context)));
+  }
+
+  final IOClient _inner;
 
   final Map<String, String> defaultHeader = {
     moabSiteIdKey: moabRetailSiteId,
@@ -113,15 +118,18 @@ class MoabHttpClient extends http.BaseClient {
     }
   }
 
+  setSecurityContext(SecurityContext context) {
+  }
+
   ///
   /// Handling Cloud Error Response
   /// 400 -
   /// 500 -
   ///
   Response _handleResponse(Response response) {
-    logger.i('Cloud Error: ${response.statusCode}, ${response.body}');
     // TODO Revisit - needs to considering about 500 internal server error, 502/503 bad requests
     if (response.statusCode >= 400) {
+      logger.i('Cloud Error: ${response.statusCode}, ${response.body}');
       throw ErrorResponse.fromJson(json.decode(response.body));
     }
     return response;

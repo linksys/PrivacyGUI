@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moab_poc/config/cloud_environment_manager.dart';
+import 'package:moab_poc/network/http/extension_requests/accounts_requests.dart';
+import 'package:moab_poc/network/http/http_client.dart';
 import 'package:moab_poc/network/http/model/cloud_config.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
@@ -191,6 +194,32 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           height: 16,
         ),
         _buildEnvPickerTile(),
+        const SizedBox(
+          height: 16,
+        ),
+        Text(
+          'Test API:',
+          style: Theme.of(context)
+              .textTheme
+              .headline2
+              ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        ),
+        SecondaryButton(
+          text: 'Test Get Profile',
+          onPress: () async {
+            SecurityContext securityContext = SecurityContext(withTrustedRoots: true);
+            final publicKey = (await rootBundle.load('assets/keys/testCert.pem'))
+                .buffer
+                .asInt8List();
+            final privateKey = (await rootBundle.load('assets/keys/testKey.key'))
+                .buffer
+                .asInt8List();
+            securityContext.useCertificateChainBytes(publicKey);
+            securityContext.usePrivateKeyBytes(privateKey);
+            final client = MoabHttpClient.withCert(securityContext);
+            await client.getAccountSelf();
+          },
+        ),
       ],
     );
   }

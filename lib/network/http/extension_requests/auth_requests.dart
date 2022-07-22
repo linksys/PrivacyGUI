@@ -123,4 +123,13 @@ extension MoabAuthRequests on MoabHttpClient {
     return this
         .post(Uri.parse(url), headers: header, body: jsonEncode(bodyPayload));
   }
+
+  Future<Response> downloadCloudCerts(String taskId,
+      {required String token, required String secret}) {
+    final url = combineUrl(endpointGetTasks, args: {varTaskId: taskId, varToken: token});
+    final header = defaultHeader
+      ..addAll({moabTaskSecretKey: secret});
+
+    return this.get(Uri.parse(url), headers: header);
+  }
 }
