@@ -175,5 +175,10 @@
   "error_enter_a_valid_email_format": "Enter a valid email format",
   "error_email_address_not_fount": "Email address not found",
   "error_reset_password_link_expired": "Un oh, your reset password link expired",
-  "error_reset_password_use_old_password": "You cannot use an old password."
+  "error_reset_password_use_old_password": "You cannot use an old password.",
+  "nodes_doesnt_find_view_title": "We didn't find any nodes",
+  "nodes_doesnt_find_view_description_1": "1. Make sure the node has power and the light is {on}.",
+  "nodes_doesnt_find_view_description_2": "2. You may be out of range. Try getting closer to the router or an already configured add-on node(white light).\n\nUnconfigured nodes will be blinking blue.",
+  "scan_again_button": "Scan again"
+
 }

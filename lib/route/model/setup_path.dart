@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
+import 'package:moab_poc/page/setup/view/nodes_doesnt_find_view.dart';
 import 'package:moab_poc/page/setup/view/view.dart';
+import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/route.dart';
 
 import 'base_path.dart';
@@ -150,6 +152,8 @@ abstract class SetupChildPath<P> extends SetupPath<P> {
         return PlaceNodeView(
           isAddOnNodes: true,
         );
+      case NodesDoesntFindPath:
+        return const NodesDoesntFindView();
       default:
         return const Center();
     }
@@ -176,3 +180,5 @@ class SetupNthChildLocationPath
     extends SetupChildPath<SetupNthChildLocationPath> {}
 
 class SetupNthChildPlacePath extends SetupChildPath<SetupNthChildPlacePath> {}
+
+class NodesDoesntFindPath extends SetupChildPath<NodesDoesntFindPath>{}
