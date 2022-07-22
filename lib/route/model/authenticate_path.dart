@@ -5,10 +5,11 @@ import 'package:moab_poc/page/login/view/view.dart';
 import 'package:moab_poc/route/route.dart';
 
 import '../../page/create_account/view/view.dart';
-import 'base_path.dart';
-import 'dashboard_path.dart';
+import 'model.dart';
 
 abstract class AuthenticatePath<P> extends BasePath<P> {
+  @override
+  PageConfig get pageConfig => super.pageConfig..ignoreAuthChanged = true;
 
   @override
   Widget buildPage(NavigationCubit cubit) {
@@ -17,13 +18,11 @@ abstract class AuthenticatePath<P> extends BasePath<P> {
         return const LoginCloudAccountView();
       case AuthCloudLoginOtpPath:
         if (args != null) {
-          args!['onNext'] = NoRouterPath();
+          args!['onNext'] = PrepareDashboardPath();
         }
         return OtpFlowView(args: args);
       case AuthForgotEmailPath:
         return const ForgotEmailView();
-      case NoRouterPath:
-        return const NoRouterView();
       case SelectPhoneRegionCodePath:
         return const RegionPickerView();
       case AuthLocalLoginPath:
@@ -56,8 +55,6 @@ class AuthResetLocalOtpPath extends AuthenticatePath<AuthResetLocalOtpPath> {}
 class AuthInputAccountPath extends AuthenticatePath<AuthInputAccountPath> {}
 
 class AuthCloudLoginOtpPath extends AuthenticatePath<AuthCloudLoginOtpPath> {}
-
-class NoRouterPath extends AuthenticatePath<NoRouterPath> {}
 
 class AuthForgotEmailPath extends AuthenticatePath<AuthForgotEmailPath> {
   @override

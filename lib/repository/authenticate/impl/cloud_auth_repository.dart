@@ -42,56 +42,8 @@ class CloudAuthRepository extends AuthRepository {
 
   @deprecated
   @override
-  Future<DummyModel> login(String username, String password) {
-    // TODO: implement login
-    throw UnimplementedError();
-  }
-
-  @deprecated
-  @override
-  Future<void> loginChallenge(int method) {
-    // TODO: implement loginChallenge
-    throw UnimplementedError();
-  }
-
-  @deprecated
-  @override
-  Future<DummyModel> passwordLessLogin(String username, String method) {
-    // TODO: implement passwordLessLogin
-    throw UnimplementedError();
-  }
-
-  @deprecated
-  @override
-  Future<void> resendPasswordLessCode(String token, String method) {
-    // TODO: implement resendPasswordLessCode
-    throw UnimplementedError();
-  }
-
-  @override
   Future<DummyModel> resetPassword(String password) {
     // TODO: implement resetPassword
-    throw UnimplementedError();
-  }
-
-  @deprecated
-  @override
-  Future<DummyModel> testUsername(String username) {
-    // TODO: implement testUsername
-    throw UnimplementedError();
-  }
-
-  @deprecated
-  @override
-  Future<DummyModel> validateChallenge(String code) {
-    // TODO: implement validateChallenge
-    throw UnimplementedError();
-  }
-
-  @deprecated
-  @override
-  Future<DummyModel> validatePasswordLessCode(String token, String code) {
-    // TODO: implement validatePasswordLessCode
     throw UnimplementedError();
   }
 
@@ -137,7 +89,7 @@ class CloudAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<CloudLoginState> login2(String token) {
+  Future<CloudLoginState> login(String token) {
     return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
         _httpClient
             .login(token, id: cloudApp.id, secret: cloudApp.appSecret)

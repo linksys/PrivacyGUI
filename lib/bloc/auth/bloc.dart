@@ -1,10 +1,14 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/event.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
+import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/repository/authenticate/auth_repository.dart';
 import 'package:moab_poc/repository/authenticate/local_auth_repository.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:moab_poc/util/logger.dart';
+
+import '../../network/http/model/cloud_auth_clallenge_method.dart';
+import '../../network/http/model/cloud_login_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _repository;
@@ -16,6 +20,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         _localAuthRepository = localRepo,
         super(AuthState.unknownAuth()) {
     on<InitAuth>(_onInitAuth);
+    on<OnLogin>(_onLogin);
+    on<OnCreateAccount>(_onCreateAccount);
+    on<Unauthorized>(_unauthorized);
+    on<Authorized>(_authorized);
     on<SetEmail>(_onSetEmail);
   }
 
@@ -25,8 +33,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // emit(AuthState.authorized(method: AuthMethod.remote));
   }
 
+  _onLogin(OnLogin event, Emitter<AuthState> emit) {
+    emit(AuthState.onLogin());
+  }
+
+  _onCreateAccount(OnCreateAccount event, Emitter<AuthState> emit) {
+    emit(AuthState.onCreateAccount());
+  }
+
+  _unauthorized(Unauthorized event, Emitter<AuthState> emit) {
+    emit(AuthState.unAuthorized());
+  }
+
+  _authorized(Authorized event, Emitter<AuthState> emit) {
+    emit(state.copyWith(status: AuthStatus.authorized));
+  }
+
   void _onSetEmail(SetEmail event, Emitter<AuthState> emit) {
-    emit(state.copyWith(accountInfo: AccountInfo(username: event.email, loginType: LoginType.otp, otpInfo: [])));
+    emit(state.copyWith(
+        accountInfo: AccountInfo(
+            username: event.email, loginType: LoginType.otp, otpInfo: [])));
   }
 
   @override
@@ -37,33 +63,100 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 }
 
 extension AuthBlocCloud on AuthBloc {
-  Future<AccountInfo> testUsername(String username) async {
+  Future<AccountInfo> loginPrepare(String username) async {
     return await _repository
-        .testUsername(username)
-        .then((value) => _handleTestUsername(username, value));
+        .loginPrepare(
+            CommunicationMethod(method: 'method', targetValue: username))
+        .then((value) => _handleLoginPrepare(username, value));
   }
 
-  Future<String> passwordLessLogin(String username, String method) async {
+  Future<AccountInfo> getMaskedCommunicationMethods(String username) async {
     return await _repository
-        .passwordLessLogin(username, method)
-        .then((value) => value['token']);
+        .getMaskedCommunicationMethods(username)
+        .then((value) => _handleGetMaskedCommunicationMethods(value));
   }
 
-  Future<void> validPasswordLess(String code, String token) async {
-    return await _repository
-        .validatePasswordLessCode(token, code)
-        .then((value) => null);
+  Future<void> authChallenge(OtpInfo method, String token) async {
+    return await _repository.authChallenge(
+        'appId',
+        'sercert',
+        AuthChallengeMethod(
+            token: token, method: method.method.name, target: method.data));
   }
 
-  Future<void> resendCode(String token, String method) async {
-    return await _repository.resendPasswordLessCode(token, method);
+  Future<void> authChallengeVerify(String token, String code) async {
+    return await _repository.authChallengeVerify(token, code);
   }
 
-  Future<List<OtpInfo>> login(String username, String password) async {
+  Future<AccountInfo> loginPassword(String token, String password) async {
     return await _repository
-        .login(username, password)
-        .then((value) => _handleLogin(value));
+        .loginPassword(token, password)
+        .then((value) => _handleLoginPassword(value));
   }
+
+  Future<void> login(String token) async {
+    // TODO: Need to be modified
+    try {
+      await _repository.login(token, null).then((value) => _handleLogin(value));
+    } catch (e) {
+      print('error: $e');
+    }
+  }
+
+  Future<AccountInfo> _handleLoginPrepare(
+      String username, CloudLoginState cloudLoginState) async {
+    logger.d("handle login prepare: $cloudLoginState");
+    final LoginType loginType = cloudLoginState.state == 'REQUIRED_2SV'
+        ? LoginType.otp
+        : LoginType.password;
+
+    AccountInfo accountInfo =
+        state.accountInfo.copyWith(username: username, loginType: loginType);
+    emit(state.copyWith(
+        accountInfo: accountInfo, vToken: cloudLoginState.data.token));
+    return accountInfo;
+  }
+
+  Future<AccountInfo> _handleGetMaskedCommunicationMethods(
+      List<CommunicationMethod> methods) async {
+    logger.d("handle get Masked Communication Methods: $methods");
+
+    List<OtpInfo> list = [];
+    for (var data in methods) {
+      final method = OtpMethod.values
+          .firstWhere((element) => element.name == data.method.toLowerCase());
+      final String target = method == OtpMethod.email
+          ? state.accountInfo.username
+          : data.targetValue;
+      list.add(OtpInfo(
+          method: method,
+          methodId: data.id ?? '',
+          data: target,
+          maskedData: data.targetValue));
+    }
+
+    AccountInfo accountInfo = state.accountInfo.copyWith(otpInfo: list);
+    emit(state.copyWith(accountInfo: accountInfo));
+    return accountInfo;
+  }
+
+  Future<AccountInfo> _handleLoginPassword(
+      CloudLoginState cloudLoginState) async {
+    logger.d("handle login password: $cloudLoginState");
+    final LoginType loginType = cloudLoginState.state == 'REQUIRED_2SV'
+        ? LoginType.otp
+        : LoginType.password;
+
+    AccountInfo accountInfo = state.accountInfo.copyWith(loginType: loginType);
+    emit(state.copyWith(accountInfo: accountInfo));
+    return accountInfo;
+  }
+
+  Future<void> _handleLogin(CloudLoginState cloudLoginState) async {
+    logger.d("handle login: $cloudLoginState");
+  }
+
+  // ---------------------------------------------------------------------------
 
   Future<void> forgotPassword() async {
     return await _repository.forgotPassword();
@@ -71,42 +164,6 @@ extension AuthBlocCloud on AuthBloc {
 
   Future<DummyModel> resetPassword(String password) async {
     return await _repository.resetPassword(password);
-  }
-
-  Future<AccountInfo> _handleTestUsername(
-      String username, DummyModel data) async {
-    logger.d("handle test user name: $data");
-    final LoginType loginType =
-        LoginType.values.firstWhere((element) => element.name == data['type']);
-    final List<DummyModel> methodList =
-        data['method'] as List<DummyModel>? ?? [];
-    List<OtpInfo> list = [];
-    for (var data in methodList) {
-      final method = OtpMethod.values
-          .firstWhere((element) => element.name == data.entries.first.key);
-      final String target = data.entries.first.value;
-      list.add(OtpInfo(method: method, data: target));
-    }
-
-    AccountInfo accountInfo =
-        AccountInfo(username: username, loginType: loginType, otpInfo: list);
-    emit(state.copyWith(accountInfo: accountInfo));
-    return accountInfo;
-  }
-
-  Future<List<OtpInfo>> _handleLogin(DummyModel data) async {
-    logger.d("handle login");
-
-    final List<DummyModel> methodList =
-        data['method'] as List<DummyModel>? ?? [];
-    List<OtpInfo> list = [];
-    for (var data in methodList) {
-      final method = OtpMethod.values
-          .firstWhere((element) => element.name == data.entries.first.key);
-      final String target = data.entries.first.value;
-      list.add(OtpInfo(method: method, data: target));
-    }
-    return list;
   }
 
   _handleError(Object? error, StackTrace stackTrace, emit) {

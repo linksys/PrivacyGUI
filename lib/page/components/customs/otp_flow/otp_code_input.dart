@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
+import 'package:moab_poc/bloc/auth/event.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
@@ -106,7 +107,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
                   _setLoading(true);
                   context
                       .read<AuthBloc>()
-                      .resendCode(state.token, state.selectedMethod?.method.name ?? '')
+                      .authChallenge(state.selectedMethod!, state.token)
                       .then((_) => _showCodeResentHint())
                       .onError((error, stackTrace) =>
                       _handleError(error as CloudException));
@@ -137,7 +138,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     _setLoading(true);
     await context
         .read<AuthBloc>()
-        .validPasswordLess(value!, token)
+        .authChallengeVerify(value!, token)
         .then((value) => context.read<OtpCubit>().finish())
         .onError((error, stackTrace) => _handleError(error as CloudException));
     _setLoading(false);

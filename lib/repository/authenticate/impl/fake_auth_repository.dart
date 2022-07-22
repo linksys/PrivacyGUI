@@ -34,44 +34,6 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<DummyModel> login(String username, String password) async {
-    await Future.delayed(waitDuration);
-    if (password == 'Showmeerror123!') {
-      throw CloudException('INCORRECT_PASSWORD', "Incorrect password");
-    } else {
-      return {
-        'method': [
-          {'sms': '+8869123456'},
-          {'email': username},
-        ]
-      };
-    }
-  }
-
-  @override
-  Future<void> loginChallenge(int method) async {
-    await Future.delayed(waitDuration);
-  }
-
-  @override
-  Future<DummyModel> passwordLessLogin(String username, String method) async {
-    await Future.delayed(waitDuration);
-    return {'token': 'DUMMY_PASSWORDLESS_TOKEN'};
-  }
-
-  @override
-  Future<void> resendPasswordLessCode(String token, String method) async {
-    await Future.delayed(waitDuration);
-    if (_resendCodeTimer != null && (_resendCodeTimer!.isActive)) {
-      throw CloudException(
-          'RESEND_CODE_TIMER', 'A new code can be sent in 0:$_resendCountdown');
-    } else {
-      _resendCodeTimer = _createResendCodeTimer();
-      return;
-    }
-  }
-
-  @override
   Future<DummyModel> resetPassword(String password) async {
     await Future.delayed(waitDuration);
     if (password == 'Showmeerror123!') {
@@ -81,42 +43,19 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<DummyModel> testUsername(String username) async {
-    await Future.delayed(waitDuration);
-    if (username.endsWith('linksys.com')) {
-      return {
-        'type': 'otp',
-        'method': [
-          {'sms': '+8869123456'},
-          {'email': username}
-        ]
-      };
-    } else if(username.endsWith('belkin.com')) {
-      return {
-        'type': 'password',
-        'method': [
-          {'sms': '+8869123456'},
-          {'email': username}
-        ]
-      };
-    }
-    throw CloudException('NOT_FOUND', "Can't find account $username");
-  }
+  Future<void> authChallenge(AuthChallengeMethod method) async {
+    // Send verification code to user
 
-  @override
-  Future<DummyModel> validateChallenge(String code) async {
-    await Future.delayed(waitDuration);
-    return {};
-  }
-
-  @override
-  Future<DummyModel> validatePasswordLessCode(String token, String code) async {
-    await Future.delayed(waitDuration);
-    if (code == '1111') {
-      throw CloudException('OTP_INVALID_TOO_MANY_TIMES',
-          "You've enter an incorrect code too many times. Resend a code to continue.");
+    if (_resendCodeTimer != null && (_resendCodeTimer!.isActive)) {
+      throw CloudException(
+          'RESEND_CODE_TIMER', 'A new code can be sent in 0:$_resendCountdown');
+    } else {
+      _resendCodeTimer = _createResendCodeTimer();
+      return;
     }
-    return {};
+
+    // When error happen
+    // throw CloudException('RESOURCE_NOT_FOUND', 'errorMessage');
   }
 
   Timer _createResendCodeTimer() {
@@ -131,15 +70,16 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<void> authChallenge(AuthChallengeMethod method) {
-    // TODO: implement authChallenge
-    throw UnimplementedError();
-  }
+  Future<void> authChallengeVerify(String token, String code) async {
+    await Future.delayed(waitDuration);
 
-  @override
-  Future<void> authChallengeVerify(String token, String code) {
-    // TODO: implement authChallengeVerify
-    throw UnimplementedError();
+    if (code == '1111') {
+      throw CloudException('OTP_INVALID_TOO_MANY_TIMES',
+          "You've enter an incorrect code too many times. Resend a code to continue.");
+    }
+
+    // When error happen
+    // throw CloudException('RESOURCE_NOT_FOUND', 'errorMessage');
   }
 
   @override
@@ -149,43 +89,83 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<void> createAccountPreparationUpdateMethod(String token, CommunicationMethod method) {
+  Future<void> createAccountPreparationUpdateMethod(
+      String token, CommunicationMethod method) {
     // TODO: implement createAccountPreparationUpdateMethod
     throw UnimplementedError();
   }
 
   @override
-  Future<CloudAccountInfo> createVerifiedAccount(CreateAccountVerified verified) {
+  Future<CloudAccountInfo> createVerifiedAccount(
+      CreateAccountVerified verified) {
     // TODO: implement createVerifiedAccount
     throw UnimplementedError();
   }
 
   @override
-  Future<List<CommunicationMethod>> getMaskedCommunicationMethods(String username) {
-    // TODO: implement getMaskedCommunicationMethods
-    throw UnimplementedError();
+  Future<List<CommunicationMethod>> getMaskedCommunicationMethods(
+      String username) async {
+    await Future.delayed(waitDuration);
+
+    String maskedUsername = username.replaceRange(1, 3, '***');
+    List<CommunicationMethod> list = [
+      const CommunicationMethod(method: 'SMS', targetValue: '+8869123456'),
+      CommunicationMethod(method: 'EMAIL', targetValue: maskedUsername)
+    ];
+
+    if (username.endsWith('linksys.com') || username.endsWith('belkin.com')) {
+      return list;
+    }
+
+    throw CloudException('NOT_FOUND', "Can't find account $username");
   }
 
   @override
-  Future<CloudLoginState> login2(String token) {
-    // TODO: implement login2
-    throw UnimplementedError();
+  Future<CloudLoginState> login(String token) async {
+    await Future.delayed(waitDuration);
+
+    return const CloudLoginState(
+        state: 'ACCEPT',
+        data: CloudLoginStateData(token: '', authenticationMode: ''));
   }
 
   @override
-  Future<CloudLoginState> loginPassword(String token, String password) {
-    // TODO: implement loginPassword
-    throw UnimplementedError();
+  Future<CloudLoginState> loginPassword(String token, String password) async {
+    await Future.delayed(waitDuration);
+    if (password == 'Showmeerror123!') {
+      throw CloudException('INCORRECT_PASSWORD', "Incorrect password");
+    } else {
+      return const CloudLoginState(
+          state: 'REQUIRED_2SV',
+          data: CloudLoginStateData(
+            token: 'token',
+            authenticationMode: 'authenticationMode',
+          ));
+    }
   }
 
   @override
-  Future<CloudLoginState> loginPrepare(String username) {
-    // TODO: implement loginPrepare
-    throw UnimplementedError();
+  Future<CloudLoginState> loginPrepare(String username) async {
+    await Future.delayed(waitDuration);
+
+    if (username.endsWith('linksys.com')) {
+      return CloudLoginState.fromJson(const {
+        'state': 'REQUIRED_2SV',
+        'data': {'token': 'vToken123', 'authenticationMode': 'PASSWORDLESS'}
+      });
+    } else if (username.endsWith('belkin.com')) {
+      return CloudLoginState.fromJson(const {
+        'state': 'PASSWORD_REQUIRED',
+        'data': {'token': 'vToken123', 'authenticationMode': 'PASSWORDLESS'}
+      });
+    }
+
+    throw CloudException('RESOURCE_NOT_FOUND', 'errorMessage');
   }
 
   @override
-  Future<void> downloadCloudCert(String taskId, {required token, required secret}) {
+  Future<void> downloadCloudCert(String taskId,
+      {required token, required secret}) {
     // TODO: implement downloadCloudCert
     throw UnimplementedError();
   }

@@ -17,11 +17,8 @@ import 'dart:convert';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:phone_number/phone_number.dart';
 
-
 class OtpAddPhoneView extends ArgumentsStatefulView {
-  const OtpAddPhoneView({
-    Key? key, super.args
-  }) : super(key: key);
+  const OtpAddPhoneView({Key? key, super.args}) : super(key: key);
 
   @override
   _OtpAddPhoneViewState createState() => _OtpAddPhoneViewState();
@@ -67,7 +64,8 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
 
     final String? phoneSample = _countryCodes[currentRegion.countryCode];
     if (phoneSample != null) {
-      phoneHint = await phoneNumberUtil.format(phoneSample, currentRegion.countryCode);
+      phoneHint =
+          await phoneNumberUtil.format(phoneSample, currentRegion.countryCode);
     } else {
       phoneHint = getAppLocalizations(context).phone;
     }
@@ -94,7 +92,9 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
                   children: [
                     GestureDetector(
                       onTap: () async {
-                        final selectedRegion = await showPopup(context: context, config: SelectPhoneRegionCodePath());
+                        final selectedRegion = await showPopup(
+                            context: context,
+                            config: SelectPhoneRegionCodePath());
                         if (selectedRegion != null) {
                           updateRegion(selectedRegion);
                         }
@@ -108,8 +108,11 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
                         )),
                         child: Text(
                           '+${currentRegion.callingCode}',
-                          style: Theme.of(context).textTheme.bodyText1?.copyWith(
-                              color: Theme.of(context).colorScheme.primary),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyText1
+                              ?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary),
                         ),
                         alignment: Alignment.center,
                       ),
@@ -142,7 +145,10 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
                 child: PrimaryButton(
                   text: getAppLocalizations(context).otp_send_code,
                   onPress: () {
-                    _onSend(OtpInfo(method: OtpMethod.sms, data: '+${currentRegion.callingCode}${phoneController.text}'));
+                    _onSend(OtpInfo(
+                        method: OtpMethod.sms,
+                        data:
+                            '+${currentRegion.callingCode}${phoneController.text}'));
                   },
                 ),
               ),
@@ -155,13 +161,12 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
   }
 
   _onSend(OtpInfo method) async {
-    // TODO maybe another api?
     logger.d('Phone number: ${phoneController.text}');
     _setLoading(true);
-    await context.read<AuthBloc>().passwordLessLogin(
-        method.data, method.method.name).then((value) =>
-        context.read<OtpCubit>().updateToken(value, info: method)
-    );
+    await context
+        .read<AuthBloc>()
+        .authChallenge(method, context.read<AuthBloc>().state.vToken)
+        .then((value) => context.read<OtpCubit>().onInputOtp(info: method));
     _setLoading(false);
   }
 

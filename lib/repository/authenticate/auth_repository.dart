@@ -20,27 +20,6 @@ import '../model/dummy_model.dart';
 ///
 abstract class AuthRepository {
   ///
-  /// refer to [loginPrepare], [createAccountPreparation]
-  Future<DummyModel> testUsername(String username);
-  ///
-  /// refer to [loginPassword], [login2]
-  Future<DummyModel> login(String username, String password);
-  ///
-  ///  refer to [loginPrepare]
-  Future<DummyModel> passwordLessLogin(String username, String method);
-  ///
-  /// refer to [authChallengeVerify]
-  Future<DummyModel> validatePasswordLessCode(String token, String code);
-  ///
-  /// refer to [authChallenge]
-  Future<void> resendPasswordLessCode(String token, String method);
-  ///
-  /// refer to [authChallenve]
-  Future<void> loginChallenge(int method);
-  ///
-  /// refer to [authChallengeCerify]
-  Future<DummyModel> validateChallenge(String code);
-  ///
   /// refer to [createVerifiedAccount]
   Future<DummyModel> createAccount(String username);
   ///
@@ -104,10 +83,10 @@ abstract class AuthRepository {
   ///
   Future<CloudLoginState> loginPassword(String token, String password);
 
-  /// TODO Please rename back to login after integrate the latest interface
+  ///
   /// * state = ACCEPTED
   ///
-  Future<CloudLoginState> login2(String token);
+  Future<CloudLoginState> login(String token);
 
   ///
   ///

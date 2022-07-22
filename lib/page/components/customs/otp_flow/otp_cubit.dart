@@ -10,7 +10,7 @@ class OtpCubit extends Cubit<OtpState> {
   void updateOtpMethods(List<OtpInfo> methods, OtpFunction function) {
     var selected = methods.length > 1 ? methods.firstWhere((element) => element.method == OtpMethod.sms) : methods[0];
     final step = (function == OtpFunction.send && methods.length == 1) ? OtpStep.inputOtp : OtpStep.chooseOtpMethod;
-    emit(state.copyWith(step: step, methods:  methods, selectedMethod: selected, token: '', function: function));
+    emit(state.copyWith(step: step, methods:  methods, selectedMethod: selected, function: function));
   }
 
   void selectOtpMethod(OtpInfo method) {
@@ -25,8 +25,12 @@ class OtpCubit extends Cubit<OtpState> {
     emit(state.copyWith(step: OtpStep.finish));
   }
 
-  void updateToken(String token, {OtpInfo? info}) {
-    emit(state.copyWith(step: OtpStep.inputOtp, token: token, selectedMethod: info ?? state.selectedMethod));
+  void updateToken(String token) {
+    emit(state.copyWith(token: token));
+  }
+
+  void onInputOtp({OtpInfo? info}) {
+    emit(state.copyWith(step: OtpStep.inputOtp, selectedMethod: info ?? state.selectedMethod));
   }
 
   void setLoading(bool isLoading) {

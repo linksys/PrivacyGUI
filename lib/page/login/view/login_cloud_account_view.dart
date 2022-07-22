@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
+import 'package:moab_poc/bloc/auth/event.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
@@ -33,6 +34,8 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
   @override
   void initState() {
     super.initState();
+
+    context.read<AuthBloc>().add(OnLogin());
   }
 
   @override
@@ -43,8 +46,6 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
 
   @override
   Widget build(BuildContext context) {
-    logger.d('DEBUG:: LoginCloudAccountView: build');
-
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) => _isLoading
           ? FullScreenSpinner(text: getAppLocalizations(context).processing)
@@ -69,14 +70,16 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
                 controller: _accountController,
                 onChanged: _checkFilledInfo,
                 inputType: TextInputType.emailAddress,
-                isError: !_isValidEmail && _accountController.text.isNotEmpty || _errorReason.isNotEmpty,
+                isError: !_isValidEmail && _accountController.text.isNotEmpty ||
+                    _errorReason.isNotEmpty,
                 errorText: _checkErrorReason(),
               ),
               if (_errorReason == "NOT_FOUND")
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: SimpleTextButton(
-                      text: getAppLocalizations(context).cloud_account_login_email_with_linksys_app,
+                      text: getAppLocalizations(context)
+                          .cloud_account_login_email_with_linksys_app,
                       onPressed: () => NavigationCubit.of(context)
                           .push(AlreadyHaveOldAccountPath())),
                 ),
@@ -98,9 +101,10 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
                           });
                           await context
                               .read<AuthBloc>()
-                              .testUsername(_accountController.text)
-                              .then((value) => _handleResult(_accountController.text, value))
-                          .onError((error, stackTrace) => _handleError(error as CloudException));
+                              .loginPrepare(_accountController.text)
+                              .then((value) => _handleResult(value))
+                              .onError((error, stackTrace) =>
+                                  _handleError(error as CloudException));
                           setState(() {
                             _isLoading = false;
                           });
@@ -110,7 +114,8 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
               ),
               Center(
                 child: SimpleTextButton(
-                    text: getAppLocalizations(context).cloud_account_login_with_router_password,
+                    text: getAppLocalizations(context)
+                        .cloud_account_login_with_router_password,
                     onPressed: () =>
                         NavigationCubit.of(context).push(AuthLocalLoginPath())),
               ),
@@ -123,7 +128,7 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
   String _checkErrorReason() {
     if (_errorReason.isEmpty) {
       return getAppLocalizations(context).error_enter_a_valid_email_format;
-    } else if (_errorReason == 'NOT_FOUND') {
+    } else if (_errorReason == 'RESOURCE_NOT_FOUND') {
       return getAppLocalizations(context).error_email_address_not_fount;
     } else {
       return getAppLocalizations(context).unknown_error;
@@ -137,14 +142,12 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
     });
   }
 
-  _handleResult(String username, AccountInfo accountInfo) {
+  _handleResult(AccountInfo accountInfo) {
     if (accountInfo.loginType == LoginType.password) {
       NavigationCubit.of(context).push(AuthCloudLoginWithPasswordPath());
     } else {
-
-      NavigationCubit.of(context)
-          .push(AuthCloudLoginOtpPath()
-        ..args = {'username': username});
+      NavigationCubit.of(context).push(
+          AuthCloudLoginOtpPath()..args = {'username': accountInfo.username});
     }
   }
 

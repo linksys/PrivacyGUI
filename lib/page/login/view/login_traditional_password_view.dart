@@ -84,7 +84,7 @@ class _LoginTraditionalPasswordViewState
                       });
                       await context
                           .read<AuthBloc>()
-                          .login(_username, passwordController.text)
+                          .loginPassword(state.vToken, passwordController.text)
                           .then((value) => _handleResult(value))
                           .onError((error, stackTrace) =>
                               _handleError(error as CloudException));
@@ -107,7 +107,8 @@ class _LoginTraditionalPasswordViewState
     }
   }
 
-  _handleResult(List<OtpInfo> otpInfoList) async {
+  _handleResult(AccountInfo accountInfo) async {
+    // if (accountInfo.loginType == LoginType.otp)
     NavigationCubit.of(context)
         .push(AuthCloudLoginOtpPath()..args = {'username': _username});
   }
