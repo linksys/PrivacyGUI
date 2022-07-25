@@ -24,6 +24,7 @@ const allConfigFileName = 'all-environments.json';
 // Cloud config url
 String get cloudConfigUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$configFileName';
 String get allCloudConfigUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$allConfigFileName';
+String get availabilityUrl => 'https://cloudhealth.lswf.net/cloud-availability/cloud-qa.json';
 
 // Cloud path constants
 const version = '/v1';

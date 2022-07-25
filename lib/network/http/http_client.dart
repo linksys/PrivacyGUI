@@ -10,15 +10,18 @@ import 'package:moab_poc/util/logger.dart';
 import 'package:http/io_client.dart';
 import 'model/base_response.dart';
 
-
+///
+/// timeout - will throw Timeout exception on ${timeout} seconds
+///
 class MoabHttpClient extends http.BaseClient {
 
-  MoabHttpClient({IOClient? client}): _inner = client ?? IOClient();
+  MoabHttpClient({IOClient? client, this.timeout = 5}): _inner = client ?? IOClient();
 
   factory MoabHttpClient.withCert(SecurityContext context) {
     return MoabHttpClient(client: IOClient(HttpClient(context: context)));
   }
 
+  int timeout;
   final IOClient _inner;
 
   final Map<String, String> defaultHeader = {
@@ -41,8 +44,7 @@ class MoabHttpClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
     _logRequest(request);
-    // TODO set client id, client secret, etc...
-    return _inner.send(request).timeout(const Duration(seconds: 10));
+    return _inner.send(request).timeout(Duration(seconds: timeout));
   }
 
   @override
