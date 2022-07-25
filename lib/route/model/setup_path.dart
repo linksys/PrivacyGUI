@@ -1,14 +1,15 @@
 import 'package:flutter/widgets.dart';
+import 'package:moab_poc/page/setup/view/nodes_doesnt_find_view.dart';
 import 'package:moab_poc/page/setup/view/view.dart';
+import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/route.dart';
 
 import 'base_path.dart';
 
-abstract class SetupPath<P> extends BasePath<P> {
-
+abstract class SetupPath<P> extends BasePath {
   @override
   Widget buildPage(NavigationCubit cubit) {
-    switch (P) {
+    switch (runtimeType) {
       case SetupWelcomeEulaPath:
         return GetWiFiUpView();
       case SetupCustomizeSSIDPath:
@@ -16,7 +17,9 @@ abstract class SetupPath<P> extends BasePath<P> {
       case SetupNodesDonePath:
         return const NodesSuccessView();
       case SetupFinishPath:
-        return SetupFinishedView(args: args,);
+        return SetupFinishedView(
+          args: args,
+        );
       case SetupNodesDoneUnFoundPath:
         return const NodesSuccessView();
       case SetupAddingNodesPath:
@@ -27,28 +30,29 @@ abstract class SetupPath<P> extends BasePath<P> {
   }
 }
 
-class SetupWelcomeEulaPath extends SetupPath<SetupWelcomeEulaPath> {}
+class SetupWelcomeEulaPath extends SetupPath {}
 
-class SetupCustomizeSSIDPath extends SetupPath<SetupCustomizeSSIDPath> {}
+class SetupCustomizeSSIDPath extends SetupPath {}
 
-class SetupNodesDonePath extends SetupPath<SetupNodesDonePath> {
+class SetupNodesDonePath extends SetupPath {
+  @override
   PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
 }
 
-class SetupNodesDoneUnFoundPath extends SetupPath<SetupNodesDoneUnFoundPath> {}
+class SetupNodesDoneUnFoundPath extends SetupPath {}
 
-class SetupFinishPath extends SetupPath<SetupFinishPath> {}
+class SetupFinishPath extends SetupPath {}
 
-class SetupAddingNodesPath extends SetupPath<SetupAddingNodesPath> {
+class SetupAddingNodesPath extends SetupPath {
   @override
   PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
 }
 
 // Setup Parent Flow
-abstract class SetupParentPath<P> extends SetupPath<P> {
+abstract class SetupParentPath extends SetupPath {
   @override
   Widget buildPage(NavigationCubit cubit) {
-    switch (P) {
+    switch (runtimeType) {
       case SetupParentPlugPath:
         return PlugNodeView();
       case SetupParentWiredPath:
@@ -77,65 +81,38 @@ abstract class SetupParentPath<P> extends SetupPath<P> {
   }
 }
 
-class SetupParentPlugPath extends SetupParentPath<SetupParentPlugPath> {}
+class SetupParentPlugPath extends SetupParentPath {}
 
-class SetupParentWiredPath extends SetupParentPath<SetupParentWiredPath> {}
+class SetupParentWiredPath extends SetupParentPath {}
 
-class SetupParentPlacePath extends SetupParentPath<SetupParentPlacePath> {}
+class SetupParentPlacePath extends SetupParentPath {}
 
 // TODO revisit - can this being a common page, not for setup specific
-class SetupParentPermissionPath
-    extends SetupParentPath<SetupParentPermissionPath> {}
+class SetupParentPermissionPath extends SetupParentPath {}
 
-class SetupParentQrCodeScanPath
-    extends SetupParentPath<SetupParentQrCodeScanPath> {
+class SetupParentQrCodeScanPath extends SetupParentPath {
   @override
   PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
 }
 
-class SetupParentManualPath extends SetupParentPath<SetupParentManualPath> {}
+class SetupParentManualPath extends SetupParentPath {}
 
-class SetupParentLocationPath extends SetupParentPath<SetupParentLocationPath> {
-}
+class SetupParentLocationPath extends SetupParentPath {}
 
-class SetupParentManualEnterSSIDPath extends SetupParentPath<SetupParentManualEnterSSIDPath>{}
+class SetupParentManualEnterSSIDPath extends SetupParentPath {}
 
-class SetupParentConnectWIFIPath
-    extends SetupParentPath<SetupParentConnectWIFIPath> {}
+class SetupParentConnectWIFIPath extends SetupParentPath {}
 
-class SetupParentEasyConnectWIFIPath
-    extends SetupParentPath<SetupParentEasyConnectWIFIPath> {}
-class SetupParentLocationPermissionDeniedPath extends SetupParentPath<SetupParentLocationPermissionDeniedPath>{}
+class SetupParentEasyConnectWIFIPath extends SetupParentPath {}
 
-class AndroidLocationPermissionPrimerPath extends SetupParentPath<AndroidLocationPermissionPrimerPath>{}
+class SetupParentLocationPermissionDeniedPath extends SetupParentPath {}
 
-// Internet Check Flow
-abstract class InternetCheckPath<P> extends SetupPath<P> {
+class AndroidLocationPermissionPrimerPath extends SetupParentPath {}
+
+abstract class SetupChildPath extends SetupPath {
   @override
   Widget buildPage(NavigationCubit cubit) {
-    switch (P) {
-      case InternetCheckingPath:
-        return const CheckNodeInternetView();
-
-      default:
-        return const Center();
-    }
-  }
-}
-
-class InternetCheckingPath extends InternetCheckPath<InternetCheckingPath> {
-  @override
-  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
-
-  @override
-  PageConfig get pageConfig =>
-      super.pageConfig..navType = PageNavigationType.none;
-}
-
-abstract class SetupChildPath<P> extends SetupPath<P> {
-  @override
-  Widget buildPage(NavigationCubit cubit) {
-    switch (P) {
+    switch (runtimeType) {
       case SetupNthChildPath:
         return AddChildFinishedView();
       case SetupNthChildQrCodePath:
@@ -150,20 +127,21 @@ abstract class SetupChildPath<P> extends SetupPath<P> {
         return PlaceNodeView(
           isAddOnNodes: true,
         );
+      case NodesDoesntFindPath:
+        return const NodesDoesntFindView();
       default:
         return const Center();
     }
   }
 }
 
-class SetupNthChildPath extends SetupChildPath<SetupNthChildPath> {}
+class SetupNthChildPath extends SetupChildPath {}
 
-class SetupNthChildQrCodePath extends SetupChildPath<SetupNthChildQrCodePath> {}
+class SetupNthChildQrCodePath extends SetupChildPath {}
 
-class SetupNthChildPlugPath extends SetupChildPath<SetupNthChildPlugPath> {}
+class SetupNthChildPlugPath extends SetupChildPath {}
 
-class SetupNthChildSearchingPath
-    extends SetupChildPath<SetupNthChildSearchingPath> {
+class SetupNthChildSearchingPath extends SetupChildPath {
   @override
   PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
 
@@ -172,7 +150,8 @@ class SetupNthChildSearchingPath
       super.pageConfig..navType = PageNavigationType.none;
 }
 
-class SetupNthChildLocationPath
-    extends SetupChildPath<SetupNthChildLocationPath> {}
+class SetupNthChildLocationPath extends SetupChildPath {}
 
-class SetupNthChildPlacePath extends SetupChildPath<SetupNthChildPlacePath> {}
+class SetupNthChildPlacePath extends SetupChildPath {}
+
+class NodesDoesntFindPath extends SetupChildPath{}

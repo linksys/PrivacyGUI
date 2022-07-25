@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:moab_poc/network/http/model/cloud_config.dart';
 import 'package:path_provider/path_provider.dart';
 
 class Storage {
@@ -9,7 +10,13 @@ class Storage {
   static Directory? _docDirectory;
   static Directory? get docDirectory => _docDirectory;
   static const String loggerFilename = 'logger.txt';
+  static final String appPublicKeyFilename = '${cloudEnvTarget.name}_key.pem';
+  static final String appPrivateKeyFilename = '${cloudEnvTarget.name}_key.key';
+
   static Uri get logFileUri => Uri.parse('${_tempDirectory?.path}/$loggerFilename');
+  static Uri get appPublicKeyUri => Uri.parse('${_tempDirectory?.path}/$appPublicKeyFilename');
+  static Uri get appPrivateKeyUri => Uri.parse('${_tempDirectory?.path}/$appPrivateKeyFilename');
+
 
   static init() async {
     _tempDirectory = (await getTemporaryDirectory());
@@ -23,5 +30,13 @@ class Storage {
 
   static deleteFile(Uri fileUri) async {
     File.fromUri(fileUri).delete();
+  }
+
+  static Future<void> saveFile(Uri fileUri, String contents) async {
+    File file = File.fromUri(fileUri);
+    if (!file.existsSync()) {
+      file.createSync();
+    }
+    file.writeAsStringSync(contents);
   }
 }

@@ -28,6 +28,10 @@ void main() {
       expect(cloudApp.deviceInfo.osVersion.isNotEmpty, true);
       expect(cloudApp.deviceInfo.os.isNotEmpty, true);
       expect(cloudApp.deviceInfo.systemLocale.isNotEmpty, true);
+
+      final str = jsonEncode(cloudApp.toJson());
+      print('json str $str');
+
     });
   });
 }

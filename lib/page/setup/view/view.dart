@@ -3,7 +3,6 @@ export 'add_child_finished_view.dart';
 export 'add_child_plug_view.dart';
 export 'add_child_scan_qrcode_view.dart';
 export 'add_child_searching_view.dart';
-export 'check_node_finished_view.dart';
 export 'check_node_internet_view.dart';
 export 'connect_to_modem_view.dart';
 export 'customize_wifi_view.dart';

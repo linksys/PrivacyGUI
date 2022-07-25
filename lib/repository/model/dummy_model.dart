@@ -1,6 +1,7 @@
 
 typedef DummyModel = Map<String, dynamic>;
 
+@Deprecated('use [ErrorResponse] instead')
 class CloudException implements Exception {
   CloudException(this.code, this.message);
 

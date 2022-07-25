@@ -50,6 +50,7 @@ class _ContentViewState extends State<_ContentView> {
     if (widget.args!.containsKey('function')) {
       _function = widget.args!['function'] as OtpFunction;
     }
+    _fetchToken();
     _fetchOtpInfo(_function);
   }
 
@@ -99,11 +100,15 @@ class _ContentViewState extends State<_ContentView> {
     context.read<OtpCubit>().setLoading(isLoading);
   }
 
+  _fetchToken() {
+    context.read<OtpCubit>().updateToken(context.read<AuthBloc>().state.vToken);
+  }
+
   _fetchOtpInfo(OtpFunction function) async {
     _setLoading(true);
     await context
         .read<AuthBloc>()
-        .testUsername(_username)
+        .getMaskedCommunicationMethods(_username)
         .then((value) => _handleAccountInfo(value, function));
     _setLoading(false);
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
+import 'package:moab_poc/network/http/model/base_response.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
@@ -8,6 +9,7 @@ import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/route/model/model.dart';
+import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/validator.dart';
 
 import '../../../bloc/auth/bloc.dart';
@@ -88,7 +90,7 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
                           .resetPassword(_passwordController.text)
                           .then((value) => _handleResult())
                           .onError((error, stackTrace) =>
-                              _handleError(error as CloudException));
+                              _handleError(error, stackTrace));
                       setState(() {
                         _isLoading = false;
                       });
@@ -169,9 +171,13 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
     });
   }
 
-  _handleError(CloudException e) {
-    setState(() {
-      _errorReason = e.code;
-    });
+  _handleError(Object? e, StackTrace trace) {
+    if (e is ErrorResponse) {
+      setState(() {
+        _errorReason = e.code;
+      });
+    } else { // Unknown error or error parsing
+      logger.d('Unknown error: $e');
+    }
   }
 }

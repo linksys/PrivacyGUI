@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import 'package:moab_poc/network/http/model/base_response.dart';
 import 'package:moab_poc/network/http/model/cloud_account_info.dart';
 import 'package:moab_poc/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/network/http/model/cloud_create_account_verified.dart';
+import 'package:moab_poc/network/http/model/cloud_login_certs.dart';
+import 'package:moab_poc/network/http/model/cloud_login_state.dart';
 import 'package:moab_poc/network/http/model/cloud_phone.dart';
 import 'package:moab_poc/network/http/model/cloud_preferences.dart';
 import 'package:test/test.dart';
@@ -179,6 +183,74 @@ void main() {
       expect(convertBack.authenticationMode, 'PASSWORD');
       expect(convertBack.createAt, '2022-07-13T09:37:01.665063052Z');
       expect(convertBack.updateAt, '2022-07-13T09:37:01.665063052Z');
+    });
+
+    test('test CloudLoginState', () async {
+      const CloudLoginState method = CloudLoginState(
+        state: 'PASSWORD_REQUIRED',
+        data: CloudLoginStateData(token: 'token-for-login-state', authenticationMode: 'PASSWORD')
+      );
+
+      final jsonObj = method.toJson();
+      expect(jsonObj['state'], 'PASSWORD_REQUIRED');
+      expect(jsonObj['data']['token'], 'token-for-login-state');
+      expect(jsonObj['data']['authenticationMode'], 'PASSWORD');
+
+
+      final convertBack = CloudLoginState.fromJson(jsonObj);
+      expect(convertBack.state, 'PASSWORD_REQUIRED');
+      expect(convertBack.data?.token, 'token-for-login-state');
+      expect(convertBack.data?.authenticationMode, 'PASSWORD');
+
+    });
+
+    test('test CloudLoginState state only', () async {
+      const CloudLoginState method = CloudLoginState(
+          state: 'PASSWORD_REQUIRED',
+      );
+
+      final jsonObj = method.toJson();
+      expect(jsonObj['state'], 'PASSWORD_REQUIRED');
+
+
+
+      final convertBack = CloudLoginState.fromJson(jsonObj);
+      expect(convertBack.state, 'PASSWORD_REQUIRED');
+
+    });
+
+    test('test CloudDownloadCertTask', () async {
+      final jsonObj = {
+        "taskType": "CREATE_CERTIFICATE",
+        "data": {
+          "id": "RET-R1:492647359751711213641065353474088091562661625693",
+          "rootCaId": "RET-ROOT1",
+          "expiration": "2032-04-22T09:37:35.000+00:00",
+          "serialNumber": "35ca07cbde04e779b5550bab457eab57",
+          "publicKey": "-----BEGIN CERTIFICATE-----\n*****\n-----END CERTIFICATE-----",
+          "privateKey": "-----BEGIN PRIVATE KEY-----\n*****\n-----END PRIVATE KEY-----"
+        }
+      };
+      final cloudDownloadTask = CloudDownloadCertTask.fromJson(jsonObj);
+      expect(cloudDownloadTask.taskType, 'CREATE_CERTIFICATE');
+      expect(cloudDownloadTask.data.id, 'RET-R1:492647359751711213641065353474088091562661625693');
+      expect(cloudDownloadTask.data.rootCaId, 'RET-ROOT1');
+      expect(cloudDownloadTask.data.expiration, '2032-04-22T09:37:35.000+00:00');
+      expect(cloudDownloadTask.data.serialNumber, '35ca07cbde04e779b5550bab457eab57');
+      expect(cloudDownloadTask.data.publicKey, '-----BEGIN CERTIFICATE-----\n*****\n-----END CERTIFICATE-----');
+      expect(cloudDownloadTask.data.privateKey, '-----BEGIN PRIVATE KEY-----\n*****\n-----END PRIVATE KEY-----');
+
+
+      final convertBack = cloudDownloadTask.toJson();
+      expect(convertBack['taskType'], 'CREATE_CERTIFICATE');
+      expect(convertBack['data']['id'], 'RET-R1:492647359751711213641065353474088091562661625693');
+      expect(convertBack['data']['rootCaId'], 'RET-ROOT1');
+      expect(convertBack['data']['expiration'], '2032-04-22T09:37:35.000+00:00');
+      expect(convertBack['data']['serialNumber'], '35ca07cbde04e779b5550bab457eab57');
+      expect(convertBack['data']['publicKey'], '-----BEGIN CERTIFICATE-----\n*****\n-----END CERTIFICATE-----');
+      expect(convertBack['data']['privateKey'], '-----BEGIN PRIVATE KEY-----\n*****\n-----END PRIVATE KEY-----');
+
+
     });
 
     test('test ErrorResponse #1', () async {

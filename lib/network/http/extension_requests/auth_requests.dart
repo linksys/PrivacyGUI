@@ -40,7 +40,7 @@ extension MoabAuthRequests on MoabHttpClient {
   /// * 204 - success
   ///
   ///
-  Future<Response> authChallenge(AuthChallengeMethod method,
+  Future<Response> authChallenge(BaseAuthChallenge method,
       {required String id, required String secret}) async {
     final url = combineUrl(endpointPostAuthChallenges);
 
@@ -82,7 +82,7 @@ extension MoabAuthRequests on MoabHttpClient {
         headers: header, body: jsonEncode(accountVerified.toJson()));
   }
 
-  Future<Response> loginPrepare(CommunicationMethod method,
+  Future<Response> loginPrepare(String username,
       {required String id, required String secret}) {
     final url = combineUrl(endpointPostLoginPrepare);
     final appId = id;
@@ -91,7 +91,7 @@ extension MoabAuthRequests on MoabHttpClient {
     final header = defaultHeader
       ..addAll({moabAppIdKey: appId, moabAppSecretKey: appSecret});
     return this.post(Uri.parse(url),
-        headers: header, body: jsonEncode(method.toJson()));
+        headers: header, body: jsonEncode({'username': username}));
   }
 
   Future<Response> loginPassword(String token, String password,
@@ -104,10 +104,11 @@ extension MoabAuthRequests on MoabHttpClient {
     final header = defaultHeader
       ..addAll({moabAppIdKey: appId, moabAppSecretKey: appSecret});
     return this.post(Uri.parse(url),
-        headers: header, body: {'token': token, 'password': password});
+        headers: header,
+        body: jsonEncode({'token': token, 'password': password}));
   }
 
-  Future<Response> login(String token, String? certToken,
+  Future<Response> login(String token,
       {required String id, required String secret}) {
     final url = combineUrl(endpointPostLogin);
 
@@ -118,10 +119,16 @@ extension MoabAuthRequests on MoabHttpClient {
       ..addAll({moabAppIdKey: appId, moabAppSecretKey: appSecret});
 
     final bodyPayload = {'token': token};
-    if (certToken != null) {
-      bodyPayload.addAll({'certToken': certToken});
-    }
-    return this.post(Uri.parse(url),
-        headers: header, body: bodyPayload);
+
+    return this
+        .post(Uri.parse(url), headers: header, body: jsonEncode(bodyPayload));
+  }
+
+  Future<Response> downloadCloudCerts(
+      {required String taskId, required String secret}) {
+    final url = combineUrl(endPointGetPrimaryTasks, args: {varTaskId: taskId});
+    final header = defaultHeader..addAll({moabTaskSecretKey: secret});
+
+    return this.get(Uri.parse(url), headers: header);
   }
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
@@ -81,8 +83,11 @@ class _ChooseLoginTypeState extends State<ChooseLoginTypeView> {
                       NavigationCubit.of(context).push(EnableTwoSVPath());
                     }
                   : () {
+                      final username =
+                          context.read<AuthBloc>().state.accountInfo.username;
+
                       NavigationCubit.of(context).push(CreateAccountOtpPath()
-                        ..args = {'username': 'test@linksys.com'});
+                        ..args = {'username': username});
                     },
             )
           ],

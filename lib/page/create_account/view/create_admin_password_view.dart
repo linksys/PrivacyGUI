@@ -64,11 +64,11 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
             text: 'Processing',
           ))
         : _isSuccess
-            ? _SuccessView()
+            ? _successView()
             : _contentView();
   }
 
-  Widget _SuccessView() {
+  Widget _successView() {
     return BasePageView.noNavigationBar(
       child: BasicLayout(
         header: BasicHeader(

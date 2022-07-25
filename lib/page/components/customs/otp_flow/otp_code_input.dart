@@ -4,14 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
+import 'package:moab_poc/bloc/auth/event.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
+import 'package:moab_poc/network/http/model/base_response.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_cubit.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
+import 'package:moab_poc/util/logger.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -25,7 +28,6 @@ class OtpCodeInputView extends StatefulWidget {
 }
 
 class _OtpCodeInputViewState extends State<OtpCodeInputView> {
-
   String _errorReason = '';
 
   static const otpChannel = MethodChannel('com.linksys.native.channel.otp');
@@ -36,10 +38,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
       final message = await otpChannel.invokeMethod('otp');
       print('receive message: $message');
       RegExp regex = RegExp(r"(\d{4})");
-      final code = regex
-          .allMatches(message)
-          .first
-          .group(0);
+      final code = regex.allMatches(message).first.group(0);
       print('receive code: $code');
       _otpController.text = code ?? '';
     }
@@ -49,13 +48,14 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
   initState() {
     super.initState();
     _startListenOtp();
+    final state = context.read<OtpCubit>().state;
+    _onSend(state.selectedMethod!, state.token);
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<OtpCubit, OtpState>(
-      builder: (context, state) => _contentView(state)
-    );
+        builder: (context, state) => _contentView(state));
   }
 
   Widget _contentView(OtpState state) {
@@ -65,8 +65,10 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
         alignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: state.selectedMethod?.method == OtpMethod.email
-              ? getAppLocalizations(context).otp_enter_code_sms_title(state.selectedMethod?.data ?? '')
-              : getAppLocalizations(context).otp_enter_code_email_title(state.selectedMethod?.data ?? ''),
+              ? getAppLocalizations(context)
+                  .otp_enter_code_sms_title(state.selectedMethod?.data ?? '')
+              : getAppLocalizations(context)
+                  .otp_enter_code_email_title(state.selectedMethod?.data ?? ''),
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,7 +84,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
                     _errorReason = '';
                   });
                 },
-                onCompleted: (String? value) => _onNext(value, state.token),
+                onCompleted: (String? value) => _onNext(value),
                 length: 4,
                 appContext: context,
                 controller: _otpController,
@@ -104,21 +106,19 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
                 text: getAppLocalizations(context).otp_resend_code,
                 onPressed: () {
                   _setLoading(true);
-                  context
-                      .read<AuthBloc>()
-                      .resendCode(state.token, state.selectedMethod?.method.name ?? '')
+                  _onSend(state.selectedMethod!, state.token)
                       .then((_) => _showCodeResentHint())
-                      .onError((error, stackTrace) =>
-                      _handleError(error as CloudException));
+                      .onError((error, stackTrace) {
+                    logger.e('Error OTP input: $error', stackTrace);
+                  });
                   _setLoading(false);
                 }),
             if (_errorReason.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
                 child: Text(
-                  _errorReason,
-                  style: Theme
-                      .of(context)
+                  _handleErrorCode(),
+                  style: Theme.of(context)
                       .textTheme
                       .bodyText1
                       ?.copyWith(color: Colors.red),
@@ -133,13 +133,13 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     );
   }
 
-  _onNext(String? value, String token) async {
+  _onNext(String? value) async {
     _setLoading(true);
     await context
         .read<AuthBloc>()
-        .validPasswordLess(value!, token)
+        .authChallengeVerify(value!)
         .then((value) => context.read<OtpCubit>().finish())
-        .onError((error, stackTrace) => _handleError(error as CloudException));
+        .onError((error, stackTrace) => _handleError(error, stackTrace));
     _setLoading(false);
   }
 
@@ -148,9 +148,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
       content: Wrap(alignment: WrapAlignment.center, children: [
         Icon(
           Icons.check,
-          color: Theme
-              .of(context)
-              .primaryColor,
+          color: Theme.of(context).primaryColor,
         ),
         Text(getAppLocalizations(context).otp_code_resent)
       ]),
@@ -158,19 +156,33 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     ));
   }
 
-  _handleError(CloudException exception) {
-    if (exception.code == 'RESEND_CODE_TIMER') {
+  _handleError(Object? e, StackTrace trace) {
+    if (e is ErrorResponse) {
       setState(() {
-        _errorReason = exception.message;
+        _errorReason = e.code;
       });
-    } else if (exception.code == 'OTP_INVALID_TOO_MANY_TIMES') {
-      setState(() {
-        _errorReason = exception.message;
-      });
+    } else { // Unknown error or error parsing
+      logger.d('Unknown error: $e');
+    }
+  }
+
+  String _handleErrorCode() {
+    if (_errorReason == 'INVALID_OTP') {
+      return 'Incorrect code, please check your code and try again';
+    } else if (_errorReason == 'EXPIRED_OTP') {
+      return 'Code expired after 15 minutes. Send a new code and try again';
+    } else if (_errorReason == 'EXCEEDS_THRESHOLD') {
+      return 'You\'ve entered an incorrect code too many times. Your account will be locked for 2 hours';
+    }else {
+      return 'Unknown Error - $_errorReason';
     }
   }
 
   _setLoading(bool isLoading) {
     context.read<OtpCubit>().setLoading(isLoading);
+  }
+
+  Future<void> _onSend(OtpInfo method, String token) async {
+    await context.read<AuthBloc>().authChallenge(method);
   }
 }

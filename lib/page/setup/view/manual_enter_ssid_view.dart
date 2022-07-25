@@ -1,10 +1,14 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
 import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+
+import 'info_setup_ssid_view.dart';
 
 // TODO nobody use this
 class ManualEnterSSIDView extends StatelessWidget {
@@ -14,7 +18,7 @@ class ManualEnterSSIDView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
+    return const BasePageView(
       child: _PageContent(),
       scrollable: true,
     );
@@ -67,18 +71,25 @@ class _PageContentState extends State<_PageContent> {
             onChanged: _checkFilledInfo,
           ),
           const Spacer(),
-          // TODO: Add on press method
-          SimpleTextButton(text: 'Where do I find this?', onPressed: () {}),
+          SimpleTextButton(text: 'Where do I find this?', onPressed: () => _goToShowMePage(context)),
           const Spacer(),
         ],
       ),
       footer: Visibility(
         visible: isValidWifiInfo,
         child: PrimaryButton(
-          text: 'Next',
+          text: getAppLocalizations(context).next,
           onPress: () {},
         ),
       ),
     );
+  }
+
+  void _goToShowMePage(BuildContext context) {
+    showCupertinoModalPopup(
+        context: context,
+        builder: (context) {
+          return InfoSetupSSIDView();
+        });
   }
 }

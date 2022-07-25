@@ -12,7 +12,6 @@ import 'package:moab_poc/util/logger.dart';
 
 enum PageNavigationType { back, close, none }
 
-
 class PathConfig {
   bool removeFromHistory = false;
 }
@@ -47,21 +46,21 @@ mixin ReturnablePath<T> {
 /// and some interfaces -
 /// BasePath.buildPage() this better to implement on the sub abstract path,
 /// this is because we can easy to understand the whole route in the setup.
-abstract class BasePath<P> {
+abstract class BasePath {
   Map<String, dynamic>? args;
 
-  String get name => P.toString();
+  String get name => runtimeType.toString();
 
   PathConfig get pathConfig => PathConfig();
 
   PageConfig get pageConfig => PageConfig();
 
   Widget buildPage(NavigationCubit cubit) {
-    switch (P) {
+    switch (runtimeType) {
       case HomePath:
-        // return HomeView(args: args,);
-        return DashboardView();
-
+        return HomeView(
+          args: args,
+        );
       case UnknownPath:
         return const Center(
           child: Text("Unknown Path"),
@@ -72,14 +71,14 @@ abstract class BasePath<P> {
   }
 }
 
-class HomePath extends BasePath<HomePath> {}
+class HomePath extends BasePath {}
 
-class UnknownPath extends BasePath<UnknownPath> {}
+class UnknownPath extends BasePath {}
 
-abstract class DebugToolsPath<P> extends BasePath<P> {
+abstract class DebugToolsPath extends BasePath {
   @override
   Widget buildPage(NavigationCubit cubit) {
-    switch (P) {
+    switch (runtimeType) {
       case DebugToolsMainPath:
         return const DebugToolsView();
       default:
@@ -88,4 +87,4 @@ abstract class DebugToolsPath<P> extends BasePath<P> {
   }
 }
 
-class DebugToolsMainPath extends DebugToolsPath<DebugToolsMainPath> {}
+class DebugToolsMainPath extends DebugToolsPath {}

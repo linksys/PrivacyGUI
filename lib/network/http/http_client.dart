@@ -1,20 +1,28 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:moab_poc/config/cloud_environment_manager.dart';
 import 'package:moab_poc/network/http/constant.dart';
 import 'package:moab_poc/util/logger.dart';
-
+import 'package:http/io_client.dart';
 import 'model/base_response.dart';
 
-
+///
+/// timeout - will throw Timeout exception on ${timeout} seconds
+///
 class MoabHttpClient extends http.BaseClient {
 
-  MoabHttpClient({http.Client? client}): _inner = client ??http.Client();
+  MoabHttpClient({IOClient? client, this.timeout = 5}): _inner = client ?? IOClient();
 
-  final http.Client _inner;
+  factory MoabHttpClient.withCert(SecurityContext context) {
+    return MoabHttpClient(client: IOClient(HttpClient(context: context)));
+  }
+
+  int timeout;
+  final IOClient _inner;
 
   final Map<String, String> defaultHeader = {
     moabSiteIdKey: moabRetailSiteId,
@@ -36,8 +44,7 @@ class MoabHttpClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
     _logRequest(request);
-    // TODO set client id, client secret, etc...
-    return _inner.send(request).timeout(const Duration(seconds: 3));
+    return _inner.send(request).timeout(Duration(seconds: timeout));
   }
 
   @override
@@ -71,7 +78,10 @@ class MoabHttpClient extends http.BaseClient {
   Future<Response> post(Uri url,
       {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
     final response =
-        await super.post(url, headers: headers, body: body, encoding: encoding).then((response) => _handleResponse(response));
+        await super.post(url, headers: headers, body: body, encoding: encoding).then((response) {
+          logger.d('post');
+             return _handleResponse(response);
+        });
     _logResponse(response);
     return response;
   }
@@ -110,15 +120,18 @@ class MoabHttpClient extends http.BaseClient {
     }
   }
 
+  setSecurityContext(SecurityContext context) {
+  }
+
   ///
   /// Handling Cloud Error Response
   /// 400 -
   /// 500 -
   ///
   Response _handleResponse(Response response) {
-    logger.i('Cloud Error: ${response.statusCode}, ${response.body}');
     // TODO Revisit - needs to considering about 500 internal server error, 502/503 bad requests
     if (response.statusCode >= 400) {
+      logger.i('Cloud Error: ${response.statusCode}, ${response.body}');
       throw ErrorResponse.fromJson(json.decode(response.body));
     }
     return response;

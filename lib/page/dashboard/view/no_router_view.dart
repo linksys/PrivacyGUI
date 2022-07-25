@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
@@ -10,6 +12,8 @@ import 'package:moab_poc/route/navigation_cubit.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/route/model/model.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+import '../../../bloc/auth/event.dart';
 
 class NoRouterView extends StatelessWidget {
   const NoRouterView({
@@ -41,7 +45,7 @@ class NoRouterView extends StatelessWidget {
             ),
             SimpleTextButton(text: getAppLocalizations(context).logout, onPressed: () {
               // TODO
-              NavigationCubit.of(context).clearAndPush(HomePath());
+              context.read<AuthBloc>().add(Unauthorized());
             }),
           ],
         ),
