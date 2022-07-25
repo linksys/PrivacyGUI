@@ -82,7 +82,7 @@ void main() {
   ///  Login actually
   ///
   group('GROUP 2 - test auth challenge verification and login part in dev', () {
-    const token = '3D8D2F5F-5AB9-43AC-9DCC-FBB925BDDED4';
+    const token = '66D11974-CF6B-44B5-8AA0-103E9E7E78C1';
     CloudLoginAcceptState? acceptState;
     test('STEP 5 - auth challenge verify', () async {
       const code = '6674'; // PUT received code here.
@@ -101,8 +101,7 @@ void main() {
       await Future.delayed(Duration(seconds: 3));
       final client = DevTestableClient();
       final response = await client.downloadCloudCerts(
-          acceptState?.data.taskId ?? '',
-          token: acceptState?.data.certToken ?? '',
+          taskId: acceptState?.data.taskId ?? '',
           secret: acceptState?.data.certSecret ?? '');
       final taskData =
           CloudDownloadCertTask.fromJson(json.decode(response.body));

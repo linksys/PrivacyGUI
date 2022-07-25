@@ -165,7 +165,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
     _setLoading(true);
     await context
         .read<AuthBloc>()
-        .authChallenge(method, context.read<AuthBloc>().state.vToken)
+        .authChallenge(method)
         .then((value) => context.read<OtpCubit>().onInputOtp(info: method));
     _setLoading(false);
   }

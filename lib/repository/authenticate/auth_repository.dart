@@ -1,10 +1,10 @@
-
 import 'package:moab_poc/network/http/model/cloud_account_info.dart';
 import 'package:moab_poc/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/network/http/model/cloud_create_account_verified.dart';
 import 'package:moab_poc/network/http/model/cloud_login_certs.dart';
 import 'package:moab_poc/network/http/model/cloud_login_state.dart';
+import 'package:moab_poc/network/http/model/cloud_task_model.dart';
 
 import '../model/dummy_model.dart';
 
@@ -22,12 +22,15 @@ abstract class AuthRepository {
   ///
   /// refer to [createVerifiedAccount]
   Future<DummyModel> createAccount(String username);
+
   ///
   /// refer to [createAccountPreparationUpdateMethod]
   Future<void> addPhoneNumber(String phone);
+
   ///
   /// TBD
   Future<DummyModel> resetPassword(String password);
+
   ///
   /// TBD
   Future<void> forgotPassword();
@@ -40,6 +43,7 @@ abstract class AuthRepository {
   /// * error: USERNAME_ALREADY_EXISTS, parameters: {"name": "username", "value":"xxxxx"}
   ///
   Future<String> createAccountPreparation(String email);
+
   ///
   /// Update a communication methods
   /// * Input: [CommunicationMethod]
@@ -47,13 +51,16 @@ abstract class AuthRepository {
   /// * return: void
   /// * error: INVALID_PARAMETER, invalid communication method
   ///
-  Future<void> createAccountPreparationUpdateMethod(String token, CommunicationMethod method);
+  Future<void> createAccountPreparationUpdateMethod(
+      String token, CommunicationMethod method);
+
   ///
   /// Initiate OTP Verify via EMAIL/SMS, OR resend code
   /// * Input: [AuthChallengeMethod]
   /// * return: void
   /// * error: INVALID_PARAMETER
   Future<void> authChallenge(AuthChallengeMethod method);
+
   ///
   /// Verify OTP code received from EMAIL/SMS
   /// * Input: token
@@ -67,7 +74,8 @@ abstract class AuthRepository {
   /// * Input: [CreateAccountVerified]
   /// * return: [CloudAccountInfo]
   /// * error: ?????
-  Future<CloudAccountInfo> createVerifiedAccount(CreateAccountVerified verified);
+  Future<CloudAccountInfo> createVerifiedAccount(
+      CreateAccountVerified verified);
 
   ///
   /// * state = PASSWORD_REQUIRED
@@ -75,7 +83,8 @@ abstract class AuthRepository {
   Future<CloudLoginState> loginPrepare(String username);
 
   ///
-  Future<List<CommunicationMethod>> getMaskedCommunicationMethods(String username);
+  Future<List<CommunicationMethod>> getMaskedCommunicationMethods(
+      String username);
 
   ///
   /// * state = CAN_LOGIN
@@ -86,10 +95,10 @@ abstract class AuthRepository {
   ///
   /// * state = ACCEPTED
   ///
-  Future<CloudLoginState> login(String token);
+  Future<CloudLoginAcceptState> login(String token);
 
   ///
   ///
   ///
-  Future<void> downloadCloudCert(String taskId, {required token, required secret});
+  Future<void> downloadCloudCert({required String taskId, required String secret});
 }

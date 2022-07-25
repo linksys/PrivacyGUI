@@ -1,11 +1,19 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/event.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
+import 'package:moab_poc/network/http/constant.dart';
 import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
+import 'package:moab_poc/network/http/model/cloud_login_certs.dart';
+import 'package:moab_poc/network/http/model/cloud_task_model.dart';
 import 'package:moab_poc/repository/authenticate/auth_repository.dart';
 import 'package:moab_poc/repository/authenticate/local_auth_repository.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:moab_poc/util/logger.dart';
+import 'package:moab_poc/util/storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../network/http/model/cloud_auth_clallenge_method.dart';
 import '../../network/http/model/cloud_login_state.dart';
@@ -75,28 +83,23 @@ extension AuthBlocCloud on AuthBloc {
         .then((value) => _handleGetMaskedCommunicationMethods(value));
   }
 
-  Future<void> authChallenge(OtpInfo method, String token) async {
+  Future<void> authChallenge(OtpInfo method) async {
     return await _repository.authChallenge(AuthChallengeMethod(
-        token: token, method: method.method.name.toUpperCase(), target: method.data));
+        token: state.vToken, method: method.method.name.toUpperCase(), target: method.data));
   }
 
-  Future<void> authChallengeVerify(String token, String code) async {
-    return await _repository.authChallengeVerify(token, code);
+  Future<void> authChallengeVerify(String code) async {
+    return await _repository.authChallengeVerify(state.vToken, code);
   }
 
-  Future<AccountInfo> loginPassword(String token, String password) async {
+  Future<AccountInfo> loginPassword(String password) async {
     return await _repository
-        .loginPassword(token, password)
+        .loginPassword(state.vToken, password)
         .then((value) => _handleLoginPassword(value));
   }
 
-  Future<void> login(String token) async {
-    // TODO: Need to be modified
-    try {
-      return await _repository.login(token).then((value) => _handleLogin(value));
-    } catch (e) {
-      print('error: $e');
-    }
+  Future<bool> login() async {
+    return await _repository.login(state.vToken).then((value) => _handleLogin(value));
   }
 
   Future<AccountInfo> _handleLoginPrepare(
@@ -148,8 +151,26 @@ extension AuthBlocCloud on AuthBloc {
     return accountInfo;
   }
 
-  Future<void> _handleLogin(CloudLoginState cloudLoginState) async {
-    logger.d("handle login: $cloudLoginState");
+  Future<bool> _handleLogin(CloudLoginAcceptState acceptState) async {
+    logger.d("handle login: $acceptState");
+    final currentTime = DateTime.now().millisecondsSinceEpoch;
+    final downloadTime = acceptState.data.downloadTime;
+    final delta = downloadTime - currentTime;
+    if (delta > 0) {
+      await Future.delayed(Duration(milliseconds: delta));
+    }
+    await _repository.downloadCloudCert(taskId: acceptState.data.taskId, secret: acceptState.data.certSecret);
+    return checkCertValidation();
+  }
+
+  Future<bool> checkCertValidation() async {
+    final isPrivateExist = File.fromUri(Storage.appPrivateKeyUri).existsSync();
+    final isPublicExist = File.fromUri(Storage.appPublicKeyUri).existsSync();
+    final prefs = await SharedPreferences.getInstance();
+    final certData = CloudDownloadCertData.fromJson(jsonDecode(prefs.getString(moabPrefCloudCertDataKey) ?? ''));
+
+    // TODO check expiration
+    return isPrivateExist & isPublicExist;
   }
 
   // ---------------------------------------------------------------------------

@@ -4,6 +4,7 @@ import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/event.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
+import 'package:moab_poc/network/http/model/base_response.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
@@ -103,7 +104,7 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
                               .read<AuthBloc>()
                               .loginPrepare(_accountController.text)
                               .then((value) => _handleResult(value))
-                              .onError((error, stackTrace) {logger.d('Error occur: $error');});
+                              .onError((error, stackTrace) => _handleError(error, stackTrace));
                           setState(() {
                             _isLoading = false;
                           });
@@ -150,9 +151,13 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
     }
   }
 
-  _handleError(CloudException e) {
-    setState(() {
-      _errorReason = e.code;
-    });
+  _handleError(Object? e, StackTrace trace) {
+    if (e is ErrorResponse) {
+      setState(() {
+        _errorReason = e.code;
+      });
+    } else { // Unknown error or error parsing
+      logger.d('Unknown error: $e');
+    }
   }
 }

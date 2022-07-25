@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:moab_poc/network/http/model/base_response.dart';
 import 'package:moab_poc/network/http/model/cloud_account_info.dart';
 import 'package:moab_poc/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/network/http/model/cloud_create_account_verified.dart';
 import 'package:moab_poc/network/http/model/cloud_login_certs.dart';
 import 'package:moab_poc/network/http/model/cloud_login_state.dart';
+import 'package:moab_poc/network/http/model/cloud_task_model.dart';
 import 'package:moab_poc/repository/authenticate/auth_repository.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,7 +39,9 @@ class FakeAuthRepository extends AuthRepository {
   Future<DummyModel> resetPassword(String password) async {
     await Future.delayed(waitDuration);
     if (password == 'Showmeerror123!') {
-      throw CloudException('OLD_PASSWORD', "You cannot use an old password.");
+      throw const ErrorResponse(
+          code: 'OLD_PASSWORD',
+          errorMessage: "You cannot use an old password.");
     }
     return {};
   }
@@ -47,8 +51,9 @@ class FakeAuthRepository extends AuthRepository {
     // Send verification code to user
 
     if (_resendCodeTimer != null && (_resendCodeTimer!.isActive)) {
-      throw CloudException(
-          'RESEND_CODE_TIMER', 'A new code can be sent in 0:$_resendCountdown');
+      throw ErrorResponse(
+          code: 'RESEND_CODE_TIMER',
+          errorMessage: 'A new code can be sent in 0:$_resendCountdown');
     } else {
       _resendCodeTimer = _createResendCodeTimer();
       return;
@@ -74,8 +79,10 @@ class FakeAuthRepository extends AuthRepository {
     await Future.delayed(waitDuration);
 
     if (code == '1111') {
-      throw CloudException('OTP_INVALID_TOO_MANY_TIMES',
-          "You've enter an incorrect code too many times. Resend a code to continue.");
+      throw const ErrorResponse(
+          code: 'OTP_INVALID_TOO_MANY_TIMES',
+          errorMessage:
+              "You've enter an incorrect code too many times. Resend a code to continue.");
     }
 
     // When error happen
@@ -117,23 +124,26 @@ class FakeAuthRepository extends AuthRepository {
       return list;
     }
 
-    throw CloudException('NOT_FOUND', "Can't find account $username");
+    throw ErrorResponse(
+        code: 'NOT_FOUND', errorMessage: "Can't find account $username");
   }
 
   @override
-  Future<CloudLoginState> login(String token) async {
+  Future<CloudLoginAcceptState> login(String token) async {
     await Future.delayed(waitDuration);
 
-    return const CloudLoginState(
+    return const CloudLoginAcceptState(
         state: 'ACCEPT',
-        data: CloudLoginStateData(token: '', authenticationMode: ''));
+        data: CloudLoginAcceptData(
+            taskId: '', certSecret: '', certToken: '', downloadTime: 0));
   }
 
   @override
   Future<CloudLoginState> loginPassword(String token, String password) async {
     await Future.delayed(waitDuration);
     if (password == 'Showmeerror123!') {
-      throw CloudException('INCORRECT_PASSWORD', "Incorrect password");
+      throw const ErrorResponse(
+          code: 'INCORRECT_PASSWORD', errorMessage: "Incorrect password");
     } else {
       return const CloudLoginState(
           state: 'REQUIRED_2SV',
@@ -160,12 +170,12 @@ class FakeAuthRepository extends AuthRepository {
       });
     }
 
-    throw CloudException('RESOURCE_NOT_FOUND', 'errorMessage');
+    throw const ErrorResponse(
+        code: 'RESOURCE_NOT_FOUND', errorMessage: 'errorMessage');
   }
 
   @override
-  Future<void> downloadCloudCert(String taskId,
-      {required token, required secret}) {
+  Future<void> downloadCloudCert({required taskId, required secret}) {
     // TODO: implement downloadCloudCert
     throw UnimplementedError();
   }

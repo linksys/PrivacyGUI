@@ -49,7 +49,7 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
     if (authState.status == AuthStatus.onLogin) {
       await context
           .read<AuthBloc>()
-          .login(authState.vToken)
+          .login()
           .then((value) => _downloadCertificate());
     } else {
       context.read<AuthBloc>().add(Unauthorized());

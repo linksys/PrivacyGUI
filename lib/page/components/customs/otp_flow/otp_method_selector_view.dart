@@ -76,7 +76,7 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
               onPress: () {
                 !state.isSendFunction()
                     ? _checkPhoneExist(state.selectedMethod!, state.token)
-                    : _onSend(state.selectedMethod!, state.token);
+                    : _onSend(state.selectedMethod!);
               },
             ),
             const SizedBox(
@@ -123,15 +123,15 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
     if (method.method == OtpMethod.sms) {
       context.read<OtpCubit>().addPhone();
     } else {
-      _onSend(method, token);
+      _onSend(method);
     }
   }
 
-  _onSend(OtpInfo method, String token) async {
+  _onSend(OtpInfo method) async {
     _setLoading(true);
     await context
         .read<AuthBloc>()
-        .authChallenge(method, token)
+        .authChallenge(method)
         .then((_) => context.read<OtpCubit>().onInputOtp());
 
     _setLoading(false);

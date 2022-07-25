@@ -8,7 +8,7 @@ import 'package:moab_poc/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 final logger =
-    Logger(printer: SimplePrinter(printTime: true), output: CustomOutput());
+    Logger(printer: SimplePrinter(printTime: true, colors: false), output: CustomOutput());
 
 class CustomOutput extends LogOutput {
   final File _file = File.fromUri(Storage.logFileUri);
