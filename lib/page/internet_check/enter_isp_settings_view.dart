@@ -34,8 +34,8 @@ class _EnterIspSettingsViewState extends State<EnterIspSettingsView> {
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'Enter ISP settings provided by your ISP',
+        header: BasicHeader(
+          title: getAppLocalizations(context).enter_isp_settings_title,
         ),
         content: Column(
           children: [
@@ -44,7 +44,7 @@ class _EnterIspSettingsViewState extends State<EnterIspSettingsView> {
               child: Column(
                 children: [
                   Text(
-                    'Account name and/or password incorrect. Please check and try again, or contact your ISP for support',
+                    getAppLocalizations(context).enter_isp_settings_error,
                     style: Theme.of(context).textTheme.headline4?.copyWith(
                         color: Colors.red
                     ),
@@ -56,7 +56,7 @@ class _EnterIspSettingsViewState extends State<EnterIspSettingsView> {
               ),
             ),
             InputField(
-              titleText: 'Account name',
+              titleText: getAppLocalizations(context).account_name,
               controller: accountController,
               isError: hasError,
               onChanged: (text) {
@@ -79,7 +79,7 @@ class _EnterIspSettingsViewState extends State<EnterIspSettingsView> {
               ),
             ),
             InputField(
-              titleText: 'VLAND(optional)',
+              titleText: getAppLocalizations(context).vlan_id,
               controller: vLandIdController,
             ),
           ],

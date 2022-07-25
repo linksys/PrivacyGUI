@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
@@ -12,8 +13,8 @@ class UnplugModemView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BasePageView(
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'Unplug your modem and wait until the lights are off',
+        header: BasicHeader(
+          title: getAppLocalizations(context).unplug_modem_title,
         ),
         content: Image.asset(
           'assets/images/unplug_modem.png',
@@ -22,7 +23,7 @@ class UnplugModemView extends StatelessWidget {
         footer: Column(
           children: [
             SimpleTextButton(
-              text: 'My modem lights are on after unplugging',
+              text: getAppLocalizations(context).unplug_modem_troubleshooting_link,
               onPressed: () {
                 NavigationCubit.of(context).push(LearnBatteryModemPath());
               },
@@ -31,7 +32,7 @@ class UnplugModemView extends StatelessWidget {
               height: 16,
             ),
             PrimaryButton(
-              text: 'Next',
+              text: getAppLocalizations(context).next,
               onPress: () {
                 NavigationCubit.of(context).push(WaitModemDisconnectPath());
               },

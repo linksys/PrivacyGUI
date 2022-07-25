@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
@@ -11,8 +12,8 @@ class CheckWiringView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BasePageView(
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'We’re having trouble finding an internet connection. Let’s check your wiring.',
+        header: BasicHeader(
+          title: getAppLocalizations(context).check_wiring_title,
         ),
         content: Column(
           children: [
@@ -21,7 +22,7 @@ class CheckWiringView extends StatelessWidget {
               height: 40,
             ),
             Text(
-              'Make sure the internet cord from your wall is connected to your modem.',
+              getAppLocalizations(context).check_wiring_description_1,
               style: Theme.of(context).textTheme.headline3?.copyWith(
                 color: Theme.of(context).colorScheme.tertiary
               ),
@@ -29,14 +30,14 @@ class CheckWiringView extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 40),
               child: Text(
-                'Check the ethernet cable connecting your modem to your parent router. Any port on the modem should work. If your router has a port labeled internet, use that one.',
+                getAppLocalizations(context).check_wiring_description_2,
                 style: Theme.of(context).textTheme.headline3?.copyWith(
                     color: Theme.of(context).colorScheme.tertiary
                 ),
               ),
             ),
             Text(
-              'Make sure all wires are firmly snapped into place.',
+              getAppLocalizations(context).check_wiring_description_3,
               style: Theme.of(context).textTheme.headline3?.copyWith(
                   color: Theme.of(context).colorScheme.tertiary
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
@@ -12,15 +13,15 @@ class PlugModemBackView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BasePageView(
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'Plug your modem back in',
+        header: BasicHeader(
+          title: getAppLocalizations(context).plug_modem_back_title,
         ),
         content: Image.asset(
           'assets/images/plug_modem_back.png',
           alignment: Alignment.topLeft,
         ),
         footer: PrimaryButton(
-          text: 'Next',
+          text: getAppLocalizations(context).next,
           onPress: () {
             NavigationCubit.of(context).push(CheckNodeInternetPath());
           },

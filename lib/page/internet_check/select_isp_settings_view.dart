@@ -20,8 +20,8 @@ class SelectIspSettingsView extends StatelessWidget {
         content: Column(
           children: [
             OptionCard(
-              title: 'PPPoE',
-              description: 'Enter the username and password for internet access',
+              title: getAppLocalizations(context).pppoe,
+              description: getAppLocalizations(context).pppoe_card_description,
               onPress: () {
                 NavigationCubit.of(context).push(EnterIspSettingsPath());
               },
@@ -30,8 +30,8 @@ class SelectIspSettingsView extends StatelessWidget {
               height: 18,
             ),
             OptionCard(
-              title: 'Static IP Address',
-              description: 'Enter your static IP address for internet access',
+              title: getAppLocalizations(context).static_ip_address,
+              description: getAppLocalizations(context).static_ip_card_description,
               onPress: () {
                 NavigationCubit.of(context).push(EnterStaticIpPath());
               },

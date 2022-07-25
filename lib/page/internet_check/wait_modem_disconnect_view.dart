@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
@@ -33,7 +34,6 @@ class _WaitModemDisconnectViewState extends State<WaitModemDisconnectView> {
   }
 
   void goToNext() {
-    //TODO: Go to next page
     NavigationCubit.of(context).push(PlugModemBackPath());
   }
 
@@ -47,8 +47,8 @@ class _WaitModemDisconnectViewState extends State<WaitModemDisconnectView> {
   Widget build(BuildContext context) {
     return BasePageView(
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'Giving your modem time to fully disconnect from your ISP...',
+        header: BasicHeader(
+          title: getAppLocalizations(context).wait_modem_disconnect_title,
         ),
         content: Column(
           children: [

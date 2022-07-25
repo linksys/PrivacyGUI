@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
@@ -13,8 +14,8 @@ class LearnBatteryModemView extends StatelessWidget {
     return BasePageView.withCloseButton(
       context,
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'You may have a battery-powered modem that requires a different way to reset',
+        header: BasicHeader(
+          title: getAppLocalizations(context).learn_battery_modem_title,
         ),
         content: Column(
           children: [
@@ -26,7 +27,7 @@ class LearnBatteryModemView extends StatelessWidget {
               height: 28,
             ),
             SimpleTextButton(
-              text: 'Learn more about restarting battery-powered modems',
+              text: getAppLocalizations(context).learn_battery_modem_link,
               onPressed: () {
                 MoabInAppBrowser.withDefaultOption().openUrlRequest(
                     urlRequest: URLRequest(

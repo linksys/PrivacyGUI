@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/option_card.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
@@ -21,8 +22,8 @@ class _NoInternetOptionsViewState extends State<NoInternetOptionsView> {
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'No internet connection',
+        header: BasicHeader(
+          title: getAppLocalizations(context).no_internet_connection_title,
         ),
         content: Column(
           children: [
@@ -31,8 +32,8 @@ class _NoInternetOptionsViewState extends State<NoInternetOptionsView> {
               child: Column(
                 children: [
                   OptionCard(
-                    title: 'Contact Linksys support',
-                    description: 'We’d love to help you',
+                    title: getAppLocalizations(context).contact_linksys_support_card_title,
+                    description: getAppLocalizations(context).contact_linksys_support_card_description,
                     onPress: () {
                       NavigationCubit.of(context).push(LinksysSupportRegionPath());
                     },
@@ -44,8 +45,8 @@ class _NoInternetOptionsViewState extends State<NoInternetOptionsView> {
               ),
             ),
             OptionCard(
-              title: 'Restart your modem',
-              description: 'Some ISPs require a fresh start to connect a new router',
+              title: getAppLocalizations(context).restart_modem_card_title,
+              description: getAppLocalizations(context).restart_modem_card_description,
               onPress: () {
                 NavigationCubit.of(context).push(UnplugModemPath());
               },
@@ -54,7 +55,7 @@ class _NoInternetOptionsViewState extends State<NoInternetOptionsView> {
               height: 64,
             ),
             Text(
-              'Or, your ISP settings require something else',
+              getAppLocalizations(context).no_internet_alternative,
               style: Theme.of(context).textTheme.headline3?.copyWith(
                   color: Theme.of(context).primaryColor
               ),
@@ -63,8 +64,8 @@ class _NoInternetOptionsViewState extends State<NoInternetOptionsView> {
               height: 18,
             ),
             OptionCard(
-              title: 'PPPoE',
-              description: 'Enter the username and password for internet access',
+              title: getAppLocalizations(context).pppoe,
+              description: getAppLocalizations(context).pppoe_card_description,
               onPress: () {
                 NavigationCubit.of(context).push(EnterIspSettingsPath());
               },
@@ -73,8 +74,8 @@ class _NoInternetOptionsViewState extends State<NoInternetOptionsView> {
               height: 16,
             ),
             OptionCard(
-              title: 'Static IP Address',
-              description: 'Enter your static IP address for internet access',
+              title: getAppLocalizations(context).static_ip_address,
+              description: getAppLocalizations(context).static_ip_card_description,
               onPress: () {
                 NavigationCubit.of(context).push(EnterStaticIpPath());
               },

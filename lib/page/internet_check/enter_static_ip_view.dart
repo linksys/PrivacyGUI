@@ -70,8 +70,8 @@ class _EnterStaticIpViewState extends State<EnterStaticIpView> {
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'Static IP Address',
+        header: BasicHeader(
+          title: getAppLocalizations(context).static_ip_address,
         ),
         content: Column(
           children: [
@@ -80,7 +80,7 @@ class _EnterStaticIpViewState extends State<EnterStaticIpView> {
               child: Column(
                 children: [
                   Text(
-                    'Couldn’t establish a connection. Please check your info and try again.',
+                    getAppLocalizations(context).enter_static_ip_error,
                     style: Theme.of(context).textTheme.headline4?.copyWith(
                         color: Colors.red
                     ),
@@ -92,10 +92,10 @@ class _EnterStaticIpViewState extends State<EnterStaticIpView> {
               ),
             ),
             InputField(
-              titleText: 'IP Address',
+              titleText: getAppLocalizations(context).ip_address,
               controller: ipController,
-              hintText: 'e.g. 192.168.1.1',
-              errorText: 'Invalid IP Address',
+              hintText: getAppLocalizations(context).general_ip_hint,
+              errorText: getAppLocalizations(context).invalid_ip_address,
               isError: isIpInvalid,
               onChanged: (text) {
                 setState(() {
@@ -107,10 +107,10 @@ class _EnterStaticIpViewState extends State<EnterStaticIpView> {
               height: 30,
             ),
             InputField(
-              titleText: 'Subnet mask',
+              titleText: getAppLocalizations(context).subnet_mask,
               controller: subnetController,
-              hintText: 'e.g. 255.255.255.1',
-              errorText: 'Invalid IP Address',
+              hintText: getAppLocalizations(context).mask_ip_hint,
+              errorText: getAppLocalizations(context).invalid_ip_address,
               isError: isSubnetInvalid,
               onChanged: (text) {
                 setState(() {
@@ -122,10 +122,10 @@ class _EnterStaticIpViewState extends State<EnterStaticIpView> {
               height: 30,
             ),
             InputField(
-              titleText: 'Default gateway',
+              titleText: getAppLocalizations(context).default_gateway,
               controller: gatewayController,
-              hintText: 'e.g. 192.168.0.1',
-              errorText: 'Invalid IP Address',
+              hintText: getAppLocalizations(context).gateway_ip_hint,
+              errorText: getAppLocalizations(context).invalid_ip_address,
               isError: isGatewayInvalid,
               onChanged: (text) {
                 setState(() {
@@ -137,10 +137,10 @@ class _EnterStaticIpViewState extends State<EnterStaticIpView> {
               height: 30,
             ),
             InputField(
-              titleText: 'DNS1',
+              titleText: getAppLocalizations(context).first_dns,
               controller: dns1Controller,
-              hintText: 'e.g. 192.168.0.1',
-              errorText: 'Invalid IP Address',
+              hintText: getAppLocalizations(context).general_ip_hint,
+              errorText: getAppLocalizations(context).invalid_ip_address,
               isError: isDns1Invalid,
               onChanged: (text) {
                 setState(() {
@@ -152,10 +152,10 @@ class _EnterStaticIpViewState extends State<EnterStaticIpView> {
               height: 30,
             ),
             InputField(
-              titleText: 'DNS2',
+              titleText: getAppLocalizations(context).second_dns,
               controller: dns2Controller,
-              hintText: 'e.g. 192.168.0.1',
-              errorText: 'Invalid IP Address',
+              hintText: getAppLocalizations(context).general_ip_hint,
+              errorText: getAppLocalizations(context).invalid_ip_address,
               isError: isDns2Invalid,
               onChanged: (text) {
                 setState(() {
