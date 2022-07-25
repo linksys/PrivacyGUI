@@ -24,12 +24,14 @@ const allConfigFileName = 'all-environments.json';
 // Cloud config url
 String get cloudConfigUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$configFileName';
 String get allCloudConfigUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$allConfigFileName';
+String get availabilityUrl => 'https://cloudhealth.lswf.net/cloud-availability/cloud-qa.json';
 
 // Cloud path constants
 const version = '/v1';
 const accountPath = '/accounts';
 const authPath = '/auth';
 const tasksPath = '/tasks';
+const primaryTasksPath = '/primary-tasks';
 
 // Cloud endpoints variables
 const varAccountId = '{accountId}';
@@ -52,5 +54,5 @@ const endpointGetMaskedCommunicationMethods = '$version$accountPath/masked-commu
 const endpointPostLoginPassword = '$version$authPath/login/password';
 const endpointPostLogin = '$version$authPath/login';
 const endpointGetTasks = '$version$tasksPath/$varTaskId?token=$varToken';
-
+const endPointGetPrimaryTasks = '$version$primaryTasksPath/$varTaskId?token=$varToken';
 const endpointGetAccountSelf = '$version$accountPath/self';

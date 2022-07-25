@@ -124,11 +124,10 @@ extension MoabAuthRequests on MoabHttpClient {
         .post(Uri.parse(url), headers: header, body: jsonEncode(bodyPayload));
   }
 
-  Future<Response> downloadCloudCerts(String taskId,
-      {required String token, required String secret}) {
-    final url = combineUrl(endpointGetTasks, args: {varTaskId: taskId, varToken: token});
-    final header = defaultHeader
-      ..addAll({moabTaskSecretKey: secret});
+  Future<Response> downloadCloudCerts(
+      {required String taskId, required String secret}) {
+    final url = combineUrl(endPointGetPrimaryTasks, args: {varTaskId: taskId});
+    final header = defaultHeader..addAll({moabTaskSecretKey: secret});
 
     return this.get(Uri.parse(url), headers: header);
   }

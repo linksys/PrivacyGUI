@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
+import 'package:moab_poc/network/http/model/base_response.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
@@ -146,7 +147,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
         .localLogin(_passwordController.text)
         .then((value) =>
             NavigationCubit.of(context).clearAndPush(DashboardMainPath()))
-        .onError((error, stackTrace) => _handleError(error as CloudException));
+        .onError((error, stackTrace) => _handleError(error, stackTrace));
     setState(() {
       _isLoading = false;
     });
@@ -162,11 +163,13 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     }
   }
 
-  _handleError(CloudException error) {
-    if (error.code == 'LOCAL_LOGIN_FAILED') {
+  _handleError(Object? e, StackTrace trace) {
+    if (e is ErrorResponse) {
       setState(() {
-        _errorReason = error.message;
+        _errorReason = e.code;
       });
+    } else { // Unknown error or error parsing
+      logger.d('Unknown error: $e');
     }
   }
 }

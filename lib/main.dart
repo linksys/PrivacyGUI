@@ -13,6 +13,7 @@ import 'package:moab_poc/bloc/connectivity/cubit.dart';
 import 'package:moab_poc/design/themes.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/network/http/http_client.dart';
+import 'package:moab_poc/repository/authenticate/impl/cloud_auth_repository.dart';
 import 'package:moab_poc/repository/config/environment_repository.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -58,7 +59,7 @@ void main() {
 Widget _app() {
   return MultiRepositoryProvider(
     providers: [
-      RepositoryProvider(create: (context) => FakeAuthRepository()),
+      RepositoryProvider(create: (context) => CloudAuthRepository(MoabHttpClient())),
       RepositoryProvider(create: (context) => FakeLocalAuthRepository()),
       RepositoryProvider(create: (context) => MoabEnvironmentRepository(MoabHttpClient()))
     ],
@@ -68,7 +69,7 @@ Widget _app() {
       ),
       BlocProvider(
         create: (BuildContext context) => AuthBloc(
-          repo: context.read<FakeAuthRepository>(),
+          repo: context.read<CloudAuthRepository>(),
           localRepo: context.read<FakeLocalAuthRepository>(),
         ),
       ),

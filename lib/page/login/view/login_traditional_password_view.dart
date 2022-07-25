@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
+import 'package:moab_poc/network/http/model/base_response.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
 
@@ -84,10 +85,9 @@ class _LoginTraditionalPasswordViewState
                       });
                       await context
                           .read<AuthBloc>()
-                          .login(_username, passwordController.text)
+                          .loginPassword(passwordController.text)
                           .then((value) => _handleResult(value))
-                          .onError((error, stackTrace) =>
-                              _handleError(error as CloudException));
+                          .onError((error, stackTrace) => _handleError(error, stackTrace));
                       setState(() {
                         _isLoading = false;
                       });
@@ -100,21 +100,27 @@ class _LoginTraditionalPasswordViewState
   }
 
   String _checkErrorReason() {
-    if (_errorReason == 'INCORRECT_PASSWORD') {
+    if (_errorReason == 'INVALID_PASSWORD') {
       return getAppLocalizations(context).error_incorrect_password;
     } else {
+      logger.d('Unknown error: $_errorReason');
       return getAppLocalizations(context).unknown_error;
     }
   }
 
-  _handleResult(List<OtpInfo> otpInfoList) async {
+  _handleResult(AccountInfo accountInfo) async {
+    // if (accountInfo.loginType == LoginType.otp)
     NavigationCubit.of(context)
         .push(AuthCloudLoginOtpPath()..args = {'username': _username});
   }
 
-  _handleError(CloudException e) {
-    setState(() {
-      _errorReason = e.code;
-    });
+  _handleError(Object? e, StackTrace trace) {
+    if (e is ErrorResponse) {
+      setState(() {
+        _errorReason = e.code;
+      });
+    } else { // Unknown error or error parsing
+      logger.d('Unknown error: $e');
+    }
   }
 }

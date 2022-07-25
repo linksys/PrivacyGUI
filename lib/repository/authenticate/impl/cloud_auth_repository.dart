@@ -10,6 +10,7 @@ import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/network/http/model/cloud_create_account_verified.dart';
 import 'package:moab_poc/network/http/model/cloud_login_certs.dart';
 import 'package:moab_poc/network/http/model/cloud_login_state.dart';
+import 'package:moab_poc/network/http/model/cloud_task_model.dart';
 import 'package:moab_poc/repository/authenticate/auth_repository.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:moab_poc/util/storage.dart';
@@ -42,56 +43,8 @@ class CloudAuthRepository extends AuthRepository {
 
   @deprecated
   @override
-  Future<DummyModel> login(String username, String password) {
-    // TODO: implement login
-    throw UnimplementedError();
-  }
-
-  @deprecated
-  @override
-  Future<void> loginChallenge(int method) {
-    // TODO: implement loginChallenge
-    throw UnimplementedError();
-  }
-
-  @deprecated
-  @override
-  Future<DummyModel> passwordLessLogin(String username, String method) {
-    // TODO: implement passwordLessLogin
-    throw UnimplementedError();
-  }
-
-  @deprecated
-  @override
-  Future<void> resendPasswordLessCode(String token, String method) {
-    // TODO: implement resendPasswordLessCode
-    throw UnimplementedError();
-  }
-
-  @override
   Future<DummyModel> resetPassword(String password) {
     // TODO: implement resetPassword
-    throw UnimplementedError();
-  }
-
-  @deprecated
-  @override
-  Future<DummyModel> testUsername(String username) {
-    // TODO: implement testUsername
-    throw UnimplementedError();
-  }
-
-  @deprecated
-  @override
-  Future<DummyModel> validateChallenge(String code) {
-    // TODO: implement validateChallenge
-    throw UnimplementedError();
-  }
-
-  @deprecated
-  @override
-  Future<DummyModel> validatePasswordLessCode(String token, String code) {
-    // TODO: implement validatePasswordLessCode
     throw UnimplementedError();
   }
 
@@ -137,12 +90,12 @@ class CloudAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<CloudLoginState> login2(String token) {
+  Future<CloudLoginAcceptState> login(String token) {
     return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
         _httpClient
             .login(token, id: cloudApp.id, secret: cloudApp.appSecret)
             .then((response) =>
-                CloudLoginState.fromJson(json.decode(response.body))));
+                CloudLoginAcceptState.fromJson(json.decode(response.body))));
   }
 
   @override
@@ -165,14 +118,14 @@ class CloudAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<void> downloadCloudCert(String taskId,
-      {required token, required secret}) {
+  Future<void> downloadCloudCert({required taskId, required secret}) {
     return _httpClient
-        .downloadCloudCerts(taskId, token: token, secret: secret)
+        .downloadCloudCerts(taskId: taskId, secret: secret)
         .then((response) {
       final task = CloudDownloadCertTask.fromJson(json.decode(response.body));
       SharedPreferences.getInstance().then((pref) {
-        pref.setString(moabPrefCloudCertDataKey, jsonEncode(task.data.toJson()));
+        pref.setString(
+            moabPrefCloudCertDataKey, jsonEncode(task.data.toJson()));
       });
       Future.wait([
         Storage.saveFile(Storage.appPublicKeyUri, task.data.publicKey),

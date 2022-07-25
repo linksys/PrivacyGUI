@@ -1,6 +1,13 @@
 import 'package:equatable/equatable.dart';
 
-enum AuthStatus { unknownAuth, unAuthorized, authorized, pending }
+enum AuthStatus {
+  unknownAuth,
+  unAuthorized,
+  authorized,
+  pending,
+  onLogin,
+  onCreateAccount,
+}
 
 enum AuthMethod { none, local, remote }
 
@@ -20,13 +27,16 @@ class AccountInfo {
       required this.otpInfo,
       this.password = ''});
 
-  AccountInfo copyWith(
-      {String? username,
-      String? password,
-      LoginType? loginType,
-      List<OtpInfo>? otpInfo}) {
+
+  AccountInfo copyWith({
+    String? username,
+    String? password,
+    LoginType? loginType,
+    List<OtpInfo>? otpInfo,
+  }) {
     return AccountInfo(
       username: username ?? this.username,
+      password: password ?? this.password,
       loginType: loginType ?? this.loginType,
       otpInfo: otpInfo ?? this.otpInfo,
     );
@@ -35,19 +45,30 @@ class AccountInfo {
 
 class OtpInfo {
   final OtpMethod method;
+  final String methodId;
   final String data;
+  final String maskedData;
 
-  const OtpInfo({required this.method, required this.data});
+  const OtpInfo(
+      {required this.method,
+        this.methodId = '',
+        this.data = '',
+        this.maskedData = ''});
 
   OtpInfo copyWith({
     OtpMethod? method,
     String? data,
+    String? methodId,
+    String? maskedData,
   }) {
     return OtpInfo(
       method: method ?? this.method,
       data: data ?? this.data,
+      methodId:  methodId ?? this.methodId,
+      maskedData: maskedData ?? this.maskedData
     );
   }
+
 }
 
 class AdminPasswordInfo {
@@ -61,6 +82,7 @@ class AuthState extends Equatable {
   final AuthStatus status;
   final AuthMethod method;
   final AccountInfo accountInfo;
+  final String vToken;
 
   // token? cert?
 
@@ -69,6 +91,7 @@ class AuthState extends Equatable {
     this.method = AuthMethod.none,
     this.accountInfo =
         const AccountInfo(username: '', loginType: LoginType.otp, otpInfo: []),
+    this.vToken = '',
   });
 
   factory AuthState.unknownAuth() {
@@ -83,22 +106,33 @@ class AuthState extends Equatable {
     return AuthState(status: AuthStatus.authorized, method: method);
   }
 
+  factory AuthState.onLogin() {
+    return const AuthState(status: AuthStatus.onLogin);
+  }
+
+  factory AuthState.onCreateAccount() {
+    return const AuthState(status: AuthStatus.onCreateAccount);
+  }
+
   @override
   List<Object?> get props => [
         status,
         method,
         accountInfo,
+        vToken,
       ];
 
   AuthState copyWith({
     AuthStatus? status,
     AuthMethod? method,
     AccountInfo? accountInfo,
+    String? vToken,
   }) {
     return AuthState(
       status: status ?? this.status,
       method: method ?? this.method,
       accountInfo: accountInfo ?? this.accountInfo,
+      vToken: vToken ?? this.vToken,
     );
   }
 }

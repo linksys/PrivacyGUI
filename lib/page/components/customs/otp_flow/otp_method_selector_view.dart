@@ -15,20 +15,15 @@ import 'package:moab_poc/route/route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class OTPMethodSelectorView extends ArgumentsStatefulView {
-  const OTPMethodSelectorView(
-      {Key? key, super.args})
-      : super(key: key);
+  const OTPMethodSelectorView({Key? key, super.args}) : super(key: key);
 
   @override
   _OTPMethodSelectorViewState createState() => _OTPMethodSelectorViewState();
 }
 
 class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
-
   @override
-  void initState() {
-
-  }
+  void initState() {}
 
   @override
   Widget build(BuildContext context) {
@@ -52,28 +47,37 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: state.methods.length,
-                itemBuilder: (context, index) =>
-                    GestureDetector(
+                itemBuilder: (context, index) => GestureDetector(
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: SelectableItem(
                           text: state.methods[index].method == OtpMethod.email
                               ? state.methods[index].data
                               : state.methods[index].method.name.toUpperCase(),
-                          isSelected: state.selectedMethod == state.methods[index],
+                          isSelected:
+                              state.selectedMethod == state.methods[index],
                           height: 66,
                         ),
                       ),
                       onTap: () {
-                        context.read<OtpCubit>().selectOtpMethod(state.methods[index]);
+                        context
+                            .read<OtpCubit>()
+                            .selectOtpMethod(state.methods[index]);
                       },
                     )),
             const SizedBox(
               height: 60,
             ),
             PrimaryButton(
-              text: !state.isSendFunction() && state.selectedMethod?.method == OtpMethod.sms ? getAppLocalizations(context).add_phone_number : getAppLocalizations(context).text_continue,
-              onPress: () { !state.isSendFunction() ? _checkPhoneExist(state.selectedMethod!) : _onSend(state.selectedMethod!);},
+              text: !state.isSendFunction() &&
+                      state.selectedMethod?.method == OtpMethod.sms
+                  ? getAppLocalizations(context).add_phone_number
+                  : getAppLocalizations(context).text_continue,
+              onPress: () {
+                !state.isSendFunction()
+                    ? _checkPhoneExist(state.selectedMethod!, state.token)
+                    : _onSend(state.selectedMethod!);
+              },
             ),
             const SizedBox(
               height: 60,
@@ -100,6 +104,7 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
       return '';
     }
   }
+
   String _createDescription(OtpState state) {
     if (state.isSendFunction()) {
       return '';
@@ -112,19 +117,21 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
     }
   }
 
-  _checkPhoneExist(OtpInfo method) {
+  _checkPhoneExist(OtpInfo method, String token) {
     if (method.method == OtpMethod.sms) {
       context.read<OtpCubit>().addPhone();
     } else {
       _onSend(method);
     }
   }
+
   _onSend(OtpInfo method) async {
     _setLoading(true);
-    await context.read<AuthBloc>().passwordLessLogin(
-        method.data, method.method.name).then((value) =>
-        context.read<OtpCubit>().updateToken(value)
-    );
+    await context
+        .read<AuthBloc>()
+        .authChallenge(method)
+        .then((_) => context.read<OtpCubit>().onInputOtp());
+
     _setLoading(false);
   }
 

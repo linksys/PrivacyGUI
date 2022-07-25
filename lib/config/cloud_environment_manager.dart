@@ -63,11 +63,14 @@ class CloudEnvironmentManager {
   }
 
   Future<CloudApp> loadCloudApp() async {
+    logger.d('load cloud app');
     if (_app == null) {
       await createCloudApp();
     }
     SharedPreferences pref = await SharedPreferences.getInstance();
-    _app = CloudApp.fromJson(json.decode(pref.getString(_getAppKey())!));
+    final jsonStr = pref.getString(_getAppKey())!;
+    _app = CloudApp.fromJson(json.decode(jsonStr));
+    logger.d('Cloud App: $_app');
     return _app!;
   }
 

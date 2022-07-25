@@ -10,7 +10,7 @@ import 'package:test/test.dart';
 import '../dev_testable_client.dart';
 
 void main() {
-  const username = 'austin.chang@linksys.com';
+  const username = 'peter.jhong@linksys.com';
   String token = '';
 
   const appId = 'ee7652e0-9a25-4ee5-9974-944179415be0';
@@ -45,6 +45,7 @@ void main() {
   });
 
   group('GROUP 2 - test auth challenge verify and actually create account in dev', () {
+    String token = '6594B83C-4E42-4512-9B9A-D9590DA45FDA';
     test('STEP 4 - auth challenge verify', () async {
       String code = '8325'; // PUT received code from email/SMS here
       final client = DevTestableClient();
