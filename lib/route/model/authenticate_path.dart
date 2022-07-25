@@ -60,8 +60,6 @@ class AuthInputAccountPath extends AuthenticatePath {}
 
 class AuthCloudLoginOtpPath extends AuthenticatePath {}
 
-class NoRouterPath extends AuthenticatePath {}
-
 class AuthForgotEmailPath extends AuthenticatePath {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
