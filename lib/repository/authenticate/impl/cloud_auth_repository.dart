@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:moab_poc/config/cloud_environment_manager.dart';
-import 'package:moab_poc/network/http/constant.dart';
+import 'package:moab_poc/constants/constants.dart';
 import 'package:moab_poc/network/http/extension_requests/extension_requests.dart';
 import 'package:moab_poc/network/http/http_client.dart';
 import 'package:moab_poc/network/http/model/cloud_account_info.dart';

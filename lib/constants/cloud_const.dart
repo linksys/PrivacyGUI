@@ -1,10 +1,5 @@
 import 'package:moab_poc/network/http/model/cloud_config.dart';
 
-// Moab Share Preferences keys
-const moabPrefAppKey = 'MoabApp';
-const moabPrefConfigKey = 'MoabConfigKey';
-const moabPrefCloudCertDataKey = 'MoabCloudCertData';
-
 // Moab header keys
 const moabSiteIdKey = 'X-Linksys-Moab-Site-Id';
 const moabAppIdKey = 'X-Linksys-Moab-App-Id';

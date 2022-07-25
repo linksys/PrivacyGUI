@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -8,12 +7,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/connectivity/availability_info.dart';
-import 'package:moab_poc/network/http/constant.dart';
 import 'package:moab_poc/network/http/http_client.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
 import '../../channel/wifi_connect_channel.dart';
+import '../../constants/constants.dart';
 import 'connectivity_info.dart';
 
 class ConnectivityCubit extends Cubit<ConnectivityInfo>

@@ -4,7 +4,7 @@ import 'package:http/http.dart';
 import 'package:moab_poc/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/network/http/model/cloud_create_account_verified.dart';
-import '../constant.dart';
+import '../../../constants/constants.dart';
 import '../http_client.dart';
 
 extension MoabAuthRequests on MoabHttpClient {

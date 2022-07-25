@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/event.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
-import 'package:moab_poc/network/http/constant.dart';
+import 'package:moab_poc/constants/pref_key.dart';
 import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/network/http/model/cloud_login_certs.dart';
 import 'package:moab_poc/network/http/model/cloud_task_model.dart';

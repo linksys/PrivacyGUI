@@ -14,6 +14,7 @@ import 'package:moab_poc/page/components/customs/otp_flow/otp_cubit.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
+import 'package:moab_poc/util/error_code_handler.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -28,7 +29,7 @@ class OtpCodeInputView extends StatefulWidget {
 }
 
 class _OtpCodeInputViewState extends State<OtpCodeInputView> {
-  String _errorReason = '';
+  String _errorCode = '';
 
   static const otpChannel = MethodChannel('com.linksys.native.channel.otp');
   final TextEditingController _otpController = TextEditingController();
@@ -81,7 +82,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
               child: PinCodeTextField(
                 onChanged: (String value) {
                   setState(() {
-                    _errorReason = '';
+                    _errorCode = '';
                   });
                 },
                 onCompleted: (String? value) => _onNext(value),
@@ -113,11 +114,11 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
                   });
                   _setLoading(false);
                 }),
-            if (_errorReason.isNotEmpty)
+            if (_errorCode.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
                 child: Text(
-                  _handleErrorCode(),
+                  generalErrorCodeHandler(context, _errorCode),
                   style: Theme.of(context)
                       .textTheme
                       .bodyText1
@@ -159,22 +160,10 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
   _handleError(Object? e, StackTrace trace) {
     if (e is ErrorResponse) {
       setState(() {
-        _errorReason = e.code;
+        _errorCode = e.code;
       });
     } else { // Unknown error or error parsing
       logger.d('Unknown error: $e');
-    }
-  }
-
-  String _handleErrorCode() {
-    if (_errorReason == 'INVALID_OTP') {
-      return 'Incorrect code, please check your code and try again';
-    } else if (_errorReason == 'EXPIRED_OTP') {
-      return 'Code expired after 15 minutes. Send a new code and try again';
-    } else if (_errorReason == 'EXCEEDS_THRESHOLD') {
-      return 'You\'ve entered an incorrect code too many times. Your account will be locked for 2 hours';
-    }else {
-      return 'Unknown Error - $_errorReason';
     }
   }
 

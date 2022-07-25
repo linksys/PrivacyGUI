@@ -12,6 +12,7 @@ import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/util/error_code_handler.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/validator.dart';
 import 'package:moab_poc/route/model/model.dart';
@@ -30,7 +31,7 @@ class LoginCloudAccountView extends StatefulWidget {
 class LoginCloudAccountState extends State<LoginCloudAccountView> {
   bool _isValidEmail = false;
   bool _isLoading = false;
-  String _errorReason = '';
+  String _errorCode = '';
 
   final _emailValidator = EmailValidator();
   final TextEditingController _accountController = TextEditingController();
@@ -96,10 +97,10 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
                 onChanged: _checkFilledInfo,
                 inputType: TextInputType.emailAddress,
                 isError: !_isValidEmail && _accountController.text.isNotEmpty ||
-                    _errorReason.isNotEmpty,
-                errorText: _checkErrorReason(),
+                    _errorCode.isNotEmpty,
+                errorText: generalErrorCodeHandler(context, _errorCode),
               ),
-              if (_errorReason == "NOT_FOUND")
+              if (_errorCode == "RESOURCE_NOT_FOUND")
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: SimpleTextButton(
@@ -149,20 +150,10 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
         ));
   }
 
-  String _checkErrorReason() {
-    if (_errorReason.isEmpty) {
-      return getAppLocalizations(context).error_enter_a_valid_email_format;
-    } else if (_errorReason == 'RESOURCE_NOT_FOUND') {
-      return getAppLocalizations(context).error_email_address_not_fount;
-    } else {
-      return getAppLocalizations(context).unknown_error;
-    }
-  }
-
   _checkFilledInfo(_) {
     setState(() {
       _isValidEmail = _emailValidator.validate(_accountController.text);
-      _errorReason = '';
+      _errorCode = 'EMPTY_EMAIL';
     });
   }
 
@@ -178,7 +169,7 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
   _handleError(Object? e, StackTrace trace) {
     if (e is ErrorResponse) {
       setState(() {
-        _errorReason = e.code;
+        _errorCode = e.code;
       });
     } else { // Unknown error or error parsing
       logger.d('Unknown error: $e');

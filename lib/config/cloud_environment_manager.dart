@@ -2,7 +2,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:moab_poc/network/http/constant.dart';
+import 'package:moab_poc/constants/constants.dart';
 import 'package:moab_poc/network/http/model/cloud_app.dart';
 import 'package:moab_poc/network/http/model/cloud_config.dart';
 import 'package:moab_poc/network/http/http_client.dart';

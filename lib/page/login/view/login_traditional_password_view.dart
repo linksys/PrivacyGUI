@@ -4,6 +4,7 @@ import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/network/http/model/base_response.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
+import 'package:moab_poc/util/error_code_handler.dart';
 
 import '../../../bloc/auth/bloc.dart';
 import '../../../bloc/auth/state.dart';
@@ -28,7 +29,7 @@ class _LoginTraditionalPasswordViewState
     extends State<LoginTraditionalPasswordView> {
   final TextEditingController passwordController = TextEditingController();
   bool _isLoading = false;
-  String _errorReason = '';
+  String _errorCode = '';
   String _username = '';
 
   @override
@@ -57,12 +58,12 @@ class _LoginTraditionalPasswordViewState
             PasswordInputField(
               titleText: getAppLocalizations(context).password,
               hintText: getAppLocalizations(context).password,
-              isError: _errorReason.isNotEmpty,
-              errorText: _checkErrorReason(),
+              isError: _errorCode.isNotEmpty,
+              errorText: generalErrorCodeHandler(context, _errorCode),
               controller: passwordController,
               onChanged: (value) {
                 setState(() {
-                  _errorReason = '';
+                  _errorCode = '';
                 });
               },
             ),
@@ -99,15 +100,6 @@ class _LoginTraditionalPasswordViewState
     );
   }
 
-  String _checkErrorReason() {
-    if (_errorReason == 'INVALID_PASSWORD') {
-      return getAppLocalizations(context).error_incorrect_password;
-    } else {
-      logger.d('Unknown error: $_errorReason');
-      return getAppLocalizations(context).unknown_error;
-    }
-  }
-
   _handleResult(AccountInfo accountInfo) async {
     // if (accountInfo.loginType == LoginType.otp)
     NavigationCubit.of(context)
@@ -117,7 +109,7 @@ class _LoginTraditionalPasswordViewState
   _handleError(Object? e, StackTrace trace) {
     if (e is ErrorResponse) {
       setState(() {
-        _errorReason = e.code;
+        _errorCode = e.code;
       });
     } else { // Unknown error or error parsing
       logger.d('Unknown error: $e');
