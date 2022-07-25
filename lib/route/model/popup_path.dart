@@ -4,10 +4,10 @@ import 'package:moab_poc/route/route.dart';
 
 import 'base_path.dart';
 
-abstract class PopUpPath<P> extends BasePath<P> {
+abstract class PopUpPath extends BasePath {
   @override
   Widget buildPage(NavigationCubit cubit) {
-    switch (P) {
+    switch (runtimeType) {
       case NoInternetConnectionPath:
         return NoInternetConnectionModal();
       default:
@@ -15,8 +15,10 @@ abstract class PopUpPath<P> extends BasePath<P> {
     }
   }
 }
-class NoInternetConnectionPath extends PopUpPath<NoInternetConnectionPath> {
+
+class NoInternetConnectionPath extends PopUpPath {
   @override
-  PageConfig get pageConfig =>
-      super.pageConfig..isFullScreenDialog = true..isOpaque = false;
+  PageConfig get pageConfig => super.pageConfig
+    ..isFullScreenDialog = true
+    ..isOpaque = false;
 }

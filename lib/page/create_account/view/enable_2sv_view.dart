@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
@@ -33,9 +35,12 @@ class EnableTwoSVView extends StatelessWidget {
             PrimaryButton(
               text: 'Yes',
               onPress: () {
+                final username =
+                    context.read<AuthBloc>().state.accountInfo.username;
+
                 NavigationCubit.of(context).push(CreateAccountOtpPath()
                   ..args = {
-                    'username': 'test@linksys.com',
+                    'username': username,
                     'function': OtpFunction.setting2sv,
                   });
               },

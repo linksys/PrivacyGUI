@@ -36,7 +36,7 @@ class _AddAccountState extends State<AddAccountView> {
     isEmailInvalid = !EmailValidator().validate(_emailController.text);
     if (!isEmailInvalid) {
       context.read<AuthBloc>().add(SetEmail(email: _emailController.text));
-      NavigationCubit.of(context).push(CreateAccountOtpPath()..args = {'username': 'test@linksys.com', 'function': OtpFunction.setting,});
+      NavigationCubit.of(context).push(CreateAccountOtpPath()..args = {'username': _emailController.text, 'function': OtpFunction.setting,});
     } else {
       setState(() {});
     }
@@ -97,6 +97,7 @@ class _AddAccountState extends State<AddAccountView> {
               controller: _emailController,
               isError: isEmailInvalid,
               errorText: 'Enter a valid email format',
+              inputType: TextInputType.emailAddress,
               onChanged: (value) {
                 setState(() {
                   isEmailInvalid = false;
@@ -107,18 +108,6 @@ class _AddAccountState extends State<AddAccountView> {
             DescriptionText(text: getAppLocalizations(context).add_cloud_account_input_description),
             const SizedBox(
               height: 8,
-            ),
-            Visibility(
-              maintainState: true,
-              maintainAnimation: true,
-              maintainSize: true,
-              visible: isEmailInvalid,
-              child: Text(
-                'Enter a valid email format',
-                style: Theme.of(context).textTheme.headline4?.copyWith(
-                      color: Colors.red,
-                    ),
-              ),
             ),
             _buildAccountTipsWidget(),
             SimpleTextButton(

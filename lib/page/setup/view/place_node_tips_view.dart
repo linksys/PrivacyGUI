@@ -14,12 +14,11 @@ class PlaceNodeTipsView extends StatefulWidget {
 
 class _PlaceNodeTipsViewState extends State<PlaceNodeTipsView> {
   final PageController _controller = PageController(initialPage: 0);
-  final Widget fpoImage = SvgPicture.asset(
-    'assets/images/linksys_logo_large_white.svg',
-    semanticsLabel: 'Setup Finished',
+  final Widget avoidInsideImage = Image.asset(
+    'assets/images/avoid_place_inside.png',
   );
-  final Widget inTheOpenImage = Image.asset('assets/images/out_in_the_open.png');
-
+  final Widget inTheOpenImage =
+      Image.asset('assets/images/out_in_the_open.png');
 
   @override
   void dispose() {
@@ -36,29 +35,47 @@ class _PlaceNodeTipsViewState extends State<PlaceNodeTipsView> {
           context,
           scrollable: true,
           child: BasicLayout(
-            header: BasicHeader(title: getAppLocalizations(context)
-                .place_node_tips_first_view_title),
+            header: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                BasicHeader(
+                    title: getAppLocalizations(context)
+                        .place_node_tips_first_view_index),
+                const SizedBox(height: 8),
+                BasicHeader(
+                    title: getAppLocalizations(context)
+                        .place_node_tips_first_view_title)
+              ],
+            ),
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 44),
-                fpoImage,
+                inTheOpenImage,
                 const SizedBox(height: 48),
               ],
             ),
           ),
         ),
         BasePageView.withCloseButton(
-            context,
+          context,
           scrollable: true,
           child: BasicLayout(
-            header: BasicHeader(title: getAppLocalizations(context).place_node_tips_second_view_title),
-            content: Column(
+            header: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 44),
-                inTheOpenImage
+                BasicHeader(
+                    title: getAppLocalizations(context)
+                        .place_node_tips_second_view_index),
+                const SizedBox(height: 8),
+                BasicHeader(
+                    title: getAppLocalizations(context)
+                        .place_node_tips_second_view_title)
               ],
+            ),
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [const SizedBox(height: 44), avoidInsideImage],
             ),
           ),
         )
