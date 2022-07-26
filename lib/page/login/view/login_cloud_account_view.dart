@@ -39,6 +39,7 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
   //TODO: Move to another place
   static const notificationAuthChannel = MethodChannel('otp.view/notification.auth');
   static const deviceTokenChannel = MethodChannel('otp.view/device.token');
+  static const notificationContentChannel = EventChannel('moab.dev/notification.payload');
 
   Future<void> _readDeviceToken() async {
     if (Platform.isIOS) {
@@ -54,11 +55,20 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
     }
   }
 
+  Future<void> _listenIOSNotification() async {
+    if (Platform.isIOS) {
+      notificationContentChannel.receiveBroadcastStream().listen((content) {
+        print('IOS notification received : $content');
+      });
+    }
+  }
+
   @override
   void initState() {
     //TODO: Move to another place
     _readDeviceToken();
     _getNotificationAuth();
+    _listenIOSNotification();
     super.initState();
 
     context.read<AuthBloc>().add(OnLogin());

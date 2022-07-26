@@ -3,9 +3,11 @@ import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:moab_poc/bloc/app_lifecycle/cubit.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/event.dart';
@@ -25,6 +27,17 @@ import 'repository/authenticate/impl/fake_auth_repository.dart';
 import 'repository/authenticate/impl/fake_local_auth_repository.dart';
 import 'package:moab_poc/route/model/model.dart';
 
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // If you're going to use other Firebase services in the background, such as Firestore,
+  // make sure you call `initializeApp` before using other Firebase services.
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  print("Handling a background message: ${message.messageId}");
+}
+
+late AndroidNotificationChannel channel;
+late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+
 void main() {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +49,22 @@ void main() {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     logger.d('Done for init Firebase Core');
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    if (!kIsWeb) {
+      channel = const AndroidNotificationChannel(
+          'high_importance_channel', 'High Importance Notifications',
+          description: 'This channel is used for important notifications.',
+          importance: Importance.high);
+    }
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+    await FirebaseMessaging.instance
+        .setForegroundNotificationPresentationOptions(
+            alert: true, badge: true, sound: true);
+    initCloudMessage();
     // Pass all uncaught errors from the framework to Crashlytics.
     FlutterError.onError = (FlutterErrorDetails details) {
       logger.e('Uncaught Flutter Error:\n', details);
@@ -56,12 +85,44 @@ void main() {
   });
 }
 
+void initCloudMessage() async {
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+  NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true);
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print('Got a message while in the foreground!');
+    print('Message data: ${message.data}');
+    RemoteNotification? notification = message.notification;
+    AndroidNotification? android = message.notification?.android;
+    if (notification != null && android != null && !kIsWeb) {
+      flutterLocalNotificationsPlugin.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          NotificationDetails(
+              android: AndroidNotificationDetails(channel.id, channel.name,
+                  channelDescription: channel.description,
+                  icon: 'launch_background')));
+    }
+  });
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    print('A new onMessageOpenedApp event was published!');
+  });
+}
+
 Widget _app() {
   return MultiRepositoryProvider(
     providers: [
       RepositoryProvider(create: (context) => CloudAuthRepository(MoabHttpClient())),
       RepositoryProvider(create: (context) => FakeLocalAuthRepository()),
-      RepositoryProvider(create: (context) => MoabEnvironmentRepository(MoabHttpClient()))
+      RepositoryProvider(
+          create: (context) => MoabEnvironmentRepository(MoabHttpClient()))
     ],
     child: MultiBlocProvider(providers: [
       BlocProvider(
@@ -88,7 +149,6 @@ class MoabApp extends StatefulWidget {
 }
 
 class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
-
   late ConnectivityCubit _cubit;
 
   @override

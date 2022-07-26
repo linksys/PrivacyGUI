@@ -6,6 +6,7 @@ import FirebaseCore
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
     var deviceToken: String?
+    var notificationContent: Dictionary<String, Any>?
     
   override func application(
     _ application: UIApplication,
@@ -47,6 +48,9 @@ import FirebaseCore
               result(FlutterError(code: "Failed", message: "Device token is nil", details: nil))
           }
       }
+      
+      let notificationContentChannel = FlutterEventChannel(name: "moab.dev/notification.payload", binaryMessenger: controller.binaryMessenger)
+      notificationContentChannel.setStreamHandler(NotificationContentStreamHandler())
       
       let notificationAuthChannel = FlutterMethodChannel(name: "otp.view/notification.auth",
                                                          binaryMessenger: controller.binaryMessenger)
@@ -113,12 +117,27 @@ import FirebaseCore
     }
     
     override func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        let userInfo = notification.request.content.userInfo
+        self.notificationContent = userInfo["aps"] as? Dictionary<String, Any>
+        if let payload = notificationContent {
+            NotificationCenter.default.post(
+                name: NSNotification.Name("ApnsPayloadNotification"),
+                object: nil,
+                userInfo: ["content": payload])
+        }
         print("AppDelegate: willPresent notification: userInfo=\(notification.request.content.userInfo)")
         completionHandler(UNNotificationPresentationOptions.banner)
     }
     
     override func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         let userInfo = response.notification.request.content.userInfo
+        self.notificationContent = userInfo["aps"] as? Dictionary<String, Any>
+        if let payload = notificationContent {
+            NotificationCenter.default.post(
+                name: NSNotification.Name("ApnsPayloadNotification"),
+                object: nil,
+                userInfo: ["content": payload])
+        }
         print("AppDelegate: didReceive response: userInfo=\(userInfo)")
         completionHandler()
     }
@@ -164,4 +183,35 @@ class UniversalLinkStreamHandler: NSObject, FlutterStreamHandler {
         eventSink(code)
     }
     
+}
+
+class NotificationContentStreamHandler: NSObject, FlutterStreamHandler {
+    private var eventSink: FlutterEventSink?
+    
+    func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(sendEvent(_:)),
+            name: NSNotification.Name("ApnsPayloadNotification"),
+            object: nil
+        )
+        eventSink = events
+        return nil
+    }
+    
+    func onCancel(withArguments arguments: Any?) -> FlutterError? {
+        NotificationCenter.default.removeObserver(self)
+        eventSink = nil
+        return nil
+    }
+    
+    @objc func sendEvent(_ notification: NSNotification) {
+        guard let eventSink = eventSink else {
+            return
+        }
+        guard let userInfo = notification.userInfo, let content = userInfo["content"] else {
+            return
+        }
+        eventSink(content)
+    }
 }
