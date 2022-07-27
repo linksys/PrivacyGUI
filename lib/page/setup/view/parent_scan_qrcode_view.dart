@@ -12,7 +12,6 @@ import 'package:moab_poc/util/permission.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../components/base_components/button/primary_button.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/route/model/model.dart';
 
 class ParentScanQRCodeView extends StatefulWidget {
@@ -45,13 +44,11 @@ class _ParentScanQRCodeViewState extends State<ParentScanQRCodeView>
       child: BasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).scan_qrcode_view_title,
-          description: 'The code is on the bottom of your node',
         ),
         content: Center(
           child: Stack(
             children: [
               Container(
-                margin: EdgeInsets.only(top: 30),
                 width: double.infinity,
                 height: 300,
                 alignment: Alignment.center,
