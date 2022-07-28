@@ -20,10 +20,6 @@ abstract class CreateAccountPath extends BasePath {
         return CreateAdminPasswordView(
           args: args,
         );
-      case ChooseLoginMethodPath:
-        return ChooseLoginTypeView(
-          args: args,
-        );
       case CreateAccountOtpPath:
         if (args != null) {
           args!['onNext'] = SaveCloudSettingsPath();
@@ -37,8 +33,6 @@ abstract class CreateAccountPath extends BasePath {
         return const HaveOldAccountView();
       case NoUseCloudAccountPath:
         return const NoUseAccountConfirmView();
-      case EnableTwoSVPath:
-        return const EnableTwoSVView();
       case CreateCloudPasswordPath:
         return CreateAccountPasswordView(
           args: args,
@@ -69,16 +63,16 @@ class SameAccountPromptPath extends CreateAccountPath {
 
 class CreateAdminPasswordPath extends CreateAccountPath {}
 
-// TODO: nobody use this
-class ChooseLoginMethodPath extends CreateAccountPath {}
-
 class CreateAccountOtpPath extends CreateAccountPath {}
 
 class CreateCloudPasswordPath extends CreateAccountPath {}
 
 class CreateCloudAccountSuccessPath extends CreateAccountPath {}
 
-class SaveCloudSettingsPath extends CreateAccountPath {}
+class SaveCloudSettingsPath extends CreateAccountPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..ignoreAuthChanged = true;
+}
 
 class AlreadyHaveOldAccountPath extends CreateAccountPath {
   @override
@@ -87,4 +81,3 @@ class AlreadyHaveOldAccountPath extends CreateAccountPath {
 
 class NoUseCloudAccountPath extends CreateAccountPath {}
 
-class EnableTwoSVPath extends CreateAccountPath {}

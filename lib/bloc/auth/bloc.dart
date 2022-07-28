@@ -15,8 +15,11 @@ import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../network/http/model/cloud_account_info.dart';
 import '../../network/http/model/cloud_auth_clallenge_method.dart';
+import '../../network/http/model/cloud_create_account_verified.dart';
 import '../../network/http/model/cloud_login_state.dart';
+import '../../network/http/model/cloud_preferences.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _repository;
@@ -32,7 +35,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<OnCreateAccount>(_onCreateAccount);
     on<Unauthorized>(_unauthorized);
     on<Authorized>(_authorized);
-    on<SetEmail>(_onSetEmail);
+    on<RequireOtpCode>(_onRequireOtpCode);
+    on<SetCloudPassword>(_onSetCloudPassword);
   }
 
   _onInitAuth(InitAuth event, Emitter<AuthState> emit) {
@@ -57,10 +61,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(state.copyWith(status: AuthStatus.authorized));
   }
 
-  void _onSetEmail(SetEmail event, Emitter<AuthState> emit) {
-    emit(state.copyWith(
-        accountInfo: AccountInfo(
-            username: event.email, loginType: LoginType.otp, otpInfo: [])));
+  void _onRequireOtpCode(RequireOtpCode event, Emitter<AuthState> emit) {
+    switch (state.status) {
+      case AuthStatus.onCreateAccount:
+        createAccountPreparationUpdateMethod(event.otpInfo)
+            .then((_) => authChallenge(event.otpInfo));
+        break;
+      case AuthStatus.onLogin:
+        authChallenge(event.otpInfo);
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _onSetCloudPassword(SetCloudPassword event, Emitter<AuthState> emit) {
+    AccountInfo info = state.accountInfo
+        .copyWith(password: event.password, loginType: LoginType.password);
+    emit(state.copyWith(accountInfo: info));
   }
 
   @override
@@ -85,7 +103,9 @@ extension AuthBlocCloud on AuthBloc {
 
   Future<void> authChallenge(OtpInfo method) async {
     return await _repository.authChallenge(AuthChallengeMethod(
-        token: state.vToken, method: method.method.name.toUpperCase(), target: method.data));
+        token: state.vToken,
+        method: method.method.name.toUpperCase(),
+        target: method.data));
   }
 
   Future<void> authChallengeVerify(String code) async {
@@ -99,7 +119,73 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<bool> login() async {
-    return await _repository.login(state.vToken).then((value) => _handleLogin(value));
+    return await _repository
+        .login(state.vToken)
+        .then((value) => _handleLogin(value));
+  }
+
+  Future<void> createAccountPreparation(String email) async {
+    return await _repository
+        .createAccountPreparation(email)
+        .then((value) => _handleCreateAccountPreparation(email, value));
+  }
+
+  Future<void> createAccountPreparationUpdateMethod(OtpInfo otpInfo) async {
+    CommunicationMethod method = CommunicationMethod(
+        method: OtpMethod.email.name.toUpperCase(), targetValue: otpInfo.data);
+    switch (otpInfo.method) {
+      case OtpMethod.email:
+        break;
+      case OtpMethod.sms:
+        method = CommunicationMethod(
+            method: OtpMethod.sms.name.toUpperCase(),
+            targetValue: otpInfo.data);
+        break;
+      default:
+        break;
+    }
+    return await _repository.createAccountPreparationUpdateMethod(
+        state.vToken, method);
+  }
+
+  Future<void> createVerifiedAccount() async {
+    // TODO: Need be modified
+    CreateAccountVerified verified = CreateAccountVerified(
+        token: state.vToken,
+        authenticationMode: state.accountInfo.loginType.name.toUpperCase(),
+        password: state.accountInfo.loginType == LoginType.password
+            ? state.accountInfo.password
+            : null,
+        preferences: const CloudPreferences(
+            isoLanguageCode: 'zh',
+            isoCountryCode: 'TW',
+            timeZone: 'Asia/Taipei'));
+    return await _repository
+        .createVerifiedAccount(verified)
+        .then((value) => _handleCreateVerifiedAccount(value));
+  }
+
+  Future<AccountInfo> fetchOtpInfo(String username) async {
+    switch (state.status) {
+      case AuthStatus.onCreateAccount:
+        List<OtpInfo> list = [];
+        list.add(const OtpInfo(
+          method: OtpMethod.sms,
+          data: '',
+        ));
+        list.add(OtpInfo(
+          method: OtpMethod.email,
+          data: username,
+        ));
+        AccountInfo accountInfo = state.accountInfo.copyWith(otpInfo: list);
+        emit(state.copyWith(accountInfo: accountInfo));
+        return accountInfo;
+      case AuthStatus.onLogin:
+        return await getMaskedCommunicationMethods(username);
+      default:
+        return AccountInfo(
+            username: username, loginType: LoginType.otp, otpInfo: []);
+    }
   }
 
   Future<AccountInfo> _handleLoginPrepare(
@@ -159,15 +245,33 @@ extension AuthBlocCloud on AuthBloc {
     if (delta > 0) {
       await Future.delayed(Duration(milliseconds: delta));
     }
-    await _repository.downloadCloudCert(taskId: acceptState.data.taskId, secret: acceptState.data.certSecret);
+    await _repository.downloadCloudCert(
+        taskId: acceptState.data.taskId, secret: acceptState.data.certSecret);
     return checkCertValidation();
+  }
+
+  Future<void> _handleCreateAccountPreparation(
+      String email, String token) async {
+    logger.d("handle create Account Preparation: $token");
+    AccountInfo info = state.accountInfo.copyWith(username: email);
+    emit(state.copyWith(vToken: token, accountInfo: info));
+  }
+
+  Future<void> _handleCreateVerifiedAccount(CloudAccountInfo info) async {
+    logger.d("handle Create Verified Account: $info");
+    // Put needed info to state
+    // emit(state.copyWith());
+
+    // Download cert (do log in) in future
+    add(Authorized());
   }
 
   Future<bool> checkCertValidation() async {
     final isPrivateExist = File.fromUri(Storage.appPrivateKeyUri).existsSync();
     final isPublicExist = File.fromUri(Storage.appPublicKeyUri).existsSync();
-    final prefs = await SharedPreferences.getInstance();
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(prefs.getString(moabPrefCloudCertDataKey) ?? ''));
+    // final prefs = await SharedPreferences.getInstance();
+    // final certData = CloudDownloadCertData.fromJson(
+    //     jsonDecode(prefs.getString(moabPrefCloudCertDataKey) ?? ''));
 
     // TODO check expiration
     return isPrivateExist & isPublicExist;
@@ -215,6 +319,14 @@ extension AuthBlocLocal on AuthBloc {
   }
 
   Future<DummyModel> createPassword(String password, String hint) async {
-    return await _localAuthRepository.createPassword(password, hint);
+    return await _localAuthRepository
+        .createPassword(password, hint)
+        .then((value) => _handleCreatePassword(password, hint));
+  }
+
+  _handleCreatePassword(String password, String? hint) {
+    LocalLoginInfo info = state.localLoginInfo
+        .copyWith(routerPassword: password, routerPasswordHint: hint);
+    emit(state.copyWith(localLoginInfo: info));
   }
 }

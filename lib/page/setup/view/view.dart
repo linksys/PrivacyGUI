@@ -1,4 +1,3 @@
-export 'add_child_connected_view.dart';
 export 'add_child_finished_view.dart';
 export 'add_child_plug_view.dart';
 export 'add_child_scan_qrcode_view.dart';

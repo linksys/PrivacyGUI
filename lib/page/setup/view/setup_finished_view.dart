@@ -84,7 +84,7 @@ class SetupFinishedView extends ArgumentsStatelessView {
         ),
         footer: PrimaryButton(
           text: getAppLocalizations(context).go_to_dashboard,
-          onPress: () => NavigationCubit.of(context).push(DashboardMainPath()),
+          onPress: () => NavigationCubit.of(context).push(PrepareDashboardPath()),
         ),
         alignment: CrossAxisAlignment.start,
       ),

@@ -7,7 +7,6 @@ import 'package:moab_poc/bloc/setup/event.dart';
 import 'package:moab_poc/bloc/setup/state.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
 import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
 import 'package:moab_poc/page/components/base_components/text/description_text.dart';
@@ -20,6 +19,7 @@ import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/validator.dart';
 
 import '../../components/base_components/button/primary_button.dart';
+import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 
 class AddAccountView extends ArgumentsStatefulView {
   const AddAccountView({Key? key, super.args}) : super(key: key);
@@ -29,24 +29,38 @@ class AddAccountView extends ArgumentsStatefulView {
 }
 
 class _AddAccountState extends State<AddAccountView> {
+  bool _isLoading = false;
   final TextEditingController _emailController = TextEditingController();
   var isEmailInvalid = false;
 
-  void _onNextAction() {
+  void _onNextAction() async {
     isEmailInvalid = !EmailValidator().validate(_emailController.text);
     if (!isEmailInvalid) {
-      context.read<AuthBloc>().add(SetEmail(email: _emailController.text));
-      NavigationCubit.of(context).push(CreateAccountOtpPath()..args = {'username': _emailController.text, 'function': OtpFunction.setting,});
+      setState(() {
+        _isLoading = true;
+      });
+      await context
+          .read<AuthBloc>()
+          .createAccountPreparation(_emailController.text)
+          .then((_) => NavigationCubit.of(context).push(CreateAccountOtpPath()
+            ..args = {
+              'username': _emailController.text,
+              'function': OtpFunction.setting,
+            }));
+      setState(() {
+        _isLoading = false;
+      });
     } else {
       setState(() {});
     }
   }
 
-
   @override
   void initState() {
     super.initState();
-    context.read<SetupBloc>().add(const ResumePointChanged(status: SetupResumePoint.CREATECLOUDACCOUNT));
+    context.read<SetupBloc>().add(
+        const ResumePointChanged(status: SetupResumePoint.CREATECLOUDACCOUNT));
+    context.read<AuthBloc>().add(OnCreateAccount());
   }
 
   Widget _buildAccountTipsWidget() {
@@ -71,8 +85,8 @@ class _AddAccountState extends State<AddAccountView> {
               Text(
                 tips[index],
                 style: Theme.of(context).textTheme.headline4?.copyWith(
-                  color: Theme.of(context).primaryColor,
-                ),
+                      color: Theme.of(context).primaryColor,
+                    ),
               ),
             ],
           );
@@ -83,57 +97,64 @@ class _AddAccountState extends State<AddAccountView> {
 
   @override
   Widget build(BuildContext context) {
+    return _isLoading
+        ? FullScreenSpinner(text: getAppLocalizations(context).processing)
+        : _contentView();
+  }
+
+  Widget _contentView() {
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
-        header: BasicHeader(
-          title: getAppLocalizations(context).add_cloud_account_header_title,
-        ),
-        content: Column(
-          children: [
-            InputField(
-              titleText: getAppLocalizations(context).add_cloud_account_input_title,
-              controller: _emailController,
-              isError: isEmailInvalid,
-              errorText: 'Enter a valid email format',
-              inputType: TextInputType.emailAddress,
-              onChanged: (value) {
-                setState(() {
-                  isEmailInvalid = false;
-                });
-              }
-            ),
-            const SizedBox(height: 31),
-            DescriptionText(text: getAppLocalizations(context).add_cloud_account_input_description),
-            const SizedBox(
-              height: 8,
-            ),
-            _buildAccountTipsWidget(),
-            SimpleTextButton(
-                text: getAppLocalizations(context).already_have_an_account,
+          alignment: CrossAxisAlignment.start,
+          header: BasicHeader(
+            title: getAppLocalizations(context).add_cloud_account_header_title,
+          ),
+          content: Column(
+            children: [
+              InputField(
+                  titleText: getAppLocalizations(context)
+                      .add_cloud_account_input_title,
+                  controller: _emailController,
+                  isError: isEmailInvalid,
+                  errorText: 'Enter a valid email format',
+                  inputType: TextInputType.emailAddress,
+                  onChanged: (value) {
+                    setState(() {
+                      isEmailInvalid = false;
+                    });
+                  }),
+              const SizedBox(height: 31),
+              DescriptionText(
+                  text: getAppLocalizations(context)
+                      .add_cloud_account_input_description),
+              const SizedBox(
+                height: 8,
+              ),
+              _buildAccountTipsWidget(),
+              SimpleTextButton(
+                  text: getAppLocalizations(context).already_have_an_account,
+                  onPressed: () {
+                    NavigationCubit.of(context).push(NoUseCloudAccountPath());
+                  })
+            ],
+            crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+          footer: Column(
+            children: [
+              PrimaryButton(
+                text: getAppLocalizations(context).next,
+                onPress: _onNextAction,
+              ),
+              const SizedBox(height: 8),
+              SimpleTextButton(
+                text: getAppLocalizations(context).do_this_later,
                 onPressed: () {
                   NavigationCubit.of(context).push(NoUseCloudAccountPath());
-                })
-          ],
-          crossAxisAlignment: CrossAxisAlignment.start,
-        ),
-        footer: Column(
-          children: [
-            PrimaryButton(
-              text: getAppLocalizations(context).next,
-              onPress: _onNextAction,
-            ),
-            const SizedBox(height: 8),
-            SimpleTextButton(
-              text: getAppLocalizations(context).do_this_later,
-              onPressed: (){
-                NavigationCubit.of(context).push(NoUseCloudAccountPath());
-              },
-            )
-          ],
-        )
-      ),
+                },
+              )
+            ],
+          )),
     );
   }
 }

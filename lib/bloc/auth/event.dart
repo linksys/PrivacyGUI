@@ -1,4 +1,6 @@
 
+import 'package:moab_poc/bloc/auth/state.dart';
+
 abstract class AuthEvent {}
 
 class InitAuth extends AuthEvent {}
@@ -11,8 +13,14 @@ class Unauthorized extends AuthEvent {}
 
 class Authorized extends AuthEvent {}
 
-class SetEmail extends AuthEvent{
-  SetEmail({required this.email});
+class RequireOtpCode extends AuthEvent{
+  RequireOtpCode({required this.otpInfo});
 
-  final String email;
+  final OtpInfo otpInfo;
+}
+
+class SetCloudPassword extends AuthEvent{
+  SetCloudPassword({required this.password});
+
+  final String password;
 }

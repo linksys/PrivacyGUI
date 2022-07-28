@@ -27,7 +27,6 @@ class AccountInfo {
       required this.otpInfo,
       this.password = ''});
 
-
   AccountInfo copyWith({
     String? username,
     String? password,
@@ -43,6 +42,26 @@ class AccountInfo {
   }
 }
 
+class LocalLoginInfo {
+  final String routerPassword;
+  final String routerPasswordHint;
+
+  const LocalLoginInfo({
+    required this.routerPassword,
+    this.routerPasswordHint = '',
+  });
+
+  LocalLoginInfo copyWith({
+    String? routerPassword,
+    String? routerPasswordHint,
+  }) {
+    return LocalLoginInfo(
+      routerPassword: routerPassword ?? this.routerPassword,
+      routerPasswordHint: routerPasswordHint ?? this.routerPasswordHint,
+    );
+  }
+}
+
 class OtpInfo {
   final OtpMethod method;
   final String methodId;
@@ -51,9 +70,9 @@ class OtpInfo {
 
   const OtpInfo(
       {required this.method,
-        this.methodId = '',
-        this.data = '',
-        this.maskedData = ''});
+      this.methodId = '',
+      this.data = '',
+      this.maskedData = ''});
 
   OtpInfo copyWith({
     OtpMethod? method,
@@ -62,13 +81,11 @@ class OtpInfo {
     String? maskedData,
   }) {
     return OtpInfo(
-      method: method ?? this.method,
-      data: data ?? this.data,
-      methodId:  methodId ?? this.methodId,
-      maskedData: maskedData ?? this.maskedData
-    );
+        method: method ?? this.method,
+        data: data ?? this.data,
+        methodId: methodId ?? this.methodId,
+        maskedData: maskedData ?? this.maskedData);
   }
-
 }
 
 class AdminPasswordInfo {
@@ -82,6 +99,7 @@ class AuthState extends Equatable {
   final AuthStatus status;
   final AuthMethod method;
   final AccountInfo accountInfo;
+  final LocalLoginInfo localLoginInfo;
   final String vToken;
 
   // token? cert?
@@ -91,6 +109,7 @@ class AuthState extends Equatable {
     this.method = AuthMethod.none,
     this.accountInfo =
         const AccountInfo(username: '', loginType: LoginType.otp, otpInfo: []),
+    this.localLoginInfo = const LocalLoginInfo(routerPassword: ''),
     this.vToken = '',
   });
 
@@ -111,7 +130,10 @@ class AuthState extends Equatable {
   }
 
   factory AuthState.onCreateAccount() {
-    return const AuthState(status: AuthStatus.onCreateAccount);
+    return const AuthState(
+        status: AuthStatus.onCreateAccount,
+        accountInfo:
+            AccountInfo(username: '', loginType: LoginType.otp, otpInfo: []));
   }
 
   @override
@@ -126,12 +148,14 @@ class AuthState extends Equatable {
     AuthStatus? status,
     AuthMethod? method,
     AccountInfo? accountInfo,
+    LocalLoginInfo? localLoginInfo,
     String? vToken,
   }) {
     return AuthState(
       status: status ?? this.status,
       method: method ?? this.method,
       accountInfo: accountInfo ?? this.accountInfo,
+      localLoginInfo: localLoginInfo ?? this.localLoginInfo,
       vToken: vToken ?? this.vToken,
     );
   }

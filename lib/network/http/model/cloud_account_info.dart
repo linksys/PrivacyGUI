@@ -32,8 +32,8 @@ class CloudAccountInfo extends Equatable {
       status: json['status'],
       type: json['type'],
       authenticationMode: json['authenticationMode'],
-      createAt: json['createAt'],
-      updateAt: json['updateAt'],
+      createAt: json['createdAt'],
+      updateAt: json['updatedAt'],
     );
   }
 

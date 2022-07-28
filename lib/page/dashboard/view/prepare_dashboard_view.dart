@@ -26,44 +26,14 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
   void initState() {
     super.initState();
 
-    _continueLogin();
+    _checkSelfNetworks();
   }
 
   @override
   Widget build(BuildContext context) {
     logger.d('DEBUG:: PrepareDashboardView: build');
 
-    return BlocConsumer<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state.status == AuthStatus.authorized) {
-            _checkSelfNetworks();
-          }
-        },
-        builder: (context, state) =>
-            FullScreenSpinner(text: getAppLocalizations(context).processing));
-  }
-
-  _continueLogin() async {
-    // TODO: Need to be modified
-    AuthState authState = context.read<AuthBloc>().state;
-    if (authState.status == AuthStatus.onLogin) {
-      await context
-          .read<AuthBloc>()
-          .login()
-          .then((value) => _downloadCertificate());
-    } else {
-      context.read<AuthBloc>().add(Unauthorized());
-    }
-  }
-
-  _downloadCertificate() {
-    // TODO: Need to be modified
-
-    // handle download finish
-    // check the account has any router or not
-    // decide got to which page
-    print('XXXX _downloadCertificate');
-    context.read<AuthBloc>().add(Authorized());
+    return FullScreenSpinner(text: getAppLocalizations(context).processing);
   }
 
   _checkSelfNetworks() {

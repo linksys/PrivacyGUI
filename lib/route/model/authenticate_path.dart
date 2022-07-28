@@ -18,7 +18,7 @@ abstract class AuthenticatePath extends BasePath {
         return const LoginCloudAccountView();
       case AuthCloudLoginOtpPath:
         if (args != null) {
-          args!['onNext'] = PrepareDashboardPath();
+          args!['onNext'] = AuthCloudReadyForLoginPath();
         }
         return OtpFlowView(args: args);
       case AuthForgotEmailPath:
@@ -46,6 +46,8 @@ abstract class AuthenticatePath extends BasePath {
         return CreateAdminPasswordView(
           args: args,
         );
+      case AuthCloudReadyForLoginPath:
+        return const CloudReadyForLoginView();
       default:
         return const Center();
     }
@@ -59,6 +61,11 @@ class AuthResetLocalOtpPath extends AuthenticatePath {}
 class AuthInputAccountPath extends AuthenticatePath {}
 
 class AuthCloudLoginOtpPath extends AuthenticatePath {}
+
+class AuthCloudReadyForLoginPath extends AuthenticatePath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..ignoreAuthChanged = false;
+}
 
 class AuthForgotEmailPath extends AuthenticatePath {
   @override

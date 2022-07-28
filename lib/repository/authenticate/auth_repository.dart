@@ -20,14 +20,6 @@ import '../model/dummy_model.dart';
 ///
 abstract class AuthRepository {
   ///
-  /// refer to [createVerifiedAccount]
-  Future<DummyModel> createAccount(String username);
-
-  ///
-  /// refer to [createAccountPreparationUpdateMethod]
-  Future<void> addPhoneNumber(String phone);
-
-  ///
   /// TBD
   Future<DummyModel> resetPassword(String password);
 
@@ -55,6 +47,14 @@ abstract class AuthRepository {
       String token, CommunicationMethod method);
 
   ///
+  /// Do create account actually
+  /// * Input: [CreateAccountVerified]
+  /// * return: [CloudAccountInfo]
+  /// * error: ?????
+  Future<CloudAccountInfo> createVerifiedAccount(
+      CreateAccountVerified verified);
+
+  ///
   /// Initiate OTP Verify via EMAIL/SMS, OR resend code
   /// * Input: [AuthChallengeMethod]
   /// * return: void
@@ -68,14 +68,6 @@ abstract class AuthRepository {
   /// * return: void
   /// * error: INVALID_OTP
   Future<void> authChallengeVerify(String token, String code);
-
-  ///
-  /// Do create account actually
-  /// * Input: [CreateAccountVerified]
-  /// * return: [CloudAccountInfo]
-  /// * error: ?????
-  Future<CloudAccountInfo> createVerifiedAccount(
-      CreateAccountVerified verified);
 
   ///
   /// * state = PASSWORD_REQUIRED

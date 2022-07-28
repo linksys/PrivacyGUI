@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
+import 'package:moab_poc/bloc/auth/event.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_state.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
@@ -9,6 +10,7 @@ import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/navigation_cubit.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/util/validator.dart';
 
 class CreateAccountPasswordView extends ArgumentsStatefulView {
   const CreateAccountPasswordView({Key? key, super.args}) : super(key: key);
@@ -23,19 +25,18 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
   bool hasError = false;
 
   void _onNextAction() {
-    hasError = passwordController.text.isEmpty;
+    hasError = !ComplexPasswordValidator().validate(passwordController.text);
     if (hasError) {
       setState(() {});
     } else {
+      context
+          .read<AuthBloc>()
+          .add(SetCloudPassword(password: passwordController.text));
       final username = context.read<AuthBloc>().state.accountInfo.username;
       NavigationCubit.of(context).push(CreateAccount2SVPath()
-        ..args = {
-          'username': username,
-          'function': OtpFunction.setting2sv
-        });
+        ..args = {'username': username, 'function': OtpFunction.setting2sv});
     }
   }
-
 
   @override
   void initState() {
@@ -52,7 +53,9 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
         ),
         content: Column(
           children: [
-            const SizedBox(height: 15,),
+            const SizedBox(
+              height: 15,
+            ),
             PasswordInputField.withValidator(
               titleText: 'Password',
               controller: passwordController,
@@ -83,4 +86,3 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
     );
   }
 }
-

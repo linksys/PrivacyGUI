@@ -21,20 +21,6 @@ class CloudAuthRepository extends AuthRepository {
 
   final MoabHttpClient _httpClient;
 
-  @deprecated
-  @override
-  Future<void> addPhoneNumber(String phone) {
-    // TODO: implement addPhoneNumber
-    throw UnimplementedError();
-  }
-
-  @deprecated
-  @override
-  Future<DummyModel> createAccount(String username) {
-    // TODO: implement createAccount
-    throw UnimplementedError();
-  }
-
   @override
   Future<void> forgotPassword() {
     // TODO: implement forgotPassword

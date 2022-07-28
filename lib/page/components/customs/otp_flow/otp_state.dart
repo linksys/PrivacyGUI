@@ -4,6 +4,7 @@ import 'package:moab_poc/page/components/customs/otp_flow/otp_view.dart';
 
 enum OtpStep { init, chooseOtpMethod, inputOtp, addPhone, finish }
 
+// TODO: Need a more understandable name
 enum OtpFunction { send, setting, setting2sv }
 
 class OtpState extends Equatable {

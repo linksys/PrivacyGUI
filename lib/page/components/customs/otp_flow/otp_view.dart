@@ -108,7 +108,7 @@ class _ContentViewState extends State<_ContentView> {
     _setLoading(true);
     await context
         .read<AuthBloc>()
-        .getMaskedCommunicationMethods(_username)
+        .fetchOtpInfo(_username)
         .then((value) => _handleAccountInfo(value, function));
     _setLoading(false);
   }

@@ -20,17 +20,6 @@ class FakeAuthRepository extends AuthRepository {
   final waitDuration = const Duration(seconds: 3);
 
   @override
-  Future<void> addPhoneNumber(String phone) async {
-    await Future.delayed(waitDuration);
-  }
-
-  @override
-  Future<DummyModel> createAccount(String username) async {
-    await Future.delayed(waitDuration);
-    return {};
-  }
-
-  @override
   Future<void> forgotPassword() async {
     await Future.delayed(waitDuration);
   }
@@ -90,23 +79,32 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<String> createAccountPreparation(String email) {
-    // TODO: implement createAccountPreparation
-    throw UnimplementedError();
+  Future<String> createAccountPreparation(String email) async {
+    await Future.delayed(waitDuration);
+    return 'some-token-that-is-unique-to-this-request';
   }
 
   @override
   Future<void> createAccountPreparationUpdateMethod(
-      String token, CommunicationMethod method) {
-    // TODO: implement createAccountPreparationUpdateMethod
-    throw UnimplementedError();
+      String token, CommunicationMethod method) async {
+    await Future.delayed(waitDuration);
   }
 
   @override
   Future<CloudAccountInfo> createVerifiedAccount(
-      CreateAccountVerified verified) {
-    // TODO: implement createVerifiedAccount
-    throw UnimplementedError();
+      CreateAccountVerified verified) async {
+    await Future.delayed(waitDuration);
+
+    return CloudAccountInfo.fromJson(const {
+      "id": "82248d9d-50a7-4e35-822c-e07ed02d8063",
+      "username": "austin.chang@linksys.com",
+      "usernames": ["austin.chang@linksys.com"],
+      "status": "ACTIVE",
+      "type": "NORMAL",
+      "authenticationMode": "PASSWORD",
+      "createdAt": "2022-07-13T09:37:01.665063052Z",
+      "updatedAt": "2022-07-13T09:37:01.665063052Z"
+    });
   }
 
   @override
@@ -120,12 +118,12 @@ class FakeAuthRepository extends AuthRepository {
       CommunicationMethod(method: 'EMAIL', targetValue: maskedUsername)
     ];
 
-    if (username.endsWith('linksys.com') || username.endsWith('belkin.com')) {
+    if (username.endsWith('error.com')) {
+      throw ErrorResponse(
+          code: 'NOT_FOUND', errorMessage: "Can't find account $username");
+    } else {
       return list;
     }
-
-    throw ErrorResponse(
-        code: 'NOT_FOUND', errorMessage: "Can't find account $username");
   }
 
   @override
@@ -135,7 +133,7 @@ class FakeAuthRepository extends AuthRepository {
     return const CloudLoginAcceptState(
         state: 'ACCEPT',
         data: CloudLoginAcceptData(
-            taskId: '', certSecret: '', downloadTime: 0));
+            taskId: 'taskId', certSecret: 'certSecret', downloadTime: 1));
   }
 
   @override
@@ -175,8 +173,7 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<void> downloadCloudCert({required taskId, required secret}) {
-    // TODO: implement downloadCloudCert
-    throw UnimplementedError();
+  Future<void> downloadCloudCert({required taskId, required secret}) async {
+    await Future.delayed(waitDuration);
   }
 }

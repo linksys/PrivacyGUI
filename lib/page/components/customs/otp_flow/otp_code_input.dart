@@ -13,7 +13,6 @@ import 'package:moab_poc/page/components/base_components/button/simple_text_butt
 import 'package:moab_poc/page/components/customs/otp_flow/otp_cubit.dart';
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
-import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:moab_poc/util/error_code_handler.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
@@ -50,7 +49,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     super.initState();
     _startListenOtp();
     final state = context.read<OtpCubit>().state;
-    _onSend(state.selectedMethod!, state.token);
+    _onInit(state.selectedMethod!);
   }
 
   @override
@@ -107,7 +106,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
                 text: getAppLocalizations(context).otp_resend_code,
                 onPressed: () {
                   _setLoading(true);
-                  _onSend(state.selectedMethod!, state.token)
+                  _onSend(state.selectedMethod!)
                       .then((_) => _showCodeResentHint())
                       .onError((error, stackTrace) {
                     logger.e('Error OTP input: $error', stackTrace);
@@ -171,7 +170,11 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     context.read<OtpCubit>().setLoading(isLoading);
   }
 
-  Future<void> _onSend(OtpInfo method, String token) async {
+  Future<void> _onSend(OtpInfo method) async {
     await context.read<AuthBloc>().authChallenge(method);
+  }
+
+  void _onInit(OtpInfo method) {
+    context.read<AuthBloc>().add(RequireOtpCode(otpInfo: method));
   }
 }

@@ -125,13 +125,9 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
     }
   }
 
-  _onSend(OtpInfo method) async {
+  _onSend(OtpInfo method) {
     _setLoading(true);
-    await context
-        .read<AuthBloc>()
-        .authChallenge(method)
-        .then((_) => context.read<OtpCubit>().onInputOtp());
-
+    context.read<OtpCubit>().onInputOtp();
     _setLoading(false);
   }
 
