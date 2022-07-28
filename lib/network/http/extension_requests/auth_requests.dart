@@ -65,7 +65,7 @@ extension MoabAuthRequests on MoabHttpClient {
     // TODO For the moment, the sequence and the type won't be changed
     return this.put(Uri.parse(url),
         headers: header,
-        body: jsonEncode({'code': code}));
+        body: jsonEncode({'otp': code}));
   }
 
   ///

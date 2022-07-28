@@ -154,7 +154,7 @@ extension AuthBlocCloud on AuthBloc {
   Future<bool> _handleLogin(CloudLoginAcceptState acceptState) async {
     logger.d("handle login: $acceptState");
     final currentTime = DateTime.now().millisecondsSinceEpoch;
-    final downloadTime = acceptState.data.downloadTime;
+    final downloadTime = acceptState.data.downloadTime * 1000;
     final delta = downloadTime - currentTime;
     if (delta > 0) {
       await Future.delayed(Duration(milliseconds: delta));

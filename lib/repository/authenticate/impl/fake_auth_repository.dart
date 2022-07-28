@@ -135,7 +135,7 @@ class FakeAuthRepository extends AuthRepository {
     return const CloudLoginAcceptState(
         state: 'ACCEPT',
         data: CloudLoginAcceptData(
-            taskId: '', certSecret: '', certToken: '', downloadTime: 0));
+            taskId: '', certSecret: '', downloadTime: 0));
   }
 
   @override

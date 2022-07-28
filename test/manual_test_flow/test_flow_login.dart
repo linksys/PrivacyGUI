@@ -7,6 +7,7 @@ import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/network/http/model/cloud_login_certs.dart';
 import 'package:moab_poc/network/http/model/cloud_login_state.dart';
 import 'package:moab_poc/network/http/model/cloud_task_model.dart';
+import 'package:moab_poc/util/logger.dart';
 import 'package:test/test.dart';
 
 import '../dev_testable_client.dart';
@@ -82,10 +83,10 @@ void main() {
   ///  Login actually
   ///
   group('GROUP 2 - test auth challenge verification and login part in dev', () {
-    const token = '66D11974-CF6B-44B5-8AA0-103E9E7E78C1';
+    const token = '8EDA1B44-803E-4707-AA3D-ADD376E3BDDA';
     CloudLoginAcceptState? acceptState;
     test('STEP 5 - auth challenge verify', () async {
-      const code = '6674'; // PUT received code here.
+      const code = '9163'; // PUT received code here.
       final client = DevTestableClient();
       final response =
           await client.authChallengeVerify(token: token, code: code);
@@ -98,6 +99,9 @@ void main() {
     });
 
     test('STEP 7 - download cert', () async {
+      final nowTime = DateTime.now().millisecondsSinceEpoch;
+      final downloadTime = (acceptState?.data.downloadTime ?? 0) * 1000;
+      print('now time: $nowTime, download time: $downloadTime, diff: ${downloadTime-nowTime}');
       await Future.delayed(Duration(seconds: 3));
       final client = DevTestableClient();
       final response = await client.downloadCloudCerts(

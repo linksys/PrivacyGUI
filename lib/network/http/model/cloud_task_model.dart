@@ -46,14 +46,12 @@ class CloudLoginAcceptState extends Equatable {
 class CloudLoginAcceptData extends Equatable {
   const CloudLoginAcceptData(
       {required this.taskId,
-      required this.certToken,
       required this.certSecret,
       required this.downloadTime});
 
   factory CloudLoginAcceptData.fromJson(Map<String, dynamic> json) {
     return CloudLoginAcceptData(
       taskId: json['taskId'],
-      certToken: json['certToken'],
       certSecret: json['certSecret'],
       downloadTime: json['downloadTime'],
     );
@@ -62,14 +60,12 @@ class CloudLoginAcceptData extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'taskId': taskId,
-      'certToken': certToken,
       'certSecret': certSecret,
       'downloadTime': downloadTime,
     };
   }
 
   final String taskId;
-  final String certToken;
   final String certSecret;
   final int downloadTime;
 
