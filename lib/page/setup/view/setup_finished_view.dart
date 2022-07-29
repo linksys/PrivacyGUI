@@ -69,22 +69,34 @@ class SetupFinishedView extends ArgumentsStatelessView {
             DescriptionText(
                 text: getAppLocalizations(context).wifi_ready_view_login_info),
             const SizedBox(height: 8),
-            BlocBuilder<AuthBloc, AuthState>(
-                buildWhen: (previous, current) =>
-                    previous.accountInfo.username !=
-                    current.accountInfo.username,
-                builder: (context, state) {
-                  return infoCard(
-                      context,
-                      portraitIcon,
-                      getAppLocalizations(context).linksys_account,
-                      state.accountInfo.username);
-                }),
+            BlocBuilder<AuthBloc, AuthState>(buildWhen: (previous, current) {
+              return previous.accountInfo.username !=
+                      current.accountInfo.username ||
+                  previous.localLoginInfo.routerPassword !=
+                      current.localLoginInfo.routerPassword;
+            }, builder: (context, state) {
+              if (state.method == AuthMethod.remote) {
+                return infoCard(
+                    context,
+                    portraitIcon,
+                    getAppLocalizations(context).linksys_account,
+                    state.accountInfo.username);
+              } else if (state.method == AuthMethod.local) {
+                return infoCard(
+                    context,
+                    portraitIcon,
+                    "router password",
+                    state.localLoginInfo.routerPassword);
+              } else {
+                return const Divider(height: 0);
+              }
+            }),
           ],
         ),
         footer: PrimaryButton(
           text: getAppLocalizations(context).go_to_dashboard,
-          onPress: () => NavigationCubit.of(context).push(PrepareDashboardPath()),
+          onPress: () =>
+              NavigationCubit.of(context).push(PrepareDashboardPath()),
         ),
         alignment: CrossAxisAlignment.start,
       ),
