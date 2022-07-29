@@ -1,4 +1,12 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:logger/logger.dart';
+import 'package:moab_poc/util/logger.dart';
+import 'package:moab_poc/util/storage.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/layout.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -35,31 +43,36 @@ class ShareWifiView extends StatefulWidget {
 
 class _ShareWifiViewState extends State<ShareWifiView> {
   ShareWifiType wifiType = ShareWifiType.main;
-  String ssid = 'MyWiFiNetworkSSID';
-  String password = 'Belkin123!';
   bool isPwSecure = true;
+  GlobalKey globalKey = GlobalKey();
+  String ssid = 'MyWiFiNetworkSSID'; //TODO: Remove dummy data
+  String password = 'Belkin12345!'; //TODO: Remove dummy data
+  String get sharingContent =>
+      'Connect to my WiFi Network:\n$ssid\n\nPassword: $password';
 
   Widget _wifiInfoSection() {
     return Column(
       children: [
         Text(
           wifiType.displayTitle,
-          style: Theme.of(context).textTheme.headline4?.copyWith(
-            color: Theme.of(context).colorScheme.tertiary
-          ),
+          style: Theme.of(context)
+              .textTheme
+              .headline4
+              ?.copyWith(color: Theme.of(context).colorScheme.tertiary),
         ),
         const SizedBox(
           height: 20,
         ),
         Text(
           ssid,
-          style: Theme.of(context).textTheme.headline2?.copyWith(
-              color: Theme.of(context).colorScheme.primary
-          ),
+          style: Theme.of(context)
+              .textTheme
+              .headline2
+              ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
         Row(
           children: [
-            Text(_getSecurePassword()),
+            Text(_getPasswordContent()),
             IconButton(
               icon: Icon(isPwSecure
                   ? Icons.remove_red_eye_outlined
@@ -72,29 +85,36 @@ class _ShareWifiViewState extends State<ShareWifiView> {
             ),
           ],
         ),
-        Padding(
-          padding: const EdgeInsets.only(top: 40, bottom: 20),
-          child: Text(
-            'JOIN THIS NETWORK',
-            style: Theme.of(context).textTheme.headline4?.copyWith(
-                color: Theme.of(context).colorScheme.tertiary
-            ),
-          ),
+        const SizedBox(
+          height: 40,
         ),
-        SizedBox(
-          child: QrImage(
-            data: 'Connect to my WiFi Network:\n$ssid\n\nPassword: $password',
-            padding: EdgeInsets.zero,
+        Text(
+          'JOIN THIS NETWORK',
+          style: Theme.of(context)
+              .textTheme
+              .headline4
+              ?.copyWith(color: Theme.of(context).colorScheme.tertiary),
+        ),
+        const SizedBox(
+          height: 20,
+        ),
+        RepaintBoundary(
+          key: globalKey,
+          child: SizedBox(
+            child: QrImage(
+              data: sharingContent,
+              padding: EdgeInsets.zero,
+            ),
+            height: 160,
+            width: 160,
           ),
-          height: 160,
-          width: 160,
         ),
       ],
       crossAxisAlignment: CrossAxisAlignment.start,
     );
   }
 
-  String _getSecurePassword() {
+  String _getPasswordContent() {
     String result = password;
     if (isPwSecure) {
       for (var i = 0; i < result.length - 2; i++) {
@@ -142,27 +162,94 @@ class _ShareWifiViewState extends State<ShareWifiView> {
     }));
   }
 
-  void _onOptionTapped(ShareWifiOption option) async {
+  void _shareByClipboard() async {
+    await Clipboard.setData(ClipboardData(text: sharingContent));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+      'Copied to clipboard',
+      style: Theme.of(context)
+          .textTheme
+          .bodyText1
+          ?.copyWith(color: Theme.of(context).primaryColor),
+    )));
+  }
+
+  void _shareByQrCode() async {
+    // Capture the image of this render object convert it to byte data
+    final RenderRepaintBoundary boundary =
+        globalKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    final ui.Image image = await boundary.toImage();
+    final ByteData? byteData =
+        await image.toByteData(format: ui.ImageByteFormat.png);
+    final Uint8List pngBytes = byteData!.buffer.asUint8List();
+    // Save the image byte data to the temp directory
+    Uri fileUri =
+        Uri.parse('${Storage.tempDirectory?.path}/shared_wifi_qr_code.png');
+    logger.i('Share WiFi - QRCode: Saved path=${fileUri.path}');
+
+    await Storage.saveByteFile(fileUri, pngBytes).then((_) async {
+      await Share.shareFilesWithResult(
+        [fileUri.path],
+        text: 'Connect to my WiFi',
+      ).then((result) {
+        logger.d('Share WiFi - QRCode: result=${result.status}');
+        // Delete the qr code image once the sharing operation ends
+        Storage.deleteFile(fileUri);
+      });
+    });
+  }
+
+  void _shareBySMS() async {
+    final Uri smsUrl =
+        Uri(scheme: 'sms', path: '', query: '&body=$sharingContent');
+    await canLaunchUrl(smsUrl).then((isAllowed) {
+      if (isAllowed) {
+        launchUrl(smsUrl);
+      } else {
+        logger.e('Share WiFi - SMS: Cannot launch url');
+      }
+    });
+  }
+
+  void _shareByEmail() async {
+    final Uri emailUrl = Uri(
+        scheme: 'mailto',
+        path: '',
+        query: 'subject=Connect to my WiFi&body=$sharingContent');
+    await canLaunchUrl(emailUrl).then((isAllowed) {
+      if (isAllowed) {
+        launchUrl(emailUrl);
+      } else {
+        logger.e('Share WiFi - Email: Cannot launch url');
+      }
+    });
+  }
+
+  void _shareByOtherWays() async {
+    await Share.shareWithResult(
+      sharingContent,
+      subject: 'Connect to my WiFi',
+    ).then((result) {
+      logger.d('Share WiFi - More options: result=${result.status}');
+    });
+  }
+
+  void _onOptionTapped(ShareWifiOption option) {
     switch (option) {
       case ShareWifiOption.clipboard:
-      case ShareWifiOption.textMessage:
-      case ShareWifiOption.email:
-      case ShareWifiOption.more:
-        final result = await Share.shareWithResult(
-          subject: 'Connect to my WiFi',
-          'Connect to my WiFi Network:\n$ssid\n\nPassword: $password',
-        );
-        if (result.status == ShareResultStatus.success) {
-          //TODO: Show toast
-        } else if (result.status == ShareResultStatus.dismissed) {
-          print('User dismissed');
-        }
+        _shareByClipboard();
         break;
       case ShareWifiOption.qrCode:
-        final result = await Share.shareFilesWithResult(
-            ['assets/images/place_node.png'],
-            text: 'IIIIIMAGE', subject: 'SUBBB');
-        print('resultt=${result.status}');
+        _shareByQrCode();
+        break;
+      case ShareWifiOption.textMessage:
+        _shareBySMS();
+        break;
+      case ShareWifiOption.email:
+        _shareByEmail();
+        break;
+      case ShareWifiOption.more:
+        _shareByOtherWays();
         break;
     }
   }

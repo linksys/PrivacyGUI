@@ -64,6 +64,7 @@ dependencies:
   flutter_inappwebview: ^5.4.3+7
   shared_preferences: ^2.0.15
   qr_flutter: ^4.0.0
+  url_launcher: ^6.1.5
 
 dev_dependencies:
   flutter_test:
