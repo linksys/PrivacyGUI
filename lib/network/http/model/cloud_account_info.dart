@@ -28,7 +28,7 @@ class CloudAccountInfo extends Equatable {
     return CloudAccountInfo(
       id: json['id'],
       username: json['username'],
-      usernames: json['usernames'],
+      usernames: List<String>.from(json['usernames']),
       status: json['status'],
       type: json['type'],
       authenticationMode: json['authenticationMode'],

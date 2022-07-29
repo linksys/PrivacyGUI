@@ -12,6 +12,8 @@ import 'package:moab_poc/repository/authenticate/auth_repository.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../constants/cloud_const.dart';
+
 class FakeAuthRepository extends AuthRepository {
   final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
   Timer? _resendCodeTimer;
@@ -158,12 +160,12 @@ class FakeAuthRepository extends AuthRepository {
 
     if (username.endsWith('linksys.com')) {
       return CloudLoginState.fromJson(const {
-        'state': 'REQUIRED_2SV',
+        'state': keyRequire2sv,
         'data': {'token': 'vToken123', 'authenticationMode': 'PASSWORDLESS'}
       });
     } else if (username.endsWith('belkin.com')) {
       return CloudLoginState.fromJson(const {
-        'state': 'PASSWORD_REQUIRED',
+        'state': keyPasswordRequired,
         'data': {'token': 'vToken123', 'authenticationMode': 'PASSWORDLESS'}
       });
     }

@@ -15,6 +15,7 @@ import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../constants/cloud_const.dart';
 import '../../network/http/model/cloud_account_info.dart';
 import '../../network/http/model/cloud_auth_clallenge_method.dart';
 import '../../network/http/model/cloud_create_account_verified.dart';
@@ -184,15 +185,16 @@ extension AuthBlocCloud on AuthBloc {
         return await getMaskedCommunicationMethods(username);
       default:
         return AccountInfo(
-            username: username, loginType: LoginType.otp, otpInfo: []);
+            username: username, loginType: LoginType.passwordless, otpInfo: []);
     }
   }
 
   Future<AccountInfo> _handleLoginPrepare(
       String username, CloudLoginState cloudLoginState) async {
     logger.d("handle login prepare: $cloudLoginState");
-    final LoginType loginType = cloudLoginState.state == 'REQUIRED_2SV'
-        ? LoginType.otp
+    // TODO: change to switch case
+    final LoginType loginType = cloudLoginState.state == keyRequire2sv
+        ? LoginType.passwordless
         : LoginType.password;
 
     AccountInfo accountInfo =
@@ -229,7 +231,7 @@ extension AuthBlocCloud on AuthBloc {
       CloudLoginState cloudLoginState) async {
     logger.d("handle login password: $cloudLoginState");
     final LoginType loginType = cloudLoginState.state == 'REQUIRED_2SV'
-        ? LoginType.otp
+        ? LoginType.passwordless
         : LoginType.password;
 
     AccountInfo accountInfo = state.accountInfo.copyWith(loginType: loginType);
@@ -241,7 +243,7 @@ extension AuthBlocCloud on AuthBloc {
     logger.d("handle login: $acceptState");
     final currentTime = DateTime.now().millisecondsSinceEpoch;
     final downloadTime = acceptState.data.downloadTime * 1000;
-    final delta = downloadTime - currentTime;
+    final delta = downloadTime - currentTime + 1000;
     if (delta > 0) {
       await Future.delayed(Duration(milliseconds: delta));
     }

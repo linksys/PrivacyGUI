@@ -19,11 +19,13 @@ extension MoabCommonRequests on MoabHttpClient {
   Future<Response> createApp(DeviceInfo deviceInfo) async {
     final url = combineUrl(endpointCreateApps);
     final header = defaultHeader;
-    return this.post(Uri.parse(url), headers: header, body: jsonEncode(deviceInfo.toJson()));
+    return this.post(Uri.parse(url),
+        headers: header, body: jsonEncode(deviceInfo.toJson()));
   }
 
   Future<Response> getMaskedCommunicationMethods(String username) async {
-    final url = combineUrl(endpointGetMaskedCommunicationMethods, args: {varUsername: username});
+    final url = combineUrl(endpointGetMaskedCommunicationMethods,
+        args: {varUsername: Uri.encodeQueryComponent(username)});
     final header = defaultHeader;
     return this.get(Uri.parse(url), headers: header);
   }

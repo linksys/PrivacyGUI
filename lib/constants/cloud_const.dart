@@ -51,3 +51,7 @@ const endpointPostLogin = '$version$authPath/login';
 const endpointGetTasks = '$version$tasksPath/$varTaskId?token=$varToken';
 const endPointGetPrimaryTasks = '$version$primaryTasksPath/$varTaskId?token=$varToken';
 const endpointGetAccountSelf = '$version$accountPath/self';
+
+//
+const keyRequire2sv = 'REQUIRE_2SV';
+const keyPasswordRequired ='PASSWORD_REQUIRED';

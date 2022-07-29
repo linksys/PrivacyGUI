@@ -22,7 +22,7 @@ class CloudApp extends Equatable {
     return CloudApp(
       id: json['id'],
       appSecret: json['appSecret'],
-      deviceInfo: DeviceInfo.fromJson(json['deviceInfo']),
+      deviceInfo: DeviceInfo.fromJson(json),
     );
   }
 
@@ -30,7 +30,7 @@ class CloudApp extends Equatable {
     return {
       'id': id,
       'appSecret': appSecret,
-      'deviceInfo': deviceInfo.toJson(),
+      ...deviceInfo.toJson(),
     };
   }
 

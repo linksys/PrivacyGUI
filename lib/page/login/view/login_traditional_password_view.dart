@@ -34,8 +34,6 @@ class _LoginTraditionalPasswordViewState
 
   @override
   Widget build(BuildContext context) {
-    logger.d('DEBUG:: LoginCloudAccountView: build');
-
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) => _isLoading
           ? FullScreenSpinner(text: getAppLocalizations(context).processing)

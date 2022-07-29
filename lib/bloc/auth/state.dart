@@ -11,7 +11,7 @@ enum AuthStatus {
 
 enum AuthMethod { none, local, remote }
 
-enum LoginType { otp, password }
+enum LoginType { passwordless, password }
 
 enum OtpMethod { sms, email }
 
@@ -107,8 +107,8 @@ class AuthState extends Equatable {
   const AuthState({
     required this.status,
     this.method = AuthMethod.none,
-    this.accountInfo =
-        const AccountInfo(username: '', loginType: LoginType.otp, otpInfo: []),
+    this.accountInfo = const AccountInfo(
+        username: '', loginType: LoginType.passwordless, otpInfo: []),
     this.localLoginInfo = const LocalLoginInfo(routerPassword: ''),
     this.vToken = '',
   });
@@ -132,8 +132,8 @@ class AuthState extends Equatable {
   factory AuthState.onCreateAccount() {
     return const AuthState(
         status: AuthStatus.onCreateAccount,
-        accountInfo:
-            AccountInfo(username: '', loginType: LoginType.otp, otpInfo: []));
+        accountInfo: AccountInfo(
+            username: '', loginType: LoginType.passwordless, otpInfo: []));
   }
 
   @override
