@@ -31,13 +31,25 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
               'NETWORK',
               [
                 'WiFi',
-                'Security',
+                'WiFi schedule'
                 'Priority',
                 'Administration',
                 'Smart home',
-                'Advanced'
+                'Advanced settings'
               ],
               (index) {logger.d('MenuItem click $index');},
+            ),
+            const SizedBox(
+              height: 32,
+            ),
+            _section(
+              'LINKSYS SECURE',
+              [
+                'Cyberthreat protection',
+                'Content filters',
+                'App blocking'
+              ],
+                  (index) {logger.d('MenuItem click $index');},
             ),
             const SizedBox(
               height: 32,
