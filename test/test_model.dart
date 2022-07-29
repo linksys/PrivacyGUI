@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:moab_poc/network/http/model/base_response.dart';
 import 'package:moab_poc/network/http/model/cloud_account_info.dart';
+import 'package:moab_poc/network/http/model/cloud_app.dart';
 import 'package:moab_poc/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/network/http/model/cloud_create_account_verified.dart';
@@ -13,6 +14,24 @@ import 'package:test/test.dart';
 
 void main() {
   group('test Cloud Model', () {
+    test('test CloudAppModel', () async {
+      final jsonObj = {
+        "id": "7914d494-8ec6-464a-a884-702072b19e76",
+        "appSecret":
+            "7ga/SOZbTBUnRhDbqJRTm1HOcnIZIxCLKIrSlH+JGtksxTToMQHqBxb8npavouEtcIzAZ+jA+atLWvhEQBHgiNXmh9K68vggbhHEGUuFWgj08ty5Ay6aB5lIA6tzfMYuI/a82tRRU0GNYgyREN5TBbHw43lk2iVUgDFH+S/PRI8=",
+        "mobileManufacturer": "Apple",
+        "mobileModel": "iPhone10,5",
+        "os": "ios",
+        "osVersion": "15.1",
+        "systemLocale": "en-US"
+      };
+
+      final cloudApp = CloudApp.fromJson(jsonObj);
+      print(cloudApp);
+      final convertBack = cloudApp.toJson();
+      print(convertBack);
+    });
+
     test('test CloudPhoneModel', () async {
       const CloudPhoneModel phone = CloudPhoneModel(
           country: 'TW', countryCallingCode: '+886', phoneNumber: '91234567');
@@ -153,18 +172,12 @@ void main() {
     });
 
     test('test CloudAccountInfo', () async {
-      const CloudAccountInfo method = CloudAccountInfo(
-        id: 'id-for-account-info',
-        username: 'austin.chang@linksys.com',
-        usernames: ['austin.chang@linksys.com'],
-        status: 'ACTIVE',
-        type: 'NORMAL',
-        authenticationMode: 'PASSWORD',
-        createAt: '2022-07-13T09:37:01.665063052Z',
-        updateAt: '2022-07-13T09:37:01.665063052Z',
-      );
+      const jsonStr =
+          '{"id": "47d9cce2-eb15-4339-9535-8dfba4423d21","username": "peter.jhong.belkin@gmail.com","usernames": ["peter.jhong.belkin@gmail.com"],"status": "ACTIVE","type": "NORMAL","authenticationMode": "PASSWORDLESS","createdAt": "2022-07-29T02:25:15.095864413Z","updatedAt": "2022-07-29T02:25:15.095864413Z"}';
 
-      final jsonObj = method.toJson();
+      final CloudAccountInfo info = CloudAccountInfo.fromJson(jsonDecode(jsonStr));
+
+      final jsonObj = info.toJson();
       expect(jsonObj['id'], 'id-for-account-info');
       expect(jsonObj['username'], 'austin.chang@linksys.com');
       expect(jsonObj['usernames'][0], 'austin.chang@linksys.com');
@@ -187,36 +200,31 @@ void main() {
 
     test('test CloudLoginState', () async {
       const CloudLoginState method = CloudLoginState(
-        state: 'PASSWORD_REQUIRED',
-        data: CloudLoginStateData(token: 'token-for-login-state', authenticationMode: 'PASSWORD')
-      );
+          state: 'PASSWORD_REQUIRED',
+          data: CloudLoginStateData(
+              token: 'token-for-login-state', authenticationMode: 'PASSWORD'));
 
       final jsonObj = method.toJson();
       expect(jsonObj['state'], 'PASSWORD_REQUIRED');
       expect(jsonObj['data']['token'], 'token-for-login-state');
       expect(jsonObj['data']['authenticationMode'], 'PASSWORD');
 
-
       final convertBack = CloudLoginState.fromJson(jsonObj);
       expect(convertBack.state, 'PASSWORD_REQUIRED');
       expect(convertBack.data?.token, 'token-for-login-state');
       expect(convertBack.data?.authenticationMode, 'PASSWORD');
-
     });
 
     test('test CloudLoginState state only', () async {
       const CloudLoginState method = CloudLoginState(
-          state: 'PASSWORD_REQUIRED',
+        state: 'PASSWORD_REQUIRED',
       );
 
       final jsonObj = method.toJson();
       expect(jsonObj['state'], 'PASSWORD_REQUIRED');
 
-
-
       final convertBack = CloudLoginState.fromJson(jsonObj);
       expect(convertBack.state, 'PASSWORD_REQUIRED');
-
     });
 
     test('test CloudDownloadCertTask', () async {
@@ -227,30 +235,39 @@ void main() {
           "rootCaId": "RET-ROOT1",
           "expiration": "2032-04-22T09:37:35.000+00:00",
           "serialNumber": "35ca07cbde04e779b5550bab457eab57",
-          "publicKey": "-----BEGIN CERTIFICATE-----\n*****\n-----END CERTIFICATE-----",
-          "privateKey": "-----BEGIN PRIVATE KEY-----\n*****\n-----END PRIVATE KEY-----"
+          "publicKey":
+              "-----BEGIN CERTIFICATE-----\n*****\n-----END CERTIFICATE-----",
+          "privateKey":
+              "-----BEGIN PRIVATE KEY-----\n*****\n-----END PRIVATE KEY-----"
         }
       };
       final cloudDownloadTask = CloudDownloadCertTask.fromJson(jsonObj);
       expect(cloudDownloadTask.taskType, 'CREATE_CERTIFICATE');
-      expect(cloudDownloadTask.data.id, 'RET-R1:492647359751711213641065353474088091562661625693');
+      expect(cloudDownloadTask.data.id,
+          'RET-R1:492647359751711213641065353474088091562661625693');
       expect(cloudDownloadTask.data.rootCaId, 'RET-ROOT1');
-      expect(cloudDownloadTask.data.expiration, '2032-04-22T09:37:35.000+00:00');
-      expect(cloudDownloadTask.data.serialNumber, '35ca07cbde04e779b5550bab457eab57');
-      expect(cloudDownloadTask.data.publicKey, '-----BEGIN CERTIFICATE-----\n*****\n-----END CERTIFICATE-----');
-      expect(cloudDownloadTask.data.privateKey, '-----BEGIN PRIVATE KEY-----\n*****\n-----END PRIVATE KEY-----');
-
+      expect(
+          cloudDownloadTask.data.expiration, '2032-04-22T09:37:35.000+00:00');
+      expect(cloudDownloadTask.data.serialNumber,
+          '35ca07cbde04e779b5550bab457eab57');
+      expect(cloudDownloadTask.data.publicKey,
+          '-----BEGIN CERTIFICATE-----\n*****\n-----END CERTIFICATE-----');
+      expect(cloudDownloadTask.data.privateKey,
+          '-----BEGIN PRIVATE KEY-----\n*****\n-----END PRIVATE KEY-----');
 
       final convertBack = cloudDownloadTask.toJson();
       expect(convertBack['taskType'], 'CREATE_CERTIFICATE');
-      expect(convertBack['data']['id'], 'RET-R1:492647359751711213641065353474088091562661625693');
+      expect(convertBack['data']['id'],
+          'RET-R1:492647359751711213641065353474088091562661625693');
       expect(convertBack['data']['rootCaId'], 'RET-ROOT1');
-      expect(convertBack['data']['expiration'], '2032-04-22T09:37:35.000+00:00');
-      expect(convertBack['data']['serialNumber'], '35ca07cbde04e779b5550bab457eab57');
-      expect(convertBack['data']['publicKey'], '-----BEGIN CERTIFICATE-----\n*****\n-----END CERTIFICATE-----');
-      expect(convertBack['data']['privateKey'], '-----BEGIN PRIVATE KEY-----\n*****\n-----END PRIVATE KEY-----');
-
-
+      expect(
+          convertBack['data']['expiration'], '2032-04-22T09:37:35.000+00:00');
+      expect(convertBack['data']['serialNumber'],
+          '35ca07cbde04e779b5550bab457eab57');
+      expect(convertBack['data']['publicKey'],
+          '-----BEGIN CERTIFICATE-----\n*****\n-----END CERTIFICATE-----');
+      expect(convertBack['data']['privateKey'],
+          '-----BEGIN PRIVATE KEY-----\n*****\n-----END PRIVATE KEY-----');
     });
 
     test('test ErrorResponse #1', () async {
@@ -314,6 +331,12 @@ void main() {
       expect(convertBack.code, 'USERNAME_ALREADY_EXISTS');
       expect(convertBack.errorMessage, 'Error');
       expect(convertBack.parameters, null);
+    });
+
+    test('test date convert', () async {
+      const dateStr = '2024-07-28T04:16:04.000+00:00';
+      final date = DateTime.parse(dateStr);
+      print('date: $date');
     });
   });
 }

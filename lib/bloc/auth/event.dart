@@ -24,3 +24,10 @@ class SetCloudPassword extends AuthEvent{
 
   final String password;
 }
+
+class Logout extends AuthEvent {
+
+  Logout({this.reason = 0});
+
+  final int reason;
+}

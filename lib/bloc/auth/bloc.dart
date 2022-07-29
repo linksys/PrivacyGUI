@@ -38,12 +38,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<Authorized>(_authorized);
     on<RequireOtpCode>(_onRequireOtpCode);
     on<SetCloudPassword>(_onSetCloudPassword);
+    on<Logout>(_onLogout);
   }
 
-  _onInitAuth(InitAuth event, Emitter<AuthState> emit) {
-    // TODO check authorize from local
-    emit(AuthState.unAuthorized());
-    // emit(AuthState.authorized(method: AuthMethod.remote));
+  _onInitAuth(InitAuth event, Emitter<AuthState> emit) async {
+    logger.d('check auth status');
+    final isValid = await checkCertValidation();
+    logger.d('is auth valid: $isValid');
+    if (isValid) {
+      emit(AuthState.authorized(method: AuthMethod.remote));
+    } else {
+      emit(AuthState.unAuthorized());
+    }
   }
 
   _onLogin(OnLogin event, Emitter<AuthState> emit) {
@@ -82,6 +88,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(state.copyWith(accountInfo: info));
   }
 
+  void _onLogout(Logout event, Emitter<AuthState> emit) {
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.remove(moabPrefCloudCertDataKey);
+      prefs.remove(moabPrefCloudPublicKey);
+      prefs.remove(moabPrefCloudPrivateKey);
+      emit(AuthState.unAuthorized());
+    });
+  }
+  
   @override
   void onTransition(Transition<AuthEvent, AuthState> transition) {
     super.onTransition(transition);
@@ -269,14 +284,20 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<bool> checkCertValidation() async {
-    final isPrivateExist = File.fromUri(Storage.appPrivateKeyUri).existsSync();
-    final isPublicExist = File.fromUri(Storage.appPublicKeyUri).existsSync();
-    // final prefs = await SharedPreferences.getInstance();
-    // final certData = CloudDownloadCertData.fromJson(
-    //     jsonDecode(prefs.getString(moabPrefCloudCertDataKey) ?? ''));
-
-    // TODO check expiration
-    return isPrivateExist & isPublicExist;
+    final prefs = await SharedPreferences.getInstance();
+    bool isKeyExist = prefs.containsKey(moabPrefCloudPublicKey) &
+        prefs.containsKey(moabPrefCloudPrivateKey) &
+        prefs.containsKey(moabPrefCloudCertDataKey);
+    if (!isKeyExist) {
+      return false;
+    }
+    final certData = CloudDownloadCertData.fromJson(
+        jsonDecode(prefs.getString(moabPrefCloudCertDataKey) ?? ''));
+    final expiredDate = DateTime.parse(certData.expiration);
+    if (expiredDate.millisecondsSinceEpoch - DateTime.now().millisecondsSinceEpoch < 0) {
+      return false;
+    }
+    return true;
   }
 
   // ---------------------------------------------------------------------------

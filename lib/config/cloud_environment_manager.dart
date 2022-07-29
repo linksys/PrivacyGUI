@@ -55,16 +55,19 @@ class CloudEnvironmentManager {
 
   Future<void> createCloudApp() async {
     SharedPreferences pref = await SharedPreferences.getInstance();
-    if (pref.containsKey(_getAppKey())) {
+    final appKey = _getAppKey();
+    if (pref.containsKey(appKey)) {
       return;
     }
+    logger.d('cloud app not exist! start create one');
     final app = await _repository.createApps(await Utils.fetchDeviceInfo());
-    await pref.setString(_getAppKey(), jsonEncode(app.toJson()));
+    await pref.setString(appKey, jsonEncode(app.toJson()));
   }
 
   Future<CloudApp> loadCloudApp() async {
     logger.d('load cloud app');
     if (_app == null) {
+      logger.d('can not find cloud app, create one');
       await createCloudApp();
     }
     SharedPreferences pref = await SharedPreferences.getInstance();

@@ -83,10 +83,10 @@ void main() {
   ///  Login actually
   ///
   group('GROUP 2 - test auth challenge verification and login part in dev', () {
-    const token = '8EDA1B44-803E-4707-AA3D-ADD376E3BDDA';
+    const token = 'AA36D25F-3D72-4A40-B1E0-EE23A41D11D3';
     CloudLoginAcceptState? acceptState;
     test('STEP 5 - auth challenge verify', () async {
-      const code = '9163'; // PUT received code here.
+      const code = '0324'; // PUT received code here.
       final client = DevTestableClient();
       final response =
           await client.authChallengeVerify(token: token, code: code);

@@ -109,14 +109,15 @@ class CloudAuthRepository extends AuthRepository {
         .downloadCloudCerts(taskId: taskId, secret: secret)
         .then((response) {
       final task = CloudDownloadCertTask.fromJson(json.decode(response.body));
+      String publicKey = task.data.publicKey;
+      String privateKey = task.data.privateKey;
+
       SharedPreferences.getInstance().then((pref) {
         pref.setString(
             moabPrefCloudCertDataKey, jsonEncode(task.data.toJson()));
+        pref.setString(moabPrefCloudPrivateKey, privateKey);
+        pref.setString(moabPrefCloudPublicKey, publicKey);
       });
-      Future.wait([
-        Storage.saveFile(Storage.appPublicKeyUri, task.data.publicKey),
-        Storage.saveFile(Storage.appPrivateKeyUri, task.data.privateKey),
-      ]);
     });
   }
 }

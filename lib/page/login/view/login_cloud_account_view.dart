@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/event.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
+import 'package:moab_poc/constants/constants.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/network/http/model/base_response.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
@@ -29,7 +30,6 @@ class LoginCloudAccountView extends StatefulWidget {
 }
 
 class LoginCloudAccountState extends State<LoginCloudAccountView> {
-  bool _isValidEmail = false;
   bool _isLoading = false;
   String _errorCode = '';
 
@@ -37,20 +37,24 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
   final TextEditingController _accountController = TextEditingController();
 
   //TODO: Move to another place
-  static const notificationAuthChannel = MethodChannel('otp.view/notification.auth');
+  static const notificationAuthChannel =
+      MethodChannel('otp.view/notification.auth');
   static const deviceTokenChannel = MethodChannel('otp.view/device.token');
-  static const notificationContentChannel = EventChannel('moab.dev/notification.payload');
+  static const notificationContentChannel =
+      EventChannel('moab.dev/notification.payload');
 
   Future<void> _readDeviceToken() async {
     if (Platform.isIOS) {
-      final deviceToken = await deviceTokenChannel.invokeMethod('readDeviceToken');
+      final deviceToken =
+          await deviceTokenChannel.invokeMethod('readDeviceToken');
       print('Receive device token=$deviceToken');
     }
   }
 
   Future<void> _getNotificationAuth() async {
     if (Platform.isIOS) {
-      final isGrant = await notificationAuthChannel.invokeMethod('requestNotificationAuthorization');
+      final isGrant = await notificationAuthChannel
+          .invokeMethod('requestNotificationAuthorization');
       print('Receive Notification authorization result: isGrant=$isGrant');
     }
   }
@@ -106,8 +110,7 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
                 controller: _accountController,
                 onChanged: _checkFilledInfo,
                 inputType: TextInputType.emailAddress,
-                isError: !_isValidEmail && _accountController.text.isNotEmpty ||
-                    _errorCode.isNotEmpty,
+                isError: _errorCode.isNotEmpty,
                 errorText: generalErrorCodeHandler(context, _errorCode),
               ),
               if (_errorCode == "RESOURCE_NOT_FOUND")
@@ -130,16 +133,24 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
                 padding: const EdgeInsets.symmetric(vertical: 24.0),
                 child: PrimaryButton(
                   text: getAppLocalizations(context).text_continue,
-                  onPress: _isValidEmail
+                  onPress: _accountController.text.isNotEmpty
                       ? () async {
+                          final isValid = _emailValidator.validate(_accountController.text);
                           setState(() {
-                            _isLoading = true;
+                            if (isValid) {
+                              _isLoading = true;
+                            } else {
+                              _errorCode = errorEmptyEmail;
+                            }
                           });
-                          await context
-                              .read<AuthBloc>()
-                              .loginPrepare(_accountController.text)
-                              .then((value) => _handleResult(value))
-                              .onError((error, stackTrace) => _handleError(error, stackTrace));
+                          if (_errorCode.isEmpty) {
+                            await context
+                                .read<AuthBloc>()
+                                .loginPrepare(_accountController.text)
+                                .then((value) => _handleResult(value))
+                                .onError((error, stackTrace) =>
+                                    _handleError(error, stackTrace));
+                          }
                           setState(() {
                             _isLoading = false;
                           });
@@ -162,8 +173,7 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
 
   _checkFilledInfo(_) {
     setState(() {
-      _isValidEmail = _emailValidator.validate(_accountController.text);
-      _errorCode = 'EMPTY_EMAIL';
+      _errorCode = '';
     });
   }
 
@@ -181,7 +191,8 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
       setState(() {
         _errorCode = e.code;
       });
-    } else { // Unknown error or error parsing
+    } else {
+      // Unknown error or error parsing
       logger.d('Unknown error: $e');
     }
   }

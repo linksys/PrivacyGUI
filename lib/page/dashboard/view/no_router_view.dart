@@ -44,8 +44,7 @@ class NoRouterView extends StatelessWidget {
               height: 26,
             ),
             SimpleTextButton(text: getAppLocalizations(context).logout, onPressed: () {
-              // TODO
-              context.read<AuthBloc>().add(Unauthorized());
+              context.read<AuthBloc>().add(Logout());
             }),
           ],
         ),

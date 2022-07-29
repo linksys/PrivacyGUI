@@ -160,3 +160,11 @@ class AuthState extends Equatable {
     );
   }
 }
+
+class AuthCloudLoginState extends AuthState {
+  const AuthCloudLoginState({required this.publicKey, required this.privateKey})
+      : super(status: AuthStatus.authorized);
+
+  final String publicKey;
+  final String privateKey;
+}
