@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/event.dart';
@@ -12,7 +11,6 @@ import 'package:moab_poc/repository/authenticate/auth_repository.dart';
 import 'package:moab_poc/repository/authenticate/local_auth_repository.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:moab_poc/util/logger.dart';
-import 'package:moab_poc/util/storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants/cloud_const.dart';
@@ -21,6 +19,7 @@ import '../../network/http/model/cloud_auth_clallenge_method.dart';
 import '../../network/http/model/cloud_create_account_verified.dart';
 import '../../network/http/model/cloud_login_state.dart';
 import '../../network/http/model/cloud_preferences.dart';
+import '../../utils.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _repository;
@@ -172,10 +171,10 @@ extension AuthBlocCloud on AuthBloc {
         password: state.accountInfo.loginType == LoginType.password
             ? state.accountInfo.password
             : null,
-        preferences: const CloudPreferences(
-            isoLanguageCode: 'zh',
-            isoCountryCode: 'TW',
-            timeZone: 'Asia/Taipei'));
+        preferences: CloudPreferences(
+            isoLanguageCode: Utils.getLanguageCode(),
+            isoCountryCode: Utils.getCountryCode(),
+            timeZone: await Utils.getTimeZone()));
     return await _repository
         .createVerifiedAccount(verified)
         .then((value) => _handleCreateVerifiedAccount(value));
@@ -207,10 +206,19 @@ extension AuthBlocCloud on AuthBloc {
   Future<AccountInfo> _handleLoginPrepare(
       String username, CloudLoginState cloudLoginState) async {
     logger.d("handle login prepare: $cloudLoginState");
-    // TODO: change to switch case
-    final LoginType loginType = cloudLoginState.state == keyRequire2sv
-        ? LoginType.passwordless
-        : LoginType.password;
+
+    LoginType loginType = LoginType.passwordless;
+    switch (cloudLoginState.state) {
+      case keyRequire2sv:
+        loginType = LoginType.passwordless;
+        break;
+      case keyPasswordRequired:
+        loginType = LoginType.password;
+        break;
+      default:
+        logger.d("error: cloud Login State = ${cloudLoginState.state}");
+        break;
+    }
 
     AccountInfo accountInfo =
         state.accountInfo.copyWith(username: username, loginType: loginType);

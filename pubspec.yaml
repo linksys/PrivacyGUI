@@ -63,6 +63,7 @@ dependencies:
   uuid: ^3.0.6
   flutter_inappwebview: ^5.4.3+7
   shared_preferences: ^2.0.15
+  flutter_native_timezone: ^2.0.0
 
 dev_dependencies:
   flutter_test:

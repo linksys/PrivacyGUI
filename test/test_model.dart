@@ -177,25 +177,24 @@ void main() {
 
       final CloudAccountInfo info = CloudAccountInfo.fromJson(jsonDecode(jsonStr));
 
+      expect(info.id, '47d9cce2-eb15-4339-9535-8dfba4423d21');
+      expect(info.username, 'peter.jhong.belkin@gmail.com');
+      expect(info.usernames.first, 'peter.jhong.belkin@gmail.com');
+      expect(info.status, 'ACTIVE');
+      expect(info.type, 'NORMAL');
+      expect(info.authenticationMode, 'PASSWORDLESS');
+      expect(info.createdAt, '2022-07-29T02:25:15.095864413Z');
+      expect(info.updatedAt, '2022-07-29T02:25:15.095864413Z');
+
       final jsonObj = info.toJson();
-      expect(jsonObj['id'], 'id-for-account-info');
-      expect(jsonObj['username'], 'austin.chang@linksys.com');
-      expect(jsonObj['usernames'][0], 'austin.chang@linksys.com');
+      expect(jsonObj['id'], '47d9cce2-eb15-4339-9535-8dfba4423d21');
+      expect(jsonObj['username'], 'peter.jhong.belkin@gmail.com');
+      expect(jsonObj['usernames'][0], 'peter.jhong.belkin@gmail.com');
       expect(jsonObj['status'], 'ACTIVE');
       expect(jsonObj['type'], 'NORMAL');
-      expect(jsonObj['authenticationMode'], 'PASSWORD');
-      expect(jsonObj['createAt'], '2022-07-13T09:37:01.665063052Z');
-      expect(jsonObj['updateAt'], '2022-07-13T09:37:01.665063052Z');
-
-      final convertBack = CloudAccountInfo.fromJson(jsonObj);
-      expect(convertBack.id, 'id-for-account-info');
-      expect(convertBack.username, 'austin.chang@linksys.com');
-      expect(convertBack.usernames.first, 'austin.chang@linksys.com');
-      expect(convertBack.status, 'ACTIVE');
-      expect(convertBack.type, 'NORMAL');
-      expect(convertBack.authenticationMode, 'PASSWORD');
-      expect(convertBack.createAt, '2022-07-13T09:37:01.665063052Z');
-      expect(convertBack.updateAt, '2022-07-13T09:37:01.665063052Z');
+      expect(jsonObj['authenticationMode'], 'PASSWORDLESS');
+      expect(jsonObj['createdAt'], '2022-07-29T02:25:15.095864413Z');
+      expect(jsonObj['updatedAt'], '2022-07-29T02:25:15.095864413Z');
     });
 
     test('test CloudLoginState', () async {

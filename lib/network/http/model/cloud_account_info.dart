@@ -20,8 +20,8 @@ class CloudAccountInfo extends Equatable {
     required this.status,
     required this.type,
     required this.authenticationMode,
-    required this.createAt,
-    required this.updateAt,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   factory CloudAccountInfo.fromJson(Map<String, dynamic> json) {
@@ -32,8 +32,8 @@ class CloudAccountInfo extends Equatable {
       status: json['status'],
       type: json['type'],
       authenticationMode: json['authenticationMode'],
-      createAt: json['createdAt'],
-      updateAt: json['updatedAt'],
+      createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
     );
   }
 
@@ -45,8 +45,8 @@ class CloudAccountInfo extends Equatable {
       'status': status,
       'type': type,
       'authenticationMode': authenticationMode,
-      'createAt': createAt,
-      'updateAt': updateAt,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
     };
   }
 
@@ -56,9 +56,9 @@ class CloudAccountInfo extends Equatable {
   final String status;
   final String type;
   final String authenticationMode;
-  final String createAt;
-  final String updateAt;
+  final String createdAt;
+  final String updatedAt;
 
   @override
-  List<Object?> get props => [id, username, usernames, status, type, authenticationMode, createAt, updateAt];
+  List<Object?> get props => [id, username, usernames, status, type, authenticationMode, createdAt, updatedAt];
 }

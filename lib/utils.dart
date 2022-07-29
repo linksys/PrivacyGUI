@@ -3,15 +3,16 @@ import 'dart:math';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:intl/intl.dart';
 import 'package:moab_poc/network/http/model/cloud_app.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-class Utils
-{
+class Utils {
   static const String NoSpeedCalculationText = "-----";
-  static const bool ReleaseMode = bool.fromEnvironment('dart.vm.product', defaultValue: false);
+  static const bool ReleaseMode =
+      bool.fromEnvironment('dart.vm.product', defaultValue: false);
 
   static String formatDuration(Duration d) {
     var seconds = d.inSeconds;
@@ -40,7 +41,8 @@ class Utils
   static String formatTimeMSS(int timeInSecond) {
     final Duration timeAmount = Duration(seconds: timeInSecond);
     final String m = timeAmount.inMinutes.remainder(60).toString();
-    final String s = timeAmount.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final String s =
+        timeAmount.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$m:$s';
   }
 
@@ -49,7 +51,8 @@ class Utils
     const suffixes = ["B", "Kb", "Mb", "Gb", "Tb", "Pb"];
     var i = (log(bytes) / log(1024)).floor();
     var number = (bytes / pow(1024, i));
-    return (number).toStringAsFixed(number.truncateToDouble() == number ? 0 : decimals) +
+    return (number).toStringAsFixed(
+            number.truncateToDouble() == number ? 0 : decimals) +
         ' ' +
         suffixes[i];
   }
@@ -57,35 +60,47 @@ class Utils
   static Size getScreenSize(BuildContext context) {
     return MediaQuery.of(context).size;
   }
+
   static double getScreenWidth(BuildContext context) {
     return MediaQuery.of(context).size.width;
   }
+
   static double getScreenHeight(BuildContext context) {
     return MediaQuery.of(context).size.height;
   }
+
   static double getScreenRatio(BuildContext context) {
     return MediaQuery.of(context).devicePixelRatio;
   }
+
   static Size getPhysicalScreenSize(BuildContext context) {
     return getScreenSize(context) * getScreenRatio(context);
   }
+
   static double getPhysicalScreenWidth(BuildContext context) {
     return getScreenWidth(context) * getScreenRatio(context);
   }
+
   static double getPhysicalScreenHeight(BuildContext context) {
     return getScreenHeight(context) * getScreenRatio(context);
   }
+
   static double getTextScaleFactor(BuildContext context) {
     return MediaQuery.of(context).textScaleFactor;
   }
+
   static double getTopSafeAreaPadding(BuildContext context) {
     return MediaQuery.of(context).padding.top;
   }
+
   static double getBottomSafeAreaPadding(BuildContext context) {
     return MediaQuery.of(context).padding.bottom;
   }
+
   static double getSafeAreaHeight(BuildContext context) {
-    return getScreenHeight(context) - getTopSafeAreaPadding(context) - getBottomSafeAreaPadding(context);
+    return getScreenHeight(context) -
+        getTopSafeAreaPadding(context) -
+        getBottomSafeAreaPadding(context);
   }
 
   static Future<DeviceInfo> fetchDeviceInfo() async {
@@ -97,7 +112,8 @@ class Utils
     return DeviceInfo.fromJson(infoMap);
   }
 
-  static Future<Map<String, dynamic>> _deviceInfoMap(DeviceInfoPlugin deviceInfo) async {
+  static Future<Map<String, dynamic>> _deviceInfoMap(
+      DeviceInfoPlugin deviceInfo) async {
     if (Platform.isIOS) {
       return _iosDeviceMap(await deviceInfo.iosInfo);
     } else if (Platform.isAndroid) {
@@ -105,10 +121,10 @@ class Utils
     } else {
       return {};
     }
-
   }
 
-  static Future<Map<String, dynamic>> _androidDeviceMap(AndroidDeviceInfo build) async {
+  static Future<Map<String, dynamic>> _androidDeviceMap(
+      AndroidDeviceInfo build) async {
     return {
       'osVersion': build.version.release,
       'mobileManufacturer': build.manufacturer,
@@ -122,5 +138,21 @@ class Utils
       'mobileModel': data.utsname.machine,
       'mobileManufacturer': 'Apple'
     };
+  }
+
+  static Future<String> getTimeZone() async {
+    return await FlutterNativeTimezone.getLocalTimezone();
+  }
+
+  static String getLanguageCode() {
+    List<String> localeNames = Platform.localeName.split('_');
+
+    return localeNames.length > 2
+        ? '${localeNames[0]}_${localeNames[1]}'
+        : localeNames.first;
+  }
+
+  static String getCountryCode() {
+    return Platform.localeName.split('_').last;
   }
 }
