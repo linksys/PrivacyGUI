@@ -8,6 +8,8 @@ String generalErrorCodeHandler(BuildContext context, String code) {
   switch(code) {
     case '':
       return '';
+    case errorUsernameExists:
+      return getAppLocalizations(context).error_enter_a_valid_email_format;
     case errorEmptyEmail:
       return getAppLocalizations(context).error_enter_a_valid_email_format;
     case errorInvalidPassword:
@@ -20,6 +22,8 @@ String generalErrorCodeHandler(BuildContext context, String code) {
       return getAppLocalizations(context).error_expired_otp;
     case errorExceedThreshold:
       return getAppLocalizations(context).error_otp_exceeds_threshold;
+    case errorInvalidPhone:
+      return getAppLocalizations(context).error_invalid_phone_number;
     default:
       logger.e('Unhandled Error: $code');
       return getAppLocalizations(context).unknown_error_code(code);

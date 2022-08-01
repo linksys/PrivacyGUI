@@ -66,7 +66,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
         header: BasicHeader(
           title: state.selectedMethod?.method == OtpMethod.sms
               ? getAppLocalizations(context)
-                  .otp_enter_code_sms_title('***${state.selectedMethod?.data}')
+                  .otp_enter_code_sms_title(state.selectedMethod?.data ?? '')
               : getAppLocalizations(context)
                   .otp_enter_code_email_title(state.selectedMethod?.data ?? ''),
         ),

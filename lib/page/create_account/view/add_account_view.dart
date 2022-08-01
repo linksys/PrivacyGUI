@@ -6,6 +6,7 @@ import 'package:moab_poc/bloc/setup/bloc.dart';
 import 'package:moab_poc/bloc/setup/event.dart';
 import 'package:moab_poc/bloc/setup/state.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
+import 'package:moab_poc/network/http/model/base_response.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/base_components/button/simple_text_button.dart';
 import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
@@ -16,6 +17,8 @@ import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/components/views/arguments_view.dart';
 import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/route.dart';
+import 'package:moab_poc/util/error_code_handler.dart';
+import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/validator.dart';
 
 import '../../components/base_components/button/primary_button.dart';
@@ -32,6 +35,7 @@ class _AddAccountState extends State<AddAccountView> {
   bool _isLoading = false;
   final TextEditingController _emailController = TextEditingController();
   var isEmailInvalid = false;
+  var _errorCode = '';
 
   void _onNextAction() async {
     isEmailInvalid = !EmailValidator().validate(_emailController.text);
@@ -46,7 +50,8 @@ class _AddAccountState extends State<AddAccountView> {
             ..args = {
               'username': _emailController.text,
               'function': OtpFunction.setting,
-            }));
+            }))
+          .onError((error, stackTrace) => _handleError(error, stackTrace));
       setState(() {
         _isLoading = false;
       });
@@ -113,18 +118,30 @@ class _AddAccountState extends State<AddAccountView> {
           content: Column(
             children: [
               InputField(
-                  titleText: getAppLocalizations(context)
-                      .add_cloud_account_input_title,
-                  controller: _emailController,
-                  isError: isEmailInvalid,
-                  errorText: 'Enter a valid email format',
-                  inputType: TextInputType.emailAddress,
-                  onChanged: (value) {
-                    setState(() {
-                      isEmailInvalid = false;
-                    });
-                  }),
-              const SizedBox(height: 31),
+                titleText:
+                    getAppLocalizations(context).add_cloud_account_input_title,
+                controller: _emailController,
+                isError: isEmailInvalid,
+                errorText: 'Enter a valid email format',
+                inputType: TextInputType.emailAddress,
+                onChanged: (value) {
+                  setState(() {
+                    isEmailInvalid = false;
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+              Offstage(
+                offstage: _errorCode.isEmpty,
+                child: Text(
+                  generalErrorCodeHandler(context, _errorCode),
+                  style: Theme.of(context)
+                      .textTheme
+                      .headline3
+                      ?.copyWith(color: Colors.red),
+                ),
+              ),
+              const SizedBox(height: 32),
               DescriptionText(
                   text: getAppLocalizations(context)
                       .add_cloud_account_input_description),
@@ -156,5 +173,16 @@ class _AddAccountState extends State<AddAccountView> {
             ],
           )),
     );
+  }
+
+  _handleError(Object? e, StackTrace trace) {
+    if (e is ErrorResponse) {
+      setState(() {
+        _errorCode = e.code;
+      });
+    } else {
+      // Unknown error or error parsing
+      logger.d('Unknown error: $e');
+    }
   }
 }
