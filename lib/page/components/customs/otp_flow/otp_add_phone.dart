@@ -29,6 +29,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
   TextEditingController phoneController = TextEditingController();
 
   bool hasInput = false;
+  bool isInputInvalid = false;
   Map _countryCodes = {};
   PhoneRegion currentRegion = PhoneRegion('United States', 'US', 1); // Default
   String phoneHint = 'Phone';
@@ -47,10 +48,42 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
     _countryCodes = json.decode(jsonText);
   }
 
-  void _checkPhoneNumber(value) async {
+  void _onInputChanged(text) {
     setState(() {
-      hasInput = phoneController.text.isNotEmpty;
+      hasInput = text.isNotEmpty;
+      isInputInvalid = false;
     });
+  }
+
+  void _checkPhoneNumber() async {
+    final userInputPhoneNumber = phoneController.text;
+    _setLoading(true);
+    try {
+      final phoneNumber = await phoneNumberUtil.parse(userInputPhoneNumber,
+          regionCode: currentRegion.countryCode);
+      context.read<OtpCubit>().onInputOtp(
+          info: OtpInfo(
+            method: OtpMethod.sms,
+            data: phoneNumber.e164,
+            phoneNumber: CloudPhoneModel(
+              country: currentRegion.countryCode,
+              countryCallingCode: '+${currentRegion.callingCode}',
+              phoneNumber: phoneNumber.nationalNumber,
+            ),
+          ));
+    } catch (e) {
+      logger.e(
+          'AddPhone: Special error: [$userInputPhoneNumber] is valid but cannot be parsed');
+      setState(() {
+        isInputInvalid = true;
+      });
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  _setLoading(bool isLoading) {
+    context.read<OtpCubit>().setLoading(isLoading);
   }
 
   Future<void> updateRegion(PhoneRegion region) async {
@@ -103,7 +136,9 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
                         width: 60,
                         decoration: BoxDecoration(
                             border: Border.all(
-                          color: Theme.of(context).colorScheme.primary,
+                          color: isInputInvalid
+                              ? Colors.red
+                              : Theme.of(context).colorScheme.primary,
                           width: 1,
                         )),
                         child: Text(
@@ -124,12 +159,27 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
                       child: PrimaryTextField(
                         controller: phoneController,
                         hintText: phoneHint,
-                        onChanged: _checkPhoneNumber,
+                        onChanged: _onInputChanged,
                         inputType: TextInputType.number,
+                        errorColor: Colors.red,
+                        isError: isInputInvalid,
                       ),
                     ),
                   ],
                   crossAxisAlignment: CrossAxisAlignment.stretch,
+                ),
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              Offstage(
+                offstage: !isInputInvalid,
+                child: Text(
+                  'Invalid phone number',
+                  style: Theme.of(context)
+                      .textTheme
+                      .headline3
+                      ?.copyWith(color: Colors.red),
                 ),
               ),
             ],
@@ -144,7 +194,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
                 visible: hasInput,
                 child: PrimaryButton(
                   text: getAppLocalizations(context).otp_send_code,
-                  onPress: () => _testPhoneNumber(),
+                  onPress: _checkPhoneNumber,
                 ),
               ),
             ],
@@ -153,45 +203,5 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
         ),
       ),
     );
-  }
-
-  _testPhoneNumber() {
-    logger.d('Phone number: ${phoneController.text}');
-    _setLoading(true);
-    PhoneNumberUtil()
-        .parse('+${currentRegion.callingCode}${phoneController.text}')
-        .then((phoneNumber) => _onSend(
-              OtpInfo(
-                method: OtpMethod.sms,
-                data: phoneNumber.e164,
-                phoneNumber: CloudPhoneModel(
-                  country: currentRegion.countryCode,
-                  countryCallingCode: '+${currentRegion.callingCode}',
-                  phoneNumber: phoneNumber.nationalNumber,
-                ),
-              ),
-            ))
-        .onError((error, stackTrace) => {_error(error)});
-  }
-
-  _onSend(OtpInfo method) async {
-    // await context
-    //     .read<AuthBloc>()
-    //     .authChallenge(method)
-    //     .then((value) => context.read<OtpCubit>().onInputOtp(info: method));
-    context.read<OtpCubit>().onInputOtp(info: method);
-    _setLoading(false);
-  }
-
-  _setLoading(bool isLoading) {
-    context.read<OtpCubit>().setLoading(isLoading);
-  }
-
-  _error(Object? error) {
-    if (error is PlatformException) {
-      logger.e('error: $error,');
-      if (error.code == 'InvalidNumber') {}
-    }
-    _setLoading(false);
   }
 }
