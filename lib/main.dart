@@ -22,6 +22,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/storage.dart';
 import 'bloc/setup/bloc.dart';
+import 'channel/universal_link_channel.dart';
 import 'firebase_options.dart';
 import 'repository/authenticate/impl/fake_auth_repository.dart';
 import 'repository/authenticate/impl/fake_local_auth_repository.dart';
@@ -177,7 +178,7 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
       theme: MoabTheme.AuthModuleLightModeData,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      routerDelegate: MoabRouterDelegate(context.read<NavigationCubit>()),
+      routerDelegate: MoabRouterDelegate(context.read<NavigationCubit>(), UniversalLinkChannel()),
       routeInformationParser: MoabRouteInformationParser(),
     );
   }

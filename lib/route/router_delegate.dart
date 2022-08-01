@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +8,7 @@ import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/bloc/connectivity/connectivity_info.dart';
 import 'package:moab_poc/bloc/connectivity/cubit.dart';
-import 'package:moab_poc/page/components/customs/no_network_bottom_modal.dart';
+import 'package:moab_poc/channel/universal_link_channel.dart';
 import 'package:moab_poc/route/moab_page.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/analytics.dart';
@@ -15,15 +17,18 @@ import 'package:moab_poc/route/model/model.dart';
 
 class MoabRouterDelegate extends RouterDelegate<BasePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<BasePath> {
-  MoabRouterDelegate(this._cubit) : navigatorKey = GlobalKey();
 
-  final NavigationCubit _cubit;
-
-  static MoabRouterDelegate of(BuildContext context) {
-    final delegate = Router.of(context).routerDelegate;
-    assert(delegate is MoabRouterDelegate, 'Delegate type must match');
-    return delegate as MoabRouterDelegate;
+  MoabRouterDelegate(this._cubit, UniversalLinkChannel universalLinkChannel) : navigatorKey = GlobalKey() {
+    _universalLinkSubscription = universalLinkChannel.stream.listen(_handleUniversalLink);
   }
+  late StreamSubscription _universalLinkSubscription;
+  final NavigationCubit _cubit;
+  //
+  // static MoabRouterDelegate of(BuildContext context) {
+  //   final delegate = Router.of(context).routerDelegate;
+  //   assert(delegate is MoabRouterDelegate, 'Delegate type must match');
+  //   return delegate as MoabRouterDelegate;
+  // }
 
   @override
   BasePath get currentConfiguration => _cubit.state.last;
@@ -67,6 +72,13 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
     print('MoabRouterDelegate::setNewRoutePath:${configuration.name}');
     _cubit.clearAndPush(configuration);
     return SynchronousFuture(null);
+  }
+
+
+  @override
+  void dispose() {
+    _universalLinkSubscription.cancel();
+    super.dispose();
   }
 
   bool _onPopPage(Route<dynamic> route, dynamic result) {
@@ -120,5 +132,9 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
         }
       },
     );
+  }
+
+  _handleUniversalLink(dynamic event) {
+    logger.d('received an universal link: $event');
   }
 }

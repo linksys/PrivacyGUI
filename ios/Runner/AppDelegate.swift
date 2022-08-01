@@ -62,7 +62,7 @@ import FirebaseCore
           self?.requestNotificationAuthorization(result: result)
       }
       
-      let universalLinkChannel = FlutterEventChannel(name: "otp.code.input.view/deeplink",
+      let universalLinkChannel = FlutterEventChannel(name: "com.linksys.moab/universal_link",
                                                      binaryMessenger: controller.binaryMessenger)
       universalLinkChannel.setStreamHandler(UniversalLinkStreamHandler())
 
@@ -92,15 +92,11 @@ import FirebaseCore
               userActivity.activityType == NSUserActivityTypeBrowsingWeb else { return false }
         
         print("Universal link: \(url)")
-        if components.path.contains("otp") {  //TODO: Depend on the real URL
-            for item in components.queryItems ?? [] {
-                if item.name == "code", let code = item.value {  //TODO: Depend on the real URL
-                    NotificationCenter.default.post(
-                        name: NSNotification.Name("UniversalLinkActivityNotification"),
-                        object: nil,
-                        userInfo: ["code": code])
-                }
-            }
+        if url.host!.contains("devvelopcloud.com") {  //TODO: Depend on the real URL
+            NotificationCenter.default.post(
+                name: NSNotification.Name("UniversalLinkActivityNotification"),
+                object: nil,
+                userInfo: ["url": url.absoluteString])
         }
         
         return false
@@ -177,10 +173,10 @@ class UniversalLinkStreamHandler: NSObject, FlutterStreamHandler {
         guard let eventSink = eventSink else {
             return
         }
-        guard let userInfo = notification.userInfo, let code = userInfo["code"] else {
+        guard let userInfo = notification.userInfo, let url = userInfo["url"] else { // TODO
             return
         }
-        eventSink(code)
+        eventSink(url)
     }
     
 }
