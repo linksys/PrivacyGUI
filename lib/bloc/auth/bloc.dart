@@ -6,12 +6,14 @@ import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/constants/pref_key.dart';
 import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
 import 'package:moab_poc/network/http/model/cloud_login_certs.dart';
+import 'package:moab_poc/network/http/model/cloud_phone.dart';
 import 'package:moab_poc/network/http/model/cloud_task_model.dart';
 import 'package:moab_poc/repository/authenticate/auth_repository.dart';
 import 'package:moab_poc/repository/authenticate/local_auth_repository.dart';
 import 'package:moab_poc/repository/model/dummy_model.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:test/test.dart';
 
 import '../../constants/cloud_const.dart';
 import '../../network/http/model/cloud_account_info.dart';
@@ -95,7 +97,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthState.unAuthorized());
     });
   }
-  
+
   @override
   void onTransition(Transition<AuthEvent, AuthState> transition) {
     super.onTransition(transition);
@@ -117,10 +119,17 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<void> authChallenge(OtpInfo method) async {
-    return await _repository.authChallenge(AuthChallengeMethod(
+    BaseAuthChallenge challenge;
+    if (method.methodId.isNotEmpty) {
+      challenge = AuthChallengeMethodId(token: state.vToken, commMethodId: method.methodId);
+    } else {
+      challenge = AuthChallengeMethod(
         token: state.vToken,
         method: method.method.name.toUpperCase(),
-        target: method.data));
+        target: method.data,
+      );
+    }
+    return await _repository.authChallenge(challenge);
   }
 
   Future<void> authChallengeVerify(String code) async {
@@ -152,9 +161,13 @@ extension AuthBlocCloud on AuthBloc {
       case OtpMethod.email:
         break;
       case OtpMethod.sms:
+        // TODO throw exception if there has no phone number information
+        assert(otpInfo.phoneNumber != null);
+        final phoneNumber = otpInfo.phoneNumber!;
         method = CommunicationMethod(
             method: OtpMethod.sms.name.toUpperCase(),
-            targetValue: otpInfo.data);
+            targetValue: otpInfo.data,
+            phone: phoneNumber);
         break;
       default:
         break;
@@ -302,7 +315,9 @@ extension AuthBlocCloud on AuthBloc {
     final certData = CloudDownloadCertData.fromJson(
         jsonDecode(prefs.getString(moabPrefCloudCertDataKey) ?? ''));
     final expiredDate = DateTime.parse(certData.expiration);
-    if (expiredDate.millisecondsSinceEpoch - DateTime.now().millisecondsSinceEpoch < 0) {
+    if (expiredDate.millisecondsSinceEpoch -
+            DateTime.now().millisecondsSinceEpoch <
+        0) {
       return false;
     }
     return true;

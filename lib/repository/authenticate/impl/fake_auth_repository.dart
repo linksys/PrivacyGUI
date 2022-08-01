@@ -38,7 +38,7 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<void> authChallenge(AuthChallengeMethod method) async {
+  Future<void> authChallenge(BaseAuthChallenge method) async {
     // Send verification code to user
 
     if (_resendCodeTimer != null && (_resendCodeTimer!.isActive)) {

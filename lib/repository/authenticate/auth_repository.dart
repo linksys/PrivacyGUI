@@ -59,7 +59,7 @@ abstract class AuthRepository {
   /// * Input: [AuthChallengeMethod]
   /// * return: void
   /// * error: INVALID_PARAMETER
-  Future<void> authChallenge(AuthChallengeMethod method);
+  Future<void> authChallenge(BaseAuthChallenge method);
 
   ///
   /// Verify OTP code received from EMAIL/SMS

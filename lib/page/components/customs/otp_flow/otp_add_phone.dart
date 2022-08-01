@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
+import 'package:moab_poc/network/http/model/cloud_phone.dart';
 import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/customs/customs.dart';
 import 'package:moab_poc/page/components/customs/otp_flow/otp_cubit.dart';
@@ -14,7 +15,6 @@ import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'dart:convert';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:phone_number/phone_number.dart';
 
 class OtpAddPhoneView extends ArgumentsStatefulView {
@@ -47,7 +47,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
     _countryCodes = json.decode(jsonText);
   }
 
-  void _checkPhoneNumber(_) {
+  void _checkPhoneNumber(value) async {
     setState(() {
       hasInput = phoneController.text.isNotEmpty;
     });
@@ -144,12 +144,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
                 visible: hasInput,
                 child: PrimaryButton(
                   text: getAppLocalizations(context).otp_send_code,
-                  onPress: () {
-                    _onSend(OtpInfo(
-                        method: OtpMethod.sms,
-                        data:
-                            '+${currentRegion.callingCode}${phoneController.text}'));
-                  },
+                  onPress: () => _testPhoneNumber(),
                 ),
               ),
             ],
@@ -160,17 +155,43 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
     );
   }
 
-  _onSend(OtpInfo method) async {
+  _testPhoneNumber() {
     logger.d('Phone number: ${phoneController.text}');
     _setLoading(true);
-    await context
-        .read<AuthBloc>()
-        .authChallenge(method)
-        .then((value) => context.read<OtpCubit>().onInputOtp(info: method));
+    PhoneNumberUtil()
+        .parse('+${currentRegion.callingCode}${phoneController.text}')
+        .then((phoneNumber) => _onSend(
+              OtpInfo(
+                method: OtpMethod.sms,
+                data: phoneNumber.e164,
+                phoneNumber: CloudPhoneModel(
+                  country: currentRegion.countryCode,
+                  countryCallingCode: '+${currentRegion.callingCode}',
+                  phoneNumber: phoneNumber.nationalNumber,
+                ),
+              ),
+            ))
+        .onError((error, stackTrace) => {_error(error)});
+  }
+
+  _onSend(OtpInfo method) async {
+    // await context
+    //     .read<AuthBloc>()
+    //     .authChallenge(method)
+    //     .then((value) => context.read<OtpCubit>().onInputOtp(info: method));
+    context.read<OtpCubit>().onInputOtp(info: method);
     _setLoading(false);
   }
 
   _setLoading(bool isLoading) {
     context.read<OtpCubit>().setLoading(isLoading);
+  }
+
+  _error(Object? error) {
+    if (error is PlatformException) {
+      logger.e('error: $error,');
+      if (error.code == 'InvalidNumber') {}
+    }
+    _setLoading(false);
   }
 }

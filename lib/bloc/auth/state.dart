@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+import 'package:moab_poc/network/http/model/cloud_phone.dart';
+import 'package:phone_number/phone_number.dart';
 
 enum AuthStatus {
   unknownAuth,
@@ -62,29 +64,36 @@ class LocalLoginInfo {
   }
 }
 
+
 class OtpInfo {
   final OtpMethod method;
   final String methodId;
   final String data;
   final String maskedData;
+  final CloudPhoneModel? phoneNumber;
 
-  const OtpInfo(
-      {required this.method,
-      this.methodId = '',
-      this.data = '',
-      this.maskedData = ''});
+  const OtpInfo({
+    required this.method,
+    this.methodId = '',
+    this.data = '',
+    this.maskedData = '',
+    this.phoneNumber,
+  });
 
   OtpInfo copyWith({
     OtpMethod? method,
     String? data,
     String? methodId,
     String? maskedData,
+    CloudPhoneModel? phoneNumber,
   }) {
     return OtpInfo(
-        method: method ?? this.method,
-        data: data ?? this.data,
-        methodId: methodId ?? this.methodId,
-        maskedData: maskedData ?? this.maskedData);
+      method: method ?? this.method,
+      data: data ?? this.data,
+      methodId: methodId ?? this.methodId,
+      maskedData: maskedData ?? this.maskedData,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+    );
   }
 }
 

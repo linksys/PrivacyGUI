@@ -35,7 +35,7 @@ class CloudAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<void> authChallenge(AuthChallengeMethod method) {
+  Future<void> authChallenge(BaseAuthChallenge method) {
     return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
         _httpClient.authChallenge(method,
             id: cloudApp.id, secret: cloudApp.appSecret));

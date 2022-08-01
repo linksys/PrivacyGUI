@@ -15,6 +15,8 @@ import 'package:moab_poc/page/components/base_components/progress_bars/full_scre
 import 'package:moab_poc/page/components/layouts/basic_header.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
 import 'package:moab_poc/page/landing/view/debug_device_info_view.dart';
+import 'package:moab_poc/route/model/model.dart';
+import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/util/storage.dart';
 import 'package:share_plus/share_plus.dart';
@@ -218,6 +220,22 @@ class _DebugToolsViewState extends State<DebugToolsView> {
             securityContext.usePrivateKeyBytes(privateKey);
             final client = MoabHttpClient.withCert(securityContext);
             await client.getAccountSelf();
+          },
+        ),
+        const SizedBox(
+          height: 16,
+        ),
+        Text(
+          'Create Account:',
+          style: Theme.of(context)
+              .textTheme
+              .headline2
+              ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        ),
+        SecondaryButton(
+          text: 'Create account',
+          onPress: () {
+            NavigationCubit.of(context).push(CreateCloudAccountPath());
           },
         ),
       ],

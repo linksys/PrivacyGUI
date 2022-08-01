@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
+import 'package:async/async.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:moab_poc/config/cloud_environment_manager.dart';
@@ -14,15 +16,61 @@ import 'model/base_response.dart';
 /// timeout - will throw Timeout exception on ${timeout} seconds
 ///
 class MoabHttpClient extends http.BaseClient {
-
-  MoabHttpClient({IOClient? client, this.timeout = 5}): _inner = client ?? IOClient();
-
-  factory MoabHttpClient.withCert(SecurityContext context) {
-    return MoabHttpClient(client: IOClient(HttpClient(context: context)));
+  MoabHttpClient({
+    IOClient? client,
+    int timeoutMs = 5000,
+    int retries = 3,
+    FutureOr<bool> Function(http.BaseResponse) when = _defaultWhen,
+    FutureOr<bool> Function(Object, StackTrace) whenError = _defaultWhenError,
+    Duration Function(int retryCount) delay = _defaultDelay,
+    FutureOr<void> Function(BaseRequest, http.BaseResponse?, int retryCount)?
+        onRetry,
+  })  : _inner = client ?? IOClient(),
+        _timeoutMs = timeoutMs,
+        _retries = retries,
+        _when = when,
+        _whenError = whenError,
+        _delay = delay,
+        _onRetry = onRetry {
+    RangeError.checkNotNegative(_retries, 'retries');
   }
 
-  int timeout;
+  MoabHttpClient.withCert(
+    SecurityContext context, {
+    int timeoutMs = 5,
+    int retries = 3,
+    FutureOr<bool> Function(http.BaseResponse) when = _defaultWhen,
+    FutureOr<bool> Function(Object, StackTrace) whenError = _defaultWhenError,
+    Duration Function(int retryCount) delay = _defaultDelay,
+    FutureOr<void> Function(BaseRequest, http.BaseResponse?, int retryCount)?
+        onRetry,
+  }) : this(
+          client: IOClient(HttpClient(context: context)),
+          timeoutMs: timeoutMs,
+          retries: retries,
+          when: when,
+          whenError: whenError,
+          delay: delay,
+          onRetry: onRetry,
+        );
+
+  final int _timeoutMs;
   final IOClient _inner;
+
+  /// The number of times a request should be retried.
+  final int _retries;
+
+  /// The callback that determines whether a request should be retried.
+  final FutureOr<bool> Function(http.BaseResponse) _when;
+
+  /// The callback that determines whether a request when an error is thrown.
+  final FutureOr<bool> Function(Object, StackTrace) _whenError;
+
+  /// The callback that determines how long to wait before retrying a request.
+  final Duration Function(int) _delay;
+
+  /// The callback to call to indicate that a request is being retried.
+  final FutureOr<void> Function(BaseRequest, http.BaseResponse?, int)? _onRetry;
 
   final Map<String, String> defaultHeader = {
     moabSiteIdKey: moabRetailSiteId,
@@ -31,6 +79,7 @@ class MoabHttpClient extends http.BaseClient {
   };
 
   String getHost() => CloudEnvironmentManager().currentConfig?.apiBase ?? '';
+
   String combineUrl(String endpoint, {Map<String, String>? args}) {
     String url = '${getHost()}$endpoint';
     if (args != null) {
@@ -42,16 +91,61 @@ class MoabHttpClient extends http.BaseClient {
   }
 
   @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    _logRequest(request);
-    return _inner.send(request).timeout(Duration(seconds: timeout));
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final splitter = StreamSplitter(request.finalize());
+
+    var i = 0;
+    for (;;) {
+      StreamedResponse? response;
+      try {
+        _logRequest(request, retry: i);
+        response = await _inner
+            .send(_copyRequest(request, splitter.split()))
+            .timeout(Duration(milliseconds: _timeoutMs));
+      } catch (error, stackTrace) {
+        if (i == _retries || !await _whenError(error, stackTrace)) rethrow;
+      }
+
+      if (response != null) {
+        if (i == _retries || !await _when(response)) return response;
+
+        // Make sure the response stream is listened to so that we don't leave
+        // dangling connections.
+        _unawaited(response.stream.listen((_) {}).cancel().catchError((_) {}));
+      }
+
+      await Future<void>.delayed(_delay(i));
+      await _onRetry?.call(request, response, i);
+      i++;
+    }
   }
+
+  /// Returns a copy of [original] with the given [body].
+  StreamedRequest _copyRequest(BaseRequest original, Stream<List<int>> body) {
+    final request = StreamedRequest(original.method, original.url)
+      ..contentLength = original.contentLength
+      ..followRedirects = original.followRedirects
+      ..headers.addAll(original.headers)
+      ..maxRedirects = original.maxRedirects
+      ..persistentConnection = original.persistentConnection;
+
+    body.listen(request.sink.add,
+        onError: request.sink.addError,
+        onDone: request.sink.close,
+        cancelOnError: true);
+
+    return request;
+  }
+
+  @override
+  void close() => _inner.close();
 
   @override
   Future<Response> delete(Uri url,
       {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
     final response = await super
-        .delete(url, headers: headers, body: body, encoding: encoding).then((response) => _handleResponse(response));
+        .delete(url, headers: headers, body: body, encoding: encoding)
+        .then((response) => _handleResponse(response));
     _logResponse(response);
     return response;
   }
@@ -60,7 +154,8 @@ class MoabHttpClient extends http.BaseClient {
   Future<Response> patch(Uri url,
       {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
     final response = await super
-        .patch(url, headers: headers, body: body, encoding: encoding).then((response) => _handleResponse(response));
+        .patch(url, headers: headers, body: body, encoding: encoding)
+        .then((response) => _handleResponse(response));
     _logResponse(response);
     return response;
   }
@@ -68,8 +163,9 @@ class MoabHttpClient extends http.BaseClient {
   @override
   Future<Response> put(Uri url,
       {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    final response =
-        await super.put(url, headers: headers, body: body, encoding: encoding).then((response) => _handleResponse(response));
+    final response = await super
+        .put(url, headers: headers, body: body, encoding: encoding)
+        .then((response) => _handleResponse(response));
     _logResponse(response);
     return response;
   }
@@ -77,31 +173,34 @@ class MoabHttpClient extends http.BaseClient {
   @override
   Future<Response> post(Uri url,
       {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    final response =
-        await super.post(url, headers: headers, body: body, encoding: encoding).then((response) {
-          logger.d('post');
-             return _handleResponse(response);
-        });
+    final response = await super
+        .post(url, headers: headers, body: body, encoding: encoding)
+        .then((response) => _handleResponse(response));
     _logResponse(response);
     return response;
   }
 
   @override
   Future<Response> get(Uri url, {Map<String, String>? headers}) async {
-    final response = await super.get(url, headers: headers).then((response) => _handleResponse(response));
+    final response = await super
+        .get(url, headers: headers)
+        .then((response) => _handleResponse(response));
     _logResponse(response);
     return response;
   }
 
   @override
   Future<Response> head(Uri url, {Map<String, String>? headers}) async {
-    final response = await super.head(url, headers: headers).then((response) => _handleResponse(response));
+    final response = await super
+        .head(url, headers: headers)
+        .then((response) => _handleResponse(response));
     _logResponse(response);
     return response;
   }
 
-  _logRequest(http.BaseRequest request) {
+  _logRequest(http.BaseRequest request, {int retry = 0}) {
     logger.i('\nREQUEST---------------------------------------------------\n'
+        '${retry == 0 ? '' : 'RETRY: $retry\n'}'
         'URL: ${request.url}, METHOD: ${request.method}\n'
         'HEADERS: ${request.headers}\n'
         '${request is http.Request ? 'BODY: ${request.body}' : ''}\n'
@@ -120,8 +219,7 @@ class MoabHttpClient extends http.BaseClient {
     }
   }
 
-  setSecurityContext(SecurityContext context) {
-  }
+  setSecurityContext(SecurityContext context) {}
 
   ///
   /// Handling Cloud Error Response
@@ -137,3 +235,13 @@ class MoabHttpClient extends http.BaseClient {
     return response;
   }
 }
+
+bool _defaultWhen(http.BaseResponse response) => response.statusCode == 503;
+
+bool _defaultWhenError(Object error, StackTrace stackTrace) =>
+    error is TimeoutException;
+
+Duration _defaultDelay(int retryCount) =>
+    const Duration(milliseconds: 500) * math.pow(1.5, retryCount);
+
+void _unawaited(Future<void>? f) {}

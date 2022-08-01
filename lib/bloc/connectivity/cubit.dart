@@ -50,7 +50,7 @@ class ConnectivityCubit extends Cubit<ConnectivityInfo>
 }
 
 mixin AvailabilityChecker {
-  final _client = MoabHttpClient(timeout: 3);
+  final _client = MoabHttpClient(timeoutMs: 3000);
 
   Future<AvailabilityInfo> testAvailability() async {
     return _client.get(Uri.parse(availabilityUrl)).then((response) {
