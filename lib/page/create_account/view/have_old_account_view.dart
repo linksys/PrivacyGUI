@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:moab_poc/page/components/base_components/base_components.dart';
 import 'package:moab_poc/page/components/base_components/base_page_view.dart';
 import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:moab_poc/route/model/model.dart';
 import 'package:moab_poc/route/navigation_cubit.dart';
 
 class HaveOldAccountView extends StatelessWidget {
@@ -36,6 +38,11 @@ class HaveOldAccountView extends StatelessWidget {
             ),
           ],
         ),
+        footer: Column(children: [
+          PrimaryButton(text: 'Set up new WiFi', onPress: () {
+            NavigationCubit.of(context).push(SetupWelcomeEulaPath());
+          },),
+        ],),
       ),
     );
   }
