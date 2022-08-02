@@ -46,7 +46,7 @@ class _ShareWifiViewState extends State<ShareWifiView> {
   bool isPwSecure = true;
   GlobalKey globalKey = GlobalKey();
   String ssid = 'MyWiFiNetworkSSID'; //TODO: Remove dummy data
-  String password = 'Belkin12345!'; //TODO: Remove dummy data
+  String password = 'Belkin123!'; //TODO: Remove dummy data
   String get sharingContent =>
       'Connect to my WiFi Network:\n$ssid\n\nPassword: $password';
 
@@ -55,10 +55,7 @@ class _ShareWifiViewState extends State<ShareWifiView> {
       children: [
         Text(
           wifiType.displayTitle,
-          style: Theme.of(context)
-              .textTheme
-              .headline4
-              ?.copyWith(color: Theme.of(context).colorScheme.tertiary),
+          style: Theme.of(context).textTheme.headline4,
         ),
         const SizedBox(
           height: 20,
@@ -67,12 +64,14 @@ class _ShareWifiViewState extends State<ShareWifiView> {
           ssid,
           style: Theme.of(context)
               .textTheme
-              .headline2
-              ?.copyWith(color: Theme.of(context).colorScheme.primary),
+              .headline2,
         ),
         Row(
           children: [
-            Text(_getPasswordContent()),
+            Text(
+              _getPasswordContent(),
+              style: Theme.of(context).textTheme.headline2,
+            ),
             IconButton(
               icon: Icon(isPwSecure
                   ? Icons.remove_red_eye_outlined
@@ -90,10 +89,7 @@ class _ShareWifiViewState extends State<ShareWifiView> {
         ),
         Text(
           'JOIN THIS NETWORK',
-          style: Theme.of(context)
-              .textTheme
-              .headline4
-              ?.copyWith(color: Theme.of(context).colorScheme.tertiary),
+          style: Theme.of(context).textTheme.headline4,
         ),
         const SizedBox(
           height: 20,
@@ -144,8 +140,7 @@ class _ShareWifiViewState extends State<ShareWifiView> {
                 options[index].displayTitle,
                 style: Theme.of(context)
                     .textTheme
-                    .headline3
-                    ?.copyWith(color: Theme.of(context).primaryColor),
+                    .headline3,
               ),
               height: 80,
               alignment: Alignment.centerLeft,
