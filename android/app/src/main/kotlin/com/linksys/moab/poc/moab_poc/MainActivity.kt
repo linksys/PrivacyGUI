@@ -17,9 +17,12 @@ import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.phone.SmsRetriever
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.common.api.Status
+import com.linksys.moab.poc.moab_poc.plugins.UniversalLinkPlugin
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugins.GeneratedPluginRegistrant
 
 class MainActivity : FlutterActivity() {
 
@@ -32,7 +35,6 @@ class MainActivity : FlutterActivity() {
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             CHANNEL

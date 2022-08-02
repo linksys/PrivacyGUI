@@ -8,18 +8,18 @@ import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/state.dart';
 import 'package:moab_poc/bloc/connectivity/connectivity_info.dart';
 import 'package:moab_poc/bloc/connectivity/cubit.dart';
-import 'package:moab_poc/channel/universal_link_channel.dart';
 import 'package:moab_poc/route/moab_page.dart';
 import 'package:moab_poc/route/route.dart';
 import 'package:moab_poc/util/analytics.dart';
 import 'package:moab_poc/util/logger.dart';
 import 'package:moab_poc/route/model/model.dart';
+import 'package:universal_link_plugin/universal_link_plugin.dart';
 
 class MoabRouterDelegate extends RouterDelegate<BasePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<BasePath> {
 
-  MoabRouterDelegate(this._cubit, UniversalLinkChannel universalLinkChannel) : navigatorKey = GlobalKey() {
-    _universalLinkSubscription = universalLinkChannel.stream.listen(_handleUniversalLink);
+  MoabRouterDelegate(this._cubit) : navigatorKey = GlobalKey() {
+    _universalLinkSubscription = UniversalLinkPlugin().universalLinkStream.listen(_handleUniversalLink);
   }
   late StreamSubscription _universalLinkSubscription;
   final NavigationCubit _cubit;

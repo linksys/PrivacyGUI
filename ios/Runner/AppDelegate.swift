@@ -61,10 +61,6 @@ import FirebaseCore
           }
           self?.requestNotificationAuthorization(result: result)
       }
-      
-      let universalLinkChannel = FlutterEventChannel(name: "com.linksys.moab/universal_link",
-                                                     binaryMessenger: controller.binaryMessenger)
-      universalLinkChannel.setStreamHandler(UniversalLinkStreamHandler())
 
       GeneratedPluginRegistrant.register(with: self)
       return super.application(application, didFinishLaunchingWithOptions: launchOptions)
@@ -83,23 +79,6 @@ import FirebaseCore
                 result(true)
             }
         }
-    }
-    
-    override func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
-
-        guard let url = userActivity.webpageURL,
-              let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
-              userActivity.activityType == NSUserActivityTypeBrowsingWeb else { return false }
-        
-        print("Universal link: \(url)")
-        if url.host!.contains("devvelopcloud.com") {  //TODO: Depend on the real URL
-            NotificationCenter.default.post(
-                name: NSNotification.Name("UniversalLinkActivityNotification"),
-                object: nil,
-                userInfo: ["url": url.absoluteString])
-        }
-        
-        return false
     }
     
     override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
@@ -147,38 +126,6 @@ import FirebaseCore
             }
         }
     }
-}
-
-class UniversalLinkStreamHandler: NSObject, FlutterStreamHandler {
-    private var eventSink: FlutterEventSink?
-    
-    func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(sendEvent(_:)),
-            name: NSNotification.Name("UniversalLinkActivityNotification"),
-            object: nil
-        )
-        eventSink = events
-        return nil
-    }
-    
-    func onCancel(withArguments arguments: Any?) -> FlutterError? {
-        NotificationCenter.default.removeObserver(self)
-        eventSink = nil
-        return nil
-    }
-    
-    @objc func sendEvent(_ notification: NSNotification) {
-        guard let eventSink = eventSink else {
-            return
-        }
-        guard let userInfo = notification.userInfo, let url = userInfo["url"] else { // TODO
-            return
-        }
-        eventSink(url)
-    }
-    
 }
 
 class NotificationContentStreamHandler: NSObject, FlutterStreamHandler {
