@@ -1,4 +1,4 @@
-package com.linksys.moab.poc.moab_poc
+package com.linksys.moab.app
 
 import android.Manifest
 import android.annotation.SuppressLint

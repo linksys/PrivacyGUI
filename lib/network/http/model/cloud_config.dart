@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 
 enum CloudEnvironment { dev, qa, prod }
 
-CloudEnvironment cloudEnvTarget = CloudEnvironment.dev;
+CloudEnvironment cloudEnvTarget = CloudEnvironment.qa;
 
 class CloudTransportConfig extends Equatable {
   const CloudTransportConfig(
