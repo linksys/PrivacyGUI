@@ -1,10 +1,10 @@
 
 import 'dart:convert';
 
-import 'package:moab_poc/network/http/extension_requests/extension_requests.dart';
-import 'package:moab_poc/network/http/http_client.dart';
-import 'package:moab_poc/network/http/model/cloud_app.dart';
-import 'package:moab_poc/network/http/model/cloud_config.dart';
+import 'package:linksys_moab/network/http/extension_requests/extension_requests.dart';
+import 'package:linksys_moab/network/http/http_client.dart';
+import 'package:linksys_moab/network/http/model/cloud_app.dart';
+import 'package:linksys_moab/network/http/model/cloud_config.dart';
 
 
 abstract class EnvironmentRepository {

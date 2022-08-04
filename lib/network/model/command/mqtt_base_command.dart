@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:moab_poc/network/model/command_spec/command_spec.dart';
-import 'package:moab_poc/network/model/exception.dart';
+import 'package:linksys_moab/network/model/command_spec/command_spec.dart';
+import 'package:linksys_moab/network/model/exception.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 
 import '../../../util/logger.dart';

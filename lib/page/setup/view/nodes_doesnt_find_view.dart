@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
-import 'package:moab_poc/localization/localization_hook.dart';
-import 'package:moab_poc/page/components/base_components/base_components.dart';
-import 'package:moab_poc/page/components/layouts/basic_header.dart';
-import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/layouts/basic_header.dart';
+import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 
 class NodesDoesntFindView extends StatelessWidget {
   const NodesDoesntFindView({Key? key}) : super(key: key);

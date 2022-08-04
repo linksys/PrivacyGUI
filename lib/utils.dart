@@ -5,8 +5,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:intl/intl.dart';
-import 'package:moab_poc/network/http/model/cloud_app.dart';
-import 'package:moab_poc/util/logger.dart';
+import 'package:linksys_moab/network/http/model/cloud_app.dart';
+import 'package:linksys_moab/util/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class Utils {

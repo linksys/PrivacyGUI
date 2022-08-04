@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:moab_poc/localization/localization_hook.dart';
-import 'package:moab_poc/network/http/model/base_response.dart';
-import 'package:moab_poc/page/components/base_components/base_components.dart';
-import 'package:moab_poc/page/components/layouts/layout.dart';
-import 'package:moab_poc/util/error_code_handler.dart';
+import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/network/http/model/base_response.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/layouts/layout.dart';
+import 'package:linksys_moab/util/error_code_handler.dart';
 
 import '../../../bloc/auth/bloc.dart';
 import '../../../bloc/auth/state.dart';
@@ -13,7 +13,7 @@ import '../../../route/navigation_cubit.dart';
 import '../../../util/logger.dart';
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 import '../../components/views/arguments_view.dart';
-import 'package:moab_poc/route/model/model.dart';
+import 'package:linksys_moab/route/model/model.dart';
 
 class LoginTraditionalPasswordView extends ArgumentsStatefulView {
   const LoginTraditionalPasswordView({

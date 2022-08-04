@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:moab_poc/route/model/model.dart';
-import 'package:moab_poc/util/logger.dart';
+import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/util/logger.dart';
 
 class MoabRouteInformationParser extends RouteInformationParser<BasePath> {
   @override

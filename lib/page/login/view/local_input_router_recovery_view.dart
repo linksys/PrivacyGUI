@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:moab_poc/bloc/auth/bloc.dart';
-import 'package:moab_poc/bloc/auth/state.dart';
-import 'package:moab_poc/localization/localization_hook.dart';
-import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/page/components/base_components/progress_bars/full_screen_spinner.dart';
-import 'package:moab_poc/page/components/layouts/basic_header.dart';
-import 'package:moab_poc/page/components/layouts/basic_layout.dart';
-import 'package:moab_poc/page/components/views/arguments_view.dart';
-import 'package:moab_poc/page/create_account/view/view.dart';
-import 'package:moab_poc/route/model/model.dart';
-import 'package:moab_poc/route/route.dart';
+import 'package:linksys_moab/bloc/auth/bloc.dart';
+import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
+import 'package:linksys_moab/page/components/layouts/basic_header.dart';
+import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/page/create_account/view/view.dart';
+import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/route.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 class LocalRecoveryKeyView extends ArgumentsStatefulView {

@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
-import 'package:moab_poc/page/components/customs/customs.dart';
-import 'package:moab_poc/page/components/customs/otp_flow/otp_view.dart';
-import 'package:moab_poc/page/login/view/view.dart';
-import 'package:moab_poc/route/route.dart';
+import 'package:linksys_moab/page/components/customs/customs.dart';
+import 'package:linksys_moab/page/components/customs/otp_flow/otp_view.dart';
+import 'package:linksys_moab/page/login/view/view.dart';
+import 'package:linksys_moab/route/route.dart';
 
 import '../../page/create_account/view/view.dart';
 import 'model.dart';

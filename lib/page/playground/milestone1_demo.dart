@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:moab_poc/design/themes.dart';
-import 'package:moab_poc/page/create_account/view/view.dart';
-import 'package:moab_poc/page/landing/view/view.dart';
+import 'package:linksys_moab/design/themes.dart';
+import 'package:linksys_moab/page/create_account/view/view.dart';
+import 'package:linksys_moab/page/landing/view/view.dart';
 
 
 void main() {

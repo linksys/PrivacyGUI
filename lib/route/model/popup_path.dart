@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:moab_poc/page/components/customs/no_network_bottom_modal.dart';
-import 'package:moab_poc/route/route.dart';
+import 'package:linksys_moab/page/components/customs/no_network_bottom_modal.dart';
+import 'package:linksys_moab/route/route.dart';
 
 import 'base_path.dart';
 

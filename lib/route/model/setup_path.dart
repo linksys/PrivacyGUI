@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
-import 'package:moab_poc/page/setup/view/nodes_doesnt_find_view.dart';
-import 'package:moab_poc/page/setup/view/view.dart';
-import 'package:moab_poc/route/model/model.dart';
-import 'package:moab_poc/route/route.dart';
+import 'package:linksys_moab/page/setup/view/nodes_doesnt_find_view.dart';
+import 'package:linksys_moab/page/setup/view/view.dart';
+import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/route.dart';
 
 import 'base_path.dart';
 

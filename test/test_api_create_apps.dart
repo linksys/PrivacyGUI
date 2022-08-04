@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:intl/intl.dart';
-import 'package:moab_poc/network/http/extension_requests/extension_requests.dart';
-import 'package:moab_poc/network/http/model/cloud_app.dart';
+import 'package:linksys_moab/network/http/extension_requests/extension_requests.dart';
+import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:test/test.dart';
 
 import 'dev_testable_client.dart';

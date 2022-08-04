@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:moab_poc/localization/localization_hook.dart';
-import 'package:moab_poc/page/components/base_components/base_components.dart';
-import 'package:moab_poc/page/components/layouts/basic_header.dart';
-import 'package:moab_poc/page/components/layouts/basic_layout.dart';
-import 'package:moab_poc/util/in_app_browser.dart';
+import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/layouts/basic_header.dart';
+import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/util/in_app_browser.dart';
 
 class LearnBatteryModemView extends StatelessWidget {
   const LearnBatteryModemView({Key? key}): super(key: key);

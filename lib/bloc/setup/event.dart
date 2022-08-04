@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:moab_poc/bloc/auth/state.dart';
-import 'package:moab_poc/bloc/setup/state.dart';
+import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/setup/state.dart';
 
 abstract class SetupEvent extends Equatable {
   const SetupEvent();

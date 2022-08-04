@@ -1,5 +1,5 @@
-import 'package:moab_poc/repository/authenticate/local_auth_repository.dart';
-import 'package:moab_poc/repository/model/dummy_model.dart';
+import 'package:linksys_moab/repository/authenticate/local_auth_repository.dart';
+import 'package:linksys_moab/repository/model/dummy_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeLocalAuthRepository implements LocalAuthRepository {

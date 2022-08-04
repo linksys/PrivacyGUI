@@ -6,9 +6,9 @@ import 'dart:math' as math;
 import 'package:async/async.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
-import 'package:moab_poc/config/cloud_environment_manager.dart';
-import 'package:moab_poc/constants/constants.dart';
-import 'package:moab_poc/util/logger.dart';
+import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/util/logger.dart';
 import 'package:http/io_client.dart';
 import 'model/base_response.dart';
 

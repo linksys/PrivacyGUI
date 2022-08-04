@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:moab_poc/util/logger.dart';
+import 'package:linksys_moab/util/logger.dart';
 
 import '../exception.dart';
 

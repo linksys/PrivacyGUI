@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:moab_poc/page/components/base_components/input_fields/primary_text_field.dart';
+import 'package:linksys_moab/page/components/base_components/input_fields/primary_text_field.dart';
 
 class InputField extends StatelessWidget {
   const InputField({

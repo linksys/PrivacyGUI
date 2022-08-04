@@ -1,5 +1,5 @@
 
-import 'package:moab_poc/network/model/command_spec/command_spec.dart';
+import 'package:linksys_moab/network/model/command_spec/command_spec.dart';
 
 class LuciCommandSpec<R> extends CommandSpec<R> {
   @override

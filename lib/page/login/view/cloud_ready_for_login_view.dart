@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:moab_poc/bloc/auth/event.dart';
-import 'package:moab_poc/localization/localization_hook.dart';
-import 'package:moab_poc/page/components/base_components/base_components.dart';
-import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/page/components/views/arguments_view.dart';
-import 'package:moab_poc/util/logger.dart';
+import 'package:linksys_moab/bloc/auth/event.dart';
+import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/util/logger.dart';
 
 import '../../../bloc/auth/bloc.dart';
 import '../../../bloc/auth/state.dart';

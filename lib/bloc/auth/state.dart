@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:moab_poc/network/http/model/cloud_phone.dart';
+import 'package:linksys_moab/network/http/model/cloud_phone.dart';
 import 'package:phone_number/phone_number.dart';
 
 enum AuthStatus {

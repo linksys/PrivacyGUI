@@ -2,10 +2,9 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:moab_poc/util/logger.dart';
+import 'package:linksys_moab/util/logger.dart';
 
 class PushNotificationChannel {
-//TODO: Move to another place
   static const notificationAuthChannel =
       MethodChannel('otp.view/notification.auth');
   static const deviceTokenChannel = MethodChannel('otp.view/device.token');

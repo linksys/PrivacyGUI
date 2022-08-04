@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:moab_poc/design/colors.dart';
+import 'package:linksys_moab/design/colors.dart';
 
 class OptionCard extends StatelessWidget {
   const OptionCard({

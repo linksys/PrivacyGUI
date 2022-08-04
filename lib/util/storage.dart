@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:moab_poc/network/http/model/cloud_config.dart';
+import 'package:linksys_moab/network/http/model/cloud_config.dart';
 import 'package:path_provider/path_provider.dart';
 
 class Storage {

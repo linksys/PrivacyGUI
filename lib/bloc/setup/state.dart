@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:moab_poc/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/auth/state.dart';
 
 // TODO
 class RouterInfo {

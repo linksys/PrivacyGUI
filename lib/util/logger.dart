@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:logger/logger.dart';
-import 'package:moab_poc/util/storage.dart';
-import 'package:moab_poc/utils.dart';
+import 'package:linksys_moab/util/storage.dart';
+import 'package:linksys_moab/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 final logger =

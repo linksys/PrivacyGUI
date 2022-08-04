@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:moab_poc/bloc/connectivity/connectivity_info.dart';
-import 'package:moab_poc/bloc/connectivity/cubit.dart';
-import 'package:moab_poc/route/navigation_cubit.dart';
-import 'package:moab_poc/util/permission.dart';
+import 'package:linksys_moab/bloc/connectivity/connectivity_info.dart';
+import 'package:linksys_moab/bloc/connectivity/cubit.dart';
+import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:linksys_moab/util/permission.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class NetworkCheckView extends StatefulWidget {

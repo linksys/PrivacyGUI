@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:moab_poc/page/components/base_components/text/description_text.dart';
-import 'package:moab_poc/page/components/base_components/text/title_text.dart';
+import 'package:linksys_moab/page/components/base_components/text/description_text.dart';
+import 'package:linksys_moab/page/components/base_components/text/title_text.dart';
 
 class BasicHeader extends StatelessWidget {
   const BasicHeader(

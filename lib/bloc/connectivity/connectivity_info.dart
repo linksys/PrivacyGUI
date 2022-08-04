@@ -1,6 +1,6 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:equatable/equatable.dart';
-import 'package:moab_poc/bloc/connectivity/availability_info.dart';
+import 'package:linksys_moab/bloc/connectivity/availability_info.dart';
 
 class ConnectivityInfo extends Equatable {
   const ConnectivityInfo(

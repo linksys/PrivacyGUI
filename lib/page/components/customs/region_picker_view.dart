@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:moab_poc/page/components/base_components/base_components.dart';
-import 'package:moab_poc/page/components/layouts/layout.dart';
-import 'package:moab_poc/route/navigation_cubit.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/layouts/layout.dart';
+import 'package:linksys_moab/route/navigation_cubit.dart';
 
 class RegionPickerView extends StatefulWidget {
   const RegionPickerView({Key? key}) : super(key: key);

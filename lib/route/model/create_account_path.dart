@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:moab_poc/page/create_account/view/view.dart';
-import 'package:moab_poc/route/route.dart';
+import 'package:linksys_moab/page/create_account/view/view.dart';
+import 'package:linksys_moab/route/route.dart';
 
 import '../../page/components/customs/otp_flow/otp_view.dart';
 import '../../page/setup/view/no_use_account_confirm_view.dart';

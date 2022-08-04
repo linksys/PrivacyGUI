@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:moab_poc/bloc/auth/bloc.dart';
-import 'package:moab_poc/bloc/auth/event.dart';
-import 'package:moab_poc/page/components/base_components/base_components.dart';
-import 'package:moab_poc/page/components/customs/otp_flow/otp_state.dart';
-import 'package:moab_poc/page/components/layouts/basic_header.dart';
-import 'package:moab_poc/page/components/layouts/basic_layout.dart';
-import 'package:moab_poc/page/components/views/arguments_view.dart';
-import 'package:moab_poc/route/model/model.dart';
-import 'package:moab_poc/route/navigation_cubit.dart';
-import 'package:moab_poc/route/route.dart';
-import 'package:moab_poc/util/validator.dart';
+import 'package:linksys_moab/bloc/auth/bloc.dart';
+import 'package:linksys_moab/bloc/auth/event.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/customs/otp_flow/otp_state.dart';
+import 'package:linksys_moab/page/components/layouts/basic_header.dart';
+import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/util/validator.dart';
 
 class CreateAccountPasswordView extends ArgumentsStatefulView {
   const CreateAccountPasswordView({Key? key, super.args}) : super(key: key);

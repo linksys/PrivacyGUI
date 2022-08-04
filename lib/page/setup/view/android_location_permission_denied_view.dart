@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:moab_poc/localization/localization_hook.dart';
-import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
-import 'package:moab_poc/page/components/base_components/text/description_text.dart';
-import 'package:moab_poc/page/components/layouts/basic_header.dart';
-import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/page/components/base_components/button/secondary_button.dart';
+import 'package:linksys_moab/page/components/base_components/text/description_text.dart';
+import 'package:linksys_moab/page/components/layouts/basic_header.dart';
+import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:moab_poc/route/model/internet_check_path.dart';
-import 'package:moab_poc/route/route.dart';
+import 'package:linksys_moab/route/model/internet_check_path.dart';
+import 'package:linksys_moab/route/route.dart';
 
 import '../../../util/permission.dart';
 import '../../components/base_components/button/primary_button.dart';
-import 'package:moab_poc/route/model/model.dart';
+import 'package:linksys_moab/route/model/model.dart';
 
 class AndroidLocationPermissionDenied extends StatefulWidget {
   const AndroidLocationPermissionDenied(

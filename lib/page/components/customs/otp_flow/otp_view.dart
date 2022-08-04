@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:moab_poc/bloc/auth/bloc.dart';
-import 'package:moab_poc/bloc/auth/state.dart';
-import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/page/components/base_components/progress_bars/full_screen_spinner.dart';
-import 'package:moab_poc/page/components/customs/otp_flow/otp_add_phone.dart';
-import 'package:moab_poc/page/components/customs/otp_flow/otp_code_input.dart';
-import 'package:moab_poc/page/components/customs/otp_flow/otp_cubit.dart';
-import 'package:moab_poc/page/components/customs/otp_flow/otp_method_selector_view.dart';
-import 'package:moab_poc/page/components/views/arguments_view.dart';
-import 'package:moab_poc/route/model/model.dart';
-import 'package:moab_poc/route/route.dart';
-import 'package:moab_poc/util/logger.dart';
+import 'package:linksys_moab/bloc/auth/bloc.dart';
+import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
+import 'package:linksys_moab/page/components/customs/otp_flow/otp_add_phone.dart';
+import 'package:linksys_moab/page/components/customs/otp_flow/otp_code_input.dart';
+import 'package:linksys_moab/page/components/customs/otp_flow/otp_cubit.dart';
+import 'package:linksys_moab/page/components/customs/otp_flow/otp_method_selector_view.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/util/logger.dart';
 
 import 'otp_state.dart';
 

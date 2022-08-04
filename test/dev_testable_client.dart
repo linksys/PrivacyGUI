@@ -1,4 +1,4 @@
-import 'package:moab_poc/network/http/http_client.dart';
+import 'package:linksys_moab/network/http/http_client.dart';
 
 class DevTestableClient extends MoabHttpClient {
 

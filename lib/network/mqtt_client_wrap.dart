@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:moab_poc/network/model/command/mqtt_base_command.dart';
+import 'package:linksys_moab/network/model/command/mqtt_base_command.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 

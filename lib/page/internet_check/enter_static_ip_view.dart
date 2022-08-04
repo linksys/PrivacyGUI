@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:moab_poc/localization/localization_hook.dart';
-import 'package:moab_poc/page/components/base_components/base_components.dart';
-import 'package:moab_poc/page/components/layouts/basic_header.dart';
-import 'package:moab_poc/page/components/layouts/basic_layout.dart';
-import 'package:moab_poc/route/model/internet_check_path.dart';
-import 'package:moab_poc/route/navigation_cubit.dart';
-import 'package:moab_poc/util/validator.dart';
+import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/layouts/basic_header.dart';
+import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/route/model/internet_check_path.dart';
+import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:linksys_moab/util/validator.dart';
 
 class EnterStaticIpView extends StatefulWidget {
   const EnterStaticIpView({Key? key}): super(key: key);

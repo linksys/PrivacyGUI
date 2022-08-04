@@ -1,6 +1,6 @@
 
 
-import 'package:moab_poc/network/model/command_spec/impl/fake_spec.dart';
+import 'package:linksys_moab/network/model/command_spec/impl/fake_spec.dart';
 
 import '../mqtt_base_command.dart';
 

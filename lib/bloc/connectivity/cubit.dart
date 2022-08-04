@@ -6,9 +6,9 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:moab_poc/bloc/connectivity/availability_info.dart';
-import 'package:moab_poc/network/http/http_client.dart';
-import 'package:moab_poc/util/logger.dart';
+import 'package:linksys_moab/bloc/connectivity/availability_info.dart';
+import 'package:linksys_moab/network/http/http_client.dart';
+import 'package:linksys_moab/util/logger.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
 import '../../channel/wifi_connect_channel.dart';

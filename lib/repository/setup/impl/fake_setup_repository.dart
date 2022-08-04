@@ -1,6 +1,6 @@
 
-import 'package:moab_poc/repository/model/dummy_model.dart';
-import 'package:moab_poc/repository/setup/setup_repository.dart';
+import 'package:linksys_moab/repository/model/dummy_model.dart';
+import 'package:linksys_moab/repository/setup/setup_repository.dart';
 
 class FakeSetupRepository extends SetupRepository {
   final waitDuration = const Duration(seconds: 3);

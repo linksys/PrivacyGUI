@@ -1,17 +1,17 @@
 import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:moab_poc/bloc/auth/event.dart';
-import 'package:moab_poc/bloc/auth/state.dart';
-import 'package:moab_poc/constants/pref_key.dart';
-import 'package:moab_poc/network/http/model/cloud_communication_method.dart';
-import 'package:moab_poc/network/http/model/cloud_login_certs.dart';
-import 'package:moab_poc/network/http/model/cloud_phone.dart';
-import 'package:moab_poc/network/http/model/cloud_task_model.dart';
-import 'package:moab_poc/repository/authenticate/auth_repository.dart';
-import 'package:moab_poc/repository/authenticate/local_auth_repository.dart';
-import 'package:moab_poc/repository/model/dummy_model.dart';
-import 'package:moab_poc/util/logger.dart';
+import 'package:linksys_moab/bloc/auth/event.dart';
+import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/constants/pref_key.dart';
+import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
+import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
+import 'package:linksys_moab/network/http/model/cloud_phone.dart';
+import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
+import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
+import 'package:linksys_moab/repository/authenticate/local_auth_repository.dart';
+import 'package:linksys_moab/repository/model/dummy_model.dart';
+import 'package:linksys_moab/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test/test.dart';
 

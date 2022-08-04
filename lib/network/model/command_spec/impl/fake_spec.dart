@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:moab_poc/network/model/command_spec/command_spec.dart';
+import 'package:linksys_moab/network/model/command_spec/command_spec.dart';
 
 abstract class FakeCommandSpec extends CommandSpec<Map<String, dynamic>> {
   @override

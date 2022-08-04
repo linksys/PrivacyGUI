@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:moab_poc/network/model/command/mqtt_base_command.dart';
-import 'package:moab_poc/network/mqtt_client_wrap.dart';
-import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/page/components/base_components/button/primary_button.dart';
-import 'package:moab_poc/page/components/base_components/button/secondary_button.dart';
-import 'package:moab_poc/page/components/base_components/input_fields/input_field.dart';
-import 'package:moab_poc/page/components/layouts/basic_header.dart';
-import 'package:moab_poc/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/network/model/command/mqtt_base_command.dart';
+import 'package:linksys_moab/network/mqtt_client_wrap.dart';
+import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/page/components/base_components/button/primary_button.dart';
+import 'package:linksys_moab/page/components/base_components/button/secondary_button.dart';
+import 'package:linksys_moab/page/components/base_components/input_fields/input_field.dart';
+import 'package:linksys_moab/page/components/layouts/basic_header.dart';
+import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 
 import '../../design/themes.dart';
 import '../../network/model/command/impl/counter_command.dart';

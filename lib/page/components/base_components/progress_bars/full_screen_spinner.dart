@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:moab_poc/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
 
 class FullScreenSpinner extends StatelessWidget {
   final String? text;

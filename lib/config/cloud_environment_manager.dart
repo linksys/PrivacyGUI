@@ -2,13 +2,13 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:moab_poc/constants/constants.dart';
-import 'package:moab_poc/network/http/model/cloud_app.dart';
-import 'package:moab_poc/network/http/model/cloud_config.dart';
-import 'package:moab_poc/network/http/http_client.dart';
-import 'package:moab_poc/repository/config/environment_repository.dart';
-import 'package:moab_poc/util/logger.dart';
-import 'package:moab_poc/utils.dart';
+import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/network/http/model/cloud_app.dart';
+import 'package:linksys_moab/network/http/model/cloud_config.dart';
+import 'package:linksys_moab/network/http/http_client.dart';
+import 'package:linksys_moab/repository/config/environment_repository.dart';
+import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 

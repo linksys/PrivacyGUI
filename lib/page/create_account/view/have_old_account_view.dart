@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:moab_poc/page/components/base_components/base_components.dart';
-import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/page/components/layouts/basic_layout.dart';
-import 'package:moab_poc/route/model/model.dart';
-import 'package:moab_poc/route/navigation_cubit.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/navigation_cubit.dart';
 
 class HaveOldAccountView extends StatelessWidget {
   const HaveOldAccountView({Key? key}) : super(key: key);

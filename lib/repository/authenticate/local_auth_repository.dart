@@ -1,5 +1,5 @@
 
-import 'package:moab_poc/repository/model/dummy_model.dart';
+import 'package:linksys_moab/repository/model/dummy_model.dart';
 
 ///
 ///  1. Local login

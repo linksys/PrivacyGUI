@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:moab_poc/design/colors.dart';
-import 'package:moab_poc/page/playground/setup_page_1.dart';
+import 'package:linksys_moab/design/colors.dart';
+import 'package:linksys_moab/page/playground/setup_page_1.dart';
 
 class EntryPage extends StatelessWidget {
   const EntryPage({Key? key}) : super(key: key);

@@ -1,18 +1,18 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:moab_poc/localization/localization_hook.dart';
-import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/page/components/layouts/basic_header.dart';
-import 'package:moab_poc/page/components/layouts/basic_layout.dart';
-import 'package:moab_poc/page/components/customs/qr_view.dart';
-import 'package:moab_poc/route/model/internet_check_path.dart';
-import 'package:moab_poc/route/route.dart';
-import 'package:moab_poc/util/permission.dart';
+import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/page/components/layouts/basic_header.dart';
+import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/customs/qr_view.dart';
+import 'package:linksys_moab/route/model/internet_check_path.dart';
+import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/util/permission.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../components/base_components/button/primary_button.dart';
-import 'package:moab_poc/route/model/model.dart';
+import 'package:linksys_moab/route/model/model.dart';
 
 class ParentScanQRCodeView extends StatefulWidget {
   const ParentScanQRCodeView({

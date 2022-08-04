@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:moab_poc/design/themes.dart';
-import 'package:moab_poc/page/landing/view/view.dart';
-import 'package:moab_poc/route/route.dart';
-import 'package:moab_poc/util/logger.dart';
+import 'package:linksys_moab/design/themes.dart';
+import 'package:linksys_moab/page/landing/view/view.dart';
+import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/util/logger.dart';
 
 enum PageNavigationType { back, close, none }
 

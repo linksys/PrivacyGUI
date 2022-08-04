@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:moab_poc/route/route.dart';
+import 'package:linksys_moab/route/route.dart';
 
 import '../../page/dashboard/view/view.dart';
 import 'base_path.dart';
