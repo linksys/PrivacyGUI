@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
-import 'package:moab_poc/util/logger.dart';
-import 'package:moab_poc/util/storage.dart';
+import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/util/storage.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/page/components/layouts/layout.dart';
+import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:moab_poc/page/components/base_components/base_components.dart';
-import 'package:moab_poc/util/logger.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/util/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 typedef OnMenuItemClick = void Function(int index);

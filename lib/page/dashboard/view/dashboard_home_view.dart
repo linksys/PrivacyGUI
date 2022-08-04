@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
-import 'package:moab_poc/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 
 class DashboardHomeView extends StatefulWidget {
   const DashboardHomeView({Key? key}) : super(key: key);
