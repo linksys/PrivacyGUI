@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>1088152750789-ussp34ea7l49u7crdps34p9g1loqp31m.apps.googleusercontent.com</string>
+	<string>1088152750789-sk8if1311qdcia4s6ov5ji5a6a53nehc.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.1088152750789-ussp34ea7l49u7crdps34p9g1loqp31m</string>
+	<string>com.googleusercontent.apps.1088152750789-sk8if1311qdcia4s6ov5ji5a6a53nehc</string>
 	<key>API_KEY</key>
 	<string>AIzaSyC7JYg9RkPvYTMiabF8Gdao4eMoyBa0OHs</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.linksys.moab.poc</string>
+	<string>com.linksys.moab.app.ee</string>
 	<key>PROJECT_ID</key>
 	<string>moab-poc</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:1088152750789:ios:f4550b14644e5f2f94beac</string>
+	<string>1:1088152750789:ios:24067fa3a2f03fbb94beac</string>
 </dict>
 </plist>

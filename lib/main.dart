@@ -12,6 +12,7 @@ import 'package:moab_poc/bloc/app_lifecycle/cubit.dart';
 import 'package:moab_poc/bloc/auth/bloc.dart';
 import 'package:moab_poc/bloc/auth/event.dart';
 import 'package:moab_poc/bloc/connectivity/cubit.dart';
+import 'package:moab_poc/channel/push_notification_channel.dart';
 import 'package:moab_poc/design/themes.dart';
 import 'package:moab_poc/localization/localization_hook.dart';
 import 'package:moab_poc/network/http/http_client.dart';
@@ -86,6 +87,11 @@ void main() {
 }
 
 void initCloudMessage() async {
+  if (Platform.isIOS) {
+    final token = await PushNotificationChannel().readDeviceToken();
+    logger.i('APNS Token: $token');
+    return;
+  }
   FirebaseMessaging messaging = FirebaseMessaging.instance;
   NotificationSettings settings = await messaging.requestPermission(
       alert: true,
@@ -111,9 +117,8 @@ void initCloudMessage() async {
                   icon: 'launch_background')));
     }
   });
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    print('A new onMessageOpenedApp event was published!');
-  });
+  final token = await FirebaseMessaging.instance.getToken();
+  logger.i('FCM Token: $token');
 }
 
 Widget _app() {
