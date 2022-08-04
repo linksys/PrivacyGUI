@@ -21,5 +21,8 @@ class MoabColor {
 
   static const authBackground = Color(0xff555252);
 
+  static const setupFinishCardBackground = Color.fromRGBO(138, 138, 138, 1.0);
+
+  static const dashboardBackground = Color(0xffdddddd);
   static const cardBackground = Color.fromRGBO(138, 138, 138, 1.0);
 }

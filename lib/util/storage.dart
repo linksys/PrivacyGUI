@@ -1,6 +1,7 @@
 import 'dart:io';
-
+import 'dart:typed_data';
 import 'package:linksys_moab/network/http/model/cloud_config.dart';
+import 'package:linksys_moab/util/logger.dart';
 import 'package:path_provider/path_provider.dart';
 
 class Storage {
@@ -21,7 +22,7 @@ class Storage {
   static init() async {
     _tempDirectory = (await getTemporaryDirectory());
     _docDirectory = await getApplicationDocumentsDirectory();
-    print('temp directory: $_tempDirectory, doc directory: $_docDirectory');
+    logger.d('temp directory: $_tempDirectory, doc directory: $_docDirectory');
     final logFile = File.fromUri(logFileUri);
     if (!logFile.existsSync()) {
       logFile.createSync();
@@ -38,5 +39,10 @@ class Storage {
       file.createSync();
     }
     file.writeAsStringSync(contents);
+  }
+
+  static Future<void> saveByteFile(Uri fileUri, Uint8List bytes) async {
+    final File file = File.fromUri(fileUri);
+    file.writeAsBytesSync(bytes);
   }
 }
