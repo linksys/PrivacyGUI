@@ -105,11 +105,12 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
+  fonts:
+    - family: NeueHaasGrotTextRound
+      fonts:
+        - asset: fonts/NeueHaasGrotTextRound-55Roman.otf
+        - asset: fonts/NeueHaasGrotTextRound-75Bold.otf
+          weight: 700
   #         style: italic
   #   - family: Trajan Pro
   #     fonts:
@@ -122,9 +123,10 @@ flutter:
 
 
 flutter_icons:
-  image_path_android: "assets/icons/icon.png"
-  image_path_ios: "assets/icons/LSWF_1024.png"
+  image_path_android: "assets/icons/ic_launcher_store.png"
+  image_path_ios: "assets/icons/ic_launcher_store.png"
   android: true # can specify file name here e.g. "ic_launcher"
   ios: true # can specify file name here e.g. "My-Launcher-Icon"
-  adaptive_icon_background: "assets/icons/ic_background.png" # only available for Android 8.0 devices and above
+  remove_alpha_ios: true
+  adaptive_icon_background: "assets/icons/ic_launcher_background.png" # only available for Android 8.0 devices and above
   adaptive_icon_foreground: "assets/icons/ic_foreground.png" # only available for Android 8.0 devices and above

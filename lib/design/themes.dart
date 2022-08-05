@@ -114,31 +114,37 @@ class MoabTheme {
 
   static final _textTheme = Typography().white.copyWith(
         headline1: const TextStyle(
+          fontFamily: 'NeueHaasGrotTextRound',
           fontSize: 22,
           fontStyle: FontStyle.normal,
           fontWeight: FontWeight.w400,
         ),
         headline2: const TextStyle(
+          fontFamily: 'NeueHaasGrotTextRound',
           fontSize: 18,
           fontStyle: FontStyle.normal,
           fontWeight: FontWeight.w400,
         ),
         headline3: const TextStyle(
+          fontFamily: 'NeueHaasGrotTextRound',
           fontSize: 15,
           fontStyle: FontStyle.normal,
           fontWeight: FontWeight.w400,
         ),
         headline4: const TextStyle(
+          fontFamily: 'NeueHaasGrotTextRound',
           fontSize: 13,
           fontStyle: FontStyle.normal,
           fontWeight: FontWeight.w400,
         ),
         button: const TextStyle(
+          fontFamily: 'NeueHaasGrotTextRound',
           fontSize: 16,
           fontStyle: FontStyle.normal,
           fontWeight: FontWeight.w400,
         ),
         bodyText1: const TextStyle(
+          fontFamily: 'NeueHaasGrotTextRound',
           fontSize: 14,
           fontStyle: FontStyle.normal,
           fontWeight: FontWeight.w400,
