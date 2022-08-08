@@ -8,7 +8,6 @@ import 'package:linksys_moab/util/error_code_handler.dart';
 
 import '../../../bloc/auth/bloc.dart';
 import '../../../bloc/auth/state.dart';
-import '../../../repository/model/dummy_model.dart';
 import '../../../route/navigation_cubit.dart';
 import '../../../util/logger.dart';
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';

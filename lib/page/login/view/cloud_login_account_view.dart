@@ -11,6 +11,7 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/repository/model/dummy_model.dart';
 import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
@@ -20,9 +21,9 @@ import 'package:linksys_moab/route/model/model.dart';
 
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 
-class LoginCloudAccountView extends StatefulWidget {
+class LoginCloudAccountView extends ArgumentsStatefulView {
   const LoginCloudAccountView({
-    Key? key,
+    Key? key, super.args
   }) : super(key: key);
 
   @override

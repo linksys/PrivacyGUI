@@ -131,6 +131,11 @@ class _AddAccountState extends State<AddAccountView> {
                 },
               ),
               const SizedBox(height: 8),
+              SimpleTextButton(
+                  text: getAppLocalizations(context).already_have_an_account,
+                  onPressed: () {
+                    NavigationCubit.of(context).push(NoUseCloudAccountPath());
+                  }),
               Offstage(
                 offstage: _errorCode.isEmpty,
                 child: Text(
@@ -149,11 +154,7 @@ class _AddAccountState extends State<AddAccountView> {
                 height: 8,
               ),
               _buildAccountTipsWidget(),
-              SimpleTextButton(
-                  text: getAppLocalizations(context).already_have_an_account,
-                  onPressed: () {
-                    NavigationCubit.of(context).push(NoUseCloudAccountPath());
-                  })
+
             ],
             crossAxisAlignment: CrossAxisAlignment.start,
           ),
@@ -165,7 +166,7 @@ class _AddAccountState extends State<AddAccountView> {
               ),
               const SizedBox(height: 8),
               SimpleTextButton(
-                text: getAppLocalizations(context).do_this_later,
+                text: getAppLocalizations(context).use_router_password,
                 onPressed: () {
                   NavigationCubit.of(context).push(NoUseCloudAccountPath());
                 },
