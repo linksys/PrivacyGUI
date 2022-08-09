@@ -14,18 +14,16 @@ import '../../components/base_components/progress_bars/full_screen_spinner.dart'
 import '../../components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
 
-class LoginTraditionalPasswordView extends ArgumentsStatefulView {
-  const LoginTraditionalPasswordView({
-    Key? key,
-  }) : super(key: key);
+class CloudLoginPasswordView extends ArgumentsStatefulView {
+  const CloudLoginPasswordView({Key? key, super.args, super.next})
+      : super(key: key);
 
   @override
   _LoginTraditionalPasswordViewState createState() =>
       _LoginTraditionalPasswordViewState();
 }
 
-class _LoginTraditionalPasswordViewState
-    extends State<LoginTraditionalPasswordView> {
+class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
   final TextEditingController passwordController = TextEditingController();
   bool _isLoading = false;
   String _errorCode = '';
@@ -67,9 +65,12 @@ class _LoginTraditionalPasswordViewState
             const SizedBox(
               height: 15,
             ),
-            SimpleTextButton(text: getAppLocalizations(context).forgot_password, onPressed: () {
-              NavigationCubit.of(context).push(AuthCloudForgotPasswordPath());
-            }),
+            SimpleTextButton(
+                text: getAppLocalizations(context).forgot_password,
+                onPressed: () {
+                  NavigationCubit.of(context)
+                      .push(AuthCloudForgotPasswordPath());
+                }),
             const SizedBox(
               height: 38,
             ),
@@ -85,7 +86,8 @@ class _LoginTraditionalPasswordViewState
                           .read<AuthBloc>()
                           .loginPassword(passwordController.text)
                           .then((value) => _handleResult(value))
-                          .onError((error, stackTrace) => _handleError(error, stackTrace));
+                          .onError((error, stackTrace) =>
+                              _handleError(error, stackTrace));
                       setState(() {
                         _isLoading = false;
                       });
@@ -99,8 +101,9 @@ class _LoginTraditionalPasswordViewState
 
   _handleResult(AccountInfo accountInfo) async {
     // if (accountInfo.loginType == LoginType.otp)
-    NavigationCubit.of(context)
-        .push(AuthCloudLoginOtpPath()..args = {'username': _username});
+    NavigationCubit.of(context).push(AuthCloudLoginOtpPath()
+      ..args = {'username': _username, ...widget.args}
+      ..next = widget.next);
   }
 
   _handleError(Object? e, StackTrace trace) {
@@ -108,7 +111,8 @@ class _LoginTraditionalPasswordViewState
       setState(() {
         _errorCode = e.code;
       });
-    } else { // Unknown error or error parsing
+    } else {
+      // Unknown error or error parsing
       logger.d('Unknown error: $e');
     }
   }

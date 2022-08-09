@@ -3,6 +3,7 @@ import 'package:linksys_moab/page/components/customs/customs.dart';
 import 'package:linksys_moab/page/components/customs/otp_flow/otp_view.dart';
 import 'package:linksys_moab/page/login/view/view.dart';
 import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/util/logger.dart';
 
 import '../../page/create_account/view/view.dart';
 import 'model.dart';
@@ -15,12 +16,20 @@ abstract class AuthenticatePath extends BasePath {
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
       case AuthInputAccountPath:
-        return const LoginCloudAccountView();
+        return CloudLoginAccountView(
+          args: args,
+          next: next,
+        );
+      case AuthSetupLoginPath:
+        return CloudLoginAccountView(
+          args: args,
+          next: next,
+        );
       case AuthCloudLoginOtpPath:
-        if (args != null) {
-          args!['onNext'] = AuthCloudReadyForLoginPath();
-        }
-        return OtpFlowView(args: args);
+        return OtpFlowView(
+          args: args,
+          next: next ?? AuthCloudReadyForLoginPath(),
+        );
       case AuthForgotEmailPath:
         return const ForgotEmailView();
       case SelectPhoneRegionCodePath:
@@ -28,26 +37,27 @@ abstract class AuthenticatePath extends BasePath {
       case AuthLocalLoginPath:
         return const EnterRouterPasswordView();
       case AuthCloudLoginWithPasswordPath:
-        return const LoginTraditionalPasswordView();
+        return CloudLoginPasswordView(
+          args: args,
+          next: next,
+        );
       case AuthCloudForgotPasswordPath:
-        return const CloudForgotPasswordView();
+        return CloudForgotPasswordView();
       case AuthCloudResetPasswordPath:
-        return const CloudResetPasswordView();
+        return CloudResetPasswordView();
       case AuthLocalRecoveryKeyPath:
-        return const LocalRecoveryKeyView();
+        return LocalRecoveryKeyView();
       case AuthResetLocalOtpPath:
-        if (args != null) {
-          args!['onNext'] = DashboardMainPath();
-        }
         return OtpFlowView(
           args: args,
+          next: DashboardMainPath(),
         );
       case AuthLocalResetPasswordPath:
         return CreateAdminPasswordView(
           args: args,
         );
       case AuthCloudReadyForLoginPath:
-        return const CloudReadyForLoginView();
+        return CloudReadyForLoginView(args: args,);
       default:
         return const Center();
     }
@@ -82,6 +92,8 @@ class AuthCloudLoginWithPasswordPath extends AuthenticatePath {}
 class AuthCloudForgotPasswordPath extends AuthenticatePath {}
 
 class AuthCloudResetPasswordPath extends AuthenticatePath {}
+
+class AuthSetupLoginPath extends AuthenticatePath {}
 
 // Local Login
 

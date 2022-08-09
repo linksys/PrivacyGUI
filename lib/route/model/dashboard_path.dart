@@ -16,11 +16,11 @@ abstract class DashboardPath extends BasePath {
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
       case DashboardMainPath:
-        return const DashboardView();
+        return DashboardView();
       case NoRouterPath:
         return const NoRouterView();
       case PrepareDashboardPath:
-        return const PrepareDashboardView();
+        return PrepareDashboardView();
       case ShareWifiPath:
         return const ShareWifiView();
       default:

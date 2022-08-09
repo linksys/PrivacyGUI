@@ -82,10 +82,7 @@ class SetupFinishedView extends ArgumentsStatelessView {
                     getAppLocalizations(context).linksys_account,
                     state.accountInfo.username);
               } else if (state.method == AuthMethod.local) {
-                return infoCard(
-                    context,
-                    portraitIcon,
-                    "router password",
+                return infoCard(context, portraitIcon, "router password",
                     state.localLoginInfo.routerPassword);
               } else {
                 return const Divider(height: 0);
@@ -95,8 +92,11 @@ class SetupFinishedView extends ArgumentsStatelessView {
         ),
         footer: PrimaryButton(
           text: getAppLocalizations(context).go_to_dashboard,
-          onPress: () =>
-              NavigationCubit.of(context).push(PrepareDashboardPath()),
+          onPress: () {
+            // TODO refactor after create account API changed
+            context.read<AuthBloc>().checkCertValidation().then((value) =>
+                NavigationCubit.of(context).push(PrepareDashboardPath()));
+          },
         ),
         alignment: CrossAxisAlignment.start,
       ),

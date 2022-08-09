@@ -16,7 +16,7 @@ import 'package:linksys_moab/util/logger.dart';
 import 'otp_state.dart';
 
 class OtpFlowView extends ArgumentsStatelessView {
-  const OtpFlowView({Key? key, super.args}) : super(key: key);
+  const OtpFlowView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -24,31 +24,32 @@ class OtpFlowView extends ArgumentsStatelessView {
         create: (BuildContext context) => OtpCubit(),
         child: _ContentView(
           args: args,
+          next: next,
         ));
   }
 }
 
 class _ContentView extends ArgumentsStatefulView {
-  const _ContentView({Key? key, super.args}) : super(key: key);
+  const _ContentView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
   State<_ContentView> createState() => _ContentViewState();
 }
 
 class _ContentViewState extends State<_ContentView> {
-  late BasePath _nextPath;
   late String _username;
   late OtpFunction _function;
 
   @override
   initState() {
     super.initState();
-    _nextPath = widget.args!['onNext'] as BasePath;
-    _username = widget.args!['username'] as String;
+    _username = widget.args['username'] as String;
     logger.d('OTP flow: $_username');
+    logger.d('NEXT: ${widget.next}');
+
     OtpFunction _function = OtpFunction.send;
-    if (widget.args!.containsKey('function')) {
-      _function = widget.args!['function'] as OtpFunction;
+    if (widget.args.containsKey('function')) {
+      _function = widget.args['function'] as OtpFunction;
     }
     _fetchToken();
     _fetchOtpInfo(_function);
@@ -59,7 +60,8 @@ class _ContentViewState extends State<_ContentView> {
     return BlocConsumer<OtpCubit, OtpState>(
       listener: (context, state) {
         if (state.step == OtpStep.finish) {
-          NavigationCubit.of(context).clearAndPush(_nextPath);
+          final next = widget.next ?? UnknownPath();
+          NavigationCubit.of(context).clearAndPush(next..args.addAll(widget.args));
         }
       },
       builder: (context, state) => Stack(children: [

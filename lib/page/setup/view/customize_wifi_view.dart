@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/auth/bloc.dart';
+import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/setup/bloc.dart';
 import 'package:linksys_moab/bloc/setup/event.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -94,7 +96,12 @@ class _PageContentState extends State<PageContent> {
           onPress: () {
             context.read<SetupBloc>().add(SetWIFISSIDAndPassword(
                 ssid: nameController.text, password: passwordController.text));
-            NavigationCubit.of(context).push(CreateCloudAccountPath());
+            if (context.read<AuthBloc>().state.status ==
+                AuthStatus.authorized) {
+              NavigationCubit.of(context).push(SaveCloudSettingsPath()..args = {'isLogin': true});
+            } else {
+              NavigationCubit.of(context).push(CreateCloudAccountPath());
+            }
           },
         ),
         child: PrimaryButton(
@@ -102,7 +109,12 @@ class _PageContentState extends State<PageContent> {
           onPress: () {
             context.read<SetupBloc>().add(SetWIFISSIDAndPassword(
                 ssid: nameController.text, password: passwordController.text));
-            NavigationCubit.of(context).push(CreateCloudAccountPath());
+            if (context.read<AuthBloc>().state.status ==
+                AuthStatus.authorized) {
+              NavigationCubit.of(context).push(SaveCloudSettingsPath()..args = {'isLogin': true});
+            } else {
+              NavigationCubit.of(context).push(CreateCloudAccountPath());
+            }
           },
         ),
       ),

@@ -21,14 +21,12 @@ abstract class CreateAccountPath extends BasePath {
           args: args,
         );
       case CreateAccountOtpPath:
-        if (args != null) {
-          args!['onNext'] = SaveCloudSettingsPath();
-        }
         return OtpFlowView(
           args: args,
+          next: SaveCloudSettingsPath(),
         );
       case SaveCloudSettingsPath:
-        return SaveSettingsView();
+        return SaveSettingsView(args: args,);
       case AlreadyHaveOldAccountPath:
         return const HaveOldAccountView();
       case NoUseCloudAccountPath:
@@ -40,11 +38,9 @@ abstract class CreateAccountPath extends BasePath {
       case SameAccountPromptPath:
         return UseSameAccountPromptView();
       case CreateAccount2SVPath:
-        if (args != null) {
-          args!['onNext'] = SaveCloudSettingsPath();
-        }
         return OtpFlowView(
           args: args,
+          next: SaveCloudSettingsPath(),
         );
       default:
         return const Center();

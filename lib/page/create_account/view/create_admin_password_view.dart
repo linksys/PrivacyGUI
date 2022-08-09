@@ -48,8 +48,8 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
   @override
   void initState() {
     super.initState();
-    if (widget.args!.containsKey('type')) {
-      _type = widget.args!['type'];
+    if (widget.args.containsKey('type')) {
+      _type = widget.args['type'];
     }
     context
         .read<SetupBloc>()

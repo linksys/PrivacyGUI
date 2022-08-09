@@ -14,6 +14,7 @@ enum PageNavigationType { back, close, none }
 
 class PathConfig {
   bool removeFromHistory = false;
+  BasePath? next;
 }
 
 class PageConfig {
@@ -47,7 +48,7 @@ mixin ReturnablePath<T> {
 /// BasePath.buildPage() this better to implement on the sub abstract path,
 /// this is because we can easy to understand the whole route in the setup.
 abstract class BasePath {
-  Map<String, dynamic>? args;
+  Map<String, dynamic> args = {};
 
   String get name => runtimeType.toString();
 
@@ -68,6 +69,11 @@ abstract class BasePath {
       default:
         return const Center();
     }
+  }
+
+  BasePath? get next => pathConfig.next;
+  set next(BasePath? next) {
+    pathConfig.next = next;
   }
 }
 

@@ -134,7 +134,7 @@ class _AddAccountState extends State<AddAccountView> {
               SimpleTextButton(
                   text: getAppLocalizations(context).already_have_an_account,
                   onPressed: () {
-                    NavigationCubit.of(context).push(NoUseCloudAccountPath());
+                    NavigationCubit.of(context).push(AuthSetupLoginPath()..args = {'fromSetup': true});
                   }),
               Offstage(
                 offstage: _errorCode.isEmpty,

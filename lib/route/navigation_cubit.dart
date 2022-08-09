@@ -25,7 +25,7 @@ class NavigationCubit extends Cubit<NavigationStack> {
   }
 
   void push(BasePath config) {
-    print('push called with $config and ${config.args}');
+    print('push called with $config and arguments: ${config.args}, next: ${config.next}');
     // PageConfig config = PageConfig(location: path, args: args);
     emit(state.push(config));
   }
