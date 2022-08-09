@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:linksys_moab/design/colors.dart';
 import '../../../localization/localization_hook.dart';
+import '../../components/base_components/base_page_view.dart';
 
 class InternetScheduleView extends StatefulWidget {
   const InternetScheduleView({Key? key}) : super(key: key);
@@ -10,24 +12,59 @@ class InternetScheduleView extends StatefulWidget {
 }
 
 class _InternetScheduleViewState extends State<InternetScheduleView> {
-  final Widget firstAvatar = Image.asset('assets/images/sparker.png');
-  final Widget secondAvatar = Image.asset('assets/images/hat.png');
+  List<Profile> profiles = [
+    Profile('assets/images/sparker.png', 'Timmy'),
+    Profile('assets/images/hat.png', 'Mandy')
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const SizedBox(height: 30),
-        Text(getAppLocalizations(context).internet_schedule_view_description),
-        const SizedBox(height: 24),
-        scheduleCard(firstAvatar, const Text('Timmy')),
-        const SizedBox(height: 8),
-        scheduleCard(secondAvatar, const Text('Mandy'))
-      ],
-    );
+    return BasePageView.onDashboardSecondary(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title:
+              const Text('Internet Schedule', style: TextStyle(fontSize: 15)),
+          leading: Transform.translate(
+              offset: const Offset(-15, 0),
+              child: BackButton(onPressed: () {})),
+          actions: [
+            TextButton(
+                onPressed: () {},
+                child: const Text('AddProfile',
+                    style:
+                        TextStyle(fontSize: 13, color: MoabColor.primaryBlue))),
+          ],
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 30),
+            Text(getAppLocalizations(context)
+                .internet_schedule_view_description),
+            const SizedBox(height: 24),
+            profileList(profiles)
+          ],
+        ));
   }
 }
 
-Widget scheduleCard(Widget image, Widget text) {
+Widget profileList(List<Profile> list) {
+  return Column(
+    children: [
+      ...list.map((item) {
+        return Column(children: [
+          GestureDetector(
+              child: profileCard(Image.asset(item.imagePath), Text(item.name)),
+              onTap: () => print('You tapped on ${item.name}')),
+          const SizedBox(height: 8)
+        ]);
+      })
+    ],
+  );
+}
+
+Widget profileCard(Widget image, Widget text) {
   return Container(
     height: 82,
     decoration: BoxDecoration(border: Border.all(color: Colors.black)),
@@ -46,4 +83,11 @@ Widget scheduleCard(Widget image, Widget text) {
       ],
     ),
   );
+}
+
+class Profile {
+  String imagePath;
+  String name;
+
+  Profile(this.imagePath, this.name);
 }

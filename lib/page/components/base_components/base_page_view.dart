@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 class BasePageView extends StatelessWidget {
   static const _containerPadding = EdgeInsets.fromLTRB(24, 0, 24, 30);
+  static const _noPadding = EdgeInsets.all(0);
 
   final AppBar? appBar;
   final Widget? child;
@@ -65,6 +66,16 @@ class BasePageView extends StatelessWidget {
         ),
         bottomNavigationBar = null,
         super(key: key);
+
+  const BasePageView.onDashboardSecondary({
+    Key? key,
+    this.appBar,
+    this.child,
+    this.padding = _noPadding,
+    this.bottomSheet,
+    this.bottomNavigationBar,
+    this.scrollable = false,
+  }) : super(key: key);
 
   const BasePageView({
     Key? key,
