@@ -163,13 +163,14 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           text: 'Export log file',
           onPress: () async {
             // Share.shareFiles(['${Storage.logFileUri.path}'], text: 'Log file');
-            final box = context.findRenderObject() as RenderBox?;
+            Size size = MediaQuery.of(context).size;
             final result = await Share.shareFilesWithResult(
-                [Storage.logFileUri.path],
-                text: 'Log',
-                subject: 'Log file',
-                sharePositionOrigin:
-                    box!.localToGlobal(Offset.zero) & box.size);
+              [Storage.logFileUri.path],
+              text: 'Log',
+              subject: 'Log file',
+              sharePositionOrigin:
+                  Rect.fromLTWH(0, 0, size.width, size.height / 2),
+            );
             print('Share result: $result');
             if (result.status == ShareResultStatus.success) {
               Storage.deleteFile(Storage.logFileUri);
@@ -210,13 +211,16 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Test Get Profile',
           onPress: () async {
-            SecurityContext securityContext = SecurityContext(withTrustedRoots: true);
-            final publicKey = (await rootBundle.load('assets/keys/testCert.pem'))
-                .buffer
-                .asInt8List();
-            final privateKey = (await rootBundle.load('assets/keys/testKey.key'))
-                .buffer
-                .asInt8List();
+            SecurityContext securityContext =
+                SecurityContext(withTrustedRoots: true);
+            final publicKey =
+                (await rootBundle.load('assets/keys/testCert.pem'))
+                    .buffer
+                    .asInt8List();
+            final privateKey =
+                (await rootBundle.load('assets/keys/testKey.key'))
+                    .buffer
+                    .asInt8List();
             securityContext.useCertificateChainBytes(publicKey);
             securityContext.usePrivateKeyBytes(privateKey);
             final client = MoabHttpClient.withCert(securityContext);
@@ -267,19 +271,20 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         if (Platform.isAndroid) {
           _streamSubscription =
               FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-                final title = message.notification?.title ?? '';
-                final msg = message.notification?.body ?? '';
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content:
+            final title = message.notification?.title ?? '';
+            final msg = message.notification?.body ?? '';
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content:
                     Text('Receive notification: title: $title, body: $msg')));
-              });
+          });
         } else if (Platform.isIOS) {
           PushNotificationChannel().grantNotificationAuth().then((value) {
             if (value) {
-              _streamSubscription = PushNotificationChannel().listenPushNotification().listen((event) {
+              _streamSubscription = PushNotificationChannel()
+                  .listenPushNotification()
+                  .listen((event) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content:
-                    Text('Receive notification: event: $event')));
+                    content: Text('Receive notification: event: $event')));
               });
             }
           });
@@ -293,11 +298,10 @@ class _DebugToolsViewState extends State<DebugToolsView> {
 
   void _goToDeviceInfoPage(BuildContext context) {
     showCupertinoModalPopup(
-      context: context,
-      builder: (context) {
-        return const DebugDeviceInfoView();
-      }
-    );
+        context: context,
+        builder: (context) {
+          return const DebugDeviceInfoView();
+        });
   }
 
   Widget _buildEnvPickerTile() {
@@ -381,7 +385,9 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                     });
                   },
                 ),
-                const SizedBox(height: 24,)
+                const SizedBox(
+                  height: 24,
+                )
               ],
             );
     });
