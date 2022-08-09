@@ -17,13 +17,13 @@ class BasePageView extends StatelessWidget {
     this.child,
     this.padding = _containerPadding,
     this.scrollable = false,
+    this.bottomNavigationBar,
   })  : appBar = AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: Colors.transparent,
           elevation: 0,
         ),
         bottomSheet = null,
-        bottomNavigationBar = null,
         super(key: key);
 
   BasePageView.withCloseButton(

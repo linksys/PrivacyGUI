@@ -32,7 +32,7 @@ class _DashboardViewState extends State<DashboardView> {
   }
 
   Widget _contentView() {
-    return BasePageView(
+    return BasePageView.noNavigationBar(
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
         content: _pages.elementAt(_selectedIndex),
