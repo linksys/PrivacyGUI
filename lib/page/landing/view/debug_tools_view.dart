@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:linksys_moab/channel/push_notification_channel.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/network/http/extension_requests/accounts_requests.dart';
@@ -162,11 +164,21 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Export log file',
           onPress: () async {
-            // Share.shareFiles(['${Storage.logFileUri.path}'], text: 'Log file');
+            final file = File.fromUri(Storage.logFileUri);
+            final appInfo = await getAppInfoLogs();
+            final screenInfo = getScreenInfo(context);
+            final String shareLogFilename = 'moab-log-${DateFormat("yyyy-MM-dd_HH_mm_ss").format(DateTime.now())}.txt';
+            final String shareLogPath = '${Storage.tempDirectory?.path}/$shareLogFilename';
+            final value = await file.readAsBytes();
+            logger.d('log file: ${String.fromCharCodes(value)}');
+
+            String content = '$appInfo\n$screenInfo\n${String.fromCharCodes(value)}';
+            await Storage.saveFile(Uri.parse(shareLogPath), content);
+
             Size size = MediaQuery.of(context).size;
             final result = await Share.shareFilesWithResult(
-              [Storage.logFileUri.path],
-              text: 'Log',
+              [shareLogPath],
+              text: 'Moab Log',
               subject: 'Log file',
               sharePositionOrigin:
                   Rect.fromLTWH(0, 0, size.width, size.height / 2),
@@ -174,6 +186,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
             print('Share result: $result');
             if (result.status == ShareResultStatus.success) {
               Storage.deleteFile(Storage.logFileUri);
+              Storage.deleteFile(Uri.parse(shareLogPath));
             }
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text("Share result: ${result.status}"),

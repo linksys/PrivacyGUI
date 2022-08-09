@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:linksys_moab/utils.dart';
@@ -18,7 +20,7 @@ class CustomOutput extends LogOutput {
     for (var line in event.lines) {
       printWrapped(line);
       if (_file.existsSync()) {
-        await _file.writeAsString("${line.toString()}\n",
+        await _file.writeAsBytes("${Utils.maskSensitiveJsonValues(line.toString())}\n".codeUnits,
             mode: FileMode.writeOnlyAppend);
       }
     }
@@ -31,7 +33,9 @@ class CustomOutput extends LogOutput {
 }
 
 initLog() async {
-  logger.i(await getAppInfoLogs());
+  if (kDebugMode) {
+    print(await getAppInfoLogs());
+  }
 }
 
 Future<String> getAppInfoLogs() async {
@@ -39,6 +43,8 @@ Future<String> getAppInfoLogs() async {
   List<String> appInfo = [
     '\n----------- App Info ------------',
     'App name: ${packageInfo.appName}',
+    'App id: ${packageInfo.packageName}',
+    'App build number: ${packageInfo.buildNumber}',
     'App version: ${packageInfo.version}',
     'Platform OS: ${Platform.operatingSystem}',
     'OS version: ${Platform.operatingSystemVersion}',
