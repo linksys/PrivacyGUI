@@ -7,7 +7,7 @@ import 'package:linksys_moab/page/dashboard/view/dashboard_settings_view.dart';
 
 import '../../../design/themes.dart';
 
-enum DashboardBottomItemType { home, second, third, settings }
+enum DashboardBottomItemType { home, security, third, settings }
 
 class DashboardView extends ArgumentsStatefulView {
   const DashboardView({Key? key}) : super(key: key);
@@ -24,11 +24,11 @@ class _DashboardViewState extends State<DashboardView> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(data: MoabTheme.dashboardLightModeData, child: Builder(
-      builder: (context) {
-        return _contentView();
-      }
-    ));
+    return Theme(
+        data: MoabTheme.dashboardLightModeData,
+        child: Builder(builder: (context) {
+          return _contentView();
+        }));
   }
 
   Widget _contentView() {
@@ -39,11 +39,10 @@ class _DashboardViewState extends State<DashboardView> {
       ),
       bottomNavigationBar: BottomNavigationBar(
           type: BottomNavigationBarType.shifting,
-          backgroundColor: Theme.of(context).primaryColor,
-          iconSize: 48,
+          iconSize: 16,
           selectedFontSize: 18,
-          selectedIconTheme: IconThemeData(color: Colors.black, size: 40),
-          selectedItemColor: Colors.black,
+          selectedIconTheme: IconThemeData(color: Colors.white, size: 24),
+          selectedItemColor: Colors.white,
           selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold),
           unselectedIconTheme: IconThemeData(
             color: Colors.grey,
@@ -69,34 +68,39 @@ class _DashboardViewState extends State<DashboardView> {
     return BottomNavigationBarItem(
         icon: Image.asset(
           item.icon,
-          width: 48,
-          height: 48,
+          width: 24,
+          height: 24,
         ),
-        label: item.title);
+        label: item.title,
+      backgroundColor: MoabColor.dashboardBottomBackground
+    );
   }
 }
 
 const List<Widget> _pages = <Widget>[
   DashboardHomeView(),
-  Icon(
-    Icons.camera,
-    size: 150,
+  Center(
+    child: Icon(
+      Icons.camera,
+      size: 150,
+    ),
   ),
-  Icon(
+  Center(
+      child: Icon(
     Icons.chat,
     size: 150,
-  ),
+  )),
   DashboardSettingsView(),
 ];
 
 const dashboardBottomItems = [
   DashboardBottomItem(
-      'assets/images/dashboard_home.png', 'Home', DashboardBottomItemType.home),
+      'assets/images/icon_home.png', 'Home', DashboardBottomItemType.home),
+  DashboardBottomItem('assets/images/icon_home.png', 'Security',
+      DashboardBottomItemType.security),
   DashboardBottomItem(
-      'assets/icons/ic_foreground.png', 'TBD', DashboardBottomItemType.second),
-  DashboardBottomItem(
-      'assets/icons/ic_foreground.png', 'TBD', DashboardBottomItemType.third),
-  DashboardBottomItem('assets/icons/ic_foreground.png', 'Settings',
+      'assets/images/icon_home.png', 'TBD', DashboardBottomItemType.third),
+  DashboardBottomItem('assets/images/icon_settings.png', 'Settings',
       DashboardBottomItemType.settings),
 ];
 
