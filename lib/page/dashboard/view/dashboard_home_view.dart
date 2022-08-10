@@ -1,9 +1,10 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:moab_poc/design/colors.dart';
-import 'package:moab_poc/page/components/base_components/base_page_view.dart';
-import 'package:moab_poc/utils.dart';
+import 'package:linksys_moab/design/colors.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/utils.dart';
 
 class Profile {
   const Profile({required this.name, required this.icon});
@@ -37,6 +38,7 @@ final _mockProfiles = [
     name: 'Austin',
     icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
   ),
+  const Profile(name: '+', icon: 'assets/images/icon_profile_add.png')
 ];
 
 class DashboardHomeView extends StatefulWidget {
@@ -296,7 +298,15 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
         SizedBox(
           height: 60,
           child: ListView.separated(
-            itemBuilder: (context, index) => _profileItem(_mockProfiles[index]),
+            itemBuilder: (context, index) => InkWell(
+                onTap: () {
+                  if (index == _mockProfiles.length - 1) {
+                    logger.d('add profile clicked: $index');
+                  } else {
+                    logger.d('profile clicked: $index');
+                  }
+                },
+                child: _profileItem(_mockProfiles[index])),
             separatorBuilder: (_, __) => SizedBox(
               width: 16,
             ),
@@ -310,34 +320,38 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
   }
 
   Widget _profileItem(Profile profile) {
-    return Container(
-      height: 58,
-      decoration: BoxDecoration(
-          color: MoabColor.dashboardTileBackground,
-          borderRadius: BorderRadius.circular(28)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Center(
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Image.asset(
-                profile.icon,
-                width: 32,
-                height: 32,
-              ),
-              SizedBox(
-                width: 8,
-              ),
-              Text(
-                profile.name,
-                style: Theme.of(context).textTheme.bodyText1,
-              )
-            ],
+    if (profile.name == '+') {
+      return Image.asset(profile.icon);
+    } else {
+      return Container(
+        height: 58,
+        decoration: BoxDecoration(
+            color: MoabColor.dashboardTileBackground,
+            borderRadius: BorderRadius.circular(28)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Image.asset(
+                  profile.icon,
+                  width: 32,
+                  height: 32,
+                ),
+                SizedBox(
+                  width: 8,
+                ),
+                Text(
+                  profile.name,
+                  style: Theme.of(context).textTheme.bodyText1,
+                )
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+    }
   }
 }

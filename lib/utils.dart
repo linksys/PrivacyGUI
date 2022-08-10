@@ -170,7 +170,6 @@ class Utils {
         }
       }
     });
-    print('result: $result');
     return result;
   }
 
