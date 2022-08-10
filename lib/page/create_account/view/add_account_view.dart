@@ -130,22 +130,22 @@ class _AddAccountState extends State<AddAccountView> {
                   });
                 },
               ),
+              Offstage(
+                offstage: _errorCode.isEmpty,
+                child: Wrap(
+                  children: [Text(
+                    generalErrorCodeHandler(context, _errorCode),
+                    style: Theme.of(context)
+                        .textTheme
+                        .headline3
+                        ?.copyWith(color: Colors.red),
+                  ), SimpleTextButton.noPadding(text: getAppLocalizations(context).login_to_continue, onPressed: _goLogin)],
+                ),
+              ),
               const SizedBox(height: 8),
               SimpleTextButton(
                   text: getAppLocalizations(context).already_have_an_account,
-                  onPressed: () {
-                    NavigationCubit.of(context).push(AuthSetupLoginPath()..args = {'fromSetup': true});
-                  }),
-              Offstage(
-                offstage: _errorCode.isEmpty,
-                child: Text(
-                  generalErrorCodeHandler(context, _errorCode),
-                  style: Theme.of(context)
-                      .textTheme
-                      .headline3
-                      ?.copyWith(color: Colors.red),
-                ),
-              ),
+                  onPressed: _goLogin),
               const SizedBox(height: 32),
               DescriptionText(
                   text: getAppLocalizations(context)
@@ -154,7 +154,6 @@ class _AddAccountState extends State<AddAccountView> {
                 height: 8,
               ),
               _buildAccountTipsWidget(),
-
             ],
             crossAxisAlignment: CrossAxisAlignment.start,
           ),
@@ -185,5 +184,9 @@ class _AddAccountState extends State<AddAccountView> {
       // Unknown error or error parsing
       logger.d('Unknown error: $e');
     }
+  }
+  _goLogin() {
+    NavigationCubit.of(context)
+        .push(AuthSetupLoginPath()..args = {'fromSetup': true});
   }
 }
