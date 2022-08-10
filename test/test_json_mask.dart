@@ -5,6 +5,19 @@ import 'package:test/test.dart';
 
 void main() {
   group('test json mask', () {
+    test('username case', () async {
+      const str = '''
+        [I] TIME: 2022-08-10T08:46:51.856634 
+        REQUEST---------------------------------------------------
+        URL: https://qa-us1-api.linksys.cloud/v1/auth/login/prepare, METHOD: POST
+        HEADERS: {X-Linksys-Moab-Site-Id: b6b70875-9ec4-45eb-9792-2545ccc2bc5d, content-type: application/json; charset=utf-8, accept: application/json, X-Linksys-Moab-App-Id: ec4496fe-ec90-466a-8354-73ea6b272565, X-Linksys-Moab-App-Secret: gmq2wvqzTK/voG5TauzLqemPt4TTtAvPGFS22c85bn/6GyzlrzYpV5xOoQ2Na/VBO9zrjnMJhe3Cegd9X3zSsyeS/BZhH3lx39Ti/AUujj13nkew3gIDz2alUx3x2N+WOVLC8YW07YJtP4LddXlMR9/SgZP30jieovFkhL6houE=}
+        BODY: {"username":"austin.chang@gmail.com"}
+        ---------------------------------------------------REQUEST END
+      ''';
+      final actual = Utils.maskJsonValue(str, ['username']);
+      expect(actual.indexOf('austin.chang@gmail.com'), -1);
+    });
+
     test('password case', () async {
       const str = '''
         [I] TIME: 2022-08-09T23:27:33.687797
@@ -34,6 +47,19 @@ void main() {
       expect(actual.indexOf('-----BEGIN CERTIFICATE-----'), -1);
       expect(actual.indexOf('-----BEGIN PRIVATE KEY-----'), -1);
 
+    });
+
+    test('Moab App Secret case', () async {
+      const str = '''
+        [I] TIME: 2022-08-10T08:46:51.856634 
+        REQUEST---------------------------------------------------
+        URL: https://qa-us1-api.linksys.cloud/v1/auth/login/prepare, METHOD: POST
+        HEADERS: {X-Linksys-Moab-Site-Id: b6b70875-9ec4-45eb-9792-2545ccc2bc5d, content-type: application/json; charset=utf-8, accept: application/json, X-Linksys-Moab-App-Id: ec4496fe-ec90-466a-8354-73ea6b272565, X-Linksys-Moab-App-Secret: gmq2wvqzTK/voG5TauzLqemPt4TTtAvPGFS22c85bn/6GyzlrzYpV5xOoQ2Na/VBO9zrjnMJhe3Cegd9X3zSsyeS/BZhH3lx39Ti/AUujj13nkew3gIDz2alUx3x2N+WOVLC8YW07YJtP4LddXlMR9/SgZP30jieovFkhL6houE=}
+        BODY: {"username":"austin.chang@gmail.com"}
+        ---------------------------------------------------REQUEST END
+      ''';
+      final actual = Utils.maskJsonValue(str, ['X-Linksys-Moab-App-Secret']);
+      expect(actual.indexOf('X-Linksys-Moab-App-Secret: gmq2wvqzTK/voG5TauzLqemPt4TTtAvPGFS22c85bn/6GyzlrzYpV5xOoQ2Na/VBO9zrjnMJhe3Cegd9X3zSsyeS/BZhH3lx39Ti/AUujj13nkew3gIDz2alUx3x2N+WOVLC8YW07YJtP4LddXlMR9/SgZP30jieovFkhL6houE='), -1);
     });
   });
 }

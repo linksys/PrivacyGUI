@@ -157,7 +157,7 @@ class Utils {
   }
 
   static String maskJsonValue(String raw, List<String> keys) {
-    final pattern = '"([${keys.join('|')}]+)"\\s*:\\s*"([\\s\\S]*?)"';
+    final pattern = '"?(${keys.join('|')})"?\\s*:\\s*"?([\\s\\S]*?)"?(?=,|})';
     RegExp regex = RegExp(pattern, multiLine: true);
     String result = raw;
 
@@ -175,7 +175,13 @@ class Utils {
   }
 
   static String maskSensitiveJsonValues(String raw) {
-    final keys = ['password', 'privateKey', 'publicKey'];
+    final keys = [
+      'username',
+      'password',
+      'privateKey',
+      'X-Linksys-Moab-App-Secret',
+      'adminPassword',
+    ];
     return maskJsonValue(raw, keys);
   }
 }
