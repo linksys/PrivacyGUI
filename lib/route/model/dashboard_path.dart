@@ -7,6 +7,7 @@ import 'package:linksys_moab/page/dashboard/view/dashboard_security_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_settings_view.dart';
 import 'package:linksys_moab/page/wifi_settings/share_wifi_view.dart';
 import 'package:linksys_moab/page/wifi_settings/wifi_main.dart';
+import 'package:linksys_moab/page/wifi_settings/wifi_list_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
 
@@ -55,6 +56,12 @@ abstract class DashboardPath extends BasePath {
         return const DailyTimeLimitListView();
       case SchedulePauseListPath:
         return const SchedulePauseListView();
+      case WifiListPath:
+        return const WifiListView();
+      case ShareWifiPath:
+        return ShareWifiView(
+          args: args,
+        );
       default:
         return const Center();
     }
@@ -98,7 +105,10 @@ class AddSchedulePausePath extends DashboardPath{}
 class DailyTimeLimitListPath extends DashboardPath{}
 
 class SchedulePauseListPath extends DashboardPath{}
+
 class WifiPath extends DashboardPath {
   @override
   PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
 }
+
+class WifiListPath extends DashboardPath {}
