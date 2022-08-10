@@ -1,3 +1,4 @@
+// Load properties file
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -6,19 +7,48 @@ if (localPropertiesFile.exists()) {
     }
 }
 
+def projectProperties = new Properties()
+def projectPropertiesFile = rootProject.file('project.properties')
+if (projectPropertiesFile.exists()) {
+    projectPropertiesFile.withReader('UTF-8') { reader ->
+        projectProperties.load(reader)
+    }
+}
+
 def flutterRoot = localProperties.getProperty('flutter.sdk')
 if (flutterRoot == null) {
     throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
 }
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+// Fetch values
+def flutterVersionCode = projectProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
     flutterVersionCode = '1'
 }
 
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
+def flutterVersionName = projectProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
     flutterVersionName = '1.0'
+}
+
+def flutterMinSdkVersion = projectProperties.getProperty('flutter.minSdkVersion')
+if (flutterMinSdkVersion == null) {
+    flutterMinSdkVersion = '16'
+}
+
+def flutterTargetSdkVersion = projectProperties.getProperty('flutter.targetSdkVersion')
+if (flutterTargetSdkVersion == null) {
+    flutterTargetSdkVersion = '30'
+}
+
+def flutterCompileSdkVersion = projectProperties.getProperty('flutter.compileSdkVersion')
+if (flutterCompileSdkVersion == null) {
+    flutterCompileSdkVersion = '30'
+}
+
+def projectApplicationId = projectProperties.getProperty('project.applicationId')
+if (projectApplicationId == null) {
+    projectApplicationId = 'com.moab.linksys.app'
 }
 
 apply plugin: 'com.android.application'
@@ -47,9 +77,10 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "com.linksys.moab.app"
-        minSdkVersion localProperties.getProperty('flutter.minSdkVersion').toInteger()
-        targetSdkVersion localProperties.getProperty('flutter.targetSdkVersion').toInteger()
+        applicationId projectApplicationId
+        minSdkVersion flutterMinSdkVersion.toInteger()
+        targetSdkVersion flutterTargetSdkVersion.toInteger()
+        compileSdkVersion flutterCompileSdkVersion.toInteger()
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
@@ -72,13 +103,13 @@ android {
     }
 
     signingConfigs {
-    debug {
-        storeFile file("../debug_keystore.keystore")
-        storePassword "Linksys123!"
-        keyAlias "LinksysDebug"
-        keyPassword "Linksys123!"
+        debug {
+            storeFile file("../debug_keystore.keystore")
+            storePassword "Linksys123!"
+            keyAlias "LinksysDebug"
+            keyPassword "Linksys123!"
+        }
     }
-}
 }
 
 flutter {
