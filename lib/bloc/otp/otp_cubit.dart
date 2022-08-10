@@ -4,6 +4,7 @@ import 'package:linksys_moab/bloc/auth/state.dart';
 
 import 'otp_state.dart';
 
+
 class OtpCubit extends Cubit<OtpState> {
   OtpCubit() : super(OtpState.init());
 

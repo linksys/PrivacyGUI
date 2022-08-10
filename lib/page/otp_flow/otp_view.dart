@@ -2,30 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
-import 'package:linksys_moab/page/components/customs/otp_flow/otp_add_phone.dart';
-import 'package:linksys_moab/page/components/customs/otp_flow/otp_code_input.dart';
-import 'package:linksys_moab/page/components/customs/otp_flow/otp_cubit.dart';
-import 'package:linksys_moab/page/components/customs/otp_flow/otp_method_selector_view.dart';
+import 'package:linksys_moab/bloc/otp/otp_cubit.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/model/otp_path.dart';
 import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-import 'otp_state.dart';
 
 class OtpFlowView extends ArgumentsStatelessView {
   const OtpFlowView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-        create: (BuildContext context) => OtpCubit(),
-        child: _ContentView(
-          args: args,
-          next: next,
-        ));
+    return _ContentView(
+      args: args,
+      next: next,
+    );
   }
 }
 
@@ -58,10 +54,22 @@ class _ContentViewState extends State<_ContentView> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<OtpCubit, OtpState>(
+      listenWhen: (previous, next) {
+        return previous.step != next.step;
+      },
       listener: (context, state) {
-        if (state.step == OtpStep.finish) {
+        if (state.step == OtpStep.inputOtp) {
           final next = widget.next ?? UnknownPath();
-          NavigationCubit.of(context).clearAndPush(next..args.addAll(widget.args));
+          logger.d('NEXT2: ${next}');
+
+          NavigationCubit.of(context).replace(OtpInputCodePath()
+            ..args.addAll(widget.args)
+            ..next = next);
+        } else if (state.step == OtpStep.chooseOtpMethod) {
+          final next = widget.next ?? UnknownPath();
+          NavigationCubit.of(context).replace(OtpMethodChoosesPath()
+            ..next = next
+            ..args.addAll(widget.args));
         }
       },
       builder: (context, state) => Stack(children: [
@@ -87,15 +95,7 @@ class _ContentViewState extends State<_ContentView> {
   }
 
   Widget _contentView(OtpState state) {
-    if (state.step == OtpStep.chooseOtpMethod) {
-      return OTPMethodSelectorView();
-    } else if (state.step == OtpStep.inputOtp) {
-      return OtpCodeInputView();
-    } else if (state.step == OtpStep.addPhone) {
-      return OtpAddPhoneView();
-    } else {
-      return BasePageView.noNavigationBar();
-    }
+    return BasePageView.noNavigationBar();
   }
 
   _setLoading(bool isLoading) {

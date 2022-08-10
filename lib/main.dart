@@ -24,6 +24,7 @@ import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'bloc/setup/bloc.dart';
 import 'firebase_options.dart';
+import 'bloc/otp/otp_cubit.dart';
 import 'repository/authenticate/impl/fake_auth_repository.dart';
 import 'repository/authenticate/impl/fake_local_auth_repository.dart';
 import 'package:linksys_moab/route/model/model.dart';
@@ -141,7 +142,8 @@ Widget _app() {
       ),
       BlocProvider(create: (BuildContext context) => ConnectivityCubit()),
       BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
-      BlocProvider(create: (BuildContext context) => SetupBloc())
+      BlocProvider(create: (BuildContext context) => SetupBloc()),
+      BlocProvider(create: (BuildContext context) => OtpCubit()),
     ], child: const MoabApp()),
   );
 }

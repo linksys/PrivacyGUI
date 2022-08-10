@@ -1,9 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/page/components/customs/customs.dart';
-import 'package:linksys_moab/page/components/customs/otp_flow/otp_view.dart';
 import 'package:linksys_moab/page/login/view/view.dart';
+import 'package:linksys_moab/page/otp_flow/otp_flow.dart';
 import 'package:linksys_moab/route/route.dart';
-import 'package:linksys_moab/util/logger.dart';
 
 import '../../page/create_account/view/view.dart';
 import 'model.dart';

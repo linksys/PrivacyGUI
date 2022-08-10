@@ -2,20 +2,19 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/customs/otp_flow/otp_cubit.dart';
-import 'package:linksys_moab/page/components/customs/otp_flow/otp_state.dart';
+import 'package:linksys_moab/bloc/otp/otp_cubit.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/route/route.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class OTPMethodSelectorView extends ArgumentsStatefulView {
-  const OTPMethodSelectorView({Key? key, super.args}) : super(key: key);
+  const OTPMethodSelectorView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
   _OTPMethodSelectorViewState createState() => _OTPMethodSelectorViewState();

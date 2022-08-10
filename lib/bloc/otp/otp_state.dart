@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
-import 'package:linksys_moab/page/components/customs/otp_flow/otp_view.dart';
 
 enum OtpStep { init, chooseOtpMethod, inputOtp, addPhone, finish }
 

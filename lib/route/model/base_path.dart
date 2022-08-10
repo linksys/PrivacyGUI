@@ -49,12 +49,14 @@ mixin ReturnablePath<T> {
 /// this is because we can easy to understand the whole route in the setup.
 abstract class BasePath {
   Map<String, dynamic> args = {};
+  final PathConfig _pathConfig = PathConfig();
+  final PageConfig _pageConfig = PageConfig();
 
   String get name => runtimeType.toString();
 
-  PathConfig get pathConfig => PathConfig();
+  PathConfig get pathConfig => _pathConfig;
 
-  PageConfig get pageConfig => PageConfig();
+  PageConfig get pageConfig => _pageConfig;
 
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
@@ -74,6 +76,7 @@ abstract class BasePath {
   BasePath? get next => pathConfig.next;
   set next(BasePath? next) {
     pathConfig.next = next;
+    logger.d('set next: ${this.next} to $runtimeType');
   }
 }
 
