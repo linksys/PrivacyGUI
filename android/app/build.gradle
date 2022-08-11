@@ -103,8 +103,6 @@ android {
                 def props = new Properties()
                 propsFile.withReader { reader ->
                     props.load(reader)
-                    println(reader.text)
-                    println(props)
                 }
 
                 signingConfigs {
