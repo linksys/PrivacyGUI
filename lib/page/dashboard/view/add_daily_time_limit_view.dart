@@ -66,6 +66,6 @@ Widget timePicker(int hour, int minutes, ValueChanged onHourChanged, ValueChange
   return  Row(children: [
     NumberPickerView(title: 'Hours', value: hour, min: 0, max: 24, step: 1, callback: onHourChanged),
     const SizedBox(width: 22),
-    NumberPickerView(title: 'Minutes', value: minutes, min: 0, max: 60, step: 1, callback: onMinutesChanged),
+    NumberPickerView(title: 'Minutes', value: minutes, min: 0, max: 60, step: 15, callback: onMinutesChanged),
   ]);
 }
