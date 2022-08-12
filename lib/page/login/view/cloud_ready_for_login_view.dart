@@ -35,9 +35,6 @@ class _CloudReadyForLoginViewState extends State<CloudReadyForLoginView> {
   }
 
   Future<void> _processLogin() async {
-    final _authBloc = context.read<AuthBloc>();
-    _authBloc
-        .login()
-        .then((state) => context.read<AuthBloc>().add(Authorized()));
+    context.read<AuthBloc>().add(CloudLogin());
   }
 }

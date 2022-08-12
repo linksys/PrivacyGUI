@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
+import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/setup/bloc.dart';
 import 'package:linksys_moab/bloc/setup/event.dart';
 import 'package:linksys_moab/bloc/setup/state.dart';
@@ -46,11 +47,6 @@ class _AddAccountState extends State<AddAccountView> {
       await context
           .read<AuthBloc>()
           .createAccountPreparation(_emailController.text)
-          .then((_) => NavigationCubit.of(context).push(CreateAccountOtpPath()
-            ..args = {
-              'username': _emailController.text,
-              'function': OtpFunction.setting,
-            }))
           .onError((error, stackTrace) => _handleError(error, stackTrace));
       setState(() {
         _isLoading = false;
@@ -65,7 +61,6 @@ class _AddAccountState extends State<AddAccountView> {
     super.initState();
     context.read<SetupBloc>().add(
         const ResumePointChanged(status: SetupResumePoint.CREATECLOUDACCOUNT));
-    context.read<AuthBloc>().add(OnCreateAccount());
   }
 
   Widget _buildAccountTipsWidget() {
@@ -102,9 +97,29 @@ class _AddAccountState extends State<AddAccountView> {
 
   @override
   Widget build(BuildContext context) {
-    return _isLoading
-        ? FullScreenSpinner(text: getAppLocalizations(context).processing)
-        : _contentView();
+    return BlocConsumer<AuthBloc, AuthState>(
+        listenWhen: (previous, current) {
+          if (previous is AuthOnCreateAccountState && current is AuthOnCreateAccountState) {
+            if (previous.vToken != current.vToken) {
+              return true;
+            }
+          }
+          return false;
+        },
+        listener: (context, state) {
+          if (state is AuthOnCreateAccountState) {
+            if (state.vToken.isNotEmpty) {
+              NavigationCubit.of(context).push(CreateAccountOtpPath()
+                ..args = {
+                  'username': _emailController.text,
+                  'function': OtpFunction.setting,
+                });
+            }
+          }
+        },
+        builder: (context, state) => _isLoading
+            ? FullScreenSpinner(text: getAppLocalizations(context).processing)
+            : _contentView());
   }
 
   Widget _contentView() {

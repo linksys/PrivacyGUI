@@ -101,7 +101,15 @@ class _ContentViewState extends State<_ContentView> {
   }
 
   _fetchToken() {
-    context.read<OtpCubit>().updateToken(context.read<AuthBloc>().state.vToken);
+    String vToken = '';
+    if (context.read<AuthBloc>().state is AuthOnCloudLoginState) {
+      vToken = (context.read<AuthBloc>().state as AuthOnCloudLoginState).vToken;
+    } else if (context.read<AuthBloc>().state is AuthOnCreateAccountState) {
+      vToken = (context.read<AuthBloc>().state as AuthOnCreateAccountState).vToken;
+    } else {
+      logger.d('ERROR: OtpFlowView: _fetchToken: Unexpected state type');
+    }
+    context.read<OtpCubit>().updateToken(vToken);
   }
 
   _fetchOtpInfo(OtpFunction function) async {

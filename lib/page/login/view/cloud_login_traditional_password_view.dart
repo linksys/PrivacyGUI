@@ -33,15 +33,24 @@ class _LoginTraditionalPasswordViewState
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) => _isLoading
-          ? FullScreenSpinner(text: getAppLocalizations(context).processing)
-          : _contentView(state),
-    );
+    return BlocConsumer<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthOnCloudLoginState) {
+            if (state.accountInfo.loginType == LoginType.passwordless) {
+              NavigationCubit.of(context).push(
+                  AuthCloudLoginOtpPath()..args = {'username': _username});
+            }
+          } else {
+            logger.d('ERROR: Wrong state type on LoginTraditionalPasswordView');
+          }
+        },
+        builder: (context, state) => _isLoading
+            ? FullScreenSpinner(text: getAppLocalizations(context).processing)
+            : _contentView(state));
   }
 
   Widget _contentView(AuthState state) {
-    _username = state.accountInfo.username;
+    _username = (state as AuthOnCloudLoginState).accountInfo.username;
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
@@ -67,9 +76,12 @@ class _LoginTraditionalPasswordViewState
             const SizedBox(
               height: 15,
             ),
-            SimpleTextButton(text: getAppLocalizations(context).forgot_password, onPressed: () {
-              NavigationCubit.of(context).push(AuthCloudForgotPasswordPath());
-            }),
+            SimpleTextButton(
+                text: getAppLocalizations(context).forgot_password,
+                onPressed: () {
+                  NavigationCubit.of(context)
+                      .push(AuthCloudForgotPasswordPath());
+                }),
             const SizedBox(
               height: 38,
             ),
@@ -84,8 +96,8 @@ class _LoginTraditionalPasswordViewState
                       await context
                           .read<AuthBloc>()
                           .loginPassword(passwordController.text)
-                          .then((value) => _handleResult(value))
-                          .onError((error, stackTrace) => _handleError(error, stackTrace));
+                          .onError((error, stackTrace) =>
+                              _handleError(error, stackTrace));
                       setState(() {
                         _isLoading = false;
                       });
@@ -97,18 +109,13 @@ class _LoginTraditionalPasswordViewState
     );
   }
 
-  _handleResult(AccountInfo accountInfo) async {
-    // if (accountInfo.loginType == LoginType.otp)
-    NavigationCubit.of(context)
-        .push(AuthCloudLoginOtpPath()..args = {'username': _username});
-  }
-
   _handleError(Object? e, StackTrace trace) {
     if (e is ErrorResponse) {
       setState(() {
         _errorCode = e.code;
       });
-    } else { // Unknown error or error parsing
+    } else {
+      // Unknown error or error parsing
       logger.d('Unknown error: $e');
     }
   }

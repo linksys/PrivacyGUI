@@ -70,18 +70,23 @@ class SetupFinishedView extends ArgumentsStatelessView {
                 text: getAppLocalizations(context).wifi_ready_view_login_info),
             const SizedBox(height: 8),
             BlocBuilder<AuthBloc, AuthState>(buildWhen: (previous, current) {
-              return previous.accountInfo.username !=
-                      current.accountInfo.username ||
-                  previous.localLoginInfo.routerPassword !=
-                      current.localLoginInfo.routerPassword;
+              if (previous is AuthOnCloudLoginState && current is AuthOnCloudLoginState) {
+                return previous.accountInfo.username !=
+                    current.accountInfo.username;
+              } else if (previous is AuthOnLocalLoginState && current is AuthOnLocalLoginState) {
+                return previous.localLoginInfo.routerPassword !=
+                        current.localLoginInfo.routerPassword;
+              } else {
+                return false;
+              }
             }, builder: (context, state) {
-              if (state.method == AuthMethod.remote) {
+              if (state is AuthOnCloudLoginState) {
                 return infoCard(
                     context,
                     portraitIcon,
                     getAppLocalizations(context).linksys_account,
                     state.accountInfo.username);
-              } else if (state.method == AuthMethod.local) {
+              } else if (state is AuthOnLocalLoginState) {
                 return infoCard(
                     context,
                     portraitIcon,

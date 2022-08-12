@@ -33,12 +33,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         _localAuthRepository = localRepo,
         super(AuthState.unknownAuth()) {
     on<InitAuth>(_onInitAuth);
-    on<OnLogin>(_onLogin);
+    on<OnCloudLogin>(_onCloudLogin);
+    on<OnLocalLogin>(_onLocalLogin);
     on<OnCreateAccount>(_onCreateAccount);
     on<Unauthorized>(_unauthorized);
     on<Authorized>(_authorized);
     on<RequireOtpCode>(_onRequireOtpCode);
+    on<SetOtpInfo>(_onSetOtpInfo);
+    on<SetLoginType>(_onSetLoginType);
     on<SetCloudPassword>(_onSetCloudPassword);
+    on<CloudLogin>(_cloudLogin);
+    on<LocalLogin>(_localLogin);
     on<Logout>(_onLogout);
   }
 
@@ -47,18 +52,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final isValid = await checkCertValidation();
     logger.d('is auth valid: $isValid');
     if (isValid) {
-      emit(AuthState.authorized(method: AuthMethod.remote));
+      // TODO: Get key and accountInfo from shared preference
+      emit(AuthState.authorized(
+          accountInfo: AccountInfo.empty(), publicKey: '', privateKey: ''));
     } else {
       emit(AuthState.unAuthorized());
     }
   }
 
-  _onLogin(OnLogin event, Emitter<AuthState> emit) {
-    emit(AuthState.onLogin());
+  _onCloudLogin(OnCloudLogin event, Emitter<AuthState> emit) {
+    emit(AuthState.onCloudLogin(
+        accountInfo: event.accountInfo, vToken: event.vToken));
+  }
+
+  _onLocalLogin(OnLocalLogin event, Emitter<AuthState> emit) {
+    emit(AuthState.onLocalLogin(localLoginInfo: event.localLoginInfo));
   }
 
   _onCreateAccount(OnCreateAccount event, Emitter<AuthState> emit) {
-    emit(AuthState.onCreateAccount());
+    emit(AuthState.onCreateAccount(
+        accountInfo: event.accountInfo, vToken: event.vToken));
   }
 
   _unauthorized(Unauthorized event, Emitter<AuthState> emit) {
@@ -66,16 +79,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   _authorized(Authorized event, Emitter<AuthState> emit) {
-    emit(state.copyWith(status: AuthStatus.authorized));
+    emit(AuthState.authorized(
+        accountInfo: event.accountInfo,
+        publicKey: event.publicKey,
+        privateKey: event.privateKey));
   }
 
   void _onRequireOtpCode(RequireOtpCode event, Emitter<AuthState> emit) {
-    switch (state.status) {
-      case AuthStatus.onCreateAccount:
+    switch (state.runtimeType) {
+      case AuthOnCreateAccountState:
         createAccountPreparationUpdateMethod(event.otpInfo)
             .then((_) => authChallenge(event.otpInfo));
         break;
-      case AuthStatus.onLogin:
+      case AuthOnCloudLoginState:
         authChallenge(event.otpInfo);
         break;
       default:
@@ -83,11 +99,62 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  void _onSetCloudPassword(SetCloudPassword event, Emitter<AuthState> emit) {
-    AccountInfo info = state.accountInfo
-        .copyWith(password: event.password, loginType: LoginType.password);
-    emit(state.copyWith(accountInfo: info));
+  void _onSetOtpInfo(SetOtpInfo event, Emitter<AuthState> emit) {
+    final _state = state;
+    if (_state is AuthOnCloudLoginState) {
+      AccountInfo accountInfo =
+          _state.accountInfo.copyWith(otpInfo: event.otpInfo);
+      emit(_state.copyWith(accountInfo: accountInfo));
+    } else if (_state is AuthOnCreateAccountState) {
+      AccountInfo accountInfo =
+          _state.accountInfo.copyWith(otpInfo: event.otpInfo);
+      emit(_state.copyWith(accountInfo: accountInfo));
+    } else {
+      logger.d('ERROR: _onSetOtpInfo: Unexpected state type');
+    }
   }
+
+  void _onSetLoginType(SetLoginType event, Emitter<AuthState> emit) {
+    final _state = state;
+    if (_state is AuthOnCloudLoginState) {
+      AccountInfo accountInfo =
+          _state.accountInfo.copyWith(loginType: event.loginType);
+      emit(_state.copyWith(accountInfo: accountInfo));
+    } else if (_state is AuthOnCreateAccountState) {
+      AccountInfo accountInfo =
+          _state.accountInfo.copyWith(loginType: event.loginType);
+      emit(_state.copyWith(accountInfo: accountInfo));
+    } else {
+      logger.d('ERROR: _onSetOtpInfo: Unexpected state type');
+    }
+  }
+
+  void _onSetCloudPassword(SetCloudPassword event, Emitter<AuthState> emit) {
+    final _state = state;
+    if (_state is AuthOnCreateAccountState) {
+      AccountInfo accountInfo = _state.accountInfo
+          .copyWith(password: event.password, loginType: LoginType.password);
+      emit(_state.copyWith(accountInfo: accountInfo));
+    } else {
+      logger.d('ERROR: _onSetCloudPassword: Unexpected state type');
+    }
+  }
+
+  void _cloudLogin(CloudLogin event, Emitter<AuthState> emit) {
+    cloudLogin().then((value) {
+      if (value == true) {
+        // TODO: Get key from shared preference
+        add(Authorized(
+            accountInfo: (state as AuthOnCloudLoginState).accountInfo,
+            publicKey: 'publicKey',
+            privateKey: 'privateKey'));
+      } else {
+        add(Unauthorized());
+      }
+    });
+  }
+
+  void _localLogin(LocalLogin event, Emitter<AuthState> emit) {}
 
   void _onLogout(Logout event, Emitter<AuthState> emit) {
     SharedPreferences.getInstance().then((prefs) {
@@ -106,7 +173,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 }
 
 extension AuthBlocCloud on AuthBloc {
-  Future<AccountInfo> loginPrepare(String username) async {
+  Future<void> loginPrepare(String username) async {
+    // Reset state
+    add(OnCloudLogin(accountInfo: AccountInfo.empty(), vToken: ''));
     return await _repository
         .loginPrepare(username)
         .then((value) => _handleLoginPrepare(username, value));
@@ -119,12 +188,23 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<void> authChallenge(OtpInfo method) async {
+    String vToken = '';
+    final _state = state;
+    if (_state is AuthOnCloudLoginState) {
+      vToken = _state.vToken;
+    } else if (_state is AuthOnCreateAccountState) {
+      vToken = _state.vToken;
+    } else {
+      logger.d('ERROR: authChallenge: Unexpected state type');
+    }
+
     BaseAuthChallenge challenge;
     if (method.methodId.isNotEmpty) {
-      challenge = AuthChallengeMethodId(token: state.vToken, commMethodId: method.methodId);
+      challenge =
+          AuthChallengeMethodId(token: vToken, commMethodId: method.methodId);
     } else {
       challenge = AuthChallengeMethod(
-        token: state.vToken,
+        token: vToken,
         method: method.method.name.toUpperCase(),
         target: method.data,
       );
@@ -133,22 +213,36 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<void> authChallengeVerify(String code) async {
-    return await _repository.authChallengeVerify(state.vToken, code);
+    String vToken = '';
+    final _state = state;
+    if (_state is AuthOnCloudLoginState) {
+      vToken = _state.vToken;
+    } else if (_state is AuthOnCreateAccountState) {
+      vToken = _state.vToken;
+    } else {
+      logger.d('ERROR: authChallengeVerify: Unexpected state type');
+    }
+
+    return await _repository.authChallengeVerify(vToken, code);
   }
 
-  Future<AccountInfo> loginPassword(String password) async {
+  Future<void> loginPassword(String password) async {
+    // Reset state
+    add(SetLoginType(loginType: LoginType.password));
     return await _repository
-        .loginPassword(state.vToken, password)
+        .loginPassword((state as AuthOnCloudLoginState).vToken, password)
         .then((value) => _handleLoginPassword(value));
   }
 
-  Future<bool> login() async {
+  Future<bool> cloudLogin() async {
     return await _repository
-        .login(state.vToken)
+        .login((state as AuthOnCloudLoginState).vToken)
         .then((value) => _handleLogin(value));
   }
 
   Future<void> createAccountPreparation(String email) async {
+    // Reset state
+    add(OnCreateAccount(accountInfo: AccountInfo.empty(), vToken: ''));
     return await _repository
         .createAccountPreparation(email)
         .then((value) => _handleCreateAccountPreparation(email, value));
@@ -173,16 +267,16 @@ extension AuthBlocCloud on AuthBloc {
         break;
     }
     return await _repository.createAccountPreparationUpdateMethod(
-        state.vToken, method);
+        (state as AuthOnCreateAccountState).vToken, method);
   }
 
   Future<void> createVerifiedAccount() async {
-    // TODO: Need be modified
+    final _state = state as AuthOnCreateAccountState;
     CreateAccountVerified verified = CreateAccountVerified(
-        token: state.vToken,
-        authenticationMode: state.accountInfo.loginType.name.toUpperCase(),
-        password: state.accountInfo.loginType == LoginType.password
-            ? state.accountInfo.password
+        token: _state.vToken,
+        authenticationMode: _state.accountInfo.loginType.name.toUpperCase(),
+        password: _state.accountInfo.loginType == LoginType.password
+            ? _state.accountInfo.password
             : null,
         preferences: CloudPreferences(
             isoLanguageCode: Utils.getLanguageCode(),
@@ -194,8 +288,8 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<AccountInfo> fetchOtpInfo(String username) async {
-    switch (state.status) {
-      case AuthStatus.onCreateAccount:
+    switch (state.runtimeType) {
+      case AuthOnCreateAccountState:
         List<OtpInfo> list = [];
         list.add(const OtpInfo(
           method: OtpMethod.sms,
@@ -205,10 +299,12 @@ extension AuthBlocCloud on AuthBloc {
           method: OtpMethod.email,
           data: username,
         ));
-        AccountInfo accountInfo = state.accountInfo.copyWith(otpInfo: list);
-        emit(state.copyWith(accountInfo: accountInfo));
+
+        add(SetOtpInfo(otpInfo: list));
+        AccountInfo accountInfo =
+            (state as AuthOnCreateAccountState).accountInfo;
         return accountInfo;
-      case AuthStatus.onLogin:
+      case AuthOnCloudLoginState:
         return await getMaskedCommunicationMethods(username);
       default:
         return AccountInfo(
@@ -216,7 +312,7 @@ extension AuthBlocCloud on AuthBloc {
     }
   }
 
-  Future<AccountInfo> _handleLoginPrepare(
+  Future<void> _handleLoginPrepare(
       String username, CloudLoginState cloudLoginState) async {
     logger.d("handle login prepare: $cloudLoginState");
 
@@ -234,10 +330,9 @@ extension AuthBlocCloud on AuthBloc {
     }
 
     AccountInfo accountInfo =
-        state.accountInfo.copyWith(username: username, loginType: loginType);
-    emit(state.copyWith(
-        accountInfo: accountInfo, vToken: cloudLoginState.data?.token));
-    return accountInfo;
+        AccountInfo(username: username, loginType: loginType, otpInfo: []);
+    add(OnCloudLogin(
+        accountInfo: accountInfo, vToken: cloudLoginState.data?.token ?? ''));
   }
 
   Future<AccountInfo> _handleGetMaskedCommunicationMethods(
@@ -249,7 +344,7 @@ extension AuthBlocCloud on AuthBloc {
       final method = OtpMethod.values
           .firstWhere((element) => element.name == data.method.toLowerCase());
       final String target = method == OtpMethod.email
-          ? state.accountInfo.username
+          ? (state as AuthOnCloudLoginState).accountInfo.username
           : data.targetValue;
       list.add(OtpInfo(
           method: method,
@@ -258,21 +353,19 @@ extension AuthBlocCloud on AuthBloc {
           maskedData: data.targetValue));
     }
 
-    AccountInfo accountInfo = state.accountInfo.copyWith(otpInfo: list);
-    emit(state.copyWith(accountInfo: accountInfo));
+    add(SetOtpInfo(otpInfo: list));
+    AccountInfo accountInfo =
+        (state as AuthOnCloudLoginState).accountInfo.copyWith(otpInfo: list);
     return accountInfo;
   }
 
-  Future<AccountInfo> _handleLoginPassword(
-      CloudLoginState cloudLoginState) async {
+  Future<void> _handleLoginPassword(CloudLoginState cloudLoginState) async {
     logger.d("handle login password: $cloudLoginState");
     final LoginType loginType = cloudLoginState.state == 'REQUIRED_2SV'
         ? LoginType.passwordless
         : LoginType.password;
 
-    AccountInfo accountInfo = state.accountInfo.copyWith(loginType: loginType);
-    emit(state.copyWith(accountInfo: accountInfo));
-    return accountInfo;
+    add(SetLoginType(loginType: loginType));
   }
 
   Future<bool> _handleLogin(CloudLoginAcceptState acceptState) async {
@@ -291,8 +384,9 @@ extension AuthBlocCloud on AuthBloc {
   Future<void> _handleCreateAccountPreparation(
       String email, String token) async {
     logger.d("handle create Account Preparation: $token");
-    AccountInfo info = state.accountInfo.copyWith(username: email);
-    emit(state.copyWith(vToken: token, accountInfo: info));
+    AccountInfo accountInfo =
+        AccountInfo(username: email, loginType: LoginType.none, otpInfo: []);
+    add(OnCreateAccount(accountInfo: accountInfo, vToken: token));
   }
 
   Future<void> _handleCreateVerifiedAccount(CloudAccountInfo info) async {
@@ -301,7 +395,10 @@ extension AuthBlocCloud on AuthBloc {
     // emit(state.copyWith());
 
     // Download cert (do log in) in future
-    add(Authorized());
+    add(Authorized(
+        accountInfo: (state as AuthOnCloudLoginState).accountInfo,
+        publicKey: '',
+        privateKey: ''));
   }
 
   Future<bool> checkCertValidation() async {
@@ -371,8 +468,8 @@ extension AuthBlocLocal on AuthBloc {
   }
 
   _handleCreatePassword(String password, String? hint) {
-    LocalLoginInfo info = state.localLoginInfo
-        .copyWith(routerPassword: password, routerPasswordHint: hint);
-    emit(state.copyWith(localLoginInfo: info));
+    // LocalLoginInfo info = state.localLoginInfo
+    //     .copyWith(routerPassword: password, routerPasswordHint: hint);
+    // emit(state.copyWith(localLoginInfo: info));
   }
 }
