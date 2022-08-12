@@ -78,32 +78,36 @@ class _dailyTimeLimitItemState extends State<DailyTimeLimitItem> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(widget.item.days,
-              style: const TextStyle(fontSize: 15, color: Colors.black)),
-          Switch.adaptive(
-              value: widget.item.status,
-              onChanged: (value) {
-                setState(() {
-                  isOn = value;
-                });
-                widget.onStatusChanged(value);
-              })
-        ]),
-        const SizedBox(height: 25),
-        GestureDetector(
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(widget.item.duration, style: TextStyle(fontSize: 25)),
-                  Image.asset('assets/images/right_compact_wire.png')
-                ]),
-            onTap: () => widget.onPress)
-      ],
-    );
+    return Container(
+        padding: const EdgeInsets.all(16),
+        color: Colors.grey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Text(widget.item.days,
+                  style: const TextStyle(fontSize: 15, color: Colors.black)),
+              Switch.adaptive(
+                  value: widget.item.status,
+                  onChanged: (value) {
+                    setState(() {
+                      isOn = value;
+                    });
+                    widget.onStatusChanged(value);
+                  })
+            ]),
+            const SizedBox(height: 25),
+            GestureDetector(
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(widget.item.duration,
+                          style: TextStyle(fontSize: 25)),
+                      Image.asset('assets/images/right_compact_wire.png')
+                    ]),
+                onTap: () => widget.onPress)
+          ],
+        ));
   }
 }
 
