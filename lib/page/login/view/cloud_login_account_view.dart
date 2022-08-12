@@ -88,8 +88,8 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
         listenWhen: (previous, current) {
           if (previous is AuthOnCloudLoginState &&
               current is AuthOnCloudLoginState) {
-            return previous.accountInfo.loginType !=
-                current.accountInfo.loginType;
+            return (previous.accountInfo.loginType == LoginType.none) &&
+                (current.accountInfo.loginType != LoginType.none);
           } else {
             return false;
           }

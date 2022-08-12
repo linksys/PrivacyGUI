@@ -9,6 +9,7 @@ String generalErrorCodeHandler(BuildContext context, String code) {
     case '':
       return '';
     case errorUsernameExists:
+      // TODO: Replace the correct text when we have it
       return getAppLocalizations(context).error_enter_a_valid_email_format;
     case errorEmptyEmail:
       return getAppLocalizations(context).error_enter_a_valid_email_format;

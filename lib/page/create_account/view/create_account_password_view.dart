@@ -31,9 +31,7 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
       setState(() {});
     } else {
       // Remove old value
-      context
-          .read<AuthBloc>()
-          .add(SetCloudPassword(password: ''));
+      context.read<AuthBloc>().add(SetCloudPassword(password: ''));
       context
           .read<AuthBloc>()
           .add(SetCloudPassword(password: passwordController.text));
@@ -48,9 +46,17 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
+        listenWhen: (previous, current) {
+          if (previous is AuthOnCreateAccountState &&
+              current is AuthOnCreateAccountState) {
+            return previous.accountInfo.password !=
+                current.accountInfo.password;
+          }
+          return false;
+        },
         listener: (context, state) {
           if (state is AuthOnCreateAccountState) {
-            if (state.accountInfo.username.isNotEmpty) {
+            if (state.accountInfo.password.isNotEmpty) {
               final username = state.accountInfo.username;
               NavigationCubit.of(context).push(CreateAccount2SVPath()
                 ..args = {

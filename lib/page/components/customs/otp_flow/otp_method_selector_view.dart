@@ -23,9 +23,6 @@ class OTPMethodSelectorView extends ArgumentsStatefulView {
 
 class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
   @override
-  void initState() {}
-
-  @override
   Widget build(BuildContext context) {
     return BlocBuilder<OtpCubit, OtpState>(
       builder: (context, state) => _contentView(state),

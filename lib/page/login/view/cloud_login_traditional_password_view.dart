@@ -34,6 +34,14 @@ class _LoginTraditionalPasswordViewState
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
+        listenWhen: (previous, current) {
+          if (previous is AuthOnCloudLoginState &&
+              current is AuthOnCloudLoginState) {
+            return previous.accountInfo.loginType !=
+                current.accountInfo.loginType;
+          }
+          return false;
+        },
         listener: (context, state) {
           if (state is AuthOnCloudLoginState) {
             if (state.accountInfo.loginType == LoginType.passwordless) {

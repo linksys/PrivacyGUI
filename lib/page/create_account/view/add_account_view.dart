@@ -100,9 +100,7 @@ class _AddAccountState extends State<AddAccountView> {
     return BlocConsumer<AuthBloc, AuthState>(
         listenWhen: (previous, current) {
           if (previous is AuthOnCreateAccountState && current is AuthOnCreateAccountState) {
-            if (previous.vToken != current.vToken) {
-              return true;
-            }
+            return previous.vToken != current.vToken;
           }
           return false;
         },

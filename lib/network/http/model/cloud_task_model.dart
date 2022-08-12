@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 
 ///
 ///{
-///   "state": "REQUIRED_2SV",
+///   "state": "REQUIRE_2SV",
 ///   "data": {
 ///     "taskId": "string",
 ///     "certToken": "string",

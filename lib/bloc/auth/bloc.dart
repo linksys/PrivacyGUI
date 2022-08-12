@@ -132,8 +132,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   void _onSetCloudPassword(SetCloudPassword event, Emitter<AuthState> emit) {
     final _state = state;
     if (_state is AuthOnCreateAccountState) {
-      AccountInfo accountInfo = _state.accountInfo
-          .copyWith(password: event.password, loginType: LoginType.password);
+      AccountInfo accountInfo = _state.accountInfo.copyWith(
+          password: event.password,
+          loginType: event.password.isEmpty
+              ? LoginType.passwordless
+              : LoginType.password);
       emit(_state.copyWith(accountInfo: accountInfo));
     } else {
       logger.d('ERROR: _onSetCloudPassword: Unexpected state type');
@@ -301,8 +304,9 @@ extension AuthBlocCloud on AuthBloc {
         ));
 
         add(SetOtpInfo(otpInfo: list));
-        AccountInfo accountInfo =
-            (state as AuthOnCreateAccountState).accountInfo;
+        AccountInfo accountInfo = (state as AuthOnCreateAccountState)
+            .accountInfo
+            .copyWith(otpInfo: list);
         return accountInfo;
       case AuthOnCloudLoginState:
         return await getMaskedCommunicationMethods(username);
@@ -361,7 +365,7 @@ extension AuthBlocCloud on AuthBloc {
 
   Future<void> _handleLoginPassword(CloudLoginState cloudLoginState) async {
     logger.d("handle login password: $cloudLoginState");
-    final LoginType loginType = cloudLoginState.state == 'REQUIRED_2SV'
+    final LoginType loginType = cloudLoginState.state == keyRequire2sv
         ? LoginType.passwordless
         : LoginType.password;
 
@@ -384,8 +388,8 @@ extension AuthBlocCloud on AuthBloc {
   Future<void> _handleCreateAccountPreparation(
       String email, String token) async {
     logger.d("handle create Account Preparation: $token");
-    AccountInfo accountInfo =
-        AccountInfo(username: email, loginType: LoginType.none, otpInfo: []);
+    AccountInfo accountInfo = AccountInfo(
+        username: email, loginType: LoginType.passwordless, otpInfo: []);
     add(OnCreateAccount(accountInfo: accountInfo, vToken: token));
   }
 
@@ -396,7 +400,7 @@ extension AuthBlocCloud on AuthBloc {
 
     // Download cert (do log in) in future
     add(Authorized(
-        accountInfo: (state as AuthOnCloudLoginState).accountInfo,
+        accountInfo: (state as AuthOnCreateAccountState).accountInfo,
         publicKey: '',
         privateKey: ''));
   }
