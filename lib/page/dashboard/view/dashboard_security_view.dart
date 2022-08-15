@@ -208,6 +208,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
           isVertical: false,
           height: 62,
         ),
+        SizedBox(height: 4,),
         _buildContentFilteredProfile(),
       ],
     );
@@ -215,41 +216,56 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
 
   Widget _buildContentFilteredProfile() {
     final double listHeight = _mockProfiles.length * 80;
-    return Container(
+    return SizedBox(
       height: listHeight,
       child: ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: _mockProfiles.length,
-        itemBuilder: (context, index) => GestureDetector(
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              height: 60,
-              decoration:
-                  BoxDecoration(border: Border.all(color: MoabColor.black)),
-              child: Wrap(
-                alignment: WrapAlignment.start,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Image.asset(
-                    _mockProfiles[index].icon,
-                    width: 32,
-                    height: 32,
-                  ),
-                  SizedBox(
-                    width: 8,
-                  ),
-                  Text(
-                    _mockProfiles[index].name,
-                    style: Theme.of(context).textTheme.bodyText1?.copyWith(fontWeight: FontWeight.w700),
-                  )
-                ],
-              ),
+        itemBuilder: (context, index) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: ListTile(
+            shape: BeveledRectangleBorder(
+              side: BorderSide(color: Colors.black, width: 1),
             ),
+            leading: Image.asset(
+              _mockProfiles[index].icon,
+              width: 32,
+              height: 32,
+            ),
+            title: Text(
+              _mockProfiles[index].name,
+              style: Theme.of(context).textTheme.bodyText1?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            // child: Container(
+            //   padding: const EdgeInsets.symmetric(vertical: 8),
+            //   child: Container(
+            //     padding: const EdgeInsets.symmetric(horizontal: 16),
+            //     height: 60,
+            //     decoration:
+            //         BoxDecoration(border: Border.all(color: MoabColor.black)),
+            //     child: Wrap(
+            //       alignment: WrapAlignment.start,
+            //       crossAxisAlignment: WrapCrossAlignment.center,
+            //       children: [
+            //         Image.asset(
+            //           _mockProfiles[index].icon,
+            //           width: 32,
+            //           height: 32,
+            //         ),
+            //         SizedBox(
+            //           width: 8,
+            //         ),
+            //         Text(
+            //           _mockProfiles[index].name,
+            //           style: Theme.of(context).textTheme.bodyText1?.copyWith(fontWeight: FontWeight.w700),
+            //         )
+            //       ],
+            //     ),
+            //   ),
+            // ),
+            // onTap: () {},
           ),
-          onTap: () {},
         ),
       ),
     );
