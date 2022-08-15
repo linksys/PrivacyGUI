@@ -147,13 +147,17 @@ class Utils {
   static String getLanguageCode() {
     List<String> localeNames = Platform.localeName.split('_');
 
-    return localeNames.length > 2
-        ? '${localeNames[0]}_${localeNames[1]}'
-        : localeNames.first;
+    return localeNames.length > 1
+        ? localeNames.first
+        : Platform.localeName;
   }
 
   static String getCountryCode() {
-    return Platform.localeName.split('_').last;
+    List<String> localeNames = Platform.localeName.split('_');
+
+    return localeNames.length > 1
+        ? localeNames.last
+        : Platform.localeName;
   }
 
   static String maskJsonValue(String raw, List<String> keys) {

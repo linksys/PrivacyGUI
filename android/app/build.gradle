@@ -96,9 +96,36 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            def propsFilePath = '/opt/build/release-signing.properties'
+            def propsFile = file(propsFilePath)
+            if (file(propsFile).exists()) {
+                println('Build with server keystore')
+                def props = new Properties()
+                propsFile.withReader { reader ->
+                    props.load(reader)
+                }
+
+                signingConfigs {
+                    release {
+                        keyAlias = props.get('keyAlias')
+                        keyPassword = props.get('keyPassword')
+                        storeFile = file("/opt/build/keystore.release")
+                        storePassword = props.get('storePassword')
+                    }
+                }
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
+            applicationVariants.all { variant ->
+                variant.outputs.all {
+                    def appName = "moab"
+                    def buildType = variant.buildType.name
+                    def newName
+                    newName = "${appName}-${defaultConfig.versionName}-${buildType}.apk"
+                    outputFileName = newName
+                }
+            }
         }
     }
 
