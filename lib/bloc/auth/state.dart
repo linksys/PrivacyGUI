@@ -1,19 +1,19 @@
 import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/network/http/model/cloud_phone.dart';
-import 'package:phone_number/phone_number.dart';
 
 enum AuthStatus {
   unknownAuth,
   unAuthorized,
   authorized,
   pending,
-  onLogin,
+  onCloudLogin,
+  onLocalLogin,
   onCreateAccount,
 }
 
 enum AuthMethod { none, local, remote }
 
-enum LoginType { passwordless, password }
+enum LoginType { none, passwordless, password }
 
 enum OtpMethod { sms, email }
 
@@ -28,6 +28,11 @@ class AccountInfo {
       required this.loginType,
       required this.otpInfo,
       this.password = ''});
+
+  factory AccountInfo.empty() {
+    return const AccountInfo(
+        username: '', loginType: LoginType.none, otpInfo: []);
+  }
 
   AccountInfo copyWith({
     String? username,
@@ -63,7 +68,6 @@ class LocalLoginInfo {
     );
   }
 }
-
 
 class OtpInfo {
   final OtpMethod method;
@@ -106,20 +110,9 @@ class AdminPasswordInfo {
 
 class AuthState extends Equatable {
   final AuthStatus status;
-  final AuthMethod method;
-  final AccountInfo accountInfo;
-  final LocalLoginInfo localLoginInfo;
-  final String vToken;
-
-  // token? cert?
 
   const AuthState({
     required this.status,
-    this.method = AuthMethod.none,
-    this.accountInfo = const AccountInfo(
-        username: '', loginType: LoginType.passwordless, otpInfo: []),
-    this.localLoginInfo = const LocalLoginInfo(routerPassword: ''),
-    this.vToken = '',
   });
 
   factory AuthState.unknownAuth() {
@@ -130,50 +123,121 @@ class AuthState extends Equatable {
     return const AuthState(status: AuthStatus.unAuthorized);
   }
 
-  factory AuthState.authorized({required AuthMethod method}) {
-    return AuthState(status: AuthStatus.authorized, method: method);
+  factory AuthState.authorized(
+      {required AccountInfo accountInfo,
+      required String publicKey,
+      required String privateKey}) {
+    return AuthCloudLoginState(
+        accountInfo: accountInfo, publicKey: publicKey, privateKey: privateKey);
   }
 
-  factory AuthState.onLogin() {
-    return const AuthState(status: AuthStatus.onLogin);
+  factory AuthState.onCloudLogin(
+      {required AccountInfo accountInfo, required String vToken}) {
+    return AuthOnCloudLoginState(accountInfo: accountInfo, vToken: vToken);
   }
 
-  factory AuthState.onCreateAccount() {
-    return const AuthState(
-        status: AuthStatus.onCreateAccount,
-        accountInfo: AccountInfo(
-            username: '', loginType: LoginType.passwordless, otpInfo: []));
+  factory AuthState.onLocalLogin({required LocalLoginInfo localLoginInfo}) {
+    return AuthOnLocalLoginState(localLoginInfo: localLoginInfo);
+  }
+
+  factory AuthState.onCreateAccount(
+      {required AccountInfo accountInfo, required String vToken}) {
+    return AuthOnCreateAccountState(accountInfo: accountInfo, vToken: vToken);
   }
 
   @override
   List<Object?> get props => [
         status,
-        method,
+      ];
+}
+
+class AuthCloudLoginState extends AuthState {
+  const AuthCloudLoginState(
+      {required this.accountInfo,
+      required this.publicKey,
+      required this.privateKey})
+      : super(status: AuthStatus.authorized);
+
+  final AccountInfo accountInfo;
+  final String publicKey;
+  final String privateKey;
+}
+
+class AuthLocalLoginState extends AuthState {
+  const AuthLocalLoginState({required this.localLoginInfo})
+      : super(status: AuthStatus.authorized);
+
+  final LocalLoginInfo localLoginInfo;
+}
+
+class AuthOnCloudLoginState extends AuthState {
+  const AuthOnCloudLoginState({required this.accountInfo, required this.vToken})
+      : super(status: AuthStatus.onCloudLogin);
+
+  final AccountInfo accountInfo;
+  final String vToken;
+
+  @override
+  List<Object?> get props => [
+        status,
         accountInfo,
         vToken,
       ];
 
-  AuthState copyWith({
-    AuthStatus? status,
-    AuthMethod? method,
+  AuthOnCloudLoginState copyWith({
     AccountInfo? accountInfo,
-    LocalLoginInfo? localLoginInfo,
     String? vToken,
   }) {
-    return AuthState(
-      status: status ?? this.status,
-      method: method ?? this.method,
+    return AuthOnCloudLoginState(
       accountInfo: accountInfo ?? this.accountInfo,
-      localLoginInfo: localLoginInfo ?? this.localLoginInfo,
       vToken: vToken ?? this.vToken,
     );
   }
 }
 
-class AuthCloudLoginState extends AuthState {
-  const AuthCloudLoginState({required this.publicKey, required this.privateKey})
-      : super(status: AuthStatus.authorized);
+class AuthOnLocalLoginState extends AuthState {
+  const AuthOnLocalLoginState({required this.localLoginInfo})
+      : super(status: AuthStatus.onLocalLogin);
 
-  final String publicKey;
-  final String privateKey;
+  final LocalLoginInfo localLoginInfo;
+
+  @override
+  List<Object?> get props => [
+        status,
+        localLoginInfo,
+      ];
+
+  AuthOnLocalLoginState copyWith({
+    LocalLoginInfo? localLoginInfo,
+  }) {
+    return AuthOnLocalLoginState(
+      localLoginInfo: localLoginInfo ?? this.localLoginInfo,
+    );
+  }
+}
+
+class AuthOnCreateAccountState extends AuthState {
+  const AuthOnCreateAccountState(
+      {required this.accountInfo, required this.vToken})
+      : super(status: AuthStatus.onCreateAccount);
+
+  final AccountInfo accountInfo;
+  final String vToken;
+
+  @override
+  List<Object?> get props => [
+        status,
+        accountInfo,
+        vToken,
+      ];
+
+  AuthOnCreateAccountState copyWith({
+    AccountInfo? accountInfo,
+    String? vToken,
+  }) {
+    return AuthOnCreateAccountState(
+      accountInfo: accountInfo ?? this.accountInfo,
+      vToken: vToken ?? this.vToken,
+    );
+  }
 }

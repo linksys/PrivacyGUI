@@ -31,43 +31,66 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
               'NETWORK',
               [
                 'WiFi',
-                'Security',
+                'Internet scheduler',
                 'Priority',
                 'Administration',
                 'Smart home',
-                'Advanced'
               ],
-              (index) {logger.d('MenuItem click $index');},
+              (index) {
+                logger.d('MenuItem click $index');
+              },
+            ),
+            const SizedBox(
+              height: 32,
+            ),
+            _section(
+              'LINKSYS SECURE',
+              ['Cyberthreat protection', 'Content filters', 'App blocking'],
+              (index) {
+                logger.d('MenuItem click $index');
+              },
             ),
             const SizedBox(
               height: 32,
             ),
             _section(
               'YOU',
-              [
-                'Account',
-                'Notifications',
-                'Privacy',
-              ],
-              (index) {logger.d('MenuItem click $index');},
+              ['Account', 'Notifications', 'Privacy', '+ Set up new product'],
+              (index) {
+                logger.d('MenuItem click $index');
+              },
             ),
             const SizedBox(
               height: 32,
             ),
             SimpleTextButton(text: 'Log out', onPressed: () {}),
-            SizedBox(height: 16,),
-            Text('Terms of Service', style: Theme.of(context).textTheme.headline4),
-            SizedBox(height: 16,),
-            Text('Privacy Policy', style: Theme.of(context).textTheme.headline4),
-            SizedBox(height: 16,),
-            FutureBuilder(
-              future: PackageInfo.fromPlatform().then((value) => value.version),
-              initialData: '-',
-              builder: (context, data) {
-                return Text('version ${data.data}', style: Theme.of(context).textTheme.headline4);
-              }
+            SizedBox(
+              height: 16,
             ),
-
+            Text('Terms of Service',
+                style: Theme.of(context).textTheme.headline4?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    )),
+            SizedBox(
+              height: 16,
+            ),
+            Text('Privacy Policy',
+                style: Theme.of(context).textTheme.headline4?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    )),
+            SizedBox(
+              height: 16,
+            ),
+            FutureBuilder(
+                future:
+                    PackageInfo.fromPlatform().then((value) => value.version),
+                initialData: '-',
+                builder: (context, data) {
+                  return Text('version ${data.data}',
+                      style: Theme.of(context).textTheme.headline4?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ));
+                }),
           ],
         ),
       ),
@@ -103,16 +126,27 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: Theme.of(context).textTheme.headline4,),
-        const SizedBox(height: 4,),
+        Text(
+          title,
+          style: Theme.of(context)
+              .textTheme
+              .headline4
+              ?.copyWith(fontWeight: FontWeight.w700, color: Colors.black),
+        ),
+        const SizedBox(
+          height: 4,
+        ),
         ...items.map((e) => InkWell(
-          onTap: () => onItemClick(items.indexOf(e)),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Text(e, style: Theme.of(context).textTheme.button,),
-          ),
-        )),
+              onTap: () => onItemClick(items.indexOf(e)),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10.0),
+                child: Text(
+                  e,
+                  style: Theme.of(context).textTheme.button,
+                ),
+              ),
+            )),
       ],
     );
   }

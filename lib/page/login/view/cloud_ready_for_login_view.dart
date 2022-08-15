@@ -36,14 +36,17 @@ class _CloudReadyForLoginViewState extends State<CloudReadyForLoginView> {
   }
 
   Future<void> _processLogin() async {
-    final _authBloc = context.read<AuthBloc>();
-    bool fromSetup = widget.args['fromSetup'] ?? false;
-    _authBloc.login().then((state) {
-      if (fromSetup) {
-        NavigationCubit.of(context).push(SaveCloudSettingsPath()..args = {'isLogin': true});
-      } else {
-        _authBloc.add(Authorized());
-      }
-    });
+    // TODO
+    ///
+    /// final _authBloc = context.read<AuthBloc>();
+    ///     bool fromSetup = widget.args['fromSetup'] ?? false;
+    ///     _authBloc.login().then((state) {
+    ///       if (fromSetup) {
+    ///         NavigationCubit.of(context).push(SaveCloudSettingsPath()..args = {'isLogin': true});
+    ///       } else {
+    ///         _authBloc.add(Authorized());
+    ///       }
+    ///     });
+    context.read<AuthBloc>().add(CloudLogin());
   }
 }

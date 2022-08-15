@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:intl/intl.dart';
 import 'package:linksys_moab/network/http/model/cloud_config.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:path_provider/path_provider.dart';
@@ -15,6 +16,7 @@ class Storage {
   static final String appPrivateKeyFilename = '${cloudEnvTarget.name}_key.key';
 
   static Uri get logFileUri => Uri.parse('${_tempDirectory?.path}/$loggerFilename');
+  static Uri get shareLogFileUri => Uri.parse('${_tempDirectory?.path}/$loggerFilename');
   static Uri get appPublicKeyUri => Uri.parse('${_tempDirectory?.path}/$appPublicKeyFilename');
   static Uri get appPrivateKeyUri => Uri.parse('${_tempDirectory?.path}/$appPrivateKeyFilename');
 

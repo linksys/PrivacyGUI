@@ -50,8 +50,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     super.initState();
     _startListenOtp();
     final state = context.read<OtpCubit>().state;
-    _onInit(state.selectedMethod!);
-    logger.d('OTP Input: ${widget.next}');
+    _onInit(state);
   }
 
   @override
@@ -184,7 +183,16 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     await context.read<AuthBloc>().authChallenge(method);
   }
 
-  void _onInit(OtpInfo method) {
-    context.read<AuthBloc>().add(RequireOtpCode(otpInfo: method));
+  void _onInit(OtpState state) {
+    final authBloc = context.read<AuthBloc>();
+    // Set state if on setting
+    if (state.isSettingFunction()) {
+      authBloc.add(SetCloudPassword(password: ''));
+      authBloc.add(SetLoginType(loginType: LoginType.passwordless));
+    } else if (state.isSetting2svFunction()) {
+      authBloc.add(SetLoginType(loginType: LoginType.password));
+    }
+    // Require otp code
+    authBloc.add(RequireOtpCode(otpInfo: state.selectedMethod!));
   }
 }

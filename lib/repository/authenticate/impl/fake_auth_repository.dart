@@ -146,7 +146,7 @@ class FakeAuthRepository extends AuthRepository {
           code: 'INCORRECT_PASSWORD', errorMessage: "Incorrect password");
     } else {
       return const CloudLoginState(
-          state: 'REQUIRED_2SV',
+          state: 'REQUIRE_2SV',
           data: CloudLoginStateData(
             token: 'token',
             authenticationMode: 'authenticationMode',

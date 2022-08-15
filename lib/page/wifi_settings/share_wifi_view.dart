@@ -62,9 +62,7 @@ class _ShareWifiViewState extends State<ShareWifiView> {
         ),
         Text(
           ssid,
-          style: Theme.of(context)
-              .textTheme
-              .headline2,
+          style: Theme.of(context).textTheme.headline2,
         ),
         Row(
           children: [
@@ -138,9 +136,7 @@ class _ShareWifiViewState extends State<ShareWifiView> {
             child: Container(
               child: Text(
                 options[index].displayTitle,
-                style: Theme.of(context)
-                    .textTheme
-                    .headline3,
+                style: Theme.of(context).textTheme.headline3,
               ),
               height: 80,
               alignment: Alignment.centerLeft,
@@ -170,6 +166,7 @@ class _ShareWifiViewState extends State<ShareWifiView> {
   }
 
   void _shareByQrCode() async {
+    Size size = MediaQuery.of(context).size;
     // Capture the image of this render object convert it to byte data
     final RenderRepaintBoundary boundary =
         globalKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
@@ -186,6 +183,7 @@ class _ShareWifiViewState extends State<ShareWifiView> {
       await Share.shareFilesWithResult(
         [fileUri.path],
         text: 'Connect to my WiFi',
+        sharePositionOrigin: Rect.fromLTWH(0, 0, size.width, size.height / 2),
       ).then((result) {
         logger.d('Share WiFi - QRCode: result=${result.status}');
         // Delete the qr code image once the sharing operation ends
@@ -221,9 +219,11 @@ class _ShareWifiViewState extends State<ShareWifiView> {
   }
 
   void _shareByOtherWays() async {
+    Size size = MediaQuery.of(context).size;
     await Share.shareWithResult(
       sharingContent,
       subject: 'Connect to my WiFi',
+      sharePositionOrigin: Rect.fromLTWH(0, 0, size.width, size.height / 2),
     ).then((result) {
       logger.d('Share WiFi - More options: result=${result.status}');
     });

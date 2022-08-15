@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 
 ///
 /// {
-///   "state": "REQUIRED_2SV",
+///   "state": "REQUIRE_2SV",
 ///   "data": {
 ///     "token": "string",
 ///     "authenticationMode": "PASSWORDLESS"

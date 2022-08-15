@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:linksys_moab/channel/push_notification_channel.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/network/http/extension_requests/accounts_requests.dart';
@@ -162,17 +164,29 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Export log file',
           onPress: () async {
-            // Share.shareFiles(['${Storage.logFileUri.path}'], text: 'Log file');
-            final box = context.findRenderObject() as RenderBox?;
+            final file = File.fromUri(Storage.logFileUri);
+            final appInfo = await getAppInfoLogs();
+            final screenInfo = getScreenInfo(context);
+            final String shareLogFilename = 'moab-log-${DateFormat("yyyy-MM-dd_HH_mm_ss").format(DateTime.now())}.txt';
+            final String shareLogPath = '${Storage.tempDirectory?.path}/$shareLogFilename';
+            final value = await file.readAsBytes();
+            logger.d('log file: ${String.fromCharCodes(value)}');
+
+            String content = '$appInfo\n$screenInfo\n${String.fromCharCodes(value)}';
+            await Storage.saveFile(Uri.parse(shareLogPath), content);
+
+            Size size = MediaQuery.of(context).size;
             final result = await Share.shareFilesWithResult(
-                [Storage.logFileUri.path],
-                text: 'Log',
-                subject: 'Log file',
-                sharePositionOrigin:
-                    box!.localToGlobal(Offset.zero) & box.size);
+              [shareLogPath],
+              text: 'Moab Log',
+              subject: 'Log file',
+              sharePositionOrigin:
+                  Rect.fromLTWH(0, 0, size.width, size.height / 2),
+            );
             print('Share result: $result');
             if (result.status == ShareResultStatus.success) {
               Storage.deleteFile(Storage.logFileUri);
+              Storage.deleteFile(Uri.parse(shareLogPath));
             }
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text("Share result: ${result.status}"),
@@ -210,13 +224,16 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Test Get Profile',
           onPress: () async {
-            SecurityContext securityContext = SecurityContext(withTrustedRoots: true);
-            final publicKey = (await rootBundle.load('assets/keys/testCert.pem'))
-                .buffer
-                .asInt8List();
-            final privateKey = (await rootBundle.load('assets/keys/testKey.key'))
-                .buffer
-                .asInt8List();
+            SecurityContext securityContext =
+                SecurityContext(withTrustedRoots: true);
+            final publicKey =
+                (await rootBundle.load('assets/keys/testCert.pem'))
+                    .buffer
+                    .asInt8List();
+            final privateKey =
+                (await rootBundle.load('assets/keys/testKey.key'))
+                    .buffer
+                    .asInt8List();
             securityContext.useCertificateChainBytes(publicKey);
             securityContext.usePrivateKeyBytes(privateKey);
             final client = MoabHttpClient.withCert(securityContext);
@@ -267,19 +284,20 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         if (Platform.isAndroid) {
           _streamSubscription =
               FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-                final title = message.notification?.title ?? '';
-                final msg = message.notification?.body ?? '';
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content:
+            final title = message.notification?.title ?? '';
+            final msg = message.notification?.body ?? '';
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content:
                     Text('Receive notification: title: $title, body: $msg')));
-              });
+          });
         } else if (Platform.isIOS) {
           PushNotificationChannel().grantNotificationAuth().then((value) {
             if (value) {
-              _streamSubscription = PushNotificationChannel().listenPushNotification().listen((event) {
+              _streamSubscription = PushNotificationChannel()
+                  .listenPushNotification()
+                  .listen((event) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content:
-                    Text('Receive notification: event: $event')));
+                    content: Text('Receive notification: event: $event')));
               });
             }
           });
@@ -293,11 +311,10 @@ class _DebugToolsViewState extends State<DebugToolsView> {
 
   void _goToDeviceInfoPage(BuildContext context) {
     showCupertinoModalPopup(
-      context: context,
-      builder: (context) {
-        return const DebugDeviceInfoView();
-      }
-    );
+        context: context,
+        builder: (context) {
+          return const DebugDeviceInfoView();
+        });
   }
 
   Widget _buildEnvPickerTile() {
@@ -381,7 +398,9 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                     });
                   },
                 ),
-                const SizedBox(height: 24,)
+                const SizedBox(
+                  height: 24,
+                )
               ],
             );
     });

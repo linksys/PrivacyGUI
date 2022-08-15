@@ -1,5 +1,45 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/design/colors.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/utils.dart';
+
+class Profile {
+  const Profile({required this.name, required this.icon});
+
+  final String name;
+  final String icon;
+}
+
+final _mockProfiles = [
+  Profile(
+    name: 'Eric',
+    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
+  ),
+  Profile(
+    name: 'Timmy',
+    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
+  ),
+  Profile(
+    name: 'Mandy',
+    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
+  ),
+  Profile(
+    name: 'Dad',
+    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
+  ),
+  Profile(
+    name: 'Peter',
+    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
+  ),
+  Profile(
+    name: 'Austin',
+    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
+  ),
+  const Profile(name: '+', icon: 'assets/images/icon_profile_add.png')
+];
 
 class DashboardHomeView extends StatefulWidget {
   const DashboardHomeView({Key? key}) : super(key: key);
@@ -12,6 +52,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
   @override
   Widget build(BuildContext context) {
     return BasePageView.noNavigationBar(
+      padding: EdgeInsets.zero,
       scrollable: true,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -20,6 +61,24 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
           _homeTitle(),
           SizedBox(height: 32),
           _basicTiles(),
+          SizedBox(height: 32),
+          _speedTestTile(2048000, 1024000),
+          SizedBox(height: 32),
+          _usageTile(28),
+          SizedBox(height: 32),
+          _profileTile(),
+          SizedBox(height: 64),
+          Text(
+            "Send feedback",
+            style: Theme.of(context)
+                .textTheme
+                .headline2
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          Text(
+            "We love hearing from you",
+            style: Theme.of(context).textTheme.headline3,
+          ),
         ],
       ),
     );
@@ -30,21 +89,28 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          alignment: WrapAlignment.start,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Image.asset('assets/images/dashboard_home.png'),
             SizedBox(
               width: 8,
             ),
-            Text(
-              'Home',
-              style: Theme.of(context)
-                  .textTheme
-                  .headline1
-                  ?.copyWith(fontSize: 32, fontWeight: FontWeight.w400),
-              textAlign: TextAlign.center,
+            Expanded(
+              child: Text(
+                'Home',
+                style: Theme.of(context)
+                    .textTheme
+                    .headline1
+                    ?.copyWith(fontSize: 32, fontWeight: FontWeight.w400),
+                textAlign: TextAlign.start,
+              ),
+            ),
+            Image.asset(
+              'assets/images/icon_noti_ring.png',
+              width: 24,
+              height: 24,
             )
           ],
         ),
@@ -73,13 +139,9 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('2',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headline1
-                          ?.copyWith(
-                              fontSize: 32, fontWeight: FontWeight.w400)),
-                  Text('active',
-                      style: Theme.of(context).textTheme.headline3)
+                      style: Theme.of(context).textTheme.headline1?.copyWith(
+                          fontSize: 32, fontWeight: FontWeight.w400)),
+                  Text('active', style: Theme.of(context).textTheme.headline3)
                 ],
               ),
             ),
@@ -89,17 +151,69 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('3',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headline1
-                          ?.copyWith(
+                      style: Theme.of(context).textTheme.headline1?.copyWith(
                           fontSize: 32, fontWeight: FontWeight.w400)),
-                  Text('online',
-                      style: Theme.of(context).textTheme.headline3)
+                  Text('online', style: Theme.of(context).textTheme.headline3)
                 ],
               ),
             ),
           ],
+        )
+      ],
+    );
+  }
+
+  Widget _speedTestTile(int downloadMbps, int uploadMbps) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('SPEED TEST'),
+        SizedBox(
+          height: 8,
+        ),
+        Container(
+          width: double.infinity,
+          height: 100,
+          child: Card(
+            color: MoabColor.dashboardTileBackground,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Expanded(
+                            child: _speedItem(
+                                downloadMbps, Icon(Icons.arrow_downward))),
+                        Expanded(
+                            child: _speedItem(
+                                uploadMbps, Icon(Icons.arrow_upward)))
+                      ],
+                    ),
+                  ),
+                  Text('a week ago',
+                      style: Theme.of(context).textTheme.headline2),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _speedItem(int speed, Icon icon) {
+    return Row(
+      children: [
+        icon,
+        Text(
+          Utils.formatBytes(speed),
+          style: Theme.of(context).textTheme.headline2,
         )
       ],
     );
@@ -118,6 +232,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
           Container(
             width: double.infinity,
             child: Card(
+              color: MoabColor.dashboardTileBackground,
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: content,
@@ -127,5 +242,116 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
         ],
       ),
     );
+  }
+
+  Widget _usageTile(int deviceCount) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('USAGE & DEVICES'),
+        SizedBox(
+          height: 8,
+        ),
+        Container(
+          width: double.infinity,
+          height: 160,
+          child: Card(
+            color: MoabColor.dashboardTileBackground,
+            child: Container(
+              decoration: BoxDecoration(
+                  image: DecorationImage(
+                image: AssetImage('assets/images/img_fake_usage.png'),
+                fit: BoxFit.cover,
+              )),
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('$deviceCount',
+                      style: Theme.of(context).textTheme.headline1?.copyWith(
+                          fontSize: 32, fontWeight: FontWeight.w500)),
+                  Text('Devices online',
+                      style: Theme.of(context)
+                          .textTheme
+                          .headline3
+                          ?.copyWith(fontSize: 14, fontWeight: FontWeight.w700))
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _profileTile() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('PROFILES'),
+        SizedBox(
+          height: 8,
+        ),
+        SizedBox(
+          height: 60,
+          child: ListView.separated(
+            itemBuilder: (context, index) => InkWell(
+                onTap: () {
+                  if (index == _mockProfiles.length - 1) {
+                    logger.d('add profile clicked: $index');
+                  } else {
+                    logger.d('profile clicked: $index');
+                  }
+                },
+                child: _profileItem(_mockProfiles[index])),
+            separatorBuilder: (_, __) => SizedBox(
+              width: 16,
+            ),
+            itemCount: _mockProfiles.length,
+            scrollDirection: Axis.horizontal,
+            shrinkWrap: true,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _profileItem(Profile profile) {
+    if (profile.name == '+') {
+      return Image.asset(profile.icon);
+    } else {
+      return Container(
+        height: 58,
+        decoration: BoxDecoration(
+            color: MoabColor.dashboardTileBackground,
+            borderRadius: BorderRadius.circular(28)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Image.asset(
+                  profile.icon,
+                  width: 32,
+                  height: 32,
+                ),
+                SizedBox(
+                  width: 8,
+                ),
+                Text(
+                  profile.name,
+                  style: Theme.of(context).textTheme.bodyText1,
+                )
+              ],
+            ),
+          ),
+        ),
+      );
+    }
   }
 }

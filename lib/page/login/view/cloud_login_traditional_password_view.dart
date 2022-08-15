@@ -31,15 +31,33 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) => _isLoading
-          ? FullScreenSpinner(text: getAppLocalizations(context).processing)
-          : _contentView(state),
-    );
+    return BlocConsumer<AuthBloc, AuthState>(
+        listenWhen: (previous, current) {
+          if (previous is AuthOnCloudLoginState &&
+              current is AuthOnCloudLoginState) {
+            return previous.accountInfo.loginType !=
+                current.accountInfo.loginType;
+          }
+          return false;
+        },
+        listener: (context, state) {
+          if (state is AuthOnCloudLoginState) {
+            if (state.accountInfo.loginType == LoginType.passwordless) {
+              NavigationCubit.of(context).push(AuthCloudLoginOtpPath()
+                ..args = {'username': _username, ...widget.args}
+                ..next = widget.next);
+            }
+          } else {
+            logger.d('ERROR: Wrong state type on LoginTraditionalPasswordView');
+          }
+        },
+        builder: (context, state) => _isLoading
+            ? FullScreenSpinner(text: getAppLocalizations(context).processing)
+            : _contentView(state));
   }
 
   Widget _contentView(AuthState state) {
-    _username = state.accountInfo.username;
+    _username = (state as AuthOnCloudLoginState).accountInfo.username;
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
@@ -85,7 +103,6 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
                       await context
                           .read<AuthBloc>()
                           .loginPassword(passwordController.text)
-                          .then((value) => _handleResult(value))
                           .onError((error, stackTrace) =>
                               _handleError(error, stackTrace));
                       setState(() {
@@ -97,13 +114,6 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
         ),
       ),
     );
-  }
-
-  _handleResult(AccountInfo accountInfo) async {
-    // if (accountInfo.loginType == LoginType.otp)
-    NavigationCubit.of(context).push(AuthCloudLoginOtpPath()
-      ..args = {'username': _username, ...widget.args}
-      ..next = widget.next);
   }
 
   _handleError(Object? e, StackTrace trace) {

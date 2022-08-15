@@ -19,7 +19,8 @@ class CloudForgotPasswordView extends ArgumentsStatefulView {
   }) : super(key: key);
 
   @override
-  _CloudForgotPasswordViewState createState() => _CloudForgotPasswordViewState();
+  _CloudForgotPasswordViewState createState() =>
+      _CloudForgotPasswordViewState();
 }
 
 class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
@@ -41,7 +42,8 @@ class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
 
   Widget _contentView(AuthState state) {
     // TODO: need modify
-    _hasPhoneNumber = state.accountInfo.otpInfo.length > 1;
+    _hasPhoneNumber =
+        (state as AuthOnCloudLoginState).accountInfo.otpInfo.length > 1;
     return _isLinkSent ? _linkSentView(state) : _sendLinkView(state);
   }
 
@@ -52,7 +54,8 @@ class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
         alignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: getAppLocalizations(context).cloud_forgot_password_title,
-          description: getAppLocalizations(context).cloud_forgot_password_description,
+          description:
+              getAppLocalizations(context).cloud_forgot_password_description,
           spacing: 12,
         ),
         content: Column(
@@ -109,7 +112,7 @@ class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
         ),
         GestureDetector(
           child: SelectableItem(
-            text: state.accountInfo.username,
+            text: (state as AuthOnCloudLoginState).accountInfo.username,
             height: 66,
             isSelected: _sendLinkViaEmail,
           ),
@@ -131,7 +134,8 @@ class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
           title: getAppLocalizations(context).link_sent,
           description: _sendLinkViaEmail
               ? ''
-              : getAppLocalizations(context).cloud_forgot_password_not_receive_email,
+              : getAppLocalizations(context)
+                  .cloud_forgot_password_not_receive_email,
         ),
         content: Column(
           children: [
