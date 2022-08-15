@@ -1,6 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/design/themes.dart';
+import 'package:linksys_moab/page/dashboard/view/dashboard_health_view.dart';
+import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';
+import 'package:linksys_moab/page/dashboard/view/dashboard_security_view.dart';
+import 'package:linksys_moab/page/dashboard/view/dashboard_settings_view.dart';
 import 'package:linksys_moab/page/wifi_settings/share_wifi_view.dart';
+import 'package:linksys_moab/page/wifi_settings/wifi_main.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
 
@@ -14,19 +20,27 @@ import '../../page/dashboard/view/view.dart';
 import 'base_path.dart';
 
 abstract class DashboardPath extends BasePath {
-
-  // @override
-  // PageConfig get pageConfig => super.pageConfig..themeData = MoabTheme.dashboardLightModeData;
+  @override
+  PageConfig get pageConfig =>
+      super.pageConfig..themeData = MoabTheme.dashboardLightModeData;
 
   @override
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
-      case DashboardMainPath:
-        return const DashboardView();
+      case DashboardHomePath:
+        return const DashboardHomeView();
+      case DashboardSettingsPath:
+        return const DashboardSettingsView();
+      case DashboardSecurityPath:
+        return const DashboardSecurityView();
+      case DashboardHealthPath:
+        return const DashboardHealthView();
       case NoRouterPath:
         return const NoRouterView();
       case PrepareDashboardPath:
         return const PrepareDashboardView();
+      case WifiPath:
+        return WiFiView();
       case ShareWifiPath:
         return const ShareWifiView();
       case InternetSchedulePath:
@@ -47,7 +61,25 @@ abstract class DashboardPath extends BasePath {
   }
 }
 
-class DashboardMainPath extends DashboardPath {}
+class DashboardHomePath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}
+
+class DashboardSettingsPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}
+
+class DashboardSecurityPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}
+
+class DashboardHealthPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}
 
 class NoRouterPath extends DashboardPath {}
 
@@ -66,3 +98,7 @@ class AddSchedulePausePath extends DashboardPath{}
 class DailyTimeLimitListPath extends DashboardPath{}
 
 class SchedulePauseListPath extends DashboardPath{}
+class WifiPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}

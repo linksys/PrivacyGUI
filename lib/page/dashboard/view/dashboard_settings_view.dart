@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-typedef OnMenuItemClick = void Function(int index);
+typedef OnMenuItemClick = void Function(int index, DashboardSettingsItem item);
 
 class DashboardSettingsView extends StatefulWidget {
   const DashboardSettingsView({Key? key}) : super(key: key);
@@ -28,15 +30,18 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
               height: 32,
             ),
             _section(
-              'NETWORK',
-              [
-                'WiFi',
-                'Internet scheduler',
-                'Priority',
-                'Administration',
-                'Smart home',
-              ],
-              (index) {
+              _networkSettingsSection(),
+              (index, item) {
+                logger.d('MenuItem click $index');
+                NavigationCubit.of(context).push(item.path);
+              },
+            ),
+            const SizedBox(
+              height: 32,
+            ),
+            _section(
+              _secureSettingsSection(),
+              (index, item) {
                 logger.d('MenuItem click $index');
               },
             ),
@@ -44,19 +49,8 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
               height: 32,
             ),
             _section(
-              'LINKSYS SECURE',
-              ['Cyberthreat protection', 'Content filters', 'App blocking'],
-              (index) {
-                logger.d('MenuItem click $index');
-              },
-            ),
-            const SizedBox(
-              height: 32,
-            ),
-            _section(
-              'YOU',
-              ['Account', 'Notifications', 'Privacy', '+ Set up new product'],
-              (index) {
+              _youSettingsSection(),
+              (index, item) {
                 logger.d('MenuItem click $index');
               },
             ),
@@ -121,13 +115,13 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
   }
 
   Widget _section(
-      String title, List<String> items, OnMenuItemClick onItemClick) {
+      DashboardSettingsSection sectionItem, OnMenuItemClick onItemClick) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title,
+          sectionItem.title,
           style: Theme.of(context)
               .textTheme
               .headline4
@@ -136,13 +130,13 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
         const SizedBox(
           height: 4,
         ),
-        ...items.map((e) => InkWell(
-              onTap: () => onItemClick(items.indexOf(e)),
+        ...sectionItem.items.map((e) => InkWell(
+              onTap: () => onItemClick(sectionItem.items.indexOf(e), e),
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 10.0),
                 child: Text(
-                  e,
+                  e.title,
                   style: Theme.of(context).textTheme.button,
                 ),
               ),
@@ -150,4 +144,50 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
       ],
     );
   }
+}
+
+_networkSettingsSection() => DashboardSettingsSection(
+      title: 'NETWORK',
+      items: [
+        DashboardSettingsItem(title: 'WiFi', path: WifiPath()),
+        DashboardSettingsItem(title: 'Internet schedule', path: InternetSchedulePath()),
+        DashboardSettingsItem(title: 'Priority', path: UnknownPath()),
+        DashboardSettingsItem(title: 'Administration', path: UnknownPath()),
+        DashboardSettingsItem(title: 'Smart home', path: UnknownPath()),
+      ],
+    );
+//
+_secureSettingsSection() => DashboardSettingsSection(
+      title: 'LINKSYS SECURE',
+      items: [
+        DashboardSettingsItem(
+            title: 'Cyberthreat protection', path: UnknownPath()),
+        DashboardSettingsItem(title: 'Content filters', path: UnknownPath()),
+        DashboardSettingsItem(title: 'App blocking', path: UnknownPath()),
+      ],
+    );
+//
+_youSettingsSection() => DashboardSettingsSection(
+      title: 'YOU',
+      items: [
+        DashboardSettingsItem(title: 'Account', path: UnknownPath()),
+        DashboardSettingsItem(title: 'Notifications', path: UnknownPath()),
+        DashboardSettingsItem(title: 'Privacy', path: UnknownPath()),
+        DashboardSettingsItem(
+            title: '+ Set up new product', path: UnknownPath()),
+      ],
+    );
+
+class DashboardSettingsSection {
+  DashboardSettingsSection({required this.title, required this.items});
+
+  final String title;
+  final List<DashboardSettingsItem> items;
+}
+
+class DashboardSettingsItem {
+  DashboardSettingsItem({required this.title, required this.path});
+
+  final String title;
+  final BasePath path;
 }

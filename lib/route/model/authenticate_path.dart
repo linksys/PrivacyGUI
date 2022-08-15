@@ -37,7 +37,7 @@ abstract class AuthenticatePath extends BasePath {
         return const LocalRecoveryKeyView();
       case AuthResetLocalOtpPath:
         if (args != null) {
-          args!['onNext'] = DashboardMainPath();
+          args!['onNext'] = DashboardHomePath();
         }
         return OtpFlowView(
           args: args,

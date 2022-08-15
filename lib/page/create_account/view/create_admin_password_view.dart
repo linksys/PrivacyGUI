@@ -83,7 +83,7 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
             PrimaryButton(
               text: getAppLocalizations(context).go_to_dashboard,
               onPress: () {
-                NavigationCubit.of(context).clearAndPush(DashboardMainPath());
+                NavigationCubit.of(context).clearAndPush(DashboardHomePath());
               },
             )
           ],
@@ -151,7 +151,7 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
     _setLoading(true);
     await context.read<AuthBloc>().createPassword(password, hint).then((value) {
       if (_type == AdminPasswordType.create) {
-        NavigationCubit.of(context).clearAndPush(DashboardMainPath());
+        NavigationCubit.of(context).clearAndPush(DashboardHomePath());
       } else {
         setState(() {
           _isSuccess = true;

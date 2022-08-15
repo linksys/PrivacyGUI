@@ -3,10 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/design/themes.dart';
-import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';
-import 'package:linksys_moab/page/dashboard/view/dashboard_view.dart';
 import 'package:linksys_moab/page/landing/view/view.dart';
-import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/logger.dart';
 
@@ -24,6 +21,7 @@ class PageConfig {
   bool ignoreConnectivityChanged = false;
   bool isOpaque = true;
   bool isBackDisable = false;
+  bool isHideBottomNavBar = true;
 }
 
 mixin ReturnablePath<T> {

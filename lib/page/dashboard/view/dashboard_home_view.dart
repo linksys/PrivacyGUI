@@ -105,7 +105,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                 style: Theme.of(context)
                     .textTheme
                     .headline1
-                    ?.copyWith(fontSize: 32, fontWeight: FontWeight.w400),
+                    ?.copyWith(fontSize: 32, fontWeight: FontWeight.w700),
                 textAlign: TextAlign.start,
               ),
             ),

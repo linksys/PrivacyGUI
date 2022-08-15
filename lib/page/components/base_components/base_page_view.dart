@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:linksys_moab/route/route.dart';
 
 class BasePageView extends StatelessWidget {
   static const _containerPadding = EdgeInsets.fromLTRB(24, 0, 24, 30);
@@ -43,7 +44,7 @@ class BasePageView extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.close),
               onPressed: () =>
-                  Navigator.pop(context), // TODO use NavigationCubit
+                  NavigationCubit.of(context).pop()
             )
           ],
         ),
@@ -93,13 +94,12 @@ class BasePageView extends StatelessWidget {
       backgroundColor: bottomSheet == null
           ? Theme.of(context).scaffoldBackgroundColor
           : Colors.transparent,
-      appBar: appBar ??
-          AppBar(
-            backgroundColor: Colors.transparent,
-            iconTheme:
-                IconThemeData(color: Theme.of(context).colorScheme.primary),
-            elevation: 0,
-          ),
+      appBar: appBar ?? AppBar(
+        backgroundColor: Colors.transparent,
+        iconTheme:
+        IconThemeData(color: Theme.of(context).colorScheme.primary),
+        elevation: 0,
+      ),
       body: SafeArea(
         child: scrollable! ? _scrollableView() : _view(),
       ),

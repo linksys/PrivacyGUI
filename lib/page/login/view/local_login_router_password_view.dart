@@ -146,7 +146,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
         .read<AuthBloc>()
         .localLogin(_passwordController.text)
         .then((value) =>
-            NavigationCubit.of(context).clearAndPush(DashboardMainPath()))
+            NavigationCubit.of(context).clearAndPush(DashboardHomePath()))
         .onError((error, stackTrace) => _handleError(error, stackTrace));
     setState(() {
       _isLoading = false;

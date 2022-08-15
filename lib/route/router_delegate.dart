@@ -12,6 +12,8 @@ import 'package:linksys_moab/util/analytics.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/route/model/model.dart';
 
+import '../page/dashboard/view/view.dart';
+
 class MoabRouterDelegate extends RouterDelegate<BasePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<BasePath> {
   MoabRouterDelegate(this._cubit) : navigatorKey = GlobalKey();
@@ -36,21 +38,31 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
     return MultiBlocListener(
       listeners: [_listenForAuth(), _listenForConnectivity()],
       child: BlocConsumer<NavigationCubit, NavigationStack>(
-        builder: (context, stack) => Navigator(
-            key: navigatorKey,
-            pages: [
-              for (final path in stack.configs)
-                MoabPage(
-                  name: path.name,
-                  key: ValueKey(path.name),
-                  fullscreenDialog: path.pageConfig.isFullScreenDialog,
-                  opaque: path.pageConfig.isOpaque,
-                  child: Theme(
-                      data: path.pageConfig.themeData,
-                      child: path.buildPage(_cubit)),
-                ),
-            ],
-            onPopPage: _onPopPage),
+        builder: (context, stack) => Overlay(
+          initialEntries: [
+            OverlayEntry(builder: (context) {
+              return DashboardBottomTabContainer(
+                cubit: _cubit,
+                navigator: Navigator(
+                    key: navigatorKey,
+                    pages: [
+                      for (final path in stack.configs)
+                        MoabPage(
+                          name: path.name,
+                          key: ValueKey(path.name),
+                          fullscreenDialog: path.pageConfig.isFullScreenDialog,
+                          opaque: path.pageConfig.isOpaque,
+                          child: Theme(
+                            data: path.pageConfig.themeData,
+                            child: _buildPageView(path),
+                          ),
+                        ),
+                    ],
+                    onPopPage: _onPopPage),
+              );
+            })
+          ],
+        ),
         listener: (context, stack) {},
       ),
     );
@@ -66,6 +78,10 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
     print('MoabRouterDelegate::setNewRoutePath:${configuration.name}');
     _cubit.clearAndPush(configuration);
     return SynchronousFuture(null);
+  }
+
+  Widget _buildPageView(BasePath path) {
+    return path.buildPage(_cubit);
   }
 
   bool _onPopPage(Route<dynamic> route, dynamic result) {
