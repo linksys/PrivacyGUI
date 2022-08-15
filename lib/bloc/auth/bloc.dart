@@ -77,10 +77,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   _authorized(Authorized event, Emitter<AuthState> emit) {
-    emit(AuthState.authorized(
-        accountInfo: event.accountInfo,
-        publicKey: event.publicKey,
-        privateKey: event.privateKey));
+    if (event.isDuringSetup) {
+    } else {
+      emit(
+        AuthState.authorized(
+            accountInfo: event.accountInfo,
+            publicKey: event.publicKey,
+            privateKey: event.privateKey),
+      );
+    }
   }
 
   void _onRequireOtpCode(RequireOtpCode event, Emitter<AuthState> emit) {
@@ -141,18 +146,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  void _cloudLogin(CloudLogin event, Emitter<AuthState> emit) {
-    cloudLogin().then((value) {
-      if (value == true) {
-        // TODO: Get key from shared preference
-        add(Authorized(
-            accountInfo: (state as AuthOnCloudLoginState).accountInfo,
-            publicKey: 'publicKey',
-            privateKey: 'privateKey'));
-      } else {
-        add(Unauthorized());
-      }
-    });
+  void _cloudLogin(CloudLogin event, Emitter<AuthState> emit) async {
+    final isLogin = await cloudLogin();
+    if (isLogin == true) {
+      final pref = await SharedPreferences.getInstance();
+      final publicKey = pref.getString(moabPrefCloudPublicKey) ?? '';
+      final privateKey = pref.getString(moabPrefCloudPrivateKey) ?? '';
+      emit(
+        AuthState.authorized(
+          accountInfo: (state as AuthOnCloudLoginState).accountInfo,
+          publicKey: publicKey,
+          privateKey: privateKey,
+        ),
+      );
+    } else {
+      // TODO
+      add(Unauthorized());
+    }
   }
 
   void _localLogin(LocalLogin event, Emitter<AuthState> emit) {}

@@ -30,11 +30,13 @@ class Authorized extends AuthEvent {
   Authorized(
       {required this.accountInfo,
       required this.publicKey,
-      required this.privateKey});
+      required this.privateKey,
+      this.isDuringSetup = false});
 
   final AccountInfo accountInfo;
   final String publicKey;
   final String privateKey;
+  final bool isDuringSetup;
 }
 
 class RequireOtpCode extends AuthEvent {

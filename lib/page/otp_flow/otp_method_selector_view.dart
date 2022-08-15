@@ -13,6 +13,8 @@ import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/route/route.dart';
 
+import '../../route/model/otp_path.dart';
+
 class OTPMethodSelectorView extends ArgumentsStatefulView {
   const OTPMethodSelectorView({Key? key, super.args, super.next}) : super(key: key);
 
@@ -123,6 +125,7 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
   _checkPhoneExist(OtpInfo method, String token) {
     if (method.method == OtpMethod.sms) {
       context.read<OtpCubit>().addPhone();
+      NavigationCubit.of(context).push(OtpAddPhonePath()..next = widget.next..args.addAll(widget.args));
     } else {
       _onSend(method);
     }
@@ -131,6 +134,7 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
   _onSend(OtpInfo method) {
     _setLoading(true);
     context.read<OtpCubit>().onInputOtp();
+    NavigationCubit.of(context).push(OtpInputCodePath()..next = widget.next..args.addAll(widget.args));
     _setLoading(false);
   }
 

@@ -17,7 +17,6 @@ import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/validator.dart';
 import 'package:linksys_moab/route/model/model.dart';
 
-import '../../../bloc/auth/event.dart';
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 
 class CloudLoginAccountView extends ArgumentsStatefulView {
@@ -39,7 +38,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
   @override
   void initState() {
     super.initState();
-    _fromSetup = widget.args['fromSetup'] ?? false;
+    _fromSetup = widget.next is SaveCloudSettingsPath ? true : false;
   }
 
   @override
@@ -65,11 +64,16 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
             if (state.accountInfo.loginType == LoginType.password) {
               logger.d('Go Password');
               NavigationCubit.of(context).push(AuthCloudLoginWithPasswordPath()
-                ..args = widget.args);
+                ..args = widget.args
+                ..next = widget.next);
             } else if (state.accountInfo.loginType == LoginType.passwordless) {
               logger.d('Go Password-less');
               NavigationCubit.of(context).push(AuthCloudLoginOtpPath()
-                ..args = {'username': state.accountInfo.username, ...widget.args});
+                ..args = {
+                  'username': state.accountInfo.username,
+                  ...widget.args
+                }
+                ..next = widget.next);
             }
           } else {
             logger.d('ERROR: Wrong state type on LoginCloudAccountView');
@@ -133,8 +137,8 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
                   child: SimpleTextButton(
                       text: getAppLocalizations(context)
                           .cloud_account_login_with_router_password,
-                      onPressed: () =>
-                          NavigationCubit.of(context).push(AuthLocalLoginPath())),
+                      onPressed: () => NavigationCubit.of(context)
+                          .push(AuthLocalLoginPath())),
                 ),
               ),
               const Spacer(),

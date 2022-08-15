@@ -40,9 +40,6 @@ class _ContentViewState extends State<_ContentView> {
   initState() {
     super.initState();
     _username = widget.args['username'] as String;
-    logger.d('OTP flow: $_username');
-    logger.d('NEXT: ${widget.next}');
-
     OtpFunction _function = OtpFunction.send;
     if (widget.args.containsKey('function')) {
       _function = widget.args['function'] as OtpFunction;
@@ -60,7 +57,6 @@ class _ContentViewState extends State<_ContentView> {
       listener: (context, state) {
         if (state.step == OtpStep.inputOtp) {
           final next = widget.next ?? UnknownPath();
-          logger.d('NEXT2: ${next}');
 
           NavigationCubit.of(context).replace(OtpInputCodePath()
             ..args.addAll(widget.args)

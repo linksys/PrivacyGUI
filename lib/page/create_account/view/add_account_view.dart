@@ -200,6 +200,6 @@ class _AddAccountState extends State<AddAccountView> {
   }
   _goLogin() {
     NavigationCubit.of(context)
-        .push(AuthSetupLoginPath()..args = {'fromSetup': true});
+        .push(AuthSetupLoginPath());
   }
 }

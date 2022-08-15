@@ -126,7 +126,8 @@ class AuthState extends Equatable {
   factory AuthState.authorized(
       {required AccountInfo accountInfo,
       required String publicKey,
-      required String privateKey}) {
+      required String privateKey,
+      }) {
     return AuthCloudLoginState(
         accountInfo: accountInfo, publicKey: publicKey, privateKey: privateKey);
   }

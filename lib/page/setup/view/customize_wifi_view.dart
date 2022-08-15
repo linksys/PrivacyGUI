@@ -98,7 +98,7 @@ class _PageContentState extends State<PageContent> {
                 ssid: nameController.text, password: passwordController.text));
             if (context.read<AuthBloc>().state.status ==
                 AuthStatus.authorized) {
-              NavigationCubit.of(context).push(SaveCloudSettingsPath()..args = {'isLogin': true});
+              NavigationCubit.of(context).push(SaveCloudSettingsPath());
             } else {
               NavigationCubit.of(context).push(CreateCloudAccountPath());
             }
@@ -111,7 +111,7 @@ class _PageContentState extends State<PageContent> {
                 ssid: nameController.text, password: passwordController.text));
             if (context.read<AuthBloc>().state.status ==
                 AuthStatus.authorized) {
-              NavigationCubit.of(context).push(SaveCloudSettingsPath()..args = {'isLogin': true});
+              NavigationCubit.of(context).push(SaveCloudSettingsPath());
             } else {
               NavigationCubit.of(context).push(CreateCloudAccountPath());
             }

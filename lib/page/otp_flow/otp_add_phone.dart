@@ -12,6 +12,7 @@ import 'package:linksys_moab/bloc/otp/otp_cubit.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/model/otp_path.dart';
 import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -69,6 +70,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
               phoneNumber: phoneNumber.nationalNumber,
             ),
           ));
+      NavigationCubit.of(context).push(OtpInputCodePath()..next = widget.next..args.addAll(widget.args));
     } catch (e) {
       logger.e(
           'AddPhone: Special error: [$userInputPhoneNumber] is valid but cannot be parsed');
