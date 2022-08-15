@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
+import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/bloc/setup/bloc.dart';
 import 'package:linksys_moab/bloc/setup/event.dart';
 import 'package:linksys_moab/bloc/setup/state.dart';
@@ -11,7 +13,6 @@ import 'package:linksys_moab/page/components/base_components/base_page_view.dart
 import 'package:linksys_moab/page/components/base_components/button/simple_text_button.dart';
 import 'package:linksys_moab/page/components/base_components/input_fields/input_field.dart';
 import 'package:linksys_moab/page/components/base_components/text/description_text.dart';
-import 'package:linksys_moab/page/components/customs/otp_flow/otp_state.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -46,11 +47,6 @@ class _AddAccountState extends State<AddAccountView> {
       await context
           .read<AuthBloc>()
           .createAccountPreparation(_emailController.text)
-          .then((_) => NavigationCubit.of(context).push(CreateAccountOtpPath()
-            ..args = {
-              'username': _emailController.text,
-              'function': OtpFunction.setting,
-            }))
           .onError((error, stackTrace) => _handleError(error, stackTrace));
       setState(() {
         _isLoading = false;
@@ -65,7 +61,6 @@ class _AddAccountState extends State<AddAccountView> {
     super.initState();
     context.read<SetupBloc>().add(
         const ResumePointChanged(status: SetupResumePoint.CREATECLOUDACCOUNT));
-    context.read<AuthBloc>().add(OnCreateAccount());
   }
 
   Widget _buildAccountTipsWidget() {
@@ -102,9 +97,27 @@ class _AddAccountState extends State<AddAccountView> {
 
   @override
   Widget build(BuildContext context) {
-    return _isLoading
-        ? FullScreenSpinner(text: getAppLocalizations(context).processing)
-        : _contentView();
+    return BlocConsumer<AuthBloc, AuthState>(
+        listenWhen: (previous, current) {
+          if (previous is AuthOnCreateAccountState && current is AuthOnCreateAccountState) {
+            return previous.vToken != current.vToken;
+          }
+          return false;
+        },
+        listener: (context, state) {
+          if (state is AuthOnCreateAccountState) {
+            if (state.vToken.isNotEmpty) {
+              NavigationCubit.of(context).push(CreateAccountOtpPath()
+                ..args = {
+                  'username': _emailController.text,
+                  'function': OtpFunction.setting,
+                });
+            }
+          }
+        },
+        builder: (context, state) => _isLoading
+            ? FullScreenSpinner(text: getAppLocalizations(context).processing)
+            : _contentView());
   }
 
   Widget _contentView() {
@@ -130,22 +143,22 @@ class _AddAccountState extends State<AddAccountView> {
                   });
                 },
               ),
+              Offstage(
+                offstage: _errorCode.isEmpty,
+                child: Wrap(
+                  children: [Text(
+                    generalErrorCodeHandler(context, _errorCode),
+                    style: Theme.of(context)
+                        .textTheme
+                        .headline3
+                        ?.copyWith(color: Colors.red),
+                  ), SimpleTextButton.noPadding(text: getAppLocalizations(context).login_to_continue, onPressed: _goLogin)],
+                ),
+              ),
               const SizedBox(height: 8),
               SimpleTextButton(
                   text: getAppLocalizations(context).already_have_an_account,
-                  onPressed: () {
-                    NavigationCubit.of(context).push(NoUseCloudAccountPath());
-                  }),
-              Offstage(
-                offstage: _errorCode.isEmpty,
-                child: Text(
-                  generalErrorCodeHandler(context, _errorCode),
-                  style: Theme.of(context)
-                      .textTheme
-                      .headline3
-                      ?.copyWith(color: Colors.red),
-                ),
-              ),
+                  onPressed: _goLogin),
               const SizedBox(height: 32),
               DescriptionText(
                   text: getAppLocalizations(context)
@@ -154,7 +167,6 @@ class _AddAccountState extends State<AddAccountView> {
                 height: 8,
               ),
               _buildAccountTipsWidget(),
-
             ],
             crossAxisAlignment: CrossAxisAlignment.start,
           ),
@@ -185,5 +197,9 @@ class _AddAccountState extends State<AddAccountView> {
       // Unknown error or error parsing
       logger.d('Unknown error: $e');
     }
+  }
+  _goLogin() {
+    NavigationCubit.of(context)
+        .push(AuthSetupLoginPath());
   }
 }

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
+import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/customs/otp_flow/otp_state.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -29,12 +30,11 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
     if (hasError) {
       setState(() {});
     } else {
+      // Remove old value
+      context.read<AuthBloc>().add(SetCloudPassword(password: ''));
       context
           .read<AuthBloc>()
           .add(SetCloudPassword(password: passwordController.text));
-      final username = context.read<AuthBloc>().state.accountInfo.username;
-      NavigationCubit.of(context).push(CreateAccount2SVPath()
-        ..args = {'username': username, 'function': OtpFunction.setting2sv});
     }
   }
 
@@ -45,6 +45,31 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
 
   @override
   Widget build(BuildContext context) {
+    return BlocConsumer<AuthBloc, AuthState>(
+        listenWhen: (previous, current) {
+          if (previous is AuthOnCreateAccountState &&
+              current is AuthOnCreateAccountState) {
+            return previous.accountInfo.password !=
+                current.accountInfo.password;
+          }
+          return false;
+        },
+        listener: (context, state) {
+          if (state is AuthOnCreateAccountState) {
+            if (state.accountInfo.password.isNotEmpty) {
+              final username = state.accountInfo.username;
+              NavigationCubit.of(context).push(CreateAccount2SVPath()
+                ..args = {
+                  'username': username,
+                  'function': OtpFunction.setting2sv
+                });
+            }
+          }
+        },
+        builder: (context, state) => _contentView());
+  }
+
+  Widget _contentView() {
     return BasePageView(
       scrollable: true,
       child: BasicLayout(

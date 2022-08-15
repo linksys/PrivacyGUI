@@ -78,7 +78,7 @@ class _HomeViewState extends State<HomeView> {
       SecondaryButton(
         text: getAppLocalizations(context).setup_new_router,
         onPress: () {
-          NavigationCubit.of(context).push(DashboardHomePath());
+          NavigationCubit.of(context).push(SetupWelcomeEulaPath());
         },
       ),
       ...showDebugButton()

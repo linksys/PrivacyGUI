@@ -70,22 +70,26 @@ class SetupFinishedView extends ArgumentsStatelessView {
                 text: getAppLocalizations(context).wifi_ready_view_login_info),
             const SizedBox(height: 8),
             BlocBuilder<AuthBloc, AuthState>(buildWhen: (previous, current) {
-              return previous.accountInfo.username !=
-                      current.accountInfo.username ||
-                  previous.localLoginInfo.routerPassword !=
-                      current.localLoginInfo.routerPassword;
+              if (previous is AuthCloudLoginState &&
+                  current is AuthCloudLoginState) {
+                return previous.accountInfo.username !=
+                    current.accountInfo.username;
+              } else if (previous is AuthLocalLoginState &&
+                  current is AuthLocalLoginState) {
+                return previous.localLoginInfo.routerPassword !=
+                    current.localLoginInfo.routerPassword;
+              } else {
+                return false;
+              }
             }, builder: (context, state) {
-              if (state.method == AuthMethod.remote) {
+              if (state is AuthCloudLoginState) {
                 return infoCard(
                     context,
                     portraitIcon,
                     getAppLocalizations(context).linksys_account,
                     state.accountInfo.username);
-              } else if (state.method == AuthMethod.local) {
-                return infoCard(
-                    context,
-                    portraitIcon,
-                    "router password",
+              } else if (state is AuthLocalLoginState) {
+                return infoCard(context, portraitIcon, "router password",
                     state.localLoginInfo.routerPassword);
               } else {
                 return const Divider(height: 0);
@@ -95,8 +99,11 @@ class SetupFinishedView extends ArgumentsStatelessView {
         ),
         footer: PrimaryButton(
           text: getAppLocalizations(context).go_to_dashboard,
-          onPress: () =>
-              NavigationCubit.of(context).push(PrepareDashboardPath()),
+          onPress: () {
+            // TODO refactor after create account API changed
+            context.read<AuthBloc>().checkCertValidation().then((value) =>
+                NavigationCubit.of(context).push(PrepareDashboardPath()));
+          },
         ),
         alignment: CrossAxisAlignment.start,
       ),

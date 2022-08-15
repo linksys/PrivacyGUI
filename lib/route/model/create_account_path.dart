@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/page/create_account/view/view.dart';
+import 'package:linksys_moab/page/otp_flow/otp_flow.dart';
 import 'package:linksys_moab/route/route.dart';
 
-import '../../page/components/customs/otp_flow/otp_view.dart';
 import '../../page/setup/view/no_use_account_confirm_view.dart';
 import '../../page/setup/view/save_settings_view.dart';
 import '../../page/setup/view/use_same_account_prompt_view.dart';
@@ -21,14 +21,12 @@ abstract class CreateAccountPath extends BasePath {
           args: args,
         );
       case CreateAccountOtpPath:
-        if (args != null) {
-          args!['onNext'] = SaveCloudSettingsPath();
-        }
         return OtpFlowView(
           args: args,
+          next: SaveCloudSettingsPath(),
         );
       case SaveCloudSettingsPath:
-        return SaveSettingsView();
+        return SaveSettingsView(args: args,);
       case AlreadyHaveOldAccountPath:
         return const HaveOldAccountView();
       case NoUseCloudAccountPath:
@@ -40,11 +38,9 @@ abstract class CreateAccountPath extends BasePath {
       case SameAccountPromptPath:
         return UseSameAccountPromptView();
       case CreateAccount2SVPath:
-        if (args != null) {
-          args!['onNext'] = SaveCloudSettingsPath();
-        }
         return OtpFlowView(
           args: args,
+          next: SaveCloudSettingsPath(),
         );
       default:
         return const Center();

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
-import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/constants/constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -12,7 +11,6 @@ import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/repository/model/dummy_model.dart';
 import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -21,62 +19,26 @@ import 'package:linksys_moab/route/model/model.dart';
 
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 
-class LoginCloudAccountView extends ArgumentsStatefulView {
-  const LoginCloudAccountView({
-    Key? key, super.args
-  }) : super(key: key);
+class CloudLoginAccountView extends ArgumentsStatefulView {
+  const CloudLoginAccountView({Key? key, super.args, super.next})
+      : super(key: key);
 
   @override
   LoginCloudAccountState createState() => LoginCloudAccountState();
 }
 
-class LoginCloudAccountState extends State<LoginCloudAccountView> {
+class LoginCloudAccountState extends State<CloudLoginAccountView> {
   bool _isLoading = false;
+  bool _fromSetup = false;
   String _errorCode = '';
 
   final _emailValidator = EmailValidator();
   final TextEditingController _accountController = TextEditingController();
 
-  //TODO: Move to another place
-  static const notificationAuthChannel =
-      MethodChannel('otp.view/notification.auth');
-  static const deviceTokenChannel = MethodChannel('otp.view/device.token');
-  static const notificationContentChannel =
-      EventChannel('moab.dev/notification.payload');
-
-  Future<void> _readDeviceToken() async {
-    if (Platform.isIOS) {
-      final deviceToken =
-          await deviceTokenChannel.invokeMethod('readDeviceToken');
-      print('Receive device token=$deviceToken');
-    }
-  }
-
-  Future<void> _getNotificationAuth() async {
-    if (Platform.isIOS) {
-      final isGrant = await notificationAuthChannel
-          .invokeMethod('requestNotificationAuthorization');
-      print('Receive Notification authorization result: isGrant=$isGrant');
-    }
-  }
-
-  Future<void> _listenIOSNotification() async {
-    if (Platform.isIOS) {
-      notificationContentChannel.receiveBroadcastStream().listen((content) {
-        print('IOS notification received : $content');
-      });
-    }
-  }
-
   @override
   void initState() {
-    //TODO: Move to another place
-    _readDeviceToken();
-    _getNotificationAuth();
-    _listenIOSNotification();
     super.initState();
-
-    context.read<AuthBloc>().add(OnLogin());
+    _fromSetup = widget.next is SaveCloudSettingsPath ? true : false;
   }
 
   @override
@@ -87,11 +49,39 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) => _isLoading
-          ? FullScreenSpinner(text: getAppLocalizations(context).processing)
-          : _contentView(state),
-    );
+    return BlocConsumer<AuthBloc, AuthState>(
+        listenWhen: (previous, current) {
+          if (previous is AuthOnCloudLoginState &&
+              current is AuthOnCloudLoginState) {
+            return (previous.accountInfo.loginType == LoginType.none) &&
+                (current.accountInfo.loginType != LoginType.none);
+          } else {
+            return false;
+          }
+        },
+        listener: (context, state) {
+          if (state is AuthOnCloudLoginState) {
+            if (state.accountInfo.loginType == LoginType.password) {
+              logger.d('Go Password');
+              NavigationCubit.of(context).push(AuthCloudLoginWithPasswordPath()
+                ..args = widget.args
+                ..next = widget.next);
+            } else if (state.accountInfo.loginType == LoginType.passwordless) {
+              logger.d('Go Password-less');
+              NavigationCubit.of(context).push(AuthCloudLoginOtpPath()
+                ..args = {
+                  'username': state.accountInfo.username,
+                  ...widget.args
+                }
+                ..next = widget.next);
+            }
+          } else {
+            logger.d('ERROR: Wrong state type on LoginCloudAccountView');
+          }
+        },
+        builder: (context, state) => _isLoading
+            ? FullScreenSpinner(text: getAppLocalizations(context).processing)
+            : _contentView(state));
   }
 
   Widget _contentView(AuthState state) {
@@ -123,48 +113,33 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
                       onPressed: () => NavigationCubit.of(context)
                           .push(AlreadyHaveOldAccountPath())),
                 ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: SimpleTextButton(
-                    text: getAppLocalizations(context).forgot_email,
-                    onPressed: () => NavigationCubit.of(context)
-                        .push(AuthForgotEmailPath())),
+              Offstage(
+                offstage: _fromSetup,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: SimpleTextButton(
+                      text: getAppLocalizations(context).forgot_email,
+                      onPressed: () => NavigationCubit.of(context)
+                          .push(AuthForgotEmailPath())),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24.0),
                 child: PrimaryButton(
                   text: getAppLocalizations(context).text_continue,
-                  onPress: _accountController.text.isNotEmpty
-                      ? () async {
-                          final isValid = _emailValidator.validate(_accountController.text);
-                          setState(() {
-                            if (isValid) {
-                              _isLoading = true;
-                            } else {
-                              _errorCode = errorEmptyEmail;
-                            }
-                          });
-                          if (_errorCode.isEmpty) {
-                            await context
-                                .read<AuthBloc>()
-                                .loginPrepare(_accountController.text)
-                                .then((value) => _handleResult(value))
-                                .onError((error, stackTrace) =>
-                                    _handleError(error, stackTrace));
-                          }
-                          setState(() {
-                            _isLoading = false;
-                          });
-                        }
-                      : null,
+                  onPress:
+                      _accountController.text.isNotEmpty ? _prepareLogin : null,
                 ),
               ),
-              Center(
-                child: SimpleTextButton(
-                    text: getAppLocalizations(context)
-                        .cloud_account_login_with_router_password,
-                    onPressed: () =>
-                        NavigationCubit.of(context).push(AuthLocalLoginPath())),
+              Offstage(
+                offstage: _fromSetup,
+                child: Center(
+                  child: SimpleTextButton(
+                      text: getAppLocalizations(context)
+                          .cloud_account_login_with_router_password,
+                      onPressed: () => NavigationCubit.of(context)
+                          .push(AuthLocalLoginPath())),
+                ),
               ),
               const Spacer(),
             ],
@@ -178,13 +153,24 @@ class LoginCloudAccountState extends State<LoginCloudAccountView> {
     });
   }
 
-  _handleResult(AccountInfo accountInfo) {
-    if (accountInfo.loginType == LoginType.password) {
-      NavigationCubit.of(context).push(AuthCloudLoginWithPasswordPath());
-    } else {
-      NavigationCubit.of(context).push(
-          AuthCloudLoginOtpPath()..args = {'username': accountInfo.username});
+  _prepareLogin() async {
+    final isValid = _emailValidator.validate(_accountController.text);
+    setState(() {
+      if (isValid) {
+        _isLoading = true;
+      } else {
+        _errorCode = errorEmptyEmail;
+      }
+    });
+    if (_errorCode.isEmpty) {
+      await context
+          .read<AuthBloc>()
+          .loginPrepare(_accountController.text)
+          .onError((error, stackTrace) => _handleError(error, stackTrace));
     }
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   _handleError(Object? e, StackTrace trace) {

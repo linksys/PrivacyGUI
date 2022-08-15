@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/util/logger.dart';
 
 // TODO rename
 Future<dynamic> showPopup({required BuildContext context, required BasePath config}) {
@@ -16,6 +17,7 @@ class NavigationCubit extends Cubit<NavigationStack> {
   }
 
   Future<dynamic> pushAndWait(BasePath config) async {
+    logger.d('NavigationCubit: pushAndWait called with $config and arguments: ${config.args}, next: ${config.next}');
     emit(state.push(config));
     if (config is ReturnablePath) {
       return (config as ReturnablePath).waitForComplete();
@@ -25,7 +27,7 @@ class NavigationCubit extends Cubit<NavigationStack> {
   }
 
   void push(BasePath config) {
-    print('push called with $config and ${config.args}');
+    logger.d('NavigationCubit: push called with $config and arguments: ${config.args}, next: ${config.next}');
     // PageConfig config = PageConfig(location: path, args: args);
     emit(state.push(config));
   }
@@ -35,6 +37,7 @@ class NavigationCubit extends Cubit<NavigationStack> {
   }
 
   void clearAndPush(BasePath config) {
+    logger.d('NavigationCubit: clearAndPush called with $config and arguments: ${config.args}, next: ${config.next}');
     // PageConfig config = PageConfig(location: path, args: args);
     emit(state.clearAndPush(config));
   }
@@ -56,10 +59,12 @@ class NavigationCubit extends Cubit<NavigationStack> {
   }
 
   void pushBeneathCurrent(BasePath config) {
+    logger.d('NavigationCubit: pushBeneathCurrent called with $config and arguments: ${config.args}, next: ${config.next}');
     emit(state.pushBeneathCurrent(config));
   }
 
   void replace(BasePath config) {
+    logger.d('NavigationCubit: replace called with $config and arguments: ${config.args}, next: ${config.next}');
     emit(state.replace(config));
   }
 }

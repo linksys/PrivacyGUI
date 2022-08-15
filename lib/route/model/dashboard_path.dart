@@ -38,7 +38,7 @@ abstract class DashboardPath extends BasePath {
       case NoRouterPath:
         return const NoRouterView();
       case PrepareDashboardPath:
-        return const PrepareDashboardView();
+        return PrepareDashboardView();
       case WifiPath:
         return WiFiView();
       case ShareWifiPath:

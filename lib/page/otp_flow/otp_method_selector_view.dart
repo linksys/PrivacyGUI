@@ -2,29 +2,27 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/customs/otp_flow/otp_cubit.dart';
-import 'package:linksys_moab/page/components/customs/otp_flow/otp_state.dart';
+import 'package:linksys_moab/bloc/otp/otp_cubit.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/route/route.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+import '../../route/model/otp_path.dart';
 
 class OTPMethodSelectorView extends ArgumentsStatefulView {
-  const OTPMethodSelectorView({Key? key, super.args}) : super(key: key);
+  const OTPMethodSelectorView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
   _OTPMethodSelectorViewState createState() => _OTPMethodSelectorViewState();
 }
 
 class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
-  @override
-  void initState() {}
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<OtpCubit, OtpState>(
@@ -83,10 +81,17 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
               height: 60,
             ),
             if (state.isSettingFunction())
-              SimpleTextButton(text: getAppLocalizations(context).otp_create_password_instead, onPressed: () {
-                final username = context.read<AuthBloc>().state.accountInfo.username;
-                NavigationCubit.of(context).push(CreateCloudPasswordPath()..args = {'username' : username});
-              }),
+              SimpleTextButton(
+                  text:
+                      getAppLocalizations(context).otp_create_password_instead,
+                  onPressed: () {
+                    final username = (context.read<AuthBloc>().state
+                            as AuthOnCreateAccountState)
+                        .accountInfo
+                        .username;
+                    NavigationCubit.of(context).push(CreateCloudPasswordPath()
+                      ..args = {'username': username});
+                  }),
           ],
         ),
       ),
@@ -120,6 +125,7 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
   _checkPhoneExist(OtpInfo method, String token) {
     if (method.method == OtpMethod.sms) {
       context.read<OtpCubit>().addPhone();
+      NavigationCubit.of(context).push(OtpAddPhonePath()..next = widget.next..args.addAll(widget.args));
     } else {
       _onSend(method);
     }
@@ -128,6 +134,7 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
   _onSend(OtpInfo method) {
     _setLoading(true);
     context.read<OtpCubit>().onInputOtp();
+    NavigationCubit.of(context).push(OtpInputCodePath()..next = widget.next..args.addAll(widget.args));
     _setLoading(false);
   }
 

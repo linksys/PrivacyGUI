@@ -37,7 +37,7 @@ class LocalNetworkAccessIntroView extends StatelessWidget {
                     .textTheme
                     .headline4
                     ?.copyWith(color: Theme.of(context).colorScheme.primary)
-                ?.copyWith(height: 2)
+                .copyWith(height: 2)
             )
           ],
         ),

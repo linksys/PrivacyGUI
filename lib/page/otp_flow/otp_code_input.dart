@@ -6,22 +6,23 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/base_components/button/simple_text_button.dart';
-import 'package:linksys_moab/page/components/customs/otp_flow/otp_cubit.dart';
+import 'package:linksys_moab/bloc/otp/otp_cubit.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import 'otp_state.dart';
-
-class OtpCodeInputView extends StatefulWidget {
-  const OtpCodeInputView({Key? key}) : super(key: key);
+class OtpCodeInputView extends ArgumentsStatefulView {
+  const OtpCodeInputView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
   _OtpCodeInputViewState createState() => _OtpCodeInputViewState();
@@ -49,12 +50,19 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     super.initState();
     _startListenOtp();
     final state = context.read<OtpCubit>().state;
-    _onInit(state.selectedMethod!);
+    _onInit(state);
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<OtpCubit, OtpState>(
+    return BlocConsumer<OtpCubit, OtpState>(
+        listener: (context, state) {
+          if (state.step == OtpStep.finish) {
+            final next = widget.next ?? UnknownPath();
+            NavigationCubit.of(context)
+                .clearAndPush(next..args.addAll(widget.args));
+          }
+        },
         builder: (context, state) => _contentView(state));
   }
 
@@ -161,7 +169,8 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
       setState(() {
         _errorCode = e.code;
       });
-    } else { // Unknown error or error parsing
+    } else {
+      // Unknown error or error parsing
       logger.d('Unknown error: $e');
     }
   }
@@ -174,7 +183,16 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     await context.read<AuthBloc>().authChallenge(method);
   }
 
-  void _onInit(OtpInfo method) {
-    context.read<AuthBloc>().add(RequireOtpCode(otpInfo: method));
+  void _onInit(OtpState state) {
+    final authBloc = context.read<AuthBloc>();
+    // Set state if on setting
+    if (state.isSettingFunction()) {
+      authBloc.add(SetCloudPassword(password: ''));
+      authBloc.add(SetLoginType(loginType: LoginType.passwordless));
+    } else if (state.isSetting2svFunction()) {
+      authBloc.add(SetLoginType(loginType: LoginType.password));
+    }
+    // Require otp code
+    authBloc.add(RequireOtpCode(otpInfo: state.selectedMethod!));
   }
 }

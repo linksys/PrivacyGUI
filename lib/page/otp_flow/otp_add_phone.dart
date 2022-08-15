@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/constants/constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/cloud_phone.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/customs/customs.dart';
-import 'package:linksys_moab/page/components/customs/otp_flow/otp_cubit.dart';
-import 'package:linksys_moab/page/components/customs/otp_flow/otp_state.dart';
+import 'package:linksys_moab/bloc/otp/otp_cubit.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/model/otp_path.dart';
 import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -20,7 +20,7 @@ import 'dart:convert';
 import 'package:phone_number/phone_number.dart';
 
 class OtpAddPhoneView extends ArgumentsStatefulView {
-  const OtpAddPhoneView({Key? key, super.args}) : super(key: key);
+  const OtpAddPhoneView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
   _OtpAddPhoneViewState createState() => _OtpAddPhoneViewState();
@@ -70,6 +70,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
               phoneNumber: phoneNumber.nationalNumber,
             ),
           ));
+      NavigationCubit.of(context).push(OtpInputCodePath()..next = widget.next..args.addAll(widget.args));
     } catch (e) {
       logger.e(
           'AddPhone: Special error: [$userInputPhoneNumber] is valid but cannot be parsed');

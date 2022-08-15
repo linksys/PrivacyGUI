@@ -231,5 +231,7 @@
   "error_expired_otp": "Code expired after 15 minutes. Send a new code and try again",
   "error_otp_exceeds_threshold": "You've entered an incorrect code too many times. Your account will be locked for 2 hours",
   "error_invalid_phone_number": "Invalid phone number",
+  "error_username_already_exist": "It looks like you already have an account.",
+  "login_to_continue": "Log in to continue.",
   "internet_schedule_view_description": "Set daily time limits and schedule blocked internet access."
 }

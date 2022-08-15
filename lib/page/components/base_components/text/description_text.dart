@@ -13,7 +13,7 @@ class DescriptionText extends StatelessWidget {
           .textTheme
           .headline3
           ?.copyWith(color: Theme.of(context).colorScheme.tertiary)
-          ?.copyWith(height: 1.5),
+          .copyWith(height: 1.5),
     );
   }
 }
