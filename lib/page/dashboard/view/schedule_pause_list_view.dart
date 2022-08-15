@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 
 import '../../../design/colors.dart';
+import '../../../route/navigation_cubit.dart';
 
 List<SchedulePause> list = [
   SchedulePause('M, T, W, Th, F', '10pm - 8am next day', true),
@@ -11,7 +12,6 @@ List<SchedulePause> list = [
 class SchedulePauseListView extends StatelessWidget {
   const SchedulePauseListView({Key? key}) : super(key: key);
 
-
   @override
   Widget build(BuildContext context) {
     return BasePageView.onDashboardSecondary(
@@ -20,30 +20,28 @@ class SchedulePauseListView extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text('Scheduled pauses', style: TextStyle(fontSize: 15)),
-        leading: Transform.translate(
-            offset: const Offset(-15, 0),
-            child: BackButton(onPressed: () {})),
+        leading: BackButton(onPressed: () {
+          NavigationCubit.of(context).pop();
+        }),
         actions: [
           TextButton(
               onPressed: () {},
               child: const Text('Add schedule',
                   style:
-                  TextStyle(fontSize: 13, color: MoabColor.primaryBlue))),
+                      TextStyle(fontSize: 13, color: MoabColor.primaryBlue))),
         ],
       ),
-      child: Column(
-        children: [
-          for (SchedulePause item in list) ...[
-            ScheduledPauseItem(
-                item: item,
-                onStatusChanged: (value) {
-                  item.status = value;
-                },
-                onPress: () {}),
-            const SizedBox(height: 8)
-          ]
+      child: Column(children: [
+        for (SchedulePause item in list) ...[
+          ScheduledPauseItem(
+              item: item,
+              onStatusChanged: (value) {
+                item.status = value;
+              },
+              onPress: () {}),
+          const SizedBox(height: 8)
         ]
-      ),
+      ]),
     );
   }
 }
@@ -53,9 +51,9 @@ typedef ValueChanged<T> = void Function(T value);
 class ScheduledPauseItem extends StatefulWidget {
   ScheduledPauseItem(
       {Key? key,
-        required this.item,
-        required this.onStatusChanged,
-        required this.onPress})
+      required this.item,
+      required this.onStatusChanged,
+      required this.onPress})
       : super(key: key);
   SchedulePause item;
   ValueChanged onStatusChanged;

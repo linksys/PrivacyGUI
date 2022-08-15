@@ -6,6 +6,9 @@ import 'package:linksys_moab/page/components/base_components/base_components.dar
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 
+import '../../../route/model/dashboard_path.dart';
+import '../../../route/navigation_cubit.dart';
+
 class Profile {
   const Profile({required this.name, required this.icon});
 
@@ -52,7 +55,6 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
   @override
   Widget build(BuildContext context) {
     return BasePageView.noNavigationBar(
-      padding: EdgeInsets.zero,
       scrollable: true,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -321,7 +323,9 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
 
   Widget _profileItem(Profile profile) {
     if (profile.name == '+') {
-      return Image.asset(profile.icon);
+      return GestureDetector(child: Image.asset(profile.icon), onTap: () {
+        NavigationCubit.of(context).push(InternetSchedulePath());
+      });
     } else {
       return Container(
         height: 58,

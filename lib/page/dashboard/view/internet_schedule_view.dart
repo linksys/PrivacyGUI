@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/design/colors.dart';
+import 'package:linksys_moab/route/route.dart';
 import '../../../localization/localization_hook.dart';
+import '../../../route/model/dashboard_path.dart';
 import '../../components/base_components/base_page_view.dart';
 
 class InternetScheduleView extends StatefulWidget {
@@ -26,9 +28,9 @@ class _InternetScheduleViewState extends State<InternetScheduleView> {
           elevation: 0,
           title:
               const Text('Internet Schedule', style: TextStyle(fontSize: 15)),
-          leading: Transform.translate(
-              offset: const Offset(-15, 0),
-              child: BackButton(onPressed: () {})),
+          leading: BackButton(onPressed: () {
+                NavigationCubit.of(context).pop();
+              }),
           actions: [
             TextButton(
                 onPressed: () {},
@@ -43,20 +45,20 @@ class _InternetScheduleViewState extends State<InternetScheduleView> {
             Text(getAppLocalizations(context)
                 .internet_schedule_view_description),
             const SizedBox(height: 24),
-            profileList(profiles)
+            profileList(context, profiles)
           ],
         ));
   }
 }
 
-Widget profileList(List<Profile> list) {
+Widget profileList(BuildContext context, List<Profile> list) {
   return Column(
     children: [
       ...list.map((item) {
         return Column(children: [
           GestureDetector(
               child: profileCard(Image.asset(item.imagePath), Text(item.name)),
-              onTap: () => print('You tapped on ${item.name}')),
+              onTap: () => NavigationCubit.of(context).push(ProfileSettingsPath())),
           const SizedBox(height: 8)
         ]);
       })

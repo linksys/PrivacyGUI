@@ -71,7 +71,7 @@ class BasePageView extends StatelessWidget {
     Key? key,
     this.appBar,
     this.child,
-    this.padding = _noPadding,
+    this.padding = _containerPadding,
     this.bottomSheet,
     this.bottomNavigationBar,
     this.scrollable = false,

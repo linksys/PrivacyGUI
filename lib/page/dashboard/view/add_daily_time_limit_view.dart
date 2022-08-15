@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/dashboard/view/number_picker_view.dart';
+import 'package:linksys_moab/route/route.dart';
 
 import '../../../design/colors.dart';
+import '../../../route/model/dashboard_path.dart';
 import 'day_picker_view.dart';
 
 class AddDailyTimeLimitView extends StatefulWidget {
@@ -24,12 +26,14 @@ class _AddDailyTimeLimitViewState extends State<AddDailyTimeLimitView> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           title: const Text('Daily time limit', style: TextStyle(fontSize: 15)),
-          leading: Transform.translate(
-              offset: const Offset(-15, 0),
-              child: BackButton(onPressed: () {})),
+          leading: BackButton(onPressed: () {
+            NavigationCubit.of(context).pop();
+          }),
           actions: [
             TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  NavigationCubit.of(context).push(DailyTimeLimitListPath());
+                },
                 child: const Text('Save',
                     style:
                         TextStyle(fontSize: 13, color: MoabColor.primaryBlue))),
@@ -41,12 +45,12 @@ class _AddDailyTimeLimitViewState extends State<AddDailyTimeLimitView> {
             const SizedBox(height: 33),
             const DayPickerView(),
             const SizedBox(height: 36),
-            timePicker(hour,minutes, (value){
-              setState((){
+            timePicker(hour, minutes, (value) {
+              setState(() {
                 hour = value;
               });
-            }, (value){
-              setState((){
+            }, (value) {
+              setState(() {
                 minutes = value;
               });
             }),
@@ -62,10 +66,23 @@ class _AddDailyTimeLimitViewState extends State<AddDailyTimeLimitView> {
 
 typedef ValueChanged<T> = void Function(T value);
 
-Widget timePicker(int hour, int minutes, ValueChanged onHourChanged, ValueChanged onMinutesChanged) {
-  return  Row(children: [
-    NumberPickerView(title: 'Hours', value: hour, min: 0, max: 24, step: 1, callback: onHourChanged),
+Widget timePicker(int hour, int minutes, ValueChanged onHourChanged,
+    ValueChanged onMinutesChanged) {
+  return Row(children: [
+    NumberPickerView(
+        title: 'Hours',
+        value: hour,
+        min: 0,
+        max: 24,
+        step: 1,
+        callback: onHourChanged),
     const SizedBox(width: 22),
-    NumberPickerView(title: 'Minutes', value: minutes, min: 0, max: 60, step: 15, callback: onMinutesChanged),
+    NumberPickerView(
+        title: 'Minutes',
+        value: minutes,
+        min: 0,
+        max: 60,
+        step: 15,
+        callback: onMinutesChanged),
   ]);
 }

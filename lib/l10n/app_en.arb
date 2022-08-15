@@ -41,6 +41,15 @@
   "phone": "Phone",
   "processing": "Processing...",
   "unknown_error": "Unknown error",
+  "unknown_error_code": "Unknown error: {code}",
+  "@unknown_error_code": {
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "INVALID_PARAMETERS"
+      }
+    }
+  },
   "add_phone_number": "Add phone number",
   "password_hint": "Password hint (optional)",
   "keep_defaults": "Keep defaults",
@@ -218,5 +227,9 @@
   "nodes_doesnt_find_view_description_1": "1. Make sure the node has power and the light is {on}.",
   "nodes_doesnt_find_view_description_2": "2. You may be out of range. Try getting closer to the router or an already configured add-on node(white light).\n\nUnconfigured nodes will be blinking blue.",
   "scan_again_button": "Scan again",
+  "error_invalid_otp": "Incorrect code, please check your code and try again",
+  "error_expired_otp": "Code expired after 15 minutes. Send a new code and try again",
+  "error_otp_exceeds_threshold": "You've entered an incorrect code too many times. Your account will be locked for 2 hours",
+  "error_invalid_phone_number": "Invalid phone number",
   "internet_schedule_view_description": "Set daily time limits and schedule blocked internet access."
 }

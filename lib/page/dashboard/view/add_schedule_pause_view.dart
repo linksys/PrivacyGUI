@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/dashboard/view/time_picker_view.dart';
+import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/route.dart';
 
 import 'day_picker_view.dart';
 
@@ -24,12 +26,14 @@ class _AddSchedulePauseViewState extends State<AddSchedulePauseView> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           title: const Text('Add schedule', style: TextStyle(fontSize: 15)),
-          leading: Transform.translate(
-              offset: const Offset(-15, 0),
-              child: BackButton(onPressed: () {})),
+          leading: BackButton(onPressed: () {
+            NavigationCubit.of(context).pop();
+          }),
           actions: [
             TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  NavigationCubit.of(context).push(SchedulePauseListPath());
+                },
                 child: const Text('Save',
                     style:
                         TextStyle(fontSize: 13, color: MoabColor.primaryBlue))),

@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 
 import '../../../design/colors.dart';
+import '../../../route/navigation_cubit.dart';
 
 class DailyTimeLimitListView extends StatelessWidget {
   const DailyTimeLimitListView({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return timeListItem();
+    return timeListItem(context);
   }
 }
 
@@ -17,15 +18,16 @@ List<TimeLimit> list = [
   TimeLimit('M, W, Th, F', '2hr,30 min', false)
 ];
 
-Widget timeListItem() {
+Widget timeListItem(BuildContext context) {
   return BasePageView.onDashboardSecondary(
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text('Daily time limit', style: TextStyle(fontSize: 15)),
-        leading: Transform.translate(
-            offset: const Offset(-15, 0), child: BackButton(onPressed: () {})),
+        leading: BackButton(onPressed: () {
+          NavigationCubit.of(context).pop();
+        }),
         actions: [
           TextButton(
               onPressed: () {},
