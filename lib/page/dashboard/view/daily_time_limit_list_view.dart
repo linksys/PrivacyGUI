@@ -20,6 +20,7 @@ List<TimeLimit> list = [
 
 Widget timeListItem(BuildContext context) {
   return BasePageView.onDashboardSecondary(
+    padding: EdgeInsets.zero,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,

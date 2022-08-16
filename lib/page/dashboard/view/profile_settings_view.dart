@@ -39,7 +39,7 @@ class ProfileSettingsView extends StatelessWidget {
 }
 
 Widget timeLimitSettingsItem(BuildContext context, ValueChanged onTap) {
-  return GestureDetector(
+  return InkWell(
       child: SizedBox(
         height: 64,
         child: Row(
@@ -65,7 +65,7 @@ Widget schedulePauseSettingsItem(BuildContext context, ValueChanged onTap) {
   return Container(
       height: 64,
       width: double.infinity,
-      child: GestureDetector(
+      child: InkWell(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
