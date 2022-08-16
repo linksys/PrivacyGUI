@@ -1,5 +1,7 @@
 import 'package:linksys_moab/network/http/model/cloud_config.dart';
 
+import 'build_config.dart';
+
 // Moab header keys
 const moabSiteIdKey = 'X-Linksys-Moab-Site-Id';
 const moabAppIdKey = 'X-Linksys-Moab-App-Id';

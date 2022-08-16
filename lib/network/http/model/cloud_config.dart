@@ -1,9 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-enum CloudEnvironment { dev, qa, prod }
-
-CloudEnvironment cloudEnvTarget = CloudEnvironment.dev;
-
 class CloudTransportConfig extends Equatable {
   const CloudTransportConfig(
       {required this.protocol, required this.mqttBroker});

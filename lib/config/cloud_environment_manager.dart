@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/constants/constants.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/network/http/model/cloud_config.dart';

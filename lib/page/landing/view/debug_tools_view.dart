@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:linksys_moab/channel/push_notification_channel.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/http/extension_requests/accounts_requests.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_config.dart';
@@ -80,16 +81,19 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                   alignment: WrapAlignment.start,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    const Text('FCM Token:'),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text('FCM Token:'),
+                    ),
                     Visibility(
                       visible: _fcmToken != null,
-                      child: GestureDetector(
-                          onTap: _fcmToken != null
+                      child: IconButton(
+                          onPressed: _fcmToken != null
                               ? () {
-                                  _copyToClipboard(_fcmToken!);
+                                  _shareToken(_fcmToken!);
                                 }
                               : null,
-                          child: const Icon(Icons.paste)),
+                          icon: const Icon(Icons.share, color: Colors.white,)),
                     ),
                     Text(_fcmToken ?? 'No FCM Token'),
                   ],
@@ -102,17 +106,17 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     const Text('APNS Token:'),
-                    Text(_apnsToken ?? 'No APNS Token'),
                     Visibility(
                       visible: _apnsToken != null,
-                      child: GestureDetector(
-                          onTap: _apnsToken != null
+                      child: IconButton(
+                          onPressed: _apnsToken != null
                               ? () {
-                                  _copyToClipboard(_apnsToken!);
-                                }
+                            _shareToken(_apnsToken!);
+                          }
                               : null,
-                          child: const Icon(Icons.paste)),
+                          icon: const Icon(Icons.share, color: Colors.white,)),
                     ),
+                    Text(_apnsToken ?? 'No APNS Token'),
                   ],
                 ),
                 const SizedBox(
@@ -258,6 +262,20 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         ),
       ],
     );
+  }
+
+  _shareToken(String token) async {
+    Size size = MediaQuery.of(context).size;
+    final result = await Share.shareWithResult(
+      token,
+      subject: 'Token',
+      sharePositionOrigin:
+      Rect.fromLTWH(0, 0, size.width, size.height / 2),
+    );
+    print('Share result: $result');
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text("Share result: ${result.status}"),
+    ));
   }
 
   Future<void> checkTokens() async {

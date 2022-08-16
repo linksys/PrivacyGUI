@@ -38,8 +38,8 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
 
   _checkSelfNetworks() {
     // TODO: Need to be modified
-    NavigationCubit.of(context).clearAndPush(NoRouterPath());
+    // NavigationCubit.of(context).clearAndPush(NoRouterPath());
     // NavigationCubit.of(context).clearAndPush(RouterPickerPath());
-    // NavigationCubit.of(context).clearAndPush(DashboardMainPath());
+    NavigationCubit.of(context).clearAndPush(DashboardHomePath());
   }
 }
