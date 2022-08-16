@@ -38,7 +38,7 @@ class _DayPickerViewState extends State<DayPickerView> {
               height: 46,
               margin: const EdgeInsets.all(2.5),
               decoration: BoxDecoration(
-                  color: days[item]! ? Colors.black : Colors.transparent,
+                  color: days[item]! ? Colors.grey : Colors.transparent,
                   border: Border.all(color: Colors.black, width: 0.5)),
               child: Center(child: Text(item))),
           onTap: () => changeStatus(item),
