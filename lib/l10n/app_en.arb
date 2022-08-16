@@ -168,7 +168,7 @@
       }
     }
   },
-  "otp_enter_code_email_title": "Enter the code we texted to {email}",
+  "otp_enter_code_email_title": "Enter the code we sent to {email}",
   "@otp_enter_code_email_title": {
     "placeholders": {
       "email": {
