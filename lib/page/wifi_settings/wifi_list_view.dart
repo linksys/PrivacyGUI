@@ -3,6 +3,7 @@ import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/customs/hidden_password_widget.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
+import 'package:linksys_moab/page/wifi_settings/wifi_settings_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
 
@@ -16,10 +17,10 @@ class WifiListView extends StatefulWidget {
 class _WifiListViewState extends State<WifiListView> {
   //TODO: Remove the dummy data
   final List<WifiListItem> items = [
-    WifiListItem(WifiType.main, 'MyMainNetwork', '01234567', true, 22, 100),
-    WifiListItem(WifiType.guest, 'MyGuestNetwork', '12345678', true, 33, 100),
-    WifiListItem(WifiType.iot, 'MyIotNetwork_1', '23456789', false, 44, 100),
-    WifiListItem(WifiType.iot, 'MyIotNetwork_2', '34567890', true, 55, 100),
+    WifiListItem(WifiType.main, 'MyMainNetwork', '01234567', WifiSecurityType.wpa2Wpa3Mixed, WifiMode.mixed, true, 22, 100),
+    WifiListItem(WifiType.guest, 'MyGuestNetwork', '12345678', WifiSecurityType.wpa2, WifiMode.mixed, true, 33, 100),
+    WifiListItem(WifiType.iot, 'MyIotNetwork_1', '23456789', WifiSecurityType.openAndEnhancedOpen, WifiMode.mixed, false, 44, 100),
+    WifiListItem(WifiType.iot, 'MyIotNetwork_2', '34567890', WifiSecurityType.open, WifiMode.mixed, true, 55, 100),
   ];
 
   Widget _wifiList() {
@@ -74,7 +75,7 @@ class _WifiListViewState extends State<WifiListView> {
             ),
             Container(
               child: Text(
-                items[index].isOnline ? 'ON' : 'OFF',
+                items[index].isWifiEnabled ? 'ON' : 'OFF',
                 style: Theme.of(context)
                     .textTheme
                     .headline4
@@ -128,32 +129,4 @@ class _WifiListViewState extends State<WifiListView> {
       ),
     );
   }
-}
-
-class WifiListItem {
-  final WifiType wifiType;
-  final String ssid;
-  final String password;
-  final bool isOnline;
-  final int numOfDevices;
-  final int signal;
-
-  WifiListItem(
-    this.wifiType,
-    this.ssid,
-    this.password,
-    this.isOnline,
-    this.numOfDevices,
-    this.signal,
-  );
-}
-
-enum WifiType {
-  main(displayTitle: 'MAIN'),
-  guest(displayTitle: 'GUEST'),
-  iot(displayTitle: 'IOT DEVICES');
-
-  const WifiType({required this.displayTitle});
-
-  final String displayTitle;
 }
