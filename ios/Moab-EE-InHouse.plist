@@ -23,5 +23,14 @@
 	<string>RP6FWVVM7B</string>
 	<key>thinning</key>
 	<string>&lt;none&gt;</string>
+	<key>manifest</key>
+	<dict>
+        <key>appURL</key>
+        <string>{appURL}</string>
+        <key>displayImageURL</key>
+        <string>{displayImageURL}</string>
+        <key>fullSizeImageURL</key>
+        <string>{fullSizeImageURL}</string>
+	</dict>
 </dict>
 </plist>
