@@ -25,8 +25,8 @@ class _EditWifiNamePasswordViewState extends State<EditWifiNamePasswordView> {
   @override
   initState() {
     super.initState();
-    if (widget.args!.containsKey('info')) {
-      _wifiItem = widget.args!['info'];
+    if (widget.args.containsKey('info')) {
+      _wifiItem = widget.args['info'];
     }
     nameController.text = _wifiItem.ssid;
     passwordController.text = _wifiItem.password;

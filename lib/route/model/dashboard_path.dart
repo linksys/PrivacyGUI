@@ -9,19 +9,18 @@ import 'package:linksys_moab/page/wifi_settings/edit_wifi_mode_view.dart';
 import 'package:linksys_moab/page/wifi_settings/edit_wifi_name_password_view.dart';
 import 'package:linksys_moab/page/wifi_settings/edit_wifi_security_view.dart';
 import 'package:linksys_moab/page/wifi_settings/share_wifi_view.dart';
-import 'package:linksys_moab/page/wifi_settings/wifi_main.dart';
 import 'package:linksys_moab/page/wifi_settings/wifi_list_view.dart';
 import 'package:linksys_moab/page/wifi_settings/wifi_settings_review_view.dart';
 import 'package:linksys_moab/page/wifi_settings/wifi_settings_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
-import '../../page/dashboard/view/add_daily_time_limit_view.dart';
-import '../../page/dashboard/view/add_schedule_pause_view.dart';
-import '../../page/dashboard/view/daily_time_limit_list_view.dart';
-import '../../page/dashboard/view/internet_schedule_view.dart';
-import '../../page/dashboard/view/profile_settings_view.dart';
-import '../../page/dashboard/view/schedule_pause_list_view.dart';
-import '../../page/dashboard/view/view.dart';
+import 'package:linksys_moab/page/dashboard/view/add_daily_time_limit_view.dart';
+import 'package:linksys_moab/page/dashboard/view/add_schedule_pause_view.dart';
+import 'package:linksys_moab/page/dashboard/view/daily_time_limit_list_view.dart';
+import 'package:linksys_moab/page/dashboard/view/internet_schedule_view.dart';
+import 'package:linksys_moab/page/dashboard/view/profile_settings_view.dart';
+import 'package:linksys_moab/page/dashboard/view/schedule_pause_list_view.dart';
+import 'package:linksys_moab/page/dashboard/view/view.dart';
 import 'base_path.dart';
 
 abstract class DashboardPath extends BasePath {
@@ -56,8 +55,6 @@ abstract class DashboardPath extends BasePath {
         return const DailyTimeLimitListView();
       case SchedulePauseListPath:
         return const SchedulePauseListView();
-      case WifiPath:
-        return WiFiView();
       case WifiSettingsPath:
         return const WifiSettingsView();
       case WifiSettingsReviewPath:
@@ -131,11 +128,6 @@ class AddSchedulePausePath extends DashboardPath{}
 class DailyTimeLimitListPath extends DashboardPath{}
 
 class SchedulePauseListPath extends DashboardPath{}
-
-class WifiPath extends DashboardPath {
-  @override
-  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
-}
 
 class EditWifiModePath extends DashboardPath {}
 

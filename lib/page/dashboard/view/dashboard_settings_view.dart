@@ -149,7 +149,7 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
 _networkSettingsSection() => DashboardSettingsSection(
       title: 'NETWORK',
       items: [
-        DashboardSettingsItem(title: 'WiFi', path: WifiPath()),
+        DashboardSettingsItem(title: 'WiFi', path: WifiSettingsPath()),
         DashboardSettingsItem(title: 'Internet schedule', path: InternetSchedulePath()),
         DashboardSettingsItem(title: 'Priority', path: UnknownPath()),
         DashboardSettingsItem(title: 'Administration', path: UnknownPath()),

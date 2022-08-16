@@ -18,7 +18,7 @@ class _WifiListViewState extends State<WifiListView> {
   //TODO: Remove the dummy data
   final List<WifiListItem> items = [
     WifiListItem(WifiType.main, 'MyMainNetwork', '01234567', WifiSecurityType.wpa2Wpa3Mixed, WifiMode.mixed, true, 22, 100),
-    WifiListItem(WifiType.guest, 'MyGuestNetwork', '12345678', WifiSecurityType.wpa2, WifiMode.mixed, true, 33, 100),
+    WifiListItem(WifiType.guest, 'MyGuestNetwork', '12345678', WifiSecurityType.wpa2, WifiMode.mixed, false, 33, 100),
     WifiListItem(WifiType.iot, 'MyIotNetwork_1', '23456789', WifiSecurityType.openAndEnhancedOpen, WifiMode.mixed, false, 44, 100),
     WifiListItem(WifiType.iot, 'MyIotNetwork_2', '34567890', WifiSecurityType.open, WifiMode.mixed, true, 55, 100),
   ];
@@ -68,7 +68,7 @@ class _WifiListViewState extends State<WifiListView> {
               style: Theme.of(context)
                   .textTheme
                   .headline4
-                  ?.copyWith(color: Theme.of(context).colorScheme.tertiary),
+                  ?.copyWith(color: Theme.of(context).colorScheme.surface),
             ),
             const SizedBox(
               width: 10,
@@ -94,7 +94,7 @@ class _WifiListViewState extends State<WifiListView> {
           style: Theme.of(context)
               .textTheme
               .headline2
-              ?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
+              ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
         const SizedBox(
           height: 8,
@@ -108,7 +108,7 @@ class _WifiListViewState extends State<WifiListView> {
           style: Theme.of(context)
               .textTheme
               .headline4
-              ?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
+              ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
       ],
       crossAxisAlignment: CrossAxisAlignment.start,

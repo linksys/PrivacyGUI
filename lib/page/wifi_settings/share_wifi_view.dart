@@ -43,8 +43,8 @@ class _ShareWifiViewState extends State<ShareWifiView> {
   @override
   initState() {
     super.initState();
-    if (widget.args!.containsKey('info')) {
-      _currentItem = widget.args!['info'];
+    if (widget.args.containsKey('info')) {
+      _currentItem = widget.args['info'];
     }
   }
 

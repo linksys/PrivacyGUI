@@ -24,8 +24,8 @@ class _EditWifiModeViewState extends State<EditWifiModeView> {
   @override
   initState() {
     super.initState();
-    if (widget.args!.containsKey('info')) {
-      _wifiItem = widget.args!['info'];
+    if (widget.args.containsKey('info')) {
+      _wifiItem = widget.args['info'];
     }
   }
 
@@ -53,7 +53,7 @@ class _EditWifiModeViewState extends State<EditWifiModeView> {
                         Text(
                           _modeList[index].displayTitle,
                           style: Theme.of(context).textTheme.headline3?.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimary
+                              color: Theme.of(context).colorScheme.primary
                           ),
                         ),
                         const SizedBox(

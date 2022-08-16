@@ -5,6 +5,7 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/wifi_settings/wifi_settings_view.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 
 class EditWifiSecurityView extends ArgumentsStatefulView {
   const EditWifiSecurityView({
@@ -24,8 +25,27 @@ class _EditWifiModeViewState extends State<EditWifiSecurityView> {
   @override
   initState() {
     super.initState();
-    if (widget.args!.containsKey('info')) {
-      _wifiItem = widget.args!['info'];
+    if (widget.args.containsKey('info')) {
+      _wifiItem = widget.args['info'];
+    }
+  }
+
+  void _onTypeTapped(int index) {
+    WifiSecurityType selectedType = _typeList[index];
+    if (selectedType == WifiSecurityType.open) {
+      showOkCancelAlertDialog(
+        context: context,
+        title: "This is a risky security type",
+        message: 'Anyone can connect to your network. Are you sure you want to continue?',
+        okLabel: getAppLocalizations(context).text_continue,
+        cancelLabel: getAppLocalizations(context).cancel,
+      ).then((result) {
+        if (result == OkCancelResult.ok) {
+          setState(() => _wifiItem.securityType = selectedType);
+        }
+      });
+    } else {
+      setState(() => _wifiItem.securityType = selectedType);
     }
   }
 
@@ -41,9 +61,7 @@ class _EditWifiModeViewState extends State<EditWifiSecurityView> {
           itemCount: _typeList.length,
           itemBuilder: (context, index) {
             return GestureDetector(
-              onTap: () {
-                setState(() => _wifiItem.securityType = _typeList[index]);
-              },
+              onTap: () => _onTypeTapped(index),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 22),
                 child: Row(
@@ -52,7 +70,7 @@ class _EditWifiModeViewState extends State<EditWifiSecurityView> {
                       child: Text(
                         _typeList[index].displayTitle,
                         style: Theme.of(context).textTheme.headline3?.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimary
+                            color: Theme.of(context).colorScheme.primary
                         ),
                       ),
                     ),

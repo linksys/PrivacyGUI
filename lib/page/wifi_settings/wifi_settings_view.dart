@@ -41,7 +41,7 @@ class _WifiSettingsViewState extends State<WifiSettingsView> {
     WifiListItem(WifiType.main, 'MyMainNetwork', '01234567',
         WifiSecurityType.wpa2Wpa3Mixed, WifiMode.mixed, true, 22, 100),
     WifiListItem(WifiType.guest, 'MyGuestNetwork', '12345678',
-        WifiSecurityType.wpa2, WifiMode.mixed, true, 33, 100),
+        WifiSecurityType.wpa2, WifiMode.mixed, false, 33, 100),
     WifiListItem(WifiType.iot, 'MyIotNetwork_1', '23456789',
         WifiSecurityType.openAndEnhancedOpen, WifiMode.mixed, false, 44, 100),
     WifiListItem(WifiType.iot, 'MyIotNetwork_2', '34567890',
@@ -52,6 +52,7 @@ class _WifiSettingsViewState extends State<WifiSettingsView> {
   Widget build(BuildContext context) {
     return BasePageView(
       child: BasicLayout(
+        alignment: CrossAxisAlignment.start,
         content: ListView.separated(
           physics: const ClampingScrollPhysics(),
           itemCount: items.length,
@@ -59,9 +60,6 @@ class _WifiSettingsViewState extends State<WifiSettingsView> {
             return GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () {
-                // NavigationCubit.of(context).push(
-                //   WifiSettingsReviewPath()..args = {'info': items[index]}
-                // );
                 NavigationCubit.of(context).pushAndWait(
                   WifiSettingsReviewPath()..args = {'info': items[index]}
                 ).then((updatedInfo) {
@@ -78,7 +76,7 @@ class _WifiSettingsViewState extends State<WifiSettingsView> {
                     child: Text(
                       items[index].wifiType.displayTitle,
                       style: Theme.of(context).textTheme.headline4?.copyWith(
-                          color: Theme.of(context).colorScheme.onPrimary),
+                          color: Theme.of(context).colorScheme.surface),
                     ),
                   ),
                   Row(
@@ -86,7 +84,7 @@ class _WifiSettingsViewState extends State<WifiSettingsView> {
                       Text(
                         items[index].ssid,
                         style: Theme.of(context).textTheme.headline2?.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimary),
+                            color: Theme.of(context).colorScheme.primary),
                       ),
                       const Spacer(),
                       Text(
@@ -115,11 +113,14 @@ class _WifiSettingsViewState extends State<WifiSettingsView> {
                 thickness: 1, height: 1, color: MoabColor.dividerGrey);
           },
         ),
-        footer: SimpleTextButton(
-          text: 'Learn more about WiFi networks and settings',
-          onPressed: () {
-            //TODO: Go to next
-          },
+        footer: Padding(
+          padding: const EdgeInsets.only(bottom: 80),
+          child: SimpleTextButton(
+            text: 'Learn more about WiFi networks and settings',
+            onPressed: () {
+              //TODO: Go to next
+            },
+          ),
         ),
       ),
     );

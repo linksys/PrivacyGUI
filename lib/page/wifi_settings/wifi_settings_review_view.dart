@@ -24,8 +24,8 @@ class _WifiSettingsReviewViewState extends State<WifiSettingsReviewView> {
   @override
   initState() {
     super.initState();
-    if (widget.args!.containsKey('info')) {
-      _wifiItem = widget.args!['info'];
+    if (widget.args.containsKey('info')) {
+      _wifiItem = widget.args['info'];
     }
   }
 
@@ -41,7 +41,7 @@ class _WifiSettingsReviewViewState extends State<WifiSettingsReviewView> {
                 Text(
                   _wifiItem.wifiType.displayTitle,
                   style: Theme.of(context).textTheme.headline3?.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimary
+                    color: Theme.of(context).colorScheme.surface
                   ),
                 ),
                 const Spacer(),
@@ -54,7 +54,7 @@ class _WifiSettingsReviewViewState extends State<WifiSettingsReviewView> {
             Text(
               'Where most of your devices connect.',
               style: Theme.of(context).textTheme.headline4?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary
+                  color: Theme.of(context).colorScheme.primary
               ),
             ),
             Padding(
@@ -114,7 +114,7 @@ class _WifiSettingsReviewViewState extends State<WifiSettingsReviewView> {
                 Text(
                   currentOption.displayTitle,
                   style: Theme.of(context).textTheme.headline3?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimary
+                      color: Theme.of(context).colorScheme.primary
                   ),
                 ),
                 const SizedBox(
