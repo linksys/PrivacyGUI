@@ -26,11 +26,11 @@
 	<key>manifest</key>
 	<dict>
         <key>appURL</key>
-        <string>{appURL}</string>
+        <string>https://linksys-moab.s3.us-west-1.amazonaws.com/{version}/moab_app_ee_distribution.ipa</string>
         <key>displayImageURL</key>
-        <string>{displayImageURL}</string>
+        <string>https://linksys-moab.s3.us-west-1.amazonaws.com/{version}/ic_launcher.png</string>
         <key>fullSizeImageURL</key>
-        <string>{fullSizeImageURL}</string>
+        <string>https://linksys-moab.s3.us-west-1.amazonaws.com/{version}/ic_launcher_store.png</string>
 	</dict>
 </dict>
 </plist>

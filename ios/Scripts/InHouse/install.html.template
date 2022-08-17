@@ -9,7 +9,7 @@
       <div class="row">
         <div class="one-half column">
           <h5 class="">Moab App In House Distribution.</h5>
-          <a class="button button-primary" href="itms-services://?action=download-manifest&url=https://linksys.devvelopcloud.com/moab-app/manifest.plist" id="text">Download</a>
+          <a class="button button-primary" href="itms-services://?action=download-manifest&url=https://linksys-moab.s3.us-west-1.amazonaws.com/{version}/manifest.plist" id="text">Download</a>
         </div>
       </div>
     </div>
