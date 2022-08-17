@@ -18,7 +18,8 @@ class ProfileSettingsView extends StatelessWidget {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Timmy', style: TextStyle(fontSize: 15)),
+        title: const Text('Timmy',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
         leading: BackButton(onPressed: () {
           NavigationCubit.of(context).pop();
         }),
@@ -49,9 +50,15 @@ Widget timeLimitSettingsItem(BuildContext context, ValueChanged onTap) {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
-                  Text('Daily time limit'),
+                  Text('Daily time limit',
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
                   SizedBox(height: 4),
-                  Text('none', style: TextStyle(color: Color(0xff666666)))
+                  Text('none',
+                      style: TextStyle(
+                          color: Color.fromRGBO(102, 102, 102, 1.0),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500))
                 ]),
             Expanded(child: Container()),
             Image.asset('assets/images/right_compact_wire.png')
@@ -73,9 +80,15 @@ Widget schedulePauseSettingsItem(BuildContext context, ValueChanged onTap) {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: const [
-                    Text('Scheduled pauses'),
+                    Text('Scheduled pauses',
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w500)),
                     SizedBox(height: 4),
-                    Text('none', style: TextStyle(color: Color(0xff666666)))
+                    Text('none',
+                        style: TextStyle(
+                            color: Color.fromRGBO(102, 102, 102, 1.0),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500))
                   ]),
               Image.asset('assets/images/right_compact_wire.png')
             ],

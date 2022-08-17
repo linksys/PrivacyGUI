@@ -25,7 +25,8 @@ class _AddDailyTimeLimitViewState extends State<AddDailyTimeLimitView> {
           automaticallyImplyLeading: false,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          title: const Text('Daily time limit', style: TextStyle(fontSize: 15)),
+          title: const Text('Daily time limit',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           leading: BackButton(onPressed: () {
             NavigationCubit.of(context).pop();
           }),
@@ -35,8 +36,10 @@ class _AddDailyTimeLimitViewState extends State<AddDailyTimeLimitView> {
                   NavigationCubit.of(context).push(DailyTimeLimitListPath());
                 },
                 child: const Text('Save',
-                    style:
-                        TextStyle(fontSize: 13, color: MoabColor.primaryBlue))),
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: MoabColor.textButtonBlue))),
           ],
         ),
         child: Column(
@@ -56,9 +59,14 @@ class _AddDailyTimeLimitViewState extends State<AddDailyTimeLimitView> {
             }),
             const SizedBox(height: 66),
             TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  NavigationCubit.of(context).pop();
+                },
                 child: const Text('Delete',
-                    style: TextStyle(color: Colors.red, fontSize: 15)))
+                    style: TextStyle(
+                        color: Color.fromRGBO(207, 26, 26, 1.0),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500)))
           ],
         ));
   }

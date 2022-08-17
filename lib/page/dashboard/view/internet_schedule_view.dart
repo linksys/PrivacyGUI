@@ -26,28 +26,35 @@ class _InternetScheduleViewState extends State<InternetScheduleView> {
           automaticallyImplyLeading: false,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          title:
-              const Text('Internet Schedule', style: TextStyle(fontSize: 15)),
+          title: const Text('Internet Schedule',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           leading: BackButton(onPressed: () {
-                NavigationCubit.of(context).pop();
-              }),
+            NavigationCubit.of(context).pop();
+          }),
           actions: [
             TextButton(
                 onPressed: () {},
-                child: const Text('AddProfile',
-                    style:
-                        TextStyle(fontSize: 13, color: MoabColor.primaryBlue))),
+                child: const Text('Add Profile',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: MoabColor.textButtonBlue))),
           ],
         ),
-        child: Column(
-          children: [
-            const SizedBox(height: 30),
-            Text(getAppLocalizations(context)
-                .internet_schedule_view_description),
-            const SizedBox(height: 24),
-            profileList(context, profiles)
-          ],
-        ));
+        child: Container(
+            color: const Color.fromARGB(1, 221, 221, 221),
+            child: Column(
+              children: [
+                const SizedBox(height: 30),
+                Text(
+                    getAppLocalizations(context)
+                        .internet_schedule_view_description,
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 24),
+                profileList(context, profiles)
+              ],
+            )));
   }
 }
 
@@ -57,8 +64,13 @@ Widget profileList(BuildContext context, List<Profile> list) {
       ...list.map((item) {
         return Column(children: [
           GestureDetector(
-              child: profileCard(Image.asset(item.imagePath), Text(item.name)),
-              onTap: () => NavigationCubit.of(context).push(ProfileSettingsPath())),
+              child: profileCard(
+                  Image.asset(item.imagePath),
+                  Text(item.name,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700))),
+              onTap: () =>
+                  NavigationCubit.of(context).push(ProfileSettingsPath())),
           const SizedBox(height: 8)
         ]);
       })
@@ -78,7 +90,7 @@ Widget profileCard(Widget image, Widget text) {
         const SizedBox(width: 21),
         Expanded(child: text),
         const SizedBox(width: 8),
-        const Text("OFF"),
+        const Text("OFF", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color.fromRGBO(102, 102, 102, 1.0))),
         const SizedBox(width: 6),
         Image.asset('assets/images/right_compact_wire.png'),
         const SizedBox(width: 12),

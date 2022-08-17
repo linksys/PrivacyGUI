@@ -93,7 +93,7 @@ class _TimePickerViewState extends State<TimePickerView> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(widget.title,
-              style: const TextStyle(fontSize: 15, color: Colors.grey)),
+              style: const TextStyle(fontSize: 15, color: Color.fromRGBO(0, 0, 0, 0.4))),
           const SizedBox(height: 11),
           TextButton(
               onPressed: () {
@@ -103,7 +103,7 @@ class _TimePickerViewState extends State<TimePickerView> {
                   _iosSelectTime(context);
                 }
               },
-              child: Text(getTimeString(), style: const TextStyle(color: Colors.black)),
+              child: Text(getTimeString(), style: const TextStyle(color: Colors.black, fontSize: 25, fontWeight: FontWeight.w500)),
               style: TextButton.styleFrom(
                   alignment: Alignment.centerLeft,
                   padding: const EdgeInsets.only(left: 0))),

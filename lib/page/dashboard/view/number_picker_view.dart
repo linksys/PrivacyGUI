@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:numberpicker/numberpicker.dart';
 
 const double _kItemExtent = 32.0;
+
 class NumberPickerView extends StatefulWidget {
   NumberPickerView(
       {Key? key,
@@ -63,41 +64,52 @@ class _NumberPickerViewState extends State<NumberPickerView> {
     showCupertinoModalPopup<void>(
         context: context,
         builder: (BuildContext context) => Container(
-          height: 216,
-          padding: const EdgeInsets.only(top: 6.0),
-          // The Bottom margin is provided to align the popup above the system navigation bar.
-          margin: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          // Provide a background color for the popup.
-          color: CupertinoColors.systemBackground.resolveFrom(context),
-          // Use a SafeArea widget to avoid system overlaps.
-          child: SafeArea(
-            top: false,
-            child: IOSPicker(current: pickerNumber, min: widget.min, max: widget.max, step: widget.step, callback: (value) {
-              setState((){
-                pickerNumber = value;
-                widget.callback(pickerNumber);
-              });
-            }),
-          ),
-        ));
+              height: 216,
+              padding: const EdgeInsets.only(top: 6.0),
+              // The Bottom margin is provided to align the popup above the system navigation bar.
+              margin: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              // Provide a background color for the popup.
+              color: CupertinoColors.systemBackground.resolveFrom(context),
+              // Use a SafeArea widget to avoid system overlaps.
+              child: SafeArea(
+                top: false,
+                child: IOSPicker(
+                    current: pickerNumber,
+                    min: widget.min,
+                    max: widget.max,
+                    step: widget.step,
+                    callback: (value) {
+                      setState(() {
+                        pickerNumber = value;
+                        widget.callback(pickerNumber);
+                      });
+                    }),
+              ),
+            ));
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(widget.title, style: const TextStyle(fontSize: 13)),
+      Text(widget.title,
+          style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Color.fromRGBO(0, 0, 0, 0.2))),
       const SizedBox(height: 11),
       TextButton(
           onPressed: () {
-            if(Platform.isAndroid) {
+            if (Platform.isAndroid) {
               _showAndroidDialog(context);
-            } else if(Platform.isIOS) {
+            } else if (Platform.isIOS) {
               _showIOSDialog();
             }
           },
-          child: Text(pickerNumber.toString()),
+          child: Text(pickerNumber.toString(),
+              style:
+                  const TextStyle(fontSize: 25, fontWeight: FontWeight.w500, color: Colors.black)),
           style: TextButton.styleFrom(
               alignment: Alignment.centerLeft,
               padding: const EdgeInsets.only(left: 0))),
@@ -112,7 +124,7 @@ typedef ValueChanged<T> = void Function(T value);
 class AndroidPicker extends StatefulWidget {
   AndroidPicker(
       {Key? key,
-        required this.current,
+      required this.current,
       required this.min,
       required this.max,
       required this.step,
@@ -131,11 +143,10 @@ class AndroidPicker extends StatefulWidget {
 class AndroidPickerState extends State<AndroidPicker> {
   int _currentValue = 0;
 
-
   @override
   void initState() {
     super.initState();
-    if(widget.current != null && widget.current != _currentValue) {
+    if (widget.current != null && widget.current != _currentValue) {
       _currentValue = widget.current;
     }
   }
@@ -160,7 +171,14 @@ class AndroidPickerState extends State<AndroidPicker> {
 }
 
 class IOSPicker extends StatefulWidget {
-  IOSPicker({Key? key, required this.current, required this.min, required this.max, required this.step, required this.callback}) : super(key: key);
+  IOSPicker(
+      {Key? key,
+      required this.current,
+      required this.min,
+      required this.max,
+      required this.step,
+      required this.callback})
+      : super(key: key);
   int current;
   int min;
   int max;
@@ -174,16 +192,18 @@ class IOSPicker extends StatefulWidget {
 class _IOSPickerState extends State<IOSPicker> {
   late List<int> nums;
 
-
   @override
   void initState() {
-    nums = List.generate((widget.max - widget.min + 1) ~/ widget.step, (index) => index * widget.step  + widget.min, growable: true);
+    nums = List.generate((widget.max - widget.min + 1) ~/ widget.step,
+        (index) => index * widget.step + widget.min,
+        growable: true);
   }
 
   @override
   Widget build(BuildContext context) {
     return CupertinoPicker(
-      scrollController: FixedExtentScrollController(initialItem: widget.current),
+      scrollController:
+          FixedExtentScrollController(initialItem: widget.current),
       magnification: 1.22,
       squeeze: 1.2,
       useMagnifier: true,
@@ -192,8 +212,7 @@ class _IOSPickerState extends State<IOSPicker> {
       onSelectedItemChanged: (int selectedItem) {
         widget.callback(nums[selectedItem]);
       },
-      children:
-      List<Widget>.generate(nums.length, (int index) {
+      children: List<Widget>.generate(nums.length, (int index) {
         return Center(
           child: Text(
             nums[index].toString(),
