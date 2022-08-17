@@ -3,7 +3,10 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:logger/logger.dart';
+import 'package:linksys_moab/design/colors.dart';
+import 'package:linksys_moab/page/components/customs/hidden_password_widget.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/page/wifi_settings/wifi_settings_view.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -24,64 +27,42 @@ enum ShareWifiOption {
   final String displayTitle;
 }
 
-enum ShareWifiType {
-  main(displayTitle: 'MAIN WIFI'),
-  guest(displayTitle: 'GUEST WIFI'),
-  legacy24(displayTitle: 'LEGACY 2.4 GHz');
-
-  const ShareWifiType({required this.displayTitle});
-
-  final String displayTitle;
-}
-
-class ShareWifiView extends StatefulWidget {
-  const ShareWifiView({Key? key}) : super(key: key);
+class ShareWifiView extends ArgumentsStatefulView {
+  const ShareWifiView({Key? key, super.args}) : super(key: key);
 
   @override
   _ShareWifiViewState createState() => _ShareWifiViewState();
 }
 
 class _ShareWifiViewState extends State<ShareWifiView> {
-  ShareWifiType wifiType = ShareWifiType.main;
-  bool isPwSecure = true;
   GlobalKey globalKey = GlobalKey();
-  String ssid = 'MyWiFiNetworkSSID'; //TODO: Remove dummy data
-  String password = 'Belkin123!'; //TODO: Remove dummy data
+  late WifiListItem _currentItem;
   String get sharingContent =>
-      'Connect to my WiFi Network:\n$ssid\n\nPassword: $password';
+      'Connect to my WiFi Network:\n${_currentItem.ssid}\n\nPassword: ${_currentItem.password}';
+
+  @override
+  initState() {
+    super.initState();
+    if (widget.args.containsKey('info')) {
+      _currentItem = widget.args['info'];
+    }
+  }
 
   Widget _wifiInfoSection() {
     return Column(
       children: [
         Text(
-          wifiType.displayTitle,
+          _currentItem.wifiType.displayTitle,
           style: Theme.of(context).textTheme.headline4,
         ),
         const SizedBox(
           height: 20,
         ),
         Text(
-          ssid,
+          _currentItem.ssid,
           style: Theme.of(context).textTheme.headline2,
         ),
-        Row(
-          children: [
-            Text(
-              _getPasswordContent(),
-              style: Theme.of(context).textTheme.headline2,
-            ),
-            IconButton(
-              icon: Icon(isPwSecure
-                  ? Icons.remove_red_eye_outlined
-                  : Icons.remove_red_eye_sharp),
-              onPressed: () {
-                setState(() {
-                  isPwSecure = !isPwSecure;
-                });
-              },
-            ),
-          ],
-        ),
+        HiddenPasswordWidget(password: _currentItem.password),
         const SizedBox(
           height: 40,
         ),
@@ -108,16 +89,6 @@ class _ShareWifiViewState extends State<ShareWifiView> {
     );
   }
 
-  String _getPasswordContent() {
-    String result = password;
-    if (isPwSecure) {
-      for (var i = 0; i < result.length - 2; i++) {
-        result = result.replaceRange(i, i + 1, '*');
-      }
-    }
-    return result;
-  }
-
   Widget _optionSection() {
     final List<ShareWifiOption> options = [
       ShareWifiOption.clipboard,
@@ -140,14 +111,13 @@ class _ShareWifiViewState extends State<ShareWifiView> {
               ),
               height: 80,
               alignment: Alignment.centerLeft,
-              // color: Colors.red,
             ),
             onTap: () {
               _onOptionTapped(options[index]);
             },
           ),
           if (index != options.length - 1)
-            const Divider(thickness: 1, height: 1, color: Colors.grey)
+            const Divider(thickness: 1, height: 1, color: MoabColor.dividerGrey)
         ],
       );
     }));
@@ -254,8 +224,8 @@ class _ShareWifiViewState extends State<ShareWifiView> {
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
-        header: const BasicHeader(
-          title: 'Share Main WiFi',
+        header: BasicHeader(
+          title: 'Share ${_currentItem.wifiType.displayTitle} WiFi',
         ),
         content: Column(
           children: [

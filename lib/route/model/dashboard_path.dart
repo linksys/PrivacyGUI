@@ -5,18 +5,22 @@ import 'package:linksys_moab/page/dashboard/view/dashboard_health_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_security_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_settings_view.dart';
+import 'package:linksys_moab/page/wifi_settings/edit_wifi_mode_view.dart';
+import 'package:linksys_moab/page/wifi_settings/edit_wifi_name_password_view.dart';
+import 'package:linksys_moab/page/wifi_settings/edit_wifi_security_view.dart';
 import 'package:linksys_moab/page/wifi_settings/share_wifi_view.dart';
-import 'package:linksys_moab/page/wifi_settings/wifi_main.dart';
+import 'package:linksys_moab/page/wifi_settings/wifi_list_view.dart';
+import 'package:linksys_moab/page/wifi_settings/wifi_settings_review_view.dart';
+import 'package:linksys_moab/page/wifi_settings/wifi_settings_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
-
-import '../../page/dashboard/view/add_daily_time_limit_view.dart';
-import '../../page/dashboard/view/add_schedule_pause_view.dart';
-import '../../page/dashboard/view/daily_time_limit_list_view.dart';
-import '../../page/dashboard/view/internet_schedule_view.dart';
-import '../../page/dashboard/view/profile_settings_view.dart';
-import '../../page/dashboard/view/schedule_pause_list_view.dart';
-import '../../page/dashboard/view/view.dart';
+import 'package:linksys_moab/page/dashboard/view/add_daily_time_limit_view.dart';
+import 'package:linksys_moab/page/dashboard/view/add_schedule_pause_view.dart';
+import 'package:linksys_moab/page/dashboard/view/daily_time_limit_list_view.dart';
+import 'package:linksys_moab/page/dashboard/view/internet_schedule_view.dart';
+import 'package:linksys_moab/page/dashboard/view/profile_settings_view.dart';
+import 'package:linksys_moab/page/dashboard/view/schedule_pause_list_view.dart';
+import 'package:linksys_moab/page/dashboard/view/view.dart';
 import 'base_path.dart';
 
 abstract class DashboardPath extends BasePath {
@@ -39,10 +43,6 @@ abstract class DashboardPath extends BasePath {
         return const NoRouterView();
       case PrepareDashboardPath:
         return PrepareDashboardView();
-      case WifiPath:
-        return WiFiView();
-      case ShareWifiPath:
-        return const ShareWifiView();
       case InternetSchedulePath:
         return const InternetScheduleView();
       case ProfileSettingsPath:
@@ -55,6 +55,30 @@ abstract class DashboardPath extends BasePath {
         return const DailyTimeLimitListView();
       case SchedulePauseListPath:
         return const SchedulePauseListView();
+      case WifiSettingsPath:
+        return const WifiSettingsView();
+      case WifiSettingsReviewPath:
+        return WifiSettingsReviewView(
+          args: args,
+        );
+      case EditWifiNamePasswordPath:
+        return EditWifiNamePasswordView(
+          args: args,
+        );
+      case EditWifiSecurityPath:
+        return EditWifiSecurityView(
+          args: args,
+        );
+      case EditWifiModePath:
+        return EditWifiModeView(
+          args: args,
+        );
+      case WifiListPath:
+        return const WifiListView();
+      case ShareWifiPath:
+        return ShareWifiView(
+          args: args,
+        );
       default:
         return const Center();
     }
@@ -85,7 +109,13 @@ class NoRouterPath extends DashboardPath {}
 
 class PrepareDashboardPath extends DashboardPath {}
 
-class ShareWifiPath extends DashboardPath {}
+class WifiSettingsPath extends DashboardPath {}
+
+class WifiSettingsReviewPath extends DashboardPath {}
+
+class EditWifiNamePasswordPath extends DashboardPath {}
+
+class EditWifiSecurityPath extends DashboardPath {}
 
 class InternetSchedulePath extends DashboardPath{}
 
@@ -98,7 +128,9 @@ class AddSchedulePausePath extends DashboardPath{}
 class DailyTimeLimitListPath extends DashboardPath{}
 
 class SchedulePauseListPath extends DashboardPath{}
-class WifiPath extends DashboardPath {
-  @override
-  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
-}
+
+class EditWifiModePath extends DashboardPath {}
+
+class WifiListPath extends DashboardPath {}
+
+class ShareWifiPath extends DashboardPath {}

@@ -137,14 +137,20 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
           children: [
             _blockTile(
               'WIFI',
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('2',
-                      style: Theme.of(context).textTheme.headline1?.copyWith(
-                          fontSize: 32, fontWeight: FontWeight.w400)),
-                  Text('active', style: Theme.of(context).textTheme.headline3)
-                ],
+              GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () {
+                  NavigationCubit.of(context).push(WifiListPath());
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('2',
+                        style: Theme.of(context).textTheme.headline1?.copyWith(
+                            fontSize: 32, fontWeight: FontWeight.w400)),
+                    Text('active', style: Theme.of(context).textTheme.headline3)
+                  ],
+                ),
               ),
             ),
             _blockTile(

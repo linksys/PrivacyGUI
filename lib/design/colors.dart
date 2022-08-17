@@ -12,6 +12,7 @@ class MoabColor {
   static const textButtonBlue = Color.fromRGBO(8, 112, 234, 1.0);
   static const placeholderGrey = Color.fromRGBO(153, 153, 153, 1.0);
   static const progressBarGreen = Color(0xff63ea71);
+  static const dividerGrey = Color.fromRGBO(0, 0, 0, 0.2);
 
   static const primaryDarkGrey = Color.fromRGBO(95, 13, 13, 1.0);
   static const primaryDarkGreen = Color.fromRGBO(34, 85, 20, 1.0);
