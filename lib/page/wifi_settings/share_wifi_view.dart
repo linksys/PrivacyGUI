@@ -9,6 +9,7 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/wifi_settings/wifi_settings_view.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
+import 'package:linksys_moab/util/wifi_credential.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
@@ -77,7 +78,11 @@ class _ShareWifiViewState extends State<ShareWifiView> {
           key: globalKey,
           child: SizedBox(
             child: QrImage(
-              data: sharingContent,
+              data: WiFiCredential(
+                ssid: _currentItem.ssid,
+                password: _currentItem.password,
+                type: SecurityType.wpa, //TODO: The security type is fixed for now
+              ).generate(),
               padding: EdgeInsets.zero,
             ),
             height: 160,
@@ -131,7 +136,7 @@ class _ShareWifiViewState extends State<ShareWifiView> {
       style: Theme.of(context)
           .textTheme
           .bodyText1
-          ?.copyWith(color: Theme.of(context).primaryColor),
+          ?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
     )));
   }
 

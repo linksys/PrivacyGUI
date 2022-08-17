@@ -1,11 +1,19 @@
 enum SecurityType { wpa, wep, none }
 
 class WiFiCredential {
-  const WiFiCredential._(
-      {this.ssid = '',
-        this.password = '',
-        this.type = SecurityType.none,
-        this.isHidden = false});
+  const WiFiCredential({
+    this.ssid = '',
+    this.password = '',
+    this.type = SecurityType.none,
+    this.isHidden = false,
+  });
+
+  const WiFiCredential._({
+    this.ssid = '',
+    this.password = '',
+    this.type = SecurityType.none,
+    this.isHidden = false,
+  });
 
   factory WiFiCredential.parse(String raw) {
     String ssid = '', password = '';
@@ -57,6 +65,6 @@ class WiFiCredential {
   final bool isHidden;
 
   String generate() {
-    return 'S:$ssid;P:$password;T:${type.name};H:$isHidden;;';
+    return 'WIFI:S:$ssid;P:$password;T:${type.name.toUpperCase()};H:$isHidden;;';
   }
 }
