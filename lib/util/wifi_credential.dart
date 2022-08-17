@@ -55,4 +55,8 @@ class WiFiCredential {
   final String password;
   final SecurityType type;
   final bool isHidden;
+
+  String generate() {
+    return 'S:$ssid;P:$password;T:${type.name};H:$isHidden;;';
+  }
 }
