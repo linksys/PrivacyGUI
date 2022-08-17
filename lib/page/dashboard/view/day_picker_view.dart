@@ -38,9 +38,15 @@ class _DayPickerViewState extends State<DayPickerView> {
               height: 46,
               margin: const EdgeInsets.all(2.5),
               decoration: BoxDecoration(
-                  color: days[item]! ? Colors.grey : Colors.transparent,
-                  border: Border.all(color: Colors.black, width: 0.5)),
-              child: Center(child: Text(item))),
+                  color: days[item]!
+                      ? const Color.fromRGBO(151, 151, 151, 1.0)
+                      : Colors.transparent,
+                  border: Border.all(
+                      color: const Color.fromRGBO(0, 0, 0, 0.2), width: 1)),
+              child: Center(
+                  child: Text(item,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w500)))),
           onTap: () => changeStatus(item),
         ))
     ]);
