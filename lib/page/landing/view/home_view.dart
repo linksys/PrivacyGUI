@@ -11,6 +11,7 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/route/model/model.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class HomeView extends ArgumentsStatefulView {
   const HomeView({Key? key, super.args}) : super(key: key);
@@ -81,7 +82,20 @@ class _HomeViewState extends State<HomeView> {
           NavigationCubit.of(context).push(SetupWelcomeEulaPath());
         },
       ),
-      ...showDebugButton()
+      ...showDebugButton(),
+      SizedBox(
+        height: 16,
+      ),
+      FutureBuilder(
+          future:
+          PackageInfo.fromPlatform().then((value) => value.version),
+          initialData: '-',
+          builder: (context, data) {
+            return Text('version ${data.data}',
+                style: Theme.of(context).textTheme.headline4?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ));
+          }),
     ]);
   }
 

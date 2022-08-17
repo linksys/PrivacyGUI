@@ -4,6 +4,8 @@ import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/util/debug_mixin.dart';
+import 'package:linksys_moab/util/logger.dart';
 
 enum DashboardBottomItemType { home, security, health, settings }
 
@@ -18,7 +20,7 @@ class DashboardBottomTabContainer extends ArgumentsStatefulView {
   _DashboardViewState createState() => _DashboardViewState();
 }
 
-class _DashboardViewState extends State<DashboardBottomTabContainer> {
+class _DashboardViewState extends State<DashboardBottomTabContainer> with DebugObserver {
   int _selectedIndex = 0;
   final List<DashboardBottomItem> _bottomTabItems = [];
 
@@ -35,9 +37,17 @@ class _DashboardViewState extends State<DashboardBottomTabContainer> {
 
   Widget _contentView() {
     return Scaffold(
-      body: BasicLayout(
-        alignment: CrossAxisAlignment.start,
-        content: widget.navigator,
+      body: GestureDetector(
+        onTap: () {
+          if (increase()) {
+            logger.d('Triggered!');
+            NavigationCubit.of(context).push(DebugToolsMainPath());
+          }
+        },
+        child: BasicLayout(
+          alignment: CrossAxisAlignment.start,
+          content: widget.navigator,
+        ),
       ),
       bottomNavigationBar: Offstage(
         offstage: widget.cubit.state.last.pageConfig.isHideBottomNavBar,
