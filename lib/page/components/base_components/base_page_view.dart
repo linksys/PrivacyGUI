@@ -42,10 +42,8 @@ class BasePageView extends StatelessWidget {
           automaticallyImplyLeading: false,
           actions: [
             IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () =>
-                  NavigationCubit.of(context).pop()
-            )
+                icon: const Icon(Icons.close),
+                onPressed: () => NavigationCubit.of(context).pop())
           ],
         ),
         bottomSheet = null,
@@ -94,12 +92,13 @@ class BasePageView extends StatelessWidget {
       backgroundColor: bottomSheet == null
           ? Theme.of(context).scaffoldBackgroundColor
           : Colors.transparent,
-      appBar: appBar ?? AppBar(
-        backgroundColor: Colors.transparent,
-        iconTheme:
-        IconThemeData(color: Theme.of(context).colorScheme.primary),
-        elevation: 0,
-      ),
+      appBar: appBar ??
+          AppBar(
+            backgroundColor: Colors.transparent,
+            iconTheme:
+                IconThemeData(color: Theme.of(context).colorScheme.primary),
+            elevation: 0,
+          ),
       body: SafeArea(
         child: scrollable! ? _scrollableView() : _view(),
       ),

@@ -55,6 +55,26 @@ abstract class DashboardPath extends BasePath {
         return const DailyTimeLimitListView();
       case SchedulePauseListPath:
         return const SchedulePauseListView();
+      case CreateProfileNamePath:
+        return CreateProfileNameView(
+          args: args,
+          next: next,
+        );
+      case CreateProfileDevicesSelectedPath:
+        return CreateProfileDevicesSelectedView(
+          args: args,
+          next: next,
+        );
+      case CreateProfileAvatarPath:
+        return CreateProfileAvatarView(
+          args: args,
+          next: next,
+        );
+      case ProfileOverviewPath:
+        return ProfileOverviewView(
+          args: args,
+          next: next,
+        );
       default:
         return const Center();
     }
@@ -98,7 +118,28 @@ class AddSchedulePausePath extends DashboardPath{}
 class DailyTimeLimitListPath extends DashboardPath{}
 
 class SchedulePauseListPath extends DashboardPath{}
+
 class WifiPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}
+
+class CreateProfileNamePath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
+}
+
+class CreateProfileDevicesSelectedPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
+}
+
+class CreateProfileAvatarPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
+}
+
+class ProfileOverviewPath extends DashboardPath {
   @override
   PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
 }

@@ -33,7 +33,10 @@ class _InternetScheduleViewState extends State<InternetScheduleView> {
               }),
           actions: [
             TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  NavigationCubit.of(context).push(CreateProfileNamePath()
+                    ..next = InternetSchedulePath());
+                },
                 child: const Text('AddProfile',
                     style:
                         TextStyle(fontSize: 13, color: MoabColor.primaryBlue))),
