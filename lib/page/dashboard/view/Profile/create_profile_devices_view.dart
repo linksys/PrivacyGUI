@@ -92,7 +92,7 @@ class _CreateProfileDevicesSelectedViewState
                 child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: _devices.length,
-                  itemBuilder: (context, index) => GestureDetector(
+                  itemBuilder: (context, index) => InkWell(
                     child: SelectableDeviceItem(
                       deviceName: _devices[index].name,
                       isSelected: _devices[index].isSelected,

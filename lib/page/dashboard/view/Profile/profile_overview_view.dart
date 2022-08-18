@@ -73,7 +73,7 @@ class _ProfileOverviewViewState extends State<ProfileOverviewView> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _blockedItems.length,
-                itemBuilder: (context, index) => GestureDetector(
+                itemBuilder: (context, index) => InkWell(
                   child: BlockedItemView(
                     blockedItem: _blockedItems[index],
                   ),
@@ -232,26 +232,31 @@ class BlockedItemView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // TODO wrap content
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(7, 7, 7, 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: MoabColor.placeholderGrey,
-            width: 1,
+      child: Wrap(
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(7, 7, 7, 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: MoabColor.placeholderGrey,
+                width: 1,
+              ),
+            ),
+            child: Wrap(
+              children: [
+                icon ?? Image.asset('assets/images/icon_blocked.png'),
+                const SizedBox(width: 8),
+                Text(blockedItem.category),
+                const SizedBox(width: 7),
+                Text(blockedItem.count.toString()),
+              ],
+            ),
           ),
-        ),
-        child: Wrap(
-          children: [
-            icon ?? Image.asset('assets/images/icon_blocked.png'),
-            const SizedBox(width: 8),
-            Text(blockedItem.category),
-            const SizedBox(width: 7),
-            Text(blockedItem.count.toString()),
-          ],
-        ),
+        ],
       ),
     );
   }
