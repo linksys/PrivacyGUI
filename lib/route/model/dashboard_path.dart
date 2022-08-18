@@ -79,6 +79,26 @@ abstract class DashboardPath extends BasePath {
         return ShareWifiView(
           args: args,
         );
+      case CreateProfileNamePath:
+        return CreateProfileNameView(
+          args: args,
+          next: next,
+        );
+      case CreateProfileDevicesSelectedPath:
+        return CreateProfileDevicesSelectedView(
+          args: args,
+          next: next,
+        );
+      case CreateProfileAvatarPath:
+        return CreateProfileAvatarView(
+          args: args,
+          next: next,
+        );
+      case ProfileOverviewPath:
+        return ProfileOverviewView(
+          args: args,
+          next: next,
+        );
       default:
         return const Center();
     }
@@ -134,3 +154,23 @@ class EditWifiModePath extends DashboardPath {}
 class WifiListPath extends DashboardPath {}
 
 class ShareWifiPath extends DashboardPath {}
+
+class CreateProfileNamePath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
+}
+
+class CreateProfileDevicesSelectedPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
+}
+
+class CreateProfileAvatarPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
+}
+
+class ProfileOverviewPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}

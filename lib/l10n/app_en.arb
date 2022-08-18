@@ -234,5 +234,45 @@
   "error_invalid_phone_number": "Invalid phone number",
   "error_username_already_exist": "It looks like you already have an account.",
   "login_to_continue": "Log in to continue.",
-  "internet_schedule_view_description": "Set daily time limits and schedule blocked internet access."
+  "internet_schedule_view_description": "Set daily time limits and schedule blocked internet access.",
+  "profile_name": "Profile name",
+  "add_profile_name_description": "First, create a profile.\n\nProfiles make it easier to manage rules for multiple devices. For example, you can group devices together and name them “kids”.",
+  "add_profile": "Add Profile",
+  "select_devices": "Select devices",
+  "select_devices_description": "A device can only belong to one profile.",
+  "i_dont_see_my_device": "I don't see my device",
+  "select_an_image": "Select an image",
+  "done": "Done",
+  "time_limits": "Time limits",
+  "time_remaining_today": "{time} remaining today",
+  "@time_remaining_today": {
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "1:15"
+      }
+    }
+  },
+  "internet_schedules": "Internet schedules",
+  "access_until_time_today": "Access until {time} today",
+  "@access_until_time_today": {
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "11pm"
+      }
+    }
+  },
+  "content_filtered": "Content filtered",
+  "count_blocked_this_week": "{count} blocked this week",
+  "@count_blocked_this_week": {
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "13"
+      }
+    }
+  },
+  "devices": "Devices",
+  "online": "Online"
 }

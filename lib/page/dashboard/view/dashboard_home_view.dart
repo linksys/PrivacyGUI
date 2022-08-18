@@ -312,6 +312,8 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                     logger.d('add profile clicked: $index');
                   } else {
                     logger.d('profile clicked: $index');
+                    NavigationCubit.of(context).push(ProfileOverviewPath()
+                      ..args.addAll({'profile': _mockProfiles[index]}));
                   }
                 },
                 child: _profileItem(_mockProfiles[index])),
@@ -329,9 +331,11 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
 
   Widget _profileItem(Profile profile) {
     if (profile.name == '+') {
-      return GestureDetector(child: Image.asset(profile.icon), onTap: () {
-        NavigationCubit.of(context).push(InternetSchedulePath());
-      });
+      return GestureDetector(
+          child: Image.asset(profile.icon),
+          onTap: () {
+            NavigationCubit.of(context).push(InternetSchedulePath());
+          });
     } else {
       return Container(
         height: 58,

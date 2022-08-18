@@ -6,9 +6,10 @@ class PrimaryTextField extends StatefulWidget {
     required this.controller,
     this.hintText = '',
     this.inputType = TextInputType.text,
+    this.onChanged,
+    this.customPrimaryColor,
     this.isError = false,
     this.errorColor = Colors.red,
-    this.onChanged,
     this.secured = false,
     this.prefixIcon,
     this.suffixIcon,
@@ -18,6 +19,7 @@ class PrimaryTextField extends StatefulWidget {
   final String hintText;
   final TextInputType inputType;
   final void Function(String text)? onChanged;
+  final Color? customPrimaryColor;
   final bool isError;
   final Color errorColor;
   final bool secured;
@@ -42,14 +44,15 @@ class _PrimaryTextFieldState extends State<PrimaryTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor =
+        widget.customPrimaryColor ?? Theme.of(context).colorScheme.primary;
     return TextField(
       obscureText: widget.secured,
       controller: widget.controller,
       style: Theme.of(context).textTheme.bodyText1?.copyWith(
-            color: widget.isError
-                ? widget.errorColor
-                : Theme.of(context).colorScheme.primary,
+            color: widget.isError ? widget.errorColor : primaryColor,
           ),
+      cursorColor: primaryColor,
       decoration: InputDecoration(
         prefixIcon: widget.prefixIcon,
         suffixIcon: widget.suffixIcon,
@@ -60,16 +63,12 @@ class _PrimaryTextFieldState extends State<PrimaryTextField> {
             ?.copyWith(color: Theme.of(context).colorScheme.surface),
         enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(
-                color: widget.isError
-                    ? widget.errorColor
-                    : Theme.of(context).colorScheme.primary,
+                color: widget.isError ? widget.errorColor : primaryColor,
                 width: 1),
             borderRadius: BorderRadius.zero),
         focusedBorder: OutlineInputBorder(
             borderSide: BorderSide(
-                color: widget.isError
-                    ? widget.errorColor
-                    : Theme.of(context).colorScheme.primary,
+                color: widget.isError ? widget.errorColor : primaryColor,
                 width: 1),
             borderRadius: BorderRadius.zero),
       ),

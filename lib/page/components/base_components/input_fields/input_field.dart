@@ -6,12 +6,13 @@ class InputField extends StatelessWidget {
     Key? key,
     required this.titleText,
     required this.controller,
-    this.inputType = TextInputType.text,
     this.hintText = '',
+    this.inputType = TextInputType.text,
+    this.onChanged,
+    this.customPrimaryColor,
     this.isError = false,
     this.errorText = '',
     this.errorColor = Colors.red,
-    this.onChanged,
     this.secured = false,
     this.prefixIcon,
     this.suffixIcon,
@@ -22,6 +23,7 @@ class InputField extends StatelessWidget {
   final String hintText;
   final TextInputType inputType;
   final void Function(String text)? onChanged;
+  final Color? customPrimaryColor;
   final bool isError;
   final String errorText;
   final Color errorColor;
@@ -31,6 +33,7 @@ class InputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = customPrimaryColor ?? Theme.of(context).colorScheme.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -40,7 +43,7 @@ class InputField extends StatelessWidget {
             style: Theme.of(context).textTheme.headline4?.copyWith(
                 color: isError
                     ? errorColor
-                    : Theme.of(context).colorScheme.primary),
+                    : primaryColor),
           ),
           padding: const EdgeInsets.only(bottom: 8),
         ),
@@ -49,6 +52,7 @@ class InputField extends StatelessWidget {
           hintText: hintText,
           inputType: inputType,
           onChanged: onChanged,
+          customPrimaryColor: primaryColor,
           isError: isError,
           prefixIcon: prefixIcon,
           suffixIcon: suffixIcon,
