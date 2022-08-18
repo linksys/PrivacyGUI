@@ -125,7 +125,7 @@
   "wifi_ready_view_login_info": "Login information",
   "cloud_account_double_check_title": "Are you sure? You'll need an account to use the following features:",
   "create_router_password_title": "Okay, you’ll need a router password",
-  "create_router_password_subtitle": "An admin password will allow you to access your router settings",
+  "create_router_password_subtitle": "A router password allows you to access your router settings",
   "create_router_password_reset_title": "Create a new router password",
   "create_router_password_how_to_access": "How do I access my router?",
   "create_router_password_reset_success": "Router password reset",
