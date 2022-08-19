@@ -2,7 +2,7 @@
 function buildInHouse() {
   version=$1
   flutter clean
-  flutter build ipa --export-options-plist=ios/Scripts/Moab-EE-InHouse.plist --obfuscate --split-debug-info=moab/build/ios/ipa/temp/;
+  flutter build ipa --export-options-plist=ios/Scripts/Moab-EE-InHouse.plist;
   mv "./build/ios/ipa/Moab.ipa" "./build/ios/ipa/moab_app_ee_distribution.ipa"
   copyInHouseAssets
   updateLinks "$version"
@@ -21,6 +21,7 @@ function copyInHouseAssets() {
 }
 
 function updateLinks() {
+  exho "Update links"
   version=$1
   htmlFilePath=./build/ios/ipa/install.html.template
   sed -i '' "s/{version}/$version/g" "$htmlFilePath"
