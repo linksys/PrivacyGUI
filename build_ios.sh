@@ -30,4 +30,7 @@ function updateLinks() {
   sed -i '' "s/Runner/Moab App $version/g" "$manifestPath"
 }
 version=$1
-buildInHouse "$version"
+if buildInHouse "$version"; then
+  echo InHouse "$version" build failed
+  exit 1
+fi

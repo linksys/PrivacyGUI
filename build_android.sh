@@ -1,18 +1,45 @@
 
 function build() {
-  targetFlutterApkPath=./build/app/outputs/flutter-apk
   conf=$1
-  echo cleaning...
-  flutter clean
-  echo start building "$conf" process...
-  flutter build apk --"$conf"
-  confFilePath=$(ls ./build/app/outputs/apk/"$conf"/*.apk)
-  confFilename=$(basename "$confFilePath" .apk)
-  # rename APK file
-  targetConfFilePath=$(ls "$targetFlutterApkPath"/*-"$conf".apk)
-  mv "$targetConfFilePath" "$targetFlutterApkPath"/"$confFilename".apk
-  echo finish build "$conf".
+  type=$2
+  echo start building "$conf" "$type" process...
+  if ! flutter build "$type" --"$conf"; then
+      echo build "$conf" failed
+      exit 1
+  fi
+  ext="apk"
+  if [ "$type" = "appbundle" ]; then
+    ext="aab"
+  fi
+  copyFiles "$ext" "$conf"
+  echo finish build "$conf" "$type".
 }
 
-build debug
-build release
+function copyFiles() {
+  targetFlutterApkPath=./build/app/outputs/flutter-apk
+  mkdir -p "$targetFlutterApkPath"
+
+  type=$1
+  conf=$2
+  path=apk
+  if [ "$type" = "aab" ]; then
+    echo "process app bundle..."
+    path="bundle"
+    confFilePath=$(ls ./build/app/outputs/"$path"/"$conf"/*."$type")
+    confFilename=$(basename "$confFilePath" ."$type")
+    cp "$confFilePath" "$targetFlutterApkPath"/"$confFilename"."$type"
+  else
+    echo "process apk..."
+    confFilePath=$(ls ./build/app/outputs/"$path"/"$conf"/*."$type")
+    confFilename=$(basename "$confFilePath" ."$type")
+    # rename file
+    targetConfFilePath=$(ls "$targetFlutterApkPath"/*-"$conf"."$type")
+    mv "$targetConfFilePath" "$targetFlutterApkPath"/"$confFilename"."$type"
+  fi
+}
+
+echo cleaning...
+flutter clean
+build debug apk
+build release apk
+build release appbundle
