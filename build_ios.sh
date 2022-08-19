@@ -1,6 +1,7 @@
 
 function buildInHouse() {
   version=$1
+  exho "start building in house $version"
   flutter clean
   flutter build ipa --export-options-plist=ios/Scripts/Moab-EE-InHouse.plist;
   mv "./build/ios/ipa/Moab.ipa" "./build/ios/ipa/moab_app_ee_distribution.ipa"
