@@ -127,4 +127,10 @@ extension MoabAuthRequests on MoabHttpClient {
 
     return this.get(Uri.parse(url), headers: header);
   }
+
+  Future<Response> fetchRegionCodes() {
+    final url = countryCodeUrl;
+    return this.get(Uri.parse(url));
+  }
+
 }

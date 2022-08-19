@@ -11,9 +11,9 @@ import 'package:linksys_moab/network/http/model/cloud_create_account_verified.da
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_state.dart';
 import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
+import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
 import 'package:linksys_moab/repository/model/dummy_model.dart';
-import 'package:linksys_moab/util/storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CloudAuthRepository extends AuthRepository {
@@ -119,5 +119,17 @@ class CloudAuthRepository extends AuthRepository {
         pref.setString(moabPrefCloudPublicKey, publicKey);
       });
     });
+  }
+
+  @override
+  Future<List<RegionCode>> fetchRegionCodes() async {
+    List<RegionCode> regions = [];
+    final response = await _httpClient.fetchRegionCodes();
+    final jsonMap = json.decode(response.body) as Map<String, dynamic>;
+    if (jsonMap.containsKey('countryCodes')) {
+      final jsonArray = jsonMap['countryCodes'] as List<dynamic>;
+      regions = List.from(jsonArray.map((e) => RegionCode.fromJson(e)));
+    }
+    return regions;
   }
 }

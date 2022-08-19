@@ -17,11 +17,15 @@ const moabAppClientId = '991490F1-AD1D-47E0-81AD-190B11757252'; // TODO fake
 const moabCloudConfigHost = 'https://config.linksys.cloud/';
 const configFileName = 'environment.json';
 const allConfigFileName = 'all-environments.json';
+const countryCodeFileName = 'country-codes.json';
 
 // Cloud config url
 String get cloudConfigUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$configFileName';
 String get allCloudConfigUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$allConfigFileName';
 String get availabilityUrl => 'https://cloudhealth.lswf.net/cloud-availability/cloud-qa.json';
+
+// Country code url
+String get countryCodeUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$countryCodeFileName';
 
 // Cloud path constants
 const version = '/v1';

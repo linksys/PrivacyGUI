@@ -5,6 +5,7 @@ import 'package:linksys_moab/network/http/model/cloud_create_account_verified.da
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_state.dart';
 import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
+import 'package:linksys_moab/network/http/model/region_code.dart';
 
 import '../model/dummy_model.dart';
 
@@ -93,4 +94,9 @@ abstract class AuthRepository {
   ///
   ///
   Future<void> downloadCloudCert({required String taskId, required String secret});
+
+  ///
+  ///
+  ///
+  Future<List<RegionCode>> fetchRegionCodes();
 }
