@@ -7,6 +7,7 @@ import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
 import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
+import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
 import 'package:linksys_moab/repository/authenticate/local_auth_repository.dart';
 import 'package:linksys_moab/repository/model/dummy_model.dart';
@@ -174,6 +175,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       prefs.remove(moabPrefCloudPrivateKey);
       emit(AuthState.unAuthorized());
     });
+  }
+
+  Future<List<RegionCode>> fetchRegionCodes() {
+    return _repository.fetchRegionCodes();
   }
 
   @override

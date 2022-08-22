@@ -5,9 +5,9 @@ import 'package:linksys_moab/network/http/model/cloud_account_info.dart';
 import 'package:linksys_moab/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_create_account_verified.dart';
-import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_state.dart';
 import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
+import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
 import 'package:linksys_moab/repository/model/dummy_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -177,5 +177,18 @@ class FakeAuthRepository extends AuthRepository {
   @override
   Future<void> downloadCloudCert({required taskId, required secret}) async {
     await Future.delayed(waitDuration);
+  }
+
+  @override
+  Future<List<RegionCode>> fetchRegionCodes() async {
+    await Future.delayed(waitDuration);
+    final jsonArray = [
+      {
+        "isoCode" : "US",
+        "country" : "United States",
+        "countryCode" : 1
+      }
+    ];
+    return List.from(jsonArray.map((e) => RegionCode.fromJson(e)));
   }
 }

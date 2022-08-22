@@ -6,9 +6,8 @@ import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/constants/constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/cloud_phone.dart';
+import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/customs/customs.dart';
-import 'package:linksys_moab/bloc/otp/otp_cubit.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
@@ -33,7 +32,11 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
   bool hasInput = false;
   bool isInputInvalid = false;
   Map _countryCodes = {};
-  PhoneRegion currentRegion = PhoneRegion('United States', 'US', 1); // Default
+  RegionCode currentRegion = RegionCode(
+    countryCode: 'US',
+    countryName: 'United States',
+    countryCallingCode: 1,
+  ); // Default
 
   @override
   void initState() {
@@ -66,7 +69,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
             data: phoneNumber.e164,
             phoneNumber: CloudPhoneModel(
               country: currentRegion.countryCode,
-              countryCallingCode: '+${currentRegion.callingCode}',
+              countryCallingCode: '+${currentRegion.countryCallingCode}',
               phoneNumber: phoneNumber.nationalNumber,
             ),
           ));
@@ -86,7 +89,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
     context.read<OtpCubit>().setLoading(isLoading);
   }
 
-  Future<void> updateRegion(PhoneRegion region) async {
+  Future<void> updateRegion(RegionCode region) async {
     setState(() {
       currentRegion = region;
     });
@@ -145,7 +148,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
                           width: 1,
                         )),
                         child: Text(
-                          '+${currentRegion.callingCode}',
+                          '+${currentRegion.countryCallingCode}',
                           style: Theme.of(context)
                               .textTheme
                               .bodyText1

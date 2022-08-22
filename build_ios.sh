@@ -1,8 +1,9 @@
 
 function buildInHouse() {
   version=$1
+  echo "start building in house $version"
   flutter clean
-  flutter build ipa --export-options-plist=ios/Scripts/Moab-EE-InHouse.plist
+  flutter build ipa --export-options-plist=ios/Scripts/Moab-EE-InHouse.plist;
   mv "./build/ios/ipa/Moab.ipa" "./build/ios/ipa/moab_app_ee_distribution.ipa"
   copyInHouseAssets
   updateLinks "$version"
@@ -21,6 +22,7 @@ function copyInHouseAssets() {
 }
 
 function updateLinks() {
+  echo "Update links"
   version=$1
   htmlFilePath=./build/ios/ipa/install.html.template
   sed -i '' "s/{version}/$version/g" "$htmlFilePath"
@@ -30,7 +32,7 @@ function updateLinks() {
   sed -i '' "s/Runner/Moab App $version/g" "$manifestPath"
 }
 version=$1
-if buildInHouse "$version"; then
+if ! buildInHouse "$version"; then
   echo InHouse "$version" build failed
   exit 1
 fi
