@@ -1,27 +1,77 @@
 import 'package:equatable/equatable.dart';
 
-List<CloudAppSignature> mappingAppSignature(List<dynamic> source, List<dynamic> mapped) {
+List<CloudAppSignature> mappingAppSignature(
+    List<dynamic> source, List<dynamic> mapped) {
   final sourceList = List<MapEntry<String, AppSignature>>.from(source
       .map((e) => AppSignature.fromJson(e))
       .map((e) => MapEntry(e.id, e)));
   final Map<String, AppSignature> sourceMap = Map.fromEntries(sourceList);
 
-  final mappedList = List<MapEntry<String, CloudAppSignature>>.from(
-      mapped
-          .map((e) => CloudAppSignature.fromJson(e))
-          .map((e) => MapEntry(e.id, e)));
-  final Map<String, CloudAppSignature> mappedMap =
-  Map.fromEntries(mappedList);
+  final mappedList = List<MapEntry<String, CloudAppSignature>>.from(mapped
+      .map((e) => CloudAppSignature.fromJson(e))
+      .map((e) => MapEntry(e.id, e)));
+  final Map<String, CloudAppSignature> mappedMap = Map.fromEntries(mappedList);
 
   final result = sourceMap.map((key, value) => MapEntry(
-    key,
-    mappedMap.containsKey(key)
-        ? mappedMap[key]!.copyWithAppSignature(signature: value)
-        : CloudAppSignature.fromAppSignature(value),
-  ));
+        key,
+        mappedMap.containsKey(key)
+            ? mappedMap[key]!.copyWithAppSignature(signature: value)
+            : CloudAppSignature.fromAppSignature(value),
+      ));
 
   return List.from(result.values);
 }
+
+class RuleExpression {
+  const RuleExpression({required this.field, required this.value});
+
+  factory RuleExpression.fromJson(Map<String, dynamic> json) {
+    return RuleExpression(field: json['field'], value: json['value']);
+  }
+
+  final String field;
+  final String value;
+}
+
+class PresetRule {
+  const PresetRule({required this.target, required this.expression});
+
+  factory PresetRule.fromJson(Map<String, dynamic> json) {
+    return PresetRule(
+        target: json['target'],
+        expression: RuleExpression.fromJson(json['expression']));
+  }
+
+  final String target;
+  final RuleExpression expression;
+}
+
+class SecurityPresets {
+  const SecurityPresets(
+      {required this.name, required this.identifier, required this.rules});
+
+  factory SecurityPresets.fromJson(Map<String, dynamic> json) {
+    return SecurityPresets(
+        name: json['name'],
+        identifier: json['identifier'],
+        rules: List.from(
+            List.from(json['rules']).map((e) => PresetRule.fromJson(e))));
+  }
+
+  final String name;
+  final String identifier;
+  final List<PresetRule> rules;
+}
+
+class SecurityPresetSignatures {
+  const SecurityPresetSignatures(
+      {required this.name, required this.identifier, required this.signatures});
+
+  final String name;
+  final String identifier;
+  final List<CloudAppSignature> signatures;
+}
+
 ///
 ///   {
 ///     "name": "GTunnel",
@@ -159,13 +209,15 @@ class CloudAppSignature extends AppSignature {
     return CloudAppSignature(
       name: json['name'],
       id: json['id'].toString(),
-      category: json['category'].toString(),
-      popularity: json['popularity'].toString(),
-      risk: json['risk'].toString(),
-      weight: '', // Cloud app signature doesn't have weight
+      category: json['category'],
+      popularity: json['popularity'],
+      risk: json['risk'],
+      weight: '',
+      // Cloud app signature doesn't have weight
       technology: json['technology'],
       behavior: json['behavior'],
-      protocol: '', // Cloud app signature doesn't have protocol
+      protocol: '',
+      // Cloud app signature doesn't have protocol
       isCloud: json['isCloud'],
       categoryName: json['categoryName'],
       language: json['language'],
@@ -173,16 +225,17 @@ class CloudAppSignature extends AppSignature {
       vendor: json['vendor'],
     );
   }
+
   factory CloudAppSignature.fromAppSignature(AppSignature signature) {
     return CloudAppSignature(
       name: signature.name,
       id: signature.id,
       category: signature.category,
-      popularity: signature.popularity ,
-      risk: signature.risk ,
-      weight: signature.weight ,
-      technology: signature.technology ,
-      behavior: signature.behavior ,
+      popularity: signature.popularity,
+      risk: signature.risk,
+      weight: signature.weight,
+      technology: signature.technology,
+      behavior: signature.behavior,
       protocol: signature.protocol,
       isCloud: '',
       categoryName: '',
@@ -245,18 +298,16 @@ class CloudAppSignature extends AppSignature {
     );
   }
 
-  CloudAppSignature copyWithAppSignature({
-   required AppSignature signature
-  }) {
+  CloudAppSignature copyWithAppSignature({required AppSignature signature}) {
     return CloudAppSignature(
       name: signature.name,
       id: signature.id,
       category: signature.category,
-      popularity: signature.popularity ,
-      risk: signature.risk ,
-      weight: signature.weight ,
-      technology: signature.technology ,
-      behavior: signature.behavior ,
+      popularity: signature.popularity,
+      risk: signature.risk,
+      weight: signature.weight,
+      technology: signature.technology,
+      behavior: signature.behavior,
       protocol: signature.protocol,
       isCloud: isCloud,
       categoryName: categoryName,
