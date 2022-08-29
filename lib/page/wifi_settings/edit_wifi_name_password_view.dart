@@ -1,3 +1,4 @@
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -38,10 +39,21 @@ class _EditWifiNamePasswordViewState extends State<EditWifiNamePasswordView> {
 
   void _checkInputData() {
     if (nameController.text.isNotEmpty && passwordController.text.isNotEmpty) {
-      //Update the name and the password
-      _wifiItem.ssid = nameController.text;
-      _wifiItem.password = passwordController.text;
-      NavigationCubit.of(context).popWithResult(_wifiItem);
+      showOkCancelAlertDialog(
+        context: context,
+        title: "Changing your WiFi name or password will cause all devices to disconnect",
+        message: 'You will have to reconnect each device with the new information',
+        okLabel: getAppLocalizations(context).text_continue,
+        cancelLabel: getAppLocalizations(context).cancel,
+      ).then((result) {
+        // If users confirm the change, update the information. Otherwise, do nothing.
+        if (result == OkCancelResult.ok) {
+          //Update the name and the password
+          _wifiItem.ssid = nameController.text;
+          _wifiItem.password = passwordController.text;
+          NavigationCubit.of(context).popWithResult(_wifiItem);
+        }
+      });
     } else {
       setState(() => isPasswordInvalid = true);
     }
@@ -50,6 +62,20 @@ class _EditWifiNamePasswordViewState extends State<EditWifiNamePasswordView> {
   @override
   Widget build(BuildContext context) {
     return BasePageView(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
+        elevation: 0,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 24),
+            child: SimpleTextButton(
+              text: getAppLocalizations(context).save,
+              onPressed: _checkInputData,
+            ),
+          ),
+        ],
+      ),
       child: BasicLayout(
         content: Column(
           children: [
@@ -64,17 +90,12 @@ class _EditWifiNamePasswordViewState extends State<EditWifiNamePasswordView> {
               titleText: getAppLocalizations(context).wifi_password,
               controller: passwordController,
               isError: isPasswordInvalid,
-              errorText: 'WiFi password must contain xyz (WIP)',
+              errorText: 'WiFi password must be between 2 - 32 characters, and not contain ?, ", \$, [, \\, ], or +.',
               onChanged: _onPasswordChanged,
             ),
           ],
         ),
-        footer: PrimaryButton(
-          text: getAppLocalizations(context).save,
-          onPress: _checkInputData,
-        ),
       ),
     );
   }
-
 }
