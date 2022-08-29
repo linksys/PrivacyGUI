@@ -2,7 +2,6 @@ package com.linksys.moab.app
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.annotation.TargetApi
 import android.app.Activity
 import android.content.*
 import android.content.pm.PackageManager
@@ -47,12 +46,6 @@ class MainActivity : FlutterFragmentActivity() {
                 } else {
                     startWifiConfiguration(this, ssid, password, security, result)
                 }
-            } else if (call.method == "openWiFiPanel") {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    openWiFiPanel(this, result)
-                } else {
-                    Log.e(WIFI_TAG, "The OS Version does not support WiFi Panel")
-                }
             } else if (call.method == "checkAndroidVersionUnderTen") {
                 result.success(Build.VERSION.SDK_INT < Build.VERSION_CODES.Q)
             } else if (call.method == "isAndroidTenAndSupportEasyConnect") {
@@ -72,7 +65,7 @@ class MainActivity : FlutterFragmentActivity() {
         ).setMethodCallHandler { call, result ->
             if (call.method == "otp") {
                 val intentFilter = IntentFilter(SmsRetriever.SMS_RETRIEVED_ACTION)
-                registerReceiver(smsVerificationReceiver, intentFilter)
+                registerReceiver(smsVerificationReceiver, intentFilter, SmsRetriever.SEND_PERMISSION, null )
 
                 // Start listening for SMS User Consent broadcasts from senderPhoneNumber
                 // The Task<Void> will be successful if SmsRetriever was able to start
@@ -266,12 +259,6 @@ class MainActivity : FlutterFragmentActivity() {
         }
         result.success(true)
     }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    private fun openWiFiPanel(context: Context, result: MethodChannel.Result) {
-        startActivity(Intent(android.provider.Settings.Panel.ACTION_WIFI))
-    }
-
 
     ///////////////////////
     private val SMS_CONSENT_REQUEST = 2  // Set to an unused request code
