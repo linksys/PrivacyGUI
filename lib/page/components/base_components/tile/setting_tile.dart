@@ -11,10 +11,6 @@ class SettingTile extends StatelessWidget {
         required this.value,
         this.onPress,
         this.space = 16})
-      required this.title,
-      required this.value,
-      this.onPress,
-      this.space = 16})
       : super(key: key);
 
   final Widget title;
