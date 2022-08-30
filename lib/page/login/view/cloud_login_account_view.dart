@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
+import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/constants/constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -17,6 +17,7 @@ import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/validator.dart';
 import 'package:linksys_moab/route/model/model.dart';
 
+import '../../../utils.dart';
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 
 class CloudLoginAccountView extends ArgumentsStatefulView {
@@ -30,6 +31,7 @@ class CloudLoginAccountView extends ArgumentsStatefulView {
 class LoginCloudAccountState extends State<CloudLoginAccountView> {
   bool _isLoading = false;
   bool _fromSetup = false;
+  bool _enableBiometrics = false;
   String _errorCode = '';
 
   final _emailValidator = EmailValidator();
@@ -123,6 +125,26 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
                           .push(AuthForgotEmailPath())),
                 ),
               ),
+              FutureBuilder<bool>(
+                future: Utils.canUseBiometrics(),
+                initialData: false,
+                builder: (context, canUseBiometrics) {
+                  return Offstage(
+                    offstage: !(canUseBiometrics.data ?? false),
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _enableBiometrics = !_enableBiometrics;
+                        });
+                      },
+                      child: CheckboxSelectableItem(
+                        title: getAppLocalizations(context).enable_biometrics,
+                        isSelected: _enableBiometrics,
+                      ),
+                    ),
+                  );
+                },
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24.0),
                 child: PrimaryButton(
@@ -167,6 +189,9 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
           .read<AuthBloc>()
           .loginPrepare(_accountController.text)
           .onError((error, stackTrace) => _handleError(error, stackTrace));
+      context
+          .read<AuthBloc>()
+          .add(SetEnableBiometrics(enableBiometrics: _enableBiometrics));
     }
     setState(() {
       _isLoading = false;

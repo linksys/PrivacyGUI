@@ -70,6 +70,7 @@ dependencies:
   adaptive_dialog: ^1.8.0
   graphite: ^0.3.0
   graphview: ^1.1.1
+  local_auth: ^2.1.2
 
 dev_dependencies:
   flutter_test:

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -8,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:local_auth/local_auth.dart';
 
 class Utils {
   static const String NoSpeedCalculationText = "-----";
@@ -186,5 +188,19 @@ class Utils {
       'adminPassword',
     ];
     return maskJsonValue(raw, keys);
+  }
+
+  static Future<bool> canUseBiometrics() async {
+    final LocalAuthentication auth = LocalAuthentication();
+    final List<BiometricType> availableBiometrics =
+    await auth.getAvailableBiometrics();
+    return await auth.canCheckBiometrics && availableBiometrics.isNotEmpty;
+  }
+
+  static Future<bool> doLocalAuthenticate() async {
+    final LocalAuthentication auth = LocalAuthentication();
+    final bool didAuthenticate = await auth.authenticate(
+        localizedReason: "Please authenticate to go to next step");
+    return didAuthenticate;
   }
 }

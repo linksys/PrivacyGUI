@@ -8,6 +8,9 @@ import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../../bloc/auth/bloc.dart';
+import '../../../bloc/auth/event.dart';
+
 typedef OnMenuItemClick = void Function(int index, DashboardSettingsItem item);
 
 class DashboardSettingsView extends StatefulWidget {
@@ -61,7 +64,9 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
             const SizedBox(
               height: 32,
             ),
-            SimpleTextButton(text: 'Log out', onPressed: () {context.read<AuthBloc>().add(Logout());}),
+            SimpleTextButton(text: 'Log out', onPressed: () {
+              context.read<AuthBloc>().add(Logout());
+            }),
             SizedBox(
               height: 16,
             ),

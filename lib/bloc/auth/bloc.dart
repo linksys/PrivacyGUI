@@ -41,6 +41,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SetOtpInfo>(_onSetOtpInfo);
     on<SetLoginType>(_onSetLoginType);
     on<SetCloudPassword>(_onSetCloudPassword);
+    on<SetEnableBiometrics>(_onSetEnableBiometrics);
     on<CloudLogin>(_cloudLogin);
     on<LocalLogin>(_localLogin);
     on<Logout>(_onLogout);
@@ -51,9 +52,31 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final isValid = await checkCertValidation();
     logger.d('is auth valid: $isValid');
     if (isValid) {
-      // TODO: Get key and accountInfo from shared preference
+      final pref = await SharedPreferences.getInstance();
+      final publicKey = pref.getString(moabPrefCloudPublicKey) ?? '';
+      final privateKey = pref.getString(moabPrefCloudPrivateKey) ?? '';
+      final enableBiometrics = pref.getBool(moabPrefEnableBiometrics) ?? false;
+      if (enableBiometrics) {
+        // Check can use biometrics
+        bool canUseBiometrics = await Utils.canUseBiometrics();
+        // User disable biometrics
+        if (canUseBiometrics == false) {
+          return;
+        }
+
+        // Do local authenticate
+        bool didAuthenticate = await Utils.doLocalAuthenticate();
+        // Local authenticate failed
+        if (didAuthenticate == false) {
+          return;
+        }
+      }
       emit(AuthState.authorized(
-          accountInfo: AccountInfo.empty(), publicKey: '', privateKey: ''));
+        accountInfo:
+            AccountInfo.empty().copyWith(enableBiometrics: enableBiometrics),
+        publicKey: publicKey,
+        privateKey: privateKey,
+      ));
     } else {
       emit(AuthState.unAuthorized());
     }
@@ -147,15 +170,53 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  void _onSetEnableBiometrics(
+      SetEnableBiometrics event, Emitter<AuthState> emit) async {
+    // Save to preference
+    final pref = await SharedPreferences.getInstance();
+    pref.setBool(moabPrefEnableBiometrics, event.enableBiometrics);
+    // Set to state
+    final _state = state;
+    if (_state is AuthOnCloudLoginState) {
+      AccountInfo accountInfo =
+          _state.accountInfo.copyWith(enableBiometrics: event.enableBiometrics);
+      emit(_state.copyWith(accountInfo: accountInfo));
+    } else if (_state is AuthOnCreateAccountState) {
+      AccountInfo accountInfo =
+          _state.accountInfo.copyWith(enableBiometrics: event.enableBiometrics);
+      emit(_state.copyWith(accountInfo: accountInfo));
+    } else if (_state is AuthOnLocalLoginState) {
+      LocalLoginInfo localLoginInfo = _state.localLoginInfo
+          .copyWith(enableBiometrics: event.enableBiometrics);
+      emit(_state.copyWith(localLoginInfo: localLoginInfo));
+    } else {
+      logger.d('ERROR: _onSetCloudPassword: Unexpected state type');
+    }
+  }
+
   void _cloudLogin(CloudLogin event, Emitter<AuthState> emit) async {
     final isLogin = await cloudLogin();
     if (isLogin == true) {
+      AccountInfo accountInfo = (state as AuthOnCloudLoginState).accountInfo;
+      if (accountInfo.enableBiometrics) {
+        bool canUseBiometrics = await Utils.canUseBiometrics();
+        bool didAuthenticate = await Utils.doLocalAuthenticate();
+        if (canUseBiometrics == false || didAuthenticate == false) {
+          // Disable or cancel authentication, set enableBiometrics to false
+          final pref = await SharedPreferences.getInstance();
+          pref.remove(moabPrefEnableBiometrics);
+          accountInfo = (state as AuthOnCloudLoginState)
+              .accountInfo
+              .copyWith(enableBiometrics: false);
+        }
+      }
+
       final pref = await SharedPreferences.getInstance();
       final publicKey = pref.getString(moabPrefCloudPublicKey) ?? '';
       final privateKey = pref.getString(moabPrefCloudPrivateKey) ?? '';
       emit(
         AuthState.authorized(
-          accountInfo: (state as AuthOnCloudLoginState).accountInfo,
+          accountInfo: accountInfo,
           publicKey: publicKey,
           privateKey: privateKey,
         ),

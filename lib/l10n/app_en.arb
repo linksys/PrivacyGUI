@@ -315,5 +315,6 @@
   "content_filters_description": "Only allow content you want on your devices.",
   "content_filter_toggle_title": "Content filter",
   "content_filter_level_title": "Filter level",
-  "content_filter_presets_title": "Filter"
+  "content_filter_presets_title": "Filter",
+  "enable_biometrics": "Enable biometrics"
 }

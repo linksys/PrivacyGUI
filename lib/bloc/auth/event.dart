@@ -63,6 +63,12 @@ class SetCloudPassword extends AuthEvent {
   final String password;
 }
 
+class SetEnableBiometrics extends AuthEvent {
+  SetEnableBiometrics({required this.enableBiometrics});
+
+  final bool enableBiometrics;
+}
+
 class CloudLogin extends AuthEvent {}
 
 class LocalLogin extends AuthEvent {}

@@ -93,8 +93,8 @@ class _CreateProfileDevicesSelectedViewState
                   shrinkWrap: true,
                   itemCount: _devices.length,
                   itemBuilder: (context, index) => InkWell(
-                    child: SelectableDeviceItem(
-                      deviceName: _devices[index].name,
+                    child: CheckboxSelectableItem(
+                      title: _devices[index].name,
                       isSelected: _devices[index].isSelected,
                       height: 65,
                     ),
@@ -112,44 +112,6 @@ class _CreateProfileDevicesSelectedViewState
         ),
       ),
     );
-  }
-}
-
-class SelectableDeviceItem extends StatelessWidget {
-  final String deviceName;
-  final bool isSelected;
-  final double? weight;
-  final double? height;
-
-  const SelectableDeviceItem({
-    Key? key,
-    required this.deviceName,
-    this.isSelected = false,
-    this.weight,
-    this.height,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 19),
-      width: weight ?? double.infinity,
-      height: height,
-      child: Row(
-        children: [
-          checkBox(isSelected),
-          const SizedBox(width: 10),
-          Text(deviceName),
-          // const Spacer(),
-        ],
-      ),
-    );
-  }
-
-  Widget checkBox(bool isSelected) {
-    return isSelected
-        ? const Icon(Icons.check_box_outlined)
-        : const Icon(Icons.check_box_outline_blank);
   }
 }
 

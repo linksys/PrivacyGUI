@@ -22,12 +22,14 @@ class AccountInfo {
   final String password;
   final LoginType loginType;
   final List<OtpInfo> otpInfo;
+  final bool enableBiometrics;
 
   const AccountInfo(
       {required this.username,
       required this.loginType,
       required this.otpInfo,
-      this.password = ''});
+      this.password = '',
+      this.enableBiometrics = false});
 
   factory AccountInfo.empty() {
     return const AccountInfo(
@@ -39,12 +41,14 @@ class AccountInfo {
     String? password,
     LoginType? loginType,
     List<OtpInfo>? otpInfo,
+    bool? enableBiometrics,
   }) {
     return AccountInfo(
       username: username ?? this.username,
       password: password ?? this.password,
       loginType: loginType ?? this.loginType,
       otpInfo: otpInfo ?? this.otpInfo,
+      enableBiometrics: enableBiometrics ?? this.enableBiometrics,
     );
   }
 }
@@ -52,19 +56,23 @@ class AccountInfo {
 class LocalLoginInfo {
   final String routerPassword;
   final String routerPasswordHint;
+  final bool enableBiometrics;
 
   const LocalLoginInfo({
     required this.routerPassword,
     this.routerPasswordHint = '',
+    this.enableBiometrics = false,
   });
 
   LocalLoginInfo copyWith({
     String? routerPassword,
     String? routerPasswordHint,
+    bool? enableBiometrics,
   }) {
     return LocalLoginInfo(
       routerPassword: routerPassword ?? this.routerPassword,
       routerPasswordHint: routerPasswordHint ?? this.routerPasswordHint,
+      enableBiometrics: enableBiometrics ?? this.enableBiometrics,
     );
   }
 }
@@ -123,11 +131,11 @@ class AuthState extends Equatable {
     return const AuthState(status: AuthStatus.unAuthorized);
   }
 
-  factory AuthState.authorized(
-      {required AccountInfo accountInfo,
-      required String publicKey,
-      required String privateKey,
-      }) {
+  factory AuthState.authorized({
+    required AccountInfo accountInfo,
+    required String publicKey,
+    required String privateKey,
+  }) {
     return AuthCloudLoginState(
         accountInfo: accountInfo, publicKey: publicKey, privateKey: privateKey);
   }
@@ -197,8 +205,9 @@ class AuthOnCloudLoginState extends AuthState {
 }
 
 class AuthOnLocalLoginState extends AuthState {
-  const AuthOnLocalLoginState({required this.localLoginInfo})
-      : super(status: AuthStatus.onLocalLogin);
+  const AuthOnLocalLoginState({
+    required this.localLoginInfo,
+  }) : super(status: AuthStatus.onLocalLogin);
 
   final LocalLoginInfo localLoginInfo;
 

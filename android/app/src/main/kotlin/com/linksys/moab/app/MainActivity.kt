@@ -18,10 +18,11 @@ import com.google.android.gms.auth.api.phone.SmsRetriever
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.common.api.Status
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterFragmentActivity() {
 
     private val CHANNEL = "com.linksys.native.channel.wifi.connect"
     private val OTP_CHANNEL = "com.linksys.native.channel.otp"
@@ -76,7 +77,7 @@ class MainActivity : FlutterActivity() {
                 // Start listening for SMS User Consent broadcasts from senderPhoneNumber
                 // The Task<Void> will be successful if SmsRetriever was able to start
                 // SMS User Consent, and will error if there was an error starting.
-                val task = SmsRetriever.getClient(context).startSmsUserConsent(null)
+                val task = SmsRetriever.getClient(this@MainActivity).startSmsUserConsent(null)
                 task.addOnSuccessListener {
                     Log.d("SMS retriever", "success listening!")
                     otpResult = result;
