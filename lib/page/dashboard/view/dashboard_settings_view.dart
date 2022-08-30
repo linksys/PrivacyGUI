@@ -43,6 +43,7 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
               _secureSettingsSection(),
               (index, item) {
                 logger.d('MenuItem click $index');
+                NavigationCubit.of(context).push(item.path);
               },
             ),
             const SizedBox(
@@ -162,7 +163,7 @@ _secureSettingsSection() => DashboardSettingsSection(
       items: [
         DashboardSettingsItem(
             title: 'Cyberthreat protection', path: UnknownPath()),
-        DashboardSettingsItem(title: 'Content filters', path: UnknownPath()),
+        DashboardSettingsItem(title: 'Content filters', path: ContentFilteringPath()),
         DashboardSettingsItem(title: 'App blocking', path: UnknownPath()),
       ],
     );

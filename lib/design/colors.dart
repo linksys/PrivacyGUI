@@ -28,4 +28,8 @@ class MoabColor {
   static const dashboardTileBackground = Color(0xffd3d3d3);
   static const cardBackground = Color.fromRGBO(138, 138, 138, 1.0);
   static const dashboardBottomBackground = Color(0xffc1c1c1);
+
+  static const contentFilterChildPreset = Color(0xffD481FC);
+  static const contentFilterTeenPreset = Color(0xff88D9FE);
+  static const contentFilterAdultPreset = Color(0xffFDC127);
 }

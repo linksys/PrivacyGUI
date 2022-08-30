@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/design/themes.dart';
+import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_age_presets_view.dart';
+import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_category_view.dart';
+import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_profile_settings_view.dart';
+import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_health_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_security_view.dart';
@@ -99,6 +103,26 @@ abstract class DashboardPath extends BasePath {
           args: args,
           next: next,
         );
+      case ContentFilteringPath:
+        return ContentFilteringView(
+          args: args,
+          next: next,
+        );
+      case CFProfileSettingPath:
+        return ContentFilteringProfileSettingsView(
+          args: args,
+          next: next,
+        );
+      case CFPresetsPath:
+        return ContentFilteringPresetsView(
+          args: args,
+          next: next,
+        );
+      case CFFilterCategoryPath:
+        return ContentFilteringCategoryView(
+          args: args,
+          next: next,
+        );
       default:
         return const Center();
     }
@@ -137,17 +161,17 @@ class EditWifiNamePasswordPath extends DashboardPath {}
 
 class EditWifiSecurityPath extends DashboardPath {}
 
-class InternetSchedulePath extends DashboardPath{}
+class InternetSchedulePath extends DashboardPath {}
 
-class ProfileSettingsPath extends DashboardPath{}
+class ProfileSettingsPath extends DashboardPath {}
 
-class AddDailyTimeLimitPath extends DashboardPath{}
+class AddDailyTimeLimitPath extends DashboardPath {}
 
-class AddSchedulePausePath extends DashboardPath{}
+class AddSchedulePausePath extends DashboardPath {}
 
-class DailyTimeLimitListPath extends DashboardPath{}
+class DailyTimeLimitListPath extends DashboardPath {}
 
-class SchedulePauseListPath extends DashboardPath{}
+class SchedulePauseListPath extends DashboardPath {}
 
 class EditWifiModePath extends DashboardPath {}
 
@@ -173,4 +197,14 @@ class CreateProfileAvatarPath extends DashboardPath {
 class ProfileOverviewPath extends DashboardPath {
   @override
   PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}
+
+class ContentFilteringPath extends DashboardPath {}
+
+class CFProfileSettingPath extends DashboardPath {}
+
+class CFPresetsPath extends DashboardPath {}
+class CFFilterCategoryPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
