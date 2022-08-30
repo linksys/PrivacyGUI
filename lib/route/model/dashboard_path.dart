@@ -9,6 +9,11 @@ import 'package:linksys_moab/page/dashboard/view/dashboard_health_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_security_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_settings_view.dart';
+import 'package:linksys_moab/page/dashboard/view/nodes/node_connected_devices_view.dart';
+import 'package:linksys_moab/page/dashboard/view/nodes/node_detail_view.dart';
+import 'package:linksys_moab/page/dashboard/view/nodes/node_name_edit_view.dart';
+import 'package:linksys_moab/page/dashboard/view/nodes/node_offline_check.dart';
+import 'package:linksys_moab/page/dashboard/view/nodes/signal_strength_view.dart';
 import 'package:linksys_moab/page/wifi_settings/edit_wifi_mode_view.dart';
 import 'package:linksys_moab/page/wifi_settings/edit_wifi_name_password_view.dart';
 import 'package:linksys_moab/page/wifi_settings/edit_wifi_security_view.dart';
@@ -25,6 +30,7 @@ import 'package:linksys_moab/page/dashboard/view/internet_schedule_view.dart';
 import 'package:linksys_moab/page/dashboard/view/profile_settings_view.dart';
 import 'package:linksys_moab/page/dashboard/view/schedule_pause_list_view.dart';
 import 'package:linksys_moab/page/dashboard/view/view.dart';
+import '../../page/dashboard/view/topology/topology_view.dart';
 import 'base_path.dart';
 
 abstract class DashboardPath extends BasePath {
@@ -103,6 +109,36 @@ abstract class DashboardPath extends BasePath {
           args: args,
           next: next,
         );
+      case TopologyPath:
+        return TopologyView(
+          args: args,
+          next: next,
+        );
+      case NodeDetailPath:
+        return NodeDetailView(
+          args: args,
+          next: next,
+        );
+      case NodeNameEditPath:
+        return NodeNameEditView(
+          args: args,
+          next: next,
+        );
+      case NodeConnectedDevicesPath:
+        return NodeConnectedDevicesView(
+          args: args,
+          next: next,
+        );
+      case SignalStrengthInfoPath:
+        return SignalStrengthView(
+          args: args,
+          next: next,
+        );
+      case NodeOfflineCheckPath:
+        return NodeOfflineCheckView(
+          args: args,
+          next: next,
+        );
       case ContentFilteringPath:
         return ContentFilteringView(
           args: args,
@@ -145,6 +181,11 @@ class DashboardSecurityPath extends DashboardPath {
 }
 
 class DashboardHealthPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}
+
+class TopologyPath extends DashboardPath {
   @override
   PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
 }
@@ -197,6 +238,18 @@ class CreateProfileAvatarPath extends DashboardPath {
 class ProfileOverviewPath extends DashboardPath {
   @override
   PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}
+
+class NodeDetailPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}
+class NodeNameEditPath extends DashboardPath{}
+class NodeConnectedDevicesPath extends DashboardPath{}
+class SignalStrengthInfoPath extends DashboardPath{}
+class NodeOfflineCheckPath extends DashboardPath{
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
 
 class ContentFilteringPath extends DashboardPath {}

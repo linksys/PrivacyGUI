@@ -79,7 +79,7 @@ class _HomeViewState extends State<HomeView> {
       SecondaryButton(
         text: getAppLocalizations(context).setup_new_router,
         onPress: () {
-          NavigationCubit.of(context).push(SetupWelcomeEulaPath());
+          NavigationCubit.of(context).push(TopologyPath());
         },
       ),
       ...showDebugButton(),

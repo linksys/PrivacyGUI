@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/auth/bloc.dart';
+import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
@@ -58,7 +61,7 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
             const SizedBox(
               height: 32,
             ),
-            SimpleTextButton(text: 'Log out', onPressed: () {}),
+            SimpleTextButton(text: 'Log out', onPressed: () {context.read<AuthBloc>().add(Logout());}),
             SizedBox(
               height: 16,
             ),

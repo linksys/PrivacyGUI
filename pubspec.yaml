@@ -68,6 +68,8 @@ dependencies:
   url_launcher: ^6.1.5
   numberpicker: ^2.1.1
   adaptive_dialog: ^1.8.0
+  graphite: ^0.3.0
+  graphview: ^1.1.1
 
 dev_dependencies:
   flutter_test:

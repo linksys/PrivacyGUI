@@ -155,14 +155,20 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
             ),
             _blockTile(
               'NODES',
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('3',
-                      style: Theme.of(context).textTheme.headline1?.copyWith(
-                          fontSize: 32, fontWeight: FontWeight.w400)),
-                  Text('online', style: Theme.of(context).textTheme.headline3)
-                ],
+              GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () {
+                  NavigationCubit.of(context).push(TopologyPath());
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('3',
+                        style: Theme.of(context).textTheme.headline1?.copyWith(
+                            fontSize: 32, fontWeight: FontWeight.w400)),
+                    Text('online', style: Theme.of(context).textTheme.headline3)
+                  ],
+                ),
               ),
             ),
           ],
