@@ -5,8 +5,7 @@ import FirebaseCore
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
-    var deviceToken: String?
-    var notificationContent: Dictionary<String, Any>?
+    var currentDeviceToken: String?
     
   override func application(
     _ application: UIApplication,
@@ -35,24 +34,21 @@ import FirebaseCore
           }
       })
       
-      let deviceTokenChannel = FlutterMethodChannel(name: "otp.view/device.token",
+      let deviceTokenChannel = FlutterMethodChannel(name: "moab.notification/device.token",
                                                     binaryMessenger: controller.binaryMessenger)
       deviceTokenChannel.setMethodCallHandler { [weak self] call, result in
           guard call.method == "readDeviceToken" else {
               result(FlutterMethodNotImplemented)
               return
           }
-          if let deviceToken = self?.deviceToken {
+          if let deviceToken = self?.currentDeviceToken {
               result(deviceToken)
           } else {
               result(FlutterError(code: "Failed", message: "Device token is nil", details: nil))
           }
       }
       
-      let notificationContentChannel = FlutterEventChannel(name: "moab.dev/notification.payload", binaryMessenger: controller.binaryMessenger)
-      notificationContentChannel.setStreamHandler(NotificationContentStreamHandler())
-      
-      let notificationAuthChannel = FlutterMethodChannel(name: "otp.view/notification.auth",
+      let notificationAuthChannel = FlutterMethodChannel(name: "moab.notification/authorization",
                                                          binaryMessenger: controller.binaryMessenger)
       notificationAuthChannel.setMethodCallHandler{ [weak self] call, result in
           guard call.method == "requestNotificationAuthorization" else {
@@ -61,6 +57,9 @@ import FirebaseCore
           }
           self?.requestNotificationAuthorization(result: result)
       }
+      
+      let notificationContentChannel = FlutterEventChannel(name: "moab.notification/payload", binaryMessenger: controller.binaryMessenger)
+      notificationContentChannel.setStreamHandler(NotificationContentStreamHandler())
       
       let universalLinkChannel = FlutterEventChannel(name: "otp.code.input.view/deeplink",
                                                      binaryMessenger: controller.binaryMessenger)
@@ -109,7 +108,7 @@ import FirebaseCore
     override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         print("AppDelegate: Register APNs succeeded")
         let tokenComponents = deviceToken.map{ data in String(format: "%02.2hhx", data)}
-        self.deviceToken = tokenComponents.joined()
+        currentDeviceToken = tokenComponents.joined()
     }
     
     override func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
@@ -117,29 +116,36 @@ import FirebaseCore
     }
     
     override func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        let userInfo = notification.request.content.userInfo
-        self.notificationContent = userInfo["aps"] as? Dictionary<String, Any>
-        if let payload = notificationContent {
-            NotificationCenter.default.post(
-                name: NSNotification.Name("ApnsPayloadNotification"),
-                object: nil,
-                userInfo: ["content": payload])
-        }
         print("AppDelegate: willPresent notification: userInfo=\(notification.request.content.userInfo)")
+        // Do nothing unless the user taps the notification to open the app
         completionHandler(UNNotificationPresentationOptions.banner)
     }
     
     override func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         let userInfo = response.notification.request.content.userInfo
-        self.notificationContent = userInfo["aps"] as? Dictionary<String, Any>
-        if let payload = notificationContent {
-            NotificationCenter.default.post(
-                name: NSNotification.Name("ApnsPayloadNotification"),
-                object: nil,
-                userInfo: ["content": payload])
-        }
         print("AppDelegate: didReceive response: userInfo=\(userInfo)")
+        
+        if let payload = userInfo["aps"] as? [String: Any] {
+            NotificationCenter.default.post(
+                name: NSNotification.Name("ReceiveAPNsPayloadNotification"),
+                object: nil,
+                userInfo: ["data": payload])
+        }
         completionHandler()
+    }
+    
+    override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        print("AppDelegate: didReceiveRemoteNotification: userInfo=\(userInfo)")
+        
+        if let _ = userInfo["aps"] {
+            if let payload = userInfo["data"] as? [String: Any] {
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("ReceiveAPNsPayloadNotification"),
+                    object: nil,
+                    userInfo: ["data": payload])
+            }
+        }
+        completionHandler(UIBackgroundFetchResult.noData)
     }
     
     private func requestNotificationAuthorization(result: @escaping FlutterResult) {
@@ -192,7 +198,7 @@ class NotificationContentStreamHandler: NSObject, FlutterStreamHandler {
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(sendEvent(_:)),
-            name: NSNotification.Name("ApnsPayloadNotification"),
+            name: NSNotification.Name("ReceiveAPNsPayloadNotification"),
             object: nil
         )
         eventSink = events
@@ -209,9 +215,9 @@ class NotificationContentStreamHandler: NSObject, FlutterStreamHandler {
         guard let eventSink = eventSink else {
             return
         }
-        guard let userInfo = notification.userInfo, let content = userInfo["content"] else {
+        guard let userInfo = notification.userInfo, let data = userInfo["data"] else {
             return
         }
-        eventSink(content)
+        eventSink(data)
     }
 }

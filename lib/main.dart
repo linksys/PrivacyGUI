@@ -109,7 +109,7 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _cubit.stop();
-    apnStreamSubscription?.cancel();
+    apnsStreamSubscription?.cancel();
     super.dispose();
   }
 

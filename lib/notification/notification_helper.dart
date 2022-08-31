@@ -13,7 +13,7 @@ import 'package:linksys_moab/util/logger.dart';
 import '../firebase_options.dart';
 import 'notification_receiver.dart';
 
-StreamSubscription? apnStreamSubscription;
+StreamSubscription? apnsStreamSubscription;
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // If you're going to use other Firebase services in the background, such as Firestore,
@@ -29,20 +29,21 @@ late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 /// Push notification initialize
 void initCloudMessage() async {
   if (Platform.isIOS) {
+    // Get the device token from the native
     final token = await PushNotificationChannel().readDeviceToken();
-    logger.i('APNS Token: $token');
+    logger.i('APNS: Read device token: $token');
     CloudEnvironmentManager().updateDeviceToken(token);
-    PushNotificationChannel().grantNotificationAuth().then((value) {
-      if (value) {
-        apnStreamSubscription = PushNotificationChannel()
-            .listenPushNotification()
-            .listen((event) {
-
-          Map<String, dynamic> transfer = Map.from(event);
-          logger.d('APNS receive push notification: $transfer');
+    // Start listening the push notifications
+    apnsStreamSubscription = PushNotificationChannel()
+        .listenPushNotification()
+        .listen((data) {
+          Map<String, dynamic> transfer = Map.from(data);
+          logger.d('APNS: Receive push notification, data: $transfer');
           pushNotificationHandler(transfer);
-        });
-      }
+    });
+    // Ask users notification authorization
+    PushNotificationChannel().grantNotificationAuth().then((grant) {
+      logger.i('APNS: User authorization result: $grant');
     });
     return;
   }

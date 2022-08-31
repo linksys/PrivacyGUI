@@ -1,15 +1,14 @@
-
 import 'dart:io';
-
 import 'package:flutter/services.dart';
 import 'package:linksys_moab/util/logger.dart';
 
 class PushNotificationChannel {
+  static const deviceTokenChannel =
+      MethodChannel('moab.notification/device.token');
   static const notificationAuthChannel =
-      MethodChannel('otp.view/notification.auth');
-  static const deviceTokenChannel = MethodChannel('otp.view/device.token');
+      MethodChannel('moab.notification/authorization');
   static const notificationContentChannel =
-      EventChannel('moab.dev/notification.payload');
+      EventChannel('moab.notification/payload');
 
   // Singleton
   static final PushNotificationChannel _singleton =
