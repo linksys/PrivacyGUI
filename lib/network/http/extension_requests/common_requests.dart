@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart';
+import 'package:linksys_moab/network/http/model/cloud_smart_device.dart';
 import '../../../constants/constants.dart';
 import '../http_client.dart';
 import '../model/cloud_app.dart';
@@ -21,6 +22,32 @@ extension MoabCommonRequests on MoabHttpClient {
     final header = defaultHeader;
     return this.post(Uri.parse(url),
         headers: header, body: jsonEncode(deviceInfo.toJson()));
+  }
+
+  Future<Response> getApp(String appId, String appSecret) async {
+    final url = combineUrl(endpointGetApps, args: {varAppId: appId});
+    final header = defaultHeader
+      ..addAll({moabAppIdKey: appId, moabAppSecretKey: appSecret});
+
+    return this.get(Uri.parse(url), headers: header);
+  }
+
+  Future<Response> registerSmartDevice(
+      String appId, String appSecret, CloudSmartDevice smartDevice) async {
+    final url = combineUrl(endpointPutSmartDevices, args: {varAppId: appId});
+    final header = defaultHeader
+      ..addAll({moabAppIdKey: appId, moabAppSecretKey: appSecret});
+    return this.put(Uri.parse(url),
+        headers: header, body: jsonEncode(smartDevice.toJson()));
+  }
+
+  Future<Response> acceptSmartDevice(
+      String appId, String appSecret, String token) async {
+    final url = combineUrl(endpointPutAcceptSmartDevices, args: {varAppId: appId});
+    final header = defaultHeader
+      ..addAll({moabAppIdKey: appId, moabAppSecretKey: appSecret});
+
+    return this.put(Uri.parse(url), headers: header, body: jsonEncode({'token': token}));
   }
 
   Future<Response> getMaskedCommunicationMethods(String username) async {

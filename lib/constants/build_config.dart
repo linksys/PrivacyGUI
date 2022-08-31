@@ -1,7 +1,7 @@
 enum CloudEnvironment { dev, qa, prod }
 
 class BuildConfig {
-  static const String cloudEnv = String.fromEnvironment('cloud_env', defaultValue: 'qa');
+  static const String cloudEnv = String.fromEnvironment('cloud_env', defaultValue: 'dev');
   static const bool isEnableEnvPicker = bool.fromEnvironment('enable_env_picker', defaultValue: true);
 }
 

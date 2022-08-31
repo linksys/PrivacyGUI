@@ -12,7 +12,7 @@ import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/http/extension_requests/accounts_requests.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
-import 'package:linksys_moab/network/http/model/cloud_config.dart';
+import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
@@ -24,6 +24,7 @@ import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DebugToolsView extends StatefulWidget {
   const DebugToolsView({
@@ -64,6 +65,63 @@ class _DebugToolsViewState extends State<DebugToolsView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        InkWell(
+          onTap: () {
+            setState(() {});
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Row(
+              children: [
+                Icon(Icons.refresh, color: Colors.white,),
+                Text(
+                  'App:',
+                  style: Theme.of(context)
+                      .textTheme
+                      .headline2
+                      ?.copyWith(color: Theme.of(context).colorScheme.primary),
+                ),
+              ],
+            ),
+          ),
+        ),
+        FutureBuilder<CloudApp>(
+            future: CloudEnvironmentManager().fetchCloudApp().then((value) => CloudEnvironmentManager().loadCloudApp()),
+            initialData: null,
+            builder: (context, snapshot) {
+              return snapshot.data == null
+                  ? Text('No Data')
+                  : Column(
+                      children: [
+                        Table(
+                          border: TableBorder.all(color: Colors.white60),
+                          children: [
+                            ...CloudEnvironmentManager()
+                                .getCloudApp()
+                                .toJson()
+                                .entries
+                                .map((e) => TableRow(
+                                    children: [Text(e.key), Text(e.value ?? '')]))
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: PrimaryButton(
+                            text: 'Register smart device',
+                            onPress: snapshot.data is CloudSmartDeviceApp
+                                ? (snapshot.data as CloudSmartDeviceApp)
+                                            .smartDevice
+                                            .smartDeviceStatus ==
+                                        'ACTIVE'
+                                    ? null
+                                    : _registerSmartDevice
+                                : _registerSmartDevice,
+                          ),
+                        ),
+                      ],
+                    );
+            }),
+        SizedBox(height: 32,),
         Text(
           'Push Notification:',
           style: Theme.of(context)
@@ -93,7 +151,10 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                                   _shareToken(_fcmToken!);
                                 }
                               : null,
-                          icon: const Icon(Icons.share, color: Colors.white,)),
+                          icon: const Icon(
+                            Icons.share,
+                            color: Colors.white,
+                          )),
                     ),
                     Text(_fcmToken ?? 'No FCM Token'),
                   ],
@@ -111,10 +172,13 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                       child: IconButton(
                           onPressed: _apnsToken != null
                               ? () {
-                            _shareToken(_apnsToken!);
-                          }
+                                  _shareToken(_apnsToken!);
+                                }
                               : null,
-                          icon: const Icon(Icons.share, color: Colors.white,)),
+                          icon: const Icon(
+                            Icons.share,
+                            color: Colors.white,
+                          )),
                     ),
                     Text(_apnsToken ?? 'No APNS Token'),
                   ],
@@ -132,7 +196,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                           _toggleForegroundNotification(value);
                         })
                   ],
-                )
+                ),
               ],
             ),
           ),
@@ -171,12 +235,15 @@ class _DebugToolsViewState extends State<DebugToolsView> {
             final file = File.fromUri(Storage.logFileUri);
             final appInfo = await getAppInfoLogs();
             final screenInfo = getScreenInfo(context);
-            final String shareLogFilename = 'moab-log-${DateFormat("yyyy-MM-dd_HH_mm_ss").format(DateTime.now())}.txt';
-            final String shareLogPath = '${Storage.tempDirectory?.path}/$shareLogFilename';
+            final String shareLogFilename =
+                'moab-log-${DateFormat("yyyy-MM-dd_HH_mm_ss").format(DateTime.now())}.txt';
+            final String shareLogPath =
+                '${Storage.tempDirectory?.path}/$shareLogFilename';
             final value = await file.readAsBytes();
             logger.d('log file: ${String.fromCharCodes(value)}');
 
-            String content = '$appInfo\n$screenInfo\n${String.fromCharCodes(value)}';
+            String content =
+                '$appInfo\n$screenInfo\n${String.fromCharCodes(value)}';
             await Storage.saveFile(Uri.parse(shareLogPath), content);
 
             Size size = MediaQuery.of(context).size;
@@ -264,13 +331,16 @@ class _DebugToolsViewState extends State<DebugToolsView> {
     );
   }
 
+  _registerSmartDevice() {
+    CloudEnvironmentManager().registerSmartDevice();
+  }
+
   _shareToken(String token) async {
     Size size = MediaQuery.of(context).size;
     final result = await Share.shareWithResult(
       token,
       subject: 'Token',
-      sharePositionOrigin:
-      Rect.fromLTWH(0, 0, size.width, size.height / 2),
+      sharePositionOrigin: Rect.fromLTWH(0, 0, size.width, size.height / 2),
     );
     print('Share result: $result');
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(

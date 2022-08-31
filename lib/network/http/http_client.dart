@@ -72,7 +72,7 @@ class MoabHttpClient extends http.BaseClient {
   /// The callback to call to indicate that a request is being retried.
   final FutureOr<void> Function(BaseRequest, http.BaseResponse?, int)? _onRetry;
 
-  final Map<String, String> defaultHeader = {
+  Map<String, String> get defaultHeader => {
     moabSiteIdKey: moabRetailSiteId,
     HttpHeaders.contentTypeHeader: ContentType.json.value,
     HttpHeaders.acceptHeader: ContentType.json.value

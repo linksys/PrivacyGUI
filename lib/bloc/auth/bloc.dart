@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
@@ -211,6 +212,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
       }
 
+      await CloudEnvironmentManager().checkSmartDevice();
       final pref = await SharedPreferences.getInstance();
       final publicKey = pref.getString(moabPrefCloudPublicKey) ?? '';
       final privateKey = pref.getString(moabPrefCloudPrivateKey) ?? '';
@@ -230,6 +232,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   void _localLogin(LocalLogin event, Emitter<AuthState> emit) {}
 
   void _onLogout(Logout event, Emitter<AuthState> emit) {
+    // Don't remove all keys on shared preferences when logging out
     SharedPreferences.getInstance().then((prefs) {
       prefs.remove(moabPrefCloudCertDataKey);
       prefs.remove(moabPrefCloudPublicKey);

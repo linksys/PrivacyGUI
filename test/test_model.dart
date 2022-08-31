@@ -32,6 +32,28 @@ void main() {
       print(convertBack);
     });
 
+    test('test Smart device app Model', () async {
+      final jsonObj = {
+        "id": "819e2172-1509-470a-a60c-1984239b50d7",
+        "mobileManufacturer": "Samsung",
+        "mobileModel": "A71",
+        "os": "Android",
+        "osVersion": "11",
+        "systemLocale": "zh-TW",
+        "appType": "DISTRIBUTION",
+        "smartDeviceType": "PRODUCTION",
+        "platform": "GCM",
+        "deviceToken": "fls5MCxWT5WjM3j_Z7PsRd:APA91bH6cJ6y8wZsN4hOL66N7oN7mJEc-DuLRFnkJFAFVlAE_g09Kbcy2y2aqR2rrdbMRg1b6PG9tYQw_xs2wfB09XwWvT6V0y6f9wXHbIUPfQPfB7Bxxj1nHnrX8Ee2CCSYP5Qv8nl7",
+        "snsArn": "arn:aws:sns:ap-northeast-1:193713173851:endpoint/GCM/MoabLocalFCM/8e84557d-2af7-3508-a736-ead83177f377",
+        "smartDeviceStatus": "ACTIVE"
+      };
+
+      final cloudApp = CloudSmartDeviceApp.fromJson(jsonObj);
+      print('cloud app model: $cloudApp');
+      final convertBack = cloudApp.toJson();
+      print('cloud app json: $convertBack');
+    });
+
     test('test CloudPhoneModel', () async {
       const CloudPhoneModel phone = CloudPhoneModel(
           country: 'TW', countryCallingCode: '+886', phoneNumber: '91234567');

@@ -38,7 +38,7 @@ class CloudAuthRepository extends AuthRepository {
   Future<void> authChallenge(BaseAuthChallenge method) {
     return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
         _httpClient.authChallenge(method,
-            id: cloudApp.id, secret: cloudApp.appSecret));
+            id: cloudApp.id, secret: cloudApp.appSecret!));
   }
 
   @override
@@ -79,7 +79,7 @@ class CloudAuthRepository extends AuthRepository {
   Future<CloudLoginAcceptState> login(String token) {
     return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
         _httpClient
-            .login(token, id: cloudApp.id, secret: cloudApp.appSecret)
+            .login(token, id: cloudApp.id, secret: cloudApp.appSecret!)
             .then((response) =>
                 CloudLoginAcceptState.fromJson(json.decode(response.body))));
   }
@@ -89,7 +89,7 @@ class CloudAuthRepository extends AuthRepository {
     return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
         _httpClient
             .loginPassword(token, password,
-                id: cloudApp.id, secret: cloudApp.appSecret)
+                id: cloudApp.id, secret: cloudApp.appSecret!)
             .then((response) =>
                 CloudLoginState.fromJson(json.decode(response.body))));
   }
@@ -98,7 +98,7 @@ class CloudAuthRepository extends AuthRepository {
   Future<CloudLoginState> loginPrepare(String username) {
     return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
         _httpClient
-            .loginPrepare(username, id: cloudApp.id, secret: cloudApp.appSecret)
+            .loginPrepare(username, id: cloudApp.id, secret: cloudApp.appSecret!)
             .then((response) =>
                 CloudLoginState.fromJson(json.decode(response.body))));
   }

@@ -40,9 +40,16 @@ const varVerifyToken = '{verifyToken}';
 const varUsername = '{username}';
 const varTaskId = '{taskId}';
 const varToken = '{token}';
+const varAppId = '{appId}';
+const varNetworkId = '{networkId}';
 
 // Cloud endpoints
 const endpointCreateApps = '$version/apps';
+const endpointGetApps = '$version/apps/$varAppId';
+const endpointPutSmartDevices = '$version/apps/$varAppId/smart-devices';
+const endpointPutAcceptSmartDevices = '$version/apps/$varAppId/smart-devices/ACCEPTED';
+const endpointPostAcceptEULA = '$version/apps/$varAppId/eula/$varNetworkId';
+
 const endpointPostAccountPreparations = '$version$accountPath/verified-first/preparations';
 const endpointPutAccountPreparations = '$version$accountPath/verified-first/preparations/$varVerifyToken';
 const endpointPostCreateAccount = '$version$accountPath/verified-first/';

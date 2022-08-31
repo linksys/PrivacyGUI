@@ -3,19 +3,17 @@ import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:linksys_moab/bloc/app_lifecycle/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/connectivity/cubit.dart';
-import 'package:linksys_moab/channel/push_notification_channel.dart';
 import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
+import 'package:linksys_moab/notification/notification_helper.dart';
 import 'package:linksys_moab/repository/authenticate/impl/cloud_auth_repository.dart';
 import 'package:linksys_moab/repository/config/environment_repository.dart';
 import 'package:linksys_moab/route/route.dart';
@@ -25,20 +23,8 @@ import 'package:linksys_moab/util/storage.dart';
 import 'bloc/setup/bloc.dart';
 import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
-import 'repository/authenticate/impl/fake_auth_repository.dart';
 import 'repository/authenticate/impl/fake_local_auth_repository.dart';
 import 'package:linksys_moab/route/model/model.dart';
-
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // If you're going to use other Firebase services in the background, such as Firestore,
-  // make sure you call `initializeApp` before using other Firebase services.
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  print("Handling a background message: ${message.messageId}");
-}
-
-late AndroidNotificationChannel channel;
-late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
 void main() {
   runZonedGuarded(() async {
@@ -51,21 +37,6 @@ void main() {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     logger.d('Done for init Firebase Core');
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    if (!kIsWeb) {
-      channel = const AndroidNotificationChannel(
-          'high_importance_channel', 'High Importance Notifications',
-          description: 'This channel is used for important notifications.',
-          importance: Importance.high);
-    }
-    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
-    await FirebaseMessaging.instance
-        .setForegroundNotificationPresentationOptions(
-            alert: true, badge: true, sound: true);
     initCloudMessage();
     // Pass all uncaught errors from the framework to Crashlytics.
     FlutterError.onError = (FlutterErrorDetails details) {
@@ -85,41 +56,6 @@ void main() {
       exit(1);
     }
   });
-}
-
-void initCloudMessage() async {
-  if (Platform.isIOS) {
-    final token = await PushNotificationChannel().readDeviceToken();
-    logger.i('APNS Token: $token');
-    return;
-  }
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
-  NotificationSettings settings = await messaging.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      sound: true);
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    print('Got a message while in the foreground!');
-    print('Message data: ${message.data}');
-    RemoteNotification? notification = message.notification;
-    AndroidNotification? android = message.notification?.android;
-    if (notification != null && android != null && !kIsWeb) {
-      flutterLocalNotificationsPlugin.show(
-          notification.hashCode,
-          notification.title,
-          notification.body,
-          NotificationDetails(
-              android: AndroidNotificationDetails(channel.id, channel.name,
-                  channelDescription: channel.description,
-                  icon: 'launch_background')));
-    }
-  });
-  final token = await FirebaseMessaging.instance.getToken();
-  logger.i('FCM Token: $token');
 }
 
 Widget _app() {
@@ -173,6 +109,7 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _cubit.stop();
+    apnStreamSubscription?.cancel();
     super.dispose();
   }
 

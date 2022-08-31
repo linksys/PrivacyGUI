@@ -22,7 +22,7 @@ void main() {
       print('Create App: ${response.body}');
       final cloudApp = CloudApp.fromJson(json.decode(response.body));
       expect(cloudApp.id.isNotEmpty, true);
-      expect(cloudApp.appSecret.isNotEmpty, true);
+      expect(cloudApp.appSecret?.isNotEmpty, true);
       expect(cloudApp.deviceInfo.mobileManufacturer.isNotEmpty, true);
       expect(cloudApp.deviceInfo.mobileModel.isNotEmpty, true);
       expect(cloudApp.deviceInfo.osVersion.isNotEmpty, true);
