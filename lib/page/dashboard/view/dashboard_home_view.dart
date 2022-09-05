@@ -66,7 +66,12 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
           SizedBox(height: 32),
           _speedTestTile(2048000, 1024000),
           SizedBox(height: 32),
-          _usageTile(28),
+          GestureDetector(
+            onTap: () {
+              NavigationCubit.of(context).push(DeviceListPath());
+            },
+            child: _usageTile(28),
+          ),
           SizedBox(height: 32),
           _profileTile(),
           SizedBox(height: 64),

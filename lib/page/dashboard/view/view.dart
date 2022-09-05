@@ -2,7 +2,11 @@ export 'dashboard_bottom_tab_container.dart';
 export 'no_router_view.dart';
 export 'prepare_dashboard_view.dart';
 // Profile
-export 'Profile/profile_overview_view.dart';
-export 'Profile/create_profile_name_view.dart';
-export 'Profile/create_profile_devices_view.dart';
-export 'Profile/create_profile_avatar_view.dart';
+export 'profile/profile_overview_view.dart';
+export 'profile/create_profile_name_view.dart';
+export 'profile/create_profile_devices_view.dart';
+export 'profile/create_profile_avatar_view.dart';
+// Device
+export 'devices/device_list_view.dart';
+export 'devices/device_detail_view.dart';
+export 'devices/edit_device_name_view.dart';

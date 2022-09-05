@@ -316,5 +316,28 @@
   "content_filter_toggle_title": "Content filter",
   "content_filter_level_title": "Filter level",
   "content_filter_presets_title": "Filter",
-  "enable_biometrics": "Enable biometrics"
+  "enable_biometrics": "Enable biometrics",
+  "today": "Today",
+  "this_week": "This week",
+  "num_online": "{num} online",
+  "@num_online": {
+    "placeholders": {
+      "num": {
+        "type": "String",
+        "example": "28"
+      }
+    }
+  },
+  "top_devices_this_week": "Top devices this week",
+  "main": "Main",
+  "guest": "Guest",
+  "iot": "IoT",
+  "device_name": "Device name",
+  "wifi_all_capital": "WIFI",
+  "mac_address": "MAC address",
+  "details_all_capital": "DETAILS",
+  "manufacturer": "Manufacturer",
+  "model": "Model",
+  "operating_system": "Operating system",
+  "profile": "Profile"
 }

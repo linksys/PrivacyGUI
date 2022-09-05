@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-
-import '../../../../localization/localization_hook.dart';
-import '../../../../route/model/base_path.dart';
-import '../../../../route/navigation_cubit.dart';
-import '../../../components/views/arguments_view.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/route.dart';
 
 class CreateProfileAvatarView extends ArgumentsStatefulView {
   const CreateProfileAvatarView({Key? key, super.args, super.next})

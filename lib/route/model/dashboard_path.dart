@@ -159,6 +159,12 @@ abstract class DashboardPath extends BasePath {
           args: args,
           next: next,
         );
+      case DeviceListPath:
+        return DeviceListView();
+      case DeviceDetailPath:
+        return DeviceDetailView();
+      case EditDeviceNamePath:
+        return EditDeviceNameView();
       default:
         return const Center();
     }
@@ -261,3 +267,15 @@ class CFFilterCategoryPath extends DashboardPath {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
+
+class DeviceListPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}
+
+class DeviceDetailPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}
+
+class EditDeviceNamePath extends DashboardPath {}

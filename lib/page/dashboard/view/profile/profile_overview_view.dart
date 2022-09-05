@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:linksys_moab/design/colors.dart';
+import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/page/components/customs/customs.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-
-import '../../../../design/colors.dart';
-import '../../../../localization/localization_hook.dart';
-import '../../../components/views/arguments_view.dart';
-import '../dashboard_home_view.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';
 
 class ProfileOverviewView extends ArgumentsStatefulView {
   const ProfileOverviewView({Key? key, super.args, super.next})
@@ -34,6 +34,12 @@ class _ProfileOverviewViewState extends State<ProfileOverviewView> {
   Widget build(BuildContext context) {
     return BasePageView(
       scrollable: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        // iconTheme:
+        // IconThemeData(color: Theme.of(context).colorScheme.primary),
+        elevation: 0,
+      ),
       child: BasicLayout(
         header: ProfileHeader(
           profile: profile,
@@ -121,28 +127,11 @@ class ProfileHeader extends StatelessWidget {
         const SizedBox(height: 16),
         Row(
           children: [
-            SizedBox(
-              width: 92,
-              height: 92,
-              child: Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(11),
-                    child: Image.asset(
-                      profile.icon,
-                      width: 81,
-                      height: 81,
-                    ),
-                  ),
-                  Image.asset(
-                    'assets/images/icon_pause.png',
-                    width: 36,
-                    height: 36,
-                  ),
-                ],
-              ),
-            ),
+            ImageWithBadge(
+                imagePath: profile.icon,
+                badgePath: 'assets/images/icon_pause.png',
+                imageSize: 81,
+                badgeSize: 36),
             const SizedBox(width: 30),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
