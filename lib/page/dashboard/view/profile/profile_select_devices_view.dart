@@ -1,24 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/design/colors.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/profiles/cubit.dart';
+import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
 
-class CreateProfileDevicesSelectedView extends ArgumentsStatefulView {
-  const CreateProfileDevicesSelectedView({Key? key, super.args, super.next})
+import '../../../../design/colors.dart';
+import '../../../../localization/localization_hook.dart';
+import '../../../../route/model/base_path.dart';
+import '../../../../route/model/dashboard_path.dart';
+import '../../../../route/navigation_cubit.dart';
+import '../../../components/views/arguments_view.dart';
+
+class ProfileSelectDevicesView extends ArgumentsStatefulView {
+  const ProfileSelectDevicesView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<CreateProfileDevicesSelectedView> createState() =>
+  State<ProfileSelectDevicesView> createState() =>
       _CreateProfileDevicesSelectedViewState();
 }
 
 class _CreateProfileDevicesSelectedViewState
-    extends State<CreateProfileDevicesSelectedView> {
-  final TextEditingController _textController = TextEditingController();
+    extends State<ProfileSelectDevicesView> {
 
   final _devices = [
     DeviceInfo(name: 'Device 1', isSelected: false),
@@ -54,9 +58,19 @@ class _CreateProfileDevicesSelectedViewState
           action: [
             TextButton(
               onPressed: () {
-                final next = widget.next ?? UnknownPath();
-                NavigationCubit.of(context).push(CreateProfileAvatarPath()
-                  ..next = next);
+                bool isReturnable = widget.args['return'] ?? false;
+                final _selected = _devices.where((element) =>
+                element.isSelected);
+                if (isReturnable) {
+                  NavigationCubit.of(context).popWithResult(_selected);
+                } else {
+                  context.read<ProfilesCubit>().updateCreatedProfile(
+                      devices: List.from(
+                          _selected.map((e) => PDevice(name: e.name))));
+                  final next = widget.next ?? UnknownPath();
+                  NavigationCubit.of(context).push(CreateProfileAvatarPath()
+                    ..next = next);
+                }
               },
               child: Text(
                 getAppLocalizations(context).next,

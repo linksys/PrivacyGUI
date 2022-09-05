@@ -2,88 +2,85 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:linksys_moab/utils.dart';
 
 class TimePickerView extends StatefulWidget {
-  TimePickerView(
-      {Key? key, required this.title, required this.current, required this.isNextDay})
-      : super(key: key);
+  const TimePickerView({
+    Key? key,
+    required this.title,
+    required this.current,
+    this.isNextDay = false,
+    this.onChanged,
+  }) : super(key: key);
 
-  String title;
-  Time current;
-  bool isNextDay = false;
+  final String title;
+  final Duration current;
+  final bool isNextDay;
+  final Function(Duration)? onChanged;
 
   @override
   State<TimePickerView> createState() => _TimePickerViewState();
 }
 
 class _TimePickerViewState extends State<TimePickerView> {
-  late TimeOfDay androidSelectedTime;
-  late DateTime iosSelectTime;
+  late Duration _current;
 
   _androidSelectTime(BuildContext context) async {
     final TimeOfDay? timeOfDay = await showTimePicker(
         context: context,
-        initialTime: TimeOfDay(hour: androidSelectedTime.hour, minute: androidSelectedTime.minute),
+        initialTime: TimeOfDay(
+            hour: _current.inHours.remainder(24),
+            minute: _current.inMinutes.remainder(60)),
         builder: (BuildContext context, Widget? child) {
           return MediaQuery(
-            data:
-            MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
             child: child ?? Container(),
           );
         });
-    if (timeOfDay != null && timeOfDay != androidSelectedTime) {
+    if (timeOfDay != null) {
+      final newTime =
+          Duration(hours: timeOfDay.hour, minutes: timeOfDay.minute);
+      if (newTime == _current) return;
       setState(() {
-        androidSelectedTime = timeOfDay;
+        _current = Duration(hours: timeOfDay.hour, minutes: timeOfDay.minute);
       });
+      widget.onChanged?.call(newTime);
     }
   }
 
   void _iosSelectTime(BuildContext context) {
     showCupertinoModalPopup<void>(
         context: context,
-        builder: (BuildContext context) =>
-            Container(
+        builder: (BuildContext context) => Container(
               height: 216,
               padding: const EdgeInsets.only(top: 6.0),
               margin: EdgeInsets.only(
-                bottom: MediaQuery
-                    .of(context)
-                    .viewInsets
-                    .bottom,
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
               color: CupertinoColors.systemBackground.resolveFrom(context),
               child: SafeArea(
                 top: false,
                 child: CupertinoDatePicker(
-                  initialDateTime: iosSelectTime,
+                  initialDateTime: DateTime.fromMillisecondsSinceEpoch(
+                      _current.inMilliseconds,
+                      isUtc: true),
                   mode: CupertinoDatePickerMode.time,
-                  use24hFormat: true,
+                  use24hFormat: false,
                   onDateTimeChanged: (DateTime newTime) {
-                    setState(() => iosSelectTime = newTime);
+
+                    setState(() => _current =
+                        Duration(hours: newTime.hour, minutes: newTime.minute));
+                    widget.onChanged?.call(_current);
                   },
                 ),
               ),
             ));
   }
 
-  String getTimeString() {
-    if (Platform.isAndroid) {
-      return '${androidSelectedTime.hour}:${androidSelectedTime.minute <= 0 ? '0${androidSelectedTime.minute}' : androidSelectedTime.minute}';
-    } else if( Platform.isIOS) {
-      return '${iosSelectTime.hour} : ${iosSelectTime.minute <= 10 ? '0${iosSelectTime.minute}' : iosSelectTime.minute}';
-    } else {
-      return '';
-    }
-  }
-
-
   @override
   void initState() {
     super.initState();
-    androidSelectedTime =
-        TimeOfDay(hour: widget.current.hour, minute: widget.current.minutes);
-    iosSelectTime =
-        DateTime(2022, 8, 12, widget.current.hour, widget.current.minutes);
+    _current = widget.current;
   }
 
   @override
@@ -93,7 +90,8 @@ class _TimePickerViewState extends State<TimePickerView> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(widget.title,
-              style: const TextStyle(fontSize: 15, color: Color.fromRGBO(0, 0, 0, 0.4))),
+              style: const TextStyle(
+                  fontSize: 15, color: Color.fromRGBO(0, 0, 0, 0.4))),
           const SizedBox(height: 11),
           TextButton(
               onPressed: () {
@@ -103,7 +101,11 @@ class _TimePickerViewState extends State<TimePickerView> {
                   _iosSelectTime(context);
                 }
               },
-              child: Text(getTimeString(), style: const TextStyle(color: Colors.black, fontSize: 25, fontWeight: FontWeight.w500)),
+              child: Text(Utils.formatTimeAmPm(_current.inSeconds),
+                  style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 25,
+                      fontWeight: FontWeight.w500)),
               style: TextButton.styleFrom(
                   alignment: Alignment.centerLeft,
                   padding: const EdgeInsets.only(left: 0))),
@@ -111,8 +113,8 @@ class _TimePickerViewState extends State<TimePickerView> {
           Image.asset('assets/images/line.png'),
           const SizedBox(height: 6),
           Visibility(
-            child: const Text(
-                'next day', style: TextStyle(fontSize: 13, color: Colors.grey)),
+            child: const Text('next day',
+                style: TextStyle(fontSize: 13, color: Colors.grey)),
             visible: widget.isNextDay,
             maintainSize: true,
             maintainAnimation: true,
@@ -120,11 +122,4 @@ class _TimePickerViewState extends State<TimePickerView> {
           )
         ]);
   }
-}
-
-class Time {
-  int hour;
-  int minutes;
-
-  Time({required this.hour, required this.minutes});
 }

@@ -1,8 +1,8 @@
 import 'dart:ffi';
 
 import 'package:flutter/material.dart';
+import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 
-import '../../space/sized_box.dart';
 
 class SettingTile extends StatelessWidget {
   const SettingTile(

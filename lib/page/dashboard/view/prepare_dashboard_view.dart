@@ -1,10 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/profiles/cubit.dart';
 
-import '../../../bloc/auth/bloc.dart';
-import '../../../bloc/auth/event.dart';
-import '../../../bloc/auth/state.dart';
 import '../../../localization/localization_hook.dart';
 import '../../../route/model/dashboard_path.dart';
 import '../../../route/navigation_cubit.dart';
@@ -36,10 +34,8 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
     return FullScreenSpinner(text: getAppLocalizations(context).processing);
   }
 
-  _checkSelfNetworks() {
-    // TODO: Need to be modified
-    // NavigationCubit.of(context).clearAndPush(NoRouterPath());
-    // NavigationCubit.of(context).clearAndPush(RouterPickerPath());
+  _checkSelfNetworks() async {
+    await context.read<ProfilesCubit>().fetchProfiles();
     NavigationCubit.of(context).clearAndPush(DashboardHomePath());
   }
 }

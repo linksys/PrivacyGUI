@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:linksys_moab/util/logger.dart';
 import 'package:numberpicker/numberpicker.dart';
 
 const double _kItemExtent = 32.0;
@@ -17,7 +19,7 @@ class NumberPickerView extends StatefulWidget {
       required this.callback})
       : super(key: key);
   final String title;
-  int value = 0;
+  int value;
   int min;
   int max;
   int step;
@@ -34,6 +36,7 @@ class _NumberPickerViewState extends State<NumberPickerView> {
   void initState() {
     super.initState();
     pickerNumber = widget.value;
+    logger.d('minutes: $pickerNumber');
   }
 
   Future _showAndroidDialog(BuildContext context) async {

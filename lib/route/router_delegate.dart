@@ -136,4 +136,9 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
       },
     );
   }
+
+  @override
+  Future<bool> popRoute() {
+    return super.popRoute();
+  }
 }

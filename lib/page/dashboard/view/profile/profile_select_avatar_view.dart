@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
 
-class CreateProfileAvatarView extends ArgumentsStatefulView {
-  const CreateProfileAvatarView({Key? key, super.args, super.next})
+import '../../../../localization/localization_hook.dart';
+import '../../../../route/model/base_path.dart';
+import '../../../../route/navigation_cubit.dart';
+import '../../../components/views/arguments_view.dart';
+
+class ProfileSelectAvatarView extends ArgumentsStatefulView {
+  const ProfileSelectAvatarView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<CreateProfileAvatarView> createState() =>
+  State<ProfileSelectAvatarView> createState() =>
       _CreateProfileAvatarViewState();
 }
 
-class _CreateProfileAvatarViewState extends State<CreateProfileAvatarView> {
-  final TextEditingController _textController = TextEditingController();
+class _CreateProfileAvatarViewState extends State<ProfileSelectAvatarView> {
   Avatar _selectedAvatar = Avatar(imageUrl: '', isSelected: false);
   final _avatars = [
     Avatar(imageUrl: 'assets/images/img_profile_icon_1.png', isSelected: false),
@@ -82,8 +84,16 @@ class _CreateProfileAvatarViewState extends State<CreateProfileAvatarView> {
               PrimaryButton(
                 text: getAppLocalizations(context).done,
                 onPress: () {
-                  final next = widget.next ?? UnknownPath();
-                  NavigationCubit.of(context).popTo(next);
+                  bool isReturnable = widget.args['return'] ?? false;
+                  if (isReturnable) {
+                    NavigationCubit.of(context).popWithResult(_selectedAvatar.imageUrl);
+                  } else {
+                    context.read<ProfilesCubit>().updateCreatedProfile(
+                        icon: _selectedAvatar.imageUrl);
+                    context.read<ProfilesCubit>().saveCreatedProfile();
+                    final next = widget.next ?? UnknownPath();
+                    NavigationCubit.of(context).popTo(next);
+                  }
                 },
               ),
             ],

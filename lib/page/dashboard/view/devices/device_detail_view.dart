@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/page/components/space/sized_box.dart';
+import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';
 import 'package:linksys_moab/page/dashboard/view/devices/device_list_view.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/route/model/model.dart';
@@ -28,7 +28,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
     icon: 'assets/images/icon_device_detail.png',
     belongToProfile: const Profile(
       name: 'Timmy',
-      icon: 'assets/images/img_profile_icon_1.png',
+      icon: 'assets/images/img_profile_icon_1.png', id: '',
     ),
     connectedTo: 'Kitchen',
     ipAddress: '192.168.1.120',

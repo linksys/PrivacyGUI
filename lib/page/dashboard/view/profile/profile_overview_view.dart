@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/profiles/cubit.dart';
+import 'package:linksys_moab/bloc/profiles/state.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/customs/customs.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/route/model/dashboard_path.dart';
+import 'package:linksys_moab/route/navigation_cubit.dart';
+
+import '../../../../design/colors.dart';
+import '../../../../localization/localization_hook.dart';
+import '../../../components/views/arguments_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';
 
@@ -16,7 +27,6 @@ class ProfileOverviewView extends ArgumentsStatefulView {
 }
 
 class _ProfileOverviewViewState extends State<ProfileOverviewView> {
-  late final Profile profile;
 
   final _blockedItems = [
     BlockedItem(category: 'Adult content', count: 10),
@@ -26,70 +36,79 @@ class _ProfileOverviewViewState extends State<ProfileOverviewView> {
   @override
   void initState() {
     super.initState();
-
-    profile = widget.args['profile'];
   }
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
-      scrollable: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        // iconTheme:
-        // IconThemeData(color: Theme.of(context).colorScheme.primary),
-        elevation: 0,
-      ),
-      child: BasicLayout(
-        header: ProfileHeader(
-          profile: profile,
-        ),
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(
-              height: 39,
+    return BlocBuilder<ProfilesCubit, ProfilesState>(
+      builder: (context, state) {
+        return BasePageView(
+          scrollable: true,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+          ),
+          child: BasicLayout(
+            header: ProfileHeader(
+              profile: state.selectedProfile!,
             ),
-            ProfileOverviewItemView(
-              title: getAppLocalizations(context).time_limits,
-              description:
-                  getAppLocalizations(context).time_remaining_today('1:15'),
-              onPress: () {},
-            ),
-            _divider(),
-            const SizedBox(height: 21),
-            ProfileOverviewItemView(
-              title: getAppLocalizations(context).internet_schedules,
-              description:
-                  getAppLocalizations(context).access_until_time_today('11pm'),
-              onPress: () {},
-            ),
-            _divider(),
-            const SizedBox(height: 31),
-            ProfileOverviewItemView(
-              title: getAppLocalizations(context).content_filtered,
-              description:
-                  getAppLocalizations(context).count_blocked_this_week('13'),
-              padding: 12,
-              onPress: () {},
-            ),
-            SizedBox(
-              height: _blockedItems.length * 45,
-              child: ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _blockedItems.length,
-                itemBuilder: (context, index) => InkWell(
-                  child: BlockedItemView(
-                    blockedItem: _blockedItems[index],
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                box36(),
+                ProfileOverviewItemView(
+                  icon: Image.asset(
+                    'assets/images/icon_wifi.png',
+                    width: 24,
+                    height: 24,
                   ),
-                  onTap: () {},
+                  description:
+                      getAppLocalizations(context).time_remaining_today('1:15'),
+                  onPress: () {},
                 ),
-              ),
-            )
-          ],
-        ),
-      ),
+                box16(),
+                ProfileOverviewItemView(
+                  icon: Image.asset(
+                    'assets/images/icon_clock.png',
+                    width: 24,
+                    height: 24,
+                  ),
+                  description:
+                      getAppLocalizations(context).access_until_time_today('11pm'),
+                  onPress: () {},
+                ),
+                box16(),
+                ProfileOverviewItemView(
+                  icon: Image.asset(
+                    'assets/images/icon_block.png',
+                    width: 24,
+                    height: 24,
+                  ),
+                  description:
+                      getAppLocalizations(context).count_blocked_this_week('13'),
+                  padding: 12,
+                  onPress: () {},
+                ),
+                box16(),
+                SizedBox(
+                  height: _blockedItems.length * 45,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _blockedItems.length,
+                    itemBuilder: (context, index) => InkWell(
+                      child: BlockedItemView(
+                        blockedItem: _blockedItems[index],
+                      ),
+                      onTap: () {},
+                    ),
+                  ),
+                )
+              ],
+            ),
+          ),
+        );
+      }
     );
   }
 
@@ -121,36 +140,56 @@ class ProfileHeader extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            IconButton(onPressed: () {}, icon: const Icon(Icons.more_horiz)),
+            SimpleTextButton(
+                onPressed: () {
+                  NavigationCubit.of(context).push(ProfileEditPath());
+                }, text: getAppLocalizations(context).edit),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           children: [
-            ImageWithBadge(
-                imagePath: profile.icon,
-                badgePath: 'assets/images/icon_pause.png',
-                imageSize: 81,
-                badgeSize: 36),
+            Hero(
+              tag: 'profile-${profile.id}',
+              child: SizedBox(
+                width: 92,
+                height: 92,
+                child: Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(11),
+                      child: Image.asset(
+                        profile.icon,
+                        width: 81,
+                        height: 81,
+                      ),
+                    ),
+                    Image.asset(
+                      'assets/images/icon_pause.png',
+                      width: 36,
+                      height: 36,
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(width: 30),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "2 " + getAppLocalizations(context).devices,
+                  getAppLocalizations(context).online,
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
-                const Text('iPhone XR, chromebook'),
-                const SizedBox(height: 7),
+                box8(),
                 Text(
-                  getAppLocalizations(context).online,
+                  getAppLocalizations(context).number_of_devices(profile.devices.length),
                   style: const TextStyle(
-                    color: MoabColor.primaryBlue,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
                   ),
                 ),
               ],
@@ -165,16 +204,16 @@ class ProfileHeader extends StatelessWidget {
 class ProfileOverviewItemView extends StatelessWidget {
   const ProfileOverviewItemView({
     Key? key,
-    this.title = '',
+    this.icon,
     this.description = '',
     this.padding = 5,
     this.onPress,
   }) : super(key: key);
 
-  final String title;
   final String description;
   final double padding;
   final VoidCallback? onPress;
+  final Image? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -183,20 +222,11 @@ class ProfileOverviewItemView extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const Spacer(),
-            const Icon(Icons.navigate_next),
+            icon ?? const Center(),
+            box8(),
+            Text(description),
           ],
         ),
-        SizedBox(height: padding),
-        Text(description),
-        const SizedBox(height: 20),
       ],
     );
   }
@@ -221,7 +251,6 @@ class BlockedItemView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO wrap content
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Wrap(
@@ -237,8 +266,6 @@ class BlockedItemView extends StatelessWidget {
             ),
             child: Wrap(
               children: [
-                icon ?? Image.asset('assets/images/icon_blocked.png'),
-                const SizedBox(width: 8),
                 Text(blockedItem.category),
                 const SizedBox(width: 7),
                 Text(blockedItem.count.toString()),

@@ -1,21 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/profiles/cubit.dart';
+import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/dashboard/view/time_picker_view.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/page/components/picker/time_picker_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
 
-import 'day_picker_view.dart';
+import '../../../components/picker/day_picker_view.dart';
 
-class AddSchedulePauseView extends StatefulWidget {
-  const AddSchedulePauseView({Key? key}) : super(key: key);
+class AddSchedulePauseView extends ArgumentsStatefulView {
+  const AddSchedulePauseView({
+    Key? key,
+    super.args,
+    super.next,
+  }) : super(key: key);
 
   @override
   State<AddSchedulePauseView> createState() => _AddSchedulePauseViewState();
 }
 
 class _AddSchedulePauseViewState extends State<AddSchedulePauseView> {
-  bool isCustomizeTime = false;
+  bool _isCustomizeTime = false;
+  List<bool> weeklySet = [];
+  late final ScheduledPausedRule _rule;
+  late String _profileId;
+  late Duration _startTimeInSeconds;
+  late Duration _endTimeInSeconds;
+  bool _isEdit = false;
+
+  @override
+  void initState() {
+    _rule = widget.args['rule'] ?? ScheduledPausedRule.empty();
+    _isEdit = widget.args.containsKey('rule');
+    _profileId = widget.args['profileId'] ?? '';
+    _startTimeInSeconds = Duration(seconds: _rule.pauseStartTime);
+    _endTimeInSeconds = Duration(seconds: _rule.pauseEndTime);
+    _isCustomizeTime = !_rule.isAllDay;
+    weeklySet = _rule.weeklySet;
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +59,18 @@ class _AddSchedulePauseViewState extends State<AddSchedulePauseView> {
           actions: [
             TextButton(
                 onPressed: () {
-                  NavigationCubit.of(context).push(SchedulePauseListPath());
+                  context
+                      .read<ProfilesCubit>()
+                      .updateSchedulePausesDetail(
+                        _profileId,
+                        _rule,
+                        weeklySet,
+                        _startTimeInSeconds.inSeconds,
+                        _endTimeInSeconds.inSeconds,
+                        !_isCustomizeTime,
+                      )
+                      .then((value) => NavigationCubit.of(context)
+                          .popTo(SchedulePauseListPath()));
                 },
                 child: const Text('Save',
                     style: TextStyle(
@@ -52,24 +89,41 @@ class _AddSchedulePauseViewState extends State<AddSchedulePauseView> {
                     fontWeight: FontWeight.w500,
                     color: Colors.black)),
             const SizedBox(height: 8),
-            const DayPickerView(),
+            DayPickerView(
+              weeklyBool: weeklySet,
+              onChanged: (changed) {
+                weeklySet = changed;
+              },
+            ),
             const SizedBox(height: 49),
-            if (isCustomizeTime) ...[
+            if (_isCustomizeTime) ...[
               Row(children: [
                 TimePickerView(
-                    title: 'start',
-                    current: Time(hour: 10, minutes: 0),
-                    isNextDay: false),
+                  title: 'start',
+                  current: _startTimeInSeconds,
+                  isNextDay: false,
+                  onChanged: (newTime) {
+                    setState(() {
+                      _startTimeInSeconds = newTime;
+                    });
+                  },
+                ),
                 const SizedBox(width: 22),
                 TimePickerView(
-                    title: 'end',
-                    current: Time(hour: 8, minutes: 0),
-                    isNextDay: true),
-                const SizedBox(width: 57),
+                  title: 'end',
+                  current: _endTimeInSeconds,
+                  isNextDay: _startTimeInSeconds > _endTimeInSeconds,
+                  onChanged: (newTime) {
+                    setState(() {
+                      _endTimeInSeconds = newTime;
+                    });
+                  },
+                ),
+                Spacer(),
                 TextButton(
                     onPressed: () {
                       setState(() {
-                        isCustomizeTime = false;
+                        _isCustomizeTime = false;
                       });
                     },
                     child: const Text('Remove',
@@ -92,14 +146,17 @@ class _AddSchedulePauseViewState extends State<AddSchedulePauseView> {
                   ),
                   onTap: () {
                     setState(() {
-                      isCustomizeTime = true;
+                      _isCustomizeTime = true;
                     });
                   })
             ],
             const SizedBox(height: 63),
             TextButton(
                 onPressed: () {
-                  NavigationCubit.of(context).pop();
+                  context
+                      .read<ProfilesCubit>()
+                      .deleteSchedulePausesRule(_profileId, _rule)
+                      .then((value) => NavigationCubit.of(context).pop());
                 },
                 child: const Text('Delete',
                     style: TextStyle(

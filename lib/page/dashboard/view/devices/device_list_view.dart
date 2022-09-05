@@ -1,12 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/customs/customs.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/page/components/space/sized_box.dart';
+import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
 
@@ -40,7 +40,7 @@ class _DeviceListViewState extends State<DeviceListView> {
         weeklyData: '345',
         belongToProfile: const Profile(
           name: 'Profile name',
-          icon: 'assets/images/img_profile_icon_1.png',
+          icon: 'assets/images/img_profile_icon_1.png', id: '',
         ),
       ),
       DeviceDetailInfo.dummy().copyWith(weeklyUsage: '128'),

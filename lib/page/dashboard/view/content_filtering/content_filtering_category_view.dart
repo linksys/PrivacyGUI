@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
-import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
-import 'package:linksys_moab/page/components/space/sized_box.dart';
+import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/dashboard/view/content_filtering/model.dart';
 import 'package:linksys_moab/route/route.dart';
 
 import 'component.dart';
@@ -34,6 +32,7 @@ class _ContentFilteringCategoryViewState
   @override
   Widget build(BuildContext context) {
     return BasePageView.onDashboardSecondary(
+      scrollable: true,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
@@ -41,7 +40,8 @@ class _ContentFilteringCategoryViewState
         leading: IconButton(
             icon: Icon(Icons.close),
             onPressed: () {
-              NavigationCubit.of(context).pop();
+              // NavigationCubit.of(context).pop();
+              NavigationCubit.of(context).popWithResult(_category);
             }),
       ),
       child: Column(
@@ -55,7 +55,11 @@ class _ContentFilteringCategoryViewState
                 _category.name,
                 style: Theme.of(context).textTheme.headline2,
               )),
-              createStatusButton(context, _category.status)
+              createStatusButton(context, _category.status, onPressed: () {
+                setState(() {
+                  _category = _category.copyWith(status: CFFilterCategory.switchStatus(_category.status));
+                });
+              })
             ],
           ),
           box16(),
@@ -70,23 +74,20 @@ class _ContentFilteringCategoryViewState
   }
 
   Widget _appSection() {
-    return ListView.separated(
-      itemBuilder: (context, index) => ListTile(
-        leading: Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.all(Radius.circular(4))),
-        ),
-        title: Text(_category.apps[index].name),
-        trailing: createStatusButton(context, _category.apps[index].status),
-      ),
-      separatorBuilder: (_, __) => SizedBox(
-        width: 16,
-      ),
-      itemCount: _category.apps.length,
-      shrinkWrap: true,
+    return Column(
+      children: [
+        ..._category.apps.map((e) => ListTile(
+              leading: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.all(Radius.circular(4))),
+              ),
+              title: Text(e.name),
+              trailing: createStatusButton(context, e.status),
+            ))
+      ],
     );
   }
 }

@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/button/primary_button.dart';
 
-import '../../../design/colors.dart';
-import '../../../route/navigation_cubit.dart';
+import '../../../../design/colors.dart';
+import '../../../../route/navigation_cubit.dart';
 
 class DailyTimeLimitEmptyView extends StatelessWidget {
   const DailyTimeLimitEmptyView({Key? key}) : super(key: key);

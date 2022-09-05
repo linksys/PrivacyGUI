@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
+import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-
-import '../../../bloc/auth/bloc.dart';
-import '../../../bloc/auth/event.dart';
 
 typedef OnMenuItemClick = void Function(int index, DashboardSettingsItem item);
 
@@ -32,9 +31,7 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _title(),
-            const SizedBox(
-              height: 32,
-            ),
+            box36(),
             _section(
               _networkSettingsSection(),
               (index, item) {
@@ -42,48 +39,20 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
                 NavigationCubit.of(context).push(item.path);
               },
             ),
-            const SizedBox(
-              height: 32,
-            ),
-            _section(
-              _secureSettingsSection(),
-              (index, item) {
-                logger.d('MenuItem click $index');
-                NavigationCubit.of(context).push(item.path);
-              },
-            ),
-            const SizedBox(
-              height: 32,
-            ),
+            box36(),
             _section(
               _youSettingsSection(),
               (index, item) {
                 logger.d('MenuItem click $index');
               },
             ),
-            const SizedBox(
-              height: 32,
-            ),
-            SimpleTextButton(text: 'Log out', onPressed: () {
-              context.read<AuthBloc>().add(Logout());
-            }),
-            SizedBox(
-              height: 16,
-            ),
-            Text('Terms of Service',
-                style: Theme.of(context).textTheme.headline4?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    )),
-            SizedBox(
-              height: 16,
-            ),
-            Text('Privacy Policy',
-                style: Theme.of(context).textTheme.headline4?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    )),
-            SizedBox(
-              height: 16,
-            ),
+            box36(),
+            SimpleTextButton(
+                text: 'Log out',
+                onPressed: () {
+                  context.read<AuthBloc>().add(Logout());
+                }),
+            box36(),
             FutureBuilder(
                 future:
                     PackageInfo.fromPlatform().then((value) => value.version),
@@ -159,20 +128,18 @@ _networkSettingsSection() => DashboardSettingsSection(
       title: 'NETWORK',
       items: [
         DashboardSettingsItem(title: 'WiFi', path: WifiSettingsPath()),
-        DashboardSettingsItem(title: 'Internet schedule', path: InternetSchedulePath()),
+        DashboardSettingsItem(
+          title: 'Internet schedule',
+          path: ProfileListPath()..args = {'category': PService.internetSchedule},
+        ),
+        DashboardSettingsItem(
+          title: 'Content filters',
+          path: ProfileListPath()..args = {'category': PService.contentFilter},
+        ),
+        DashboardSettingsItem(title: 'Profiles', path: ProfileListPath()),
         DashboardSettingsItem(title: 'Priority', path: UnknownPath()),
         DashboardSettingsItem(title: 'Administration', path: UnknownPath()),
         DashboardSettingsItem(title: 'Smart home', path: UnknownPath()),
-      ],
-    );
-//
-_secureSettingsSection() => DashboardSettingsSection(
-      title: 'LINKSYS SECURE',
-      items: [
-        DashboardSettingsItem(
-            title: 'Cyberthreat protection', path: UnknownPath()),
-        DashboardSettingsItem(title: 'Content filters', path: ContentFilteringPath()),
-        DashboardSettingsItem(title: 'App blocking', path: UnknownPath()),
       ],
     );
 //
@@ -181,9 +148,7 @@ _youSettingsSection() => DashboardSettingsSection(
       items: [
         DashboardSettingsItem(title: 'Account', path: UnknownPath()),
         DashboardSettingsItem(title: 'Notifications', path: UnknownPath()),
-        DashboardSettingsItem(title: 'Privacy', path: UnknownPath()),
-        DashboardSettingsItem(
-            title: '+ Set up new product', path: UnknownPath()),
+        DashboardSettingsItem(title: 'Privacy and legal', path: UnknownPath()),
       ],
     );
 

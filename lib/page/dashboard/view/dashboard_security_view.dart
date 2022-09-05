@@ -1,36 +1,11 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/profiles/cubit.dart';
+import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';
-
-final _mockProfiles = [
-  Profile(
-    name: 'Eric',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-  Profile(
-    name: 'Timmy',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-  Profile(
-    name: 'Mandy',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-  Profile(
-    name: 'Dad',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-  Profile(
-    name: 'Peter',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-  Profile(
-    name: 'Austin',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-];
 
 class DashboardSecurityView extends StatefulWidget {
   const DashboardSecurityView({Key? key}) : super(key: key);
@@ -215,6 +190,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
   }
 
   Widget _buildContentFilteredProfile() {
+    final _mockProfiles = context.read<ProfilesCubit>().state.profileList;
     final double listHeight = _mockProfiles.length * 80;
     return SizedBox(
       height: listHeight,

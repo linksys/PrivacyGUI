@@ -21,3 +21,13 @@ return const SizedBox(width: 4, height: 4,);
 Widget box12(){
   return const SizedBox(width: 12, height:12,);
 }
+Widget box(double space, {Widget? child}) {
+  return SizedBox(width: space, height: space, child: child,);
+}
+Widget infinityBox({Axis axis = Axis.horizontal, Widget? child}) {
+  if (axis == Axis.horizontal) {
+    return SizedBox(width: double.infinity, child: child,);
+  } else {
+    return SizedBox(height: double.infinity, child: child,);
+  }
+}

@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/design/themes.dart';
+import 'package:linksys_moab/page/dashboard/view/Profile/profile_list_view.dart';
 import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_age_presets_view.dart';
 import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_category_view.dart';
-import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_profile_settings_view.dart';
-import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_view.dart';
+import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_overview_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_health_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_security_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_settings_view.dart';
+import 'package:linksys_moab/page/dashboard/view/internet_schedules/internet_schedule_overview_view.dart';
 import 'package:linksys_moab/page/dashboard/view/nodes/node_connected_devices_view.dart';
 import 'package:linksys_moab/page/dashboard/view/nodes/node_detail_view.dart';
 import 'package:linksys_moab/page/dashboard/view/nodes/node_name_edit_view.dart';
 import 'package:linksys_moab/page/dashboard/view/nodes/node_offline_check.dart';
 import 'package:linksys_moab/page/dashboard/view/nodes/signal_strength_view.dart';
+import 'package:linksys_moab/page/dashboard/view/profile/profile_edit_name_avatar_view.dart';
+import 'package:linksys_moab/page/dashboard/view/profile/profile_edit_view.dart';
+import 'package:linksys_moab/page/dashboard/view/profile/profile_select_avatar_view.dart';
 import 'package:linksys_moab/page/wifi_settings/edit_wifi_mode_view.dart';
 import 'package:linksys_moab/page/wifi_settings/edit_wifi_name_password_view.dart';
 import 'package:linksys_moab/page/wifi_settings/edit_wifi_security_view.dart';
@@ -23,13 +27,12 @@ import 'package:linksys_moab/page/wifi_settings/wifi_settings_review_view.dart';
 import 'package:linksys_moab/page/wifi_settings/wifi_settings_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
-import 'package:linksys_moab/page/dashboard/view/add_daily_time_limit_view.dart';
-import 'package:linksys_moab/page/dashboard/view/add_schedule_pause_view.dart';
-import 'package:linksys_moab/page/dashboard/view/daily_time_limit_list_view.dart';
-import 'package:linksys_moab/page/dashboard/view/internet_schedule_view.dart';
-import 'package:linksys_moab/page/dashboard/view/profile_settings_view.dart';
-import 'package:linksys_moab/page/dashboard/view/schedule_pause_list_view.dart';
+import 'package:linksys_moab/page/dashboard/view/internet_schedules/add_daily_time_limit_view.dart';
+import 'package:linksys_moab/page/dashboard/view/internet_schedules/add_schedule_pause_view.dart';
+import 'package:linksys_moab/page/dashboard/view/internet_schedules/daily_time_limit_list_view.dart';
+import 'package:linksys_moab/page/dashboard/view/internet_schedules/schedule_pause_list_view.dart';
 import 'package:linksys_moab/page/dashboard/view/view.dart';
+import '../../page/dashboard/view/profile/profile_select_devices_view.dart';
 import '../../page/dashboard/view/topology/topology_view.dart';
 import 'base_path.dart';
 
@@ -53,14 +56,21 @@ abstract class DashboardPath extends BasePath {
         return const NoRouterView();
       case PrepareDashboardPath:
         return PrepareDashboardView();
-      case InternetSchedulePath:
-        return const InternetScheduleView();
-      case ProfileSettingsPath:
-        return const ProfileSettingsView();
+      case InternetScheduleOverviewPath:
+        return InternetScheduleOverviewView(
+          args: args,
+          next: next,
+        );
       case AddDailyTimeLimitPath:
-        return const AddDailyTimeLimitView();
+        return AddDailyTimeLimitView(
+          args: args,
+          next: next,
+        );
       case AddSchedulePausePath:
-        return const AddSchedulePauseView();
+        return AddSchedulePauseView(
+          args: args,
+          next: next,
+        );
       case DailyTimeLimitListPath:
         return const DailyTimeLimitListView();
       case SchedulePauseListPath:
@@ -95,17 +105,27 @@ abstract class DashboardPath extends BasePath {
           next: next,
         );
       case CreateProfileDevicesSelectedPath:
-        return CreateProfileDevicesSelectedView(
+        return ProfileSelectDevicesView(
           args: args,
           next: next,
         );
       case CreateProfileAvatarPath:
-        return CreateProfileAvatarView(
+        return ProfileSelectAvatarView(
           args: args,
           next: next,
         );
       case ProfileOverviewPath:
         return ProfileOverviewView(
+          args: args,
+          next: next,
+        );
+      case ProfileEditPath:
+        return ProfileEditView(
+          args: args,
+          next: next,
+        );
+      case ProfileEditNameAvatarPath:
+        return ProfileEditNameAvatarView(
           args: args,
           next: next,
         );
@@ -139,13 +159,8 @@ abstract class DashboardPath extends BasePath {
           args: args,
           next: next,
         );
-      case ContentFilteringPath:
-        return ContentFilteringView(
-          args: args,
-          next: next,
-        );
-      case CFProfileSettingPath:
-        return ContentFilteringProfileSettingsView(
+      case ContentFilteringOverviewPath:
+        return ContentFilteringOverviewView(
           args: args,
           next: next,
         );
@@ -156,6 +171,11 @@ abstract class DashboardPath extends BasePath {
         );
       case CFFilterCategoryPath:
         return ContentFilteringCategoryView(
+          args: args,
+          next: next,
+        );
+      case ProfileListPath:
+        return ProfileListView(
           args: args,
           next: next,
         );
@@ -210,7 +230,7 @@ class EditWifiSecurityPath extends DashboardPath {}
 
 class InternetSchedulePath extends DashboardPath {}
 
-class ProfileSettingsPath extends DashboardPath {}
+class InternetScheduleOverviewPath extends DashboardPath {}
 
 class AddDailyTimeLimitPath extends DashboardPath {}
 
@@ -231,17 +251,32 @@ class CreateProfileNamePath extends DashboardPath {
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
 
-class CreateProfileDevicesSelectedPath extends DashboardPath {
+class CreateProfileDevicesSelectedPath extends DashboardPath with ReturnablePath {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
 
-class CreateProfileAvatarPath extends DashboardPath {
+class CreateProfileAvatarPath extends DashboardPath with ReturnablePath {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
 
 class ProfileOverviewPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}
+
+class ProfileEditPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}
+
+class ProfileEditNameAvatarPath extends DashboardPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}
+
+class ProfileListPath extends DashboardPath {
   @override
   PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
 }
@@ -260,10 +295,10 @@ class NodeOfflineCheckPath extends DashboardPath{
 
 class ContentFilteringPath extends DashboardPath {}
 
-class CFProfileSettingPath extends DashboardPath {}
+class ContentFilteringOverviewPath extends DashboardPath {}
 
 class CFPresetsPath extends DashboardPath {}
-class CFFilterCategoryPath extends DashboardPath {
+class CFFilterCategoryPath extends DashboardPath with ReturnablePath {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }

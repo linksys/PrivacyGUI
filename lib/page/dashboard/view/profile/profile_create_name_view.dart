@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/design/colors.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/profiles/cubit.dart';
+import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+
+import '../../../../design/colors.dart';
+import '../../../../localization/localization_hook.dart';
+import '../../../../route/model/base_path.dart';
+import '../../../../route/model/dashboard_path.dart';
+import '../../../../route/navigation_cubit.dart';
+import '../../../components/views/arguments_view.dart';
 
 class CreateProfileNameView extends ArgumentsStatefulView {
   const CreateProfileNameView({Key? key, super.args, super.next})
@@ -40,6 +45,7 @@ class _CreateProfileNameViewState extends State<CreateProfileNameView> {
           action: [
             TextButton(
               onPressed: () {
+                context.read<ProfilesCubit>().updateCreatedProfile(name: _textController.text,);
                 final next = widget.next ?? UnknownPath();
                 NavigationCubit.of(context).push(CreateProfileDevicesSelectedPath()
                   ..next = next);
