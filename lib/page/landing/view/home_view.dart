@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/base_components/button/secondary_button.dart';
@@ -91,7 +92,7 @@ class _HomeViewState extends State<HomeView> {
           PackageInfo.fromPlatform().then((value) => value.version),
           initialData: '-',
           builder: (context, data) {
-            return Text('version ${data.data}',
+            return Text('version ${data.data} ${cloudEnvTarget == CloudEnvironment.prod ? '' : cloudEnvTarget.name}',
                 style: Theme.of(context).textTheme.headline4?.copyWith(
                   fontWeight: FontWeight.w700,
                 ));

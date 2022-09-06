@@ -6,7 +6,10 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:linksys_moab/bloc/auth/bloc.dart';
+import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/channel/push_notification_channel.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
@@ -73,7 +76,10 @@ class _DebugToolsViewState extends State<DebugToolsView> {
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Row(
               children: [
-                Icon(Icons.refresh, color: Colors.white,),
+                Icon(
+                  Icons.refresh,
+                  color: Colors.white,
+                ),
                 Text(
                   'App:',
                   style: Theme.of(context)
@@ -86,7 +92,9 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           ),
         ),
         FutureBuilder<CloudApp>(
-            future: CloudEnvironmentManager().fetchCloudApp().then((value) => CloudEnvironmentManager().loadCloudApp()),
+            future: CloudEnvironmentManager()
+                .fetchCloudApp()
+                .then((value) => CloudEnvironmentManager().loadCloudApp()),
             initialData: null,
             builder: (context, snapshot) {
               return snapshot.data == null
@@ -100,8 +108,10 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                                 .getCloudApp()
                                 .toJson()
                                 .entries
-                                .map((e) => TableRow(
-                                    children: [Text(e.key), Text(e.value ?? '')]))
+                                .map((e) => TableRow(children: [
+                                      Text(e.key),
+                                      Text(e.value ?? '')
+                                    ]))
                           ],
                         ),
                         Padding(
@@ -121,7 +131,9 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                       ],
                     );
             }),
-        SizedBox(height: 32,),
+        SizedBox(
+          height: 32,
+        ),
         Text(
           'Push Notification:',
           style: Theme.of(context)
@@ -416,6 +428,13 @@ class _DebugToolsViewState extends State<DebugToolsView> {
               .headline2
               ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
+        Text(
+          'Will logout after change environment!',
+          style: Theme.of(context)
+              .textTheme
+              .headline2
+              ?.copyWith(color: Colors.red),
+        ),
         SecondaryButton(
           text: 'Select environment',
           onPress: () async {
@@ -470,6 +489,8 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                     cloudEnvTarget = _selectedEnv;
                     await CloudEnvironmentManager()
                         .fetchCloudConfig()
+                        .then((value) =>
+                            CloudEnvironmentManager().createCloudApp())
                         .then(
                             (value) => Navigator.of(context).pop(_selectedEnv))
                         .onError((error, stackTrace) {
@@ -483,6 +504,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                       setState(() {
                         _isLoading = false;
                       });
+                      context.read<AuthBloc>().add(Logout());
                     });
                   },
                 ),
