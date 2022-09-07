@@ -71,6 +71,8 @@ dependencies:
   graphite: ^0.3.0
   graphview: ^1.1.1
   local_auth: ^2.1.2
+  universal_link_plugin:
+    path: plugins/universal_link_plugin
 
 dev_dependencies:
   flutter_test:

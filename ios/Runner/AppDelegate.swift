@@ -60,10 +60,6 @@ import FirebaseCore
       
       let notificationContentChannel = FlutterEventChannel(name: "moab.notification/payload", binaryMessenger: controller.binaryMessenger)
       notificationContentChannel.setStreamHandler(NotificationContentStreamHandler())
-      
-      let universalLinkChannel = FlutterEventChannel(name: "otp.code.input.view/deeplink",
-                                                     binaryMessenger: controller.binaryMessenger)
-      universalLinkChannel.setStreamHandler(UniversalLinkStreamHandler())
 
       GeneratedPluginRegistrant.register(with: self)
       return super.application(application, didFinishLaunchingWithOptions: launchOptions)
@@ -83,28 +79,7 @@ import FirebaseCore
             }
         }
     }
-    
-    override func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
 
-        guard let url = userActivity.webpageURL,
-              let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
-              userActivity.activityType == NSUserActivityTypeBrowsingWeb else { return false }
-        
-        print("Universal link: \(url)")
-        if components.path.contains("otp") {  //TODO: Depend on the real URL
-            for item in components.queryItems ?? [] {
-                if item.name == "code", let code = item.value {  //TODO: Depend on the real URL
-                    NotificationCenter.default.post(
-                        name: NSNotification.Name("UniversalLinkActivityNotification"),
-                        object: nil,
-                        userInfo: ["code": code])
-                }
-            }
-        }
-        
-        return false
-    }
-    
     override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         print("AppDelegate: Register APNs succeeded")
         let tokenComponents = deviceToken.map{ data in String(format: "%02.2hhx", data)}
@@ -124,7 +99,7 @@ import FirebaseCore
     override func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         let userInfo = response.notification.request.content.userInfo
         print("AppDelegate: didReceive response: userInfo=\(userInfo)")
-        
+
         if let payload = userInfo["aps"] as? [String: Any] {
             NotificationCenter.default.post(
                 name: NSNotification.Name("ReceiveAPNsPayloadNotification"),
@@ -136,7 +111,7 @@ import FirebaseCore
     
     override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         print("AppDelegate: didReceiveRemoteNotification: userInfo=\(userInfo)")
-        
+
         if let _ = userInfo["aps"] {
             if let payload = userInfo["data"] as? [String: Any] {
                 NotificationCenter.default.post(
@@ -147,7 +122,7 @@ import FirebaseCore
         }
         completionHandler(UIBackgroundFetchResult.noData)
     }
-    
+
     private func requestNotificationAuthorization(result: @escaping FlutterResult) {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { grant, error in
             if let _ = error {
@@ -157,38 +132,6 @@ import FirebaseCore
             }
         }
     }
-}
-
-class UniversalLinkStreamHandler: NSObject, FlutterStreamHandler {
-    private var eventSink: FlutterEventSink?
-    
-    func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(sendEvent(_:)),
-            name: NSNotification.Name("UniversalLinkActivityNotification"),
-            object: nil
-        )
-        eventSink = events
-        return nil
-    }
-    
-    func onCancel(withArguments arguments: Any?) -> FlutterError? {
-        NotificationCenter.default.removeObserver(self)
-        eventSink = nil
-        return nil
-    }
-    
-    @objc func sendEvent(_ notification: NSNotification) {
-        guard let eventSink = eventSink else {
-            return
-        }
-        guard let userInfo = notification.userInfo, let code = userInfo["code"] else {
-            return
-        }
-        eventSink(code)
-    }
-    
 }
 
 class NotificationContentStreamHandler: NSObject, FlutterStreamHandler {
