@@ -3,8 +3,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
-import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/design/colors.dart';
+import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 
 class DashboardSecurityView extends StatefulWidget {
@@ -44,7 +44,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
               ?.copyWith(fontSize: 32, fontWeight: FontWeight.w700),
           textAlign: TextAlign.start,
         ),
-        SizedBox(
+        const SizedBox(
           height: 32,
         ),
       ],
@@ -82,11 +82,11 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             ),
           ],
         ),
-        SizedBox(
+        const SizedBox(
           height: 8,
         ),
         Text(
-          'Your protection this week',
+          'This week',
           style: Theme.of(context)
               .textTheme
               .headline2
@@ -102,27 +102,33 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TitleWithTailIcon(
+        TitleWithIcons(
           text: Text(
             'Cyberthreats blocked',
             style: Theme.of(context)
                 .textTheme
-                .headline2
+                .headline3
                 ?.copyWith(fontWeight: FontWeight.w700),
           ),
-          icon: IconButton(
+          leadingIcon: Image.asset('assets/images/security_good_small.png'),
+          trailingIcon: IconButton(
+            icon: Image.asset(
+              'assets/images/icon_info.png',
+              height: 26,
+              width: 26,
+            ),
             onPressed: () {},
-            icon: Image.asset('assets/images/icon_info.png'),
           ),
         ),
-        Container(
+        SizedBox(
           height: tileHeight,
           child: GridView.count(
+            shrinkWrap: true,
             crossAxisCount: 2,
             childAspectRatio: 1.75,
             mainAxisSpacing: 14,
             crossAxisSpacing: 14,
-            physics: NeverScrollableScrollPhysics(),
+            physics: const NeverScrollableScrollPhysics(),
             children: const [
               InfoBlockWidget(
                 count: 3,
@@ -143,18 +149,13 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             ],
           ),
         ),
-        SizedBox(
-          height: 8,
-        ),
+        box8(),
         Text(
           '924 total inspections performed',
           style: Theme.of(context)
               .textTheme
-              .headline2
+              .headline3
               ?.copyWith(fontWeight: FontWeight.w400),
-        ),
-        SizedBox(
-          height: 32,
         ),
       ],
     );
@@ -164,27 +165,44 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TitleWithTailIcon(
+        TitleWithIcons(
           text: Text(
             'Content filtered',
             style: Theme.of(context)
                 .textTheme
-                .headline2
+                .headline3
                 ?.copyWith(fontWeight: FontWeight.w700),
           ),
-          icon: IconButton(
+          leadingIcon: Image.asset('assets/images/icon_block.png'),
+          trailingIcon: IconButton(
+            icon: Image.asset(
+              'assets/images/icon_info.png',
+              height: 26,
+              width: 26,
+            ),
             onPressed: () {},
-            icon: Image.asset('assets/images/icon_info.png'),
           ),
         ),
-        InfoBlockWidget(
+        const InfoBlockWidget(
           count: 21,
           text: 'Blocked content this week',
           isVertical: false,
-          height: 62,
+          height: 60,
         ),
-        SizedBox(height: 4,),
+        box4(),
         _buildContentFilteredProfile(),
+        Text(
+          'Fortinet threat database',
+          style: Theme.of(context).textTheme.headline4?.copyWith(
+            fontWeight: FontWeight.w700
+          ),
+        ),
+        Text(
+          'Last updated on Aug 15, 2022',
+          style: Theme.of(context).textTheme.headline4?.copyWith(
+              fontWeight: FontWeight.w500
+          ),
+        ),
       ],
     );
   }
@@ -201,7 +219,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
         itemBuilder: (context, index) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: ListTile(
-            shape: BeveledRectangleBorder(
+            shape: const BeveledRectangleBorder(
               side: BorderSide(color: Colors.black, width: 1),
             ),
             leading: Image.asset(
@@ -213,34 +231,6 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
               _mockProfiles[index].name,
               style: Theme.of(context).textTheme.bodyText1?.copyWith(fontWeight: FontWeight.w700),
             ),
-            // child: Container(
-            //   padding: const EdgeInsets.symmetric(vertical: 8),
-            //   child: Container(
-            //     padding: const EdgeInsets.symmetric(horizontal: 16),
-            //     height: 60,
-            //     decoration:
-            //         BoxDecoration(border: Border.all(color: MoabColor.black)),
-            //     child: Wrap(
-            //       alignment: WrapAlignment.start,
-            //       crossAxisAlignment: WrapCrossAlignment.center,
-            //       children: [
-            //         Image.asset(
-            //           _mockProfiles[index].icon,
-            //           width: 32,
-            //           height: 32,
-            //         ),
-            //         SizedBox(
-            //           width: 8,
-            //         ),
-            //         Text(
-            //           _mockProfiles[index].name,
-            //           style: Theme.of(context).textTheme.bodyText1?.copyWith(fontWeight: FontWeight.w700),
-            //         )
-            //       ],
-            //     ),
-            //   ),
-            // ),
-            // onTap: () {},
           ),
         ),
       ),
@@ -258,21 +248,36 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
   }
 }
 
-class TitleWithTailIcon extends StatelessWidget {
-  const TitleWithTailIcon({Key? key, required this.text, required this.icon})
-      : super(key: key);
+class TitleWithIcons extends StatelessWidget {
+  TitleWithIcons({
+    Key? key,
+    required this.text,
+    this.leadingIcon,
+    this.trailingIcon,
+  }): super(key: key){
+    if(leadingIcon != null) {
+      _widgets.add(leadingIcon!);
+      _widgets.add(box8());
+    }
+    _widgets.add(Expanded(
+      child: text,
+    ));
+    if(trailingIcon != null) {
+      _widgets.add(trailingIcon!);
+    }
+  }
 
   final Widget text;
-  final Widget icon;
+  final Widget? leadingIcon;
+  final Widget? trailingIcon;
+  final List<Widget> _widgets = [];
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      padding: const EdgeInsets.symmetric(vertical: 0.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [Expanded(child: text), icon],
+        children: _widgets,
       ),
     );
   }

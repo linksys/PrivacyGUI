@@ -5,6 +5,7 @@ import 'package:linksys_moab/page/dashboard/view/Profile/profile_list_view.dart'
 import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_age_presets_view.dart';
 import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_category_view.dart';
 import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_overview_view.dart';
+import 'package:linksys_moab/page/dashboard/view/content_filtering/filtered_content_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_health_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_security_view.dart';
@@ -18,6 +19,11 @@ import 'package:linksys_moab/page/dashboard/view/nodes/signal_strength_view.dart
 import 'package:linksys_moab/page/dashboard/view/profile/profile_edit_name_avatar_view.dart';
 import 'package:linksys_moab/page/dashboard/view/profile/profile_edit_view.dart';
 import 'package:linksys_moab/page/dashboard/view/profile/profile_select_avatar_view.dart';
+import 'package:linksys_moab/page/dashboard/view/security/security_cyber_threat_view.dart';
+import 'package:linksys_moab/page/dashboard/view/security/security_marketing_view.dart';
+import 'package:linksys_moab/page/dashboard/view/security/security_protection_status_view.dart';
+import 'package:linksys_moab/page/dashboard/view/security/security_subscribe_view.dart';
+import 'package:linksys_moab/page/dashboard/view/security/vulnerability_introduction_view.dart';
 import 'package:linksys_moab/page/wifi_settings/edit_wifi_mode_view.dart';
 import 'package:linksys_moab/page/wifi_settings/edit_wifi_name_password_view.dart';
 import 'package:linksys_moab/page/wifi_settings/edit_wifi_security_view.dart';
@@ -185,6 +191,18 @@ abstract class DashboardPath extends BasePath {
         return DeviceDetailView();
       case EditDeviceNamePath:
         return EditDeviceNameView();
+      case CFFilteredContentPath:
+        return const FilteredContentView();
+      case SecurityProtectionStatusPath:
+        return const SecurityProtectionStatusView();
+      case SecurityCyberThreatPath:
+        return const SecurityCyberThreatView();
+      case VulnerabilityIntroductionPath:
+        return const VulnerabilityIntroductionView();
+      case SecurityMarketingPath:
+        return const SecurityMarketingView();
+      case SecuritySubscribePath:
+        return const SecuritySubscribeView();
       default:
         return const Center();
     }
@@ -302,6 +320,7 @@ class CFFilterCategoryPath extends DashboardPath with ReturnablePath {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
+class CFFilteredContentPath extends DashboardPath {}
 
 class DeviceListPath extends DashboardPath {
   @override
@@ -314,3 +333,13 @@ class DeviceDetailPath extends DashboardPath {
 }
 
 class EditDeviceNamePath extends DashboardPath {}
+
+class SecurityProtectionStatusPath extends DashboardPath {}
+
+class SecurityCyberThreatPath extends DashboardPath {}
+
+class VulnerabilityIntroductionPath extends DashboardPath {}
+
+class SecurityMarketingPath extends DashboardPath {}
+
+class SecuritySubscribePath extends DashboardPath {}
