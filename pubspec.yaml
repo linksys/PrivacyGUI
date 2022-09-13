@@ -71,6 +71,7 @@ dependencies:
   graphite: ^0.3.0
   graphview: ^1.1.1
   local_auth: ^2.1.2
+  fl_chart: ^0.55.1
 
 dev_dependencies:
   flutter_test:

@@ -12,6 +12,8 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
 
+import '../security/BarChartSample2.dart';
+
 class DeviceListView extends ArgumentsStatefulView {
   const DeviceListView({Key? key, super.args, super.next}) : super(key: key);
 
@@ -91,6 +93,7 @@ class _DeviceListViewState extends State<DeviceListView> {
         _infoSelector(),
         box48(),
         // Bandwidth chart
+        const BarChartSample2(),
         box36(),
         _subTitle(),
         SizedBox(height: _showTodayInfo() ? 16 : 8),

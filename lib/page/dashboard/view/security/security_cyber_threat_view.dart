@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/dashboard/view/security/BarChartSample1.dart';
 
 enum CyberThreatType {
   virus,
@@ -18,8 +19,8 @@ class CyberThreatModel {
   String time;
   String date;
 
-  CyberThreatModel(
-      this.type, this.content, this.deviceName, this.time, this.date);
+  CyberThreatModel(this.type, this.content, this.deviceName, this.time,
+      this.date);
 }
 
 class SecurityCyberThreatView extends StatefulWidget {
@@ -68,79 +69,99 @@ class _SecurityCyberThreatViewState extends State<SecurityCyberThreatView> {
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.asset('assets/images/dummy_security_chart.png'),
+            BarChartSample1(),
             Expanded(
               child: ListView.builder(
                   itemCount: dummyData.length,
-                  itemBuilder: (context, index) => InkWell(
-                    child: Container(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                dummyData[index].type,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headline4
-                                    ?.copyWith(
-                                  color: Theme.of(context).colorScheme.surface,
-                                ),
-                              ),
-                              Text(
-                                dummyData[index].content,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headline3
-                                    ?.copyWith(
-                                  color: Theme.of(context).primaryColor,
-                                ),
-                              ),
-                              Text(
-                                dummyData[index].deviceName,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headline4
-                                    ?.copyWith(
-                                  color: Theme.of(context).colorScheme.onTertiary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Spacer(),
-                          Column(
+                  itemBuilder: (context, index) =>
+                      InkWell(
+                        child: Container(
+                          child: Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Text(
-                                dummyData[index].time,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headline3
-                                    ?.copyWith(
-                                      color: Theme.of(context).colorScheme.surface,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    dummyData[index].type,
+                                    style: Theme
+                                        .of(context)
+                                        .textTheme
+                                        .headline4
+                                        ?.copyWith(
+                                      color: Theme
+                                          .of(context)
+                                          .colorScheme
+                                          .surface,
                                     ),
+                                  ),
+                                  Text(
+                                    dummyData[index].content,
+                                    style: Theme
+                                        .of(context)
+                                        .textTheme
+                                        .headline3
+                                        ?.copyWith(
+                                      color: Theme
+                                          .of(context)
+                                          .primaryColor,
+                                    ),
+                                  ),
+                                  Text(
+                                    dummyData[index].deviceName,
+                                    style: Theme
+                                        .of(context)
+                                        .textTheme
+                                        .headline4
+                                        ?.copyWith(
+                                      color: Theme
+                                          .of(context)
+                                          .colorScheme
+                                          .onTertiary,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                dummyData[index].date,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headline4
-                                    ?.copyWith(
-                                      color: Theme.of(context).colorScheme.surface,
+                              const Spacer(),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    dummyData[index].time,
+                                    style: Theme
+                                        .of(context)
+                                        .textTheme
+                                        .headline3
+                                        ?.copyWith(
+                                      color: Theme
+                                          .of(context)
+                                          .colorScheme
+                                          .surface,
                                     ),
+                                  ),
+                                  Text(
+                                    dummyData[index].date,
+                                    style: Theme
+                                        .of(context)
+                                        .textTheme
+                                        .headline4
+                                        ?.copyWith(
+                                      color: Theme
+                                          .of(context)
+                                          .colorScheme
+                                          .surface,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                    ),
-                    onTap: () {
-                      //TODO: Go to next page
-                    },
-                  )
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                        ),
+                        onTap: () {
+                          //TODO: Go to next page
+                        },
+                      )
               ),
             ),
             Image.asset('assets/images/secured_by_fortinet.png'),
