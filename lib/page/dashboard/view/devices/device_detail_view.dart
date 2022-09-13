@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/device/device.dart';
+import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/dashboard/view/devices/device_list_view.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
@@ -17,59 +19,38 @@ class DeviceDetailView extends ArgumentsStatefulView {
 }
 
 class _DeviceDetailViewState extends State<DeviceDetailView> {
-  final DeviceDetailInfo _deviceInfo = DeviceDetailInfo(
-    name: 'iPhone XR',
-    place: 'Living Room node',
-    frequency: '5 GHz',
-    uploadData: '0.4',
-    downloadData: '12',
-    connection: 'wifi',
-    weeklyData: '345',
-    icon: 'assets/images/icon_device_detail.png',
-    belongToProfile: const Profile(
-      name: 'Timmy',
-      icon: 'assets/images/img_profile_icon_1.png', id: '',
-    ),
-    connectedTo: 'Kitchen',
-    ipAddress: '192.168.1.120',
-    macAddress: '92:98:DD:AF:4E:42',
-    manufacturer: 'Apple',
-    model: 'iPhone XR',
-    os: 'iOS 15.0.2',
-  );
-
   @override
   Widget build(BuildContext context) {
-    // TODO: Use cubit or bloc to get selected device
-    return BasePageView(
-      scrollable: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        // iconTheme:
-        // IconThemeData(color: Theme.of(context).colorScheme.primary),
-        elevation: 0,
-        title: Text(
-          _deviceInfo.name,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
-        header: _header(),
-        content: _content(),
-      ),
-    );
+    return BlocBuilder<DeviceCubit, DeviceState>(
+        builder: (context, state) => BasePageView(
+              scrollable: true,
+              appBar: AppBar(
+                backgroundColor: Colors.transparent,
+                // iconTheme:
+                // IconThemeData(color: Theme.of(context).colorScheme.primary),
+                elevation: 0,
+                title: Text(
+                  state.selectedDeviceInfo?.name ?? '',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              child: BasicLayout(
+                alignment: CrossAxisAlignment.start,
+                header: _header(state),
+                content: _content(state),
+              ),
+            ));
   }
 
-  _header() {
+  _header(DeviceState state) {
     return Column(
       children: [
         box24(),
         Image.asset(
-          _deviceInfo.icon,
+          state.selectedDeviceInfo?.icon ?? '',
           width: 100,
           height: 100,
         ),
@@ -89,15 +70,31 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
           ],
         ),
         box16(),
-        _headerCell(
-            getAppLocalizations(context).device_name, _deviceInfo.name, () {
+        _headerCell(getAppLocalizations(context).device_name,
+            state.selectedDeviceInfo?.name, () {
           NavigationCubit.of(context).push(EditDeviceNamePath());
         }),
         _headerCell(getAppLocalizations(context).node_detail_label_connected_to,
-            _deviceInfo.connectedTo, () {}),
-        if (_deviceInfo.belongToProfile != null)
-          _headerCell(getAppLocalizations(context).profile,
-              _deviceInfo.belongToProfile!.name, () {}),
+            state.selectedDeviceInfo?.connectedTo, () {}),
+        if (state.selectedDeviceInfo?.profileId != null)
+          _headerCell(
+              getAppLocalizations(context).profile,
+              context
+                  .read<ProfilesCubit>()
+                  .state
+                  .profiles[state.selectedDeviceInfo?.profileId]
+                  ?.name,
+              () {
+                String? profileId = state.selectedDeviceInfo?.profileId;
+                Profile? profile = context
+                    .read<ProfilesCubit>().state.profiles[profileId ?? ''];
+                if (profile != null) {
+                  context
+                      .read<ProfilesCubit>()
+                      .selectProfile(profile);
+                  NavigationCubit.of(context).push(ProfileOverviewPath());
+                }
+              }),
         box24(),
       ],
     );
@@ -131,7 +128,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
     );
   }
 
-  _content() {
+  _content(DeviceState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -143,10 +140,10 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
             color: Color.fromRGBO(0, 0, 0, 0.5),
           ),
         ),
-        _contentCell(
-            getAppLocalizations(context).ip_address, _deviceInfo.ipAddress),
-        _contentCell(
-            getAppLocalizations(context).mac_address, _deviceInfo.macAddress),
+        _contentCell(getAppLocalizations(context).ip_address,
+            state.selectedDeviceInfo?.ipAddress ?? ''),
+        _contentCell(getAppLocalizations(context).mac_address,
+            state.selectedDeviceInfo?.macAddress ?? ''),
         box36(),
         Text(
           getAppLocalizations(context).details_all_capital,
@@ -156,12 +153,12 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
             color: Color.fromRGBO(0, 0, 0, 0.5),
           ),
         ),
-        _contentCell(
-            getAppLocalizations(context).manufacturer, _deviceInfo.manufacturer),
-        _contentCell(
-            getAppLocalizations(context).model, _deviceInfo.model),
-        _contentCell(
-            getAppLocalizations(context).operating_system, _deviceInfo.os),
+        _contentCell(getAppLocalizations(context).manufacturer,
+            state.selectedDeviceInfo?.manufacturer ?? ''),
+        _contentCell(getAppLocalizations(context).model,
+            state.selectedDeviceInfo?.model ?? ''),
+        _contentCell(getAppLocalizations(context).operating_system,
+            state.selectedDeviceInfo?.os ?? ''),
       ],
     );
   }

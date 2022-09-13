@@ -10,6 +10,7 @@ import 'package:linksys_moab/bloc/app_lifecycle/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/connectivity/cubit.dart';
+import 'package:linksys_moab/bloc/device/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -82,6 +83,7 @@ Widget _app() {
       BlocProvider(create: (BuildContext context) => SetupBloc()),
       BlocProvider(create: (BuildContext context) => OtpCubit()),
       BlocProvider(create: (BuildContext context) => ProfilesCubit()),
+      BlocProvider(create: (BuildContext context) => DeviceCubit()),
     ], child: const MoabApp()),
   );
 }
