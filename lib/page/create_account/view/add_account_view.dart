@@ -152,7 +152,7 @@ class _AddAccountState extends State<AddAccountView> {
                         .textTheme
                         .headline3
                         ?.copyWith(color: Colors.red),
-                  ), SimpleTextButton.noPadding(text: getAppLocalizations(context).login_to_continue, onPressed: _goLogin)],
+                  ), SimpleTextButton.onPaddingWithStyle(text: getAppLocalizations(context).login_to_continue, onPressed: _goLogin, textStyle: const TextStyle(color: Colors.blue))],
                 ),
               ),
               const SizedBox(height: 8),
