@@ -26,8 +26,10 @@ import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
 import 'repository/authenticate/impl/fake_local_auth_repository.dart';
 import 'package:linksys_moab/route/model/model.dart';
+import 'package:flutter_driver/driver_extension.dart';
 
 void main() {
+  enableFlutterDriverExtension();
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     await Storage.init();
