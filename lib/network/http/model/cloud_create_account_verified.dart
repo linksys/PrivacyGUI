@@ -11,7 +11,8 @@ import 'cloud_preferences.dart';
 ///     "isoLanguageCode": "zh",
 ///     "isoCountryCode": "TW",
 ///     "timeZone": "Asia/Taipei"
-///   }
+///   },
+///   "generateCert": true
 /// }
 ///
 class CreateAccountVerified extends Equatable {
@@ -20,6 +21,7 @@ class CreateAccountVerified extends Equatable {
     required this.authenticationMode,
     this.password,
     required this.preferences,
+    this.generateCert = true,
   });
 
   factory CreateAccountVerified.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,7 @@ class CreateAccountVerified extends Equatable {
       authenticationMode: json['authenticationMode'],
       password: json['password'],
       preferences: CloudPreferences.fromJson(json['preferences']),
+      generateCert: json['generateCert'],
     );
   }
 
@@ -36,6 +39,7 @@ class CreateAccountVerified extends Equatable {
       'token': token,
       'authenticationMode': authenticationMode,
       'preferences': preferences.toJson(),
+      'generateCert': generateCert,
     };
     if (password != null) {
       json.addAll({'password': password});
@@ -47,6 +51,7 @@ class CreateAccountVerified extends Equatable {
   final String authenticationMode;
   final String? password;
   final CloudPreferences preferences;
+  final bool generateCert;
 
   @override
   List<Object?> get props => [token, authenticationMode, password, preferences];

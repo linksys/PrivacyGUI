@@ -368,5 +368,6 @@
   "manufacturer": "Manufacturer",
   "model": "Model",
   "operating_system": "Operating system",
-  "profile": "Profile"
+  "profile": "Profile",
+  "account": "Account"
 }

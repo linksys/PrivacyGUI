@@ -9,6 +9,7 @@ import 'package:linksys_moab/bloc/setup/event.dart';
 import 'package:linksys_moab/bloc/setup/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/base_components/button/simple_text_button.dart';
 import 'package:linksys_moab/page/components/base_components/input_fields/input_field.dart';
@@ -21,6 +22,7 @@ import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/validator.dart';
+import 'package:linksys_moab/utils.dart';
 
 import '../../components/base_components/button/primary_button.dart';
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
@@ -37,6 +39,7 @@ class _AddAccountState extends State<AddAccountView> {
   final TextEditingController _emailController = TextEditingController();
   var isEmailInvalid = false;
   var _errorCode = '';
+  bool _enableBiometrics = false;
 
   void _onNextAction() async {
     isEmailInvalid = !EmailValidator().validate(_emailController.text);
@@ -48,6 +51,9 @@ class _AddAccountState extends State<AddAccountView> {
           .read<AuthBloc>()
           .createAccountPreparation(_emailController.text)
           .onError((error, stackTrace) => _handleError(error, stackTrace));
+      context
+          .read<AuthBloc>()
+          .add(SetEnableBiometrics(enableBiometrics: _enableBiometrics));
       setState(() {
         _isLoading = false;
       });
@@ -156,6 +162,26 @@ class _AddAccountState extends State<AddAccountView> {
                 ),
               ),
               const SizedBox(height: 8),
+              FutureBuilder<bool>(
+                future: Utils.canUseBiometrics(),
+                initialData: false,
+                builder: (context, canUseBiometrics) {
+                  return Offstage(
+                    offstage: !(canUseBiometrics.data ?? false),
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _enableBiometrics = !_enableBiometrics;
+                        });
+                      },
+                      child: CheckboxSelectableItem(
+                        title: getAppLocalizations(context).enable_biometrics,
+                        isSelected: _enableBiometrics,
+                      ),
+                    ),
+                  );
+                },
+              ),
               SimpleTextButton(
                   text: getAppLocalizations(context).already_have_an_account,
                   onPressed: _goLogin),

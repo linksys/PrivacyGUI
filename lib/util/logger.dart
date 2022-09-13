@@ -10,7 +10,7 @@ import 'package:linksys_moab/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 final logger =
-    Logger(printer: SimplePrinter(printTime: true, colors: false), output: CustomOutput());
+    Logger(filter: ProductionFilter(),printer: SimplePrinter(printTime: true, colors: false), output: CustomOutput());
 
 class CustomOutput extends LogOutput {
   final File _file = File.fromUri(Storage.logFileUri);

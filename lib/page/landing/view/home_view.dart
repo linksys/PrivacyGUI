@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:linksys_moab/bloc/account/cubit.dart';
+import 'package:linksys_moab/bloc/auth/bloc.dart';
+import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/constants/build_config.dart';
+import 'package:linksys_moab/constants/constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/network/http/model/cloud_account_info.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/base_components/button/secondary_button.dart';
 import 'package:linksys_moab/page/components/base_components/button/primary_button.dart';
@@ -11,7 +18,9 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeView extends ArgumentsStatefulView {
   const HomeView({Key? key, super.args}) : super(key: key);
@@ -69,8 +78,22 @@ class _HomeViewState extends State<HomeView> {
     return Column(children: [
       PrimaryButton(
         text: getAppLocalizations(context).login,
-        onPress: () {
-          NavigationCubit.of(context).push(AuthInputAccountPath());
+        onPress: () async {
+          final pref = await SharedPreferences.getInstance();
+          if (pref.containsKey(moabPrefEnableBiometrics)) {
+            if (await Utils.checkCertValidation()) {
+              bool isPass = await Utils.doLocalAuthenticate();
+              if (isPass) {
+                final authBloc = context.read<AuthBloc>();
+                await authBloc.requestSession();
+                authBloc.add(Authorized());
+              } else {
+                NavigationCubit.of(context).push(AuthInputAccountPath());
+              }
+            }
+          } else {
+            NavigationCubit.of(context).push(AuthInputAccountPath());
+          }
         },
       ),
       const SizedBox(
@@ -91,7 +114,7 @@ class _HomeViewState extends State<HomeView> {
           PackageInfo.fromPlatform().then((value) => value.version),
           initialData: '-',
           builder: (context, data) {
-            return Text('version ${data.data}',
+            return Text('version ${data.data} ${cloudEnvTarget == CloudEnvironment.prod ? '' : cloudEnvTarget.name}',
                 style: Theme.of(context).textTheme.headline4?.copyWith(
                   fontWeight: FontWeight.w700,
                 ));

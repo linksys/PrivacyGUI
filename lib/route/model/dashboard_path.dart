@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/page/dashboard/view/Profile/profile_list_view.dart';
+import 'package:linksys_moab/page/dashboard/view/account/account_view.dart';
+import 'package:linksys_moab/page/dashboard/view/account/cloud_password_validation_view.dart';
+import 'package:linksys_moab/page/dashboard/view/account/input_new_password_view.dart';
 import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_age_presets_view.dart';
 import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_category_view.dart';
 import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_overview_view.dart';
@@ -203,6 +206,18 @@ abstract class DashboardPath extends BasePath {
         return const SecurityMarketingView();
       case SecuritySubscribePath:
         return const SecuritySubscribeView();
+      case AccountPath:
+        return AccountView();
+      case CloudPasswordValidationPath:
+        return CloudPasswordValidationView(
+          args: args,
+          next: next,
+        );
+      case InputNewPasswordPath:
+        return InputNewPasswordView(
+          args: args,
+          next: next,
+        );
       default:
         return const Center();
     }
@@ -269,7 +284,8 @@ class CreateProfileNamePath extends DashboardPath {
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
 
-class CreateProfileDevicesSelectedPath extends DashboardPath with ReturnablePath {
+class CreateProfileDevicesSelectedPath extends DashboardPath
+    with ReturnablePath {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
@@ -303,10 +319,14 @@ class NodeDetailPath extends DashboardPath {
   @override
   PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
 }
-class NodeNameEditPath extends DashboardPath{}
-class NodeConnectedDevicesPath extends DashboardPath{}
-class SignalStrengthInfoPath extends DashboardPath{}
-class NodeOfflineCheckPath extends DashboardPath{
+
+class NodeNameEditPath extends DashboardPath {}
+
+class NodeConnectedDevicesPath extends DashboardPath {}
+
+class SignalStrengthInfoPath extends DashboardPath {}
+
+class NodeOfflineCheckPath extends DashboardPath {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
@@ -316,6 +336,7 @@ class ContentFilteringPath extends DashboardPath {}
 class ContentFilteringOverviewPath extends DashboardPath {}
 
 class CFPresetsPath extends DashboardPath {}
+
 class CFFilterCategoryPath extends DashboardPath with ReturnablePath {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
@@ -343,3 +364,11 @@ class VulnerabilityIntroductionPath extends DashboardPath {}
 class SecurityMarketingPath extends DashboardPath {}
 
 class SecuritySubscribePath extends DashboardPath {}
+
+
+// Accounts
+class AccountPath extends DashboardPath {}
+
+class CloudPasswordValidationPath extends DashboardPath {}
+
+class InputNewPasswordPath extends DashboardPath {}

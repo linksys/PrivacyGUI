@@ -8,6 +8,7 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
   SetupBloc() : super(SetupState.init()) {
     on<ResumePointChanged>(_onResumePointChanged);
     on<SetWIFISSIDAndPassword>(_onSetWIFISSIDAndPassword);
+    on<SetAccountInfo>(_onSetAccountInfo);
   }
 
   void _onResumePointChanged(
@@ -39,5 +40,9 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
       SetWIFISSIDAndPassword event, Emitter<SetupState> emit) {
     return emit(
         state.copyWith(wifiSSID: event.ssid, wifiPassword: event.password));
+  }
+
+  void _onSetAccountInfo(SetAccountInfo event, Emitter<SetupState> emit) {
+    return emit(state.copyWith(accountInfo: event.accountInfo));
   }
 }

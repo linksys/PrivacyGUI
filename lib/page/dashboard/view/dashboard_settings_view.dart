@@ -44,6 +44,7 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
               _youSettingsSection(),
               (index, item) {
                 logger.d('MenuItem click $index');
+                NavigationCubit.of(context).push(item.path);
               },
             ),
             box36(),
@@ -146,7 +147,7 @@ _networkSettingsSection() => DashboardSettingsSection(
 _youSettingsSection() => DashboardSettingsSection(
       title: 'YOU',
       items: [
-        DashboardSettingsItem(title: 'Account', path: UnknownPath()),
+        DashboardSettingsItem(title: 'Account', path: AccountPath()),
         DashboardSettingsItem(title: 'Notifications', path: UnknownPath()),
         DashboardSettingsItem(title: 'Privacy and legal', path: UnknownPath()),
       ],
