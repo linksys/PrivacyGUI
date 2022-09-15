@@ -10,20 +10,15 @@ class DeviceCubit extends Cubit<DeviceState> {
   void fetchTodayDevicesList() {
     // TODO: fetch Today DevicesList
     Map<String, DeviceDetailInfo> _deviceMap = {
-      '92:98:DD:AF:4E:00': DeviceDetailInfo(
+      '92:98:DD:AF:4E:00': DeviceDetailInfo.dummy().copyWith(
           name: 'iPhone XR',
-          place: 'Living Room node',
-          frequency: '5 GHz',
-          uploadData: '0.4',
-          downloadData: '12',
-          connection: 'wifi',
-          weeklyData: '345',
+          weeklyUsage: '345',
           profileId: 'PROFILE_ID_0001',
           macAddress: '92:98:DD:AF:4E:00'),
       '92:98:DD:AF:4E:01': DeviceDetailInfo.dummy()
           .copyWith(weeklyUsage: '128', macAddress: '92:98:DD:AF:4E:01'),
       '92:98:DD:AF:4E:02': DeviceDetailInfo.dummy()
-          .copyWith(weeklyUsage: '359', macAddress: '92:98:DD:AF:4E:02'),
+          .copyWith(weeklyUsage: '35', macAddress: '92:98:DD:AF:4E:02'),
       '92:98:DD:AF:4E:03': DeviceDetailInfo.dummy()
           .copyWith(weeklyUsage: '23', macAddress: '92:98:DD:AF:4E:03'),
       '92:98:DD:AF:4E:04': DeviceDetailInfo.dummy()
@@ -36,6 +31,10 @@ class DeviceCubit extends Cubit<DeviceState> {
           .copyWith(weeklyUsage: '4', macAddress: '92:98:DD:AF:4E:07'),
       '92:98:DD:AF:4E:08': DeviceDetailInfo.dummy()
           .copyWith(weeklyUsage: '4', macAddress: '92:98:DD:AF:4E:08'),
+      '92:98:DD:AF:4E:09': DeviceDetailInfo.dummy().copyWith(
+          name: 'Device 300',
+          weeklyUsage: '300',
+          macAddress: '92:98:DD:AF:4E:09'),
     };
 
     emit(state.copyWith(deviceDetailInfoMap: _deviceMap));
@@ -62,8 +61,7 @@ class DeviceCubit extends Cubit<DeviceState> {
       ..sort((e1, e2) => double.parse(e2.value.weeklyData)
           .compareTo(double.parse(e1.value.weeklyData))));
 
-    emit(DeviceState.init());
-    emit(DeviceState(deviceDetailInfoMap: _sortedDeviceMap));
+    emit(state.copyWith(deviceDetailInfoMap: _sortedDeviceMap));
   }
 
   void setSelectedDeviceInfo(DeviceDetailInfo deviceInfo) {

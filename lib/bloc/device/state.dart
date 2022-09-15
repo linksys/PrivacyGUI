@@ -26,6 +26,7 @@ class DeviceState extends Equatable {
   @override
   List<Object?> get props => [
         deviceDetailInfoMap,
+        deviceDetailInfoMap.values,
         selectedDeviceInfo,
       ];
 }

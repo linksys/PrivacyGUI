@@ -50,7 +50,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
       children: [
         box24(),
         Image.asset(
-          state.selectedDeviceInfo?.icon ?? '',
+          state.selectedDeviceInfo?.icon ?? 'assets/images/icon_device.png',
           width: 100,
           height: 100,
         ),
@@ -59,6 +59,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             getWifiIcon(),
+            // TODO: Set status according to device info
             const Text(
               'Online',
               style: TextStyle(
@@ -177,7 +178,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
           ),
           box4(),
           Text(
-            title,
+            data,
             style: const TextStyle(
               fontSize: 13,
               color: Color.fromRGBO(102, 102, 102, 1.0),
