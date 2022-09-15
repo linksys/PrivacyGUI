@@ -199,7 +199,9 @@ abstract class DashboardPath extends BasePath {
       case SecurityProtectionStatusPath:
         return const SecurityProtectionStatusView();
       case SecurityCyberThreatPath:
-        return const SecurityCyberThreatView();
+        return SecurityCyberThreatView(
+          args: args,
+        );
       case VulnerabilityIntroductionPath:
         return const VulnerabilityIntroductionView();
       case SecurityMarketingPath:

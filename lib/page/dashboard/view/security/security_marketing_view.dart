@@ -3,6 +3,8 @@ import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_security_view.dart';
+import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/route.dart';
 
 class SecurityMarketingView extends StatelessWidget {
   const SecurityMarketingView({Key? key}) : super(key: key);
@@ -15,11 +17,11 @@ class SecurityMarketingView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            color: MoabColor.placeholderGrey,
+            color: MoabColor.dashboardBottomBackground,
             height: 52,
-            alignment: Alignment.center,
+            alignment: Alignment.centerLeft,
             child: Text(
-              '{30 days left on Linksys Secure trial}',
+              '30 days left on Linksys Secure trial',
               style: Theme.of(context).textTheme.headline3?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -41,13 +43,17 @@ class SecurityMarketingView extends StatelessWidget {
           ),
           Container(
             alignment: Alignment.center,
-            child: Image.asset('assets/images/shield_outline.png'),
+            child: Image.asset(
+              'assets/images/shield_outline.png',
+              height: 160,
+              width: 160,
+            ),
           ),
           box24(),
           PrimaryButton(
             text: 'Get Linksys Secure',
             onPress: () {
-              //TODO: Go to next page
+              NavigationCubit.of(context).push(SecuritySubscribePath());
             },
           ),
           const SizedBox(
@@ -113,7 +119,7 @@ class SecurityMarketingView extends StatelessWidget {
           PrimaryButton(
             text: 'Get Linksys Secure',
             onPress: () {
-              //TODO: Go to next page
+              NavigationCubit.of(context).push(SecuritySubscribePath());
             },
           ),
         ],
