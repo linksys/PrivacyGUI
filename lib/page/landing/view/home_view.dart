@@ -82,6 +82,9 @@ class _HomeViewState extends State<HomeView> {
           final pref = await SharedPreferences.getInstance();
           if (pref.containsKey(moabPrefEnableBiometrics)) {
             if (await Utils.checkCertValidation()) {
+              // TODO
+              // bool canUseBiometrics = await Utils.canUseBiometrics();
+              // if cannot use, show a alert to let user open it
               bool isPass = await Utils.doLocalAuthenticate();
               if (isPass) {
                 final authBloc = context.read<AuthBloc>();
@@ -90,6 +93,8 @@ class _HomeViewState extends State<HomeView> {
               } else {
                 NavigationCubit.of(context).push(AuthInputAccountPath());
               }
+            } else {
+              NavigationCubit.of(context).push(AuthInputAccountPath());
             }
           } else {
             NavigationCubit.of(context).push(AuthInputAccountPath());

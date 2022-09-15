@@ -4,6 +4,8 @@ import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/route.dart';
 
 
 enum SubscriptionStatus {
@@ -15,6 +17,10 @@ enum SubscriptionStatus {
   const SubscriptionStatus({required this.displayTitle});
 
   final String displayTitle;
+}
+
+enum CyberthreatType {
+  virus, malware, botnet, maliciousWeb
 }
 
 class DashboardSecurityView extends StatefulWidget {
@@ -75,17 +81,22 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
         const SizedBox(
           height: 10,
         ),
-        Container(
-          alignment: Alignment.centerLeft,
-          height: 52,
-          color: MoabColor.dashboardBottomBackground,
-          child: Text(
-            subscriptionPrompt,
-            style: Theme.of(context).textTheme.headline3?.copyWith(
-              fontWeight: FontWeight.w500
+        GestureDetector(
+          child: Container(
+            alignment: Alignment.centerLeft,
+            height: 52,
+            color: MoabColor.dashboardBottomBackground,
+            child: Text(
+              subscriptionPrompt,
+              style: Theme.of(context).textTheme.headline3?.copyWith(
+                  fontWeight: FontWeight.w500
+              ),
             ),
           ),
-        )
+          onTap: () {
+            NavigationCubit.of(context).push(SecurityMarketingPath());
+          },
+        ),
       ],
     );
   }
@@ -159,7 +170,9 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
               height: 26,
               width: 26,
             ),
-            onPressed: () {},
+            onPressed: () {
+              NavigationCubit.of(context).push(SecurityProtectionStatusPath());
+            },
           ),
         ),
         Visibility(
@@ -184,21 +197,41 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                   count: 3,
                   text: 'Virus',
                   isEnabled: subscriptionStatus != SubscriptionStatus.activeTurnedOff,
+                  onPress: () {
+                    NavigationCubit.of(context).push(SecurityCyberThreatPath()
+                      ..args = {'type': CyberthreatType.virus}
+                    );
+                  },
                 ),
                 InfoBlockWidget(
                   count: 6,
                   text: 'Ransomware & Malware',
                   isEnabled: subscriptionStatus != SubscriptionStatus.activeTurnedOff,
+                  onPress: () {
+                    NavigationCubit.of(context).push(SecurityCyberThreatPath()
+                      ..args = {'type': CyberthreatType.malware}
+                    );
+                  },
                 ),
                 InfoBlockWidget(
                   count: 11,
                   text: 'Botnet',
                   isEnabled: subscriptionStatus != SubscriptionStatus.activeTurnedOff,
+                  onPress: () {
+                    NavigationCubit.of(context).push(SecurityCyberThreatPath()
+                      ..args = {'type': CyberthreatType.botnet}
+                    );
+                  },
                 ),
                 InfoBlockWidget(
                   count: 4,
                   text: 'Malicious websites',
                   isEnabled: subscriptionStatus != SubscriptionStatus.activeTurnedOff,
+                  onPress: () {
+                    NavigationCubit.of(context).push(SecurityCyberThreatPath()
+                      ..args = {'type': CyberthreatType.maliciousWeb}
+                    );
+                  },
                 ),
               ],
             ),
@@ -244,7 +277,9 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
               height: 26,
               width: 26,
             ),
-            onPressed: () {},
+            onPressed: () {
+              //TODO: Go to next page
+            },
           ),
         ),
         box36(),
@@ -299,6 +334,9 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                   _mockProfiles[index].name,
                   style: Theme.of(context).textTheme.bodyText1?.copyWith(fontWeight: FontWeight.w700),
                 ),
+                onTap: () {
+                  NavigationCubit.of(context).push(CFFilteredContentPath());
+                },
               ),
             ),
           ),
@@ -404,6 +442,7 @@ class InfoBlockWidget extends StatelessWidget {
     this.disabledColor = MoabColor.dashboardDisabled,
     this.isVertical = true,
     this.height = 0,
+    this.onPress,
   }) : super(key: key);
 
   final bool isEnabled;
@@ -413,28 +452,34 @@ class InfoBlockWidget extends StatelessWidget {
   final String text;
   final bool isVertical;
   final double height;
+  final VoidCallback? onPress;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: isEnabled ? color : disabledColor,
-      height: height,
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.all(12),
-      child: isVertical
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: _content(context),
+    return GestureDetector(
+      onTap: onPress,
+      child: Container(
+        color: isEnabled ? color : disabledColor,
+        height: height,
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.all(12),
+        child: isVertical
+            ? Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: _content(context),
+        )
+            : Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: _content(
+            context,
+            space: const SizedBox(
+              width: 16,
             )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: _content(context,
-                  space: const SizedBox(
-                    width: 16,
-                  )),
-            ),
+          ),
+        ),
+      ),
     );
   }
 
