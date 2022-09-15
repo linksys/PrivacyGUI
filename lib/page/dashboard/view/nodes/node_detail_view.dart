@@ -123,7 +123,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         NavigationCubit.of(context)
             .push(NodeNameEditPath()..args = widget.args);
       },
-      space: 32,
     );
   }
 
@@ -141,7 +140,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         NavigationCubit.of(context)
             .push(NodeConnectedDevicesPath()..args = widget.args);
       },
-      space: 32,
     );
   }
 
@@ -156,7 +154,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         style: Theme.of(context).textTheme.bodyText1,
       ),
       onPress: null,
-      space: 32,
     );
   }
 
@@ -188,7 +185,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         ],
       ),
       onPress: null,
-      space: 32,
     );
   }
 
@@ -203,7 +199,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         style: Theme.of(context).textTheme.bodyText1,
       ),
       onPress: null,
-      space: 32,
     );
   }
 
@@ -218,7 +213,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         style: Theme.of(context).textTheme.bodyText1,
       ),
       onPress: null,
-      space: 32,
     );
   }
 
@@ -243,7 +237,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         ],
       ),
       onPress: null,
-      space: 32,
     );
   }
 

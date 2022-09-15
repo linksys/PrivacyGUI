@@ -96,6 +96,9 @@ class _ContentFilteringPresetsViewState
               ],
             ),
           ),
+          box36(),
+          SimpleTextButton(text: 'Send feedback', onPressed: () {}),
+          Text('Suggest a category or app'),
         ],
       ),
     );

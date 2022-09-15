@@ -4,18 +4,23 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/account/state.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
+import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/otp/otp.dart';
+import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
 import 'package:linksys_moab/page/components/shortcuts/dialogs.dart';
+import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/route/model/dashboard_path.dart';
 import 'package:linksys_moab/route/model/otp_path.dart';
 import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/validator.dart';
 import 'package:linksys_moab/utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AccountView extends StatefulWidget {
   const AccountView({super.key});
@@ -35,6 +40,7 @@ class _AccountViewState extends State<AccountView> {
   Widget build(BuildContext context) {
     return BlocBuilder<AccountCubit, AccountState>(builder: (context, state) {
       return BasePageView.onDashboardSecondary(
+          scrollable: true,
           appBar: AppBar(
             automaticallyImplyLeading: false,
             backgroundColor: Colors.transparent,
@@ -50,111 +56,97 @@ class _AccountViewState extends State<AccountView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 33),
-              accountExpansionTile(
-                title: SettingTileTwoLine(
-                  title: Text('Username'),
-                  value: Text(state.username),
-                  space: 0,
+              ..._createCommunicationTiles(
+                  state.username, state.communicationMethods),
+              SettingTileTwoLine(
+                title: Text('Account Password'),
+                value: state.authMode == LoginType.passwordless.name
+                    ? Text(
+                        'none',
+                        style: Theme.of(context).textTheme.headline4,
+                      )
+                    : Text(
+                        '**********',
+                        style: Theme.of(context).textTheme.headline4,
+                      ),
+                onPress: state.authMode == LoginType.password.name.toUpperCase()
+                    ? () {
+                        NavigationCubit.of(context)
+                            .push(CloudPasswordValidationPath());
+                      }
+                    : null,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Divider(
+                  height: 2,
                 ),
-                children: [
-                  SettingTile(title: Text('Status'), value: Text(state.status)),
-                  SettingTile(title: Text('Type'), value: Text(state.type)),
-                  SettingTile(
-                    title: Text('Authentication Mode'),
-                    value: Text(state.authMode),
-                    onPress:
-                        state.authMode == LoginType.password.name.toUpperCase()
-                            ? () {
-                                // _showChangePasswordDialog();
-                                NavigationCubit.of(context)
-                                    .push(CloudPasswordValidationPath());
-                              }
-                            : null,
-                  ),
-                  SettingTile(title: Text('Biometric login'), value: Switch.adaptive(value: state.isBiometricEnabled, onChanged: (value){})),
-                  SettingTile(title: Text('Linksys secure'), value: Switch.adaptive(value: state.isBiometricEnabled, onChanged: (value){})),
-                  SettingTile(title: Text('Receive newsletter'), value: Switch.adaptive(value: state.pref.marketingOptIn, onChanged: (value){})),
-
-                ],
               ),
-              accountExpansionTile(
-                title: Text('Preferences'),
-                children: [
-                  SettingTile(
-                      title: Text('Language'),
-                      value: Text(state.pref.isoLanguageCode)),
-                  SettingTile(
-                      title: Text('Country'),
-                      value: Text(state.pref.isoCountryCode)),
-                  SettingTile(
-                      title: Text('Time zone'),
-                      value: Text(state.pref.timeZone)),
-                ],
-              ),
-              accountExpansionTile(
-                  title: SettingTile(
-                    title: Text('Communication methods'),
-                    value: Text(state.communicationMethods
-                        .map((e) => e.method)
-                        .join('/')),
-                  ),
-                  children: _createCommunicationTiles(
-                      state.username, state.communicationMethods)),
-              SettingTile(
+              SettingTileWithDescription(
                   title: Text('Biometric login'),
+                  description: Text(
+                      'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.'),
                   value: Switch.adaptive(
                       value: state.isBiometricEnabled,
                       onChanged: (value) async {
-                        // TODO check with cloud team, is there any way to revoke extended cert?
-                        // final isValidate = await Utils.doLocalAuthenticate();
-                        // if (isValidate) {
-                        //   final authBloc = context.read<AuthBloc>();
-                        //   await authBloc.extendCertification();
-                        //   await authBloc.requestSession();
-                        //   context.read<AccountCubit>().toggleBiometrics(value);
-                        // }
+                        if (!value) {
+                          showAdaptiveDialog(
+                              context: context,
+                              title: Text('Warning'),
+                              content: Text(
+                                  'You\'ll need to login again after turning off biometric login'),
+                              actions: [
+                                SimpleTextButton(
+                                    text: 'Turn off',
+                                    onPressed: () async {
+                                      await context
+                                          .read<AccountCubit>()
+                                          .toggleBiometrics(value);
+                                      context.read<AuthBloc>().add(Logout());
+                                      Navigator.pop(context);
+                                    }),
+                                SimpleTextButton(
+                                    text: 'Cancel',
+                                    onPressed: () => Navigator.pop(context))
+                              ]);
+                        } else {
+                          final isValidate = await Utils.doLocalAuthenticate();
+                          if (isValidate) {
+                            final authBloc = context.read<AuthBloc>();
+                            await authBloc.extendCertification();
+                            await authBloc.requestSession();
+                            await context
+                                .read<AccountCubit>()
+                                .toggleBiometrics(value);
+                          }
+                        }
                       })),
-              SettingTile(
-                  title: Text('Linksys secure'),
+              box16(),
+              SettingTileWithDescription(
+                  title: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text('Linksys secure'),
+                      box8(),
+                      Text(
+                        'Active',
+                        style: Theme.of(context).textTheme.headline4,
+                      )
+                    ],
+                  ),
+                  description: Text('Next charge is on April, 23, 2024'),
                   value: Switch.adaptive(value: true, onChanged: (value) {})),
-              SettingTile(
+              box16(),
+              SettingTileWithDescription(
                   title: Text('Receive newsletter'),
+                  description: Text(
+                      'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.'),
                   value: Switch.adaptive(
                       value: state.pref.marketingOptIn, onChanged: (value) {})),
               Spacer(),
             ],
           ));
     });
-  }
-
-  _showChangePasswordDialog() {
-    TextEditingController _controller = TextEditingController();
-    showAdaptiveDialog(
-        context: context,
-        title: Text('Change Password'),
-        content: PasswordInputField.withValidator(
-          titleText: 'New password',
-          controller: _controller,
-          color: Colors.black,
-          inputType: TextInputType.visiblePassword,
-        ),
-        actions: [
-          SimpleTextButton(
-              text: 'OK',
-              onPressed: () {
-                if (ComplexPasswordValidator().validate(_controller.text)) {
-                  // context
-                  //     .read<AccountCubit>()
-                  //     .changePassword(_controller.text)
-                  //     .then((value) => Navigator.pop(context));
-                } else {}
-              }),
-          SimpleTextButton(
-              text: 'Cancel',
-              onPressed: () {
-                Navigator.pop(context);
-              }),
-        ]);
   }
 
   List<Widget> _createCommunicationTiles(
@@ -166,7 +158,12 @@ class _AccountViewState extends State<AccountView> {
             header: Text('Email'),
             child: SettingTile(
               title: Text(username),
-              value: Text('Not verified'),
+              value: Text(
+                'Not verified',
+                style: Theme.of(context).textTheme.headline4?.copyWith(
+                      color: MoabColor.primaryBlue,
+                    ),
+              ),
               onPress: () async {
                 String token = await context
                     .read<AccountCubit>()
@@ -187,15 +184,18 @@ class _AccountViewState extends State<AccountView> {
                   ..next = AccountPath()
                   ..args = {'function': OtpFunction.add});
               },
-              space: 0,
             )),
       );
     }
     if (!methods.any((element) => element.method == 'SMS')) {
-      list.add(SettingTile(
-        title: Text('SMS'),
-        value: Text('Add phone'),
-        space: 0,
+      list.add(SettingTileTwoLine(
+        title: Text('Phone number'),
+        value: Text(
+          '+Add',
+          style: Theme.of(context).textTheme.headline4?.copyWith(
+                color: MoabColor.primaryBlue,
+              ),
+        ),
         onPress: () {
           NavigationCubit.of(context).push(OtpAddPhonePath()
             ..next = AccountPath()
@@ -215,16 +215,19 @@ class _AccountViewState extends State<AccountView> {
       children: [
         Expanded(
           child: SettingTileTwoLine(
-              title: Text(method.method), value: Text(method.targetValue)),
-        ),
-        Offstage(
-          offstage: !showDelete,
-          child: IconButton(
-              onPressed: () {
-                showDeleteCommunicationMethodDialog(
-                    method.method, method.targetValue);
-              },
-              icon: Icon(Icons.delete)),
+            title: Text(method.method == 'EMAIL' ? 'Email' : 'Phone number'),
+            value: Text(
+              method.targetValue,
+              style: Theme.of(context).textTheme.headline4,
+            ),
+            icon: Icon(Icons.delete),
+            onPress: showDelete
+                ? () {
+                    showDeleteCommunicationMethodDialog(
+                        method.method, method.targetValue);
+                  }
+                : null,
+          ),
         ),
       ],
     );
@@ -251,25 +254,6 @@ class _AccountViewState extends State<AccountView> {
               Navigator.pop(context);
             }),
       ],
-    );
-  }
-
-  Widget accountExpansionTile(
-      {Widget? title, List<Widget> children = const []}) {
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        title: title ?? const Center(),
-        textColor: Colors.black,
-        tilePadding: EdgeInsets.zero,
-        backgroundColor: Colors.transparent,
-        expandedAlignment: Alignment.centerLeft,
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        collapsedTextColor: Colors.black,
-        iconColor: Colors.black,
-        collapsedIconColor: Colors.black,
-        children: children,
-      ),
     );
   }
 }

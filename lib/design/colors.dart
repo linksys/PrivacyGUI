@@ -6,7 +6,7 @@ class MoabColor {
   static const whiteAlpha70 = Color.fromRGBO(255, 255, 255, 0.7);
   static const black = Color(0xff000000);
   static const blackAlpha70 = Color(0xb3000000);
-  static const primaryBlue = Color(0xff093c9d);
+  static const primaryBlue = Color(0xff0870EA);
   static const primaryBlueAlpha10 = Color(0x1a093c9d);
   static const progressBarBlue = Color(0xff005ce6);
   static const textButtonBlue = Color.fromRGBO(8, 112, 234, 1.0);
