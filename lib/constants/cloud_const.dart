@@ -18,6 +18,9 @@ const moabCloudConfigHost = 'https://config.linksys.cloud/';
 const configFileName = 'environment.json';
 const allConfigFileName = 'all-environments.json';
 const countryCodeFileName = 'country-codes.json';
+const webFilteringFileName = 'web-filters.json';
+const securityCategoryPresetsFileName = 'security-category-presets.json';
+const appSignaturesFileName = 'app-signatures.json';
 
 // Cloud config url
 String get cloudConfigUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$configFileName';
@@ -26,6 +29,11 @@ String get availabilityUrl => 'https://cloudhealth.lswf.net/cloud-availability/c
 
 // Country code url
 String get countryCodeUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$countryCodeFileName';
+
+// Content filtering urls
+String get webFilteringUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$webFilteringFileName';
+String get appSignaturesUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$appSignaturesFileName';
+String get wcfPresetsUrl =>'$moabCloudConfigHost${cloudEnvTarget.name}/$securityCategoryPresetsFileName';
 
 // Cloud path constants
 const version = '/v1';
