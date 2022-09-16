@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/design/themes.dart';
-import 'package:linksys_moab/page/dashboard/view/Profile/profile_list_view.dart';
+import 'package:linksys_moab/page/dashboard/view/profile/profile_list_view.dart';
 import 'package:linksys_moab/page/dashboard/view/account/account_view.dart';
 import 'package:linksys_moab/page/dashboard/view/account/cloud_password_validation_view.dart';
 import 'package:linksys_moab/page/dashboard/view/account/input_new_password_view.dart';
@@ -21,7 +21,6 @@ import 'package:linksys_moab/page/dashboard/view/nodes/node_offline_check.dart';
 import 'package:linksys_moab/page/dashboard/view/nodes/signal_strength_view.dart';
 import 'package:linksys_moab/page/dashboard/view/profile/profile_edit_name_avatar_view.dart';
 import 'package:linksys_moab/page/dashboard/view/profile/profile_edit_view.dart';
-import 'package:linksys_moab/page/dashboard/view/profile/profile_select_avatar_view.dart';
 import 'package:linksys_moab/page/dashboard/view/security/security_cyber_threat_view.dart';
 import 'package:linksys_moab/page/dashboard/view/security/security_marketing_view.dart';
 import 'package:linksys_moab/page/dashboard/view/security/security_protection_status_view.dart';
@@ -41,7 +40,6 @@ import 'package:linksys_moab/page/dashboard/view/internet_schedules/add_schedule
 import 'package:linksys_moab/page/dashboard/view/internet_schedules/daily_time_limit_list_view.dart';
 import 'package:linksys_moab/page/dashboard/view/internet_schedules/schedule_pause_list_view.dart';
 import 'package:linksys_moab/page/dashboard/view/view.dart';
-import '../../page/dashboard/view/profile/profile_select_devices_view.dart';
 import '../../page/dashboard/view/topology/topology_view.dart';
 import 'base_path.dart';
 

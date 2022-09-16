@@ -67,7 +67,7 @@ class _ProfileEditNameAvatarViewState extends State<ProfileEditNameAvatarView> {
                 width: 92,
                 height: 92,
                 child: Image.asset(
-                  _iconPath ?? '',
+                  _iconPath,
                   width: 81,
                   height: 81,
                 ),
