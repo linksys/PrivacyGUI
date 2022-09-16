@@ -193,7 +193,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         throw Exception('Invalid cloud login state');
       }
 
-      if (accountInfo.enableBiometrics ?? false) {
+      if (accountInfo.enableBiometrics) {
         bool canUseBiometrics = await Utils.canUseBiometrics();
         bool didAuthenticate = await Utils.doLocalAuthenticate();
         if (!canUseBiometrics || !didAuthenticate) {
