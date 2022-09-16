@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/channel/push_notification_channel.dart';
@@ -22,6 +23,7 @@ import 'package:linksys_moab/page/components/base_components/progress_bars/full_
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
+import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -307,20 +309,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Test Get Profile',
           onPress: () async {
-            SecurityContext securityContext =
-                SecurityContext(withTrustedRoots: true);
-            final publicKey =
-                (await rootBundle.load('assets/keys/testCert.pem'))
-                    .buffer
-                    .asInt8List();
-            final privateKey =
-                (await rootBundle.load('assets/keys/testKey.key'))
-                    .buffer
-                    .asInt8List();
-            securityContext.useCertificateChainBytes(publicKey);
-            securityContext.usePrivateKeyBytes(privateKey);
-            final client = MoabHttpClient.withCert(securityContext);
-            await client.getAccountSelf();
+            context.read<AccountCubit>().fetchAccount();
           },
         ),
         const SizedBox(
@@ -515,4 +504,8 @@ class _DebugToolsViewState extends State<DebugToolsView> {
             );
     });
   }
+}
+
+Future<SecurityContext> loader(BuildContext context) async {
+  return SecurityContext();
 }

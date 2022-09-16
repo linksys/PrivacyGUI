@@ -6,6 +6,7 @@ import 'package:linksys_moab/network/http/model/cloud_auth_clallenge_method.dart
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_create_account_verified.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_state.dart';
+import 'package:linksys_moab/network/http/model/cloud_session_data.dart';
 import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
 import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
@@ -93,11 +94,11 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<CloudAccountInfo> createVerifiedAccount(
+  Future<CloudAccountVerifyInfo> createVerifiedAccount(
       CreateAccountVerified verified) async {
     await Future.delayed(waitDuration);
 
-    return CloudAccountInfo.fromJson(const {
+    return CloudAccountVerifyInfo.fromJson(const {
       "id": "82248d9d-50a7-4e35-822c-e07ed02d8063",
       "username": "austin.chang@linksys.com",
       "usernames": ["austin.chang@linksys.com"],
@@ -134,7 +135,7 @@ class FakeAuthRepository extends AuthRepository {
 
     return const CloudLoginAcceptState(
         state: 'ACCEPT',
-        data: CloudLoginAcceptData(
+        data: CertInfoData(
             taskId: 'taskId', certSecret: 'certSecret', downloadTime: 1));
   }
 
@@ -190,5 +191,23 @@ class FakeAuthRepository extends AuthRepository {
       }
     ];
     return List.from(jsonArray.map((e) => RegionCode.fromJson(e)));
+  }
+
+  @override
+  Future<void> authChallengeVerifyAccept(String token, String code) {
+    // TODO: implement authChallengeVerifyAccept
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<CertInfoData> extendCertificate({required String certId}) {
+    // TODO: implement extendCertificate
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<CloudSessionData> requestSession({required String certId}) {
+    // TODO: implement requestSession
+    throw UnimplementedError();
   }
 }

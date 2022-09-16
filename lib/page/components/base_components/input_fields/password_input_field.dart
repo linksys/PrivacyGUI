@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/customs/customs.dart';
 
+
+// TODO @Peter
 class PasswordInputField extends StatefulWidget {
   const PasswordInputField({
     Key? key,
@@ -13,6 +15,7 @@ class PasswordInputField extends StatefulWidget {
     this.errorText = '',
     this.errorColor = Colors.red,
     this.onChanged,
+    this.color,
     this.withValidator = false,
   }) : super(key: key);
 
@@ -25,6 +28,7 @@ class PasswordInputField extends StatefulWidget {
       this.onChanged,
       this.isError = false,
       this.errorText = '',
+      this.color,
       this.errorColor = Colors.red,
       this.withValidator = true})
       : super(key: key);
@@ -38,6 +42,7 @@ class PasswordInputField extends StatefulWidget {
   final String errorText;
   final Color errorColor;
   final bool withValidator;
+  final Color? color;
 
   @override
   _PasswordInputFieldState createState() => _PasswordInputFieldState();
@@ -59,8 +64,12 @@ class _PasswordInputFieldState extends State<PasswordInputField> {
           isError: widget.isError,
           errorText: widget.errorText,
           errorColor: widget.errorColor,
-          onChanged: widget.onChanged,
+          onChanged: (value) {
+            setState(() {});
+            widget.onChanged?.call(value);
+          },
           secured: secured,
+          customPrimaryColor: widget.color,
           suffixIcon: _suffixIcon(),
         ),
         if (widget.withValidator)

@@ -20,7 +20,7 @@ class CloudLoginAcceptState extends Equatable {
   factory CloudLoginAcceptState.fromJson(Map<String, dynamic> json) {
     return CloudLoginAcceptState(
       state: json['state'],
-      data: CloudLoginAcceptData.fromJson(json['data']),
+      data: CertInfoData.fromJson(json['data']),
     );
   }
 
@@ -32,7 +32,7 @@ class CloudLoginAcceptState extends Equatable {
   }
 
   final String state;
-  final CloudLoginAcceptData data;
+  final CertInfoData data;
 
   @override
   List<Object?> get props => [state, data];
@@ -43,14 +43,15 @@ class CloudLoginAcceptState extends Equatable {
 ///     "certSecret": "string",
 ///     "downloadTime": "string"
 ///   }
-class CloudLoginAcceptData extends Equatable {
-  const CloudLoginAcceptData(
-      {required this.taskId,
-      required this.certSecret,
-      required this.downloadTime});
+class CertInfoData extends Equatable {
+  const CertInfoData({
+    required this.taskId,
+    required this.certSecret,
+    required this.downloadTime,
+  });
 
-  factory CloudLoginAcceptData.fromJson(Map<String, dynamic> json) {
-    return CloudLoginAcceptData(
+  factory CertInfoData.fromJson(Map<String, dynamic> json) {
+    return CertInfoData(
       taskId: json['taskId'],
       certSecret: json['certSecret'],
       downloadTime: json['downloadTime'],

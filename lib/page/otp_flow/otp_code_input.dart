@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
@@ -58,9 +59,14 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     return BlocConsumer<OtpCubit, OtpState>(
         listener: (context, state) {
           if (state.step == OtpStep.finish) {
+            final function = widget.args['function'] ?? OtpFunction.send;
             final next = widget.next ?? UnknownPath();
-            NavigationCubit.of(context)
-                .clearAndPush(next..args.addAll(widget.args));
+            if (function == OtpFunction.add) {
+              NavigationCubit.of(context).popTo(next);
+            } else {
+              NavigationCubit.of(context)
+                  .clearAndPush(next..args.addAll(widget.args));
+            }
           }
         },
         builder: (context, state) => _contentView(state));
@@ -92,7 +98,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
                     _errorCode = '';
                   });
                 },
-                onCompleted: (String? value) => _onNext(value),
+                onCompleted: (String? value) => _onNext(value, state.token),
                 length: 4,
                 appContext: context,
                 controller: _otpController,
@@ -141,13 +147,22 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     );
   }
 
-  _onNext(String? value) async {
+  _onNext(String? value, String token) async {
     _setLoading(true);
-    await context
-        .read<AuthBloc>()
-        .authChallengeVerify(value!)
-        .then((value) => context.read<OtpCubit>().finish())
+    final _authBloc = context.read<AuthBloc>();
+    final function = widget.args['function'] ?? OtpFunction.send;
+
+    await _authBloc
+        .authChallengeVerify(value!,
+            token: function == OtpFunction.add ? token : null)
         .onError((error, stackTrace) => _handleError(error, stackTrace));
+    if (function == OtpFunction.add) {
+      await _authBloc
+          .authChallengeVerifyAccept(value, token)
+          .then((value) async => await context.read<AccountCubit>().fetchAccount())
+          .onError((error, stackTrace) => _handleError(error, stackTrace));
+    }
+    context.read<OtpCubit>().finish();
     _setLoading(false);
   }
 

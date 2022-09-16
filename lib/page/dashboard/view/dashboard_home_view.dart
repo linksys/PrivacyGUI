@@ -1,48 +1,17 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/profiles/cubit.dart';
+import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/shortcuts/profiles.dart';
+import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/page/dashboard/view/LineChartSample.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 
 import '../../../route/model/dashboard_path.dart';
 import '../../../route/navigation_cubit.dart';
-
-class Profile {
-  const Profile({required this.name, required this.icon});
-
-  final String name;
-  final String icon;
-}
-
-final _mockProfiles = [
-  Profile(
-    name: 'Eric',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-  Profile(
-    name: 'Timmy',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-  Profile(
-    name: 'Mandy',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-  Profile(
-    name: 'Dad',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-  Profile(
-    name: 'Peter',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-  Profile(
-    name: 'Austin',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-  const Profile(name: '+', icon: 'assets/images/icon_profile_add.png')
-];
 
 class DashboardHomeView extends StatefulWidget {
   const DashboardHomeView({Key? key}) : super(key: key);
@@ -66,7 +35,12 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
           SizedBox(height: 32),
           _speedTestTile(2048000, 1024000),
           SizedBox(height: 32),
-          _usageTile(28),
+          GestureDetector(
+            onTap: () {
+              NavigationCubit.of(context).push(DeviceListPath());
+            },
+            child: _usageTile(28),
+          ),
           SizedBox(height: 32),
           _profileTile(),
           SizedBox(height: 64),
@@ -269,31 +243,27 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
         ),
         Container(
           width: double.infinity,
-          height: 160,
-          child: Card(
-            color: MoabColor.dashboardTileBackground,
-            child: Container(
-              decoration: BoxDecoration(
-                  image: DecorationImage(
-                image: AssetImage('assets/images/img_fake_usage.png'),
-                fit: BoxFit.cover,
-              )),
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('$deviceCount',
-                      style: Theme.of(context).textTheme.headline1?.copyWith(
-                          fontSize: 32, fontWeight: FontWeight.w500)),
-                  Text('Devices online',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headline3
-                          ?.copyWith(fontSize: 14, fontWeight: FontWeight.w700))
-                ],
-              ),
-            ),
+          height: 200,
+          child: Stack(
+            children: [
+              LineChartSample(),
+              Container(
+                alignment: Alignment.bottomLeft,
+                padding: EdgeInsets.only(left: 10, bottom: 10),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('$deviceCount',
+                        style: Theme.of(context).textTheme.headline1?.copyWith(
+                            fontSize: 32, fontWeight: FontWeight.w500)),
+                    Text('Devices online',
+                        style: Theme.of(context).textTheme.headline3?.copyWith(
+                            fontSize: 14, fontWeight: FontWeight.w700))
+                  ],
+                ),
+              )
+            ],
           ),
         ),
       ],
@@ -301,77 +271,65 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
   }
 
   Widget _profileTile() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('PROFILES'),
-        SizedBox(
-          height: 8,
-        ),
-        SizedBox(
-          height: 60,
-          child: ListView.separated(
-            itemBuilder: (context, index) => InkWell(
-                onTap: () {
-                  if (index == _mockProfiles.length - 1) {
-                    logger.d('add profile clicked: $index');
-                  } else {
-                    logger.d('profile clicked: $index');
-                    NavigationCubit.of(context).push(ProfileOverviewPath()
-                      ..args.addAll({'profile': _mockProfiles[index]}));
-                  }
-                },
-                child: _profileItem(_mockProfiles[index])),
-            separatorBuilder: (_, __) => SizedBox(
-              width: 16,
+    return BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('PROFILES'),
+          box8(),
+          SizedBox(
+            height: 60,
+            child: ListView.separated(
+              itemBuilder: (context, index) => InkWell(
+                  onTap: () {
+                    if (index == state.profileList.length) {
+                      logger.d('add profile clicked: $index');
+                      NavigationCubit.of(context).push(CreateProfileNamePath());
+                    } else {
+                      logger.d('profile clicked: $index');
+                      context
+                          .read<ProfilesCubit>()
+                          .selectProfile(state.profileList[index]);
+                      NavigationCubit.of(context).push(ProfileOverviewPath());
+                    }
+                  },
+                  child: index == state.profileList.length
+                      ? _profileAdd()
+                      : _profileItem(state.profileList[index])),
+              separatorBuilder: (_, __) => box16(),
+              itemCount: state.profileList.length + 1,
+              scrollDirection: Axis.horizontal,
+              shrinkWrap: true,
             ),
-            itemCount: _mockProfiles.length,
-            scrollDirection: Axis.horizontal,
-            shrinkWrap: true,
           ),
-        ),
-      ],
+        ],
+      );
+    });
+  }
+
+  Widget _profileAdd() {
+    return Container(
+      width: 29,
+      height: 29,
+      decoration: BoxDecoration(
+        color: MoabColor.dashboardTileBackground,
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.add),
     );
   }
 
   Widget _profileItem(Profile profile) {
-    if (profile.name == '+') {
-      return GestureDetector(
-          child: Image.asset(profile.icon),
-          onTap: () {
-            NavigationCubit.of(context).push(InternetSchedulePath());
-          });
-    } else {
-      return Container(
-        height: 58,
-        decoration: BoxDecoration(
-            color: MoabColor.dashboardTileBackground,
-            borderRadius: BorderRadius.circular(28)),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Center(
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Image.asset(
-                  profile.icon,
-                  width: 32,
-                  height: 32,
-                ),
-                SizedBox(
-                  width: 8,
-                ),
-                Text(
-                  profile.name,
-                  style: Theme.of(context).textTheme.bodyText1,
-                )
-              ],
-            ),
-          ),
-        ),
-      );
-    }
+    return Container(
+      height: 58,
+      decoration: BoxDecoration(
+          color: MoabColor.dashboardTileBackground,
+          borderRadius: BorderRadius.circular(28)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: profileTileShort(context, profile),
+      ),
+    );
   }
 }

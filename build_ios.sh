@@ -32,6 +32,7 @@ function updateLinks() {
   sed -i '' "s/Runner/Moab App $version/g" "$manifestPath"
 }
 version=$1
+pod repo update
 if ! buildInHouse "$version"; then
   echo InHouse "$version" build failed
   exit 1

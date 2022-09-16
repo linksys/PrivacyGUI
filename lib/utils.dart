@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -6,10 +7,14 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:intl/intl.dart';
+import 'package:linksys_moab/constants/pref_key.dart';
+import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
+import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Utils {
   static const String NoSpeedCalculationText = "-----";
@@ -46,6 +51,66 @@ class Utils {
     final String s =
         timeAmount.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$m:$s';
+  }
+
+
+  static String formatTimeInterval(int startTimeInSecond, int endTimeInSecond) {
+    bool isNextDay = startTimeInSecond > endTimeInSecond;
+    return '${formatTimeAmPm(startTimeInSecond)} - ${formatTimeAmPm(endTimeInSecond)} ${isNextDay?'next day':''}';
+  }
+
+  static String formatTimeAmPm(int timeInSecond) {
+    final Duration timeAmount = Duration(seconds: timeInSecond);
+    final String h =
+    timeAmount.inHours.remainder(12).toString().padLeft(2, '0');
+    final String m =
+    timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final String ampm = timeAmount.inHours.remainder(24) >= 12 ? 'pm' : 'am';
+    return '$h:$m $ampm';
+  }
+
+  static String formatTimeHM(int timeInSecond) {
+    final Duration timeAmount = Duration(seconds: timeInSecond);
+    final String h =
+        timeAmount.inHours.remainder(24).toString().padLeft(2, '0');
+    final String m =
+        timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
+    return '$h hr,$m min';
+  }
+
+  static Map<String, bool> weeklyTransform(
+      BuildContext context, List<bool> weeklyBool) {
+    final weeklyStr = [
+      getAppLocalizations(context).weekly_sunday,
+      getAppLocalizations(context).weekly_monday,
+      getAppLocalizations(context).weekly_tuesday,
+      getAppLocalizations(context).weekly_wednesday,
+      getAppLocalizations(context).weekly_thursday,
+      getAppLocalizations(context).weekly_friday,
+      getAppLocalizations(context).weekly_saturday,
+    ];
+    return weeklyBool
+        .asMap()
+        .map((key, value) => MapEntry(weeklyStr[key], value));
+  }
+
+  static List<String> toWeeklyStringList(
+      BuildContext context, List<bool> weeklyBool) {
+    final weeklyStr = [
+      getAppLocalizations(context).weekly_sunday,
+      getAppLocalizations(context).weekly_monday,
+      getAppLocalizations(context).weekly_tuesday,
+      getAppLocalizations(context).weekly_wednesday,
+      getAppLocalizations(context).weekly_thursday,
+      getAppLocalizations(context).weekly_friday,
+      getAppLocalizations(context).weekly_saturday,
+    ];
+    return List.from(weeklyBool
+        .asMap()
+        .map((key, value) => MapEntry(weeklyStr[key], value))
+        .entries
+        .where((element) => element.value)
+        .map((e) => e.key));
   }
 
   static String formatBytes(int bytes, {int decimals = 0}) {
@@ -149,17 +214,13 @@ class Utils {
   static String getLanguageCode() {
     List<String> localeNames = Platform.localeName.split('_');
 
-    return localeNames.length > 1
-        ? localeNames.first
-        : Platform.localeName;
+    return localeNames.length > 1 ? localeNames.first : Platform.localeName;
   }
 
   static String getCountryCode() {
     List<String> localeNames = Platform.localeName.split('_');
 
-    return localeNames.length > 1
-        ? localeNames.last
-        : Platform.localeName;
+    return localeNames.length > 1 ? localeNames.last : Platform.localeName;
   }
 
   static String maskJsonValue(String raw, List<String> keys) {
@@ -193,14 +254,34 @@ class Utils {
   static Future<bool> canUseBiometrics() async {
     final LocalAuthentication auth = LocalAuthentication();
     final List<BiometricType> availableBiometrics =
-    await auth.getAvailableBiometrics();
+        await auth.getAvailableBiometrics();
     return await auth.canCheckBiometrics && availableBiometrics.isNotEmpty;
   }
 
+  // TODO
   static Future<bool> doLocalAuthenticate() async {
     final LocalAuthentication auth = LocalAuthentication();
     final bool didAuthenticate = await auth.authenticate(
         localizedReason: "Please authenticate to go to next step");
     return didAuthenticate;
+  }
+
+  static Future<bool> checkCertValidation() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool isKeyExist = prefs.containsKey(moabPrefCloudPublicKey) &
+    prefs.containsKey(moabPrefCloudPrivateKey) &
+    prefs.containsKey(moabPrefCloudCertDataKey);
+    if (!isKeyExist) {
+      return false;
+    }
+    final certData = CloudDownloadCertData.fromJson(
+        jsonDecode(prefs.getString(moabPrefCloudCertDataKey) ?? ''));
+    final expiredDate = DateTime.parse(certData.expiration);
+    if (expiredDate.millisecondsSinceEpoch -
+        DateTime.now().millisecondsSinceEpoch <
+        0) {
+      return false;
+    }
+    return true;
   }
 }

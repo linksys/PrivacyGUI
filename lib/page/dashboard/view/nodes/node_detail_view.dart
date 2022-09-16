@@ -4,7 +4,7 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
-import 'package:linksys_moab/page/components/space/sized_box.dart';
+import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/topology_view.dart';
 import 'package:linksys_moab/route/model/dashboard_path.dart';
@@ -123,7 +123,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         NavigationCubit.of(context)
             .push(NodeNameEditPath()..args = widget.args);
       },
-      space: 32,
     );
   }
 
@@ -141,7 +140,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         NavigationCubit.of(context)
             .push(NodeConnectedDevicesPath()..args = widget.args);
       },
-      space: 32,
     );
   }
 
@@ -156,7 +154,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         style: Theme.of(context).textTheme.bodyText1,
       ),
       onPress: null,
-      space: 32,
     );
   }
 
@@ -188,7 +185,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         ],
       ),
       onPress: null,
-      space: 32,
     );
   }
 
@@ -203,7 +199,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         style: Theme.of(context).textTheme.bodyText1,
       ),
       onPress: null,
-      space: 32,
     );
   }
 
@@ -218,7 +213,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         style: Theme.of(context).textTheme.bodyText1,
       ),
       onPress: null,
-      space: 32,
     );
   }
 
@@ -243,7 +237,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         ],
       ),
       onPress: null,
-      space: 32,
     );
   }
 

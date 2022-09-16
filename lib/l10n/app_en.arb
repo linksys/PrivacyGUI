@@ -85,7 +85,7 @@
   "already_have_an_account": "I already have an account",
   "dont_want_cloud_account": "I do not want an account",
   "welcome_eula_title": "Let’s get your WiFi up and running",
-  "welcome_eula_content": "First things first, by continuing with setup, you agree to our Terms and License Agreement. Take a few minutes to read them.",
+  "welcome_eula_content": "First things first, by continuing with setup, you agree to our <link1 href=\"https://flutter.dev\">Terms</link1> and <link2 href=\"https://www.linksys.com\">License Agreement</link2>. Take a few minutes to read them.",
   "plug_node_view_title": "Plug the router into power near your internet source",
   "connect_to_modem_view_title": "Connect the router to your modem or source of internet",
   "connect_to_modem_view_description": "Plug the ethernet cable into the Internet port on your router. Plug the other end into your modem, gateway or source of internet.",
@@ -254,7 +254,7 @@
     }
   },
   "internet_schedules": "Internet schedules",
-  "access_until_time_today": "Access until {time} today",
+  "access_until_time_today": "WiFi access until {time} today",
   "@access_until_time_today": {
     "placeholders": {
       "time": {
@@ -264,7 +264,7 @@
     }
   },
   "content_filtered": "Content filtered",
-  "count_blocked_this_week": "{count} blocked this week",
+  "count_blocked_this_week": "{count} blocked content this week",
   "@count_blocked_this_week": {
     "placeholders": {
       "count": {
@@ -273,7 +273,14 @@
       }
     }
   },
-  "devices": "Devices",
+  "number_of_devices": "{count, plural, =0{No devices} =1{{count} device} other{{count} devices}",
+  "@number_of_devices": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "online": "Online",
   "offline": "Offline",
   "wifi_signal_weak_rssi_range": "0 to -50",
@@ -316,5 +323,51 @@
   "content_filter_toggle_title": "Content filter",
   "content_filter_level_title": "Filter level",
   "content_filter_presets_title": "Filter",
-  "enable_biometrics": "Enable biometrics"
+  "enable_biometrics": "Enable biometrics",
+  "edit": "Edit",
+  "daily_time_limit": "Daily time limit",
+  "schedule_pauses": "Schedule pauses",
+  "add": "Add",
+  "weekly_sunday": "Su",
+  "weekly_monday": "Mo",
+  "weekly_tuesday": "Tu",
+  "weekly_wednesday": "We",
+  "weekly_thursday": "Th",
+  "weekly_friday": "Fr",
+  "weekly_saturday": "Sa",
+  "profile_edit": "Edit profile",
+  "name": "Name",
+  "devices": "Devices",
+  "enhanced_protection": "Enhanced protection",
+  "enhanced_protection_description": "Block .exe files and don’t allow remote access to this profile’s devices. (WIP)",
+  "profile_delete": "Delete profile",
+  "none": "None",
+  "on": "On",
+  "off": "Off",
+  "no_filters": "No filters",
+  "change": "Change",
+  "today": "Today",
+  "this_week": "This week",
+  "num_online": "{num} online",
+  "@num_online": {
+    "placeholders": {
+      "num": {
+        "type": "String",
+        "example": "28"
+      }
+    }
+  },
+  "top_devices_this_week": "Top devices this week",
+  "main": "Main",
+  "guest": "Guest",
+  "iot": "IoT",
+  "device_name": "Device name",
+  "wifi_all_capital": "WIFI",
+  "mac_address": "MAC address",
+  "details_all_capital": "DETAILS",
+  "manufacturer": "Manufacturer",
+  "model": "Model",
+  "operating_system": "Operating system",
+  "profile": "Profile",
+  "account": "Account"
 }

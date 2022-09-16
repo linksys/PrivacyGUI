@@ -37,7 +37,7 @@ class MoabHttpClient extends http.BaseClient {
 
   MoabHttpClient.withCert(
     SecurityContext context, {
-    int timeoutMs = 5,
+    int timeoutMs = 5000,
     int retries = 3,
     FutureOr<bool> Function(http.BaseResponse) when = _defaultWhen,
     FutureOr<bool> Function(Object, StackTrace) whenError = _defaultWhenError,
