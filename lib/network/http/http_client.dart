@@ -10,6 +10,7 @@ import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/constants.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:http/io_client.dart';
+import 'package:linksys_moab/util/storage.dart';
 import 'model/base_response.dart';
 
 ///
@@ -198,6 +199,20 @@ class MoabHttpClient extends http.BaseClient {
     return response;
   }
 
+  Future<bool> download(Uri url, Uri savedPathUri, {Map<String, String>? headers}) async {
+    try {
+      final response = await super
+          .get(url, headers: headers)
+          .then((response) => _handleResponse(response));
+      _logResponse(response, ignoreResponse: true);
+      Storage.saveByteFile(savedPathUri, response.bodyBytes);
+    } catch (e) {
+      logger.e('Download data failed!', e);
+      return false;
+    }
+    return true;
+  }
+
   _logRequest(http.BaseRequest request, {int retry = 0}) {
     logger.i('\nREQUEST---------------------------------------------------\n'
         '${retry == 0 ? '' : 'RETRY: $retry\n'}'
@@ -207,14 +222,14 @@ class MoabHttpClient extends http.BaseClient {
         '---------------------------------------------------REQUEST END\n');
   }
 
-  _logResponse(http.Response response) {
+  _logResponse(http.Response response, {bool ignoreResponse = false}) {
     final request = response.request;
     if (request != null) {
       logger.i('\nRESPONSE---------------------------------------------------\n'
           'URL: ${request.url}, METHOD: ${request.method}\n'
           'HEADERS: ${request.headers}\n'
           '${request is http.Request ? 'BODY: ${request.body}' : ''}\n'
-          'RESPONSE: ${response.statusCode}, ${response.body}\n'
+          'RESPONSE: ${response.statusCode}, ${ignoreResponse ? '' : response.body}\n'
           '---------------------------------------------------RESPONSE END\n');
     }
   }

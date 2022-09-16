@@ -15,12 +15,13 @@ class Storage {
   static const String loggerFilename = 'logger.txt';
   static final String appPublicKeyFilename = '${cloudEnvTarget.name}_key.pem';
   static final String appPrivateKeyFilename = '${cloudEnvTarget.name}_key.key';
+  static const String iconMapFilename = 'sprite-icons-map.png';
 
   static Uri get logFileUri => Uri.parse('${_tempDirectory?.path}/$loggerFilename');
   static Uri get shareLogFileUri => Uri.parse('${_tempDirectory?.path}/$loggerFilename');
+  static Uri get iconFileUri => Uri.parse('${Storage.tempDirectory?.path}/$iconMapFilename');
   static Uri get appPublicKeyUri => Uri.parse('${_tempDirectory?.path}/$appPublicKeyFilename');
   static Uri get appPrivateKeyUri => Uri.parse('${_tempDirectory?.path}/$appPrivateKeyFilename');
-
 
   static init() async {
     _tempDirectory = (await getTemporaryDirectory());

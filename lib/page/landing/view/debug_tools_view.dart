@@ -25,6 +25,7 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/util/app_icon_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:share_plus/share_plus.dart';
@@ -44,7 +45,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
   String? _apnsToken;
   CloudEnvironment _selectedEnv = cloudEnvTarget;
 
-  late Map<String, dynamic> _iconData;
+  late List<String> _iconData;
   String? _selectedIconKey;
 
   @override
@@ -336,15 +337,15 @@ class _DebugToolsViewState extends State<DebugToolsView> {
               .headline2
               ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
-        FutureBuilder<Map<String, dynamic>>(
-          future: _loadIconKeys(),
+        FutureBuilder<List<String>>(
+          future: AppIconManager.instance().getAppIds(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.done) {
-              _iconData = snapshot.data ?? {};
+              _iconData = snapshot.data ?? [];
               return DropdownButton<String>(
                 value: _selectedIconKey,
                   items: List.from(
-                      _iconData.keys.map((e) => DropdownMenuItem<String>(child: Text(e), value: e,))),
+                      _iconData.map((e) => DropdownMenuItem<String>(child: Text(e), value: e,))),
                   onChanged: (value) {
                     setState(() {
                       _selectedIconKey = value!;
@@ -356,7 +357,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           },
         ),
         FutureBuilder<Uint8List?>(
-            future: _imageSprite(),
+            future: AppIconManager.instance().getIconByte(_selectedIconKey ?? ''),
             builder: (context, snapshot) => snapshot.data == null
                 ? Center()
                 : Image.memory(
@@ -368,41 +369,41 @@ class _DebugToolsViewState extends State<DebugToolsView> {
     );
   }
 
-  Future<Map<String, dynamic>> _loadIconKeys() async {
-    final keyStr =
-        await rootBundle.loadString('assets/resources/icon-keys.json');
-    String iconFilePath = '${Storage.tempDirectory?.path}/sprite-icons-map.png';
-    File iconFile = File(iconFilePath);
-    if (!iconFile.existsSync()) {
-      MoabHttpClient _client = MoabHttpClient();
-      final response = await _client.get(Uri.parse(
-          'https://linksys.devvelopcloud.com/moab-assets/sprite-map.png'));
-      // logger.d("image file: ${response.bodyBytes}");
-      Storage.saveByteFile(Uri.parse(iconFilePath), response.bodyBytes);
-    }
-    return jsonDecode(keyStr);
-  }
+  // Future<Map<String, dynamic>> _loadIconKeys() async {
+  //   final keyStr =
+  //       await rootBundle.loadString('assets/resources/icon-keys.json');
+  //   String iconFilePath = '${Storage.tempDirectory?.path}/sprite-icons-map.png';
+  //   File iconFile = File(iconFilePath);
+  //   if (!iconFile.existsSync()) {
+  //     MoabHttpClient _client = MoabHttpClient();
+  //     final response = await _client.get(Uri.parse(
+  //         'https://linksys.devvelopcloud.com/moab-assets/sprite-map.png'));
+  //     // logger.d("image file: ${response.bodyBytes}");
+  //     Storage.saveByteFile(Uri.parse(iconFilePath), response.bodyBytes);
+  //   }
+  //   return jsonDecode(keyStr);
+  // }
 
-  Future<Uint8List?> _imageSprite() async {
-    String iconFilePath = '${Storage.tempDirectory?.path}/sprite-icons-map.png';
-    File iconFile = File(iconFilePath);
-
-    final image = image_util.decodeImage(iconFile.readAsBytesSync());
-    logger.d('Image ddta: ${image == null}');
-    if (image == null) {
-      logger.d("No image shown");
-      return null;
-    }
-
-    logger.d('image load down');
-    logger.d('image size: ${image.width}, ${image.height}');
-    final data = _iconData[_selectedIconKey];
-    final cropped = image_util.copyCrop(image, data['x'], data['y'], 96, 96);
-
-    logger.d('cropped image size: ${cropped.width}, ${cropped.height}');
-
-    return Uint8List.fromList(image_util.encodePng(cropped));
-  }
+  // Future<Uint8List?> _imageSprite() async {
+  //   String iconFilePath = '${Storage.tempDirectory?.path}/sprite-icons-map.png';
+  //   File iconFile = File(iconFilePath);
+  //
+  //   final image = image_util.decodeImage(iconFile.readAsBytesSync());
+  //   logger.d('Image ddta: ${image == null}');
+  //   if (image == null) {
+  //     logger.d("No image shown");
+  //     return null;
+  //   }
+  //
+  //   logger.d('image load down');
+  //   logger.d('image size: ${image.width}, ${image.height}');
+  //   final data = _iconData[_selectedIconKey];
+  //   final cropped = image_util.copyCrop(image, data['x'], data['y'], 96, 96);
+  //
+  //   logger.d('cropped image size: ${cropped.width}, ${cropped.height}');
+  //
+  //   return Uint8List.fromList(image_util.encodePng(cropped));
+  // }
 
   _registerSmartDevice() {
     CloudEnvironmentManager().registerSmartDevice();

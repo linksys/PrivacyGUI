@@ -21,6 +21,7 @@ const countryCodeFileName = 'country-codes.json';
 const webFilteringFileName = 'web-filters.json';
 const securityCategoryPresetsFileName = 'security-category-presets.json';
 const appSignaturesFileName = 'app-signatures.json';
+const profilePresetsFilename = 'profile-presets.json';
 
 // Cloud config url
 String get cloudConfigUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$configFileName';
@@ -34,6 +35,8 @@ String get countryCodeUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$countr
 String get webFilteringUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$webFilteringFileName';
 String get appSignaturesUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$appSignaturesFileName';
 String get wcfPresetsUrl =>'$moabCloudConfigHost${cloudEnvTarget.name}/$securityCategoryPresetsFileName';
+String get appIconsUrl => 'https://linksys.devvelopcloud.com/moab-assets/sprite-map.png'; //TBD
+String get profilePresetsUrl =>'$moabCloudConfigHost${cloudEnvTarget.name}/$profilePresetsFilename';
 
 // Cloud path constants
 const version = '/v1';
