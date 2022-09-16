@@ -30,6 +30,7 @@ class MoabColor {
   static const cardBackground = Color.fromRGBO(138, 138, 138, 1.0);
   static const dashboardBottomBackground = Color(0xffc1c1c1);
   static const topologyNoInternet = Color(0xffd0d0d0);
+  static const avatarBackground = Color(0xffc3c3c3);
 
   static const contentFilterChildPreset = Color(0xffD481FC);
   static const contentFilterTeenPreset = Color(0xff88D9FE);

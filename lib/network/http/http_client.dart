@@ -230,6 +230,7 @@ class MoabHttpClient extends http.BaseClient {
     // TODO Revisit - needs to considering about 500 internal server error, 502/503 bad requests
     if (response.statusCode >= 400) {
       logger.i('Cloud Error: ${response.statusCode}, ${response.body}');
+
       throw ErrorResponse.fromJson(json.decode(response.body));
     }
     return response;

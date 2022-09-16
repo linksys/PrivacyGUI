@@ -256,7 +256,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
             style: Theme.of(context).textTheme.bodyText1,
           ),
           onPress: null),
-      space: 32,
     );
   }
 
@@ -276,7 +275,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
             style: Theme.of(context).textTheme.bodyText1,
           ),
           onPress: null),
-      space: 32,
     );
   }
 }

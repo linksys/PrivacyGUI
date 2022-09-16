@@ -7,7 +7,6 @@ import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/otp/otp.dart';
-import 'package:linksys_moab/constants/constants.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
@@ -18,9 +17,7 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/route/model/dashboard_path.dart';
 import 'package:linksys_moab/route/model/otp_path.dart';
 import 'package:linksys_moab/route/route.dart';
-import 'package:linksys_moab/util/validator.dart';
 import 'package:linksys_moab/utils.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AccountView extends StatefulWidget {
   const AccountView({super.key});
@@ -56,97 +53,88 @@ class _AccountViewState extends State<AccountView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 33),
-              ..._createCommunicationTiles(
-                  state.username, state.communicationMethods),
-              SettingTileTwoLine(
-                title: Text('Account Password'),
-                value: state.authMode == LoginType.passwordless.name
-                    ? Text(
-                        'none',
-                        style: Theme.of(context).textTheme.headline4,
-                      )
-                    : Text(
-                        '**********',
-                        style: Theme.of(context).textTheme.headline4,
-                      ),
-                onPress: state.authMode == LoginType.password.name.toUpperCase()
-                    ? () {
-                        NavigationCubit.of(context)
-                            .push(CloudPasswordValidationPath());
-                      }
-                    : null,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Divider(
-                  height: 2,
+              Center(
+                child: CircleAvatar(
+                  child: Image.asset(
+                    'assets/images/icon_default_avatar.png',
+                    width: 52,
+                    height: 52,
+                  ),
+                  radius: 45,
+                  backgroundColor: MoabColor.avatarBackground,
                 ),
               ),
-              SettingTileWithDescription(
-                  title: Text('Biometric login'),
-                  description: Text(
-                      'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.'),
-                  value: Switch.adaptive(
-                      value: state.isBiometricEnabled,
-                      onChanged: (value) async {
-                        if (!value) {
-                          showAdaptiveDialog(
-                              context: context,
-                              title: Text('Warning'),
-                              content: Text(
-                                  'You\'ll need to login again after turning off biometric login'),
-                              actions: [
-                                SimpleTextButton(
-                                    text: 'Turn off',
-                                    onPressed: () async {
-                                      await context
-                                          .read<AccountCubit>()
-                                          .toggleBiometrics(value);
-                                      context.read<AuthBloc>().add(Logout());
-                                      Navigator.pop(context);
-                                    }),
-                                SimpleTextButton(
-                                    text: 'Cancel',
-                                    onPressed: () => Navigator.pop(context))
-                              ]);
-                        } else {
-                          final isValidate = await Utils.doLocalAuthenticate();
-                          if (isValidate) {
-                            final authBloc = context.read<AuthBloc>();
-                            await authBloc.extendCertification();
-                            await authBloc.requestSession();
-                            await context
-                                .read<AccountCubit>()
-                                .toggleBiometrics(value);
-                          }
-                        }
-                      })),
               box16(),
-              SettingTileWithDescription(
-                  title: Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text('Linksys secure'),
-                      box8(),
-                      Text(
-                        'Active',
-                        style: Theme.of(context).textTheme.headline4,
-                      )
-                    ],
-                  ),
-                  description: Text('Next charge is on April, 23, 2024'),
-                  value: Switch.adaptive(value: true, onChanged: (value) {})),
-              box16(),
-              SettingTileWithDescription(
-                  title: Text('Receive newsletter'),
-                  description: Text(
-                      'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.'),
-                  value: Switch.adaptive(
-                      value: state.pref.marketingOptIn, onChanged: (value) {})),
+              _informationSection(state),
+              dividerWithPadding(),
+              _subscriptionSection(state),
+              dividerWithPadding(),
+              _preferencesSection(state),
               Spacer(),
             ],
           ));
     });
+  }
+
+  Widget _informationSection(AccountState state) {
+    return SectionTile(
+      header: Text(
+        'YOUR INFORMATION',
+        style: Theme.of(context).textTheme.headline4,
+      ),
+      child: Column(
+        children: [
+          ..._createCommunicationTiles(
+              state.username, state.communicationMethods),
+        ],
+      ),
+    );
+  }
+
+  Widget _subscriptionSection(AccountState state) {
+    return SectionTile(
+      header: Text(
+        'SUBSCRIPTION',
+        style: Theme.of(context).textTheme.headline4,
+      ),
+      child: SettingTileWithDescription(
+          title: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text('Linksys secure'),
+              box8(),
+              Text(
+                'Active',
+                style: Theme.of(context).textTheme.headline4,
+              )
+            ],
+          ),
+          description: Text('Next charge is on April, 23, 2024'),
+          value: Switch.adaptive(value: true, onChanged: (value) {})),
+    );
+  }
+
+  Widget _preferencesSection(AccountState state) {
+    return SectionTile(
+      header: Text(
+        'PREFERENCES',
+        style: Theme.of(context).textTheme.headline4,
+      ),
+      child: Column(
+        children: [
+          _passwordLessTile(state),
+          box16(),
+          _biometricsTile(state),
+          box16(),
+          SettingTileWithDescription(
+              title: Text('Receive newsletter'),
+              description: Text(
+                  'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.'),
+              value: Switch.adaptive(
+                  value: state.pref.marketingOptIn, onChanged: (value) {})),
+        ],
+      ),
+    );
   }
 
   List<Widget> _createCommunicationTiles(
@@ -223,7 +211,7 @@ class _AccountViewState extends State<AccountView> {
             icon: Icon(Icons.delete),
             onPress: showDelete
                 ? () {
-                    showDeleteCommunicationMethodDialog(
+                    _showDeleteCommunicationMethodDialog(
                         method.method, method.targetValue);
                   }
                 : null,
@@ -233,7 +221,89 @@ class _AccountViewState extends State<AccountView> {
     );
   }
 
-  showDeleteCommunicationMethodDialog(String method, String value) {
+  Widget _passwordLessTile(AccountState state) {
+    return SettingTileWithDescription(
+      title: Text('Password-less login'),
+      description: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+              'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.'),
+          box8(),
+          state.authMode == LoginType.passwordless.name
+              ? Center()
+              : SettingTile(
+                  title: Text(
+                    '\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyText1
+                        ?.copyWith(fontSize: 20),
+                  ),
+                  value: Center(),
+                  onPress:
+                      state.authMode == LoginType.password.name.toUpperCase()
+                          ? () {
+                              NavigationCubit.of(context)
+                                  .push(CloudPasswordValidationPath());
+                            }
+                          : null,
+                )
+        ],
+      ),
+      value: Switch.adaptive(
+        value: state.authMode == LoginType.passwordless.name,
+        onChanged: (value) {},
+      ),
+    );
+  }
+
+  Widget _biometricsTile(AccountState state) {
+    return SettingTileWithDescription(
+      title: Text('Biometric login'),
+      description: Text(
+          'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.'),
+      value: Switch.adaptive(
+        value: state.isBiometricEnabled,
+        onChanged: (value) async {
+          if (!value) {
+            _showConfirmBiometricDialog(value);
+          } else {
+            final isValidate = await Utils.doLocalAuthenticate();
+            if (isValidate) {
+              final authBloc = context.read<AuthBloc>();
+              await authBloc.extendCertification();
+              await authBloc.requestSession();
+              await context.read<AccountCubit>().toggleBiometrics(value);
+            }
+          }
+        },
+      ),
+    );
+  }
+
+  _showConfirmBiometricDialog(bool value) {
+    showAdaptiveDialog(
+        context: context,
+        title: Text('Warning'),
+        content: Text(
+            'You\'ll need to login again after turning off biometric login'),
+        actions: [
+          SimpleTextButton(
+              text: 'Turn off',
+              onPressed: () async {
+                await context
+                    .read<AccountCubit>()
+                    .toggleBiometrics(value);
+                context.read<AuthBloc>().add(Logout());
+                Navigator.pop(context);
+              }),
+          SimpleTextButton(
+              text: 'Cancel', onPressed: () => Navigator.pop(context))
+        ]);
+  }
+
+  _showDeleteCommunicationMethodDialog(String method, String value) {
     showAdaptiveDialog(
       context: context,
       title: Text('Warning'),
