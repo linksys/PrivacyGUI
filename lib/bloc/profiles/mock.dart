@@ -161,15 +161,15 @@ const List<CFFilterCategory> mockChildPresetRules = [
       'Mature category includes topics considered to be sensitive in nature such as:\n\nAbortion\nAdvocacy Organizations\nAlcohol\nAlternative Beliefs\nDating\nGambling\nLingerie and Swimsuit\nMarijuana\nSex Education\nSports Hunting and War Games\nTobacco\n\n\nExamples: Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
       apps: [
         CFFilterApp(
-            name: 'Badoo', category: '', status: FilterStatus.notAllowed),
+            name: 'Badoo', category: 'Social media', status: FilterStatus.notAllowed),
         CFFilterApp(
-            name: 'Tinder', category: '', status: FilterStatus.notAllowed),
+            name: 'Tinder', category: 'Social media', status: FilterStatus.notAllowed),
         CFFilterApp(
-            name: 'OKcupid', category: '', status: FilterStatus.notAllowed),
+            name: 'OKcupid', category: 'Social media', status: FilterStatus.notAllowed),
         CFFilterApp(
-            name: 'Craigslist', category: '', status: FilterStatus.notAllowed),
+            name: 'Craigslist', category: 'Social media', status: FilterStatus.notAllowed),
         CFFilterApp(
-            name: 'Reddit', category: '', status: FilterStatus.notAllowed),
+            name: 'Reddit', category: 'Social media', status: FilterStatus.notAllowed),
       ]),
   CFFilterCategory(
       name: 'Social media',
@@ -243,15 +243,15 @@ const List<CFFilterCategory> mockTeenPresetRules = [
       'Mature category includes topics considered to be sensitive in nature such as:\n\nAbortion\nAdvocacy Organizations\nAlcohol\nAlternative Beliefs\nDating\nGambling\nLingerie and Swimsuit\nMarijuana\nSex Education\nSports Hunting and War Games\nTobacco\n\n\nExamples: Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
       apps: [
         CFFilterApp(
-            name: 'Badoo', category: '', status: FilterStatus.notAllowed),
+            name: 'Badoo', category: 'Social media', status: FilterStatus.notAllowed),
         CFFilterApp(
-            name: 'Tinder', category: '', status: FilterStatus.notAllowed),
+            name: 'Tinder', category: 'Social media', status: FilterStatus.notAllowed),
         CFFilterApp(
-            name: 'OKcupid', category: '', status: FilterStatus.notAllowed),
+            name: 'OKcupid', category: 'Social media', status: FilterStatus.notAllowed),
         CFFilterApp(
-            name: 'Craigslist', category: '', status: FilterStatus.notAllowed),
+            name: 'Craigslist', category: 'Social media', status: FilterStatus.notAllowed),
         CFFilterApp(
-            name: 'Reddit', category: '', status: FilterStatus.notAllowed),
+            name: 'Reddit', category: 'Social media', status: FilterStatus.notAllowed),
       ]),
   CFFilterCategory(
       name: 'Social media',
@@ -316,15 +316,15 @@ const List<CFFilterCategory> mockAdultPresetRules = [
       'Mature category includes topics considered to be sensitive in nature such as:\n\nAbortion\nAdvocacy Organizations\nAlcohol\nAlternative Beliefs\nDating\nGambling\nLingerie and Swimsuit\nMarijuana\nSex Education\nSports Hunting and War Games\nTobacco\n\n\nExamples: Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
       apps: [
         CFFilterApp(
-            name: 'Badoo', category: '', status: FilterStatus.notAllowed),
+            name: 'Badoo', category: 'Social media', status: FilterStatus.notAllowed),
         CFFilterApp(
-            name: 'Tinder', category: '', status: FilterStatus.notAllowed),
+            name: 'Tinder', category: 'Social media', status: FilterStatus.notAllowed),
         CFFilterApp(
-            name: 'OKcupid', category: '', status: FilterStatus.notAllowed),
+            name: 'OKcupid', category: 'Social media', status: FilterStatus.notAllowed),
         CFFilterApp(
-            name: 'Craigslist', category: '', status: FilterStatus.notAllowed),
+            name: 'Craigslist', category: 'Social media', status: FilterStatus.notAllowed),
         CFFilterApp(
-            name: 'Reddit', category: '', status: FilterStatus.notAllowed),
+            name: 'Reddit', category: 'Social media', status: FilterStatus.notAllowed),
       ]),
   CFFilterCategory(
       name: 'Social media',

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
+import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/page/components/customs/popup_button.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/util/in_app_browser.dart';
+import 'package:styled_text/styled_text.dart';
 
 import 'component.dart';
 
@@ -55,11 +60,6 @@ class _ContentFilteringCategoryViewState
                 _category.name,
                 style: Theme.of(context).textTheme.headline2,
               )),
-              createStatusButton(context, _category.status, onPressed: () {
-                setState(() {
-                  _category = _category.copyWith(status: CFFilterCategory.switchStatus(_category.status));
-                });
-              })
             ],
           ),
           box16(),
@@ -67,7 +67,64 @@ class _ContentFilteringCategoryViewState
             _category.description,
           ),
           box36(),
-          _appSection(),
+          Card(
+            color: MoabColor.dashboardDisabled,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                      child: Text(
+                    'Websites(1,000+)',
+                    style: Theme.of(context).textTheme.headline2,
+                  )),
+                  PopupButton(
+                    icon: Icon(Icons.info_outlined),
+                    content: StyledText(
+                        text: 'Websites are reviewed and categorized by Fortinet, a cyber security company.  To check a website’s categorization, visit <link1 href="https://fortiguard.com/webfilter">fortiguard.com/webfilter</link1> and enter the URL.',
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .headline3
+                            ?.copyWith(color: Theme
+                            .of(context)
+                            .colorScheme
+                            .tertiary)
+                            .copyWith(height: 1.5),
+                        tags: {
+                          'link1': StyledTextActionTag(
+                                  (String? text, Map<String?, String?> attrs) {
+                                String? link = attrs['href'];
+                                MoabInAppBrowser.withDefaultOption().openUrlRequest(
+                                    urlRequest: URLRequest(
+                                        url: Uri.parse(link!)
+                                    )
+                                );
+                              }
+                              ,style: const TextStyle(color: Colors.blue)),
+                        }
+                    )
+                  ),
+                  createStatusButton(context, _category.status, onPressed: () {
+                    setState(() {
+                      _category = _category.copyWith(
+                          status:
+                              CFFilterCategory.switchStatus(_category.status));
+                    });
+                  })
+                ],
+              ),
+            ),
+          ),
+          box8(),
+          Card(color: MoabColor.dashboardDisabled, child: _appSection()),
+          box36(),
+          SimpleTextButton(
+            text: 'Send feedback',
+            onPressed: () {},
+            padding: EdgeInsets.zero,
+          ),
+          Text('Suggest a category or app'),
         ],
       ),
     );
@@ -76,6 +133,24 @@ class _ContentFilteringCategoryViewState
   Widget _appSection() {
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Expanded(
+                  child: Text(
+                'App(${_category.apps.length})',
+                style: Theme.of(context).textTheme.headline2,
+              )),
+              IconButton(onPressed: () {}, icon: Icon(Icons.search)),
+              createStatusButton(
+                context,
+                _category.getAppSummaryStatus(),
+              )
+            ],
+          ),
+        ),
+        dividerWithPadding(padding: EdgeInsets.symmetric(horizontal: 16)),
         ..._category.apps.map((e) => ListTile(
               leading: Container(
                 width: 24,
@@ -85,6 +160,7 @@ class _ContentFilteringCategoryViewState
                     borderRadius: BorderRadius.all(Radius.circular(4))),
               ),
               title: Text(e.name),
+              subtitle: Text(e.category),
               trailing: createStatusButton(context, e.status),
             ))
       ],
