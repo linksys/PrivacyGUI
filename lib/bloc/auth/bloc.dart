@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5,6 +6,7 @@ import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
+import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
 import 'package:linksys_moab/network/http/model/cloud_session_data.dart';
@@ -27,6 +29,7 @@ import '../../utils.dart';
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _repository;
   final LocalAuthRepository _localAuthRepository;
+  StreamSubscription? _errorStreamSubscription;
 
   AuthBloc(
       {required AuthRepository repo, required LocalAuthRepository localRepo})
@@ -48,6 +51,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LocalLogin>(_localLogin);
     on<Logout>(_onLogout);
     on<OnRequestSession>(_onRequestSession);
+
+    //
+    _errorStreamSubscription = errorResponseStream.listen((error) {
+      logger.e('Receive http response error: ${error.status}, ${error.code}, ${error.errorMessage}');
+      if (error.status == 401) {
+        add(Unauthorized());
+      }
+    });
+  }
+
+
+  @override
+  Future<void> close() {
+    _errorStreamSubscription?.cancel();
+    return super.close();
   }
 
   _onInitAuth(InitAuth event, Emitter<AuthState> emit) async {

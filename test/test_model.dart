@@ -293,6 +293,7 @@ void main() {
 
     test('test ErrorResponse #1', () async {
       const ErrorResponse method = ErrorResponse(
+        status: 400,
         code: 'USERNAME_ALREADY_EXISTS',
         errorMessage: 'Error',
         parameters: [
@@ -308,7 +309,7 @@ void main() {
       expect((jsonObj['parameters'] as List<Map<String, dynamic>>)[0]['value'],
           'austin.chang@linksys.com');
 
-      final convertBack = ErrorResponse.fromJson(jsonObj);
+      final convertBack = ErrorResponse.fromJson(400, jsonObj);
       expect(convertBack.code, 'USERNAME_ALREADY_EXISTS');
       expect(convertBack.errorMessage, 'Error');
       expect(convertBack.parameters?.length, 1);
@@ -317,6 +318,7 @@ void main() {
     });
     test('test ErrorResponse #2', () async {
       const ErrorResponse method = ErrorResponse(
+        status: 400,
         code: 'USERNAME_ALREADY_EXISTS',
         parameters: [
           {'name': 'username', 'value': 'austin.chang@linksys.com'},
@@ -331,7 +333,7 @@ void main() {
       expect((jsonObj['parameters'] as List<Map<String, dynamic>>)[0]['value'],
           'austin.chang@linksys.com');
 
-      final convertBack = ErrorResponse.fromJson(jsonObj);
+      final convertBack = ErrorResponse.fromJson(400, jsonObj);
       expect(convertBack.code, 'USERNAME_ALREADY_EXISTS');
       expect(convertBack.errorMessage, null);
       expect(convertBack.parameters?.length, 1);
@@ -340,6 +342,7 @@ void main() {
     });
     test('test ErrorResponse #3', () async {
       const ErrorResponse method = ErrorResponse(
+        status: 400,
         code: 'USERNAME_ALREADY_EXISTS',
         errorMessage: 'Error',
       );
@@ -348,7 +351,7 @@ void main() {
       expect(jsonObj['errorMessage'], 'Error');
       expect((jsonObj['parameters']), null);
 
-      final convertBack = ErrorResponse.fromJson(jsonObj);
+      final convertBack = ErrorResponse.fromJson(400, jsonObj);
       expect(convertBack.code, 'USERNAME_ALREADY_EXISTS');
       expect(convertBack.errorMessage, 'Error');
       expect(convertBack.parameters, null);

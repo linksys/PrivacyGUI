@@ -119,6 +119,7 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _cubit.stop();
     apnsStreamSubscription?.cancel();
+    releaseErrorResponseStream();
     super.dispose();
   }
 
