@@ -7,7 +7,8 @@ import 'package:linksys_moab/page/components/base_components/base_page_view.dart
 import 'package:linksys_moab/page/components/customs/popup_button.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:linksys_moab/util/in_app_browser.dart';
 import 'package:styled_text/styled_text.dart';
 

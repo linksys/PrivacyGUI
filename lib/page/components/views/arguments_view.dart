@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 
 abstract class ArgumentsBaseStatefulView<T> extends StatefulWidget {
   final Map<String, T> args;

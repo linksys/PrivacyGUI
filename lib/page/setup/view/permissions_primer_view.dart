@@ -7,13 +7,14 @@ import 'package:linksys_moab/page/components/base_components/base_page_view.dart
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/setup/view/parent_scan_qrcode_view.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 
 import '../../../bloc/connectivity/cubit.dart';
 import '../../components/base_components/button/primary_button.dart';
 import 'android_manually_connect_view.dart';
 import 'android_qr_choice_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 
 class PermissionsPrimerView extends StatefulWidget {
   PermissionsPrimerView({

@@ -1,0 +1,47 @@
+
+import 'package:flutter/widgets.dart';
+import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_age_presets_view.dart';
+import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_category_view.dart';
+import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_overview_view.dart';
+import 'package:linksys_moab/page/dashboard/view/content_filtering/filtered_content_view.dart';
+import 'package:linksys_moab/route/_route.dart';
+
+
+import '_model.dart';
+
+class ContentFilterPath extends DashboardPath {
+  @override
+  Widget buildPage(NavigationCubit cubit) {
+    switch (runtimeType) {
+      case ContentFilteringOverviewPath:
+        return ContentFilteringOverviewView(
+          args: args,
+          next: next,
+        );
+      case CFPresetsPath:
+        return ContentFilteringPresetsView(
+          args: args,
+          next: next,
+        );
+      case CFFilterCategoryPath:
+        return ContentFilteringCategoryView(
+          args: args,
+          next: next,
+        );
+      case CFFilteredContentPath:
+        return const FilteredContentView();
+      default:
+        return Center();
+    }
+  }
+}
+
+class ContentFilteringOverviewPath extends ContentFilterPath {}
+
+class CFPresetsPath extends ContentFilterPath {}
+
+class CFFilterCategoryPath extends ContentFilterPath with ReturnablePath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
+}
+class CFFilteredContentPath extends ContentFilterPath {}

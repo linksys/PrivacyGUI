@@ -4,6 +4,7 @@ import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/route/model/internet_schedule_path.dart';
 
 import '../../../../design/colors.dart';
 import '../../../../route/model/dashboard_path.dart';

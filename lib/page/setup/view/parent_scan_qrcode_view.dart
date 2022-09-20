@@ -7,12 +7,13 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/customs/qr_view.dart';
 import 'package:linksys_moab/route/model/internet_check_path.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:linksys_moab/util/permission.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../components/base_components/button/primary_button.dart';
-import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 
 class ParentScanQRCodeView extends StatefulWidget {
   const ParentScanQRCodeView({

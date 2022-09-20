@@ -9,7 +9,8 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_moab/route/model/internet_check_path.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 
 class CheckNodeInternetView extends StatefulWidget {
   const CheckNodeInternetView({

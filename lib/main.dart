@@ -20,7 +20,8 @@ import 'package:linksys_moab/notification/notification_helper.dart';
 import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
 import 'package:linksys_moab/repository/authenticate/impl/cloud_auth_repository.dart';
 import 'package:linksys_moab/repository/config/environment_repository.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
@@ -28,7 +29,7 @@ import 'bloc/setup/bloc.dart';
 import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
 import 'repository/authenticate/impl/fake_local_auth_repository.dart';
-import 'package:linksys_moab/route/model/model.dart';
+import 'route/model/_model.dart';
 
 void main() {
   runZonedGuarded(() async {

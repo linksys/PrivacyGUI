@@ -6,7 +6,11 @@ import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/shortcuts/profiles.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
-import 'package:linksys_moab/page/dashboard/view/LineChartSample.dart';
+import 'package:linksys_moab/page/components/chart/LineChartSample.dart';
+import 'package:linksys_moab/route/model/devices_path.dart';
+import 'package:linksys_moab/route/model/nodes_path.dart';
+import 'package:linksys_moab/route/model/profile_group_path.dart';
+import 'package:linksys_moab/route/model/wifi_settings_path.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 

@@ -6,11 +6,11 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/components/picker/number_picker_view.dart';
-import 'package:linksys_moab/route/route.dart';
-import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/route/model/internet_schedule_path.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 
 import '../../../../design/colors.dart';
-import '../../../../route/model/dashboard_path.dart';
 import '../../../components/picker/day_picker_view.dart';
 
 class AddDailyTimeLimitView extends ArgumentsStatefulView {
@@ -109,27 +109,25 @@ class _AddDailyTimeLimitViewState extends State<AddDailyTimeLimitView> {
           ));
     });
   }
-}
 
-typedef ValueChanged<T> = void Function(T value);
-
-Widget timePicker(int hour, int minutes, ValueChanged onHourChanged,
-    ValueChanged onMinutesChanged) {
-  return Row(children: [
-    NumberPickerView(
-        title: 'Hours',
-        value: hour,
-        min: 0,
-        max: 24,
-        step: 1,
-        callback: onHourChanged),
-    const SizedBox(width: 22),
-    NumberPickerView(
-        title: 'Minutes',
-        value: minutes,
-        min: 0,
-        max: 60,
-        step: 15,
-        callback: onMinutesChanged),
-  ]);
+  Widget timePicker(int hour, int minutes, ValueChanged onHourChanged,
+      ValueChanged onMinutesChanged) {
+    return Row(children: [
+      NumberPickerView(
+          title: 'Hours',
+          value: hour,
+          min: 0,
+          max: 24,
+          step: 1,
+          callback: onHourChanged),
+      const SizedBox(width: 22),
+      NumberPickerView(
+          title: 'Minutes',
+          value: minutes,
+          min: 0,
+          max: 60,
+          step: 15,
+          callback: onMinutesChanged),
+    ]);
+  }
 }

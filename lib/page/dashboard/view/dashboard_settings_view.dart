@@ -5,8 +5,12 @@ import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/account_path.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/model/profile_group_path.dart';
+import 'package:linksys_moab/route/model/wifi_settings_path.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:linksys_moab/util/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -128,7 +132,7 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
 _networkSettingsSection() => DashboardSettingsSection(
       title: 'NETWORK',
       items: [
-        DashboardSettingsItem(title: 'WiFi', path: WifiSettingsPath()),
+        DashboardSettingsItem(title: 'WiFi', path: WifiSettingsOverviewPath()),
         DashboardSettingsItem(
           title: 'Internet schedule',
           path: ProfileListPath()..args = {'category': PService.internetSchedule},
@@ -147,7 +151,7 @@ _networkSettingsSection() => DashboardSettingsSection(
 _youSettingsSection() => DashboardSettingsSection(
       title: 'YOU',
       items: [
-        DashboardSettingsItem(title: 'Account', path: AccountPath()),
+        DashboardSettingsItem(title: 'Account', path: AccountDetailPath()),
         DashboardSettingsItem(title: 'Notifications', path: UnknownPath()),
         DashboardSettingsItem(title: 'Privacy and legal', path: UnknownPath()),
       ],

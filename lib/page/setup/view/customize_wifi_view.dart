@@ -11,9 +11,9 @@ import 'package:linksys_moab/page/components/base_components/button/secondary_bu
 import 'package:linksys_moab/page/components/base_components/input_fields/input_field.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:linksys_moab/route/route.dart';
-import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/_route.dart';
+
+import 'package:linksys_moab/route/model/_model.dart';
 
 import '../../../bloc/setup/state.dart';
 

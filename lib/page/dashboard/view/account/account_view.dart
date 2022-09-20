@@ -14,9 +14,11 @@ import 'package:linksys_moab/page/components/base_components/base_components.dar
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
 import 'package:linksys_moab/page/components/shortcuts/dialogs.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/route/model/account_path.dart';
 import 'package:linksys_moab/route/model/dashboard_path.dart';
 import 'package:linksys_moab/route/model/otp_path.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:linksys_moab/utils.dart';
 
 class AccountView extends StatefulWidget {
@@ -169,7 +171,7 @@ class _AccountViewState extends State<AccountView> {
                 context.read<OtpCubit>().selectOtpMethod(otpInfo);
                 context.read<AuthBloc>().authChallenge(otpInfo, token: token);
                 NavigationCubit.of(context).push(OtpInputCodePath()
-                  ..next = AccountPath()
+                  ..next = AccountDetailPath()
                   ..args = {'function': OtpFunction.add});
               },
             )),
@@ -186,7 +188,7 @@ class _AccountViewState extends State<AccountView> {
         ),
         onPress: () {
           NavigationCubit.of(context).push(OtpAddPhonePath()
-            ..next = AccountPath()
+            ..next = AccountDetailPath()
             ..args = {'function': OtpFunction.add});
         },
       ));
