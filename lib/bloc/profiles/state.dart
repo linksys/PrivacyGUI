@@ -1,10 +1,13 @@
-import 'dart:ui';
+import 'dart:typed_data';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/bloc/profiles/mock.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/security/app_signature.dart';
+import 'package:linksys_moab/security/cloud_preset.dart';
+import 'package:linksys_moab/security/web_filter.dart';
 
 class ProfilesState extends Equatable {
   final Map<String, Profile> profiles;
@@ -265,35 +268,30 @@ class ScheduledPausedRule extends InternetScheduleRule {
 class ContentFilterData extends MoabServiceData {
   const ContentFilterData({
     required this.isEnabled,
-    required this.filterCategory,
-    required this.rules,
+    required this.secureProfile,
     required super.profileId,
   }) : super(serviceCategory: PService.contentFilter);
 
   final bool isEnabled;
-  final CFPresetCategory filterCategory;
-  final List<CFFilterCategory> rules;
+  final CFSecureProfile secureProfile;
 
   ContentFilterData copyWith({
     bool? isEnabled,
-    CFPresetCategory? filterCategory,
-    List<CFFilterCategory>? rules,
+    CFSecureProfile? secureProfile,
     String? profileId,
   }) {
     return ContentFilterData(
       isEnabled: isEnabled ?? this.isEnabled,
-      filterCategory: filterCategory ?? this.filterCategory,
-      rules: rules ?? this.rules,
+      secureProfile: secureProfile ?? this.secureProfile,
       profileId: profileId ?? this.profileId,
     );
   }
 
   @override
-  List<Object?> get props =>
-      super.props..addAll([isEnabled, filterCategory, rules]);
+  List<Object?> get props => super.props..addAll([isEnabled, secureProfile]);
 }
 
-enum CFPresetCategory { child, teen, adult }
+enum CFSecureProfileType { child, teen, adult }
 
 enum FilterStatus {
   allowed,
@@ -302,97 +300,69 @@ enum FilterStatus {
   force,
 }
 
-class CFPreset {
-  const CFPreset({
-    required this.category,
+class CFSecureProfile extends Equatable {
+  const CFSecureProfile({
+    required this.id,
     required this.name,
     required this.description,
-    required this.color,
-    required this.filters,
+    required this.securityCategories,
   });
 
-  const CFPreset.child()
-      : category = CFPresetCategory.child,
-        name = 'Child',
-        description =
-            'Child filter allows content appropriate for ages X to X. Customize sites or apps you want to block.',
-        color = MoabColor.contentFilterChildPreset,
-        filters = mockChildPresetRules;
-
-  const CFPreset.teen()
-      : category = CFPresetCategory.teen,
-        name = 'Teen',
-        description =
-            'Pre-teen filter allows topics appropriate for ages X to X. Customize sites or apps you want to block.',
-        color = MoabColor.contentFilterTeenPreset,
-        filters = mockTeenPresetRules;
-
-  const CFPreset.adult()
-      : category = CFPresetCategory.adult,
-        name = 'Adult',
-        description =
-            'Adult Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed. You can customize.',
-        color = MoabColor.contentFilterAdultPreset,
-        filters = mockAdultPresetRules;
-
-  factory CFPreset.fromCategory(CFPresetCategory category) {
-    if (category == CFPresetCategory.child) {
-      return CFPreset.child();
-    } else if (category == CFPresetCategory.teen) {
-      return CFPreset.teen();
-    } else if (category == CFPresetCategory.adult) {
-      return CFPreset.adult();
-    } else {
-      throw Exception('Not support preset category!');
-    }
-  }
-
-  CFPreset copyWith({
-    CFPresetCategory? category,
+  CFSecureProfile copyWith({
+    String? id,
     String? name,
     String? description,
     Color? color,
-    List<CFFilterCategory>? filters,
+    List<CFSecureCategory>? securityCategories,
   }) {
-    return CFPreset(
-      category: category ?? this.category,
+    return CFSecureProfile(
+      id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
-      color: color ?? this.color,
-      filters: filters ?? this.filters,
+      securityCategories: securityCategories ?? this.securityCategories,
     );
   }
 
-  final CFPresetCategory category;
+  final String id;
   final String name;
   final String description;
-  final Color color;
-  final List<CFFilterCategory> filters;
+  final List<CFSecureCategory> securityCategories;
+
+  @override
+  List<Object?> get props => [id, name, description, securityCategories];
 }
 
-class CFFilterCategory {
-  const CFFilterCategory({
+class CFSecureCategory extends Equatable {
+  const CFSecureCategory({
     required this.name,
+    required this.id,
     required this.status,
     required this.description,
+    required this.webFilters,
     required this.apps,
   });
 
   final String name;
+  final String id;
   final FilterStatus status;
   final String description;
-  final List<CFFilterApp> apps;
+  final CFWebFilters webFilters;
+  final List<CFAppSignature> apps;
 
-  CFFilterCategory copyWith({
+  CFSecureCategory copyWith({
     String? name,
+    String? id,
     FilterStatus? status,
     String? description,
-    List<CFFilterApp>? apps,
+    CFWebFilters? webFilters,
+    List<CFAppSignature>? apps,
   }) {
-    return CFFilterCategory(
+    return CFSecureCategory(
       name: name ?? this.name,
+      id: id ?? this.id,
       status: status ?? this.status,
       description: description ?? this.description,
+      webFilters: webFilters ?? this.webFilters,
       apps: apps ?? this.apps,
     );
   }
@@ -406,26 +376,75 @@ class CFFilterCategory {
       return current;
     }
   }
+
+  static FilterStatus mapStatus(String status) {
+    if (status == 'Block') {
+      return FilterStatus.force;
+    } else if (status == 'Allow') {
+      return FilterStatus.allowed;
+    } else if (status == 'Not Allow') {
+      // TODO TBD
+      return FilterStatus.notAllowed;
+    } else {
+      return FilterStatus.notAllowed;
+    }
+  }
+
+  @override
+  List<Object?> get props => [name, id, status, description, webFilters, apps];
 }
 
-class CFFilterApp {
-  const CFFilterApp(
-      {required this.name,
-      required this.category,
-      this.icon,
-      required this.status});
+class CFWebFilters extends Equatable {
+  const CFWebFilters({
+    required this.status,
+    required this.webFilters,
+  });
+
+  final FilterStatus status;
+  final List<WebFilter> webFilters;
+
+  CFWebFilters copyWith({FilterStatus? status, List<WebFilter>? webFilters}) {
+    return CFWebFilters(
+      status: status ?? this.status,
+      webFilters: webFilters ?? this.webFilters,
+    );
+  }
+
+  @override
+  List<Object?> get props => [status, webFilters];
+}
+
+class CFAppSignature extends Equatable {
+  const CFAppSignature({
+    required this.name,
+    required this.category,
+    this.icon = '0',
+    required this.status,
+    this.raw = const [],
+  });
 
   final String name;
   final String category;
-  final String? icon;
+  final String icon;
   final FilterStatus status;
+  final List<AppSignature> raw;
 
-  CFFilterApp copyWith(
-      {String? name, String? category, String? icon, FilterStatus? status}) {
-    return CFFilterApp(
+  CFAppSignature copyWith({
+    String? name,
+    String? category,
+    String? icon,
+    FilterStatus? status,
+    List<AppSignature>? raw,
+  }) {
+    return CFAppSignature(
       name: name ?? this.name,
       category: category ?? this.category,
+      icon: icon ?? this.icon,
       status: status ?? this.status,
+      raw: raw ?? this.raw,
     );
   }
+
+  @override
+  List<Object?> get props => [name, category, icon, status, raw];
 }

@@ -4,7 +4,7 @@ List<CloudAppSignature> mappingAppSignature(
     List<dynamic> source, List<dynamic> mapped) {
   final sourceList = List<MapEntry<String, AppSignature>>.from(source
       .map((e) => AppSignature.fromJson(e))
-      .map((e) => MapEntry(e.id, e)));
+      .map((e) => MapEntry<String, AppSignature>(e.id, e)));
   final Map<String, AppSignature> sourceMap = Map.fromEntries(sourceList);
 
   final mappedList = List<MapEntry<String, CloudAppSignature>>.from(mapped
@@ -20,47 +20,6 @@ List<CloudAppSignature> mappingAppSignature(
       ));
 
   return List.from(result.values);
-}
-
-class RuleExpression {
-  const RuleExpression({required this.field, required this.value});
-
-  factory RuleExpression.fromJson(Map<String, dynamic> json) {
-    return RuleExpression(field: json['field'], value: json['value']);
-  }
-
-  final String field;
-  final String value;
-}
-
-class PresetRule {
-  const PresetRule({required this.target, required this.expression});
-
-  factory PresetRule.fromJson(Map<String, dynamic> json) {
-    return PresetRule(
-        target: json['target'],
-        expression: RuleExpression.fromJson(json['expression']));
-  }
-
-  final String target;
-  final RuleExpression expression;
-}
-
-class SecurityPresets {
-  const SecurityPresets(
-      {required this.name, required this.identifier, required this.rules});
-
-  factory SecurityPresets.fromJson(Map<String, dynamic> json) {
-    return SecurityPresets(
-        name: json['name'],
-        identifier: json['identifier'],
-        rules: List.from(
-            List.from(json['rules']).map((e) => PresetRule.fromJson(e))));
-  }
-
-  final String name;
-  final String identifier;
-  final List<PresetRule> rules;
 }
 
 class SecurityPresetSignatures {

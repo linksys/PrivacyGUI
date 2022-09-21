@@ -5,9 +5,9 @@ import 'package:linksys_moab/page/dashboard/view/Profile/profile_list_view.dart'
 import 'package:linksys_moab/page/dashboard/view/account/account_view.dart';
 import 'package:linksys_moab/page/dashboard/view/account/cloud_password_validation_view.dart';
 import 'package:linksys_moab/page/dashboard/view/account/input_new_password_view.dart';
-import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_age_presets_view.dart';
-import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_category_view.dart';
-import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_overview_view.dart';
+import 'package:linksys_moab/page/dashboard/view/content_filtering/secure_profiles_view.dart';
+import 'package:linksys_moab/page/dashboard/view/content_filtering/security_category_view.dart';
+import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filter_overview_view.dart';
 import 'package:linksys_moab/page/dashboard/view/content_filtering/filtered_content_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_health_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';

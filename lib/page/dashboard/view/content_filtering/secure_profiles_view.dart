@@ -9,12 +9,13 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/security/security_profile_manager.dart';
 
 import 'component.dart';
 
 typedef ValueChanged<T> = void Function(T value);
 
-List<CFPreset> _presets = [CFPreset.child(), CFPreset.teen(), CFPreset.adult()];
+List<CFSecureProfile> _presets = SecurityProfileManager.instance().defaultSecurityProfiles;
 
 class ContentFilteringPresetsView extends ArgumentsStatefulView {
   const ContentFilteringPresetsView({Key? key, super.args, super.next})
@@ -28,14 +29,14 @@ class ContentFilteringPresetsView extends ArgumentsStatefulView {
 class _ContentFilteringPresetsViewState
     extends State<ContentFilteringPresetsView> {
   late final Profile? _profile;
-  late CFPreset? _preset;
+  late CFSecureProfile? _preset;
   final TextEditingController _controller = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _profile = context.read<ProfilesCubit>().state.selectedProfile;
-    _preset = widget.args['preset'] as CFPreset? ?? _presets[1];
+    _preset = widget.args['preset'] as CFSecureProfile? ?? _presets[1];
   }
 
   @override
@@ -61,7 +62,7 @@ class _ContentFilteringPresetsViewState
                         context
                             .read<ProfilesCubit>()
                             .updateContentFilterDetails(_profile?.id ?? '',
-                                _preset!.category, _preset!.filters)
+                                _preset!)
                             .then((value) => NavigationCubit.of(context).pop());
                       },
                 child: const Text('Save',
@@ -114,12 +115,12 @@ class _ContentFilteringPresetsViewState
               onTap: () {
                 setState(() {
                   int prevIndex = _presets.indexWhere(
-                      (element) => element.category == _preset!.category);
+                      (element) => element.id == _preset!.id);
                   if (prevIndex != -1) {
                     final latest = _presets
                         .firstWhere(
-                            (element) => element.category == _preset!.category)
-                        .copyWith(filters: _preset!.filters);
+                            (element) => element.id == _preset!.id)
+                        .copyWith(securityCategories: _preset!.securityCategories);
                     _presets[prevIndex] = latest;
                   }
                   if (_preset == _presets[index]) {
@@ -141,7 +142,7 @@ class _ContentFilteringPresetsViewState
     );
   }
 
-  Widget _presetItem(CFPreset preset, bool isSelected) {
+  Widget _presetItem(CFSecureProfile preset, bool isSelected) {
     return Column(
       children: [
         Hero(
@@ -150,14 +151,14 @@ class _ContentFilteringPresetsViewState
             decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                    color: _preset?.category == preset.category
+                    color: _preset?.id == preset.id
                         ? Colors.white
-                        : preset.color,
+                        : SecurityProfileManager.colorMapping(preset.id),
                     width: 3)),
             child: Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: preset.color,
+                color: SecurityProfileManager.colorMapping(preset.id),
               ),
               width: 49,
               height: 49,
@@ -172,20 +173,20 @@ class _ContentFilteringPresetsViewState
   Widget _filterList() {
     return Column(
       children: [
-        ...?_preset?.filters.map((e) => InkWell(
+        ...?_preset?.securityCategories.map((e) => InkWell(
             onTap: () async {
               final newCategory = await showPopup(
                       context: context,
                       config: CFFilterCategoryPath()..args = {'selected': e})
-                  as CFFilterCategory;
+                  as CFSecureCategory;
               if (newCategory != null) {
-                final index = _preset?.filters.indexOf(e) ?? -1;
+                final index = _preset?.securityCategories.indexOf(e) ?? -1;
                 if (index != -1) {
                   final list =
-                      List<CFFilterCategory>.from(_preset?.filters ?? []);
+                      List<CFSecureCategory>.from(_preset?.securityCategories ?? []);
                   setState(() {
                     list.replaceRange(index, index + 1, [newCategory]);
-                    _preset = _preset?.copyWith(filters: list);
+                    _preset = _preset?.copyWith(securityCategories: list);
                   });
                 }
               }
@@ -197,7 +198,7 @@ class _ContentFilteringPresetsViewState
       ],
     );
   }
-  FilterStatus _checkStatus(CFFilterCategory category) {
+  FilterStatus _checkStatus(CFSecureCategory category) {
     return category.apps.fold<FilterStatus>(
         category.status,
             (value, element) => (value != FilterStatus.force && value != element.status) ? FilterStatus.someAllowed : value);

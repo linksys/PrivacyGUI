@@ -10,6 +10,7 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/security/security_profile_manager.dart';
 
 typedef ValueChanged<T> = void Function(T value);
 
@@ -67,8 +68,7 @@ class _ContentFilteringProfileSettingsViewState
   }
 
   Widget _contentFilterLevel(ContentFilterData? data) {
-    CFPreset? _preset =
-        data?.filterCategory == null ? null : CFPreset.fromCategory(data!.filterCategory);
+    CFSecureProfile? _preset = data!.secureProfile;
 
     return SettingTile(
       title: Text(getAppLocalizations(context).content_filter_level_title),
@@ -79,10 +79,10 @@ class _ContentFilteringProfileSettingsViewState
             )
           : CFPresetLabel(
               name: _preset.name,
-              color: _preset.color,
+              color: SecurityProfileManager.colorMapping(_preset.id),
             ),
       onPress: () {
-        NavigationCubit.of(context).push(CFPresetsPath()..args = {'preset': _preset?.copyWith(filters: data?.rules)});
+        NavigationCubit.of(context).push(CFPresetsPath()..args = {'preset': _preset.copyWith()});
       },
     );
   }

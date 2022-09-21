@@ -1,10 +1,40 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:image/image.dart';
 import 'package:linksys_moab/security/app_signature.dart';
+import 'package:linksys_moab/security/cloud_preset.dart';
+import 'package:linksys_moab/security/web_filter.dart';
 import 'package:test/test.dart';
+
 // TODO revise it
 void main() {
+  test('test web filter model', () async {
+    const sample = '''
+    {
+      "id": "1",
+      "name": "Drug Abuse",
+      "group": "Potentially Liable",
+      "rating": "R",
+      "desc": "Websites that feature information on illegal drug activities including: drug promotion, preparation, cultivation, trafficking, distribution, solicitation, etc.",
+      "example": "magic-mushrooms.net,erowid.org,mushmagic.de",
+      "active": true,
+      "group_id": "1",
+      "blocked_in_ratings": [
+        "G",
+        "PG-13"
+      ]
+    }
+    ''';
+    final webFilter = WebFilter.fromJson(jsonDecode(sample));
+    expect(webFilter.id, '1');
+    expect(webFilter.rating, 'R');
+    expect(webFilter.blockedInRatings.length, 2);
+
+    final covertBack = webFilter.toJson();
+    expect(covertBack['id'], '1');
+  });
+
   group('test security file mapping', () {
     test('test load fw file', () async {
       final file = File('assets/test/fcn_application.name.json');
@@ -94,9 +124,10 @@ void main() {
     test('test security presets model transfer', () async {
       final file = File('assets/test/security-category-presets.json');
       final presetsJsonArray = List.from(jsonDecode(file.readAsStringSync()));
-      final List<SecurityPresets> list =
-      List.from(presetsJsonArray.map((e) => SecurityPresets.fromJson(e)));
+      final List<MoabPreset> list =
+          List.from(presetsJsonArray.map((e) => MoabPreset.fromJson(e)));
       expect(list.isNotEmpty, true);
+
       ///   Partial data
       ///   {
       ///     "name": "Adult & sexually explicit",
@@ -160,7 +191,8 @@ void main() {
 
       print(result.length);
       print('result: ${result.keys.first}');
-      File('assets/test/output.json').writeAsStringSync(jsonEncode(List.from(result.values)));
+      File('assets/test/output.json')
+          .writeAsStringSync(jsonEncode(List.from(result.values)));
     });
 
     test('test mapping preset rules', () async {
@@ -173,55 +205,56 @@ void main() {
 
       final cloudFile = File('assets/test/app-signatures.json');
       final cloudJsonArray =
-      List.from(jsonDecode(cloudFile.readAsStringSync()));
+          List.from(jsonDecode(cloudFile.readAsStringSync()));
       final cloudList = List<MapEntry<String, CloudAppSignature>>.from(
           cloudJsonArray
               .map((e) => CloudAppSignature.fromJson(e))
               .map((e) => MapEntry(e.id, e)));
       final Map<String, CloudAppSignature> cloudMap =
-      Map.fromEntries(cloudList);
+          Map.fromEntries(cloudList);
 
       final result = fwMap.map((key, value) => MapEntry(
-        key,
-        cloudMap.containsKey(key)
-            ? cloudMap[key]!.copyWithAppSignature(signature: value)
-            : CloudAppSignature.fromAppSignature(value),
-      ));
+            key,
+            cloudMap.containsKey(key)
+                ? cloudMap[key]!.copyWithAppSignature(signature: value)
+                : CloudAppSignature.fromAppSignature(value),
+          ));
 
       final signatureList = result.values;
 
       print(result.length);
       print('result: ${result.keys.first}');
 
-
-
       final presetFile = File('assets/test/security-category-presets.json');
-      final presetsJsonArray = List.from(jsonDecode(presetFile.readAsStringSync()));
-      final List<SecurityPresets> presetList =
-      List.from(presetsJsonArray.map((e) => SecurityPresets.fromJson(e)));
+      final presetsJsonArray =
+          List.from(jsonDecode(presetFile.readAsStringSync()));
+      final List<MoabPreset> presetList =
+          List.from(presetsJsonArray.map((e) => MoabPreset.fromJson(e)));
 
       List<CloudAppSignature> signatures = [];
       for (var preset in presetList) {
-          for (var rule in preset.rules.where((element) => element.target == 'application')) {
-            Iterable<CloudAppSignature> query = [];
-            switch(rule.expression.field) {
-              case 'categoryId':
-                query = signatureList.where((element) {
-                  print('categoryId:: ${element.category}, ${rule.expression.value}');
-                  return element.category == rule.expression.value;
-                });
-                break;
-              case 'vendor':
-                query = signatureList.where((element) {
-                  print('vendor:: ${element.vendor}, ${rule.expression.value}');
-                  return element.vendor == rule.expression.value;
-                });
-                break;
-            }
-            if (query.isNotEmpty) {
-              signatures.addAll(query);
-            }
+        for (var rule in preset.rules
+            .where((element) => element.target == 'application')) {
+          Iterable<CloudAppSignature> query = [];
+          switch (rule.expression.field) {
+            case 'categoryId':
+              query = signatureList.where((element) {
+                print(
+                    'categoryId:: ${element.category}, ${rule.expression.value}');
+                return element.category == rule.expression.value;
+              });
+              break;
+            case 'vendor':
+              query = signatureList.where((element) {
+                print('vendor:: ${element.vendor}, ${rule.expression.value}');
+                return element.vendor == rule.expression.value;
+              });
+              break;
           }
+          if (query.isNotEmpty) {
+            signatures.addAll(query);
+          }
+        }
       }
       print('application signature length: ${signatures.length}');
     });

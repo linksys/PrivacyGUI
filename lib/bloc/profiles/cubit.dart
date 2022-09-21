@@ -1,7 +1,13 @@
+import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/profiles/mock.dart';
+import 'package:linksys_moab/security/app_signature.dart';
+import 'package:linksys_moab/security/cloud_preset.dart';
+import 'package:linksys_moab/security/web_filter.dart';
+import 'package:linksys_moab/security/app_icon_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
 
 import 'state.dart';
@@ -13,8 +19,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     await Future.delayed(Duration(seconds: 3));
 
     emit(state.copyWith(
-        profiles:
-            Map.fromEntries(mockProfiles.map((e) => MapEntry(e.id, e)))));
+        profiles: Map.fromEntries(mockProfiles.map((e) => MapEntry(e.id, e)))));
     fetchAllServices();
   }
 
@@ -63,10 +68,10 @@ class ProfilesCubit extends Cubit<ProfilesState> {
       }
       if (serviceCategory == PService.contentFilter ||
           serviceCategory == PService.all) {
-        final data = mockContentFilterData[profileId];
-        if (data != null) {
-          dataMap[PService.contentFilter] = data;
-        }
+        // final data = mockContentFilterData[profileId];
+        // if (data != null) {
+        //   dataMap[PService.contentFilter] = data;
+        // }
       }
 
       emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
@@ -74,15 +79,15 @@ class ProfilesCubit extends Cubit<ProfilesState> {
   }
 
   // Internet schedule - Daily time limit
-  updateDailyTimeLimitEnabled(
-      String profileId, DateTimeLimitRule rule, bool isEnabled) async {
+  updateDailyTimeLimitEnabled(String profileId, DateTimeLimitRule rule,
+      bool isEnabled) async {
     var profile = state.selectedProfile;
     if (profile == null || profile.id != profileId) {
       profile =
           state.profileList.firstWhere((element) => element.id == profileId);
     }
     var data = profile.serviceDetails[PService.internetSchedule]
-        as InternetScheduleData?;
+    as InternetScheduleData?;
     data ??= InternetScheduleData(
         dateTimeLimitRule: const [],
         scheduledPauseRule: const [],
@@ -90,7 +95,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     final copy = List<DateTimeLimitRule>.from(data.dateTimeLimitRule);
     copy.contains(rule)
         ? copy.replaceRange(copy.indexOf(rule), copy.indexOf(rule) + 1,
-            [rule.copyWith(isEnabled: isEnabled)])
+        [rule.copyWith(isEnabled: isEnabled)])
         : copy.add(rule.copyWith(isEnabled: isEnabled));
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.internetSchedule] = data.copyWith(dateTimeLimitRule: copy);
@@ -105,32 +110,32 @@ class ProfilesCubit extends Cubit<ProfilesState> {
           state.profileList.firstWhere((element) => element.id == profileId);
     }
     var data = profile.serviceDetails[PService.internetSchedule]
-        as InternetScheduleData?;
+    as InternetScheduleData?;
     data ??= InternetScheduleData(
         dateTimeLimitRule: const [],
         scheduledPauseRule: const [],
         profileId: profileId);
     final newRule =
-        rule.copyWith(weeklySet: weeklyBool, timeInSeconds: timeInSeconds);
+    rule.copyWith(weeklySet: weeklyBool, timeInSeconds: timeInSeconds);
     final copy = List<DateTimeLimitRule>.from(data.dateTimeLimitRule);
     copy.contains(rule)
         ? copy
-            .replaceRange(copy.indexOf(rule), copy.indexOf(rule) + 1, [newRule])
+        .replaceRange(copy.indexOf(rule), copy.indexOf(rule) + 1, [newRule])
         : copy.add(newRule);
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.internetSchedule] = data.copyWith(dateTimeLimitRule: copy);
     emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
   }
 
-  Future<bool> deleteTimeLimitRule(
-      String profileId, DateTimeLimitRule rule) async {
+  Future<bool> deleteTimeLimitRule(String profileId,
+      DateTimeLimitRule rule) async {
     var profile = state.selectedProfile;
     if (profile == null || profile.id != profileId) {
       profile =
           state.profileList.firstWhere((element) => element.id == profileId);
     }
     var data = profile.serviceDetails[PService.internetSchedule]
-        as InternetScheduleData?;
+    as InternetScheduleData?;
     data ??= InternetScheduleData(
         dateTimeLimitRule: const [],
         scheduledPauseRule: const [],
@@ -146,15 +151,15 @@ class ProfilesCubit extends Cubit<ProfilesState> {
   }
 
   // Internet schedule - schedule pauses
-  updateSchedulePausesEnabled(
-      String profileId, ScheduledPausedRule rule, bool isEnabled) async {
+  updateSchedulePausesEnabled(String profileId, ScheduledPausedRule rule,
+      bool isEnabled) async {
     var profile = state.selectedProfile;
     if (profile == null || profile.id != profileId) {
       profile =
           state.profileList.firstWhere((element) => element.id == profileId);
     }
     var data = profile.serviceDetails[PService.internetSchedule]
-        as InternetScheduleData?;
+    as InternetScheduleData?;
     data ??= InternetScheduleData(
         dateTimeLimitRule: const [],
         scheduledPauseRule: const [],
@@ -162,7 +167,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     final copy = List<ScheduledPausedRule>.from(data.scheduledPauseRule);
     copy.contains(rule)
         ? copy.replaceRange(copy.indexOf(rule), copy.indexOf(rule) + 1,
-            [rule.copyWith(isEnabled: isEnabled)])
+        [rule.copyWith(isEnabled: isEnabled)])
         : copy.add(rule.copyWith(isEnabled: isEnabled));
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.internetSchedule] =
@@ -170,21 +175,19 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
   }
 
-  Future<void> updateSchedulePausesDetail(
-    String profileId,
-    ScheduledPausedRule rule,
-    List<bool> weeklyBool,
-    int startTimeInSeconds,
-    int endTimeInSeconds,
-    bool isAllDay,
-  ) async {
+  Future<void> updateSchedulePausesDetail(String profileId,
+      ScheduledPausedRule rule,
+      List<bool> weeklyBool,
+      int startTimeInSeconds,
+      int endTimeInSeconds,
+      bool isAllDay,) async {
     var profile = state.selectedProfile;
     if (profile == null || profile.id != profileId) {
       profile =
           state.profileList.firstWhere((element) => element.id == profileId);
     }
     var data = profile.serviceDetails[PService.internetSchedule]
-        as InternetScheduleData?;
+    as InternetScheduleData?;
     data ??= InternetScheduleData(
         dateTimeLimitRule: const [],
         scheduledPauseRule: const [],
@@ -197,7 +200,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     final copy = List<ScheduledPausedRule>.from(data.scheduledPauseRule);
     copy.contains(rule)
         ? copy
-            .replaceRange(copy.indexOf(rule), copy.indexOf(rule) + 1, [newRule])
+        .replaceRange(copy.indexOf(rule), copy.indexOf(rule) + 1, [newRule])
         : copy.add(newRule);
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.internetSchedule] =
@@ -205,15 +208,15 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
   }
 
-  Future<bool> deleteSchedulePausesRule(
-      String profileId, ScheduledPausedRule rule) async {
+  Future<bool> deleteSchedulePausesRule(String profileId,
+      ScheduledPausedRule rule) async {
     var profile = state.selectedProfile;
     if (profile == null || profile.id != profileId) {
       profile =
           state.profileList.firstWhere((element) => element.id == profileId);
     }
     var data = profile.serviceDetails[PService.internetSchedule]
-        as InternetScheduleData?;
+    as InternetScheduleData?;
     data ??= InternetScheduleData(
         dateTimeLimitRule: const [],
         scheduledPauseRule: const [],
@@ -237,16 +240,15 @@ class ProfilesCubit extends Cubit<ProfilesState> {
           state.profileList.firstWhere((element) => element.id == profileId);
     }
     var data =
-        profile.serviceDetails[PService.contentFilter] as ContentFilterData?;
+    profile.serviceDetails[PService.contentFilter] as ContentFilterData?;
     if (data == null) return;
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
-    dataMap[PService.contentFilter] =
-        data.copyWith(isEnabled: isEnabled);
+    dataMap[PService.contentFilter] = data.copyWith(isEnabled: isEnabled);
     emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
   }
 
-  Future updateContentFilterDetails(String profileId, CFPresetCategory filterCategory,
-      List<CFFilterCategory> rules,) async {
+  Future updateContentFilterDetails(String profileId,
+      CFSecureProfile secureProfile,) async {
     var profile = state.selectedProfile;
     if (profile == null || profile.id != profileId) {
       profile =
@@ -255,20 +257,23 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     var data =
     profile.serviceDetails[PService.contentFilter] as ContentFilterData?;
     if (data == null) {
-      data = ContentFilterData(isEnabled: true, filterCategory: filterCategory, rules: rules, profileId: profileId);
+      data = ContentFilterData(
+          isEnabled: true,
+          secureProfile: secureProfile,
+          profileId: profileId);
     } else {
-      data = data.copyWith(filterCategory: filterCategory, rules: rules);
+      data = data.copyWith(secureProfile: secureProfile);
     }
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.contentFilter] = data;
     emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
-
   }
 
   @override
   void onChange(Change<ProfilesState> change) {
     super.onChange(change);
     logger.i(
-        'Profiles Cubit changed: ${change.currentState} -> ${change.nextState}');
+        'Profiles Cubit changed: ${change.currentState} -> ${change
+            .nextState}');
   }
 }

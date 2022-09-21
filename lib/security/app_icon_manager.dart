@@ -4,11 +4,12 @@ import 'dart:math';
 
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as image_util;
+import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/cloud_const.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/util/storage.dart';
 
-import 'logger.dart';
+import '../util/logger.dart';
 
 class AppIconManager {
   static const defaultIconSize = 96;
@@ -36,7 +37,7 @@ class AppIconManager {
           '${Storage.tempDirectory?.path}/sprite-icons-map.png';
       File iconFile = File(iconFilePath);
       if (!iconFile.existsSync()) {
-        await _fetchFromCloud();
+        await CloudEnvironmentManager().downloadResources(CloudResourceType.appIcons);
       }
       final image = image_util.decodeImage(iconFile.readAsBytesSync());
       if (image == null) {
@@ -62,17 +63,22 @@ class AppIconManager {
     logger.d('icon keys loaded! ${_iconKeys.length}');
   }
 
-  _fetchFromCloud() async {
-    MoabHttpClient _client = MoabHttpClient();
-    await _client.download(Uri.parse(appIconsUrl), Storage.iconFileUri);
-  }
-
   Future<List<String>> getAppIds() async {
     await _loadIconKeys();
     return List.from(_iconKeys.keys);
   }
 
+  bool isDefaultIcon(String appId) {
+    if (!_iconKeys.containsKey(appId)) {
+      return true;
+    }
+    final pt = _iconKeys[appId]!;
+    return pt.x == 0 && pt.y == 0;
+  }
+
+
   Future<Uint8List> getIconByte(String appId, {bool force = false}) async {
+    await Future.delayed(Duration(seconds: 3));
     if (!force && _iconCache.containsKey(appId)) {
       logger.d('found app icon on cache! $appId');
       return Uint8List.fromList(image_util.encodePng(_iconCache[appId]!));
@@ -91,7 +97,7 @@ class AppIconManager {
     final iconMapImage = _cached?.target;
     final cropped = image_util.copyCrop(iconMapImage!, pos.x.toInt(),
         pos.y.toInt(), defaultIconSize, defaultIconSize);
-    logger.d('found app icon on icon Map! $appId, $pos, (${cropped.width},${cropped.height})');
+    logger.d('found app icon on icon Map! id:$appId, $pos, (${cropped.width},${cropped.height})');
     _iconCache[appId] = cropped;
     return Uint8List.fromList(image_util.encodePng(cropped));
   }

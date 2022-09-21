@@ -34,7 +34,7 @@ String get countryCodeUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$countr
 // Content filtering urls
 String get webFilteringUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$webFilteringFileName';
 String get appSignaturesUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$appSignaturesFileName';
-String get wcfPresetsUrl =>'$moabCloudConfigHost${cloudEnvTarget.name}/$securityCategoryPresetsFileName';
+String get categoryPresetsUrl =>'$moabCloudConfigHost${cloudEnvTarget.name}/$securityCategoryPresetsFileName';
 String get appIconsUrl => 'https://linksys.devvelopcloud.com/moab-assets/sprite-map.png'; //TBD
 String get profilePresetsUrl =>'$moabCloudConfigHost${cloudEnvTarget.name}/$profilePresetsFilename';
 

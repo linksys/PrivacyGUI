@@ -30,6 +30,8 @@ import 'bloc/otp/otp_cubit.dart';
 import 'repository/authenticate/impl/fake_local_auth_repository.dart';
 import 'package:linksys_moab/route/model/model.dart';
 
+import 'security/security_profile_manager.dart';
+
 void main() {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();

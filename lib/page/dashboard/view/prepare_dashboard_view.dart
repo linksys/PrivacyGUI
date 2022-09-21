@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
+import 'package:linksys_moab/security/security_profile_manager.dart';
 
 import '../../../localization/localization_hook.dart';
 import '../../../route/model/dashboard_path.dart';
@@ -36,6 +37,7 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
 
   _checkSelfNetworks() async {
     await context.read<ProfilesCubit>().fetchProfiles();
+    await SecurityProfileManager.instance().fetchDefaultPresets();
     NavigationCubit.of(context).clearAndPush(DashboardHomePath());
   }
 }
