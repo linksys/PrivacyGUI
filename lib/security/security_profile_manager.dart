@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/services.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/security/app_signature.dart';
 import 'package:linksys_moab/util/logger.dart';
-
 import '../util/storage.dart';
 import 'app_icon_manager.dart';
 import 'cloud_preset.dart';
@@ -34,11 +34,11 @@ class SecurityProfileManager {
   //
   Future<List<CFSecureProfile>> fetchDefaultPresets() async {
     // fetch App signature
-    final appSignature = await fetchAppSignature();
+    final appSignatures = await fetchAppSignature();
     await AppIconManager.instance().getAppIds();
     // fetch web filters
-    final webFilter = await fetchWebFilters();
-    logger.d('fetchDefaultPresets:: web filters count: ${webFilter.length}');
+    final webFilters = await fetchWebFilters();
+    logger.d('fetchDefaultPresets:: web filters count: ${webFilters.length}');
     // fetch security category presets
     final securityCategory = await fetchSecurityCategoryPresets();
     // fetch profile presets
@@ -52,74 +52,39 @@ class SecurityProfileManager {
       final id = preset.identifier;
       logger.d('fetchDefaultPresets:: profile preset: $name, $id');
       // category rules
-      final categories = preset.rules.map((cRule) {
-        final categoryName = cRule.target;
-        final categoryId = cRule.identifier;
-        final categoryStatus = cRule.expression.value;
-        // find
-        final securityPreset = securityCategory
-            .firstWhere((element) => element.identifier == categoryId);
-        // handle web filters
-        final webFilterList = securityPreset.rules
-            .where((element) => element.target == 'webfilter')
-            .map((e) =>
-                webFilter.firstWhere((e2) => e2.id == e.expression.value))
-            .toList();
-        final webFilterCount = webFilterList.length;
-        final appSignatureList = securityPreset.rules
-            .where((element) => element.target == 'application')
-            .map((e) {
-              final field = e.expression.field;
-              final value = e.expression.value;
-              final rawApps = appSignature
-                  .map((e) => e.toJson())
-                  .where((element) => element[field].toString().contains(value))
-                  .map((e) => AppSignature.fromJson(e))
-                  .toList();
-              if (rawApps.isEmpty) {
-                return null;
-              }
-              logger.d('raw apps: ${rawApps.length}');
-              String appIcon;
-              try {
-                appIcon = rawApps
-                    .where((value) =>
-                        !AppIconManager.instance().isDefaultIcon(value.id))
-                    .first
-                    .id;
-              } catch (e) {
-                logger.e('resolve app icon error $value', e);
-                appIcon = '0';
-              }
-              final cfAppSignature = CFAppSignature(
-                name: value,
-                icon: appIcon,
-                category: rawApps.first.category,
+      final categories = preset.rules
+          .map((cRule) {
+            final categoryName = cRule.target;
+            final categoryId = cRule.identifier;
+            final categoryStatus = cRule.expression.value;
+            // find
+            logger.d('fetchDefaultPresets:: category id: $categoryId');
+            final securityPreset = securityCategory.firstWhereOrNull(
+                (element) => element.identifier == categoryId);
+            if (securityPreset == null) {
+              return null;
+            }
+            // handle web filters
+            final webFilterList =
+                _extractWebFilters(securityPreset, webFilters);
+            final appSignatureList = _extractAppSignatures(securityPreset, appSignatures, categoryStatus);
+            logger.d(
+                'fetchDefaultPresets:: category: $categoryName, web filter count: ${webFilterList.length}, app signature count: ${appSignatureList.length}');
+            final cfPreset = CFSecureCategory(
+              name: categoryName,
+              id: categoryId,
+              status: CFSecureCategory.mapStatus(categoryStatus),
+              description: '',
+              webFilters: CFWebFilters(
                 status: CFSecureCategory.mapStatus(categoryStatus),
-                raw: rawApps,
-              );
-              logger.d(
-                  'raw apps: field - $field, value - $value, ${rawApps.length}, ${appIcon.length}');
-              return cfAppSignature;
-            })
-            .where((value) => value != null)
-            .whereType<CFAppSignature>()
-            .toList();
-        logger.d(
-            'fetchDefaultPresets:: category: $categoryName, web filter count: $webFilterCount, app signature count: ${appSignatureList.length}');
-        final cfPreset = CFSecureCategory(
-          name: categoryName,
-          id: categoryId,
-          status: CFSecureCategory.mapStatus(categoryStatus),
-          description: '',
-          webFilters: CFWebFilters(
-            status: CFSecureCategory.mapStatus(categoryStatus),
-            webFilters: webFilterList,
-          ),
-          apps: appSignatureList,
-        );
-        return cfPreset;
-      }).toList();
+                webFilters: webFilterList,
+              ),
+              apps: appSignatureList,
+            );
+            return cfPreset;
+          })
+          .whereType<CFSecureCategory>()
+          .toList();
       return CFSecureProfile(
         id: id,
         name: name,
@@ -130,6 +95,54 @@ class SecurityProfileManager {
     logger.d('fetch default security profiles done!\n $result');
     _securityProfiles = result;
     return result;
+  }
+
+  List<WebFilter> _extractWebFilters(
+      MoabPreset securityPreset, List<WebFilter> webFilters) {
+    return securityPreset.rules
+        .where((element) => element.target == 'webfilter')
+        .map((e) => webFilters.firstWhere((e2) => e2.id == e.expression.value))
+        .toList();
+  }
+
+  List<CFAppSignature> _extractAppSignatures(MoabPreset securityPreset,
+      List<AppSignature> appSignatures, String categoryStatus) {
+    return securityPreset.rules
+        .where((element) => element.target == 'application')
+        .map((e) {
+          final field =
+              e.expression.field == 'applicationId' ? 'id' : e.expression.field;
+          final value = e.expression.value;
+          final rawApps = appSignatures
+              .map((e) => e.toJson())
+              .where((element) => element[field].toString().contains(value))
+              .map((e) => AppSignature.fromJson(e))
+              .toList();
+          final name = e.expression.field == 'applicationId'
+              ? rawApps.first.name
+              : value;
+          if (rawApps.isEmpty) {
+            return null;
+          }
+          logger.d('raw apps: ${rawApps.length}');
+          String appIcon;
+          appIcon = rawApps
+              .where((value) =>
+          !AppIconManager.instance().isDefaultIcon(value.id))
+              .firstOrNull?.id ?? '0';
+          final cfAppSignature = CFAppSignature(
+            name: name,
+            icon: appIcon,
+            category: rawApps.first.category,
+            status: CFSecureCategory.mapStatus(categoryStatus),
+            raw: rawApps,
+          );
+          logger.d(
+              'raw apps: field - $field, value - $value, ${rawApps.length}, ${appIcon.length}');
+          return cfAppSignature;
+        })
+        .whereType<CFAppSignature>()
+        .toList();
   }
 
   Future<List<MoabPreset>> fetchProfilePresets() async {
@@ -174,8 +187,8 @@ class SecurityProfileManager {
     await _checkResourceExpiration(file, CloudResourceType.appSignature);
     final cJsonStr = file.readAsStringSync();
     // TODO get form FW
-    final fwJsonStr =
-        await rootBundle.loadString('assets/resources/fcn_application.name.json');
+    final fwJsonStr = await rootBundle
+        .loadString('assets/resources/fcn_application.name.json');
 
     final fwJsonArray = List.from(jsonDecode(fwJsonStr));
 
@@ -190,12 +203,14 @@ class SecurityProfileManager {
       await CloudEnvironmentManager().downloadResources(type);
     }
     final lastModified = file.lastModifiedSync();
-    final diff = DateTime.now().millisecondsSinceEpoch - lastModified.millisecondsSinceEpoch;
+    final diff = DateTime.now().millisecondsSinceEpoch -
+        lastModified.millisecondsSinceEpoch;
     if (diff > resourceDownloadTimeThreshold[type]!) {
       logger.d('Resource expired! $diff, Download again - $type');
       await CloudEnvironmentManager().downloadResources(type);
     }
   }
+
 //////
   static Color colorMapping(String id) {
     if (id == 'ADULT') {

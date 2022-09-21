@@ -37,7 +37,7 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
 
   _checkSelfNetworks() async {
     await context.read<ProfilesCubit>().fetchProfiles();
-    await SecurityProfileManager.instance().fetchDefaultPresets();
+    // await SecurityProfileManager.instance().fetchDefaultPresets();
     NavigationCubit.of(context).clearAndPush(DashboardHomePath());
   }
 }

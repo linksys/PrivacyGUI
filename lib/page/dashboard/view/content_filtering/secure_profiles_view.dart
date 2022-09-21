@@ -5,6 +5,7 @@ import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/model.dart';
@@ -14,8 +15,6 @@ import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'component.dart';
 
 typedef ValueChanged<T> = void Function(T value);
-
-List<CFSecureProfile> _presets = SecurityProfileManager.instance().defaultSecurityProfiles;
 
 class ContentFilteringPresetsView extends ArgumentsStatefulView {
   const ContentFilteringPresetsView({Key? key, super.args, super.next})
@@ -28,20 +27,31 @@ class ContentFilteringPresetsView extends ArgumentsStatefulView {
 
 class _ContentFilteringPresetsViewState
     extends State<ContentFilteringPresetsView> {
+  List<CFSecureProfile> _presets = const [];
   late final Profile? _profile;
   late CFSecureProfile? _preset;
   final TextEditingController _controller = TextEditingController();
+  bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _profile = context.read<ProfilesCubit>().state.selectedProfile;
-    _preset = widget.args['preset'] as CFSecureProfile? ?? _presets[1];
+    SecurityProfileManager.instance().fetchDefaultPresets().then((value) {
+      setState(() {
+        _presets = value;
+        _preset = widget.args['preset'] as CFSecureProfile? ?? _presets[1];
+        isLoading = false;
+      });
+    });
+    setState(() {
+      isLoading = true;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView.onDashboardSecondary(
+    return isLoading ? FullScreenSpinner(text: getAppLocalizations(context).processing,) : BasePageView.onDashboardSecondary(
       scrollable: true,
       appBar: AppBar(
         automaticallyImplyLeading: false,

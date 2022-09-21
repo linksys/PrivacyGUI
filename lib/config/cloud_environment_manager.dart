@@ -28,7 +28,7 @@ enum CloudResourceType {
 final resourceDownloadTimeThreshold = {
   CloudResourceType.appIcons: const Duration(days: 1).inMilliseconds,
   CloudResourceType.securityProfiles: const Duration(minutes: 1).inMilliseconds,
-  CloudResourceType.securityCategories: const Duration(days: 1).inMilliseconds,
+  CloudResourceType.securityCategories: const Duration(minutes: 1).inMilliseconds,
   CloudResourceType.webFilters: const Duration(days: 1).inMilliseconds,
   CloudResourceType.appSignature: const Duration(days: 1).inMilliseconds,
 };
