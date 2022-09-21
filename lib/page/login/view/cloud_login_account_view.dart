@@ -98,6 +98,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               InputField(
+                key: const Key('login_view_input_field_email'),
                 titleText: getAppLocalizations(context).email,
                 hintText: getAppLocalizations(context).email,
                 controller: _accountController,
@@ -110,6 +111,8 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: SimpleTextButton(
+                      key: const Key(
+                          'login_view_button_email_with_another_linksys_app'),
                       text: getAppLocalizations(context)
                           .cloud_account_login_email_with_linksys_app,
                       onPressed: () => NavigationCubit.of(context)
@@ -120,6 +123,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: SimpleTextButton(
+                      key: const Key('login_view_button_forgot_email'),
                       text: getAppLocalizations(context).forgot_email,
                       onPressed: () => NavigationCubit.of(context)
                           .push(AuthForgotEmailPath())),
@@ -132,6 +136,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
                   return Offstage(
                     offstage: !(canUseBiometrics.data ?? false),
                     child: InkWell(
+                      key: const Key('login_view_button_enable_biometrics'),
                       onTap: () {
                         setState(() {
                           _enableBiometrics = !_enableBiometrics;
@@ -148,6 +153,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24.0),
                 child: PrimaryButton(
+                  key: const Key('login_view_button_continue'),
                   text: getAppLocalizations(context).text_continue,
                   onPress:
                       _accountController.text.isNotEmpty ? _prepareLogin : null,
@@ -157,6 +163,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
                 offstage: _fromSetup,
                 child: Center(
                   child: SimpleTextButton(
+                      key: const Key('login_view_button_login_router_password'),
                       text: getAppLocalizations(context)
                           .cloud_account_login_with_router_password,
                       onPressed: () => NavigationCubit.of(context)

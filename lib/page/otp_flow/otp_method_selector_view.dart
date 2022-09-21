@@ -16,7 +16,8 @@ import 'package:linksys_moab/route/route.dart';
 import '../../route/model/otp_path.dart';
 
 class OTPMethodSelectorView extends ArgumentsStatefulView {
-  const OTPMethodSelectorView({Key? key, super.args, super.next}) : super(key: key);
+  const OTPMethodSelectorView({Key? key, super.args, super.next})
+      : super(key: key);
 
   @override
   _OTPMethodSelectorViewState createState() => _OTPMethodSelectorViewState();
@@ -46,6 +47,9 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: state.methods.length,
                 itemBuilder: (context, index) => GestureDetector(
+                      key: Key(state.methods[index].method == OtpMethod.email
+                          ? 'otp_method_selector_view_button_email'
+                          : 'otp_method_selector_view_button_sms'),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: SelectableItem(
@@ -67,6 +71,7 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
               height: 60,
             ),
             PrimaryButton(
+              key: const Key('otp_method_selector_view_button_continue'),
               text: !state.isSendFunction() &&
                       state.selectedMethod?.method == OtpMethod.sms
                   ? getAppLocalizations(context).add_phone_number
@@ -82,6 +87,8 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
             ),
             if (state.isSettingFunction())
               SimpleTextButton(
+                  key: const Key(
+                      'otp_method_selector_view_button_create_password'),
                   text:
                       getAppLocalizations(context).otp_create_password_instead,
                   onPressed: () {
@@ -125,7 +132,9 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
   _checkPhoneExist(OtpInfo method, String token) {
     if (method.method == OtpMethod.sms) {
       context.read<OtpCubit>().addPhone();
-      NavigationCubit.of(context).push(OtpAddPhonePath()..next = widget.next..args.addAll(widget.args));
+      NavigationCubit.of(context).push(OtpAddPhonePath()
+        ..next = widget.next
+        ..args.addAll(widget.args));
     } else {
       _onSend(method);
     }
@@ -134,7 +143,9 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
   _onSend(OtpInfo method) {
     _setLoading(true);
     context.read<OtpCubit>().onInputOtp();
-    NavigationCubit.of(context).push(OtpInputCodePath()..next = widget.next..args.addAll(widget.args));
+    NavigationCubit.of(context).push(OtpInputCodePath()
+      ..next = widget.next
+      ..args.addAll(widget.args));
     _setLoading(false);
   }
 

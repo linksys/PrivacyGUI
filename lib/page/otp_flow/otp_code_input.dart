@@ -87,6 +87,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
             SizedBox(
               width: 242,
               child: PinCodeTextField(
+                key: const Key('otp_input_view_input_field_code'),
                 onChanged: (String value) {
                   setState(() {
                     _errorCode = '';

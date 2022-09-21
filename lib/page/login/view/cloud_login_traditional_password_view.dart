@@ -69,6 +69,7 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             PasswordInputField(
+              key: const Key('login_password_view_input_field_password'),
               titleText: getAppLocalizations(context).password,
               hintText: getAppLocalizations(context).password,
               isError: _errorCode.isNotEmpty,
@@ -84,6 +85,7 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
               height: 15,
             ),
             SimpleTextButton(
+                key: const Key('login_password_view_button_forgot_password'),
                 text: getAppLocalizations(context).forgot_password,
                 onPressed: () {
                   NavigationCubit.of(context)
@@ -93,6 +95,7 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
               height: 38,
             ),
             PrimaryButton(
+              key: const Key('login_password_view_button_continue'),
               text: getAppLocalizations(context).text_continue,
               onPress: passwordController.text.isEmpty
                   ? null
