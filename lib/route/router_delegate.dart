@@ -7,12 +7,13 @@ import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/connectivity/connectivity_info.dart';
 import 'package:linksys_moab/bloc/connectivity/cubit.dart';
 import 'package:linksys_moab/route/moab_page.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:linksys_moab/util/analytics.dart';
 import 'package:linksys_moab/util/logger.dart';
-import 'package:linksys_moab/route/model/model.dart';
 
-import '../page/dashboard/view/view.dart';
+import '../page/dashboard/view/_view.dart';
 
 class MoabRouterDelegate extends RouterDelegate<BasePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<BasePath> {

@@ -12,7 +12,7 @@ import '../../../route/navigation_cubit.dart';
 import '../../../util/logger.dart';
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 import '../../components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 
 class CloudLoginPasswordView extends ArgumentsStatefulView {
   const CloudLoginPasswordView({Key? key, super.args, super.next})

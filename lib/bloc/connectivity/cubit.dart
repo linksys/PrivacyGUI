@@ -24,7 +24,7 @@ class ConnectivityCubit extends Cubit<ConnectivityInfo>
   @override
   Future onConnectivityChanged(ConnectivityInfo info) async {
     if (info.type != ConnectivityResult.none) {
-      testAvailability().then((value) => emit(info.copyWith(availabilityInfo: value)));
+      // testAvailability().then((value) => emit(info.copyWith(availabilityInfo: value)));
     } else {
       emit(info.copyWith(availabilityInfo: null));
     }

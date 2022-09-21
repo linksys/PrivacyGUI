@@ -4,12 +4,9 @@ import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/route.dart';
-import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/route/model/internet_schedule_path.dart';
+import 'package:linksys_moab/route/_route.dart';
 
-import '../../../../route/model/dashboard_path.dart';
-
-typedef ValueChanged<T> = void Function(T value);
 
 class InternetScheduleOverviewView extends ArgumentsStatefulView {
   const InternetScheduleOverviewView({Key? key, super.args, super.next})

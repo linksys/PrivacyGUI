@@ -3,8 +3,10 @@ import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_security_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/model/security_path.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 
 class SecurityMarketingView extends StatelessWidget {
   const SecurityMarketingView({Key? key}) : super(key: key);

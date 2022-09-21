@@ -8,8 +8,11 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/devices_path.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/model/profile_group_path.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 
 class DeviceDetailView extends ArgumentsStatefulView {
   const DeviceDetailView({Key? key, super.args, super.next}) : super(key: key);

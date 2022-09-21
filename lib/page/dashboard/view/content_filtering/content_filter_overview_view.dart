@@ -8,11 +8,11 @@ import 'package:linksys_moab/page/components/base_components/base_page_view.dart
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/content_filter_path.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 
-typedef ValueChanged<T> = void Function(T value);
 
 class ContentFilteringOverviewView extends ArgumentsStatefulView {
   const ContentFilteringOverviewView({Key? key, super.args, super.next})

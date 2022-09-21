@@ -8,7 +8,9 @@ import 'package:linksys_moab/page/components/base_components/base_components.dar
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/dashboard_path.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/nodes_path.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 
 import 'custom_buchheim_walker_algorithm.dart';
 import 'custom_tree_edge_renderer.dart';

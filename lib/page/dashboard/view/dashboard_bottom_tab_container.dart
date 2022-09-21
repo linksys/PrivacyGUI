@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:linksys_moab/util/debug_mixin.dart';
 import 'package:linksys_moab/util/logger.dart';
 

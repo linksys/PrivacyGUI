@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
 
 class HaveOldAccountView extends StatelessWidget {

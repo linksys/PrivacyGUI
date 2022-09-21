@@ -13,6 +13,17 @@ import 'package:http/io_client.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'model/base_response.dart';
 
+/// A error response stream
+/// Everytime occurs error response the stream will emit #ErrorResponse
+StreamController<ErrorResponse> _errorResponseStreamController =
+    StreamController();
+
+Stream<ErrorResponse> get errorResponseStream => _errorResponseStreamController.stream;
+
+void releaseErrorResponseStream() {
+  _errorResponseStreamController.close();
+}
+
 ///
 /// timeout - will throw Timeout exception on ${timeout} seconds
 ///
@@ -74,10 +85,10 @@ class MoabHttpClient extends http.BaseClient {
   final FutureOr<void> Function(BaseRequest, http.BaseResponse?, int)? _onRetry;
 
   Map<String, String> get defaultHeader => {
-    moabSiteIdKey: moabRetailSiteId,
-    HttpHeaders.contentTypeHeader: ContentType.json.value,
-    HttpHeaders.acceptHeader: ContentType.json.value
-  };
+        moabSiteIdKey: moabRetailSiteId,
+        HttpHeaders.contentTypeHeader: ContentType.json.value,
+        HttpHeaders.acceptHeader: ContentType.json.value
+      };
 
   String getHost() => CloudEnvironmentManager().currentConfig?.apiBase ?? '';
 
@@ -245,7 +256,9 @@ class MoabHttpClient extends http.BaseClient {
     // TODO Revisit - needs to considering about 500 internal server error, 502/503 bad requests
     if (response.statusCode >= 400) {
       logger.i('Cloud Error: ${response.statusCode}, ${response.body}');
-      throw ErrorResponse.fromJson(json.decode(response.body));
+      final error = ErrorResponse.fromJson(response.statusCode, json.decode(response.body));
+      _errorResponseStreamController.add(error);
+      throw error;
     }
     return response;
   }

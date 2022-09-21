@@ -8,13 +8,12 @@ import 'package:linksys_moab/page/components/base_components/base_components.dar
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/content_filter_path.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 
 import 'component.dart';
-
-typedef ValueChanged<T> = void Function(T value);
 
 class ContentFilteringPresetsView extends ArgumentsStatefulView {
   const ContentFilteringPresetsView({Key? key, super.args, super.next})
@@ -95,12 +94,17 @@ class _ContentFilteringPresetsViewState
               children: [
                 Text(_preset?.description ?? ''),
                 box36(),
-                InputField(
-                  titleText: '',
-                  hintText: 'Search by app name',
-                  controller: _controller,
-                  prefixIcon: Icon(Icons.search),
-                  customPrimaryColor: Colors.black,
+                InkWell(
+                  onTap: () {
+                    // TODO go to search view
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(color: MoabColor.dashboardTileBackground),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(children: [Icon(Icons.search), Text('Search by app name')],),
+                    ),
+                  ),
                 ),
                 box36(),
                 _filterList(),
@@ -108,7 +112,7 @@ class _ContentFilteringPresetsViewState
             ),
           ),
           box36(),
-          SimpleTextButton(text: 'Send feedback', onPressed: () {}),
+          SimpleTextButton(text: 'Send feedback', onPressed: () {}, padding: EdgeInsets.zero,),
           Text('Suggest a category or app'),
         ],
       ),

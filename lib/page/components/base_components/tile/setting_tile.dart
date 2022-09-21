@@ -23,6 +23,7 @@ class SettingTile extends StatelessWidget {
         InkWell(
           onTap: onPress,
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(child: title),
               value,
@@ -121,12 +122,11 @@ class SettingTileTwoLine extends StatelessWidget {
 
 class SectionTile extends StatelessWidget {
   const SectionTile(
-      {Key? key, required this.header, required this.child, this.space = 32})
+      {Key? key, required this.header, required this.child,})
       : super(key: key);
 
   final Widget header;
   final Widget child;
-  final double space;
 
   @override
   Widget build(BuildContext context) {
@@ -134,9 +134,6 @@ class SectionTile extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: space,
-        ),
         header,
         box16(),
         child,

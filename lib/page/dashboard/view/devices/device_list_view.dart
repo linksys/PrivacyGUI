@@ -5,14 +5,16 @@ import 'package:linksys_moab/bloc/device/device.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/customs/customs.dart';
+import 'package:linksys_moab/page/components/chart/BarChartSample2.dart';
+import 'package:linksys_moab/page/components/customs/_customs.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/devices_path.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/_route.dart';
 
-import '../security/BarChartSample2.dart';
+
 
 class DeviceListView extends ArgumentsStatefulView {
   const DeviceListView({Key? key, super.args, super.next}) : super(key: key);
