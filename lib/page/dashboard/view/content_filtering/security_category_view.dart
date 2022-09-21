@@ -5,15 +5,15 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/page/components/customs/app_icon_view.dart';
 import 'package:linksys_moab/page/components/customs/popup_button.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 
 import 'package:linksys_moab/util/in_app_browser.dart';
 import 'package:styled_text/styled_text.dart';
-import 'package:linksys_moab/security/app_icon_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
 
 import 'component.dart';
@@ -120,7 +120,7 @@ class _ContentFilteringCategoryViewState
                     setState(() {
                       _category = _category.copyWith(
                           status:
-                              CFFilterCategory.switchStatus(_category.status));
+                          CFSecureCategory.switchStatus(_category.status));
                     });
                   })
                 ],
@@ -154,7 +154,9 @@ class _ContentFilteringCategoryViewState
                 'App(${_category.apps.length})',
                 style: Theme.of(context).textTheme.headline2,
               )),
-              IconButton(onPressed: () {}, icon: Icon(Icons.search)),
+              IconButton(onPressed: () {
+                NavigationCubit.of(context).push(CFAppSearchPath());
+              }, icon: Icon(Icons.search)),
               createStatusButton(
                 context,
                 _category.getAppSummaryStatus(),
@@ -175,47 +177,6 @@ class _ContentFilteringCategoryViewState
               });
             })))
       ],
-    );
-  }
-}
-
-class AppIconView extends StatefulWidget {
-  const AppIconView({
-    Key? key,
-    this.appId = '0',
-  }) : super(key: key);
-
-  final String appId;
-
-  @override
-  State<AppIconView> createState() => _AppIconViewState();
-}
-
-class _AppIconViewState extends State<AppIconView> {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.all(Radius.circular(4))),
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: FutureBuilder<Uint8List>(
-            future: AppIconManager.instance().getIconByte(widget.appId),
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                return Image.memory(snapshot.data!);
-              } else if (snapshot.hasError) {
-                return const Icon(Icons.cancel);
-              } else {
-                return const CircularProgressIndicator(
-                  color: MoabColor.placeholderGrey,
-                );
-              }
-            }),
-      ),
     );
   }
 }

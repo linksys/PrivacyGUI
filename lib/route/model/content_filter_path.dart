@@ -1,9 +1,6 @@
 
 import 'package:flutter/widgets.dart';
-import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_age_presets_view.dart';
-import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_category_view.dart';
-import 'package:linksys_moab/page/dashboard/view/content_filtering/content_filtering_overview_view.dart';
-import 'package:linksys_moab/page/dashboard/view/content_filtering/filtered_content_view.dart';
+import 'package:linksys_moab/page/dashboard/view/content_filtering/_content_filtering.dart';
 import 'package:linksys_moab/route/_route.dart';
 
 
@@ -30,6 +27,11 @@ class ContentFilterPath extends DashboardPath {
         );
       case CFFilteredContentPath:
         return const FilteredContentView();
+      case CFAppSearchPath:
+        return AppSignatureSearchView(
+          args: args,
+          next: next,
+        );
       default:
         return Center();
     }
@@ -45,3 +47,5 @@ class CFFilterCategoryPath extends ContentFilterPath with ReturnablePath {
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
 class CFFilteredContentPath extends ContentFilterPath {}
+
+class CFAppSearchPath extends ContentFilterPath {}

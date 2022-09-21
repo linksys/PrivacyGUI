@@ -78,7 +78,6 @@ class AppIconManager {
 
 
   Future<Uint8List> getIconByte(String appId, {bool force = false}) async {
-    await Future.delayed(Duration(seconds: 3));
     if (!force && _iconCache.containsKey(appId)) {
       logger.d('found app icon on cache! $appId');
       return Uint8List.fromList(image_util.encodePng(_iconCache[appId]!));

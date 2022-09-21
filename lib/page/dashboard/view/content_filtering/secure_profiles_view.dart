@@ -29,7 +29,6 @@ class _ContentFilteringPresetsViewState
   List<CFSecureProfile> _presets = const [];
   late final Profile? _profile;
   late CFSecureProfile? _preset;
-  final TextEditingController _controller = TextEditingController();
   bool isLoading = false;
 
   @override
@@ -96,7 +95,7 @@ class _ContentFilteringPresetsViewState
                 box36(),
                 InkWell(
                   onTap: () {
-                    // TODO go to search view
+                    NavigationCubit.of(context).push(CFAppSearchPath());
                   },
                   child: Container(
                     decoration: BoxDecoration(color: MoabColor.dashboardTileBackground),
