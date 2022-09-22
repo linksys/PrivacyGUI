@@ -111,19 +111,19 @@ class SecurityProfileManager {
         .where((element) => element.target == 'application')
         .map((e) {
           final field =
-              e.expression.field == 'applicationId' ? 'id' : e.expression.field;
+              e.expression.field == 'applicationId' ? 'id' : e.expression.field; // use id instead the applicationId
           final value = e.expression.value;
           final rawApps = appSignatures
               .map((e) => e.toJson())
               .where((element) => element[field].toString().contains(value))
               .map((e) => AppSignature.fromJson(e))
               .toList();
-          final name = e.expression.field == 'applicationId'
-              ? rawApps.first.name
-              : value;
           if (rawApps.isEmpty) {
             return null;
           }
+          final name = e.expression.field == 'applicationId'
+              ? rawApps.first.name
+              : value;
           logger.d('raw apps: ${rawApps.length}');
           String appIcon;
           appIcon = rawApps

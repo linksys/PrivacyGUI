@@ -371,9 +371,12 @@ class CFSecureCategory extends Equatable {
     if (apps.isEmpty) {
       return FilterStatus.notAllowed;
     }
+    if (status == FilterStatus.force) {
+      return FilterStatus.force;
+    }
     return apps.fold<FilterStatus>(
         apps[0].status == FilterStatus.force ? FilterStatus.notAllowed : apps[0].status,
-            (value, element) => (value != FilterStatus.force && value != element.status) ? FilterStatus.someAllowed : value);
+            (value, element) => (element.status != FilterStatus.force && value != element.status) ? FilterStatus.someAllowed : value);
   }
 
   static FilterStatus switchStatus(FilterStatus current) {
@@ -391,8 +394,7 @@ class CFSecureCategory extends Equatable {
       return FilterStatus.force;
     } else if (status == 'Allow') {
       return FilterStatus.allowed;
-    } else if (status == 'Not Allow') {
-      // TODO TBD
+    } else if (status == 'NotAllow') {
       return FilterStatus.notAllowed;
     } else {
       return FilterStatus.notAllowed;

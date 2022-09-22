@@ -65,12 +65,6 @@ class _ContentFilteringCategoryViewState
                 _category.name,
                 style: Theme.of(context).textTheme.headline2,
               )),
-              createStatusButton(context, _category.status, onPressed: () {
-                setState(() {
-                  _category = _category.copyWith(
-                      status: CFSecureCategory.switchStatus(_category.status));
-                });
-              })
             ],
           ),
           box16(),
@@ -86,7 +80,7 @@ class _ContentFilteringCategoryViewState
                 children: [
                   Expanded(
                       child: Text(
-                    'Websites(1,000+)',
+                    'Websites',
                     style: Theme.of(context).textTheme.headline2,
                   )),
                   PopupButton(
@@ -151,7 +145,7 @@ class _ContentFilteringCategoryViewState
             children: [
               Expanded(
                   child: Text(
-                'App(${_category.apps.length})',
+                'App (${_category.apps.length})',
                 style: Theme.of(context).textTheme.headline2,
               )),
               IconButton(onPressed: () {
