@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
@@ -11,7 +11,6 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/base_components/button/simple_text_button.dart';
-import 'package:linksys_moab/bloc/otp/otp_cubit.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -20,6 +19,7 @@ import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:sms_receiver_plugin/sms_receiver_plugin.dart';
 
 class OtpCodeInputView extends ArgumentsStatefulView {
   const OtpCodeInputView({Key? key, super.args, super.next}) : super(key: key);
@@ -30,18 +30,18 @@ class OtpCodeInputView extends ArgumentsStatefulView {
 
 class _OtpCodeInputViewState extends State<OtpCodeInputView> {
   String _errorCode = '';
-
-  static const otpChannel = MethodChannel('com.linksys.native.channel.otp');
+  StreamSubscription? _subscription;
   final TextEditingController _otpController = TextEditingController();
 
   _startListenOtp() async {
     if (Platform.isAndroid) {
-      final message = await otpChannel.invokeMethod('otp');
-      print('receive message: $message');
-      RegExp regex = RegExp(r"(\d{4})");
-      final code = regex.allMatches(message).first.group(0);
-      print('receive code: $code');
-      _otpController.text = code ?? '';
+      _subscription = SmsReceiverPlugin().smsReceiverStream.listen((message) {
+        logger.d('receive message: $message');
+        RegExp regex = RegExp(r"(\d{4})");
+        final code = regex.allMatches(message).first.group(0);
+        logger.d('receive code: $code');
+        _otpController.text = code ?? '';
+      });
     }
   }
 
@@ -51,6 +51,12 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     _startListenOtp();
     final state = context.read<OtpCubit>().state;
     _onInit(state);
+  }
+
+  @override
+  dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 
   @override

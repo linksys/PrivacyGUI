@@ -75,6 +75,8 @@ dependencies:
     path: plugins/universal_link_plugin
   connecting_wifi_plugin:
     path: plugins/connecting_wifi_plugin
+  sms_receiver_plugin:
+    path: plugins/sms_receiver_plugin
 
 dev_dependencies:
   flutter_test:
