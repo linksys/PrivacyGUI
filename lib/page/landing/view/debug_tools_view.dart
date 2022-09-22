@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -7,7 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:linksys_moab/channel/push_notification_channel.dart';
+import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/http/extension_requests/accounts_requests.dart';
@@ -24,7 +23,6 @@ import 'package:linksys_moab/route/route.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class DebugToolsView extends StatefulWidget {
   const DebugToolsView({
@@ -379,10 +377,10 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                     Text('Receive notification: title: $title, body: $msg')));
           });
         } else if (Platform.isIOS) {
-          PushNotificationChannel().grantNotificationAuth().then((value) {
+          IosPushNotificationPlugin().requestAuthorization().then((value) {
             if (value) {
-              _streamSubscription = PushNotificationChannel()
-                  .listenPushNotification()
+              _streamSubscription = IosPushNotificationPlugin()
+                  .pushNotificationStream
                   .listen((event) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text('Receive notification: event: $event')));

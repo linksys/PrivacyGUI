@@ -77,6 +77,8 @@ dependencies:
     path: plugins/connecting_wifi_plugin
   sms_receiver_plugin:
     path: plugins/sms_receiver_plugin
+  ios_push_notification_plugin:
+    path: plugins/ios_push_notification_plugin
 
 dev_dependencies:
   flutter_test:
