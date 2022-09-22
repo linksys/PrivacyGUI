@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/security/bloc.dart';
+import 'package:linksys_moab/bloc/security/event.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
@@ -36,7 +39,7 @@ class SecuritySubscribeView extends StatelessWidget {
             PrimaryButton(
               text: 'Subscribe',
               onPress: () {
-                //TODO: Go to next page
+                context.read<SecurityBloc>().add(SetActiveSubscription());
               },
             ),
             const SizedBox(

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:linksys_moab/bloc/security/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/dashboard/view/dashboard_security_view.dart';
 import 'package:linksys_moab/page/components/chart/BarChartSample1.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/model/security_path.dart';
@@ -69,7 +69,7 @@ class _SecurityCyberThreatViewState extends State<SecurityCyberThreatView> {
     return BasePageView(
       child: BasicLayout(
         header: BasicHeader(
-          title: _getPageTitle(),
+          title: currentType.displayTitle,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,19 +200,6 @@ class _SecurityCyberThreatViewState extends State<SecurityCyberThreatView> {
     );
   }
 
-  String _getPageTitle() {
-    switch(currentType) {
-      case CyberthreatType.virus:
-        return 'Virus';
-      case CyberthreatType.malware:
-        return 'Ransomware & Malware';
-      case CyberthreatType.botnet:
-        return 'Botnet';
-      case CyberthreatType.maliciousWeb:
-        return 'Malicious websites';
-    }
-  }
-
   String _getPageSubtitle() {
     switch(currentType) {
       case CyberthreatType.virus:
@@ -221,7 +208,7 @@ class _SecurityCyberThreatViewState extends State<SecurityCyberThreatView> {
         return 'Ransomware & Malware blocked ${dummyData.length}';
       case CyberthreatType.botnet:
         return 'Botnet blocked ${dummyData.length}';
-      case CyberthreatType.maliciousWeb:
+      case CyberthreatType.website:
         return 'Malicious websites ${dummyData.length}';
     }
   }
@@ -234,7 +221,7 @@ class _SecurityCyberThreatViewState extends State<SecurityCyberThreatView> {
         return 'MALWARE';
       case CyberthreatType.botnet:
         return 'BOTNET';
-      case CyberthreatType.maliciousWeb:
+      case CyberthreatType.website:
         return 'WEBSITE';
     }
   }

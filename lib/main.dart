@@ -14,6 +14,7 @@ import 'package:linksys_moab/bloc/connectivity/cubit.dart';
 import 'package:linksys_moab/bloc/content_filter/cubit.dart';
 import 'package:linksys_moab/bloc/device/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
+import 'package:linksys_moab/bloc/security/bloc.dart';
 import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
@@ -94,6 +95,7 @@ Widget _app() {
       BlocProvider(create: (BuildContext context) => DeviceCubit()),
       BlocProvider(create: (BuildContext context) => AccountCubit(repository: context.read<CloudAccountRepository>())),
       BlocProvider(create: (BuildContext context) => ContentFilterCubit()),
+      BlocProvider(create: (BuildContext context) => SecurityBloc()),
     ], child: const MoabApp()),
   );
 }

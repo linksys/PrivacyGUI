@@ -1,30 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
+import 'package:linksys_moab/bloc/security/bloc.dart';
+import 'package:linksys_moab/bloc/security/state.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/route/model/content_filter_path.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/model/security_path.dart';
 import 'package:linksys_moab/route/_route.dart';
-
-
-
-enum SubscriptionStatus {
-  active(displayTitle: 'Active'),
-  activeTrial(displayTitle: 'Active (trial)'),
-  activeTurnedOff(displayTitle: 'Active (Turned Off)'),
-  expired(displayTitle: 'Expired');
-
-  const SubscriptionStatus({required this.displayTitle});
-
-  final String displayTitle;
-}
-
-enum CyberthreatType {
-  virus, malware, botnet, maliciousWeb
-}
 
 class DashboardSecurityView extends StatefulWidget {
   const DashboardSecurityView({Key? key}) : super(key: key);
@@ -34,22 +17,6 @@ class DashboardSecurityView extends StatefulWidget {
 }
 
 class _DashboardSecurityViewState extends State<DashboardSecurityView> {
-  //TODO: Remove dummy data
-  var subscriptionPrompt = '30 days left on Linksys Secure trial';
-  // var subscriptionPrompt = 'Your Linksys Secure trial expired';
-  // var subscriptionPrompt = '30% off Linksys Secure subscription';
-  var subscriptionStatus = SubscriptionStatus.active;
-  var numOfInspection = 329;
-  Map<String, int> blockedThreats = {
-    'Virus': 3,
-    'Ransomware & Malware': 6,
-    'Botnet': 11,
-    'Malicious websites': 4,
-  };
-  var hasFilterCreated = true;
-  var numOfIncidents = 21;
-  var evaluatedRange = 'This week';
-  var latestUpdateDate = 'Aug 15, 2022';
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +57,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             height: 52,
             color: MoabColor.dashboardBottomBackground,
             child: Text(
-              subscriptionPrompt,
+              _getSubscriptionPromptText(),
               style: Theme.of(context).textTheme.headline3?.copyWith(
                   fontWeight: FontWeight.w500
               ),
@@ -130,7 +97,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
               ),
             ),
             Text(
-              subscriptionStatus.displayTitle,
+              context.read<SecurityBloc>().state.subscriptionStatus.displayTitle,
               style: Theme.of(context)
                   .textTheme
                   .headline2
@@ -142,7 +109,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
           height: 8,
         ),
         Text(
-          evaluatedRange,  //TODO: Remove hard code
+          'This ${context.read<SecurityBloc>().state.evaluatedRange.displayTitle}',
           style: Theme.of(context)
               .textTheme
               .headline3
@@ -155,6 +122,8 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
   Widget _cyberthreatsTile() {
     final screenWidth = MediaQuery.of(context).size.width - (24 * 2);
     final tileHeight = (screenWidth - 14) / 2 / 1.75 * 2 + 14;
+    final status = context.read<SecurityBloc>().state.subscriptionStatus;
+    final numOfInspections = context.read<SecurityBloc>().state.numOfInspection;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -179,7 +148,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
           ),
         ),
         Visibility(
-          visible: blockedThreats.isNotEmpty,
+          visible: context.read<SecurityBloc>().state.hasBlockedThreat,
           replacement: Text(
             'No one has tried any funny business yet, but we are monitoring 24/7',
             style: Theme.of(context).textTheme.headline3?.copyWith(
@@ -197,9 +166,9 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
               physics: const NeverScrollableScrollPhysics(),
               children: [  //TODO: Remove hard code
                 InfoBlockWidget(
-                  count: 3,
-                  text: 'Virus',
-                  isEnabled: subscriptionStatus != SubscriptionStatus.activeTurnedOff,
+                  count: context.read<SecurityBloc>().state.numOfBlockedVirus,
+                  text: CyberthreatType.virus.displayTitle,
+                  isEnabled: status != SubscriptionStatus.activeTurnedOff,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
                       ..args = {'type': CyberthreatType.virus}
@@ -207,9 +176,9 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                   },
                 ),
                 InfoBlockWidget(
-                  count: 6,
-                  text: 'Ransomware & Malware',
-                  isEnabled: subscriptionStatus != SubscriptionStatus.activeTurnedOff,
+                  count: context.read<SecurityBloc>().state.numOfBlockedMalware,
+                  text: CyberthreatType.malware.displayTitle,
+                  isEnabled: status != SubscriptionStatus.activeTurnedOff,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
                       ..args = {'type': CyberthreatType.malware}
@@ -217,9 +186,9 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                   },
                 ),
                 InfoBlockWidget(
-                  count: 11,
-                  text: 'Botnet',
-                  isEnabled: subscriptionStatus != SubscriptionStatus.activeTurnedOff,
+                  count: context.read<SecurityBloc>().state.numOfBlockedBotnet,
+                  text: CyberthreatType.botnet.displayTitle,
+                  isEnabled: status != SubscriptionStatus.activeTurnedOff,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
                       ..args = {'type': CyberthreatType.botnet}
@@ -227,12 +196,12 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                   },
                 ),
                 InfoBlockWidget(
-                  count: 4,
-                  text: 'Malicious websites',
-                  isEnabled: subscriptionStatus != SubscriptionStatus.activeTurnedOff,
+                  count: context.read<SecurityBloc>().state.numOfBlockedWebsite,
+                  text: CyberthreatType.website.displayTitle,
+                  isEnabled: status != SubscriptionStatus.activeTurnedOff,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
-                      ..args = {'type': CyberthreatType.maliciousWeb}
+                      ..args = {'type': CyberthreatType.website}
                     );
                   },
                 ),
@@ -241,12 +210,12 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
           ),
         ),
         Offstage(
-          offstage: !(numOfInspection > 0),
+          offstage: !(numOfInspections > 0),
           child: Column(
             children: [
               box8(),
               Text(
-                '$numOfInspection total inspections performed',
+                '$numOfInspections total inspections performed',
                 style: Theme.of(context).textTheme.headline3?.copyWith(
                   fontWeight: FontWeight.w400
                 ),
@@ -287,9 +256,9 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
         ),
         box36(),
         Visibility(
-          visible: hasFilterCreated,
+          visible: context.read<SecurityBloc>().state.hasFilterCreated,
           child: Visibility(
-            visible: numOfIncidents > 0,
+            visible: (context.read<SecurityBloc>().state.numOfIncidents) > 0,
             child: _incidentsOnProfiles(),
             replacement: Text(
               'No incidents yet',
@@ -306,13 +275,15 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
 
   Widget _incidentsOnProfiles() {
     final _mockProfiles = context.read<ProfilesCubit>().state.profileList;
+    final status = context.read<SecurityBloc>().state.subscriptionStatus;
+    final range = context.read<SecurityBloc>().state.evaluatedRange;
     final double listHeight = _mockProfiles.length * 80;
     return Column(
       children: [
         InfoBlockWidget(
-          count: numOfIncidents,
-          text: 'Blocked content $evaluatedRange',
-          isEnabled: subscriptionStatus != SubscriptionStatus.activeTurnedOff,
+          count: context.read<SecurityBloc>().state.numOfIncidents,
+          text: 'Blocked content this ${range.displayTitle}',
+          isEnabled: status != SubscriptionStatus.activeTurnedOff,
           isVertical: false,
           height: 60,
         ),
@@ -390,13 +361,31 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
           ),
         ),
         Text(
-          'Last updated on $latestUpdateDate',
+          'Last updated on ${context.read<SecurityBloc>().state.latestUpdateDate}',
           style: Theme.of(context).textTheme.headline4?.copyWith(
               fontWeight: FontWeight.w500
           ),
         ),
       ],
     );
+  }
+
+  String _getSubscriptionPromptText() {
+    switch(context.read<SecurityBloc>().state.subscriptionStatus) {
+      case SubscriptionStatus.unsubscribed:
+        return 'Security is unsubscribed (TODO)';
+      case SubscriptionStatus.active:
+        return 'Security subscription is active (TODO)';
+      case SubscriptionStatus.activeTrial:
+        final numOfDays = context.read<SecurityBloc>().state.remainingTrialDays;
+        return '$numOfDays days left on Linksys Secure trial';
+      case SubscriptionStatus.activeTurnedOff:
+        return 'Security subscription is active but turned off (TODO)';
+      case SubscriptionStatus.expired:
+        return 'Subscription canceled';
+      case SubscriptionStatus.trialExpired:
+        return 'Your Linksys Secure trial expired';
+    }
   }
 }
 
