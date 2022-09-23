@@ -12,7 +12,9 @@ function buildSimulatorApp() {
     version=$1
     echo "start building simulator app $version"
     flutter build ios --simulator;
-    mv "./build/ios/iphonesimulator/Runner.app" "./build/ios/ipa/moab_app_simulator.app"
+    mv "./build/ios/iphonesimulator/Runner.app" "./build/ios/iphonesimulator/moab_app_simulator.app"
+    zip -r "./build/ios/iphonesimulator/moab_app_simulator.app.zip" ./*
+    mv "./build/ios/iphonesimulator/moab_app_simulator.app.zip" "./build/ios/ipa/moab_app_simulator.app.zip"
 }
 
 function copyInHouseAssets() {
@@ -45,7 +47,9 @@ if ! buildInHouse "$version"; then
   echo InHouse "$version" build failed
   exit 1
 fi
-if ! buildSimulatorApp "$version"; then
-  echo Simulator app "$version" build failed
-  exit 1
+if [ "${Build Simulator App}" == "true" ] ; then
+  if ! buildSimulatorApp "$version"; then
+    echo Simulator app "$version" build failed
+    exit 1
+  fi
 fi
