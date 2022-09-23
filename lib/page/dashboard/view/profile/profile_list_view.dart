@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/content_filter/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/model/group_profile.dart';
+import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/content_filter_path.dart';
@@ -93,7 +96,7 @@ class _ProfileListViewState extends State<ProfileListView> {
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500));
   }
 
-  Widget profileList(BuildContext context, List<Profile> list) {
+  Widget profileList(BuildContext context, List<GroupProfile> list) {
     return Column(
       children: [
         ...list.map((item) {
@@ -126,7 +129,7 @@ class _ProfileListViewState extends State<ProfileListView> {
     );
   }
 
-  _onProfileClick(Profile profile) {
+  _onProfileClick(GroupProfile profile) {
     BasePath path = ProfileOverviewPath();
     if (_category == PService.internetSchedule) {
       path = InternetScheduleOverviewPath();
@@ -135,14 +138,15 @@ class _ProfileListViewState extends State<ProfileListView> {
       if (hasData) {
         path = ContentFilteringOverviewPath();
       } else {
-        path = CFPresetsPath();
+        context.read<ContentFilterCubit>().selectSecureProfile(null);
+        path = CFPresetsPath()..args = {'profileId': profile.id};
       }
     }
-    context.read<ProfilesCubit>().selectProfile(profile.copyWith());
+    context.read<ProfilesCubit>().selectProfile(profile);
     NavigationCubit.of(context).push(path);
   }
 
-  Widget _profileValue(Profile profile) {
+  Widget _profileValue(GroupProfile profile) {
     return Text(profile.serviceOverallStatus(context, _category),
         style: TextStyle(
             fontSize: 13,

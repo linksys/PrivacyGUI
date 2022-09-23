@@ -1,57 +1,42 @@
 import 'dart:math';
 
-import 'package:linksys_moab/bloc/profiles/state.dart';
+import 'package:linksys_moab/model/group_profile.dart';
+import 'package:linksys_moab/model/profile_service_data.dart';
 
 final mockProfiles = [
-  Profile(
+  GroupProfile(
     id: 'PROFILE_ID_0001',
     name: 'Eric',
     icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-    enabledServices: const [
-      PService.contentFilter,
-      PService.internetSchedule
-    ],
     devices: [
       PDevice(name: 'iphone 20'),
       PDevice(name: 'Samsung Galaxy S87')
     ],
   ),
-  Profile(
+  GroupProfile(
     id: 'PROFILE_ID_0002',
     name: 'Timmy',
     icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-    enabledServices: const [],
   ),
-  Profile(
+  GroupProfile(
     id: 'PROFILE_ID_0003',
     name: 'Mandy',
     icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-    enabledServices: const [PService.internetSchedule],
   ),
-  Profile(
+  GroupProfile(
     id: 'PROFILE_ID_0004',
     name: 'Dad',
     icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-    enabledServices: const [
-      PService.contentFilter,
-    ],
   ),
-  Profile(
+  GroupProfile(
     id: 'PROFILE_ID_0005',
     name: 'Peter',
     icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-    enabledServices: const [
-      PService.contentFilter,
-    ],
   ),
-  Profile(
+  GroupProfile(
     id: 'PROFILE_ID_0006',
     name: 'Austin',
     icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-    enabledServices: const [
-      PService.contentFilter,
-      PService.internetSchedule
-    ],
   ),
 ];
 

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/content_filter/cubit.dart';
+import 'package:linksys_moab/bloc/content_filter/state.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
-import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/model/group_profile.dart';
+import 'package:linksys_moab/model/secure_profile.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
@@ -12,6 +15,7 @@ import 'package:linksys_moab/route/model/content_filter_path.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
+import 'package:linksys_moab/util/logger.dart';
 
 import 'component.dart';
 
@@ -27,20 +31,21 @@ class ContentFilteringPresetsView extends ArgumentsStatefulView {
 class _ContentFilteringPresetsViewState
     extends State<ContentFilteringPresetsView> {
   List<CFSecureProfile> _presets = const [];
-  late final Profile? _profile;
-  late CFSecureProfile? _preset;
+  late final String? _profileId;
   bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _profile = context.read<ProfilesCubit>().state.selectedProfile;
+    _profileId = widget.args['profileId'];
     SecurityProfileManager.instance().fetchDefaultPresets().then((value) {
       setState(() {
         _presets = value;
-        _preset = widget.args['preset'] as CFSecureProfile? ?? _presets[1];
         isLoading = false;
       });
+      if (context.read<ContentFilterCubit>().state.selectedSecureProfile == null) {
+        context.read<ContentFilterCubit>().selectSecureProfile(_presets[1]);
+      }
     });
     setState(() {
       isLoading = true;
@@ -49,76 +54,96 @@ class _ContentFilteringPresetsViewState
 
   @override
   Widget build(BuildContext context) {
-    return isLoading ? FullScreenSpinner(text: getAppLocalizations(context).processing,) : BasePageView.onDashboardSecondary(
-      scrollable: true,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(getAppLocalizations(context).content_filter_presets_title,
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-        leading: BackButton(onPressed: () {
-          NavigationCubit.of(context).pop();
-        }),
-        actions: [
-          Offstage(
-            offstage: _preset == null,
-            child: TextButton(
-                onPressed: _preset == null
-                    ? null
-                    : () {
-                        context
-                            .read<ProfilesCubit>()
-                            .updateContentFilterDetails(_profile?.id ?? '',
-                                _preset!)
-                            .then((value) => NavigationCubit.of(context).pop());
+    return isLoading
+        ? FullScreenSpinner(
+            text: getAppLocalizations(context).processing,
+          )
+        : BlocBuilder<ContentFilterCubit, ContentFilterState>(
+            builder: (context, state) {
+            return BasePageView.onDashboardSecondary(
+              scrollable: true,
+              appBar: AppBar(
+                automaticallyImplyLeading: false,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                title: Text(
+                    getAppLocalizations(context).content_filter_presets_title,
+                    style:
+                        TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                leading: BackButton(onPressed: () {
+                  NavigationCubit.of(context).pop();
+                }),
+                actions: [
+                  TextButton(
+                      onPressed: () {
+                        final profileId = _profileId;
+                        if (profileId != null) {
+                          context
+                              .read<ProfilesCubit>()
+                              .updateContentFilterDetails(
+                                  profileId, state.selectedSecureProfile!)
+                              .then(
+                                  (value) => NavigationCubit.of(context).pop());
+                        } else {
+                          logger.e('No profile id');
+                        }
                       },
-                child: const Text('Save',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: MoabColor.textButtonBlue))),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          box16(),
-          _presetsSelector(),
-          box36(),
-          Offstage(
-            offstage: _preset == null,
-            child: Column(
-              children: [
-                Text(_preset?.description ?? ''),
-                box36(),
-                InkWell(
-                  onTap: () {
-                    NavigationCubit.of(context).push(CFAppSearchPath());
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(color: MoabColor.dashboardTileBackground),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(children: [Icon(Icons.search), Text('Search by app name')],),
+                      child: const Text('Save',
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: MoabColor.textButtonBlue))),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  box16(),
+                  _presetsSelector(state),
+                  box36(),
+                  Offstage(
+                    offstage: state.selectedSecureProfile == null,
+                    child: Column(
+                      children: [
+                        Text(state.selectedSecureProfile?.description ?? ''),
+                        box36(),
+                        InkWell(
+                          onTap: () {
+                            NavigationCubit.of(context).push(CFAppSearchPath());
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                                color: MoabColor.dashboardTileBackground),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.search),
+                                  Text('Search by app name')
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        box36(),
+                        _filterList(state),
+                      ],
                     ),
                   ),
-                ),
-                box36(),
-                _filterList(),
-              ],
-            ),
-          ),
-          box36(),
-          SimpleTextButton(text: 'Send feedback', onPressed: () {}, padding: EdgeInsets.zero,),
-          Text('Suggest a category or app'),
-        ],
-      ),
-    );
+                  box36(),
+                  SimpleTextButton(
+                    text: 'Send feedback',
+                    onPressed: () {},
+                    padding: EdgeInsets.zero,
+                  ),
+                  Text('Suggest a category or app'),
+                ],
+              ),
+            );
+          });
   }
 
-  Widget _presetsSelector() {
+  Widget _presetsSelector(ContentFilterState state) {
     return SizedBox(
       width: double.infinity,
       height: 80,
@@ -127,23 +152,30 @@ class _ContentFilteringPresetsViewState
           itemBuilder: (context, index) => InkWell(
               onTap: () {
                 setState(() {
-                  int prevIndex = _presets.indexWhere(
-                      (element) => element.id == _preset!.id);
+                  int prevIndex = _presets.indexWhere((element) =>
+                      element.id == state.selectedSecureProfile!.id);
                   if (prevIndex != -1) {
                     final latest = _presets
-                        .firstWhere(
-                            (element) => element.id == _preset!.id)
-                        .copyWith(securityCategories: _preset!.securityCategories);
+                        .firstWhere((element) =>
+                            element.id == state.selectedSecureProfile!.id)
+                        .copyWith(
+                            securityCategories:
+                                state.selectedSecureProfile!.securityCategories);
                     _presets[prevIndex] = latest;
                   }
-                  if (_preset == _presets[index]) {
-                    _preset = null;
-                  } else {
-                    _preset = _presets[index];
+                  // if (state.selectedSecurePreset == _presets[index]) {
+                  //   state.selectedSecurePreset = null;
+                  // } else {
+                  //   state.selectedSecurePreset = _presets[index];
+                  // }
+                  if (state.selectedSecureProfile != _presets[index]) {
+                    context
+                        .read<ContentFilterCubit>()
+                        .selectSecureProfile(_presets[index]);
                   }
                 });
               },
-              child: _presetItem(_presets[index], true)),
+              child: _presetItem(state, _presets[index], true)),
           separatorBuilder: (_, __) => SizedBox(
             width: 16,
           ),
@@ -155,7 +187,8 @@ class _ContentFilteringPresetsViewState
     );
   }
 
-  Widget _presetItem(CFSecureProfile preset, bool isSelected) {
+  Widget _presetItem(
+      ContentFilterState state, CFSecureProfile preset, bool isSelected) {
     return Column(
       children: [
         Hero(
@@ -164,7 +197,7 @@ class _ContentFilteringPresetsViewState
             decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                    color: _preset?.id == preset.id
+                    color: state.selectedSecureProfile?.id == preset.id
                         ? Colors.white
                         : SecurityProfileManager.colorMapping(preset.id),
                     width: 3)),
@@ -183,25 +216,27 @@ class _ContentFilteringPresetsViewState
     );
   }
 
-  Widget _filterList() {
+  Widget _filterList(ContentFilterState state) {
     return Column(
       children: [
-        ...?_preset?.securityCategories.map((e) => InkWell(
+        ...?state.selectedSecureProfile?.securityCategories.map((e) => InkWell(
             onTap: () async {
               final newCategory = await showPopup(
                       context: context,
                       config: CFFilterCategoryPath()..args = {'selected': e})
                   as CFSecureCategory;
-              if (newCategory != null) {
-                final index = _preset?.securityCategories.indexOf(e) ?? -1;
-                if (index != -1) {
-                  final list =
-                      List<CFSecureCategory>.from(_preset?.securityCategories ?? []);
-                  setState(() {
-                    list.replaceRange(index, index + 1, [newCategory]);
-                    _preset = _preset?.copyWith(securityCategories: list);
-                  });
-                }
+              final index =
+                  state.selectedSecureProfile?.securityCategories.indexOf(e) ??
+                      -1;
+              if (index != -1) {
+                final list = List<CFSecureCategory>.from(
+                    state.selectedSecureProfile?.securityCategories ?? []);
+                setState(() {
+                  list.replaceRange(index, index + 1, [newCategory]);
+                  context.read<ContentFilterCubit>().selectSecureProfile(state
+                      .selectedSecureProfile!
+                      .copyWith(securityCategories: list));
+                });
               }
             },
             child: FilterItem(
@@ -211,10 +246,14 @@ class _ContentFilteringPresetsViewState
       ],
     );
   }
+
   FilterStatus _checkStatus(CFSecureCategory category) {
     return category.apps.fold<FilterStatus>(
         category.status,
-            (value, element) => (value != FilterStatus.force && value != element.status) ? FilterStatus.someAllowed : value);
+        (value, element) =>
+            (value != FilterStatus.force && value != element.status)
+                ? FilterStatus.someAllowed
+                : value);
   }
 }
 

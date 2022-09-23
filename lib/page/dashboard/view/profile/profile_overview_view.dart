@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
+import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -117,7 +118,7 @@ class _ProfileOverviewViewState extends State<ProfileOverviewView> {
 
 class ProfileHeader extends StatelessWidget {
   const ProfileHeader({Key? key, required this.profile}) : super(key: key);
-  final Profile profile;
+  final GroupProfile profile;
 
   @override
   Widget build(BuildContext context) {

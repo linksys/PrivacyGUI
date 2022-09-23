@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/bloc/profiles/state.dart';
+import 'package:linksys_moab/model/group_profile.dart';
 
 Widget createStatusButton(BuildContext context, FilterStatus status,
     {Function()? onPressed}) {

@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:image/image.dart';
-import 'package:linksys_moab/security/app_signature.dart';
-import 'package:linksys_moab/security/cloud_preset.dart';
-import 'package:linksys_moab/security/web_filter.dart';
+import 'package:linksys_moab/model/app_signature.dart';
+import 'package:linksys_moab/model/cloud_preset.dart';
+import 'package:linksys_moab/model/web_filter.dart';
 import 'package:test/test.dart';
 
 // TODO revise it

@@ -2,8 +2,9 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/design/colors.dart';
+import 'package:linksys_moab/model/group_profile.dart';
+import 'package:linksys_moab/model/secure_profile.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/customs/app_icon_view.dart';
 import 'package:linksys_moab/page/components/customs/popup_button.dart';

@@ -11,7 +11,7 @@ class ContentFilterPath extends DashboardPath {
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
       case ContentFilteringOverviewPath:
-        return ContentFilteringOverviewView(
+        return ContentFilterOverviewView(
           args: args,
           next: next,
         );

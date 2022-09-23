@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/bloc/profiles/_profiles.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/content_filter/cubit.dart';
+import 'package:linksys_moab/model/app_signature.dart';
+import 'package:linksys_moab/model/group_profile.dart';
+import 'package:linksys_moab/model/secure_profile.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/customs/app_icon_view.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/security/app_signature.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
 
@@ -114,11 +117,16 @@ class _AppSignatureSearchViewState extends State<AppSignatureSearchView> {
             children: [
               Text('Results'),
               ..._searchResult
-                  .map((e) => CFAppSignature(
-                      name: e.name,
-                      icon: e.id,
-                      category: e.categoryName,
-                      status: FilterStatus.notAllowed))
+                  .map(
+                    (e) => CFAppSignature(
+                        name: e.name,
+                        icon: e.id,
+                        category: e.categoryName,
+                        status: context
+                            .read<ContentFilterCubit>()
+                            .checkSearchAppSignatureStatus(e.id),
+                        raw: [e]),
+                  )
                   .map((e) => ListTile(
                       leading: AppIconView(
                         appId: e.icon,
@@ -127,6 +135,10 @@ class _AppSignatureSearchViewState extends State<AppSignatureSearchView> {
                       subtitle: Text(e.category),
                       trailing:
                           createStatusButton(context, e.status, onPressed: () {
+                        context.read<ContentFilterCubit>().updateSearchAppSignature(
+                            e.copyWith(
+                                status:
+                                    CFSecureCategory.switchStatus(e.status)));
                         setState(() {});
                       })))
             ],

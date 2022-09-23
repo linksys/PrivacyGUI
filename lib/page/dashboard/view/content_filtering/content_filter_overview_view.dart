@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:linksys_moab/bloc/profiles/cubit.dart';
-import 'package:linksys_moab/bloc/profiles/state.dart';
+import 'package:linksys_moab/bloc/content_filter/cubit.dart';
+import 'package:linksys_moab/bloc/profiles/_profiles.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/model/group_profile.dart';
+import 'package:linksys_moab/model/profile_service_data.dart';
+import 'package:linksys_moab/model/secure_profile.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
@@ -14,18 +17,18 @@ import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 
 
-class ContentFilteringOverviewView extends ArgumentsStatefulView {
-  const ContentFilteringOverviewView({Key? key, super.args, super.next})
+class ContentFilterOverviewView extends ArgumentsStatefulView {
+  const ContentFilterOverviewView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<ContentFilteringOverviewView> createState() =>
-      _ContentFilteringProfileSettingsViewState();
+  State<ContentFilterOverviewView> createState() =>
+      _ContentFilterOverviewViewState();
 }
 
-class _ContentFilteringProfileSettingsViewState
-    extends State<ContentFilteringOverviewView> {
-
+class _ContentFilterOverviewViewState
+    extends State<ContentFilterOverviewView> {
+  ContentFilterData? _data;
   @override
   void initState() {
     super.initState();
@@ -34,9 +37,7 @@ class _ContentFilteringProfileSettingsViewState
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
-      final profile = state.selectedProfile;
-      final ContentFilterData? data = state.selectedProfile
-          ?.serviceDetails[PService.contentFilter] as ContentFilterData?;
+      _data = context.read<ProfilesCubit>().state.selectedProfile?.serviceDetails[PService.contentFilter] as ContentFilterData?;
       return BasePageView.onDashboardSecondary(
         appBar: AppBar(
           automaticallyImplyLeading: false,
@@ -51,8 +52,8 @@ class _ContentFilteringProfileSettingsViewState
         child: Column(
           children: [
             box16(),
-            _contentFilterToggle(data?.isEnabled ?? false, data?.profileId ?? ''),
-            _contentFilterLevel(data),
+            _contentFilterToggle(_data?.isEnabled ?? false, _data?.profileId ?? ''),
+            _contentFilterLevel(_data),
           ],
         ),
       );
@@ -68,7 +69,7 @@ class _ContentFilteringProfileSettingsViewState
   }
 
   Widget _contentFilterLevel(ContentFilterData? data) {
-    CFSecureProfile? _preset = data!.secureProfile;
+    CFSecureProfile? _preset = data?.secureProfile;
 
     return SettingTile(
       title: Text(getAppLocalizations(context).content_filter_level_title),
@@ -82,7 +83,8 @@ class _ContentFilteringProfileSettingsViewState
               color: SecurityProfileManager.colorMapping(_preset.id),
             ),
       onPress: () {
-        NavigationCubit.of(context).push(CFPresetsPath()..args = {'preset': _preset.copyWith()});
+        context.read<ContentFilterCubit>().selectSecureProfile(_preset);
+        NavigationCubit.of(context).push(CFPresetsPath()..args = {'profileId': data?.profileId});
       },
     );
   }

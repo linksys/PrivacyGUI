@@ -3,15 +3,16 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/services.dart';
-import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/design/colors.dart';
-import 'package:linksys_moab/security/app_signature.dart';
+import 'package:linksys_moab/model/app_signature.dart';
+import 'package:linksys_moab/model/group_profile.dart';
+import 'package:linksys_moab/model/secure_profile.dart';
 import 'package:linksys_moab/util/logger.dart';
 import '../util/storage.dart';
 import 'app_icon_manager.dart';
-import 'cloud_preset.dart';
-import 'web_filter.dart';
+import '../model/cloud_preset.dart';
+import '../model/web_filter.dart';
 
 class SecurityProfileManager {
   factory SecurityProfileManager() {
