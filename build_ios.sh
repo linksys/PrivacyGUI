@@ -47,9 +47,7 @@ if ! buildInHouse "$version"; then
   echo InHouse "$version" build failed
   exit 1
 fi
-if [ "${Build Simulator App}" == "true" ] ; then
-  if ! buildSimulatorApp "$version"; then
+if ! buildSimulatorApp "$version"; then
     echo Simulator app "$version" build failed
     exit 1
-  fi
 fi
