@@ -15,7 +15,6 @@ import 'package:linksys_moab/route/_route.dart';
 
 import 'package:linksys_moab/util/analytics.dart';
 import 'package:linksys_moab/util/logger.dart';
-import 'package:linksys_moab/route/model/model.dart';
 import 'package:universal_link_plugin/universal_link_plugin.dart';
 
 import '../page/dashboard/view/_view.dart';
