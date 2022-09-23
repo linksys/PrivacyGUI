@@ -21,8 +21,8 @@ const countryCodeFileName = 'country-codes.json';
 const webFilteringFileName = 'web-filters.json';
 const securityCategoryPresetsFileName = 'security-category-presets.json';
 const appSignaturesFileName = 'app-signatures.json';
-// const profilePresetsFilename = 'profile-presets.json';
-const profilePresetsFilename = 'profile-presets-temp.json';
+const profilePresetsFilename = 'profile-presets.json';
+// const profilePresetsFilename = 'profile-presets-temp.json';
 
 // Cloud config url
 String get cloudConfigUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$configFileName';
