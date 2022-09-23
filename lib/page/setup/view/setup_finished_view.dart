@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/setup/bloc.dart';
 import 'package:linksys_moab/bloc/setup/state.dart';
@@ -11,12 +12,10 @@ import 'package:linksys_moab/page/components/base_components/button/primary_butt
 import 'package:linksys_moab/page/components/base_components/text/description_text.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/route.dart';
-import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/_route.dart';
 
-import '../../../bloc/auth/state.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 
 class SetupFinishedView extends ArgumentsStatelessView {
   SetupFinishedView({Key? key, super.args}) : super(key: key);
@@ -69,40 +68,35 @@ class SetupFinishedView extends ArgumentsStatelessView {
             DescriptionText(
                 text: getAppLocalizations(context).wifi_ready_view_login_info),
             const SizedBox(height: 8),
-            BlocBuilder<AuthBloc, AuthState>(buildWhen: (previous, current) {
-              if (previous is AuthCloudLoginState &&
-                  current is AuthCloudLoginState) {
-                return previous.accountInfo.username !=
-                    current.accountInfo.username;
-              } else if (previous is AuthLocalLoginState &&
-                  current is AuthLocalLoginState) {
-                return previous.localLoginInfo.routerPassword !=
-                    current.localLoginInfo.routerPassword;
-              } else {
-                return false;
-              }
-            }, builder: (context, state) {
-              if (state is AuthCloudLoginState) {
+            // TODO handle local login
+            FutureBuilder<void>(
+              future: context.read<AccountCubit>().fetchAccount(),
+              builder: (context, snapshot) {
                 return infoCard(
                     context,
                     portraitIcon,
                     getAppLocalizations(context).linksys_account,
-                    state.accountInfo.username);
-              } else if (state is AuthLocalLoginState) {
-                return infoCard(context, portraitIcon, "router password",
-                    state.localLoginInfo.routerPassword);
-              } else {
-                return const Divider(height: 0);
-              }
-            }),
+                    context.read<AccountCubit>().state.username);
+                // if (state is AuthCloudLoginState) {
+                //   return infoCard(
+                //       context,
+                //       portraitIcon,
+                //       getAppLocalizations(context).linksys_account,
+                //       state.accountInfo.username);
+                // } else if (state is AuthLocalLoginState) {
+                //   return infoCard(context, portraitIcon, "router password",
+                //       state.localLoginInfo.routerPassword);
+                // } else {
+                //   return const Divider(height: 0);
+                // }
+              },
+            ),
           ],
         ),
         footer: PrimaryButton(
           text: getAppLocalizations(context).go_to_dashboard,
           onPress: () {
-            // TODO refactor after create account API changed
-            context.read<AuthBloc>().checkCertValidation().then((value) =>
-                NavigationCubit.of(context).push(PrepareDashboardPath()));
+            NavigationCubit.of(context).push(PrepareDashboardPath());
           },
         ),
         alignment: CrossAxisAlignment.start,

@@ -27,15 +27,8 @@ class OnCreateAccount extends AuthEvent {
 class Unauthorized extends AuthEvent {}
 
 class Authorized extends AuthEvent {
-  Authorized(
-      {required this.accountInfo,
-      required this.publicKey,
-      required this.privateKey,
-      this.isDuringSetup = false});
+  Authorized({this.isDuringSetup = false});
 
-  final AccountInfo accountInfo;
-  final String publicKey;
-  final String privateKey;
   final bool isDuringSetup;
 }
 
@@ -68,6 +61,8 @@ class SetEnableBiometrics extends AuthEvent {
 
   final bool enableBiometrics;
 }
+
+class OnRequestSession extends AuthEvent {}
 
 class CloudLogin extends AuthEvent {}
 

@@ -28,3 +28,10 @@ class SetWIFISSIDAndPassword extends SetupEvent {
   List<Object> get props => [ssid, password];
 }
 
+class SetAccountInfo extends SetupEvent {
+
+  const SetAccountInfo({required this.accountInfo});
+
+  final AccountInfo accountInfo;
+}
+

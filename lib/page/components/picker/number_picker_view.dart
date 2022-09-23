@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -121,8 +120,6 @@ class _NumberPickerViewState extends State<NumberPickerView> {
     ]);
   }
 }
-
-typedef ValueChanged<T> = void Function(T value);
 
 class AndroidPicker extends StatefulWidget {
   AndroidPicker(

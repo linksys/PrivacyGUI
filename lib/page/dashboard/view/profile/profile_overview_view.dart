@@ -5,18 +5,12 @@ import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
-import 'package:linksys_moab/page/components/customs/customs.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
-import 'package:linksys_moab/route/model/dashboard_path.dart';
+import 'package:linksys_moab/route/model/profile_group_path.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
 
-import '../../../../design/colors.dart';
-import '../../../../localization/localization_hook.dart';
 import '../../../components/views/arguments_view.dart';
-import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';
 
 class ProfileOverviewView extends ArgumentsStatefulView {
   const ProfileOverviewView({Key? key, super.args, super.next})

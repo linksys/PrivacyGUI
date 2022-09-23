@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:linksys_moab/page/otp_flow/otp_flow.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/page/otp_flow/view/_view.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 
 import 'base_path.dart';
 

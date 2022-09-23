@@ -10,12 +10,15 @@ import 'package:linksys_moab/bloc/connectivity/connectivity_info.dart';
 import 'package:linksys_moab/bloc/connectivity/cubit.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_bottom_tab_container.dart';
 import 'package:linksys_moab/route/moab_page.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:linksys_moab/util/analytics.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/route/model/model.dart';
 import 'package:universal_link_plugin/universal_link_plugin.dart';
 
+import '../page/dashboard/view/_view.dart';
 
 class MoabRouterDelegate extends RouterDelegate<BasePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<BasePath> {

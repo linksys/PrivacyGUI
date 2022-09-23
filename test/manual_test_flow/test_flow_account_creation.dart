@@ -10,7 +10,7 @@ import 'package:test/test.dart';
 import '../dev_testable_client.dart';
 
 void main() {
-  const username = 'peter.jhong@linksys.com';
+  const username = 'austin.chang.chia.hao@gmail.com';
   String token = '';
 
   const appId = 'ee7652e0-9a25-4ee5-9974-944179415be0';

@@ -7,11 +7,12 @@ import 'package:linksys_moab/page/components/base_components/text/description_te
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_moab/page/setup/view/place_node_tips_view.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 
 import '../../components/base_components/button/primary_button.dart';
 import '../../components/layouts/basic_header.dart';
-import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 
 class PlaceNodeView extends StatelessWidget {
   var isAddOnNodes;

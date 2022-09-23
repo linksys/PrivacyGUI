@@ -5,6 +5,7 @@ import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/route/model/profile_group_path.dart';
 
 import '../../../../design/colors.dart';
 import '../../../../localization/localization_hook.dart';
@@ -67,7 +68,7 @@ class _ProfileEditNameAvatarViewState extends State<ProfileEditNameAvatarView> {
                 width: 92,
                 height: 92,
                 child: Image.asset(
-                  _iconPath ?? '',
+                  _iconPath,
                   width: 81,
                   height: 81,
                 ),

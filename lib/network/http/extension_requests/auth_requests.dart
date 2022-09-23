@@ -68,6 +68,17 @@ extension MoabAuthRequests on MoabHttpClient {
         body: jsonEncode({'otp': code}));
   }
 
+  Future<Response> authChallengeVerifyAccepted(
+      {required String token, required String code}) async {
+    final url =
+    combineUrl(endpointPutVerificationAccept, args: {varVerifyToken: token});
+    final header = defaultHeader;
+    // TODO For the moment, the sequence and the type won't be changed
+    return this.put(Uri.parse(url),
+        headers: header,
+        body: jsonEncode({'otp': code}));
+  }
+
   ///
   /// * 200 - {"id":"82248d9d-50a7-4e35-822c-e07ed02d8063","username":"austin.chang@linksys.com","usernames":["austin.chang@linksys.com"],"status":"ACTIVE","type":"NORMAL","authenticationMode":"PASSWORD","createdAt":"2022-07-13T09:37:01.665063052Z","updatedAt":"2022-07-13T09:37:01.665063052Z"}
   ///
@@ -126,6 +137,24 @@ extension MoabAuthRequests on MoabHttpClient {
     final header = defaultHeader..addAll({moabTaskSecretKey: secret});
 
     return this.get(Uri.parse(url), headers: header);
+  }
+
+  Future<Response> extendCertificates(String certId, String appId, String appSecret){
+
+    final url = combineUrl(endpointPostCertExtensions, args: {varCertificateId: certId});
+    final header = defaultHeader
+      ..addAll({moabAppIdKey: appId, moabAppSecretKey: appSecret});
+
+    return this.post(Uri.parse(url), headers: header,);
+  }
+
+  Future<Response> requestAuthSession(String certId, String appId, String appSecret){
+
+    final url = combineUrl(endpointPostCertSessions, args: {varCertificateId: certId});
+    final header = defaultHeader
+      ..addAll({moabAppIdKey: appId, moabAppSecretKey: appSecret});
+
+    return this.post(Uri.parse(url), headers: header,);
   }
 
   Future<Response> fetchRegionCodes() {

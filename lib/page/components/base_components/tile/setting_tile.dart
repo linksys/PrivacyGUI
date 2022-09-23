@@ -9,25 +9,21 @@ class SettingTile extends StatelessWidget {
       {Key? key,
         required this.title,
         required this.value,
-        this.onPress,
-        this.space = 16})
+        this.onPress,})
       : super(key: key);
 
   final Widget title;
   final Widget value;
   final VoidCallback? onPress;
-  final double space;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        SizedBox(
-          height: space,
-        ),
         InkWell(
           onTap: onPress,
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(child: title),
               value,
@@ -41,58 +37,96 @@ class SettingTile extends StatelessWidget {
   }
 }
 
-class SettingTileTwoLine extends StatelessWidget {
-  const SettingTileTwoLine(
+class SettingTileWithDescription extends StatelessWidget {
+  const SettingTileWithDescription(
       {Key? key,
         required this.title,
         required this.value,
-        this.onPress,
-        this.space = 16})
+        required this.description,
+        this.onPress,})
       : super(key: key);
 
   final Widget title;
   final Widget value;
   final VoidCallback? onPress;
-  final double space;
+  final Widget description;
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: space,
+        InkWell(
+          onTap: onPress,
+          child: Row(
+            children: [
+              Expanded(child: title),
+              value,
+              box8(),
+              if (onPress != null) const Icon(Icons.arrow_forward_ios)
+            ],
+          ),
         ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        description,
+      ],
+    );
+  }
+}
+
+class SettingTileTwoLine extends StatelessWidget {
+  const SettingTileTwoLine(
+      {Key? key,
+        required this.title,
+        required this.value,
+        this.icon,
+        this.onPress})
+      : super(key: key);
+
+  final Widget title;
+  final Widget value;
+  final Widget? icon;
+  final VoidCallback? onPress;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPress,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Column(
           children: [
-            Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    title,
-                    box8(),
-                    value,
-                  ],
-                )),
-            box8(),
-            if (onPress != null) Icon(Icons.arrow_forward_ios)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        title,
+                        box8(),
+                        value,
+                      ],
+                    )),
+                box8(),
+                if (onPress != null) icon ?? Icon(Icons.arrow_forward_ios)
+              ],
+            ),
           ],
         ),
-      ],
+      ),
     );
   }
 }
 
 class SectionTile extends StatelessWidget {
   const SectionTile(
-      {Key? key, required this.header, required this.child, this.space = 32})
+      {Key? key, required this.header, required this.child,})
       : super(key: key);
 
   final Widget header;
   final Widget child;
-  final double space;
 
   @override
   Widget build(BuildContext context) {
@@ -100,9 +134,6 @@ class SectionTile extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: space,
-        ),
         header,
         box16(),
         child,

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/device/device.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 
 class EditDeviceNameView extends ArgumentsStatefulView {
   const EditDeviceNameView({Key? key, super.args, super.next})
@@ -21,8 +24,8 @@ class _EditDeviceNameViewState extends State<EditDeviceNameView> {
   void initState() {
     super.initState();
 
-    // TODO: Get selected device from cubit or bloc, then set the name to default
-    _textController.text = 'iPhoneXR';
+    _textController.text =
+        context.read<DeviceCubit>().state.selectedDeviceInfo?.name ?? '';
   }
 
   @override
@@ -44,7 +47,9 @@ class _EditDeviceNameViewState extends State<EditDeviceNameView> {
           SimpleTextButton(
             text: getAppLocalizations(context).save,
             onPressed: () {
-              // TODO: modify the device in state
+              context
+                  .read<DeviceCubit>()
+                  .updateDeviceInfoName(null, _textController.text);
               NavigationCubit.of(context).pop();
             },
           ),

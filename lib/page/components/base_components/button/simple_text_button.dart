@@ -5,7 +5,8 @@ class SimpleTextButton extends StatelessWidget {
     Key? key,
     required this.text,
     required this.onPressed,
-    this.padding
+    this.padding,
+    this.style,
   }) : super(key: key);
 
   factory SimpleTextButton.noPadding({
@@ -16,9 +17,19 @@ class SimpleTextButton extends StatelessWidget {
     return SimpleTextButton(text: text, onPressed: onPressed, padding: EdgeInsets.zero,);
   }
 
+  factory SimpleTextButton.onPaddingWithStyle({
+    Key? key,
+    required String text,
+    required void Function() onPressed,
+    required TextStyle textStyle
+  }) {
+    return SimpleTextButton(text: text, onPressed: onPressed, padding: EdgeInsets.zero, style: textStyle);
+  }
+
   final String text;
   final void Function() onPressed;
   final EdgeInsets? padding;
+  final TextStyle? style;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +37,7 @@ class SimpleTextButton extends StatelessWidget {
       style: padding == null ? null : TextButton.styleFrom(padding: padding),
       child: Text(
         text,
-        style: Theme.of(context).textTheme.button?.copyWith(
+        style: style ?? Theme.of(context).textTheme.button?.copyWith(
               color: Theme.of(context).colorScheme.onTertiary,
             ),
       ),

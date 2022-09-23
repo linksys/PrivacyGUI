@@ -5,9 +5,11 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/base_components/button/primary_button.dart';
 import 'package:linksys_moab/page/components/base_components/text/description_text.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:styled_text/styled_text.dart';
 
 class GetWiFiUpView extends StatelessWidget {
   GetWiFiUpView({
@@ -36,7 +38,8 @@ class GetWiFiUpView extends StatelessWidget {
         content: _content(context),
         footer: PrimaryButton(
           text: getAppLocalizations(context).accept,
-          onPress: () => NavigationCubit.of(context).push(SetupParentPlugPath()),
+          onPress: () =>
+              NavigationCubit.of(context).push(SetupParentPlugPath()),
         ),
       ),
     );
@@ -52,10 +55,32 @@ class GetWiFiUpView extends StatelessWidget {
         const SizedBox(
           height: 39,
         ),
-        DescriptionText(
-            // TODO: Use rich text here
-            text: getAppLocalizations(context).welcome_eula_content
-        ),
+        StyledText(
+          text: getAppLocalizations(context).welcome_eula_content,
+          style: Theme
+              .of(context)
+              .textTheme
+              .headline3
+              ?.copyWith(color: Theme
+              .of(context)
+              .colorScheme
+              .tertiary)
+              .copyWith(height: 1.5),
+          tags: {
+        'link1': StyledTextActionTag(
+        (String? text, Map<String?, String?> attrs) {
+         String? link = attrs['href'];
+          print('The "$link" link1 is tapped.');
+        }
+        ,style: const TextStyle(color: Colors.blue)),
+        'link2': StyledTextActionTag(
+        (String? text, Map<String?, String?> attrs) {
+        String? link = attrs['href'];
+        print('The "$link" link2 is tapped.');
+        },
+            style: const TextStyle(color: Colors.blue)),
+        }
+        )
       ],
     );
   }

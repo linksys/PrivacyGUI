@@ -85,7 +85,7 @@
   "already_have_an_account": "I already have an account",
   "dont_want_cloud_account": "I do not want an account",
   "welcome_eula_title": "Let’s get your WiFi up and running",
-  "welcome_eula_content": "First things first, by continuing with setup, you agree to our Terms and License Agreement. Take a few minutes to read them.",
+  "welcome_eula_content": "First things first, by continuing with setup, you agree to our <link1 href=\"https://flutter.dev\">Terms</link1> and <link2 href=\"https://www.linksys.com\">License Agreement</link2>. Take a few minutes to read them.",
   "plug_node_view_title": "Plug the router into power near your internet source",
   "connect_to_modem_view_title": "Connect the router to your modem or source of internet",
   "connect_to_modem_view_description": "Plug the ethernet cable into the Internet port on your router. Plug the other end into your modem, gateway or source of internet.",
@@ -368,5 +368,6 @@
   "manufacturer": "Manufacturer",
   "model": "Model",
   "operating_system": "Operating system",
-  "profile": "Profile"
+  "profile": "Profile",
+  "account": "Account"
 }

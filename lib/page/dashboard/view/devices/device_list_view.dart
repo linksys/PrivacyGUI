@@ -1,14 +1,20 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/bloc/profiles/state.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/device/device.dart';
+import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/customs/customs.dart';
+import 'package:linksys_moab/page/components/chart/BarChartSample2.dart';
+import 'package:linksys_moab/page/components/customs/_customs.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/devices_path.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/_route.dart';
+
+
 
 class DeviceListView extends ArgumentsStatefulView {
   const DeviceListView({Key? key, super.args, super.next}) : super(key: key);
@@ -18,40 +24,17 @@ class DeviceListView extends ArgumentsStatefulView {
 }
 
 class _DeviceListViewState extends State<DeviceListView> {
-  final String keyToday = 'today';
-  final String keyWeek = 'week';
+  static const String keyToday = 'today';
+  static const String keyWeek = 'week';
   Map<String, String> _intervalList = {};
   String _selectedInterval = 'today';
   DeviceListInfoType _selectedSegment = DeviceListInfoType.main;
-  late List<DeviceDetailInfo> _deviceList;
 
   @override
   initState() {
     super.initState();
 
-    _deviceList = [
-      DeviceDetailInfo(
-        name: 'iPhone XR',
-        place: 'Living Room node',
-        frequency: '5 GHz',
-        uploadData: '0.4',
-        downloadData: '12',
-        connection: 'wifi',
-        weeklyData: '345',
-        belongToProfile: const Profile(
-          name: 'Profile name',
-          icon: 'assets/images/img_profile_icon_1.png', id: '',
-        ),
-      ),
-      DeviceDetailInfo.dummy().copyWith(weeklyUsage: '128'),
-      DeviceDetailInfo.dummy().copyWith(weeklyUsage: '35'),
-      DeviceDetailInfo.dummy().copyWith(weeklyUsage: '24'),
-      DeviceDetailInfo.dummy().copyWith(weeklyUsage: '19'),
-      DeviceDetailInfo.dummy().copyWith(weeklyUsage: '5'),
-      DeviceDetailInfo.dummy().copyWith(weeklyUsage: '4'),
-      DeviceDetailInfo.dummy().copyWith(weeklyUsage: '4'),
-      DeviceDetailInfo.dummy().copyWith(weeklyUsage: '4'),
-    ];
+    context.read<DeviceCubit>().fetchTodayDevicesList();
   }
 
   _initIntervalListWithLocalizedString() {
@@ -66,18 +49,20 @@ class _DeviceListViewState extends State<DeviceListView> {
   @override
   Widget build(BuildContext context) {
     _initIntervalListWithLocalizedString();
-    return BasePageView(
-      scrollable: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        // iconTheme:
-        // IconThemeData(color: Theme.of(context).colorScheme.primary),
-        elevation: 0,
-      ),
-      child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
-        header: _header(),
-        content: _content(),
+    return BlocBuilder<DeviceCubit, DeviceState>(
+      builder: (context, state) => BasePageView(
+        scrollable: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          // iconTheme:
+          // IconThemeData(color: Theme.of(context).colorScheme.primary),
+          elevation: 0,
+        ),
+        child: BasicLayout(
+          alignment: CrossAxisAlignment.start,
+          header: _header(),
+          content: _content(state),
+        ),
       ),
     );
   }
@@ -103,17 +88,18 @@ class _DeviceListViewState extends State<DeviceListView> {
     );
   }
 
-  _content() {
+  _content(DeviceState state) {
     return Column(
       children: [
         box24(),
         _infoSelector(),
         box48(),
         // Bandwidth chart
+        const BarChartSample2(),
         box36(),
         _subTitle(),
         SizedBox(height: _showTodayInfo() ? 16 : 8),
-        _deviceListWidget(),
+        _deviceListWidget(state),
       ],
     );
   }
@@ -150,6 +136,14 @@ class _DeviceListViewState extends State<DeviceListView> {
             onTap: () {
               setState(() {
                 _selectedInterval = interval;
+                switch (_selectedInterval) {
+                  case keyToday:
+                    context.read<DeviceCubit>().fetchTodayDevicesList();
+                    break;
+                  case keyWeek:
+                    context.read<DeviceCubit>().fetchWeekDevicesList();
+                    break;
+                }
                 // TODO: handle device list, such as sorting list
               });
             },
@@ -179,11 +173,13 @@ class _DeviceListViewState extends State<DeviceListView> {
     );
   }
 
-  _deviceListWidget() {
-    return _showTodayInfo() ? _todayInfoSection() : _weekInfoSection();
+  _deviceListWidget(DeviceState state) {
+    return _showTodayInfo()
+        ? _todayInfoSection(state)
+        : _weekInfoSection(state);
   }
 
-  _todayInfoSection() {
+  _todayInfoSection(DeviceState state) {
     return Column(
       children: [
         Row(
@@ -197,6 +193,17 @@ class _DeviceListViewState extends State<DeviceListView> {
                   if (value != null) {
                     setState(() {
                       _selectedSegment = value;
+                      switch (value) {
+                        case DeviceListInfoType.main:
+                          context.read<DeviceCubit>().showMainDevices();
+                          break;
+                        case DeviceListInfoType.guest:
+                          context.read<DeviceCubit>().showGuestDevices();
+                          break;
+                        case DeviceListInfoType.iot:
+                          context.read<DeviceCubit>().showIotDevices();
+                          break;
+                      }
                     });
                   }
                 },
@@ -220,14 +227,17 @@ class _DeviceListViewState extends State<DeviceListView> {
         ),
         box24(),
         SizedBox(
-          height: _deviceList.length * 87,
+          height: state.deviceDetailInfoMap.length * 87,
           child: ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: _deviceList.length,
+            itemCount: state.deviceDetailInfoMap.length,
             itemBuilder: (context, index) => InkWell(
-              child: _todayDeviceInfoCell(_deviceList[index]),
+              child: _todayDeviceInfoCell(
+                  state.deviceDetailInfoMap.values.elementAt(index)),
               onTap: () {
+                context.read<DeviceCubit>().setSelectedDeviceInfo(
+                    state.deviceDetailInfoMap.values.elementAt(index));
                 NavigationCubit.of(context).push(DeviceDetailPath());
               },
             ),
@@ -240,12 +250,16 @@ class _DeviceListViewState extends State<DeviceListView> {
   _todayDeviceInfoCell(DeviceDetailInfo deviceInfo) {
     Widget _deviceIcon = ImageWithBadge(
       imagePath: deviceInfo.icon,
-      badgePath: deviceInfo.belongToProfile != null
-          ? deviceInfo.belongToProfile!.icon
+      badgePath: deviceInfo.profileId != null
+          ? context
+              .read<ProfilesCubit>()
+              .state
+              .profiles[deviceInfo.profileId!]
+              ?.icon
           : null,
       imageSize: 48,
       badgeSize: 19,
-      offset: deviceInfo.belongToProfile != null ? 5 : 0,
+      offset: deviceInfo.profileId != null ? 5 : 0,
     );
     // TODO: Modify here if connection is not wifi
     Widget _connectionIcon = deviceInfo.connection == 'wifi'
@@ -318,16 +332,20 @@ class _DeviceListViewState extends State<DeviceListView> {
     );
   }
 
-  _weekInfoSection() {
+  _weekInfoSection(DeviceState state) {
     return SizedBox(
-      height: _deviceList.length * 87,
+      height: state.deviceDetailInfoMap.length * 87,
       child: ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: _deviceList.length,
+        itemCount: state.deviceDetailInfoMap.length,
         itemBuilder: (context, index) => InkWell(
-          child: _weeklyDeviceInfoCell(_deviceList[index]),
+          child: _weeklyDeviceInfoCell(
+              state.deviceDetailInfoMap.values.elementAt(index),
+              state.deviceDetailInfoMap.values.first),
           onTap: () {
+            context.read<DeviceCubit>().setSelectedDeviceInfo(
+                state.deviceDetailInfoMap.values.elementAt(index));
             NavigationCubit.of(context).push(DeviceDetailPath());
           },
         ),
@@ -335,17 +353,22 @@ class _DeviceListViewState extends State<DeviceListView> {
     );
   }
 
-  _weeklyDeviceInfoCell(DeviceDetailInfo deviceInfo) {
-    double biggestData = double.parse(_deviceList.first.weeklyData);
+  _weeklyDeviceInfoCell(
+      DeviceDetailInfo deviceInfo, DeviceDetailInfo firstDeviceInfo) {
+    double biggestData = double.parse(firstDeviceInfo.weeklyData);
     double selfData = double.parse(deviceInfo.weeklyData);
     Widget _deviceIcon = ImageWithBadge(
       imagePath: deviceInfo.icon,
-      badgePath: deviceInfo.belongToProfile != null
-          ? deviceInfo.belongToProfile!.icon
+      badgePath: deviceInfo.profileId != null
+          ? context
+              .read<ProfilesCubit>()
+              .state
+              .profiles[deviceInfo.profileId!]
+              ?.icon
           : null,
       imageSize: 48,
       badgeSize: 19,
-      offset: deviceInfo.belongToProfile != null ? 5 : 0,
+      offset: deviceInfo.profileId != null ? 5 : 0,
     );
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -389,90 +412,5 @@ class _DeviceListViewState extends State<DeviceListView> {
 
   bool _showTodayInfo() {
     return _selectedInterval == keyToday;
-  }
-}
-
-enum DeviceListInfoType { main, guest, iot }
-
-class DeviceDetailInfo {
-  String name;
-  String place;
-  String frequency;
-  String uploadData;
-  String downloadData;
-  String connection;
-  String weeklyData;
-  String icon;
-  String connectedTo;
-  String ipAddress;
-  String macAddress;
-  String manufacturer;
-  String model;
-  String os;
-  Profile? belongToProfile;
-
-  DeviceDetailInfo({
-    this.name = '',
-    this.place = '',
-    this.frequency = '',
-    this.uploadData = '',
-    this.downloadData = '',
-    this.connection = '',
-    this.weeklyData = '',
-    this.icon = 'assets/images/icon_device.png',
-    this.connectedTo = '',
-    this.ipAddress = '',
-    this.macAddress = '',
-    this.manufacturer = '',
-    this.model = '',
-    this.os = '',
-    this.belongToProfile,
-  });
-
-  factory DeviceDetailInfo.dummy() {
-    return DeviceDetailInfo(
-      name: 'Device name',
-      place: 'Living Room node',
-      frequency: '5 GHz',
-      uploadData: '0.4',
-      downloadData: '12',
-      connection: 'wifi',
-    );
-  }
-
-  DeviceDetailInfo copyWith({
-    String? name,
-    String? place,
-    String? frequency,
-    String? uploadUsage,
-    String? downloadUsage,
-    String? connection,
-    String? weeklyUsage,
-    String? icon,
-    String? connectedTo,
-    String? ipAddress,
-    String? macAddress,
-    String? manufacturer,
-    String? model,
-    String? os,
-    Profile? belongToProfile,
-  }) {
-    return DeviceDetailInfo(
-      name: name ?? this.name,
-      place: place ?? this.place,
-      frequency: frequency ?? this.frequency,
-      uploadData: uploadUsage ?? this.uploadData,
-      downloadData: downloadUsage ?? this.downloadData,
-      connection: connection ?? this.connection,
-      weeklyData: weeklyUsage ?? this.weeklyData,
-      icon: icon ?? this.icon,
-      connectedTo: connectedTo ?? this.connectedTo,
-      ipAddress: ipAddress ?? this.ipAddress,
-      macAddress: macAddress ?? this.macAddress,
-      manufacturer: manufacturer ?? this.manufacturer,
-      model: model ?? this.model,
-      os: os ?? this.os,
-      belongToProfile: belongToProfile ?? this.belongToProfile,
-    );
   }
 }

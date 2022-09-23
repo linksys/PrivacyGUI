@@ -13,6 +13,7 @@ import 'package:linksys_moab/repository/config/environment_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CloudEnvironmentManager {
@@ -114,6 +115,11 @@ class CloudEnvironmentManager {
   }
 
   Future<void> checkSmartDevice() async {
+
+    final pref = await SharedPreferences.getInstance();
+    if (pref.getString(moabPrefDeviceToken) == null) {
+      return;
+    }
     await fetchCloudApp();
     final app = _app;
     bool isRegister = false;
@@ -132,7 +138,7 @@ class CloudEnvironmentManager {
       logger.d('can not find cloud app, create one');
       await createCloudApp();
     }
-    logger.d('Cloud App: $_app');
+    logger.d('Cloud App loaded!');
     return _app!;
   }
 

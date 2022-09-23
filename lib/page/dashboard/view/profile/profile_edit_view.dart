@@ -8,8 +8,12 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/profiles.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';
+import 'package:linksys_moab/route/model/content_filter_path.dart';
 import 'package:linksys_moab/route/model/dashboard_path.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/internet_schedule_path.dart';
+import 'package:linksys_moab/route/model/profile_group_path.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 
 import '../../../../design/colors.dart';
 import '../../../../localization/localization_hook.dart';

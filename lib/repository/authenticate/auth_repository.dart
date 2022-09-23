@@ -4,6 +4,7 @@ import 'package:linksys_moab/network/http/model/cloud_communication_method.dart'
 import 'package:linksys_moab/network/http/model/cloud_create_account_verified.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_state.dart';
+import 'package:linksys_moab/network/http/model/cloud_session_data.dart';
 import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
 import 'package:linksys_moab/network/http/model/region_code.dart';
 
@@ -50,9 +51,9 @@ abstract class AuthRepository {
   ///
   /// Do create account actually
   /// * Input: [CreateAccountVerified]
-  /// * return: [CloudAccountInfo]
+  /// * return: [CloudAccountVerifyInfo]
   /// * error: ?????
-  Future<CloudAccountInfo> createVerifiedAccount(
+  Future<CloudAccountVerifyInfo> createVerifiedAccount(
       CreateAccountVerified verified);
 
   ///
@@ -69,6 +70,14 @@ abstract class AuthRepository {
   /// * return: void
   /// * error: INVALID_OTP
   Future<void> authChallengeVerify(String token, String code);
+
+  ///
+  /// Verify OTP code received from EMAIL/SMS
+  /// * Input: token
+  /// * Input: code
+  /// * return: void
+  /// * error: INVALID_OTP
+  Future<void> authChallengeVerifyAccept(String token, String code);
 
   ///
   /// * state = PASSWORD_REQUIRED
@@ -95,6 +104,8 @@ abstract class AuthRepository {
   ///
   Future<void> downloadCloudCert({required String taskId, required String secret});
 
+  Future<CertInfoData> extendCertificate({required String certId});
+  Future<CloudSessionData> requestSession({required String certId});
   ///
   ///
   ///

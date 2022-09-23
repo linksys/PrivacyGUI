@@ -6,3 +6,4 @@ const moabPrefCloudPrivateKey = 'MoabCloudPrivateKey';
 const moabPrefCloudPublicKey = 'MoabCloudPublicKey';
 const moabPrefEnableBiometrics = "MoabEnableBiometrics";
 const moabPrefDeviceToken = 'MoabDeviceToken';
+const moabPrefSessionDataKey = 'MoabSessionData';
