@@ -6,6 +6,11 @@ import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/shortcuts/profiles.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/page/components/chart/LineChartSample.dart';
+import 'package:linksys_moab/route/model/devices_path.dart';
+import 'package:linksys_moab/route/model/nodes_path.dart';
+import 'package:linksys_moab/route/model/profile_group_path.dart';
+import 'package:linksys_moab/route/model/wifi_settings_path.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 
@@ -242,31 +247,27 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
         ),
         Container(
           width: double.infinity,
-          height: 160,
-          child: Card(
-            color: MoabColor.dashboardTileBackground,
-            child: Container(
-              decoration: BoxDecoration(
-                  image: DecorationImage(
-                image: AssetImage('assets/images/img_fake_usage.png'),
-                fit: BoxFit.cover,
-              )),
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('$deviceCount',
-                      style: Theme.of(context).textTheme.headline1?.copyWith(
-                          fontSize: 32, fontWeight: FontWeight.w500)),
-                  Text('Devices online',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headline3
-                          ?.copyWith(fontSize: 14, fontWeight: FontWeight.w700))
-                ],
-              ),
-            ),
+          height: 200,
+          child: Stack(
+            children: [
+              LineChartSample(),
+              Container(
+                alignment: Alignment.bottomLeft,
+                padding: EdgeInsets.only(left: 10, bottom: 10),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('$deviceCount',
+                        style: Theme.of(context).textTheme.headline1?.copyWith(
+                            fontSize: 32, fontWeight: FontWeight.w500)),
+                    Text('Devices online',
+                        style: Theme.of(context).textTheme.headline3?.copyWith(
+                            fontSize: 14, fontWeight: FontWeight.w700))
+                  ],
+                ),
+              )
+            ],
           ),
         ),
       ],

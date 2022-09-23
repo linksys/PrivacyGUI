@@ -4,7 +4,7 @@ import 'package:linksys_moab/bloc/auth/state.dart';
 enum OtpStep { init, chooseOtpMethod, inputOtp, addPhone, finish }
 
 // TODO: Need a more understandable name
-enum OtpFunction { send, setting, setting2sv }
+enum OtpFunction { send, setting, setting2sv, add }
 
 class OtpState extends Equatable {
   const OtpState({

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -6,11 +7,14 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:intl/intl.dart';
+import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
+import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Utils {
   static const String NoSpeedCalculationText = "-----";
@@ -254,10 +258,30 @@ class Utils {
     return await auth.canCheckBiometrics && availableBiometrics.isNotEmpty;
   }
 
+  // TODO
   static Future<bool> doLocalAuthenticate() async {
     final LocalAuthentication auth = LocalAuthentication();
     final bool didAuthenticate = await auth.authenticate(
         localizedReason: "Please authenticate to go to next step");
     return didAuthenticate;
+  }
+
+  static Future<bool> checkCertValidation() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool isKeyExist = prefs.containsKey(moabPrefCloudPublicKey) &
+    prefs.containsKey(moabPrefCloudPrivateKey) &
+    prefs.containsKey(moabPrefCloudCertDataKey);
+    if (!isKeyExist) {
+      return false;
+    }
+    final certData = CloudDownloadCertData.fromJson(
+        jsonDecode(prefs.getString(moabPrefCloudCertDataKey) ?? ''));
+    final expiredDate = DateTime.parse(certData.expiration);
+    if (expiredDate.millisecondsSinceEpoch -
+        DateTime.now().millisecondsSinceEpoch <
+        0) {
+      return false;
+    }
+    return true;
   }
 }

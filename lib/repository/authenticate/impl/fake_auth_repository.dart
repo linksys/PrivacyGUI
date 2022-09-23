@@ -6,6 +6,7 @@ import 'package:linksys_moab/network/http/model/cloud_auth_clallenge_method.dart
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_create_account_verified.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_state.dart';
+import 'package:linksys_moab/network/http/model/cloud_session_data.dart';
 import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
 import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
@@ -31,6 +32,7 @@ class FakeAuthRepository extends AuthRepository {
     await Future.delayed(waitDuration);
     if (password == 'Showmeerror123!') {
       throw const ErrorResponse(
+          status: 400,
           code: 'OLD_PASSWORD',
           errorMessage: "You cannot use an old password.");
     }
@@ -43,6 +45,7 @@ class FakeAuthRepository extends AuthRepository {
 
     if (_resendCodeTimer != null && (_resendCodeTimer!.isActive)) {
       throw ErrorResponse(
+          status: 400,
           code: 'RESEND_CODE_TIMER',
           errorMessage: 'A new code can be sent in 0:$_resendCountdown');
     } else {
@@ -71,6 +74,7 @@ class FakeAuthRepository extends AuthRepository {
 
     if (code == '1111') {
       throw const ErrorResponse(
+          status: 400,
           code: 'OTP_INVALID_TOO_MANY_TIMES',
           errorMessage:
               "You've enter an incorrect code too many times. Resend a code to continue.");
@@ -93,11 +97,11 @@ class FakeAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<CloudAccountInfo> createVerifiedAccount(
+  Future<CloudAccountVerifyInfo> createVerifiedAccount(
       CreateAccountVerified verified) async {
     await Future.delayed(waitDuration);
 
-    return CloudAccountInfo.fromJson(const {
+    return CloudAccountVerifyInfo.fromJson(const {
       "id": "82248d9d-50a7-4e35-822c-e07ed02d8063",
       "username": "austin.chang@linksys.com",
       "usernames": ["austin.chang@linksys.com"],
@@ -122,7 +126,9 @@ class FakeAuthRepository extends AuthRepository {
 
     if (username.endsWith('error.com')) {
       throw ErrorResponse(
-          code: 'NOT_FOUND', errorMessage: "Can't find account $username");
+          status: 400,
+          code: 'NOT_FOUND',
+          errorMessage: "Can't find account $username");
     } else {
       return list;
     }
@@ -134,7 +140,7 @@ class FakeAuthRepository extends AuthRepository {
 
     return const CloudLoginAcceptState(
         state: 'ACCEPT',
-        data: CloudLoginAcceptData(
+        data: CertInfoData(
             taskId: 'taskId', certSecret: 'certSecret', downloadTime: 1));
   }
 
@@ -143,7 +149,9 @@ class FakeAuthRepository extends AuthRepository {
     await Future.delayed(waitDuration);
     if (password == 'Showmeerror123!') {
       throw const ErrorResponse(
-          code: 'INCORRECT_PASSWORD', errorMessage: "Incorrect password");
+          status: 400,
+          code: 'INCORRECT_PASSWORD',
+          errorMessage: "Incorrect password");
     } else {
       return const CloudLoginState(
           state: 'REQUIRE_2SV',
@@ -171,7 +179,7 @@ class FakeAuthRepository extends AuthRepository {
     }
 
     throw const ErrorResponse(
-        code: 'RESOURCE_NOT_FOUND', errorMessage: 'errorMessage');
+        status: 400, code: 'RESOURCE_NOT_FOUND', errorMessage: 'errorMessage');
   }
 
   @override
@@ -183,12 +191,26 @@ class FakeAuthRepository extends AuthRepository {
   Future<List<RegionCode>> fetchRegionCodes() async {
     await Future.delayed(waitDuration);
     final jsonArray = [
-      {
-        "isoCode" : "US",
-        "country" : "United States",
-        "countryCode" : 1
-      }
+      {"isoCode": "US", "country": "United States", "countryCode": 1}
     ];
     return List.from(jsonArray.map((e) => RegionCode.fromJson(e)));
+  }
+
+  @override
+  Future<void> authChallengeVerifyAccept(String token, String code) {
+    // TODO: implement authChallengeVerifyAccept
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<CertInfoData> extendCertificate({required String certId}) {
+    // TODO: implement extendCertificate
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<CloudSessionData> requestSession({required String certId}) {
+    // TODO: implement requestSession
+    throw UnimplementedError();
   }
 }

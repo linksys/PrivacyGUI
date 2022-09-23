@@ -1,13 +1,16 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:linksys_moab/channel/push_notification_channel.dart';
+import 'package:linksys_moab/bloc/account/cubit.dart';
+import 'package:linksys_moab/bloc/auth/bloc.dart';
+import 'package:linksys_moab/bloc/auth/event.dart';
+import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/http/extension_requests/accounts_requests.dart';
@@ -19,12 +22,13 @@ import 'package:linksys_moab/page/components/base_components/progress_bars/full_
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class DebugToolsView extends StatefulWidget {
   const DebugToolsView({
@@ -73,7 +77,10 @@ class _DebugToolsViewState extends State<DebugToolsView> {
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Row(
               children: [
-                Icon(Icons.refresh, color: Colors.white,),
+                Icon(
+                  Icons.refresh,
+                  color: Colors.white,
+                ),
                 Text(
                   'App:',
                   style: Theme.of(context)
@@ -86,7 +93,9 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           ),
         ),
         FutureBuilder<CloudApp>(
-            future: CloudEnvironmentManager().fetchCloudApp().then((value) => CloudEnvironmentManager().loadCloudApp()),
+            future: CloudEnvironmentManager()
+                .fetchCloudApp()
+                .then((value) => CloudEnvironmentManager().loadCloudApp()),
             initialData: null,
             builder: (context, snapshot) {
               return snapshot.data == null
@@ -100,8 +109,10 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                                 .getCloudApp()
                                 .toJson()
                                 .entries
-                                .map((e) => TableRow(
-                                    children: [Text(e.key), Text(e.value ?? '')]))
+                                .map((e) => TableRow(children: [
+                                      Text(e.key),
+                                      Text(e.value ?? '')
+                                    ]))
                           ],
                         ),
                         Padding(
@@ -121,7 +132,9 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                       ],
                     );
             }),
-        SizedBox(height: 32,),
+        SizedBox(
+          height: 32,
+        ),
         Text(
           'Push Notification:',
           style: Theme.of(context)
@@ -295,20 +308,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Test Get Profile',
           onPress: () async {
-            SecurityContext securityContext =
-                SecurityContext(withTrustedRoots: true);
-            final publicKey =
-                (await rootBundle.load('assets/keys/testCert.pem'))
-                    .buffer
-                    .asInt8List();
-            final privateKey =
-                (await rootBundle.load('assets/keys/testKey.key'))
-                    .buffer
-                    .asInt8List();
-            securityContext.useCertificateChainBytes(publicKey);
-            securityContext.usePrivateKeyBytes(privateKey);
-            final client = MoabHttpClient.withCert(securityContext);
-            await client.getAccountSelf();
+            context.read<AccountCubit>().fetchAccount();
           },
         ),
         const SizedBox(
@@ -379,10 +379,10 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                     Text('Receive notification: title: $title, body: $msg')));
           });
         } else if (Platform.isIOS) {
-          PushNotificationChannel().grantNotificationAuth().then((value) {
+          IosPushNotificationPlugin().requestAuthorization().then((value) {
             if (value) {
-              _streamSubscription = PushNotificationChannel()
-                  .listenPushNotification()
+              _streamSubscription = IosPushNotificationPlugin()
+                  .pushNotificationStream
                   .listen((event) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text('Receive notification: event: $event')));
@@ -415,6 +415,13 @@ class _DebugToolsViewState extends State<DebugToolsView> {
               .textTheme
               .headline2
               ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        ),
+        Text(
+          'Will logout after change environment!',
+          style: Theme.of(context)
+              .textTheme
+              .headline2
+              ?.copyWith(color: Colors.red),
         ),
         SecondaryButton(
           text: 'Select environment',
@@ -470,6 +477,8 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                     cloudEnvTarget = _selectedEnv;
                     await CloudEnvironmentManager()
                         .fetchCloudConfig()
+                        .then((value) =>
+                            CloudEnvironmentManager().createCloudApp())
                         .then(
                             (value) => Navigator.of(context).pop(_selectedEnv))
                         .onError((error, stackTrace) {
@@ -483,6 +492,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                       setState(() {
                         _isLoading = false;
                       });
+                      context.read<AuthBloc>().add(Logout());
                     });
                   },
                 ),
@@ -493,4 +503,8 @@ class _DebugToolsViewState extends State<DebugToolsView> {
             );
     });
   }
+}
+
+Future<SecurityContext> loader(BuildContext context) async {
+  return SecurityContext();
 }

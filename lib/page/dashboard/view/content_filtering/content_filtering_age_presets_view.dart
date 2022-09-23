@@ -7,12 +7,12 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/content_filter_path.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 
 import 'component.dart';
-
-typedef ValueChanged<T> = void Function(T value);
 
 List<CFPreset> _presets = [CFPreset.child(), CFPreset.teen(), CFPreset.adult()];
 
@@ -84,18 +84,26 @@ class _ContentFilteringPresetsViewState
               children: [
                 Text(_preset?.description ?? ''),
                 box36(),
-                InputField(
-                  titleText: '',
-                  hintText: 'Search by app name',
-                  controller: _controller,
-                  prefixIcon: Icon(Icons.search),
-                  customPrimaryColor: Colors.black,
+                InkWell(
+                  onTap: () {
+                    // TODO go to search view
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(color: MoabColor.dashboardTileBackground),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(children: [Icon(Icons.search), Text('Search by app name')],),
+                    ),
+                  ),
                 ),
                 box36(),
                 _filterList(),
               ],
             ),
           ),
+          box36(),
+          SimpleTextButton(text: 'Send feedback', onPressed: () {}, padding: EdgeInsets.zero,),
+          Text('Suggest a category or app'),
         ],
       ),
     );

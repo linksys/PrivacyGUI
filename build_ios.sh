@@ -2,7 +2,7 @@
 function buildInHouse() {
   version=$1
   echo "start building in house $version"
-  flutter build ipa --export-options-plist=ios/Scripts/Moab-EE-InHouse.plist;
+  flutter build ipa --export-options-plist=ios/Scripts/Moab-EE-InHouse.plist --dart-define=cloud_env=qa
   mv "./build/ios/ipa/Moab.ipa" "./build/ios/ipa/moab_app_ee_distribution.ipa"
   copyInHouseAssets
   updateLinks "$version"
@@ -39,6 +39,7 @@ function updateLinks() {
 }
 
 version=$1
+pod repo update
 flutter clean
 if ! buildInHouse "$version"; then
   echo InHouse "$version" build failed

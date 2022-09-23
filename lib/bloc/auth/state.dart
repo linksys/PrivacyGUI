@@ -131,13 +131,8 @@ class AuthState extends Equatable {
     return const AuthState(status: AuthStatus.unAuthorized);
   }
 
-  factory AuthState.authorized({
-    required AccountInfo accountInfo,
-    required String publicKey,
-    required String privateKey,
-  }) {
-    return AuthCloudLoginState(
-        accountInfo: accountInfo, publicKey: publicKey, privateKey: privateKey);
+  factory AuthState.authorized() {
+    return const AuthCloudLoginState();
   }
 
   factory AuthState.onCloudLogin(
@@ -161,15 +156,8 @@ class AuthState extends Equatable {
 }
 
 class AuthCloudLoginState extends AuthState {
-  const AuthCloudLoginState(
-      {required this.accountInfo,
-      required this.publicKey,
-      required this.privateKey})
+  const AuthCloudLoginState()
       : super(status: AuthStatus.authorized);
-
-  final AccountInfo accountInfo;
-  final String publicKey;
-  final String privateKey;
 }
 
 class AuthLocalLoginState extends AuthState {

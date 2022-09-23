@@ -1,8 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:linksys_moab/page/setup/view/nodes_doesnt_find_view.dart';
-import 'package:linksys_moab/page/setup/view/view.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/page/setup/view/_view.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 
 import 'base_path.dart';
 

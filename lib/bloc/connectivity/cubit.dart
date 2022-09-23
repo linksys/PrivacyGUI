@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:connecting_wifi_plugin/connecting_wifi_plugin.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -11,7 +12,6 @@ import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
-import '../../channel/wifi_connect_channel.dart';
 import '../../constants/constants.dart';
 import 'connectivity_info.dart';
 
@@ -24,7 +24,7 @@ class ConnectivityCubit extends Cubit<ConnectivityInfo>
   @override
   Future onConnectivityChanged(ConnectivityInfo info) async {
     if (info.type != ConnectivityResult.none) {
-      testAvailability().then((value) => emit(info.copyWith(availabilityInfo: value)));
+      // testAvailability().then((value) => emit(info.copyWith(availabilityInfo: value)));
     } else {
       emit(info.copyWith(availabilityInfo: null));
     }
@@ -36,10 +36,11 @@ class ConnectivityCubit extends Cubit<ConnectivityInfo>
   }
 
   void _checkAndroidVersionAndEasyConnect() async {
-    isAndroid9 = await NativeConnectWiFiChannel().isAndroidVersionUnderTen();
+
+    isAndroid9 = await ConnectingWifiPlugin().isAndroidVersionUnderTen();
     isAndroid10AndSupportEasyConnect = isAndroid9
         ? false
-        : await NativeConnectWiFiChannel().isAndroidTenAndSupportEasyConnect();
+        : await ConnectingWifiPlugin().isAndroidTenAndSupportEasyConnect();
   }
 
   @override

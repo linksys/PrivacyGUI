@@ -3,7 +3,7 @@ function build() {
   conf=$1
   type=$2
   echo start building "$conf" "$type" process...
-  if ! flutter build "$type" --"$conf" --obfuscate --split-debug-info=moab/build/app/outputs/temp/; then
+  if ! flutter build "$type" --"$conf" --obfuscate --split-debug-info=moab/build/app/outputs/temp/ --dart-define=cloud_env=qa; then
       echo build "$conf" failed
       exit 1
   fi

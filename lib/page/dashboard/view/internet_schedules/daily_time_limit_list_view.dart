@@ -4,10 +4,10 @@ import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/route/model/internet_schedule_path.dart';
 import 'package:linksys_moab/utils.dart';
 
 import '../../../../design/colors.dart';
-import '../../../../route/model/dashboard_path.dart';
 import '../../../../route/navigation_cubit.dart';
 
 class DailyTimeLimitListView extends StatelessWidget {
@@ -86,8 +86,6 @@ class DailyTimeLimitListView extends StatelessWidget {
     }
   }
 }
-
-typedef ValueChanged<T> = void Function(T value);
 
 class DailyTimeLimitItem extends StatefulWidget {
   DailyTimeLimitItem({

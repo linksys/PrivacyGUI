@@ -6,9 +6,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:linksys_moab/channel/push_notification_channel.dart';
+import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../firebase_options.dart';
 import 'notification_receiver.dart';
@@ -30,21 +32,22 @@ late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 void initCloudMessage() async {
   if (Platform.isIOS) {
     // Get the device token from the native
-    final token = await PushNotificationChannel().readDeviceToken();
+    final token = await IosPushNotificationPlugin().readApnsToken() ?? '';
     logger.i('APNS: Read device token: $token');
     CloudEnvironmentManager().updateDeviceToken(token);
     // Start listening the push notifications
-    apnsStreamSubscription = PushNotificationChannel()
-        .listenPushNotification()
+    apnsStreamSubscription = IosPushNotificationPlugin()
+        .pushNotificationStream
         .listen((data) {
           Map<String, dynamic> transfer = Map.from(data);
           logger.d('APNS: Receive push notification, data: $transfer');
           pushNotificationHandler(transfer);
     });
     // Ask users notification authorization
-    PushNotificationChannel().grantNotificationAuth().then((grant) {
+    IosPushNotificationPlugin().requestAuthorization().then((grant) {
       logger.i('APNS: User authorization result: $grant');
     });
+    logger.i('APNS token back: ${(await SharedPreferences.getInstance()).getString(moabPrefDeviceToken)}');
     return;
   }
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
