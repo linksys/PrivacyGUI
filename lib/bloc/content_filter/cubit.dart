@@ -13,7 +13,7 @@ class ContentFilterCubit extends Cubit<ContentFilterState> {
         );
 
   selectSecureProfile(CFSecureProfile? secureProfile) {
-    emit(state.copyWith(selectedSecurePreset: secureProfile));
+    emit(state.copyWith(selectedSecureProfile: secureProfile));
   }
 
   Future<void> updateSearchAppSignature(CFAppSignature signature) async {

@@ -11,8 +11,6 @@ import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
-import 'package:linksys_moab/bloc/profiles/cubit.dart';
-import 'package:linksys_moab/channel/push_notification_channel.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
@@ -22,7 +20,6 @@ import 'package:linksys_moab/page/components/base_components/progress_bars/full_
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
-import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/security/app_icon_manager.dart';

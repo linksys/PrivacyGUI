@@ -43,7 +43,8 @@ class _ContentFilteringPresetsViewState
         _presets = value;
         isLoading = false;
       });
-      if (context.read<ContentFilterCubit>().state.selectedSecureProfile == null) {
+      if (context.read<ContentFilterCubit>().state.selectedSecureProfile ==
+          null) {
         context.read<ContentFilterCubit>().selectSecureProfile(_presets[1]);
       }
     });
@@ -126,7 +127,7 @@ class _ContentFilteringPresetsViewState
                           ),
                         ),
                         box36(),
-                        _filterList(state),
+                        _secureCategoryList(state),
                       ],
                     ),
                   ),
@@ -159,15 +160,10 @@ class _ContentFilteringPresetsViewState
                         .firstWhere((element) =>
                             element.id == state.selectedSecureProfile!.id)
                         .copyWith(
-                            securityCategories:
-                                state.selectedSecureProfile!.securityCategories);
+                            securityCategories: state
+                                .selectedSecureProfile!.securityCategories);
                     _presets[prevIndex] = latest;
                   }
-                  // if (state.selectedSecurePreset == _presets[index]) {
-                  //   state.selectedSecurePreset = null;
-                  // } else {
-                  //   state.selectedSecurePreset = _presets[index];
-                  // }
                   if (state.selectedSecureProfile != _presets[index]) {
                     context
                         .read<ContentFilterCubit>()
@@ -216,33 +212,35 @@ class _ContentFilteringPresetsViewState
     );
   }
 
-  Widget _filterList(ContentFilterState state) {
+  Widget _secureCategoryList(ContentFilterState state) {
     return Column(
       children: [
-        ...?state.selectedSecureProfile?.securityCategories.map((e) => InkWell(
-            onTap: () async {
-              final newCategory = await showPopup(
+        ...?state.selectedSecureProfile?.securityCategories
+            .where((category) => category.id != "SECURITYRISK")
+            .map((category) => InkWell(
+                onTap: () async {
+                  final newCategory = await showPopup(
                       context: context,
-                      config: CFFilterCategoryPath()..args = {'selected': e})
-                  as CFSecureCategory;
-              final index =
-                  state.selectedSecureProfile?.securityCategories.indexOf(e) ??
+                      config: CFFilterCategoryPath()
+                        ..args = {'selected': category}) as CFSecureCategory;
+                  final index = state.selectedSecureProfile?.securityCategories
+                          .indexOf(category) ??
                       -1;
-              if (index != -1) {
-                final list = List<CFSecureCategory>.from(
-                    state.selectedSecureProfile?.securityCategories ?? []);
-                setState(() {
-                  list.replaceRange(index, index + 1, [newCategory]);
-                  context.read<ContentFilterCubit>().selectSecureProfile(state
-                      .selectedSecureProfile!
-                      .copyWith(securityCategories: list));
-                });
-              }
-            },
-            child: FilterItem(
-              name: e.name,
-              status: _checkStatus(e),
-            )))
+                  if (index != -1) {
+                    final list = List<CFSecureCategory>.from(
+                        state.selectedSecureProfile?.securityCategories ?? []);
+                    setState(() {
+                      list.replaceRange(index, index + 1, [newCategory]);
+                      context.read<ContentFilterCubit>().selectSecureProfile(
+                          state.selectedSecureProfile!
+                              .copyWith(securityCategories: list));
+                    });
+                  }
+                },
+                child: FilterItem(
+                  name: category.name,
+                  status: _checkStatus(category),
+                )))
       ],
     );
   }

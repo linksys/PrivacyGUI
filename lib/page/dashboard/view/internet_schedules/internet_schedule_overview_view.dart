@@ -30,7 +30,7 @@ class _InternetScheduleOverviewViewState
   Widget build(BuildContext context) {
     return BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
       final profile = state.selectedProfile;
-      final data = profile?.serviceDetails?[PService.internetSchedule]
+      final data = profile?.serviceDetails[PService.internetSchedule]
           as InternetScheduleData?;
       return BasePageView.onDashboardSecondary(
         appBar: AppBar(

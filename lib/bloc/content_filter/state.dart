@@ -12,11 +12,11 @@ class ContentFilterState extends Equatable {
   });
 
   ContentFilterState copyWith({
-    CFSecureProfile? selectedSecurePreset,
+    CFSecureProfile? selectedSecureProfile,
     Set<CFAppSignature>? searchAppSignatureSet,
   }) {
     return ContentFilterState(
-      selectedSecureProfile: selectedSecurePreset ?? this.selectedSecureProfile,
+      selectedSecureProfile: selectedSecureProfile ?? this.selectedSecureProfile,
       searchAppSignatureSet:
           searchAppSignatureSet ?? this.searchAppSignatureSet,
     );

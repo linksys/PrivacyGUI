@@ -27,11 +27,12 @@ class ProfilesState extends Equatable {
   }
 
   ProfilesState addOrUpdateProfile(GroupProfile profile) {
-    profiles[profile.id] = profile;
+    var copy = Map<String, GroupProfile>.from(profiles);
+    copy[profile.id] = profile;
     if (selectedProfile?.id == profile.id) {
-      return copyWith(profiles: profiles, selectedProfile: profile);
+      return copyWith(profiles: copy, selectedProfile: profile);
     }
-    return copyWith(profiles: profiles);
+    return copyWith(profiles: copy);
   }
 
   @override

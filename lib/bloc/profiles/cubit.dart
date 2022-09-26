@@ -48,8 +48,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     if (state.createdProfile == null) {
       return;
     }
-    emit(state.copyWith(createdProfile: null)
-      ..addOrUpdateProfile(state.createdProfile!));
+    emit(state.addOrUpdateProfile(state.createdProfile!).copyWith(createdProfile: null));
   }
 
   fetchAllServices({PService serviceCategory = PService.all}) async {
