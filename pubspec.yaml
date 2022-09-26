@@ -75,6 +75,14 @@ dependencies:
   styled_text: ^5.1.0
   image: ^3.2.0
   collection: ^1.16.0
+  universal_link_plugin:
+    path: plugins/universal_link_plugin
+  connecting_wifi_plugin:
+    path: plugins/connecting_wifi_plugin
+  sms_receiver_plugin:
+    path: plugins/sms_receiver_plugin
+  ios_push_notification_plugin:
+    path: plugins/ios_push_notification_plugin
 
 dev_dependencies:
   flutter_test:

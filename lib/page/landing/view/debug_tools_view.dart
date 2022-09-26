@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
+import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/channel/push_notification_channel.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
@@ -434,10 +435,10 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                     Text('Receive notification: title: $title, body: $msg')));
           });
         } else if (Platform.isIOS) {
-          PushNotificationChannel().grantNotificationAuth().then((value) {
+          IosPushNotificationPlugin().requestAuthorization().then((value) {
             if (value) {
-              _streamSubscription = PushNotificationChannel()
-                  .listenPushNotification()
+              _streamSubscription = IosPushNotificationPlugin()
+                  .pushNotificationStream
                   .listen((event) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text('Receive notification: event: $event')));
