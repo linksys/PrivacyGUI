@@ -46,6 +46,9 @@ class CloudEnvironmentManager {
   }
 
   Future<void> fetchCloudConfig() async {
+    if (_config != null) {
+      return;
+    }
     final config = await _repository.fetchCloudConfig();
     logger.d('Cloud config fetched: $config');
     if (config == _config) {
@@ -56,6 +59,9 @@ class CloudEnvironmentManager {
   }
 
   Future<List<CloudConfig>> fetchAllCloudConfigs() async {
+    if (_allConfigs.isNotEmpty) {
+      return [];
+    }
     final configs = await _repository.fetchAllCloudConfig();
     _allConfigs
       ..clear()

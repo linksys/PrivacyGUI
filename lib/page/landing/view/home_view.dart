@@ -147,17 +147,5 @@ class _HomeViewState extends State<HomeView> {
   }
 
   _initialize() async {
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _isLoading = true;
-    });
-    // TODO what if there has no network???
-    await CloudEnvironmentManager().fetchCloudConfig();
-    await CloudEnvironmentManager().fetchAllCloudConfigs();
-    setState(() {
-      _isLoading = false;
-    });
   }
 }

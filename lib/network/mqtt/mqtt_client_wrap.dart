@@ -33,36 +33,36 @@ class MqttClientWrap {
 
   MqttClientWrap(this._endpoint, this._port, this._clientId);
 
-  Future<void> connect() async {
+  Future<void> connect({String? username, String? password, bool secure = true}) async {
     // Create the client
     _client = MqttServerClient.withPort(_endpoint, _clientId, _port)
-      ..secure = true // Set secure
       ..keepAlivePeriod = 20 // Set Keep-Alive
       ..setProtocolV311() // Set the protocol to V3.1.1 for AWS IoT Core, if you fail to do this you will receive a connect ack with the response code
       // ..logging(on: true); // logging if you wish
       ..onBadCertificate = _onBadCertificate;
 
-    // Set the security context as you need, note this is the standard Dart SecurityContext class.
-    // If this is incorrect the TLS handshake will abort and a Handshake exception will be raised,
-    // no connect ack message will be received and the broker will disconnect.
-    // For AWS IoT Core, we need to set the AWS Root CA, device cert & device private key
-    // Note that for Flutter users the parameters above can be set in byte format rather than file paths
-    final context = SecurityContext(withTrustedRoots: true);
-    // final context = SecurityContext.defaultContext;
+    _client.secure = secure;
+    if (secure) {
+      // Set the security context as you need, note this is the standard Dart SecurityContext class.
+      // If this is incorrect the TLS handshake will abort and a Handshake exception will be raised,
+      // no connect ack message will be received and the broker will disconnect.
+      // For AWS IoT Core, we need to set the AWS Root CA, device cert & device private key
+      // Note that for Flutter users the parameters above can be set in byte format rather than file paths
+      final context = SecurityContext(withTrustedRoots: true);
+      // final context = SecurityContext.defaultContext;
 
-    if (caCert != null) {
-      context.setClientAuthoritiesBytes(caCert!);
-      context.setTrustedCertificatesBytes(caCert!);
+      if (caCert != null) {
+        context.setClientAuthoritiesBytes(caCert!);
+        context.setTrustedCertificatesBytes(caCert!);
+      }
+      if (cert != null) {
+        context.useCertificateChainBytes(cert!);
+      }
+      if (keyCert != null) {
+        context.usePrivateKeyBytes(keyCert!);
+      }
+      _client.securityContext = context;
     }
-    if (cert != null) {
-      context.useCertificateChainBytes(cert!);
-    }
-    if (keyCert != null) {
-      context.usePrivateKeyBytes(keyCert!);
-    }
-
-    _client.securityContext = context;
-
     // Setup the connection Message
     final connMess =
         MqttConnectMessage().withClientIdentifier(_clientId).startClean();
@@ -75,7 +75,7 @@ class MqttClientWrap {
     // Connect the client
     try {
       logger.i('MQTT client connecting to endpoint: $_endpoint');
-      await _client.connect();
+      await _client.connect(username, password);
     } on Exception catch (e) {
       logger.i('MQTT client exception - $e');
       _client.disconnect();
@@ -159,9 +159,13 @@ class MqttClientWrap {
   bool _onBadCertificate(dynamic cert) {
     X509Certificate x509 = cert;
     logger.i("cert: ${x509.startValidity}, ${x509.endValidity}");
-    final localCa = String.fromCharCodes(caCert!).trim();
-    return x509.pem.trim() == localCa &&
-        _certExpirationCheck(x509.startValidity, x509.endValidity);
+    logger.i('cert info: ${x509.issuer}');
+    logger.i('cert info: ${x509.subject}');
+
+    return _certExpirationCheck(x509.startValidity, x509.endValidity);
+    // final localCa = String.fromCharCodes(caCert!).trim();
+    // return x509.pem.trim() == localCa &&
+    //     _certExpirationCheck(x509.startValidity, x509.endValidity);
   }
 
   bool _certExpirationCheck(DateTime start, DateTime end) {

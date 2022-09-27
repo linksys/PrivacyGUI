@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -17,6 +18,7 @@ import 'package:linksys_moab/network/http/extension_requests/accounts_requests.d
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/network/mqtt/mqtt_client_wrap.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
@@ -315,16 +317,26 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           height: 16,
         ),
         Text(
-          'Create Account:',
+          'MQTT test:',
           style: Theme.of(context)
               .textTheme
               .headline2
               ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
         SecondaryButton(
-          text: 'Create account',
-          onPress: () {
-            NavigationCubit.of(context).push(CreateCloudAccountPath());
+          text: 'Connect',
+          onPress: () async {
+            final client = MoabHttpClient();
+            const credentials = 'admin:admin';
+            final stringToBase64 = utf8.fuse(base64);
+
+            final response = await client
+                .get(Uri.parse('http://192.168.1.1/cert.cgi'), headers: {
+              'Authorization': 'Basic ${stringToBase64.encode(credentials)}',
+            });
+            // final mqtt = MqttClientWrap('192.168.1.1', 8833, 'TEST-CLIENT-ID');
+            // // mqtt.caCert = (await rootBundle.load('assets/keys/server.pem')).buffer.asInt8List();
+            // mqtt.connect(username: 'linksys', password: 'admin');
           },
         ),
       ],

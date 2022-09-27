@@ -25,6 +25,7 @@ import 'package:linksys_moab/route/_route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
+import 'package:mqtt_client/mqtt_client.dart';
 import 'bloc/setup/bloc.dart';
 import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
@@ -41,6 +42,9 @@ void main() {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    if (!kReleaseMode) {
+      MqttLogger.loggingOn = true;
+    }
     logger.d('Done for init Firebase Core');
     initCloudMessage();
     // Pass all uncaught errors from the framework to Crashlytics.
@@ -110,7 +114,7 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
     _initAuth();
     WidgetsBinding.instance.addObserver(this);
     _cubit = context.read<ConnectivityCubit>();
-    _cubit.start();
+    _cubit.init();
     _cubit.forceUpdate();
     super.initState();
   }

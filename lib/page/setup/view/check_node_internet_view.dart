@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/setup/bloc.dart';
 import 'package:linksys_moab/bloc/setup/event.dart';
 import 'package:linksys_moab/bloc/setup/state.dart';
@@ -7,7 +8,6 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_moab/route/model/internet_check_path.dart';
 import 'package:linksys_moab/route/_route.dart';
 
@@ -27,7 +27,6 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
   @override
   void initState() {
     super.initState();
-    //TODO: Add real Internet check function
     _fakeInternetChecking();
   }
 
@@ -35,7 +34,11 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
     context.read<SetupBloc>().add(
       const ResumePointChanged(status: SetupResumePoint.INTERNETCHECK)
     );
-    await Future.delayed(const Duration(seconds: 5));
+    final state = await context.read<ConnectivityCubit>().forceUpdate();
+    if (state.connectivityInfo.gatewayIp != null) {
+
+    }
+    _hasInternet = state.hasInternet;
     setState(() {
       _hasInternet = true;
     });

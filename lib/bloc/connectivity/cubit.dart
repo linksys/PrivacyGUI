@@ -8,35 +8,57 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/connectivity/availability_info.dart';
+import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
 import '../../constants/constants.dart';
 import 'connectivity_info.dart';
+import 'state.dart';
 
-class ConnectivityCubit extends Cubit<ConnectivityInfo>
+class ConnectivityCubit extends Cubit<ConnectivityState>
     with ConnectivityListener, AvailabilityChecker {
-  ConnectivityCubit() : super(const ConnectivityInfo(gatewayIp: '', ssid: ''));
+  ConnectivityCubit()
+      : super(const ConnectivityState(
+            hasInternet: false, connectivityInfo: ConnectivityInfo()));
+  // TODO refactor
   bool isAndroid9 = false;
   bool isAndroid10AndSupportEasyConnect = false;
 
   @override
   Future onConnectivityChanged(ConnectivityInfo info) async {
     if (info.type != ConnectivityResult.none) {
-      // testAvailability().then((value) => emit(info.copyWith(availabilityInfo: value)));
+      scheduleCheck(immediate: true);
     } else {
-      emit(info.copyWith(availabilityInfo: null));
+      emit(state.copyWith(connectivityInfo: info));
     }
   }
 
-  void forceUpdate() async {
+  void init() {
+    callback = _internetCheckCallback;
+    scheduleCheck();
+    start();
+  }
+
+  Future<ConnectivityState> forceUpdate() async {
     _checkAndroidVersionAndEasyConnect();
     _updateConnectivity(await _connectivity.checkConnectivity());
+    return state;
+  }
+
+  void _internetCheckCallback(
+      bool hasConnection, AvailabilityInfo? cloudInfo) async {
+    if (hasConnection) {
+      await CloudEnvironmentManager().fetchCloudConfig();
+      await CloudEnvironmentManager().fetchAllCloudConfigs();
+    }
+    logger.d('internet check result: $state');
+    emit(state.copyWith(
+        hasInternet: hasConnection, cloudAvailabilityInfo: cloudInfo));
   }
 
   void _checkAndroidVersionAndEasyConnect() async {
-
     isAndroid9 = await ConnectingWifiPlugin().isAndroidVersionUnderTen();
     isAndroid10AndSupportEasyConnect = isAndroid9
         ? false
@@ -44,16 +66,53 @@ class ConnectivityCubit extends Cubit<ConnectivityInfo>
   }
 
   @override
-  void onChange(Change<ConnectivityInfo> change) {
+  void onChange(Change<ConnectivityState> change) {
     super.onChange(change);
-    logger.i('Connectivity Cubit change: ${change.currentState.type} -> ${change.nextState.type}');
+    logger.i(
+        'Connectivity Cubit change: ${change.currentState} -> ${change.nextState}');
   }
 }
 
 mixin AvailabilityChecker {
+  static const internetCheckPeriod = Duration(seconds: 30);
+  Timer? timer;
   final _client = MoabHttpClient(timeoutMs: 3000);
+  Function(bool, AvailabilityInfo?)? _callback;
 
-  Future<AvailabilityInfo> testAvailability() async {
+  set callback(Function(bool, AvailabilityInfo?) callback) =>
+      _callback = callback;
+
+  scheduleCheck({bool immediate = false}) async {
+    if (immediate) {
+      await check();
+    }
+    timer?.cancel();
+    timer = Timer.periodic(internetCheckPeriod, (timer) async {
+      logger.d('Start period check internet...');
+      await check();
+    });
+  }
+
+  check() async {
+    final hasConnection = await testConnection();
+    if (!hasConnection) {
+      _callback?.call(hasConnection, null);
+      return;
+    }
+    final cloudAvailability = await testCloudAvailability();
+    _callback?.call(hasConnection, cloudAvailability);
+  }
+
+  Future<bool> testConnection() async {
+    try {
+      final result = await InternetAddress.lookup('google.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } on SocketException catch (_) {
+      return false;
+    }
+  }
+
+  Future<AvailabilityInfo> testCloudAvailability() async {
     return _client.get(Uri.parse(availabilityUrl)).then((response) {
       final isCloudOk = json.decode(response.body)['cloudStatus'] == 'OK';
       return AvailabilityInfo(isCloudOk: isCloudOk);
@@ -79,7 +138,6 @@ mixin ConnectivityListener {
 
   _updateConnectivity(ConnectivityResult result) async {
     final connectivityInfo = await _updateNetworkInfo(result);
-
     onConnectivityChanged(connectivityInfo);
   }
 

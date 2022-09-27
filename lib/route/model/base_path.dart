@@ -79,7 +79,8 @@ abstract class BasePath {
   }
 }
 
-class HomePath extends BasePath {}
+class HomePath extends BasePath {
+}
 
 class UnknownPath extends BasePath {}
 
