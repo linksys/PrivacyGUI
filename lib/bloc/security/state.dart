@@ -1,12 +1,11 @@
-import 'package:equatable/equatable.dart';
 
 enum SubscriptionStatus {
   unsubscribed(displayTitle: 'Unsubscribed'),
+  trialActive(displayTitle: 'Active (trial)'),
   active(displayTitle: 'Active'),
-  activeTrial(displayTitle: 'Active (trial)'),
-  activeTurnedOff(displayTitle: 'Active (Turned Off)'),
+  trialExpired(displayTitle: 'Expired'),
   expired(displayTitle: 'Expired'),
-  trialExpired(displayTitle: 'Expired');
+  turnedOff(displayTitle: 'Active (Turned Off)');
 
   const SubscriptionStatus({required this.displayTitle});
 
@@ -34,18 +33,17 @@ enum SecurityEvaluatedRange {
   final String displayTitle;
 }
 
-class SecurityState extends Equatable {
-  final SubscriptionStatus subscriptionStatus;
-  final SecurityEvaluatedRange evaluatedRange;
-  final String latestUpdateDate;
-  final int remainingTrialDays;
+class SecurityState {
+  SubscriptionStatus get subscriptionStatus => SubscriptionStatus.unsubscribed;
   final int numOfInspection;
-  final int numOfIncidents;
-  final bool hasFilterCreated;
   final int numOfBlockedVirus;
   final int numOfBlockedMalware;
   final int numOfBlockedBotnet;
   final int numOfBlockedWebsite;
+  final int numOfIncidents;
+  final bool hasFilterCreated;
+  final String latestUpdateDate;
+  final SecurityEvaluatedRange evaluatedRange;
   bool get hasBlockedThreat {
     return numOfBlockedVirus > 0 ||
         numOfBlockedMalware > 0 ||
@@ -53,74 +51,171 @@ class SecurityState extends Equatable {
         numOfBlockedWebsite > 0;
   }
 
-  const SecurityState({
-    required this.subscriptionStatus,
-    required this.evaluatedRange,
-    required this.latestUpdateDate,
-    required this.remainingTrialDays,
-    required this.numOfInspection,
-    required this.numOfIncidents,
-    required this.hasFilterCreated,
-    required this.numOfBlockedVirus,
-    required this.numOfBlockedMalware,
-    required this.numOfBlockedBotnet,
-    required this.numOfBlockedWebsite,
+  SecurityState({
+    this.numOfInspection = 0,
+    this.numOfBlockedVirus = 0,
+    this.numOfBlockedMalware = 0,
+    this.numOfBlockedBotnet = 0,
+    this.numOfBlockedWebsite = 0,
+    this.numOfIncidents = 0,
+    this.hasFilterCreated = false,
+    this.latestUpdateDate = '',
+    this.evaluatedRange = SecurityEvaluatedRange.week,
   });
+}
 
-  SecurityState.init()
-      : subscriptionStatus = SubscriptionStatus.unsubscribed,
-        evaluatedRange = SecurityEvaluatedRange.week,
-        latestUpdateDate = 'Aug 15, 2022',
-        remainingTrialDays = 30,
-        numOfInspection = 924,
-        numOfIncidents = 21,
-        hasFilterCreated = true,
-        numOfBlockedVirus = 3,
-        numOfBlockedMalware = 6,
-        numOfBlockedBotnet = 11,
-        numOfBlockedWebsite = 4;
+class UnsubscribedState extends SecurityState {
+  @override
+  SubscriptionStatus get subscriptionStatus => SubscriptionStatus.unsubscribed;
 
-  SecurityState copyWith({
-    String? headerPrompt,
-    SubscriptionStatus? subscriptionStatus,
-    SecurityEvaluatedRange? evaluatedRange,
-    String? latestUpdateDate,
-    int? remainingTrialDays,
+  UnsubscribedState({
+    super.numOfInspection,
+    super.numOfBlockedVirus,
+    super.numOfBlockedMalware,
+    super.numOfBlockedBotnet,
+    super.numOfBlockedWebsite,
+    super.numOfIncidents,
+    super.hasFilterCreated,
+    super.latestUpdateDate,
+    super.evaluatedRange,
+  }) : super();
+}
+
+class TrialActiveState extends SecurityState {
+  final int remainingTrialDays;
+  @override
+  SubscriptionStatus get subscriptionStatus => SubscriptionStatus.trialActive;
+
+  TrialActiveState({
+    super.numOfInspection,
+    super.numOfBlockedVirus,
+    super.numOfBlockedMalware,
+    super.numOfBlockedBotnet,
+    super.numOfBlockedWebsite,
+    super.numOfIncidents,
+    super.hasFilterCreated,
+    super.latestUpdateDate,
+    super.evaluatedRange,
+    this.remainingTrialDays = 0,
+  }) : super();
+
+  TrialActiveState copyWith({
     int? numOfInspection,
-    int? numOfIncidents,
-    bool? hasFilterCreated,
     int? numOfBlockedVirus,
     int? numOfBlockedMalware,
     int? numOfBlockedBotnet,
     int? numOfBlockedWebsite,
+    int? numOfIncidents,
+    bool? hasFilterCreated,
+    String? latestUpdateDate,
+    SecurityEvaluatedRange? evaluatedRange,
+    int? remainingTrialDays,
   }) {
-    return SecurityState(
-      subscriptionStatus: subscriptionStatus ?? this.subscriptionStatus,
-      evaluatedRange: evaluatedRange ?? this.evaluatedRange,
-      latestUpdateDate: latestUpdateDate ?? this.latestUpdateDate,
+    return TrialActiveState(
+      numOfInspection: numOfInspection ?? super.numOfInspection,
+      numOfBlockedVirus: numOfBlockedVirus ?? super.numOfBlockedVirus,
+      numOfBlockedMalware: numOfBlockedMalware ?? super.numOfBlockedMalware,
+      numOfBlockedBotnet: numOfBlockedBotnet ?? super.numOfBlockedBotnet,
+      numOfBlockedWebsite: numOfBlockedWebsite ?? super.numOfBlockedWebsite,
+      numOfIncidents: numOfIncidents ?? super.numOfIncidents,
+      hasFilterCreated: hasFilterCreated ?? super.hasFilterCreated,
+      latestUpdateDate: latestUpdateDate ?? super.latestUpdateDate,
+      evaluatedRange: evaluatedRange ?? super.evaluatedRange,
       remainingTrialDays: remainingTrialDays ?? this.remainingTrialDays,
-      numOfInspection: numOfInspection ?? this.numOfInspection,
-      numOfIncidents: numOfIncidents ?? this.numOfIncidents,
-      hasFilterCreated: hasFilterCreated ?? this.hasFilterCreated,
-      numOfBlockedVirus: numOfBlockedVirus ?? this.numOfBlockedVirus,
-      numOfBlockedMalware: numOfBlockedMalware ?? this.numOfBlockedMalware,
-      numOfBlockedBotnet: numOfBlockedBotnet ?? this.numOfBlockedBotnet,
-      numOfBlockedWebsite: numOfBlockedWebsite ?? this.numOfBlockedWebsite,
     );
   }
-
-  @override
-  List<Object?> get props => [
-    subscriptionStatus,
-    evaluatedRange,
-    latestUpdateDate,
-    remainingTrialDays,
-    numOfInspection,
-    numOfIncidents,
-    hasFilterCreated,
-    numOfBlockedVirus,
-    numOfBlockedMalware,
-    numOfBlockedBotnet,
-    numOfBlockedWebsite,
-  ];
 }
+
+class FormalActiveState extends SecurityState {
+  @override
+  SubscriptionStatus get subscriptionStatus => SubscriptionStatus.active;
+
+  FormalActiveState({
+    super.numOfInspection,
+    super.numOfBlockedVirus,
+    super.numOfBlockedMalware,
+    super.numOfBlockedBotnet,
+    super.numOfBlockedWebsite,
+    super.numOfIncidents,
+    super.hasFilterCreated,
+    super.latestUpdateDate,
+    super.evaluatedRange,
+  });
+
+  FormalActiveState copyWith({
+    int? numOfInspection,
+    int? numOfBlockedVirus,
+    int? numOfBlockedMalware,
+    int? numOfBlockedBotnet,
+    int? numOfBlockedWebsite,
+    int? numOfIncidents,
+    bool? hasFilterCreated,
+    String? latestUpdateDate,
+    SecurityEvaluatedRange? evaluatedRange,
+  }) {
+    return FormalActiveState(
+      numOfInspection: numOfInspection ?? super.numOfInspection,
+      numOfBlockedVirus: numOfBlockedVirus ?? super.numOfBlockedVirus,
+      numOfBlockedMalware: numOfBlockedMalware ?? super.numOfBlockedMalware,
+      numOfBlockedBotnet: numOfBlockedBotnet ?? super.numOfBlockedBotnet,
+      numOfBlockedWebsite: numOfBlockedWebsite ?? super.numOfBlockedWebsite,
+      numOfIncidents: numOfIncidents ?? super.numOfIncidents,
+      hasFilterCreated: hasFilterCreated ?? super.hasFilterCreated,
+      latestUpdateDate: latestUpdateDate ?? super.latestUpdateDate,
+      evaluatedRange: evaluatedRange ?? super.evaluatedRange,
+    );
+  }
+}
+
+class TrialExpiredState extends SecurityState {
+  @override
+  SubscriptionStatus get subscriptionStatus => SubscriptionStatus.trialExpired;
+
+  TrialExpiredState({
+    super.numOfInspection,
+    super.numOfBlockedVirus,
+    super.numOfBlockedMalware,
+    super.numOfBlockedBotnet,
+    super.numOfBlockedWebsite,
+    super.numOfIncidents,
+    super.hasFilterCreated,
+    super.latestUpdateDate,
+    super.evaluatedRange,
+  }) : super();
+}
+
+class ExpiredState extends SecurityState {
+  @override
+  SubscriptionStatus get subscriptionStatus => SubscriptionStatus.expired;
+
+  ExpiredState({
+    super.numOfInspection,
+    super.numOfBlockedVirus,
+    super.numOfBlockedMalware,
+    super.numOfBlockedBotnet,
+    super.numOfBlockedWebsite,
+    super.numOfIncidents,
+    super.hasFilterCreated,
+    super.latestUpdateDate,
+    super.evaluatedRange,
+  }) : super();
+}
+
+class TurnedOffState extends SecurityState {
+  @override
+  SubscriptionStatus get subscriptionStatus => SubscriptionStatus.turnedOff;
+
+  TurnedOffState({
+    super.numOfInspection,
+    super.numOfBlockedVirus,
+    super.numOfBlockedMalware,
+    super.numOfBlockedBotnet,
+    super.numOfBlockedWebsite,
+    super.numOfIncidents,
+    super.hasFilterCreated,
+    super.latestUpdateDate,
+    super.evaluatedRange,
+  }) : super();
+}
+
+

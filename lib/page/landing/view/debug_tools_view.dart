@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-
+import 'dart:typed_data';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +11,10 @@ import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
+import 'package:linksys_moab/bloc/security/bloc.dart';
+import 'package:linksys_moab/bloc/security/event.dart';
+import 'package:linksys_moab/bloc/security/state.dart';
+import 'package:linksys_moab/channel/push_notification_channel.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
@@ -19,6 +23,7 @@ import 'package:linksys_moab/page/components/base_components/base_components.dar
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
@@ -331,9 +336,12 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         Text(
           'Icon Map:',
           style: Theme.of(context)
-              .textTheme
-              .headline2
-              ?.copyWith(color: Theme.of(context).colorScheme.primary),
+            .textTheme
+            .headline2
+            ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        ),
+        const SizedBox(
+          height: 16,
         ),
         FutureBuilder<List<String>>(
           future: AppIconManager.instance().getAppIds(),
@@ -343,10 +351,10 @@ class _DebugToolsViewState extends State<DebugToolsView> {
               return DropdownButton<String>(
                   value: _selectedIconKey,
                   items:
-                      List.from(_iconData.map((e) => DropdownMenuItem<String>(
-                            child: Text(e),
-                            value: e,
-                          ))),
+                  List.from(_iconData.map((e) => DropdownMenuItem<String>(
+                    child: Text(e),
+                    value: e,
+                  ))),
                   onChanged: (value) {
                     setState(() {
                       _selectedIconKey = value!;
@@ -359,14 +367,15 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         ),
         FutureBuilder<Uint8List?>(
             future:
-                AppIconManager.instance().getIconByte(_selectedIconKey ?? ''),
+            AppIconManager.instance().getIconByte(_selectedIconKey ?? ''),
             builder: (context, snapshot) => snapshot.data == null
                 ? Center()
                 : Image.memory(
-                    snapshot.data!,
-                    width: 96,
-                    height: 96,
-                  )),
+              snapshot.data!,
+              width: 96,
+              height: 96,
+            )
+        ),
         Text(
           'Default Preset:',
           style: Theme.of(context)
@@ -379,6 +388,110 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           onPress: () {
             SecurityProfileManager.instance().fetchDefaultPresets();
           },
+        ),
+        Text(
+          'Subscription:',
+          style: Theme.of(context)
+              .textTheme
+              .headline2
+              ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        ),
+        SecondaryButton(
+          text: 'Activate Trial Subscription',
+          onPress: () {
+            context.read<SecurityBloc>().add(SetTrialActiveEvent());
+          },
+        ),
+        box8(),
+        SecondaryButton(
+          text: 'Activate Formal Subscription',
+          onPress: () {
+            context.read<SecurityBloc>().add(SetFormalActiveEvent());
+          },
+        ),
+        box8(),
+        SecondaryButton(
+          text: 'Trial Subscription Expires',
+          onPress: () {
+            context.read<SecurityBloc>().add(SetTrialExpiredEvent());
+          },
+        ),
+        box8(),
+        SecondaryButton(
+          text: 'Formal Subscription Expires',
+          onPress: () {
+            context.read<SecurityBloc>().add(SetExpiredEvent());
+          },
+        ),
+        box8(),
+        SecondaryButton(
+          text: 'Turn Off Security',
+          onPress: () {
+            context.read<SecurityBloc>().add(TurnOffSecurityEvent());
+          },
+        ),
+        box8(),
+        SecondaryButton(
+          text: 'Cancel Subscription',
+          onPress: () {
+            context.read<SecurityBloc>().add(SetUnsubscribedEvent());
+          },
+        ),
+        box8(),
+        Row(
+          children: [
+            Expanded(
+              child: SecondaryButton(
+                text: 'Virus+1',
+                onPress: () {
+                  context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
+                    type: CyberthreatType.virus,
+                    number: 1,
+                  ));
+                },
+              ),
+            ),
+            box8(),
+            Expanded(
+              child: SecondaryButton(
+                text: 'Malware+1',
+                onPress: () {
+                  context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
+                    type: CyberthreatType.malware,
+                    number: 1,
+                  ));
+                },
+              ),
+            ),
+          ],
+        ),
+        box8(),
+        Row(
+          children: [
+            Expanded(
+              child: SecondaryButton(
+                text: 'Botnet+1',
+                onPress: () {
+                  context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
+                    type: CyberthreatType.botnet,
+                    number: 1,
+                  ));
+                },
+              ),
+            ),
+            box8(),
+            Expanded(
+              child: SecondaryButton(
+                text: 'Website+1',
+                onPress: () {
+                  context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
+                    type: CyberthreatType.website,
+                    number: 1,
+                  ));
+                },
+              ),
+            ),
+          ],
         ),
       ],
     );

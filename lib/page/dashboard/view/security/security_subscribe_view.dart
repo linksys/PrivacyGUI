@@ -39,7 +39,7 @@ class SecuritySubscribeView extends StatelessWidget {
             PrimaryButton(
               text: 'Subscribe',
               onPress: () {
-                context.read<SecurityBloc>().add(SetActiveSubscription());
+                context.read<SecurityBloc>().add(SetFormalActiveEvent());
               },
             ),
             const SizedBox(

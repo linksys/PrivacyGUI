@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/security/bloc.dart';
+import 'package:linksys_moab/bloc/security/event.dart';
 import 'package:linksys_moab/bloc/security/state.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
@@ -18,48 +19,244 @@ class DashboardSecurityView extends StatefulWidget {
 
 class _DashboardSecurityViewState extends State<DashboardSecurityView> {
 
-  @override
-  Widget build(BuildContext context) {
-    return BasePageView.noNavigationBar(
-      scrollable: true,
+  Widget _unsubscribedView(SecurityState state) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: _subscriptionStatus(state),
+        ),
+        _subscriptionPrompt(state),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _cyberthreatTile(),
+              _divider(),
+              _contentFilterTile(),
+              _contentFilterInfo(state),
+              _lastUpdate(state),
+            ],
+          )
+        ),
+      ],
+    );
+  }
+
+  Widget _trialActiveView(SecurityState state) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: _subscriptionStatus(state),
+        ),
+        _subscriptionPrompt(state),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _cyberthreatTile(),
+              _cyberthreatGrid(state),
+              _performedInspectionInfo(state),
+              _divider(),
+              _contentFilterTile(),
+              _contentFilterInfo(state),
+              _lastUpdate(state),
+            ],
+          ),
+        ),
+
+      ],
+    );
+  }
+
+  Widget _formalActiveView(SecurityState state) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(),
-          _securityStatus(),
-          _cyberthreatsTile(),
+          _subscriptionStatus(state),
+          _cyberthreatTile(),
+          _cyberthreatGrid(state),
+          _performedInspectionInfo(state),
           _divider(),
           _contentFilterTile(),
-          _updateInfo(),
+          _contentFilterInfo(state),
+          _lastUpdate(state),
         ],
       ),
     );
   }
 
-  Widget _header() {
+  Widget _trialExpiredView(SecurityState state) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: _subscriptionStatus(state),
+        ),
+        _subscriptionPrompt(state),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _cyberthreatTile(),
+              _divider(),
+              _contentFilterTile(),
+              _contentFilterInfo(state),
+              _lastUpdate(state),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _expiredView(SecurityState state) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: _subscriptionStatus(state),
+        ),
+        _subscriptionPrompt(state),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _cyberthreatTile(),
+              _divider(),
+              _contentFilterTile(),
+              _contentFilterInfo(state),
+              _lastUpdate(state),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _turnedOffView(SecurityState state) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _subscriptionStatus(state),
+          _cyberthreatTile(),
+          _cyberthreatGrid(state),
+          _divider(),
+          _contentFilterTile(),
+          _contentFilterInfo(state),
+          _lastUpdate(state),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BasePageView.noNavigationBar(
+      scrollable: true,
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
+      child: BlocBuilder<SecurityBloc, SecurityState>(
+        builder: (context, state) {
+          switch(state.subscriptionStatus) {
+            case SubscriptionStatus.unsubscribed:
+              return _unsubscribedView(state);
+            case SubscriptionStatus.trialActive:
+              return _trialActiveView(state);
+            case SubscriptionStatus.active:
+              return _formalActiveView(state);
+            case SubscriptionStatus.trialExpired:
+              return _trialExpiredView(state);
+            case SubscriptionStatus.expired:
+              return _expiredView(state);
+            case SubscriptionStatus.turnedOff:
+              return _turnedOffView(state);
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _subscriptionStatus(SecurityState state) {
+    return Row(
       children: [
         Text(
-          'Security',
+          'Linksys Secure',
           style: Theme.of(context)
               .textTheme
               .headline1
-              ?.copyWith(fontSize: 32, fontWeight: FontWeight.w700),
+              ?.copyWith(fontSize: 23, fontWeight: FontWeight.w700),
           textAlign: TextAlign.start,
         ),
-        const SizedBox(
-          height: 10,
+        box8(),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _getSubscriptionStatusImage(),
+            box4(),
+            Text(
+              state.subscriptionStatus.displayTitle,
+              style: Theme.of(context)
+                  .textTheme
+                  .headline3
+                  ?.copyWith(fontWeight: FontWeight.w500),
+            ),
+          ],
         ),
+      ],
+    );
+  }
+
+  Widget _getSubscriptionStatusImage() {
+    String imageName;
+    switch(context.read<SecurityBloc>().state.subscriptionStatus) {
+      case SubscriptionStatus.unsubscribed:
+        imageName = 'assets/images/icon_checked_circle.png';
+        break;
+      case SubscriptionStatus.trialActive:
+        imageName = 'assets/images/icon_checked_circle.png';
+        break;
+      case SubscriptionStatus.active:
+        imageName = 'assets/images/icon_checked_circle.png';
+        break;
+      case SubscriptionStatus.trialExpired:
+        imageName = 'assets/images/icon_checked_circle.png';
+        break;
+      case SubscriptionStatus.expired:
+        imageName = 'assets/images/icon_checked_circle.png';
+        break;
+      case SubscriptionStatus.turnedOff:
+        imageName = 'assets/images/icon_checked_circle.png';
+        break;
+    }
+    return Image.asset(imageName, width: 16, height: 16);
+  }
+
+  Widget _subscriptionPrompt(SecurityState state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        box24(),
         GestureDetector(
           child: Container(
             alignment: Alignment.centerLeft,
             height: 52,
             color: MoabColor.dashboardBottomBackground,
-            child: Text(
-              _getSubscriptionPromptText(),
-              style: Theme.of(context).textTheme.headline3?.copyWith(
-                  fontWeight: FontWeight.w500
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                _getSubscriptionPromptText(state),
+                style: Theme.of(context).textTheme.headline3?.copyWith(
+                    fontWeight: FontWeight.w500
+                ),
               ),
             ),
           ),
@@ -67,88 +264,74 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             NavigationCubit.of(context).push(SecurityMarketingPath());
           },
         ),
-      ],
-    );
-  }
-
-  Widget _securityStatus() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(
-          height: 45,
-        ),
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(
-              'Linksys Secure',
-              style: Theme.of(context)
-                  .textTheme
-                  .headline2
-                  ?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Image.asset(
-                'assets/images/icon_checked_circle.png',//TODO: Remove hard code
-                width: 16,
-                height: 16,
-              ),
-            ),
-            Text(
-              context.read<SecurityBloc>().state.subscriptionStatus.displayTitle,
-              style: Theme.of(context)
-                  .textTheme
-                  .headline2
-                  ?.copyWith(fontWeight: FontWeight.w400),
-            ),
-          ],
-        ),
-        const SizedBox(
-          height: 8,
-        ),
-        Text(
-          'This ${context.read<SecurityBloc>().state.evaluatedRange.displayTitle}',
-          style: Theme.of(context)
-              .textTheme
-              .headline3
-              ?.copyWith(fontWeight: FontWeight.w400),
-        ),
-      ],
-    );
-  }
-
-  Widget _cyberthreatsTile() {
-    final screenWidth = MediaQuery.of(context).size.width - (24 * 2);
-    final tileHeight = (screenWidth - 14) / 2 / 1.75 * 2 + 14;
-    final status = context.read<SecurityBloc>().state.subscriptionStatus;
-    final numOfInspections = context.read<SecurityBloc>().state.numOfInspection;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TitleWithIcons(
-          text: Text(
-            'Cyberthreats blocked',
-            style: Theme.of(context)
-                .textTheme
-                .headline3
-                ?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          leadingIcon: Image.asset('assets/images/security_good_small.png'),
-          trailingIcon: IconButton(
-            icon: Image.asset(
-              'assets/images/icon_info.png',
-              height: 26,
-              width: 26,
-            ),
-            onPressed: () {
-              NavigationCubit.of(context).push(SecurityProtectionStatusPath());
+        box16(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: PrimaryButton(
+            text: 'Subscribe',
+            onPress: () {
+              context.read<SecurityBloc>().add(SetFormalActiveEvent());
             },
           ),
         ),
+      ],
+    );
+  }
+
+  String _getSubscriptionPromptText(SecurityState state) {
+    switch(state.subscriptionStatus) {
+      case SubscriptionStatus.unsubscribed:
+        return 'Get enterprise-level security for your home';
+      case SubscriptionStatus.active:
+        return '';  // The subscription prompt will not display
+      case SubscriptionStatus.trialActive:
+        final numOfDays = (state as TrialActiveState).remainingTrialDays;
+        return '$numOfDays days left on Linksys Secure trial';
+      case SubscriptionStatus.trialExpired:
+        return 'Get enterprise-level security for your home';
+      case SubscriptionStatus.expired:
+        return 'Get enterprise-level security for your home';
+      case SubscriptionStatus.turnedOff:
+        return '';  // The subscription prompt will not display
+    }
+  }
+
+  Widget _cyberthreatTile() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 40),
+      child: TitleWithIcons(
+        text: Text(
+          'Cyberthreats blocked',
+          style: Theme.of(context)
+              .textTheme
+              .headline3
+              ?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        leadingIcon: Image.asset('assets/images/security_good_small.png'),
+        trailingIcon: IconButton(
+          icon: Image.asset(
+            'assets/images/icon_info.png',
+            height: 26,
+            width: 26,
+          ),
+          onPressed: () {
+            NavigationCubit.of(context).push(SecurityProtectionStatusPath());
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _cyberthreatGrid(SecurityState state) {
+    final screenWidth = MediaQuery.of(context).size.width - (24 * 2);
+    final tileHeight = (screenWidth - 14) / 2 / 1.75 * 2 + 14;
+    final isGridEnabled = state.subscriptionStatus != SubscriptionStatus.turnedOff;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        box16(),
         Visibility(
-          visible: context.read<SecurityBloc>().state.hasBlockedThreat,
+          visible: state.hasBlockedThreat,
           replacement: Text(
             'No one has tried any funny business yet, but we are monitoring 24/7',
             style: Theme.of(context).textTheme.headline3?.copyWith(
@@ -164,11 +347,11 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
               mainAxisSpacing: 14,
               crossAxisSpacing: 14,
               physics: const NeverScrollableScrollPhysics(),
-              children: [  //TODO: Remove hard code
+              children: [
                 InfoBlockWidget(
                   count: context.read<SecurityBloc>().state.numOfBlockedVirus,
                   text: CyberthreatType.virus.displayTitle,
-                  isEnabled: status != SubscriptionStatus.activeTurnedOff,
+                  isEnabled: isGridEnabled,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
                       ..args = {'type': CyberthreatType.virus}
@@ -178,7 +361,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                 InfoBlockWidget(
                   count: context.read<SecurityBloc>().state.numOfBlockedMalware,
                   text: CyberthreatType.malware.displayTitle,
-                  isEnabled: status != SubscriptionStatus.activeTurnedOff,
+                  isEnabled: isGridEnabled,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
                       ..args = {'type': CyberthreatType.malware}
@@ -188,7 +371,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                 InfoBlockWidget(
                   count: context.read<SecurityBloc>().state.numOfBlockedBotnet,
                   text: CyberthreatType.botnet.displayTitle,
-                  isEnabled: status != SubscriptionStatus.activeTurnedOff,
+                  isEnabled: isGridEnabled,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
                       ..args = {'type': CyberthreatType.botnet}
@@ -198,7 +381,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                 InfoBlockWidget(
                   count: context.read<SecurityBloc>().state.numOfBlockedWebsite,
                   text: CyberthreatType.website.displayTitle,
-                  isEnabled: status != SubscriptionStatus.activeTurnedOff,
+                  isEnabled: isGridEnabled,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
                       ..args = {'type': CyberthreatType.website}
@@ -209,65 +392,110 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             ),
           ),
         ),
-        Offstage(
-          offstage: !(numOfInspections > 0),
-          child: Column(
-            children: [
-              box8(),
-              Text(
-                '$numOfInspections total inspections performed',
-                style: Theme.of(context).textTheme.headline3?.copyWith(
-                  fontWeight: FontWeight.w400
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
 
-  Widget _contentFilterTile() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TitleWithIcons(
-          text: Text(
-            'Content filtered',
+  Widget _performedInspectionInfo(SecurityState state) {
+    return Offstage(
+      offstage: !(state.numOfInspection > 0),
+      child: Column(
+        children: [
+          box8(),
+          Text(
+            '${state.numOfInspection} total inspections performed',
             style: Theme.of(context).textTheme.headline3?.copyWith(
-              fontWeight: FontWeight.w700
+                fontWeight: FontWeight.w400
             ),
           ),
-          leadingIcon: Image.asset(
-            'assets/images/icon_block.png',
+        ],
+      ),
+    );
+  }
+
+  Widget _divider() {
+    return const Padding(
+      padding: EdgeInsets.only(top: 32),
+      child: Divider(
+        height: 1,
+        color: MoabColor.black,
+      ),
+    );
+  }
+
+  Widget _contentFilterTile() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 30),
+      child: TitleWithIcons(
+        text: Text(
+          'Content filtered',
+          style: Theme.of(context).textTheme.headline3?.copyWith(
+              fontWeight: FontWeight.w700
+          ),
+        ),
+        leadingIcon: Image.asset(
+          'assets/images/icon_block.png',
+          height: 26,
+          width: 26,
+        ),
+        trailingIcon: IconButton(
+          icon: Image.asset(
+            'assets/images/icon_info.png',
             height: 26,
             width: 26,
           ),
-          trailingIcon: IconButton(
-            icon: Image.asset(
-              'assets/images/icon_info.png',
-              height: 26,
-              width: 26,
+          onPressed: () {
+            //TODO: Go to next page
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _contentFilterInfo(SecurityState state) {
+    if (state is UnsubscribedState ||
+        state is TrialExpiredState ||
+        state is ExpiredState) {
+      return Text(
+        'Create healthy digital lifestyle for your family and feel safe with the content on your network. Filter out categories and apps you don’t want.',
+        style: Theme.of(context).textTheme.headline3?.copyWith(
+            fontWeight: FontWeight.w500
+        ),
+      );
+    } else {
+      return Visibility(
+        visible: state.hasFilterCreated,
+        child: Visibility(
+          visible: state.numOfIncidents > 0,
+          child: _incidentsOnProfiles(),
+          replacement: Text(
+            'No incidents yet',
+            style: Theme.of(context).textTheme.headline3?.copyWith(
+                fontWeight: FontWeight.w500
             ),
-            onPressed: () {
-              //TODO: Go to next page
-            },
           ),
         ),
-        box36(),
-        Visibility(
-          visible: context.read<SecurityBloc>().state.hasFilterCreated,
-          child: Visibility(
-            visible: (context.read<SecurityBloc>().state.numOfIncidents) > 0,
-            child: _incidentsOnProfiles(),
-            replacement: Text(
-              'No incidents yet',
-              style: Theme.of(context).textTheme.headline3?.copyWith(
-                  fontWeight: FontWeight.w500
-              ),
-            ),
+        replacement: _createFilter(),
+      );
+    }
+  }
+
+  Widget _createFilter() {
+    return Column(
+      children: [
+        Text(
+          'Create healthy digital lifestyle for your family and feel safe with the content on your network. Filter out categories and apps you don’t want.',
+          style: Theme.of(context).textTheme.headline3?.copyWith(
+              fontWeight: FontWeight.w500
           ),
-          replacement: _createFilter(),
+        ),
+        box24(),
+        PrimaryButton(
+          text: 'Create filter',
+          onPress: () {
+            //TODO: Go to next page
+            context.read<SecurityBloc>().add(ContentFilterCreatedEvent());
+          },
         ),
       ],
     );
@@ -283,7 +511,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
         InfoBlockWidget(
           count: context.read<SecurityBloc>().state.numOfIncidents,
           text: 'Blocked content this ${range.displayTitle}',
-          isEnabled: status != SubscriptionStatus.activeTurnedOff,
+          isEnabled: status != SubscriptionStatus.turnedOff,
           isVertical: false,
           height: 60,
         ),
@@ -319,37 +547,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
     );
   }
 
-  Widget _createFilter() {
-    return Column(
-      children: [
-        Text(
-          'Create healthy digital lifestyle for your family and feel safe with the content on your network. Filter out categories and apps you don’t want.',
-          style: Theme.of(context).textTheme.headline3?.copyWith(
-              fontWeight: FontWeight.w500
-          ),
-        ),
-        box24(),
-        PrimaryButton(
-          text: 'Create filter',
-          onPress: () {
-            //TODO: Go to next page
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _divider() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 16.0),
-      child: Divider(
-        height: 1,
-        color: MoabColor.black,
-      ),
-    );
-  }
-
-  Widget _updateInfo() {
+  Widget _lastUpdate(SecurityState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -361,31 +559,13 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
           ),
         ),
         Text(
-          'Last updated on ${context.read<SecurityBloc>().state.latestUpdateDate}',
+          'Last updated on ${state.latestUpdateDate}',
           style: Theme.of(context).textTheme.headline4?.copyWith(
               fontWeight: FontWeight.w500
           ),
         ),
       ],
     );
-  }
-
-  String _getSubscriptionPromptText() {
-    switch(context.read<SecurityBloc>().state.subscriptionStatus) {
-      case SubscriptionStatus.unsubscribed:
-        return 'Security is unsubscribed (TODO)';
-      case SubscriptionStatus.active:
-        return 'Security subscription is active (TODO)';
-      case SubscriptionStatus.activeTrial:
-        final numOfDays = context.read<SecurityBloc>().state.remainingTrialDays;
-        return '$numOfDays days left on Linksys Secure trial';
-      case SubscriptionStatus.activeTurnedOff:
-        return 'Security subscription is active but turned off (TODO)';
-      case SubscriptionStatus.expired:
-        return 'Subscription canceled';
-      case SubscriptionStatus.trialExpired:
-        return 'Your Linksys Secure trial expired';
-    }
   }
 }
 

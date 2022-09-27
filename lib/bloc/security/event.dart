@@ -1,32 +1,43 @@
 
 
+import 'package:linksys_moab/bloc/security/state.dart';
+
 abstract class SecurityEvent {}
 
-
-class SetTrialSubscription extends SecurityEvent {
-
-}
-
-class SetTrialExpiredSubscription extends SecurityEvent {
+class SetUnsubscribedEvent extends SecurityEvent {
 
 }
 
-class SetActiveSubscription extends SecurityEvent {
+class SetTrialActiveEvent extends SecurityEvent {
 
 }
 
-class SetExpiredSubscription extends SecurityEvent {
+class SetFormalActiveEvent extends SecurityEvent {
 
 }
 
-class TurnOffSecurity extends SecurityEvent {
+class SetTrialExpiredEvent extends SecurityEvent {
 
 }
 
-class ContentFilterCreated extends SecurityEvent {
+class SetExpiredEvent extends SecurityEvent {
 
 }
 
-class CyberThreatDetected extends SecurityEvent {
+class TurnOffSecurityEvent extends SecurityEvent {
 
+}
+
+class ContentFilterCreatedEvent extends SecurityEvent {
+
+}
+
+class CyberthreatDetectedEvent extends SecurityEvent {
+  final CyberthreatType type;
+  final int number;
+
+  CyberthreatDetectedEvent({
+    required this.type,
+    required this.number,
+  });
 }
