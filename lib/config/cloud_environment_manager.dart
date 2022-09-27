@@ -11,10 +11,27 @@ import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_smart_device.dart';
 import 'package:linksys_moab/repository/config/environment_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/util/storage.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+enum CloudResourceType {
+  appIcons,
+  securityProfiles,
+  securityCategories,
+  webFilters,
+  appSignature
+}
+
+final resourceDownloadTimeThreshold = {
+  CloudResourceType.appIcons: const Duration(days: 1).inMilliseconds,
+  CloudResourceType.securityProfiles: const Duration(minutes: 1).inMilliseconds,
+  CloudResourceType.securityCategories: const Duration(minutes: 1).inMilliseconds,
+  CloudResourceType.webFilters: const Duration(days: 1).inMilliseconds,
+  CloudResourceType.appSignature: const Duration(days: 1).inMilliseconds,
+};
 
 class CloudEnvironmentManager {
   CloudConfig? _config;
@@ -121,7 +138,6 @@ class CloudEnvironmentManager {
   }
 
   Future<void> checkSmartDevice() async {
-
     final pref = await SharedPreferences.getInstance();
     if (pref.getString(moabPrefDeviceToken) == null) {
       return;
@@ -185,6 +201,30 @@ class CloudEnvironmentManager {
   }
 
   CloudApp _buildCloudApp(Map<String, dynamic> json) {
-    return json['smartDeviceStatus'] == null ? CloudApp.fromJson(json) : CloudSmartDeviceApp.fromJson(json);
+    return json['smartDeviceStatus'] == null
+        ? CloudApp.fromJson(json)
+        : CloudSmartDeviceApp.fromJson(json);
+  }
+
+  //
+  Future<bool> downloadResources(CloudResourceType type) {
+    if (type == CloudResourceType.appSignature) {
+      return _repository.downloadResources(
+          Uri.parse(appSignaturesUrl), Storage.appSignaturesFileUri);
+    } else if (type == CloudResourceType.webFilters) {
+      return _repository.downloadResources(
+          Uri.parse(webFilteringUrl), Storage.webFiltersFileUri);
+    } else if (type == CloudResourceType.securityCategories) {
+      return _repository.downloadResources(
+          Uri.parse(categoryPresetsUrl), Storage.categoryPresetsFileUri);
+    } else if (type == CloudResourceType.securityProfiles) {
+      return _repository.downloadResources(
+          Uri.parse(profilePresetsUrl), Storage.secureProfilePresetsFileUri);
+    } else if (type == CloudResourceType.appIcons) {
+      return _repository.downloadResources(
+          Uri.parse(appIconsUrl), Storage.iconFileUri);
+    } else {
+      throw Exception('Unsupported resource type! ${type.name}');
+    }
   }
 }

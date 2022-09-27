@@ -1,6 +1,4 @@
 
-import 'dart:io';
-
 import 'ios_push_notification_plugin_platform_interface.dart';
 
 class IosPushNotificationPlugin {

@@ -11,6 +11,7 @@ import 'package:linksys_moab/bloc/app_lifecycle/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/connectivity/cubit.dart';
+import 'package:linksys_moab/bloc/content_filter/cubit.dart';
 import 'package:linksys_moab/bloc/device/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/design/themes.dart';
@@ -31,6 +32,8 @@ import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
 import 'repository/authenticate/impl/fake_local_auth_repository.dart';
 import 'route/model/_model.dart';
+
+import 'security/security_profile_manager.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -94,6 +97,7 @@ Widget _app() {
       BlocProvider(create: (BuildContext context) => ProfilesCubit()),
       BlocProvider(create: (BuildContext context) => DeviceCubit()),
       BlocProvider(create: (BuildContext context) => AccountCubit(repository: context.read<CloudAccountRepository>())),
+      BlocProvider(create: (BuildContext context) => ContentFilterCubit()),
     ], child: const MoabApp()),
   );
 }

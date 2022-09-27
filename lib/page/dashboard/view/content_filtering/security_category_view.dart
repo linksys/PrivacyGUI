@@ -1,16 +1,21 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/design/colors.dart';
+import 'package:linksys_moab/model/group_profile.dart';
+import 'package:linksys_moab/model/secure_profile.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/page/components/customs/app_icon_view.dart';
 import 'package:linksys_moab/page/components/customs/popup_button.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 
 import 'package:linksys_moab/util/in_app_browser.dart';
 import 'package:styled_text/styled_text.dart';
+import 'package:linksys_moab/util/logger.dart';
 
 import 'component.dart';
 
@@ -27,12 +32,12 @@ class ContentFilteringCategoryView extends ArgumentsStatefulView {
 
 class _ContentFilteringCategoryViewState
     extends State<ContentFilteringCategoryView> {
-  late CFFilterCategory _category;
+  late CFSecureCategory _category;
 
   @override
   void initState() {
     super.initState();
-    _category = widget.args['selected'] as CFFilterCategory;
+    _category = widget.args['selected'] as CFSecureCategory;
   }
 
   @override
@@ -76,7 +81,7 @@ class _ContentFilteringCategoryViewState
                 children: [
                   Expanded(
                       child: Text(
-                    'Websites(1,000+)',
+                    'Websites',
                     style: Theme.of(context).textTheme.headline2,
                   )),
                   PopupButton(
@@ -110,7 +115,7 @@ class _ContentFilteringCategoryViewState
                     setState(() {
                       _category = _category.copyWith(
                           status:
-                              CFFilterCategory.switchStatus(_category.status));
+                          CFSecureCategory.switchStatus(_category.status));
                     });
                   })
                 ],
@@ -132,6 +137,7 @@ class _ContentFilteringCategoryViewState
   }
 
   Widget _appSection() {
+    logger.d('app count: ${_category.apps.length}');
     return Column(
       children: [
         Padding(
@@ -140,10 +146,12 @@ class _ContentFilteringCategoryViewState
             children: [
               Expanded(
                   child: Text(
-                'App(${_category.apps.length})',
+                'App (${_category.apps.length})',
                 style: Theme.of(context).textTheme.headline2,
               )),
-              IconButton(onPressed: () {}, icon: Icon(Icons.search)),
+              IconButton(onPressed: () {
+                NavigationCubit.of(context).push(CFAppSearchPath());
+              }, icon: Icon(Icons.search)),
               createStatusButton(
                 context,
                 _category.getAppSummaryStatus(),
@@ -153,17 +161,16 @@ class _ContentFilteringCategoryViewState
         ),
         dividerWithPadding(padding: EdgeInsets.symmetric(horizontal: 16)),
         ..._category.apps.map((e) => ListTile(
-              leading: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.all(Radius.circular(4))),
-              ),
-              title: Text(e.name),
-              subtitle: Text(e.category),
-              trailing: createStatusButton(context, e.status),
-            ))
+            leading: AppIconView(appId: e.icon,),
+            title: Text(e.name),
+            trailing: createStatusButton(context, e.status, onPressed: () {
+              setState(() {
+                final newOne =
+                    e.copyWith(status: CFSecureCategory.switchStatus(e.status));
+                _category.apps.replaceRange(_category.apps.indexOf(e),
+                    _category.apps.indexOf(e) + 1, [newOne]);
+              });
+            })))
       ],
     );
   }

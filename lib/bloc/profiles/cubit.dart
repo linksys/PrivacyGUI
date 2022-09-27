@@ -2,7 +2,11 @@ import 'dart:math';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/profiles/mock.dart';
+import 'package:linksys_moab/model/group_profile.dart';
+import 'package:linksys_moab/model/profile_service_data.dart';
+import 'package:linksys_moab/model/secure_profile.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:collection/collection.dart';
 
 import 'state.dart';
 
@@ -13,12 +17,11 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     await Future.delayed(Duration(seconds: 3));
 
     emit(state.copyWith(
-        profiles:
-            Map.fromEntries(mockProfiles.map((e) => MapEntry(e.id, e)))));
+        profiles: Map.fromEntries(mockProfiles.map((e) => MapEntry(e.id, e)))));
     fetchAllServices();
   }
 
-  selectProfile(Profile? profile) {
+  selectProfile(GroupProfile? profile) {
     emit(state.copyWith(selectedProfile: profile));
   }
 
@@ -27,8 +30,8 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     String? icon,
     List<PDevice>? devices,
   }) {
-    Profile? _profile = state.createdProfile;
-    _profile ??= Profile(
+    GroupProfile? _profile = state.createdProfile;
+    _profile ??= GroupProfile(
         id: 'PROFILE_ID_${Random().nextInt(999999)}',
         name: name ?? '',
         icon: icon ?? '',
@@ -45,8 +48,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     if (state.createdProfile == null) {
       return;
     }
-    emit(state.copyWith(createdProfile: null)
-      ..addOrUpdateProfile(state.createdProfile!));
+    emit(state.addOrUpdateProfile(state.createdProfile!).copyWith(createdProfile: null));
   }
 
   fetchAllServices({PService serviceCategory = PService.all}) async {
@@ -63,16 +65,17 @@ class ProfilesCubit extends Cubit<ProfilesState> {
       }
       if (serviceCategory == PService.contentFilter ||
           serviceCategory == PService.all) {
-        final data = mockContentFilterData[profileId];
-        if (data != null) {
-          dataMap[PService.contentFilter] = data;
-        }
+        // final data = mockContentFilterData[profileId];
+        // if (data != null) {
+        //   dataMap[PService.contentFilter] = data;
+        // }
       }
 
       emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
     }
   }
 
+  // TODO refactor
   // Internet schedule - Daily time limit
   updateDailyTimeLimitEnabled(
       String profileId, DateTimeLimitRule rule, bool isEnabled) async {
@@ -240,29 +243,31 @@ class ProfilesCubit extends Cubit<ProfilesState> {
         profile.serviceDetails[PService.contentFilter] as ContentFilterData?;
     if (data == null) return;
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
-    dataMap[PService.contentFilter] =
-        data.copyWith(isEnabled: isEnabled);
+    dataMap[PService.contentFilter] = data.copyWith(isEnabled: isEnabled);
     emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
   }
 
-  Future updateContentFilterDetails(String profileId, CFPresetCategory filterCategory,
-      List<CFFilterCategory> rules,) async {
+  Future updateContentFilterDetails(
+    String profileId,
+    CFSecureProfile secureProfile,
+  ) async {
+    logger.d('updateContentFilterDetails: $profileId');
     var profile = state.selectedProfile;
     if (profile == null || profile.id != profileId) {
       profile =
           state.profileList.firstWhere((element) => element.id == profileId);
     }
     var data =
-    profile.serviceDetails[PService.contentFilter] as ContentFilterData?;
+        profile.serviceDetails[PService.contentFilter] as ContentFilterData?;
     if (data == null) {
-      data = ContentFilterData(isEnabled: true, filterCategory: filterCategory, rules: rules, profileId: profileId);
+      data = ContentFilterData(
+          isEnabled: true, secureProfile: secureProfile, profileId: profileId);
     } else {
-      data = data.copyWith(filterCategory: filterCategory, rules: rules);
+      data = data.copyWith(secureProfile: secureProfile);
     }
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.contentFilter] = data;
     emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
-
   }
 
   @override

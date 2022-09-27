@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/design/colors.dart';
+import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/shortcuts/profiles.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
@@ -14,7 +15,6 @@ import 'package:linksys_moab/route/model/wifi_settings_path.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 
-import '../../../route/model/dashboard_path.dart';
 import '../../../route/navigation_cubit.dart';
 
 class DashboardHomeView extends StatefulWidget {
@@ -324,7 +324,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
     );
   }
 
-  Widget _profileItem(Profile profile) {
+  Widget _profileItem(GroupProfile profile) {
     return Container(
       height: 58,
       decoration: BoxDecoration(

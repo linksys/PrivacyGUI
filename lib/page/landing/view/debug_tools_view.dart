@@ -14,8 +14,6 @@ import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
-import 'package:linksys_moab/network/http/extension_requests/accounts_requests.dart';
-import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/mqtt/mqtt_client_wrap.dart';
@@ -24,10 +22,10 @@ import 'package:linksys_moab/page/components/base_components/progress_bars/full_
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
-import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
-
+import 'package:linksys_moab/security/app_icon_manager.dart';
+import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:share_plus/share_plus.dart';
@@ -46,6 +44,9 @@ class _DebugToolsViewState extends State<DebugToolsView> {
   String? _fcmToken;
   String? _apnsToken;
   CloudEnvironment _selectedEnv = cloudEnvTarget;
+
+  late List<String> _iconData;
+  String? _selectedIconKey;
 
   @override
   void initState() {
@@ -337,6 +338,58 @@ class _DebugToolsViewState extends State<DebugToolsView> {
             // final mqtt = MqttClientWrap('192.168.1.1', 8833, 'TEST-CLIENT-ID');
             // // mqtt.caCert = (await rootBundle.load('assets/keys/server.pem')).buffer.asInt8List();
             // mqtt.connect(username: 'linksys', password: 'admin');
+          },
+        ),
+        Text(
+          'Icon Map:',
+          style: Theme.of(context)
+              .textTheme
+              .headline2
+              ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        ),
+        FutureBuilder<List<String>>(
+          future: AppIconManager.instance().getAppIds(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.done) {
+              _iconData = snapshot.data ?? [];
+              return DropdownButton<String>(
+                  value: _selectedIconKey,
+                  items:
+                      List.from(_iconData.map((e) => DropdownMenuItem<String>(
+                            child: Text(e),
+                            value: e,
+                          ))),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedIconKey = value!;
+                    });
+                  });
+            } else {
+              return CircularProgressIndicator();
+            }
+          },
+        ),
+        FutureBuilder<Uint8List?>(
+            future:
+                AppIconManager.instance().getIconByte(_selectedIconKey ?? ''),
+            builder: (context, snapshot) => snapshot.data == null
+                ? Center()
+                : Image.memory(
+                    snapshot.data!,
+                    width: 96,
+                    height: 96,
+                  )),
+        Text(
+          'Default Preset:',
+          style: Theme.of(context)
+              .textTheme
+              .headline2
+              ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        ),
+        PrimaryButton(
+          text: 'Load Security Preset',
+          onPress: () {
+            SecurityProfileManager.instance().fetchDefaultPresets();
           },
         ),
       ],
