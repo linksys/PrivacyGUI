@@ -12,6 +12,7 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/util/uuid.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -283,5 +284,17 @@ class Utils {
       return false;
     }
     return true;
+  }
+
+  static String stringBase64Encode(String value) {
+    return utf8.fuse(base64).encode(value);
+  }
+  static String stringBase64Decode(String base64String) {
+    return utf8.fuse(base64).decode(base64String);
+  }
+
+  static String generateMqttClintId() {
+    final platform = Platform.isIOS ? 'iOS' : 'Android';
+    return '$platform-${uuid.v1()}';
   }
 }

@@ -13,7 +13,7 @@ import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
-import '../../constants/constants.dart';
+import '../../constants/_constants.dart';
 import 'connectivity_info.dart';
 import 'state.dart';
 

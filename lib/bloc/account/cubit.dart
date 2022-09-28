@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/account/state.dart';
-import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';

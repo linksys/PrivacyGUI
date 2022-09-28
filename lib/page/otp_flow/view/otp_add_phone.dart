@@ -5,7 +5,7 @@ import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/otp/otp.dart';
-import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_phone.dart';

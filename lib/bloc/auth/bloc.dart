@@ -243,7 +243,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } else {}
   }
 
-  void _localLogin(LocalLogin event, Emitter<AuthState> emit) {}
+  void _localLogin(LocalLogin event, Emitter<AuthState> emit) async {
+    final result = await localLogin(event.password);
+  }
 
   void _onLogout(Logout event, Emitter<AuthState> emit) {
     // Don't remove all keys on shared preferences when logging out
@@ -583,7 +585,10 @@ extension AuthBlocCloud on AuthBloc {
 }
 
 extension AuthBlocLocal on AuthBloc {
-  Future<DummyModel> localLogin(String password) async {
+  Future<bool> downloadCert() async {
+    return _localAuthRepository.downloadCert();
+  }
+  Future<bool> localLogin(String password) async {
     return await _localAuthRepository.localLogin(password);
   }
 

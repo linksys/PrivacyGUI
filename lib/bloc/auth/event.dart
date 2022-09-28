@@ -66,7 +66,10 @@ class OnRequestSession extends AuthEvent {}
 
 class CloudLogin extends AuthEvent {}
 
-class LocalLogin extends AuthEvent {}
+class LocalLogin extends AuthEvent {
+  LocalLogin(this.password);
+  final String password;
+}
 
 class Logout extends AuthEvent {
   Logout({this.reason = 0});

@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
-import '../../../constants/constants.dart';
+import '../../../constants/_constants.dart';
 import '../http_client.dart';
 
 extension MoabAccountsRequests on MoabHttpClient {

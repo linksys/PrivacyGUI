@@ -61,13 +61,17 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     // TODO: check if connect to router
     setState(() {
       _isLoading = true;
-      _isConnectedToRouter = true;
     });
-    await context
-        .read<AuthBloc>()
-        .getAdminPasswordInfo()
-        .then((value) => _handleAdminPasswordInfo(value));
+
+    final bloc = context.read<AuthBloc>();
+    bool isConnected = await bloc.downloadCert();
+    if (isConnected) {
+      await bloc
+          .getAdminPasswordInfo()
+          .then((value) => _handleAdminPasswordInfo(value));
+    }
     setState(() {
+      _isConnectedToRouter = isConnected;
       _isLoading = false;
     });
   }
@@ -141,9 +145,11 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     await context
         .read<AuthBloc>()
         .localLogin(_passwordController.text)
-        .then((value) =>
-            NavigationCubit.of(context).clearAndPush(DashboardHomePath()))
-        .onError((error, stackTrace) => _handleError(error, stackTrace));
+        .then((value) {
+          if (value) {
+            NavigationCubit.of(context).clearAndPush(DashboardHomePath());
+          }
+    }).onError((error, stackTrace) => _handleError(error, stackTrace));
     setState(() {
       _isLoading = false;
     });
@@ -164,7 +170,8 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
       setState(() {
         _errorReason = e.code;
       });
-    } else { // Unknown error or error parsing
+    } else {
+      // Unknown error or error parsing
       logger.d('Unknown error: $e');
     }
   }

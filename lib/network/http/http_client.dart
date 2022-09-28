@@ -7,7 +7,7 @@ import 'package:async/async.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
-import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:http/io_client.dart';
 import 'package:linksys_moab/util/storage.dart';

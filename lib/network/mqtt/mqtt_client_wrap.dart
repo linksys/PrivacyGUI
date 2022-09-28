@@ -123,6 +123,8 @@ class MqttClientWrap {
     _client.disconnect();
   }
 
+  MqttConnectionState? get connectionState => _client.connectionStatus?.state;
+
   void subscribe(String topic) {
     _client.subscribe(topic, MqttQos.atLeastOnce);
   }

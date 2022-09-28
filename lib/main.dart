@@ -30,10 +30,8 @@ import 'package:mqtt_client/mqtt_client.dart';
 import 'bloc/setup/bloc.dart';
 import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
-import 'repository/authenticate/impl/fake_local_auth_repository.dart';
+import 'repository/authenticate/impl/router_auth_repository.dart';
 import 'route/model/_model.dart';
-
-import 'security/security_profile_manager.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -75,7 +73,8 @@ Widget _app() {
     providers: [
       RepositoryProvider(
           create: (context) => CloudAuthRepository(MoabHttpClient())),
-      RepositoryProvider(create: (context) => FakeLocalAuthRepository()),
+      RepositoryProvider(
+          create: (context) => RouterAuthRepository(MoabHttpClient())),
       RepositoryProvider(
           create: (context) => MoabEnvironmentRepository(MoabHttpClient())),
       RepositoryProvider(create: (context) => CloudAccountRepository()),
@@ -87,7 +86,7 @@ Widget _app() {
       BlocProvider(
         create: (BuildContext context) => AuthBloc(
           repo: context.read<CloudAuthRepository>(),
-          localRepo: context.read<FakeLocalAuthRepository>(),
+          localRepo: context.read<RouterAuthRepository>(),
         ),
       ),
       BlocProvider(create: (BuildContext context) => ConnectivityCubit()),
@@ -96,7 +95,9 @@ Widget _app() {
       BlocProvider(create: (BuildContext context) => OtpCubit()),
       BlocProvider(create: (BuildContext context) => ProfilesCubit()),
       BlocProvider(create: (BuildContext context) => DeviceCubit()),
-      BlocProvider(create: (BuildContext context) => AccountCubit(repository: context.read<CloudAccountRepository>())),
+      BlocProvider(
+          create: (BuildContext context) =>
+              AccountCubit(repository: context.read<CloudAccountRepository>())),
       BlocProvider(create: (BuildContext context) => ContentFilterCubit()),
     ], child: const MoabApp()),
   );
