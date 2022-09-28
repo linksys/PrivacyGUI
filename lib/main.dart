@@ -37,7 +37,7 @@ import 'route/model/_model.dart';
 import 'security/security_profile_manager.dart';
 
 void main() {
-  enableFlutterDriverExtension();
+  // enableFlutterDriverExtension();
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     await Storage.init();
