@@ -35,6 +35,7 @@ class _HomeViewState extends State<HomeView> {
   bool _isLoading = false;
   final Widget logoImage = SvgPicture.asset(
     'assets/images/linksys_logo_large_white.svg',
+    key: const Key('linksys_logo'),
     semanticsLabel: 'Linksys Logo',
     height: 180,
   );
@@ -78,6 +79,7 @@ class _HomeViewState extends State<HomeView> {
   Widget _footer(BuildContext context) {
     return Column(children: [
       PrimaryButton(
+        key: const Key('home_view_button_login'),
         text: getAppLocalizations(context).login,
         onPress: () async {
           final pref = await SharedPreferences.getInstance();
@@ -106,6 +108,7 @@ class _HomeViewState extends State<HomeView> {
         height: 24,
       ),
       SecondaryButton(
+        key: const Key('home_view_button_setup'),
         text: getAppLocalizations(context).setup_new_router,
         onPress: () {
           NavigationCubit.of(context).push(SetupWelcomeEulaPath());

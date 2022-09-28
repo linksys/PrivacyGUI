@@ -85,7 +85,10 @@ dependencies:
     path: plugins/ios_push_notification_plugin
 
 dev_dependencies:
+  test: any
   flutter_test:
+    sdk: flutter
+  flutter_driver:
     sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to

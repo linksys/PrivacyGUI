@@ -31,11 +31,13 @@ import 'bloc/setup/bloc.dart';
 import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
 import 'repository/authenticate/impl/fake_local_auth_repository.dart';
+import 'package:flutter_driver/driver_extension.dart';
 import 'route/model/_model.dart';
 
 import 'security/security_profile_manager.dart';
 
 void main() {
+  enableFlutterDriverExtension();
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     await Storage.init();
