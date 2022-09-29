@@ -27,9 +27,10 @@ class OnCreateAccount extends AuthEvent {
 class Unauthorized extends AuthEvent {}
 
 class Authorized extends AuthEvent {
-  Authorized({this.isDuringSetup = false});
+  Authorized({this.isDuringSetup = false, this.isCloud = false});
 
-  final bool isDuringSetup;
+  final bool isDuringSetup; // TODO seems this is not used anymore
+  final bool isCloud;
 }
 
 class RequireOtpCode extends AuthEvent {

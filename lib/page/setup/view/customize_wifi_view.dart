@@ -97,7 +97,7 @@ class _PageContentState extends State<PageContent> {
             context.read<SetupBloc>().add(SetWIFISSIDAndPassword(
                 ssid: nameController.text, password: passwordController.text));
             if (context.read<AuthBloc>().state.status ==
-                AuthStatus.authorized) {
+                AuthStatus.cloudAuthorized) {
               NavigationCubit.of(context).push(SaveCloudSettingsPath());
             } else {
               NavigationCubit.of(context).push(CreateCloudAccountPath());
@@ -110,7 +110,7 @@ class _PageContentState extends State<PageContent> {
             context.read<SetupBloc>().add(SetWIFISSIDAndPassword(
                 ssid: nameController.text, password: passwordController.text));
             if (context.read<AuthBloc>().state.status ==
-                AuthStatus.authorized) {
+                AuthStatus.cloudAuthorized) {
               NavigationCubit.of(context).push(SaveCloudSettingsPath());
             } else {
               NavigationCubit.of(context).push(CreateCloudAccountPath());

@@ -128,7 +128,7 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
         logger.d("Auth Listener: $state}");
         if (state.status == AuthStatus.unAuthorized) {
           _cubit.clearAndPush(HomePath());
-        } else if (state.status == AuthStatus.authorized) {
+        } else if (state.status == AuthStatus.cloudAuthorized) {
           _cubit.clearAndPush(PrepareDashboardPath());
         }
       },

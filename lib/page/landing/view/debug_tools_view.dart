@@ -337,9 +337,19 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                 .get(Uri.parse('http://192.168.1.1/cert.cgi'), headers: {
               'Authorization': 'Basic ${stringToBase64.encode(credentials)}',
             });
-            // final mqtt = MqttClientWrap('192.168.1.1', 8833, 'TEST-CLIENT-ID');
-            // // mqtt.caCert = (await rootBundle.load('assets/keys/server.pem')).buffer.asInt8List();
-            // mqtt.connect(username: 'linksys', password: 'admin');
+            final mqtt = MqttClientWrap('192.168.1.1', 8833, 'TEST-CLIENT-ID');
+            mqtt.caCert = response.bodyBytes
+                .buffer
+                .asInt8List();
+            await mqtt.connect(username: 'linksys', password: 'admin');
+            mqtt.subscribe('local/command');
+            mqtt.subscribe('local/command/response');
+            mqtt.subscribeCallback = (status) {
+              logger.d('mqtt subscribe callback: $status');
+            };
+            mqtt.messageReceivedCallback = (topic, payload) {
+              logger.d('mqtt message received: $topic, $payload');
+            };
           },
         ),
         Text(

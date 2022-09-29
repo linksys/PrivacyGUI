@@ -69,6 +69,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   _onInitAuth(InitAuth event, Emitter<AuthState> emit) async {
+    // TODO add local auth check
     logger.d('check auth status');
     final isValid = await checkCertValidation();
     logger.d('is auth valid: $isValid');
@@ -77,7 +78,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthState.unAuthorized());
       }
 
-      emit(AuthState.authorized());
+      emit(AuthState.cloudAuthorized());
     } else {
       emit(AuthState.unAuthorized());
     }
@@ -103,8 +104,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   _authorized(Authorized event, Emitter<AuthState> emit) {
     if (event.isDuringSetup) {
+    } else if (event.isCloud){
+      emit(AuthState.cloudAuthorized());
     } else {
-      emit(AuthState.authorized());
+      emit(AuthState.localAuthorized());
     }
   }
 
@@ -229,7 +232,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await CloudEnvironmentManager().checkSmartDevice();
       final publicKey = pref.getString(moabPrefCloudPublicKey) ?? '';
       final privateKey = pref.getString(moabPrefCloudPrivateKey) ?? '';
-      emit(AuthState.authorized());
+      emit(AuthState.cloudAuthorized());
     } else {
       // TODO
       add(Unauthorized());
@@ -245,6 +248,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   void _localLogin(LocalLogin event, Emitter<AuthState> emit) async {
     final result = await localLogin(event.password);
+    if (result) {
+      // Authorized
+      final pref = await SharedPreferences.getInstance();
+      pref.setString(moabPrefLocalPassword, event.password);
+      emit(AuthState.localAuthorized());
+    } else {
+      // Unauthorized
+      emit(AuthState.unAuthorized());
+    }
   }
 
   void _onLogout(Logout event, Emitter<AuthState> emit) {

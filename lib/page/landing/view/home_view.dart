@@ -79,6 +79,7 @@ class _HomeViewState extends State<HomeView> {
       PrimaryButton(
         text: getAppLocalizations(context).login,
         onPress: () async {
+          // TODO local auth check
           final pref = await SharedPreferences.getInstance();
           if (pref.containsKey(moabPrefEnableBiometrics)) {
             if (await Utils.checkCertValidation()) {
@@ -89,7 +90,7 @@ class _HomeViewState extends State<HomeView> {
               if (isPass) {
                 final authBloc = context.read<AuthBloc>();
                 await authBloc.requestSession();
-                authBloc.add(Authorized());
+                authBloc.add(Authorized(isCloud: true));
               } else {
                 NavigationCubit.of(context).push(AuthInputAccountPath());
               }

@@ -83,39 +83,43 @@ class MqttClientWrap {
 
     if (_client.connectionStatus!.state == MqttConnectionState.connected) {
       // Print incoming messages from another client on this topic
-      _client.updates!.listen((List<MqttReceivedMessage<MqttMessage>> c) {
-        final recMess = c[0].payload as MqttPublishMessage;
-        final pt =
-            MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
-        final id = BaseMqttCommand.extractUUID(pt);
-        logger.i(
-            'MQTT:: onReceived: message id is <$id>, topic is <${c[0].topic}>, payload is <-- $pt -->');
-
-        if ((id ?? '').isNotEmpty) {
-          final command = _commandMap[id];
-          command?.completeResponse(pt);
-        }
-        messageReceivedCallback?.call(c[0].topic, pt);
-      });
+      _client.updates!.listen(_handleReceiveMessage);
 
       /// If needed you can listen for published messages that have completed the publishing
       /// handshake which is Qos dependant. Any message received on this stream has completed its
       /// publishing handshake with the broker unless the message is a Qos 1 message and manual
       /// acknowledge has been set on the client, in which case the user must manually acknowledge the
       /// received publish message on completion of any business logic processing.
-      _client.published!.listen((MqttPublishMessage message) {
-        final pt =
-            MqttPublishPayload.bytesToStringAsString(message.payload.message);
-        final id = BaseMqttCommand.extractUUID(pt);
-        logger.i(
-            'MQTT:: Published notification:: id is <$id>, topic is ${message.variableHeader!.topicName}, with Qos ${message.header!.qos}, message $pt');
-        if ((id ?? '').isNotEmpty) {
-          final command = _commandMap[id];
-          if (command?.topic == message.variableHeader!.topicName) {
-            command?.completePuback();
-          }
-        }
-      });
+      _client.published!.listen(_handlePublishMessage);
+    }
+  }
+
+  _handleReceiveMessage(List<MqttReceivedMessage<MqttMessage>> c) {
+    final recMess = c[0].payload as MqttPublishMessage;
+    final pt =
+    MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+    final id = BaseMqttCommand.extractUUID(pt);
+    logger.i(
+        'MQTT:: onReceived: message id is <$id>, topic is <${c[0].topic}>, payload is <-- $pt -->');
+
+    if ((id ?? '').isNotEmpty) {
+      final command = _commandMap[id];
+      command?.completeResponse(pt);
+    }
+    messageReceivedCallback?.call(c[0].topic, pt);
+  }
+
+  _handlePublishMessage(MqttPublishMessage message) {
+    final pt =
+    MqttPublishPayload.bytesToStringAsString(message.payload.message);
+    final id = BaseMqttCommand.extractUUID(pt);
+    logger.i(
+        'MQTT:: Published notification:: id is <$id>, topic is ${message.variableHeader!.topicName}, with Qos ${message.header!.qos}, message $pt');
+    if ((id ?? '').isNotEmpty) {
+      final command = _commandMap[id];
+      if (command?.topic == message.variableHeader!.topicName) {
+        command?.completePuback();
+      }
     }
   }
 
