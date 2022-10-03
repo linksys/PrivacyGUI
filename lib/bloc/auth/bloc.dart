@@ -613,7 +613,7 @@ extension AuthBlocLocal on AuthBloc {
   }
 
   Future<AdminPasswordInfo> getAdminPasswordInfo() async {
-    return await _routerRepository.getAdminPasswordInfo().then((value) =>
+    return await _routerRepository.getAdminPasswordHint().then((value) =>
         AdminPasswordInfo(
             hasAdminPassword: value.output.containsKey('passwordHint'),
             hint: value.output['passwordHint'] ?? ''));

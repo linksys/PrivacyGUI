@@ -331,7 +331,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Connect',
           onPress: () async {
-            context.read<RouterRepository>().getAdminPasswordInfo();
+            context.read<RouterRepository>().getAdminPasswordHint();
           },
         ),
         Text(

@@ -1,3 +1,4 @@
+import 'package:linksys_moab/network/better_action.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 
@@ -5,7 +6,7 @@ extension CoreService on RouterRepository {
   // Core service
   Future<JnapSuccess> isAdminPasswordDefault() async {
     final command =
-        createCommand('http://linksys.com/jnap/core/IsPasswordAdminDefault');
+        createCommand(JNAPAction.isAdminPasswordDefault.actionValue);
 
     final result = await command.publish(mqttClient!);
     return handleJnapResult(result.body);
@@ -13,7 +14,7 @@ extension CoreService on RouterRepository {
 
   Future<JnapSuccess> isAdminPasswordSetByUser() async {
     final command =
-        createCommand('http://linksys.com/jnap/core/IsAdminPasswordSetByUser');
+        createCommand(JNAPAction.isAdminPasswordSetByUser.actionValue);
 
     final result = await command.publish(mqttClient!);
     return handleJnapResult(result.body);
@@ -21,15 +22,15 @@ extension CoreService on RouterRepository {
 
   Future<JnapSuccess> getDeviceInfo() async {
     final command =
-    createCommand('http://linksys.com/jnap/core/GetDeviceInfo');
+    createCommand(JNAPAction.getDeviceInfo.actionValue);
 
     final result = await command.publish(mqttClient!);
     return handleJnapResult(result.body);
   }
 
-  Future<JnapSuccess> getAdminPasswordInfo() async {
+  Future<JnapSuccess> getAdminPasswordHint() async {
     final command =
-        createCommand('http://linksys.com/jnap/core/GetAdminPasswordHint');
+        createCommand(JNAPAction.getAdminPasswordHint.actionValue);
 
     final result = await command.publish(mqttClient!);
     return handleJnapResult(result.body);
@@ -37,7 +38,7 @@ extension CoreService on RouterRepository {
 
   Future<JnapSuccess> checkAdminPassword(String password) async {
     final command = createCommand(
-      'http://linksys.com/jnap/core/CheckAdminPassword2',
+      JNAPAction.checkAdminPassword.actionValue,
       data: {
         'adminPassword': password,
       },
@@ -46,9 +47,10 @@ extension CoreService on RouterRepository {
     return handleJnapResult(result.body);
   }
 
+  // TODO
   Future<JnapSuccess> createPassword(String password, String hint) async {
     final command =
-        createCommand('http://linksys.com/jnap/core/CheckAdminPassword', data: {
+        createCommand(JNAPAction.coreSetAdminPassword.actionValue, data: {
       'adminPassword': password,
       'passwordHint': hint,
     });
