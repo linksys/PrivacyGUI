@@ -16,7 +16,7 @@ class RouterAuthRepository extends LocalAuthRepository
     with ConnectivityListener {
   RouterAuthRepository(MoabHttpClient httpClient)
       : _httpclient = httpClient {
-    start();
+    // start();
   }
 
   final MoabHttpClient _httpclient;

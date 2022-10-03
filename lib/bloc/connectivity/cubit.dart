@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/connectivity/availability_info.dart';
+import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -18,21 +19,28 @@ import 'connectivity_info.dart';
 import 'state.dart';
 
 class ConnectivityCubit extends Cubit<ConnectivityState>
-    with ConnectivityListener, AvailabilityChecker {
+    with ConnectivityListener, AvailabilityChecker, StateStreamRegister {
   ConnectivityCubit()
       : super(const ConnectivityState(
-            hasInternet: false, connectivityInfo: ConnectivityInfo()));
+            hasInternet: false, connectivityInfo: ConnectivityInfo())) {
+    shareStream = stream;
+  }
   // TODO refactor
   bool isAndroid9 = false;
   bool isAndroid10AndSupportEasyConnect = false;
 
   @override
+  Future<void> close() async {
+    unregisterAll();
+    super.close();
+  }
+
+  @override
   Future onConnectivityChanged(ConnectivityInfo info) async {
     if (info.type != ConnectivityResult.none) {
-      scheduleCheck(immediate: true);
-    } else {
-      emit(state.copyWith(connectivityInfo: info));
+      await scheduleCheck(immediate: true);
     }
+    emit(state.copyWith(connectivityInfo: info));
   }
 
   void init() {
@@ -137,6 +145,7 @@ mixin ConnectivityListener {
   }
 
   _updateConnectivity(ConnectivityResult result) async {
+    logger.d('Connectivity Result: $result');
     final connectivityInfo = await _updateNetworkInfo(result);
     onConnectivityChanged(connectivityInfo);
   }
@@ -173,9 +182,9 @@ mixin ConnectivityListener {
       wifiGatewayIP = 'Unknown Gateway IP';
     }
 
+
     final info = ConnectivityInfo(
         type: result, gatewayIp: wifiGatewayIP ?? "", ssid: wifiName ?? "");
-
     return info;
   }
 

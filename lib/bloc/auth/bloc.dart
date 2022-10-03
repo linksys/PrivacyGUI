@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
@@ -15,6 +16,7 @@ import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
 import 'package:linksys_moab/repository/authenticate/local_auth_repository.dart';
 import 'package:linksys_moab/repository/model/dummy_model.dart';
+import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,15 +28,15 @@ import '../../network/http/model/cloud_login_state.dart';
 import '../../network/http/model/cloud_preferences.dart';
 import '../../utils.dart';
 
-class AuthBloc extends Bloc<AuthEvent, AuthState> {
+class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
   final AuthRepository _repository;
-  final LocalAuthRepository _localAuthRepository;
+  final RouterRepository _routerRepository;
   StreamSubscription? _errorStreamSubscription;
 
   AuthBloc(
-      {required AuthRepository repo, required LocalAuthRepository localRepo})
+      {required AuthRepository repo, required RouterRepository routerRepo})
       : _repository = repo,
-        _localAuthRepository = localRepo,
+        _routerRepository = routerRepo,
         super(AuthState.unknownAuth()) {
     on<InitAuth>(_onInitAuth);
     on<OnCloudLogin>(_onCloudLogin);
@@ -59,6 +61,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         add(Unauthorized());
       }
     });
+    //
+    shareStream = stream;
   }
 
 
@@ -598,35 +602,23 @@ extension AuthBlocCloud on AuthBloc {
 
 extension AuthBlocLocal on AuthBloc {
   Future<bool> downloadCert() async {
-    return _localAuthRepository.downloadCert();
+    return _routerRepository.downloadCert();
   }
   Future<bool> localLogin(String password) async {
-    return await _localAuthRepository.localLogin(password);
-  }
-
-  Future<DummyModel> verifyRecoveryKey(String key) async {
-    return await _localAuthRepository.verifyRecoveryKey(key);
-  }
-
-  Future<String> getMaskedEmail() async {
-    return await _localAuthRepository
-        .getMaskedEmail()
-        .then((value) => value['maskedEmail']);
+    final result =  await _routerRepository.localLogin(password);
+    return result;
   }
 
   Future<AdminPasswordInfo> getAdminPasswordInfo() async {
-    return await _localAuthRepository.getAdminPasswordInfo().then((value) =>
+    return await _routerRepository.getAdminPasswordInfo().then((value) =>
         AdminPasswordInfo(
-            hasAdminPassword: value['hasAdminPassword'] ?? false,
-            hint: value['hint'] ?? ''));
+            hasAdminPassword: value.containsKey('passwordHint'),
+            hint: value['passwordHint'] ?? ''));
   }
 
-  Future<DummyModel> getAccountInfo() async {
-    return await _localAuthRepository.getCloudAccount();
-  }
 
   Future<DummyModel> createPassword(String password, String hint) async {
-    return await _localAuthRepository
+    return await _routerRepository
         .createPassword(password, hint)
         .then((value) => _handleCreatePassword(password, hint));
   }

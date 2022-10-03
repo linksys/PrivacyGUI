@@ -22,6 +22,7 @@ import 'package:linksys_moab/page/components/base_components/progress_bars/full_
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
+import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/security/app_icon_manager.dart';
@@ -329,27 +330,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Connect',
           onPress: () async {
-            final client = MoabHttpClient();
-            const credentials = 'admin:admin';
-            final stringToBase64 = utf8.fuse(base64);
-
-            final response = await client
-                .get(Uri.parse('http://192.168.1.1/cert.cgi'), headers: {
-              'Authorization': 'Basic ${stringToBase64.encode(credentials)}',
-            });
-            final mqtt = MqttClientWrap('192.168.1.1', 8833, 'TEST-CLIENT-ID');
-            mqtt.caCert = response.bodyBytes
-                .buffer
-                .asInt8List();
-            await mqtt.connect(username: 'linksys', password: 'admin');
-            mqtt.subscribe('local/command');
-            mqtt.subscribe('local/command/response');
-            mqtt.subscribeCallback = (status) {
-              logger.d('mqtt subscribe callback: $status');
-            };
-            mqtt.messageReceivedCallback = (topic, payload) {
-              logger.d('mqtt message received: $topic, $payload');
-            };
+            context.read<RouterRepository>().getAdminPasswordInfo();
           },
         ),
         Text(

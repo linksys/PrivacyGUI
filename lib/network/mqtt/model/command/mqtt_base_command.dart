@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/network/mqtt/command_spec/command_spec.dart';
 import 'package:linksys_moab/network/mqtt/exception.dart';
 import 'package:linksys_moab/network/mqtt/mqtt_client_wrap.dart';
@@ -15,7 +16,7 @@ abstract class BaseMqttCommand<R> with CommandCompleter {
 
   final qos = MqttQos.atLeastOnce;
 
-  String get topic;
+  String get publishTopic;
 
   String get responseTopic;
 
@@ -47,10 +48,11 @@ abstract class BaseMqttCommand<R> with CommandCompleter {
     }
   }
 
+  // TODO
   static String? extractUUID(String payload) {
     try {
       final jsonData = json.decode(payload) as Map<String, dynamic>;
-      return jsonData['id'] as String?;
+      return jsonData[keyMqttHeader][keyMqttHeaderId] as String?;
     } catch (e) {
       logger.d('extract uuid failed!');
       return null;

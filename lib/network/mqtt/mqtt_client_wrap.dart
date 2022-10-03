@@ -117,7 +117,7 @@ class MqttClientWrap {
         'MQTT:: Published notification:: id is <$id>, topic is ${message.variableHeader!.topicName}, with Qos ${message.header!.qos}, message $pt');
     if ((id ?? '').isNotEmpty) {
       final command = _commandMap[id];
-      if (command?.topic == message.variableHeader!.topicName) {
+      if (command?.publishTopic == message.variableHeader!.topicName) {
         command?.completePuback();
       }
     }
@@ -129,8 +129,8 @@ class MqttClientWrap {
 
   MqttConnectionState? get connectionState => _client.connectionStatus?.state;
 
-  void subscribe(String topic) {
-    _client.subscribe(topic, MqttQos.atLeastOnce);
+  Subscription? subscribe(String topic) {
+    return _client.subscribe(topic, MqttQos.atLeastOnce);
   }
 
   void unSubscribe(String topic) {
@@ -144,7 +144,7 @@ class MqttClientWrap {
 
   Future send(BaseMqttCommand command) async {
     final message = command.data;
-    final topic = command.topic;
+    final topic = command.publishTopic;
     final qos = command.qos;
     final msgId = command.spec.uuid;
     final builder = MqttClientPayloadBuilder();
@@ -167,8 +167,7 @@ class MqttClientWrap {
     logger.i("cert: ${x509.startValidity}, ${x509.endValidity}");
     logger.i('cert info: ${x509.issuer}');
     logger.i('cert info: ${x509.subject}');
-
-    return _certExpirationCheck(x509.startValidity, x509.endValidity);
+    return true;
     // final localCa = String.fromCharCodes(caCert!).trim();
     // return x509.pem.trim() == localCa &&
     //     _certExpirationCheck(x509.startValidity, x509.endValidity);
