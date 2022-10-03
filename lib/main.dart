@@ -16,6 +16,7 @@ import 'package:linksys_moab/bloc/device/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/network/better_action.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/notification/notification_helper.dart';
 import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
@@ -58,6 +59,7 @@ void main() {
         exit(1);
       }
     };
+    initBetterActions();
     runApp(_app());
   }, (Object error, StackTrace stack) {
     logger.e('Uncaught Error:\n', error);
