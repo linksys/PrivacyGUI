@@ -1,11 +1,13 @@
-
 import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/connectivity/state.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
+import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
 import 'package:linksys_moab/network/mqtt/mqtt_client_wrap.dart';
@@ -15,13 +17,24 @@ import 'package:linksys_moab/utils.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+enum MqttConnectType {
+  none,
+  local,
+  remote,
+}
 
-class RouterRepository with StateStreamListener{
-
+class RouterRepository with StateStreamListener {
   RouterRepository();
 
   MqttClientWrap? _mqttClient;
-  String? _gatewayIp;
+
+  MqttClientWrap? get mqttClient => _mqttClient;
+
+  MqttConnectType connectType = MqttConnectType.none;
+
+  String? _brokerUrl;
+  String? localPassword;
+  List<String> topics = [];
 
   Future<bool> downloadCert() async {
     final caCert = await rootBundle.loadString('assets/keys/server.pem');
@@ -41,37 +54,63 @@ class RouterRepository with StateStreamListener{
     // return true;
   }
 
-  Future<bool> localLogin(String password) async {
+  connectToRemote() async {
+    // TODO
+    connectType = MqttConnectType.remote;
+  }
+
+  Future<bool> connectToLocal() async {
     final pref = await SharedPreferences.getInstance();
-    final cert = pref.getString(moabPrefLocalCert) ?? '';
-    logger.d('local login: $cert');
-    _mqttClient = MqttClientWrap(_gatewayIp ?? '', 8833, Utils.generateMqttClintId());
-    _mqttClient?.caCert = Int8List.fromList(cert.codeUnits);
-    await _mqttClient?.connect(username: 'linksys', password: password);
-    return _mqttClient?.connectionState == MqttConnectionState.connected;
-  }
-
-  Future<DummyModel> getAdminPasswordInfo() async {
-    if (_mqttClient == null) {
-      await localLogin('admin');
+    String cert = pref.getString(moabPrefLocalCert) ?? '';
+    if (cert.isEmpty) {
+      await downloadCert();
+      cert = pref.getString(moabPrefLocalCert) ?? '';
     }
-    const credentials = 'admin:admin';
-    final command = JnapCommand.local(action: 'http://linksys.com/jnap/core/GetAdminPasswordHint', auth: 'Basic ${Utils.stringBase64Encode(credentials)}');
-    final subscription = _mqttClient?.subscribe(command.responseTopic);
-    logger.d('subscribe topic: $subscription');
-
-    final result = await command.publish(_mqttClient!);
-    return _handleJnapResult(result.body);
+    _mqttClient =
+        MqttClientWrap(_brokerUrl ?? '', 8833, Utils.generateMqttClintId());
+    _mqttClient?.caCert = Int8List.fromList(cert.codeUnits);
+    await _mqttClient?.connect(username: 'linksys', password: 'admin');
+    if (_mqttClient?.connectionState == MqttConnectionState.connected) {
+      topics.addAll([mqttLocalResponseTopic]);
+      for (var topic in topics) {
+        _mqttClient?.subscribe(topic);
+      }
+      connectType = MqttConnectType.local;
+      return true;
+    } else {
+      connectType = MqttConnectType.none;
+      return false;
+    }
   }
-  Future<DummyModel> createPassword(String password, String hint) {
-    // TODO: implement createPassword
-    throw UnimplementedError();
+
+  disconnect() async {
+    for (var topic in topics) {
+      _mqttClient?.unSubscribe(topic);
+    }
+    _mqttClient?.disconnect();
   }
 
-  // TODO return generic type
-  DummyModel _handleJnapResult(JnapResult result) {
+  JnapCommand createCommand(String action,
+      {Map<String, dynamic> data = const {}, bool needAuth = false}) {
+    if (connectType == MqttConnectType.local) {
+      return JnapCommand.local(
+        action: action,
+        auth: needAuth
+            ? 'Basic ${Utils.stringBase64Encode(localPassword!)}'
+            : null,
+        data: data,
+      );
+    } else if (connectType == MqttConnectType.remote) {
+      return JnapCommand.remote(gid: 'gid', nid: 'nid', action: action);
+    } else {
+      //
+      throw Exception();
+    }
+  }
+
+  JnapSuccess handleJnapResult(JnapResult result) {
     if (result is JnapSuccess) {
-      return result.output;
+      return result;
     } else {
       throw (result as JnapError);
     }
@@ -86,17 +125,28 @@ class RouterRepository with StateStreamListener{
     }
   }
 
-  _handleConnectivityChanged(ConnectivityState state) {
+  _handleConnectivityChanged(ConnectivityState state) async {
     logger.d('Router repository:: handleConnectivityChanged: $state');
-    _gatewayIp = state.connectivityInfo.gatewayIp;
+    _brokerUrl = state.connectivityInfo.gatewayIp;
   }
 
-  _handleAuthChanged(AuthState state) {
+  _handleAuthChanged(AuthState state) async {
     logger.d('Router repository:: _handleAuthChanged: $state');
+    final pref = await SharedPreferences.getInstance();
     if (state is CloudLogin) {
       // get cloud certs and etc...
+      _brokerUrl =
+          CloudEnvironmentManager().currentConfig?.transport.mqttBroker;
+      connectToRemote();
     } else if (state is LocalLogin) {
       // get local password and cert, etc...
+      localPassword = pref.getString(moabPrefLocalPassword);
+      connectToLocal();
+    } else if (state is Unauthorized) {
+      connectType = MqttConnectType.none;
+      // remove all information
+      localPassword = null;
+      disconnect();
     }
   }
 }

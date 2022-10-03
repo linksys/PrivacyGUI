@@ -81,6 +81,7 @@ class MqttClientWrap {
       _client.disconnect();
     }
 
+    logger.i('MQTT client status: ${_client.connectionStatus!.state}');
     if (_client.connectionStatus!.state == MqttConnectionState.connected) {
       // Print incoming messages from another client on this topic
       _client.updates!.listen(_handleReceiveMessage);

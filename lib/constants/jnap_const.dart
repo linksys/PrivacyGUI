@@ -6,6 +6,8 @@ const keyJnapResult = 'result';
 const keyJnapOutput = 'output';
 const keyJnapError = 'error';
 
+const jnapResultOk = 'OK';
+
 const keyMqttHeader = 'header';
 const keyMqttBody = 'body';
 const keyMqttHeaderAction = 'X-JNAP-Action';

@@ -64,7 +64,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     });
 
     final bloc = context.read<AuthBloc>();
-    bool isConnected = await bloc.downloadCert();
+    bool isConnected = await bloc.connectToLocalBroker();
     if (isConnected) {
       await bloc
           .getAdminPasswordInfo()
@@ -145,11 +145,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     await context
         .read<AuthBloc>()
         .localLogin(_passwordController.text)
-        .then((value) {
-          if (value) {
-            NavigationCubit.of(context).clearAndPush(DashboardHomePath());
-          }
-    }).onError((error, stackTrace) => _handleError(error, stackTrace));
+        .onError((error, stackTrace) => _handleError(error, stackTrace));
     setState(() {
       _isLoading = false;
     });

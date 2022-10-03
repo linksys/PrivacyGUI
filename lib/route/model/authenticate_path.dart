@@ -5,7 +5,6 @@ import 'package:linksys_moab/page/login/view/_view.dart';
 import 'package:linksys_moab/page/otp_flow/view/_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 
-
 import '_model.dart';
 
 abstract class AuthenticatePath extends BasePath {
@@ -57,7 +56,9 @@ abstract class AuthenticatePath extends BasePath {
           args: args,
         );
       case AuthCloudReadyForLoginPath:
-        return CloudReadyForLoginView(args: args,);
+        return CloudReadyForLoginView(
+          args: args,
+        );
       default:
         return const Center();
     }
@@ -97,7 +98,10 @@ class AuthSetupLoginPath extends AuthenticatePath {}
 
 // Local Login
 
-class AuthLocalLoginPath extends AuthenticatePath {}
+class AuthLocalLoginPath extends AuthenticatePath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..ignoreAuthChanged = false;
+}
 
 class AuthLocalRecoveryKeyPath extends AuthenticatePath {}
 

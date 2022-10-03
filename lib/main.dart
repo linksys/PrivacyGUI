@@ -44,9 +44,9 @@ void main() {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    if (!kReleaseMode) {
-      MqttLogger.loggingOn = true;
-    }
+    // if (!kReleaseMode) {
+    //   MqttLogger.loggingOn = true;
+    // }
     logger.d('Done for init Firebase Core');
     initCloudMessage();
     // Pass all uncaught errors from the framework to Crashlytics.

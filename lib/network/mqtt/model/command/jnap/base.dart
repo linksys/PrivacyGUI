@@ -22,7 +22,7 @@ class JnapCommand extends BaseMqttCommand<JnapResponse> {
 
   factory JnapCommand.local({
     required String action,
-    required String auth,
+    String? auth,
     Map<String, dynamic> data = const {},
   }) {
     return JnapCommand(
@@ -38,12 +38,10 @@ class JnapCommand extends BaseMqttCommand<JnapResponse> {
     required String gid,
     required String nid,
     required String action,
-    required String auth,
-    required Map<String, dynamic> data,
+    Map<String, dynamic> data = const {},
   }) {
     return JnapCommand(
       action: action,
-      auth: auth,
       data: data,
       publishTopic: mqttRemotePublishTopic
           .replaceFirst(varMqttGroupId, gid)
@@ -122,7 +120,7 @@ abstract class JnapResult extends Equatable {
   }
 
   factory JnapResult.fromJson(Map<String, dynamic> json) {
-    if (json.containsKey(keyJnapOutput)) {
+    if (json[keyJnapResult] == jnapResultOk) {
       return JnapSuccess.fromJson(json);
     } else {
       return JnapError.fromJson(json);
@@ -142,7 +140,7 @@ class JnapSuccess extends JnapResult {
   factory JnapSuccess.fromJson(Map<String, dynamic> json) {
     return JnapSuccess(
       result: json[keyJnapResult],
-      output: json[keyJnapOutput],
+      output: json[keyJnapOutput] ?? {},
     );
   }
 

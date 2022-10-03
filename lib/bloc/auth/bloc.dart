@@ -6,6 +6,7 @@ import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
@@ -14,8 +15,8 @@ import 'package:linksys_moab/network/http/model/cloud_session_data.dart';
 import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
 import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
-import 'package:linksys_moab/repository/authenticate/local_auth_repository.dart';
 import 'package:linksys_moab/repository/model/dummy_model.dart';
+import 'package:linksys_moab/repository/router/core_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -33,9 +34,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
   final RouterRepository _routerRepository;
   StreamSubscription? _errorStreamSubscription;
 
-  AuthBloc(
-      {required AuthRepository repo, required RouterRepository routerRepo})
-      : _repository = repo,
+  AuthBloc({
+    required AuthRepository repo,
+    required RouterRepository routerRepo,
+  })  : _repository = repo,
         _routerRepository = routerRepo,
         super(AuthState.unknownAuth()) {
     on<InitAuth>(_onInitAuth);
@@ -56,7 +58,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
 
     //
     _errorStreamSubscription = errorResponseStream.listen((error) {
-      logger.e('Receive http response error: ${error.status}, ${error.code}, ${error.errorMessage}');
+      logger.e(
+          'Receive http response error: ${error.status}, ${error.code}, ${error.errorMessage}');
       if (error.status == 401) {
         add(Unauthorized());
       }
@@ -64,7 +67,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
     //
     shareStream = stream;
   }
-
 
   @override
   Future<void> close() {
@@ -108,7 +110,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
 
   _authorized(Authorized event, Emitter<AuthState> emit) {
     if (event.isDuringSetup) {
-    } else if (event.isCloud){
+    } else if (event.isCloud) {
       emit(AuthState.cloudAuthorized());
     } else {
       emit(AuthState.localAuthorized());
@@ -251,16 +253,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
   }
 
   void _localLogin(LocalLogin event, Emitter<AuthState> emit) async {
-    final result = await localLogin(event.password);
-    if (result) {
-      // Authorized
-      final pref = await SharedPreferences.getInstance();
-      pref.setString(moabPrefLocalPassword, event.password);
-      emit(AuthState.localAuthorized());
-    } else {
-      // Unauthorized
-      emit(AuthState.unAuthorized());
-    }
+    // Authorized
+    final pref = await SharedPreferences.getInstance();
+    pref.setString(moabPrefLocalPassword, event.password);
+    emit(AuthState.localAuthorized());
   }
 
   void _onLogout(Logout event, Emitter<AuthState> emit) {
@@ -601,21 +597,27 @@ extension AuthBlocCloud on AuthBloc {
 }
 
 extension AuthBlocLocal on AuthBloc {
-  Future<bool> downloadCert() async {
-    return _routerRepository.downloadCert();
+  Future<bool> connectToLocalBroker() async {
+    return _routerRepository
+        .downloadCert()
+        .then((value) => _routerRepository.connectToLocal());
   }
+
   Future<bool> localLogin(String password) async {
-    final result =  await _routerRepository.localLogin(password);
-    return result;
+    final result = await _routerRepository.checkAdminPassword(password);
+    if (result.result == jnapResultOk) {
+      add(LocalLogin(password));
+      return true;
+    }
+    return false;
   }
 
   Future<AdminPasswordInfo> getAdminPasswordInfo() async {
     return await _routerRepository.getAdminPasswordInfo().then((value) =>
         AdminPasswordInfo(
-            hasAdminPassword: value.containsKey('passwordHint'),
-            hint: value['passwordHint'] ?? ''));
+            hasAdminPassword: value.output.containsKey('passwordHint'),
+            hint: value.output['passwordHint'] ?? ''));
   }
-
 
   Future<DummyModel> createPassword(String password, String hint) async {
     return await _routerRepository
