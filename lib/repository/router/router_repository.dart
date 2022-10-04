@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/connectivity/state.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
@@ -11,7 +10,6 @@ import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
 import 'package:linksys_moab/network/mqtt/mqtt_client_wrap.dart';
-import 'package:linksys_moab/repository/model/dummy_model.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:mqtt_client/mqtt_client.dart';
@@ -21,6 +19,18 @@ enum MqttConnectType {
   none,
   local,
   remote,
+}
+
+class CommandWrap {
+  CommandWrap({
+    required this.action,
+    required this.needAuth,
+    this.data = const {},
+  });
+
+  final String action;
+  final bool needAuth;
+  Map<String, dynamic> data;
 }
 
 class RouterRepository with StateStreamListener {
@@ -65,6 +75,9 @@ class RouterRepository with StateStreamListener {
     if (cert.isEmpty) {
       await downloadCert();
       cert = pref.getString(moabPrefLocalCert) ?? '';
+    }
+    if (_mqttClient?.connectionState == MqttConnectionState.connected) {
+      await _mqttClient?.disconnect();
     }
     _mqttClient =
         MqttClientWrap(_brokerUrl ?? '', 8833, Utils.generateMqttClintId());
@@ -114,6 +127,18 @@ class RouterRepository with StateStreamListener {
     } else {
       throw (result as JnapError);
     }
+  }
+
+  Future<List<JnapSuccess>> batchCommands(List<CommandWrap> commands) async {
+    return Future.wait(
+      commands.map(
+        (e) => createCommand(e.action, needAuth: e.needAuth, data: e.data)
+            .publish(mqttClient!)
+            .then(
+              (value) => handleJnapResult(value.body),
+            ),
+      ),
+    );
   }
 
   @override

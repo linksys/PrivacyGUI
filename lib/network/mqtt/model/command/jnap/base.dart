@@ -158,6 +158,7 @@ class JnapSuccess extends JnapResult {
   List<Object?> get props => super.props..add(output);
 }
 
+// TODO check Authenticate error
 class JnapError extends JnapResult {
   const JnapError({
     required super.result,

@@ -11,6 +11,8 @@ import 'package:linksys_moab/bloc/connectivity/availability_info.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
+import 'package:linksys_moab/repository/router/batch_extension.dart';
+import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
@@ -18,13 +20,28 @@ import '../../constants/_constants.dart';
 import 'connectivity_info.dart';
 import 'state.dart';
 
+class RouterConfiguredData {
+
+  const RouterConfiguredData({
+    required this.isDefaultPassword,
+    required this.isSetByUser,
+  });
+  
+  final bool isDefaultPassword;
+  final bool isSetByUser;
+
+
+}
+
 class ConnectivityCubit extends Cubit<ConnectivityState>
     with ConnectivityListener, AvailabilityChecker, StateStreamRegister {
-  ConnectivityCubit()
-      : super(const ConnectivityState(
+  ConnectivityCubit({required RouterRepository routerRepository})
+      : _routerRepository = routerRepository, super(const ConnectivityState(
             hasInternet: false, connectivityInfo: ConnectivityInfo())) {
     shareStream = stream;
   }
+
+  final RouterRepository _routerRepository;
   // TODO refactor
   bool isAndroid9 = false;
   bool isAndroid10AndSupportEasyConnect = false;
@@ -78,6 +95,19 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
     super.onChange(change);
     logger.i(
         'Connectivity Cubit change: ${change.currentState} -> ${change.nextState}');
+  }
+
+  Future<bool> connectToLocalBroker() async {
+    return _routerRepository
+        .downloadCert()
+        .then((value) => _routerRepository.connectToLocal());
+  }
+
+  Future<RouterConfiguredData> isRouterConfigured() async {
+    final results = await _routerRepository.fetchIsConfigured();
+    bool isDefaultPassword = results.firstWhere((element) => element.output.containsKey('isAdminPasswordDefault')).output['isAdminPasswordDefault'];
+    bool isSetByUser = results.firstWhere((element) => element.output.containsKey('isAdminPasswordSetByUser')).output['isAdminPasswordSetByUser'];
+    return RouterConfiguredData(isDefaultPassword: isDefaultPassword, isSetByUser: isSetByUser);
   }
 }
 
@@ -147,7 +177,7 @@ mixin ConnectivityListener {
   _updateConnectivity(ConnectivityResult result) async {
     logger.d('Connectivity Result: $result');
     final connectivityInfo = await _updateNetworkInfo(result);
-    onConnectivityChanged(connectivityInfo);
+    await onConnectivityChanged(connectivityInfo);
   }
 
   Future<ConnectivityInfo> _updateNetworkInfo(ConnectivityResult result) async {

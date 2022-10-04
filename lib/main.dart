@@ -82,7 +82,6 @@ Widget _app() {
           create: (context) => MoabEnvironmentRepository(MoabHttpClient())),
       RepositoryProvider(create: (context) => CloudAccountRepository()),
       RepositoryProvider(create: (context) => RouterRepository()),
-
     ],
     child: MultiBlocProvider(providers: [
       BlocProvider(
@@ -94,7 +93,12 @@ Widget _app() {
           routerRepo: context.read<RouterRepository>(),
         )..register(context.read<RouterRepository>()),
       ),
-      BlocProvider(create: (BuildContext context) => ConnectivityCubit()..register(context.read<RouterRepository>())),
+      BlocProvider(
+          create: (BuildContext context) => ConnectivityCubit(
+                routerRepository: context.read<RouterRepository>(),
+              )..register(
+                  context.read<RouterRepository>(),
+                )),
       BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
       BlocProvider(create: (BuildContext context) => SetupBloc()),
       BlocProvider(create: (BuildContext context) => OtpCubit()),

@@ -16,6 +16,7 @@ import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
 import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
 import 'package:linksys_moab/repository/model/dummy_model.dart';
+import 'package:linksys_moab/repository/router/batch_extension.dart';
 import 'package:linksys_moab/repository/router/core_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -597,12 +598,6 @@ extension AuthBlocCloud on AuthBloc {
 }
 
 extension AuthBlocLocal on AuthBloc {
-  Future<bool> connectToLocalBroker() async {
-    return _routerRepository
-        .downloadCert()
-        .then((value) => _routerRepository.connectToLocal());
-  }
-
   Future<bool> localLogin(String password) async {
     final result = await _routerRepository.checkAdminPassword(password);
     if (result.result == jnapResultOk) {

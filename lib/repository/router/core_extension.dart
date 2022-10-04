@@ -12,14 +12,6 @@ extension CoreService on RouterRepository {
     return handleJnapResult(result.body);
   }
 
-  Future<JnapSuccess> isAdminPasswordSetByUser() async {
-    final command =
-        createCommand(JNAPAction.isAdminPasswordSetByUser.actionValue);
-
-    final result = await command.publish(mqttClient!);
-    return handleJnapResult(result.body);
-  }
-
   Future<JnapSuccess> getDeviceInfo() async {
     final command =
     createCommand(JNAPAction.getDeviceInfo.actionValue);

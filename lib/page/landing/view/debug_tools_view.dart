@@ -32,6 +32,7 @@ import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../network/better_action.dart';
 import '../../../network/http/http_client.dart';
 
 class DebugToolsView extends StatefulWidget {
@@ -331,7 +332,18 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Connect',
           onPress: () async {
-            context.read<RouterRepository>().getAdminPasswordHint();
+            final results = await context.read<RouterRepository>().batchCommands([
+              CommandWrap(
+                action: JNAPAction.isAdminPasswordSetByUser.actionValue,
+                needAuth: false,
+              ),
+              CommandWrap(
+                action: JNAPAction.isAdminPasswordDefault.actionValue,
+                needAuth: false,
+              ),
+            ]);
+
+            logger.d('test results: $results');
           },
         ),
         Text(

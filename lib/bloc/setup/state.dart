@@ -1,20 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 
-// TODO
-class RouterInfo {
-  final String friendlyName;
-  final String model;
-  final String mac;
-  final String serialNumber;
-
-  RouterInfo(
-      {required this.friendlyName,
-      required this.model,
-      required this.mac,
-      required this.serialNumber});
-}
-
 enum SetupResumePoint {
   NONE,
   INTERNETCHECK,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/setup/bloc.dart';
 import 'package:linksys_moab/bloc/setup/event.dart';
@@ -34,10 +35,22 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
     context.read<SetupBloc>().add(
       const ResumePointChanged(status: SetupResumePoint.INTERNETCHECK)
     );
-    final state = await context.read<ConnectivityCubit>().forceUpdate();
-    if (state.connectivityInfo.gatewayIp != null) {
+    final bloc = context.read<ConnectivityCubit>();
+    final state = await bloc.forceUpdate();
 
-    }
+    // bool isConnect = await bloc.connectToLocalBroker();
+    // if (!isConnect) {
+    //   // TODO not a Moab/Linksys router
+    // }
+
+    // TODO get gateway ip
+    // TODO get device info
+    // TODO update better action
+    // final configuredData = await bloc.isRouterConfigured();
+    // bool hasConfigured = !configuredData.isDefaultPassword & configuredData.isSetByUser;
+
+    // TODO getWANStatus?
+
     _hasInternet = state.hasInternet;
     setState(() {
       _hasInternet = true;

@@ -6,7 +6,6 @@ import 'package:linksys_moab/page/components/base_components/base_page_view.dart
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/customs/qr_view.dart';
-import 'package:linksys_moab/route/model/internet_check_path.dart';
 import 'package:linksys_moab/route/_route.dart';
 
 import 'package:linksys_moab/util/permission.dart';
