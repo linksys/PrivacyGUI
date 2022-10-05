@@ -41,6 +41,11 @@ extension RouterService on RouterRepository {
 
   Future<JnapSuccess> getWANStatus() async {
     final command = createCommand(JNAPAction.getWANStatus.actionValue);
+
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
+
   Stream<JnapResult> testGetWANDetectionStatus({
     int retryDelayInSec = 5,
     int maxRetry = 10,
