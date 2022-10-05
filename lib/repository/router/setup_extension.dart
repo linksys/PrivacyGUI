@@ -12,6 +12,28 @@ extension SetupService on RouterRepository {
     return handleJnapResult(result.body);
   }
 
+  Future<JnapSuccess> resetAdminPassword(
+      String resetCode, String password, String hint) async {
+    final command =
+        createCommand(JNAPAction.setupSetAdminPassword.actionValue, data: {
+      'resetCode': resetCode,
+      'adminPassword': password,
+      'passwordHint': hint,
+    });
+
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
+
+  Future<JnapSuccess> verifyRouterResetCode(String resetCode) async {
+    final command =
+        createCommand(JNAPAction.verifyRouterResetCode.actionValue, data: {
+      'resetCode': resetCode,
+    });
+
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
   // TODO extract a RetryCommandWrap
   Stream<JnapResult> testGetInternetConnectionStatus({
     int retryDelayInSec = 5,
