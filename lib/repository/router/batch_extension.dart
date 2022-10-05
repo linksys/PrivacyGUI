@@ -42,6 +42,7 @@ extension BatchCommands on RouterRepository {
       CommandWrap(
         action: JNAPAction.getHealthCheckResults.actionValue,
         needAuth: true,
+        data: {'includeModuleResults': true},
       ),
       CommandWrap(
         action: JNAPAction.getSupportedHealthCheckModules.actionValue,
