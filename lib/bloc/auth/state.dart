@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/network/http/model/cloud_phone.dart';
 
 enum AuthStatus {
@@ -125,11 +126,11 @@ class AuthState extends Equatable {
   });
 
   factory AuthState.unknownAuth() {
-    return const AuthState(status: AuthStatus.unknownAuth);
+    return const AuthUnknownState();
   }
 
   factory AuthState.unAuthorized() {
-    return const AuthState(status: AuthStatus.unAuthorized);
+    return const AuthUnAuthorizedState();
   }
 
   factory AuthState.cloudAuthorized() {
@@ -158,6 +159,16 @@ class AuthState extends Equatable {
   List<Object?> get props => [
         status,
       ];
+}
+
+class AuthUnknownState extends AuthState {
+  const AuthUnknownState()
+      : super(status: AuthStatus.unknownAuth);
+}
+
+class AuthUnAuthorizedState extends AuthState {
+  const AuthUnAuthorizedState()
+      : super(status: AuthStatus.unAuthorized);
 }
 
 class AuthCloudLoginState extends AuthState {

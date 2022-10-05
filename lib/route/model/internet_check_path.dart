@@ -5,7 +5,6 @@ import '_model.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
 
 abstract class InternetCheckPath extends BasePath {
-
   @override
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
@@ -47,20 +46,35 @@ class CheckNodeInternetPath extends InternetCheckPath {
   PageConfig get pageConfig =>
       super.pageConfig..navType = PageNavigationType.none;
 }
+
 class SelectIspSettingsPath extends InternetCheckPath {}
+
 class CheckWiringPath extends InternetCheckPath {}
+
 class NoInternetOptionsPath extends InternetCheckPath {}
+
 class EnterIspSettingsPath extends InternetCheckPath {}
+
 class EnterStaticIpPath extends InternetCheckPath {}
+
 class LinksysSupportRegionPath extends InternetCheckPath {}
+
 class UnplugModemPath extends InternetCheckPath {}
+
 class WaitModemDisconnectPath extends InternetCheckPath {}
+
 class PlugModemBackPath extends InternetCheckPath {}
+
 class LearnBatteryModemPath extends InternetCheckPath {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
-class InternetConnectedPath extends InternetCheckPath {}
 
+class InternetConnectedPath extends InternetCheckPath {
+  @override
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
 
-
+  @override
+  PageConfig get pageConfig =>
+      super.pageConfig..navType = PageNavigationType.none;
+}

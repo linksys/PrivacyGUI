@@ -74,6 +74,7 @@ enum JNAPService {
   setup8(value: 'http://linksys.com/jnap/nodes/setup/Setup8'),
   smartMode(value: 'http://linksys.com/jnap/nodes/smartmode/SmartMode'),
   smartMode2(value: 'http://linksys.com/jnap/nodes/smartmode/SmartMode2'),
+  selectableWAN(value: 'http://linksys.com/jnap/nodes/setup/SelectableWAN'),
   wirelessAP(value: 'http://linksys.com/jnap/wirelessap/WirelessAP'),
   wirelessAP2(value: 'http://linksys.com/jnap/wirelessap/WirelessAP2'),
   wirelessAP4(value: 'http://linksys.com/jnap/wirelessap/WirelessAP4'),
@@ -163,10 +164,16 @@ enum JNAPAction {
   // routerManagement
   getManagementSettings,
   setManagementSettings,
+  // selectableWAN
+  getPortConnectionStatus,
+  getWANPort,
+  setWANPort,
   // setup
   isAdminPasswordSetByUser,
   setupSetAdminPassword,
   verifyRouterResetCode,
+  getWANDetectionStatus,
+  getInternetConnectionStatus,
   // smartMode
   getDeviceMode,
   // wirelessAP
@@ -254,6 +261,7 @@ enum _JNAPActionValue {
   getWANSettings5(value: 'http://linksys.com/jnap/router/GetWANSettings5'),
   getWANStatus(value: 'http://linksys.com/jnap/router/GetWANStatus'),
   getWANStatus3(value: 'http://linksys.com/jnap/router/GetWANStatus3'),
+  getWANDetectionStatus(value: 'http://linksys.com/jnap/nodes/setup/GetWANDetectionStatus'),
   setIPv6Settings(value: 'http://linksys.com/jnap/router/SetIPv6Settings'),
   setIPv6Settings2(value: 'http://linksys.com/jnap/router/SetIPv6Settings2'),
   setWANSettings(value: 'http://linksys.com/jnap/router/SetWANSettings'),
@@ -273,8 +281,11 @@ enum _JNAPActionValue {
   getWPSServerSessionStatus(value: 'http://linksys.com/jnap/wirelessap/GetWPSServerSessionStatus'),
   setRadioSettings(value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings'),
   setRadioSettings3(value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings3'),
-  getWirelessSchedulerSettings(value: 'http://linksys.com/jnap/wirelessscheduler/GetWirelessSchedulerSettings');
-
+  getWirelessSchedulerSettings(value: 'http://linksys.com/jnap/wirelessscheduler/GetWirelessSchedulerSettings'),
+  getPortConnectionStatus(value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings3'),
+  getWANPort(value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings3'),
+  setWANPort(value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings3'),
+  getInternetConnectionStatus(value:'http://linksys.com/jnap/nodes/setup/GetInternetConnectionStatus');
   const _JNAPActionValue({required this.value});
 
   final String value;
@@ -457,6 +468,8 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.smartMode2:
       break;
+    case JNAPService.selectableWAN:
+      break;
     case JNAPService.wirelessAP:
       break;
     case JNAPService.wirelessAP2:
@@ -537,13 +550,21 @@ void initBetterActions() {
   _betterActionMap[JNAPAction.getWPSServerSessionStatus] = _JNAPActionValue.getWPSServerSessionStatus.value;
   _betterActionMap[JNAPAction.setRadioSettings] = _JNAPActionValue.setRadioSettings.value;
   _betterActionMap[JNAPAction.getWirelessSchedulerSettings] = _JNAPActionValue.getWirelessSchedulerSettings.value;
+  _betterActionMap[JNAPAction.getWANDetectionStatus] = _JNAPActionValue.getWANDetectionStatus.value;
+  _betterActionMap[JNAPAction.getPortConnectionStatus] = _JNAPActionValue.getPortConnectionStatus.value;
+  _betterActionMap[JNAPAction.getWANPort] = _JNAPActionValue.getWANPort.value;
+  _betterActionMap[JNAPAction.setWANPort] = _JNAPActionValue.setWANPort.value;
+  _betterActionMap[JNAPAction.getInternetConnectionStatus] = _JNAPActionValue.getInternetConnectionStatus.value;
 }
 
-void buildBetterActions(List<JNAPService> routerServices) {
+void buildBetterActions(List<String> routerServices) {
   initBetterActions();
-  final List<JNAPService> supportedServices = routerServices.where((element) =>
-      JNAPService.appSupportedServices.contains(element)
-  ).toList();
+  final List<JNAPService> supportedServices = routerServices
+      .where((routerService) => JNAPService.appSupportedServices
+          .any((supportedService) => routerService == supportedService.value))
+      .map((service) => JNAPService.appSupportedServices
+          .firstWhere((supportedService) => supportedService.value == service))
+      .toList();
 
   for (final service in supportedServices) {
     _updateBetterActions(service);

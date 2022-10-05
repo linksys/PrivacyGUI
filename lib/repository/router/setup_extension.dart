@@ -12,4 +12,30 @@ extension SetupService on RouterRepository {
     return handleJnapResult(result.body);
   }
 
+  // TODO extract a RetryCommandWrap
+  Stream<JnapResult> testGetInternetConnectionStatus({
+    int retryDelayInSec = 5,
+    int maxRetry = 10,
+    bool Function()? condition,
+  }) {
+    final command = createCommand(JNAPAction.getInternetConnectionStatus.actionValue);
+    return command
+        .publishWithRetry(mqttClient!,
+        retryDelayInSec: retryDelayInSec, maxRetry: maxRetry, condition: condition)
+        .map((event) => handleJnapResult(event.body));
+  }
+  ///
+  /// Value -
+  /// NoPortConnected -	There are no physical ethernet ports connected.
+  /// NoWANConnection -	An ethernet port is connected, but no WAN connection was detected.
+  /// NoInternetConnection -	A WAN connection was detected, but no internet connection.
+  /// InternetConnected -	There is an active internet connection.
+  ///
+  Future<JnapSuccess> getInternetConnectionStatus() async {
+    final command =
+    createCommand(JNAPAction.getInternetConnectionStatus.actionValue);
+
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
 }

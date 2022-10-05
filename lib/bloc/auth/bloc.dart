@@ -67,6 +67,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
     });
     //
     shareStream = stream;
+    register(routerRepo);
   }
 
   @override

@@ -39,6 +39,7 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
       : _routerRepository = routerRepository, super(const ConnectivityState(
             hasInternet: false, connectivityInfo: ConnectivityInfo())) {
     shareStream = stream;
+    register(routerRepository);
   }
 
   final RouterRepository _routerRepository;
@@ -99,7 +100,7 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
 
   Future<bool> connectToLocalBroker() async {
     return _routerRepository
-        .downloadCert()
+        .downloadCert().onError((error, stackTrace) => false)
         .then((value) => _routerRepository.connectToLocal());
   }
 
@@ -112,7 +113,8 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
 }
 
 mixin AvailabilityChecker {
-  static const internetCheckPeriod = Duration(seconds: 30);
+  static const defaultInternetCheckPeriodSec = 30;
+  Duration internetCheckPeriod = const Duration(seconds: defaultInternetCheckPeriodSec);
   Timer? timer;
   final _client = MoabHttpClient(timeoutMs: 3000);
   Function(bool, AvailabilityInfo?)? _callback;
@@ -120,7 +122,11 @@ mixin AvailabilityChecker {
   set callback(Function(bool, AvailabilityInfo?) callback) =>
       _callback = callback;
 
-  scheduleCheck({bool immediate = false}) async {
+  scheduleCheck({bool immediate = false, int? periodInSec}) async {
+    logger.d("Connectivity start schedule check");
+    if (periodInSec != null) {
+      internetCheckPeriod = Duration(seconds: periodInSec);
+    }
     if (immediate) {
       await check();
     }
@@ -129,6 +135,10 @@ mixin AvailabilityChecker {
       logger.d('Start period check internet...');
       await check();
     });
+  }
+
+  stopChecking() {
+    timer?.cancel();
   }
 
   check() async {

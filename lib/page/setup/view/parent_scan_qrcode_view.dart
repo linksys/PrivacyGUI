@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:connecting_wifi_plugin/connecting_wifi_plugin.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
@@ -7,8 +8,10 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/customs/qr_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/util/logger.dart';
 
 import 'package:linksys_moab/util/permission.dart';
+import 'package:linksys_moab/util/wifi_credential.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../components/base_components/button/primary_button.dart';
@@ -25,9 +28,13 @@ class ParentScanQRCodeView extends StatefulWidget {
 
 class _ParentScanQRCodeViewState extends State<ParentScanQRCodeView>
     with Permissions {
+
+  bool _isLoading = false;
+
   @override
   void initState() {
     _checkCameraPermission();
+    super.initState();
   }
 
   Future<void> _checkCameraPermission() async {
@@ -84,13 +91,27 @@ class _ParentScanQRCodeViewState extends State<ParentScanQRCodeView>
     );
   }
 
-  _handleScanResult(BuildContext context, Barcode code) {
-    print('Scanned code: ${code.rawValue ?? ''}');
+  _handleScanResult(BuildContext context, Barcode code) async {
+    setState(() {
+      _isLoading = true;
+    });
+    logger.d('Scanned code: ${code.rawValue ?? ''}');
     if (Platform.isAndroid) {
       NavigationCubit.of(context).push(
           AndroidLocationPermissionPrimerPath());
     } else if (Platform.isIOS) {
-      NavigationCubit.of(context).push(CheckNodeInternetPath());
+      // NavigationCubit.of(context).push(CheckNodeInternetPath());
+      final cred = WiFiCredential.parse(code.rawValue ?? '');
+      logger.d('WiFi Credentials: ssid: ${cred.ssid}, ${cred.password}');
+      final isConnected = await ConnectingWifiPlugin().connectToWiFi(ssid: cred.ssid, password: cred.password);
+      setState(() {
+        _isLoading = false;
+      });
+      if (isConnected) {
+        NavigationCubit.of(context).push(CheckNodeInternetPath());
+      } else {
+        // TODO error handling and restart scanning
+      }
     }
   }
 }

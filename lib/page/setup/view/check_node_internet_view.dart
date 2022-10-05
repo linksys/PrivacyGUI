@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
+import 'package:linksys_moab/bloc/internet_check/cubit.dart';
+import 'package:linksys_moab/bloc/internet_check/state.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/setup/bloc.dart';
 import 'package:linksys_moab/bloc/setup/event.dart';
 import 'package:linksys_moab/bloc/setup/state.dart';
@@ -9,9 +12,10 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/repository/router/router_extension.dart';
+import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/model/internet_check_path.dart';
 import 'package:linksys_moab/route/_route.dart';
-
 
 class CheckNodeInternetView extends StatefulWidget {
   const CheckNodeInternetView({
@@ -23,7 +27,6 @@ class CheckNodeInternetView extends StatefulWidget {
 }
 
 class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
-  bool _hasInternet = false;
 
   @override
   void initState() {
@@ -32,53 +35,86 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
   }
 
   _fakeInternetChecking() async {
-    context.read<SetupBloc>().add(
-      const ResumePointChanged(status: SetupResumePoint.INTERNETCHECK)
-    );
-    final bloc = context.read<ConnectivityCubit>();
-    final state = await bloc.forceUpdate();
+    context
+        .read<SetupBloc>()
+        .add(const ResumePointChanged(status: SetupResumePoint.INTERNETCHECK));
+    final connCubit = context.read<ConnectivityCubit>();
+    final internetCheckCubit = context.read<InternetCheckCubit>();
+    await connCubit.stopChecking();
 
-    // bool isConnect = await bloc.connectToLocalBroker();
-    // if (!isConnect) {
-    //   // TODO not a Moab/Linksys router
-    // }
+    bool isConnected = await _tryConnectMQTT();
 
-    // TODO get gateway ip
-    // TODO get device info
-    // TODO update better action
-    // final configuredData = await bloc.isRouterConfigured();
-    // bool hasConfigured = !configuredData.isDefaultPassword & configuredData.isSetByUser;
+    internetCheckCubit.setConnectToRouter(isConnected);
+  }
 
-    // TODO getWANStatus?
-
-    _hasInternet = state.hasInternet;
-    setState(() {
-      _hasInternet = true;
-    });
-    await Future.delayed(const Duration(seconds: 3));
-    NavigationCubit.of(context).push(InternetConnectedPath());
+  Future<bool> _tryConnectMQTT() async {
+    final connCubit = context.read<ConnectivityCubit>();
+    const maxRetry = 3;
+    int retry = 0;
+    bool isConnect = false;
+    do {
+      isConnect = await connCubit.connectToLocalBroker();
+      if (isConnect) {
+        return isConnect;
+      } else {
+        retry++;
+        await Future.delayed(const Duration(seconds: 3));
+      }
+    } while (retry < maxRetry);
+    return isConnect;
   }
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView.noNavigationBar(
-      child: BasicLayout(
-        header: BasicHeader(
-          title: getAppLocalizations(context).check_for_internet,
-        ),
-        content: Container(
-          child: const IndeterminateProgressBar(),
-          alignment: Alignment.topCenter,
-        ),
-        footer: !_hasInternet ? Center(
-          child: SimpleTextButton(
-            text: getAppLocalizations(context).enter_isp_settings,
-            onPressed: () {
-              NavigationCubit.of(context).push(SelectIspSettingsPath());
-            },
+    return BlocConsumer<InternetCheckCubit, InternetCheckState>(
+      listenWhen: (previous, current) => previous.status != current.status,
+      listener: (context, state) {
+        if (state.status == InternetCheckStatus.detectWANStatus) {
+          context.read<InternetCheckCubit>().detectWANStatus();
+        } else if (state.status == InternetCheckStatus.pppoe) {
+          // go pppoe page
+        } else if (state.status == InternetCheckStatus.static) {
+          // go static page
+        } else if (state.status == InternetCheckStatus.connectedToRouter) {
+          context.read<InternetCheckCubit>().initDevice();
+        } else if (state.status == InternetCheckStatus.errorConnectedToRouter) {
+          // Not a moab/linksys router
+        } else if (state.status == InternetCheckStatus.checkWiring) {
+          // go check wiring page
+        } else if (state.status == InternetCheckStatus.getInternetConnectionStatus) {
+          context.read<InternetCheckCubit>().getInternetConnectionStatus();
+        } else if (state.status == InternetCheckStatus.noInternet) {
+          // Go no internet page
+        } else if (state.status == InternetCheckStatus.manually) {
+          // go manually
+          NavigationCubit.of(context).push(SelectIspSettingsPath());
+        } else if (state.status == InternetCheckStatus.connected) {
+          // go connected page
+          NavigationCubit.of(context).push(InternetConnectedPath());
+        }
+      },
+      builder: (context, state) => BasePageView.noNavigationBar(
+        child: BasicLayout(
+          header: BasicHeader(
+            title: getAppLocalizations(context).check_for_internet,
           ),
-        ) : null,
-        alignment: CrossAxisAlignment.start,
+          content: Container(
+            child: const IndeterminateProgressBar(),
+            alignment: Alignment.topCenter,
+          ),
+          footer: Offstage(
+            offstage: state.status == InternetCheckStatus.init,
+            child: Center(
+              child: SimpleTextButton(
+                text: getAppLocalizations(context).enter_isp_settings,
+                onPressed: () {
+                  context.read<InternetCheckCubit>().setManuallyInput();
+                },
+              ),
+            ),
+          ),
+          alignment: CrossAxisAlignment.start,
+        ),
       ),
     );
   }

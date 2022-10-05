@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
@@ -8,6 +9,7 @@ import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
+import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
 import 'package:linksys_moab/network/mqtt/mqtt_client_wrap.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -47,21 +49,21 @@ class RouterRepository with StateStreamListener {
   List<String> topics = [];
 
   Future<bool> downloadCert() async {
-    final caCert = await rootBundle.loadString('assets/keys/server.pem');
-    final pref = await SharedPreferences.getInstance();
-    await pref.setString(moabPrefLocalCert, caCert);
-    return true;
-    // const credentials = 'admin:admin';
-    // final _client = MoabHttpClient(timeoutMs: 1000);
-    // final response = await _client.get(Uri.parse('http://$_gatewayIp/cert.cgi'), headers: {
-    //   'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
-    // });
-    // if (response.statusCode != HttpStatus.ok) {
-    //   return false;
-    // }
+    // final caCert = await rootBundle.loadString('assets/keys/server.pem');
     // final pref = await SharedPreferences.getInstance();
-    // await pref.setString(moabPrefLocalCert, response.body);
+    // await pref.setString(moabPrefLocalCert, caCert);
     // return true;
+    const credentials = 'admin:admin';
+    final _client = MoabHttpClient(timeoutMs: 1000);
+    final response = await _client.get(Uri.parse('http://$_brokerUrl/cert.cgi'), headers: {
+      'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
+    });
+    if (response.statusCode != HttpStatus.ok) {
+      return false;
+    }
+    final pref = await SharedPreferences.getInstance();
+    await pref.setString(moabPrefLocalCert, response.body);
+    return true;
   }
 
   connectToRemote() async {
@@ -156,21 +158,21 @@ class RouterRepository with StateStreamListener {
   }
 
   _handleAuthChanged(AuthState state) async {
-    logger.d('Router repository:: _handleAuthChanged: $state');
+    logger.d('Router repository:: _handleAuthChanged: $state, ${state.runtimeType}');
     final pref = await SharedPreferences.getInstance();
-    if (state is CloudLogin) {
+    if (state is AuthCloudLoginState) {
       // get cloud certs and etc...
       _brokerUrl =
           CloudEnvironmentManager().currentConfig?.transport.mqttBroker;
       connectToRemote();
-    } else if (state is LocalLogin) {
+    } else if (state is AuthLocalLoginState) {
       // get local password and cert, etc...
       localPassword = pref.getString(moabPrefLocalPassword);
       connectToLocal();
-    } else if (state is Unauthorized) {
+    } else if (state is AuthUnAuthorizedState) {
       connectType = MqttConnectType.none;
       // remove all information
-      localPassword = null;
+      localPassword = 'admin';
       disconnect();
     }
   }

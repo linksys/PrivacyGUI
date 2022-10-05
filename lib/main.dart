@@ -13,6 +13,8 @@ import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/connectivity/cubit.dart';
 import 'package:linksys_moab/bloc/content_filter/cubit.dart';
 import 'package:linksys_moab/bloc/device/cubit.dart';
+import 'package:linksys_moab/bloc/internet_check/cubit.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -91,14 +93,12 @@ Widget _app() {
         create: (BuildContext context) => AuthBloc(
           repo: context.read<CloudAuthRepository>(),
           routerRepo: context.read<RouterRepository>(),
-        )..register(context.read<RouterRepository>()),
+        ),
       ),
       BlocProvider(
           create: (BuildContext context) => ConnectivityCubit(
                 routerRepository: context.read<RouterRepository>(),
-              )..register(
-                  context.read<RouterRepository>(),
-                )),
+              )),
       BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
       BlocProvider(create: (BuildContext context) => SetupBloc()),
       BlocProvider(create: (BuildContext context) => OtpCubit()),
@@ -108,6 +108,13 @@ Widget _app() {
           create: (BuildContext context) =>
               AccountCubit(repository: context.read<CloudAccountRepository>())),
       BlocProvider(create: (BuildContext context) => ContentFilterCubit()),
+      BlocProvider(
+          create: (BuildContext context) => NetworkCubit(
+                routerRepository: context.read<RouterRepository>(),
+              )),
+      BlocProvider(
+          create: (BuildContext context) => InternetCheckCubit(
+              routerRepository: context.read<RouterRepository>())),
     ], child: const MoabApp()),
   );
 }

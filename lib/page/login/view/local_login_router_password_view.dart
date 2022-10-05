@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -67,6 +68,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     final bloc = context.read<AuthBloc>();
     bool isConnected = await context.read<ConnectivityCubit>().connectToLocalBroker();
     if (isConnected) {
+      await context.read<NetworkCubit>().getDeviceInfo();
       await bloc
           .getAdminPasswordInfo()
           .then((value) => _handleAdminPasswordInfo(value));
