@@ -617,7 +617,7 @@ extension AuthBlocLocal on AuthBloc {
 
   Future<DummyModel> createPassword(String password, String hint) async {
     return await _routerRepository
-        .createPassword(password, hint)
+        .createAdminPassword(password, hint)
         .then((value) => _handleCreatePassword(password, hint));
   }
 

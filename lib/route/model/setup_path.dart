@@ -35,7 +35,7 @@ class SetupCustomizeSSIDPath extends SetupPath {}
 
 class SetupNodesDonePath extends SetupPath {
   @override
-  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = false;
 }
 
 class SetupNodesDoneUnFoundPath extends SetupPath {}

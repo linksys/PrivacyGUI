@@ -23,7 +23,8 @@ class _InternetConnectedViewState extends State<InternetConnectedView> {
   @override
   void initState() {
     Future.delayed(Duration(seconds: 2), () {
-      NavigationCubit.of(context).push(SetupAddingNodesPath());
+      // NavigationCubit.of(context).push(SetupAddingNodesPath());
+      NavigationCubit.of(context).push(SetupNodesDoneUnFoundPath());
     });
   }
 
