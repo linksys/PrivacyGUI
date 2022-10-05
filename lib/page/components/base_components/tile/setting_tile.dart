@@ -3,17 +3,18 @@ import 'dart:ffi';
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 
-
 class SettingTile extends StatelessWidget {
-  const SettingTile(
-      {Key? key,
-        required this.title,
-        required this.value,
-        this.onPress,})
-      : super(key: key);
+  const SettingTile({
+    Key? key,
+    required this.title,
+    required this.value,
+    this.icon,
+    this.onPress,
+  }) : super(key: key);
 
   final Widget title;
   final Widget value;
+  final Widget? icon;
   final VoidCallback? onPress;
 
   @override
@@ -27,8 +28,8 @@ class SettingTile extends StatelessWidget {
             children: [
               Expanded(child: title),
               value,
-              box8(),
-              if (onPress != null) const Icon(Icons.arrow_forward_ios)
+              if (onPress != null) box8(),
+              if (onPress != null) icon ?? const Icon(Icons.arrow_forward_ios)
             ],
           ),
         ),
@@ -38,13 +39,13 @@ class SettingTile extends StatelessWidget {
 }
 
 class SettingTileWithDescription extends StatelessWidget {
-  const SettingTileWithDescription(
-      {Key? key,
-        required this.title,
-        required this.value,
-        required this.description,
-        this.onPress,})
-      : super(key: key);
+  const SettingTileWithDescription({
+    Key? key,
+    required this.title,
+    required this.value,
+    required this.description,
+    this.onPress,
+  }) : super(key: key);
 
   final Widget title;
   final Widget value;
@@ -76,10 +77,10 @@ class SettingTileWithDescription extends StatelessWidget {
 class SettingTileTwoLine extends StatelessWidget {
   const SettingTileTwoLine(
       {Key? key,
-        required this.title,
-        required this.value,
-        this.icon,
-        this.onPress})
+      required this.title,
+      required this.value,
+      this.icon,
+      this.onPress})
       : super(key: key);
 
   final Widget title;
@@ -101,16 +102,16 @@ class SettingTileTwoLine extends StatelessWidget {
               children: [
                 Expanded(
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        title,
-                        box8(),
-                        value,
-                      ],
-                    )),
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    title,
+                    box8(),
+                    value,
+                  ],
+                )),
                 box8(),
-                if (onPress != null) icon ?? Icon(Icons.arrow_forward_ios)
+                if (onPress != null) icon ?? const Icon(Icons.arrow_forward_ios)
               ],
             ),
           ],
@@ -121,9 +122,11 @@ class SettingTileTwoLine extends StatelessWidget {
 }
 
 class SectionTile extends StatelessWidget {
-  const SectionTile(
-      {Key? key, required this.header, required this.child,})
-      : super(key: key);
+  const SectionTile({
+    Key? key,
+    required this.header,
+    required this.child,
+  }) : super(key: key);
 
   final Widget header;
   final Widget child;
