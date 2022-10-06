@@ -17,7 +17,7 @@ extension CoreService on RouterRepository {
   Future<JnapSuccess> createAdminPassword(String password, String hint) async {
     final command =
     createCommand(JNAPAction.coreSetAdminPassword.actionValue, data: {
-      'adminPassword': password,
+      'adminPassword': 'admin', // TODO currently don't modify the password
       'passwordHint': hint,
     });
     final result = await command.publish(mqttClient!);

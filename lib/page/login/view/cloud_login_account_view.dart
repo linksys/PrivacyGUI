@@ -41,7 +41,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
   @override
   void initState() {
     super.initState();
-    _fromSetup = widget.next is SaveCloudSettingsPath ? true : false;
+    _fromSetup = widget.next is SaveSettingsPath ? true : false;
   }
 
   @override

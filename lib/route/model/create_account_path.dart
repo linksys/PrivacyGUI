@@ -22,9 +22,9 @@ abstract class CreateAccountPath extends BasePath {
       case CreateAccountOtpPath:
         return OtpFlowView(
           args: args,
-          next: SaveCloudSettingsPath(),
+          next: SaveSettingsPath(),
         );
-      case SaveCloudSettingsPath:
+      case SaveSettingsPath:
         return SaveSettingsView(args: args,);
       case AlreadyHaveOldAccountPath:
         return const HaveOldAccountView();
@@ -39,7 +39,7 @@ abstract class CreateAccountPath extends BasePath {
       case CreateAccount2SVPath:
         return OtpFlowView(
           args: args,
-          next: SaveCloudSettingsPath(),
+          next: SaveSettingsPath(),
         );
       default:
         return const Center();
@@ -64,7 +64,7 @@ class CreateCloudPasswordPath extends CreateAccountPath {}
 
 class CreateCloudAccountSuccessPath extends CreateAccountPath {}
 
-class SaveCloudSettingsPath extends CreateAccountPath {
+class SaveSettingsPath extends CreateAccountPath {
   @override
   PageConfig get pageConfig => super.pageConfig..ignoreAuthChanged = true;
 }

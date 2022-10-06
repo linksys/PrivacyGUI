@@ -67,7 +67,7 @@ class _AddAccountState extends State<AddAccountView> {
   void initState() {
     super.initState();
     context.read<SetupBloc>().add(
-        const ResumePointChanged(status: SetupResumePoint.CREATECLOUDACCOUNT));
+        const ResumePointChanged(status: SetupResumePoint.createCloudAccount));
   }
 
   Widget _buildAccountTipsWidget() {

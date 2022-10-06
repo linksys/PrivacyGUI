@@ -29,7 +29,7 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
   @override
   void initState() {
     super.initState();
-    _createAccountProcess();
+    _processAllSettings();
   }
 
   //TODO: The svg image must be replaced
@@ -38,7 +38,10 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
     semanticsLabel: 'Setup Finished',
   );
 
-  _createAccountProcess() {
+  _processAllSettings() async {
+    await _createCloudAccountProcess();
+  }
+  _createCloudAccountProcess() async {
     final authBloc = context.read<AuthBloc>();
     if (authBloc.state is AuthOnCloudLoginState) {
       authBloc.add(CloudLogin());
@@ -50,6 +53,7 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
           .then((value) => authBloc.add(CloudLogin()));
     }
   }
+
   //
   // // TODO no use
   // _fakeInternetChecking() async {

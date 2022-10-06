@@ -29,9 +29,20 @@ class SetWIFISSIDAndPassword extends SetupEvent {
 }
 
 class SetAccountInfo extends SetupEvent {
-
   const SetAccountInfo({required this.accountInfo});
 
   final AccountInfo accountInfo;
 }
 
+class SetAdminPasswordHint extends SetupEvent {
+  const SetAdminPasswordHint({
+    required this.password,
+    this.hint = '',
+  });
+
+  final String password;
+  final String hint;
+}
+class SaveRouterSettings extends SetupEvent {
+
+}

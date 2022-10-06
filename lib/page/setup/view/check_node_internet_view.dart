@@ -37,7 +37,7 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
   _fakeInternetChecking() async {
     context
         .read<SetupBloc>()
-        .add(const ResumePointChanged(status: SetupResumePoint.INTERNETCHECK));
+        .add(const ResumePointChanged(status: SetupResumePoint.internetCheck));
     final connCubit = context.read<ConnectivityCubit>();
     final internetCheckCubit = context.read<InternetCheckCubit>();
     await connCubit.stopChecking();

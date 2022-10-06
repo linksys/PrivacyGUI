@@ -29,7 +29,7 @@ class _NodesSuccessViewState extends State<NodesSuccessView> {
   @override
   void initState() {
       super.initState();
-      context.read<SetupBloc>().add(const ResumePointChanged(status: SetupResumePoint.ADDCHILDNODE));
+      context.read<SetupBloc>().add(const ResumePointChanged(status: SetupResumePoint.addChildNode));
   }
 
   @override

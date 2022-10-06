@@ -22,7 +22,7 @@ abstract class AuthenticatePath extends BasePath {
       case AuthSetupLoginPath:
         return CloudLoginAccountView(
           args: args,
-          next: next ?? SaveCloudSettingsPath(),
+          next: next ?? SaveSettingsPath(),
         );
       case AuthCloudLoginOtpPath:
         return OtpFlowView(
