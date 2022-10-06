@@ -37,23 +37,6 @@ class CloudAuthRepository extends AuthRepository with SCLoader {
   }
 
   @override
-  Future<void> authChallenge(BaseAuthChallenge method) {
-    return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
-        _httpClient.authChallenge(method,
-            id: cloudApp.id, secret: cloudApp.appSecret!));
-  }
-
-  @override
-  Future<void> authChallengeVerify(String token, String code) {
-    return _httpClient.authChallengeVerify(token: token, code: code);
-  }
-
-  @override
-  Future<void> authChallengeVerifyAccept(String token, String code) {
-    return _httpClient.authChallengeVerifyAccepted(token: token, code: code);
-  }
-
-  @override
   Future<String> createAccountPreparation(String email) {
     return _httpClient
         .createAccountPreparation(email)

@@ -264,7 +264,18 @@ class MoabHttpClient extends http.BaseClient {
   }
 }
 
-bool _defaultWhen(http.BaseResponse response) => response.statusCode == 503;
+bool _defaultWhen(http.BaseResponse response)  {
+   if (response.statusCode == 503) {
+     return true;
+   }
+   if (response.statusCode == 404) {
+     final error = ErrorResponse.fromJson(response.statusCode, json.decode((response as Response).body));
+     if (error.code == errorResourceNotReady) {
+       return true;
+     }
+   }
+   return false;
+}
 
 bool _defaultWhenError(Object error, StackTrace stackTrace) =>
     error is TimeoutException;

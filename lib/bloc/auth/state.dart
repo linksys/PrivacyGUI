@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_phone.dart';
 
 enum AuthStatus {
@@ -11,43 +12,43 @@ enum AuthStatus {
   onCreateAccount,
 }
 
-enum AuthMethod { none, local, remote }
+enum LoginFrom { none, local, remote }
 
-enum LoginType { none, passwordless, password }
+enum AuthenticationType { none, passwordless, password }
 
-enum OtpMethod { sms, email }
+enum CommunicationMethodType { sms, email }
 
 class AccountInfo {
   final String username;
   final String password;
-  final LoginType loginType;
-  final List<OtpInfo> otpInfo;
+  final AuthenticationType authenticationType;
+  final List<CommunicationMethod> communicationMethods;
   final bool enableBiometrics;
 
   const AccountInfo(
       {required this.username,
-      required this.loginType,
-      required this.otpInfo,
+      required this.authenticationType,
+      required this.communicationMethods,
       this.password = '',
       this.enableBiometrics = false});
 
   factory AccountInfo.empty() {
     return const AccountInfo(
-        username: '', loginType: LoginType.none, otpInfo: []);
+        username: '', authenticationType: AuthenticationType.none, communicationMethods: []);
   }
 
   AccountInfo copyWith({
     String? username,
     String? password,
-    LoginType? loginType,
-    List<OtpInfo>? otpInfo,
+    AuthenticationType? authenticationType,
+    List<CommunicationMethod>? communicationMethods,
     bool? enableBiometrics,
   }) {
     return AccountInfo(
       username: username ?? this.username,
       password: password ?? this.password,
-      loginType: loginType ?? this.loginType,
-      otpInfo: otpInfo ?? this.otpInfo,
+      authenticationType: authenticationType ?? this.authenticationType,
+      communicationMethods: communicationMethods ?? this.communicationMethods,
       enableBiometrics: enableBiometrics ?? this.enableBiometrics,
     );
   }
@@ -77,8 +78,9 @@ class LocalLoginInfo {
   }
 }
 
+@Deprecated('Please use CommunicationMethod')
 class OtpInfo {
-  final OtpMethod method;
+  final CommunicationMethodType method;
   final String methodId;
   final String data;
   final String maskedData;
@@ -93,7 +95,7 @@ class OtpInfo {
   });
 
   OtpInfo copyWith({
-    OtpMethod? method,
+    CommunicationMethodType? method,
     String? data,
     String? methodId,
     String? maskedData,

@@ -48,7 +48,6 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    logger.d('DEBUG:: HomeView: build');
     return _isLoading
         ? BasePageView.noNavigationBar(
             child: const FullScreenSpinner(

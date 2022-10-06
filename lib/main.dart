@@ -32,6 +32,7 @@ import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
 import 'repository/authenticate/impl/fake_local_auth_repository.dart';
 import 'package:flutter_driver/driver_extension.dart';
+import 'repository/authenticate/otp_repository.dart';
 import 'route/model/_model.dart';
 
 import 'security/security_profile_manager.dart';
@@ -78,6 +79,7 @@ Widget _app() {
       RepositoryProvider(
           create: (context) => MoabEnvironmentRepository(MoabHttpClient())),
       RepositoryProvider(create: (context) => CloudAccountRepository()),
+      RepositoryProvider(create: (context) => OtpRepository(httpClient: MoabHttpClient())),
     ],
     child: MultiBlocProvider(providers: [
       BlocProvider(
@@ -92,7 +94,7 @@ Widget _app() {
       BlocProvider(create: (BuildContext context) => ConnectivityCubit()),
       BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
       BlocProvider(create: (BuildContext context) => SetupBloc()),
-      BlocProvider(create: (BuildContext context) => OtpCubit()),
+      BlocProvider(create: (BuildContext context) => OtpCubit(otpRepository: context.read<OtpRepository>())),
       BlocProvider(create: (BuildContext context) => ProfilesCubit()),
       BlocProvider(create: (BuildContext context) => DeviceCubit()),
       BlocProvider(create: (BuildContext context) => AccountCubit(repository: context.read<CloudAccountRepository>())),
