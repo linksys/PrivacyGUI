@@ -7,8 +7,8 @@ class SecurityBloc extends Bloc<SecurityEvent, SecurityState> {
     on<SetUnsubscribedEvent>(_onSetUnsubscribedEvent);
     on<SetTrialActiveEvent>(_onSetTrialActiveEvent);
     on<SetFormalActiveEvent>(_onSetFormalActiveEvent);
-    on<SetTrialExpiredEvent>(_onSetTrialExpiredEvent);
-    on<SetExpiredEvent>(_onSetExpiredEvent);
+    // on<SetTrialExpiredEvent>(_onSetTrialExpiredEvent);
+    // on<SetExpiredEvent>(_onSetExpiredEvent);
     on<TurnOffSecurityEvent>(_onTurnOffSecurityEvent);
     on<ContentFilterCreatedEvent>(_onContentFilterCreatedEvent);
     on<CyberthreatDetectedEvent>(_onCyberthreatDetectedEvent);
@@ -90,7 +90,7 @@ class SecurityBloc extends Bloc<SecurityEvent, SecurityState> {
       evaluatedRange: range,
     ));
   }
-
+  /*
 void _onSetTrialExpiredEvent(SetTrialExpiredEvent event, Emitter<SecurityState> emit) {
   //TODO: Remove the fake data
   const inspectionCount = 44;
@@ -140,6 +140,7 @@ void _onSetTrialExpiredEvent(SetTrialExpiredEvent event, Emitter<SecurityState> 
       evaluatedRange: range,
     ));
   }
+   */
 
   void _onTurnOffSecurityEvent(TurnOffSecurityEvent event, Emitter<SecurityState> emit) {
     //TODO: Remove the fake data

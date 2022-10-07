@@ -409,20 +409,6 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         ),
         box8(),
         SecondaryButton(
-          text: 'Trial Subscription Expires',
-          onPress: () {
-            context.read<SecurityBloc>().add(SetTrialExpiredEvent());
-          },
-        ),
-        box8(),
-        SecondaryButton(
-          text: 'Formal Subscription Expires',
-          onPress: () {
-            context.read<SecurityBloc>().add(SetExpiredEvent());
-          },
-        ),
-        box8(),
-        SecondaryButton(
           text: 'Turn Off Security',
           onPress: () {
             context.read<SecurityBloc>().add(TurnOffSecurityEvent());
@@ -430,7 +416,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         ),
         box8(),
         SecondaryButton(
-          text: 'Cancel Subscription',
+          text: 'Unsubscribe',
           onPress: () {
             context.read<SecurityBloc>().add(SetUnsubscribedEvent());
           },

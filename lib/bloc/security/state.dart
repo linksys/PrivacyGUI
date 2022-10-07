@@ -167,6 +167,7 @@ class FormalActiveState extends SecurityState {
   }
 }
 
+/*
 class TrialExpiredState extends SecurityState {
   @override
   SubscriptionStatus get subscriptionStatus => SubscriptionStatus.trialExpired;
@@ -200,6 +201,7 @@ class ExpiredState extends SecurityState {
     super.evaluatedRange,
   }) : super();
 }
+ */
 
 class TurnedOffState extends SecurityState {
   @override

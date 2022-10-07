@@ -453,9 +453,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
   }
 
   Widget _contentFilterInfo(SecurityState state) {
-    if (state is UnsubscribedState ||
-        state is TrialExpiredState ||
-        state is ExpiredState) {
+    if (state is UnsubscribedState) {
       return Text(
         'Create healthy digital lifestyle for your family and feel safe with the content on your network. Filter out categories and apps you don’t want.',
         style: Theme.of(context).textTheme.headline3?.copyWith(
