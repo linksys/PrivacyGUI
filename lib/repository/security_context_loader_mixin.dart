@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/constants/constants.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,7 +13,10 @@ mixin SCLoader {
     }
     final pref = await SharedPreferences.getInstance();
     final publicKey = pref.getString(moabPrefCloudPublicKey)?.codeUnits;
-    final privateKey = pref.getString(moabPrefCloudPrivateKey)?.codeUnits;
+
+    const storage = FlutterSecureStorage();
+    String? privateKeyString = await storage.read(key: moabPrefCloudPrivateKey);
+    final privateKey = privateKeyString?.codeUnits;
 
     SecurityContext securityContext = SecurityContext(withTrustedRoots: true);
     securityContext.useCertificateChainBytes(publicKey!);

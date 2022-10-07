@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
@@ -54,13 +55,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     //
     _errorStreamSubscription = errorResponseStream.listen((error) {
-      logger.e('Receive http response error: ${error.status}, ${error.code}, ${error.errorMessage}');
+      logger.e(
+          'Receive http response error: ${error.status}, ${error.code}, ${error.errorMessage}');
       if (error.status == 401) {
         add(Unauthorized());
       }
     });
   }
-
 
   @override
   Future<void> close() {
@@ -227,8 +228,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
 
       await CloudEnvironmentManager().checkSmartDevice();
-      final publicKey = pref.getString(moabPrefCloudPublicKey) ?? '';
-      final privateKey = pref.getString(moabPrefCloudPrivateKey) ?? '';
       emit(AuthState.authorized());
     } else {
       // TODO
@@ -249,9 +248,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // Don't remove all keys on shared preferences when logging out
     SharedPreferences.getInstance().then((prefs) {
       prefs.remove(moabPrefSessionDataKey);
-      // prefs.remove(moabPrefCloudCertDataKey);
       // prefs.remove(moabPrefCloudPublicKey);
-      // prefs.remove(moabPrefCloudPrivateKey);
       emit(AuthState.unAuthorized());
     });
   }
@@ -497,15 +494,19 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<bool> checkCertValidation() async {
+    const storage = FlutterSecureStorage();
+    String? privateKey = await storage.read(key: moabPrefCloudPrivateKey);
+    String? cert = await storage.read(key: moabPrefCloudCertDataKey);
+
     final prefs = await SharedPreferences.getInstance();
     bool isKeyExist = prefs.containsKey(moabPrefCloudPublicKey) &
-        prefs.containsKey(moabPrefCloudPrivateKey) &
-        prefs.containsKey(moabPrefCloudCertDataKey);
+        (privateKey != null) &
+        (cert != null);
     if (!isKeyExist) {
       return false;
     }
     final certData = CloudDownloadCertData.fromJson(
-        jsonDecode(prefs.getString(moabPrefCloudCertDataKey) ?? ''));
+        jsonDecode(cert ?? ''));
     final expiredDate = DateTime.parse(certData.expiration);
     if (expiredDate.millisecondsSinceEpoch -
             DateTime.now().millisecondsSinceEpoch <
@@ -531,13 +532,13 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<void> extendCertification() async {
-    final pref = await SharedPreferences.getInstance();
-    if (!pref.containsKey(moabPrefCloudCertDataKey)) {
+    const storage = FlutterSecureStorage();
+    String? cert = await storage.read(key: moabPrefCloudCertDataKey);
+    if (cert == null) {
       logger.d('extend certification: original cert data does not exist!');
       return;
     }
-    final certStr = pref.getString(moabPrefCloudCertDataKey);
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(certStr!));
+    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert!));
     final newCertInfo =
         await _repository.extendCertificate(certId: certData.id);
     await delayDownloadCertTime(newCertInfo.downloadTime);
@@ -547,14 +548,15 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<void> requestSession() async {
-    final pref = await SharedPreferences.getInstance();
-    if (!pref.containsKey(moabPrefCloudCertDataKey)) {
+    const storage = FlutterSecureStorage();
+    String? cert = await storage.read(key: moabPrefCloudCertDataKey);
+    if (cert == null) {
       logger.d('extend certification: original cert data does not exist!');
       return;
     }
-    final certStr = pref.getString(moabPrefCloudCertDataKey);
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(certStr!));
+    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert!));
     final session = await _repository.requestSession(certId: certData.id);
+    final pref = await SharedPreferences.getInstance();
     pref.setString(moabPrefSessionDataKey, jsonEncode(session.toJson()));
   }
 

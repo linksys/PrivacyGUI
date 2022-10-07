@@ -75,6 +75,7 @@ dependencies:
   styled_text: ^5.1.0
   image: ^3.2.0
   collection: ^1.16.0
+  flutter_secure_storage: ^6.0.0
   universal_link_plugin:
     path: plugins/universal_link_plugin
   connecting_wifi_plugin:

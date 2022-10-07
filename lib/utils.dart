@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -53,18 +54,17 @@ class Utils {
     return '$m:$s';
   }
 
-
   static String formatTimeInterval(int startTimeInSecond, int endTimeInSecond) {
     bool isNextDay = startTimeInSecond > endTimeInSecond;
-    return '${formatTimeAmPm(startTimeInSecond)} - ${formatTimeAmPm(endTimeInSecond)} ${isNextDay?'next day':''}';
+    return '${formatTimeAmPm(startTimeInSecond)} - ${formatTimeAmPm(endTimeInSecond)} ${isNextDay ? 'next day' : ''}';
   }
 
   static String formatTimeAmPm(int timeInSecond) {
     final Duration timeAmount = Duration(seconds: timeInSecond);
     final String h =
-    timeAmount.inHours.remainder(12).toString().padLeft(2, '0');
+        timeAmount.inHours.remainder(12).toString().padLeft(2, '0');
     final String m =
-    timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
+        timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
     final String ampm = timeAmount.inHours.remainder(24) >= 12 ? 'pm' : 'am';
     return '$h:$m $ampm';
   }
@@ -267,18 +267,21 @@ class Utils {
   }
 
   static Future<bool> checkCertValidation() async {
+    const storage = FlutterSecureStorage();
+    String? privateKey = await storage.read(key: moabPrefCloudPrivateKey);
+    String? cert = await storage.read(key: moabPrefCloudCertDataKey);
+
     final prefs = await SharedPreferences.getInstance();
     bool isKeyExist = prefs.containsKey(moabPrefCloudPublicKey) &
-    prefs.containsKey(moabPrefCloudPrivateKey) &
-    prefs.containsKey(moabPrefCloudCertDataKey);
+        (privateKey != null) &
+        (cert != null);
     if (!isKeyExist) {
       return false;
     }
-    final certData = CloudDownloadCertData.fromJson(
-        jsonDecode(prefs.getString(moabPrefCloudCertDataKey) ?? ''));
+    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert ?? ''));
     final expiredDate = DateTime.parse(certData.expiration);
     if (expiredDate.millisecondsSinceEpoch -
-        DateTime.now().millisecondsSinceEpoch <
+            DateTime.now().millisecondsSinceEpoch <
         0) {
       return false;
     }
