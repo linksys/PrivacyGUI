@@ -441,5 +441,7 @@
   },
   "web_ui_access": "Web UI access",
   "web_ui_access_off_description": "Your router cannot be accessed from a web browser",
-  "web_ui_access_on_description": "Enable logging in to your router and managing settings from a web browser by visiting www.MyRouter.Local (WIP)"
+  "web_ui_access_on_description": "Enable logging in to your router and managing settings from a web browser by visiting www.MyRouter.Local (WIP)",
+  "set_a_router_password": "Set a router password",
+  "create_router_password_description": "A router password allows you to access your router settings locally without your Linksys account"
 }

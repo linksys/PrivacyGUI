@@ -27,8 +27,10 @@ class _RouterPasswordViewState extends State<RouterPasswordView> {
     super.initState();
 
     // TODO: Fetch current password and hint
-    currentPassword = 'passwordFromCubit';
-    currentHint = 'hintFromCubit';
+    currentPassword = '';
+    currentHint = '';
+    // currentPassword = 'passwordFromCubit';
+    // currentHint = 'hintFromCubit';
     _passwordController.text = currentPassword;
     _hintController.text = currentHint;
   }
@@ -36,18 +38,22 @@ class _RouterPasswordViewState extends State<RouterPasswordView> {
   @override
   Widget build(BuildContext context) {
     return BasePageView(
+      scrollable: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         // iconTheme:
         // IconThemeData(color: Theme.of(context).colorScheme.primary),
         elevation: 0,
-        title: Text(
-          getAppLocalizations(context).router_password,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        // TODO: Use set password or not instead of currentPassword
+        title: currentPassword.isEmpty
+            ? null
+            : Text(
+                getAppLocalizations(context).router_password,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
         actions: [
           SimpleTextButton(
             text: getAppLocalizations(context).save,
@@ -55,51 +61,119 @@ class _RouterPasswordViewState extends State<RouterPasswordView> {
           ),
         ],
       ),
-      child: BasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            box24(),
-            PasswordInputField(
-              withValidator: editing,
-              titleText: getAppLocalizations(context).router_password,
-              controller: _passwordController,
-              color: Colors.black,
-              suffixIcon: editing ? null : box4(),
-              onFocusChanged: (hasFocus) {
-                if (hasFocus && _passwordController.text == currentPassword) {
-                  setState(() {
-                    _passwordController.text = '';
-                    editing = true;
-                    isValid = false;
-                  });
-                }
-              },
-              onValidationChanged: (isValid) {
+      // TODO: Use set password or not instead of currentPassword
+      child: currentPassword.isEmpty
+          ? _createRouterPasswordView()
+          : _editRouterPasswordView(),
+    );
+  }
+
+  _editRouterPasswordView() {
+    return BasicLayout(
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          box24(),
+          PasswordInputField(
+            withValidator: editing,
+            titleText: getAppLocalizations(context).router_password,
+            controller: _passwordController,
+            color: Colors.black,
+            suffixIcon: editing ? null : box4(),
+            onFocusChanged: (hasFocus) {
+              if (hasFocus && _passwordController.text == currentPassword) {
                 setState(() {
-                  this.isValid = isValid;
+                  _passwordController.text = '';
+                  editing = true;
+                  isValid = false;
                 });
-              },
+              }
+            },
+            onValidationChanged: (isValid) {
+              setState(() {
+                this.isValid = isValid;
+              });
+            },
+          ),
+          box36(),
+          InputField(
+            titleText: getAppLocalizations(context).password_hint,
+            hintText: '',
+            controller: _hintController,
+            readOnly: !editing,
+            customPrimaryColor: editing
+                ? Colors.black
+                : const Color.fromRGBO(153, 153, 153, 1.0),
+          ),
+          box12(),
+          if (!editing)
+            Text(
+              getAppLocalizations(context)
+                  .enter_router_password_to_change_password_hint,
+              style: const TextStyle(fontSize: 11),
             ),
-            box36(),
-            InputField(
-              titleText: getAppLocalizations(context).password_hint,
-              hintText: '',
-              controller: _hintController,
-              readOnly: !editing,
-              customPrimaryColor: editing
-                  ? Colors.black
-                  : const Color.fromRGBO(153, 153, 153, 1.0),
-            ),
-            box12(),
-            if (!editing)
-              Text(
-                getAppLocalizations(context)
-                    .enter_router_password_to_change_password_hint,
-                style: const TextStyle(fontSize: 11),
-              ),
-          ],
+        ],
+      ),
+    );
+  }
+
+  _createRouterPasswordView() {
+    return BasicLayout(
+      alignment: CrossAxisAlignment.start,
+      header: Text(
+        getAppLocalizations(context).set_a_router_password,
+        style: const TextStyle(
+          fontSize: 23,
+          fontWeight: FontWeight.w700,
         ),
+      ),
+      content: Column(
+        children: [
+          box24(),
+          Text(getAppLocalizations(context).create_router_password_description),
+          box36(),
+          PasswordInputField.withValidator(
+            titleText: getAppLocalizations(context).router_password,
+            controller: _passwordController,
+            color: Colors.black,
+            suffixIcon: editing ? null : box4(),
+            onFocusChanged: (hasFocus) {
+              if (hasFocus && _passwordController.text == currentPassword) {
+                setState(() {
+                  _passwordController.text = '';
+                  editing = true;
+                  isValid = false;
+                });
+              }
+            },
+            onValidationChanged: (isValid) {
+              setState(() {
+                this.isValid = isValid;
+              });
+            },
+          ),
+          box36(),
+          InputField(
+            titleText: getAppLocalizations(context).password_hint,
+            hintText: '',
+            controller: _hintController,
+            readOnly: !editing,
+            customPrimaryColor: editing
+                ? Colors.black
+                : const Color.fromRGBO(153, 153, 153, 1.0),
+          ),
+          box36(),
+          Row(
+            children: [
+              Expanded(
+                  child: SimpleTextButton(
+                text: getAppLocalizations(context)
+                    .create_router_password_how_to_access,
+                onPressed: () {},
+              ))
+            ],
+          ),
+        ],
       ),
     );
   }
