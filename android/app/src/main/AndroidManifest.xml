@@ -45,10 +45,12 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <!-- Accepts URIs that begin with https://YOUR_HOST -->
                 <data
                     android:scheme="https"
-                    android:host="*.devvelopcloud.com" />
+                    android:host="qa.linksys.cloud" />
+                <data
+                    android:scheme="https"
+                    android:host="dev.linksys.cloud" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
