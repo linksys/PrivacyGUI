@@ -13,10 +13,9 @@ enum SubscriptionStatus {
 }
 
 enum CyberthreatType {
-  virus(displayTitle: 'Virus'),
-  malware(displayTitle: 'Ransomware & Malware'),
+  virus(displayTitle: 'Viruses'),
   botnet(displayTitle: 'Botnet'),
-  website(displayTitle: 'Malicious websites');
+  website(displayTitle: 'Malicious\nwebsites');
 
   const CyberthreatType({required this.displayTitle});
 
@@ -37,7 +36,6 @@ class SecurityState {
   SubscriptionStatus get subscriptionStatus => SubscriptionStatus.unsubscribed;
   final int numOfInspection;
   final int numOfBlockedVirus;
-  final int numOfBlockedMalware;
   final int numOfBlockedBotnet;
   final int numOfBlockedWebsite;
   final int numOfIncidents;
@@ -46,7 +44,6 @@ class SecurityState {
   final SecurityEvaluatedRange evaluatedRange;
   bool get hasBlockedThreat {
     return numOfBlockedVirus > 0 ||
-        numOfBlockedMalware > 0 ||
         numOfBlockedBotnet > 0 ||
         numOfBlockedWebsite > 0;
   }
@@ -54,7 +51,6 @@ class SecurityState {
   SecurityState({
     this.numOfInspection = 0,
     this.numOfBlockedVirus = 0,
-    this.numOfBlockedMalware = 0,
     this.numOfBlockedBotnet = 0,
     this.numOfBlockedWebsite = 0,
     this.numOfIncidents = 0,
@@ -71,7 +67,6 @@ class UnsubscribedState extends SecurityState {
   UnsubscribedState({
     super.numOfInspection,
     super.numOfBlockedVirus,
-    super.numOfBlockedMalware,
     super.numOfBlockedBotnet,
     super.numOfBlockedWebsite,
     super.numOfIncidents,
@@ -89,7 +84,6 @@ class TrialActiveState extends SecurityState {
   TrialActiveState({
     super.numOfInspection,
     super.numOfBlockedVirus,
-    super.numOfBlockedMalware,
     super.numOfBlockedBotnet,
     super.numOfBlockedWebsite,
     super.numOfIncidents,
@@ -102,7 +96,6 @@ class TrialActiveState extends SecurityState {
   TrialActiveState copyWith({
     int? numOfInspection,
     int? numOfBlockedVirus,
-    int? numOfBlockedMalware,
     int? numOfBlockedBotnet,
     int? numOfBlockedWebsite,
     int? numOfIncidents,
@@ -114,7 +107,6 @@ class TrialActiveState extends SecurityState {
     return TrialActiveState(
       numOfInspection: numOfInspection ?? super.numOfInspection,
       numOfBlockedVirus: numOfBlockedVirus ?? super.numOfBlockedVirus,
-      numOfBlockedMalware: numOfBlockedMalware ?? super.numOfBlockedMalware,
       numOfBlockedBotnet: numOfBlockedBotnet ?? super.numOfBlockedBotnet,
       numOfBlockedWebsite: numOfBlockedWebsite ?? super.numOfBlockedWebsite,
       numOfIncidents: numOfIncidents ?? super.numOfIncidents,
@@ -133,7 +125,6 @@ class FormalActiveState extends SecurityState {
   FormalActiveState({
     super.numOfInspection,
     super.numOfBlockedVirus,
-    super.numOfBlockedMalware,
     super.numOfBlockedBotnet,
     super.numOfBlockedWebsite,
     super.numOfIncidents,
@@ -145,7 +136,6 @@ class FormalActiveState extends SecurityState {
   FormalActiveState copyWith({
     int? numOfInspection,
     int? numOfBlockedVirus,
-    int? numOfBlockedMalware,
     int? numOfBlockedBotnet,
     int? numOfBlockedWebsite,
     int? numOfIncidents,
@@ -156,7 +146,6 @@ class FormalActiveState extends SecurityState {
     return FormalActiveState(
       numOfInspection: numOfInspection ?? super.numOfInspection,
       numOfBlockedVirus: numOfBlockedVirus ?? super.numOfBlockedVirus,
-      numOfBlockedMalware: numOfBlockedMalware ?? super.numOfBlockedMalware,
       numOfBlockedBotnet: numOfBlockedBotnet ?? super.numOfBlockedBotnet,
       numOfBlockedWebsite: numOfBlockedWebsite ?? super.numOfBlockedWebsite,
       numOfIncidents: numOfIncidents ?? super.numOfIncidents,
@@ -175,7 +164,6 @@ class TrialExpiredState extends SecurityState {
   TrialExpiredState({
     super.numOfInspection,
     super.numOfBlockedVirus,
-    super.numOfBlockedMalware,
     super.numOfBlockedBotnet,
     super.numOfBlockedWebsite,
     super.numOfIncidents,
@@ -192,7 +180,6 @@ class ExpiredState extends SecurityState {
   ExpiredState({
     super.numOfInspection,
     super.numOfBlockedVirus,
-    super.numOfBlockedMalware,
     super.numOfBlockedBotnet,
     super.numOfBlockedWebsite,
     super.numOfIncidents,
@@ -210,7 +197,6 @@ class TurnedOffState extends SecurityState {
   TurnedOffState({
     super.numOfInspection,
     super.numOfBlockedVirus,
-    super.numOfBlockedMalware,
     super.numOfBlockedBotnet,
     super.numOfBlockedWebsite,
     super.numOfIncidents,

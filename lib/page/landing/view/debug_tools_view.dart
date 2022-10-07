@@ -438,22 +438,6 @@ class _DebugToolsViewState extends State<DebugToolsView> {
             box8(),
             Expanded(
               child: SecondaryButton(
-                text: 'Malware+1',
-                onPress: () {
-                  context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
-                    type: CyberthreatType.malware,
-                    number: 1,
-                  ));
-                },
-              ),
-            ),
-          ],
-        ),
-        box8(),
-        Row(
-          children: [
-            Expanded(
-              child: SecondaryButton(
                 text: 'Botnet+1',
                 onPress: () {
                   context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
@@ -463,19 +447,17 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                 },
               ),
             ),
-            box8(),
-            Expanded(
-              child: SecondaryButton(
-                text: 'Website+1',
-                onPress: () {
-                  context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
-                    type: CyberthreatType.website,
-                    number: 1,
-                  ));
-                },
-              ),
-            ),
           ],
+        ),
+        box8(),
+        SecondaryButton(
+          text: 'Website+1',
+          onPress: () {
+            context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
+              type: CyberthreatType.website,
+              number: 1,
+            ));
+          },
         ),
       ],
     );

@@ -323,8 +323,6 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
   }
 
   Widget _cyberthreatGrid(SecurityState state) {
-    final screenWidth = MediaQuery.of(context).size.width - (24 * 2);
-    final tileHeight = (screenWidth - 14) / 2 / 1.75 * 2 + 14;
     final isGridEnabled = state.subscriptionStatus != SubscriptionStatus.turnedOff;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,58 +336,50 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
               fontWeight: FontWeight.w500,
             ),
           ),
-          child: SizedBox(
-            height: tileHeight,
-            child: GridView.count(
-              shrinkWrap: true,
-              crossAxisCount: 2,
-              childAspectRatio: 1.75,
-              mainAxisSpacing: 14,
-              crossAxisSpacing: 14,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                InfoBlockWidget(
+          child: Row(
+            children: [
+              Expanded(
+                child: InfoBlockWidget(
                   count: context.read<SecurityBloc>().state.numOfBlockedVirus,
                   text: CyberthreatType.virus.displayTitle,
                   isEnabled: isGridEnabled,
+                  height: 96,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
                       ..args = {'type': CyberthreatType.virus}
                     );
                   },
                 ),
-                InfoBlockWidget(
-                  count: context.read<SecurityBloc>().state.numOfBlockedMalware,
-                  text: CyberthreatType.malware.displayTitle,
-                  isEnabled: isGridEnabled,
-                  onPress: () {
-                    NavigationCubit.of(context).push(SecurityCyberThreatPath()
-                      ..args = {'type': CyberthreatType.malware}
-                    );
-                  },
-                ),
-                InfoBlockWidget(
+              ),
+              box8(),
+              Expanded(
+                child: InfoBlockWidget(
                   count: context.read<SecurityBloc>().state.numOfBlockedBotnet,
                   text: CyberthreatType.botnet.displayTitle,
                   isEnabled: isGridEnabled,
+                  height: 96,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
                       ..args = {'type': CyberthreatType.botnet}
                     );
                   },
                 ),
-                InfoBlockWidget(
+              ),
+              box8(),
+              Expanded(
+                child: InfoBlockWidget(
                   count: context.read<SecurityBloc>().state.numOfBlockedWebsite,
                   text: CyberthreatType.website.displayTitle,
                   isEnabled: isGridEnabled,
+                  height: 96,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
                       ..args = {'type': CyberthreatType.website}
                     );
                   },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],
@@ -615,11 +605,11 @@ class InfoBlockWidget extends StatelessWidget {
     this.onPress,
   }) : super(key: key);
 
+  final int count;
+  final String text;
   final bool isEnabled;
   final Color color;
   final Color disabledColor;
-  final int count;
-  final String text;
   final bool isVertical;
   final double height;
   final VoidCallback? onPress;
@@ -636,7 +626,7 @@ class InfoBlockWidget extends StatelessWidget {
         child: isVertical
             ? Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: _content(context),
         )
             : Row(
