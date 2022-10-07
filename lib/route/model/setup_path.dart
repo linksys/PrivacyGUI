@@ -50,6 +50,9 @@ class SetupAddingNodesPath extends SetupPath {
 // Setup Parent Flow
 abstract class SetupParentPath extends SetupPath {
   @override
+  PageConfig get pageConfig => super.pageConfig..ignoreConnectivityChanged = true;
+  
+  @override
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
       case SetupParentPlugPath:

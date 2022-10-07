@@ -1,3 +1,36 @@
+class NewRadioSettings {
+  final String radioID;
+  final RouterRadioInfoSettings settings;
+
+  const NewRadioSettings({
+    required this.radioID,
+    required this.settings,
+  });
+
+  NewRadioSettings copyWith({
+    String? radioID,
+    RouterRadioInfoSettings? settings,
+  }) {
+    return NewRadioSettings(
+      radioID: radioID ?? this.radioID,
+      settings: settings ?? this.settings,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'radioID': radioID,
+      'settings': settings,
+    };
+  }
+
+  factory NewRadioSettings.fromJson(Map<String, dynamic> json) {
+    return NewRadioSettings(
+      radioID: json['radioID'] as String,
+      settings: json['settings'] as RouterRadioInfoSettings,
+    );
+  }
+}
 class RouterRadioInfo {
   final String band;
   final String bssid;
@@ -53,28 +86,34 @@ class RouterRadioInfo {
 class RouterRadioInfoSettings {
   final bool broadcastSSID;
   final String ssid;
-  final bool isEnable;
+  final bool isEnabled;
   final String security;
   final int channel;
   final RouterWPAPersonalSettings wpaPersonalSettings;
+  final String channelWidth;
+  final String mode;
 
   const RouterRadioInfoSettings({
     required this.broadcastSSID,
     required this.ssid,
-    required this.isEnable,
+    required this.isEnabled,
     required this.security,
     required this.channel,
     required this.wpaPersonalSettings,
+    required this.channelWidth,
+    required this.mode,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'broadcastSSID': broadcastSSID,
       'ssid': ssid,
-      'isEnable': isEnable,
+      'isEnabled': isEnabled,
       'security': security,
       'channel': channel,
       'wpaPersonalSettings': wpaPersonalSettings,
+      'channelWidth': channelWidth,
+      'mode': mode,
     };
   }
 
@@ -82,11 +121,13 @@ class RouterRadioInfoSettings {
     return RouterRadioInfoSettings(
       broadcastSSID: json['broadcastSSID'],
       ssid: json['ssid'],
-      isEnable: json['isEnabled'],
+      isEnabled: json['isEnabled'],
       security: json['security'],
       channel: json['channel'],
       wpaPersonalSettings:
           RouterWPAPersonalSettings.fromJson(json['wpaPersonalSettings']),
+      channelWidth: json['channelWidth'],
+      mode: json['mode'],
     );
   }
 
@@ -97,42 +138,46 @@ class RouterRadioInfoSettings {
     String? security,
     int? channel,
     RouterWPAPersonalSettings? wpaPersonalSettings,
+    String? channelWidth,
+    String? mode,
   }) {
     return RouterRadioInfoSettings(
       broadcastSSID: broadcastSSID ?? this.broadcastSSID,
       ssid: ssid ?? this.ssid,
-      isEnable: isEnable ?? this.isEnable,
+      isEnabled: isEnable ?? this.isEnabled,
       security: security ?? this.security,
       channel: channel ?? this.channel,
       wpaPersonalSettings: wpaPersonalSettings ?? this.wpaPersonalSettings,
+      channelWidth: channelWidth ?? this.channelWidth,
+      mode: mode ?? this.mode,
     );
   }
 }
 
 class RouterWPAPersonalSettings {
-  final String password;
+  final String passphrase;
 
   const RouterWPAPersonalSettings({
-    required this.password,
+    required this.passphrase,
   });
 
   RouterWPAPersonalSettings copyWith({
     String? password,
   }) {
     return RouterWPAPersonalSettings(
-      password: password ?? this.password,
+      passphrase: password ?? passphrase,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'password': password,
+      'passphrase': passphrase,
     };
   }
 
   factory RouterWPAPersonalSettings.fromJson(Map<String, dynamic> json) {
     return RouterWPAPersonalSettings(
-      password: json['passphrase'],
+      passphrase: json['passphrase'],
     );
   }
 }

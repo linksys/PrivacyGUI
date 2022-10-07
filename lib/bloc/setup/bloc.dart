@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/repository/router/core_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
+import 'package:linksys_moab/repository/router/wireless_ap_extension.dart';
 
 import 'event.dart';
 import 'state.dart';
@@ -38,6 +40,11 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
             state.copyWith(resumePoint: SetupResumePoint.createCloudAccount));
       case SetupResumePoint.location:
         return emit(state.copyWith(resumePoint: SetupResumePoint.location));
+      case SetupResumePoint.waiting:
+        return emit(state.copyWith(resumePoint: SetupResumePoint.waiting));
+      case SetupResumePoint.finish:
+        return emit(state.copyWith(resumePoint: SetupResumePoint.finish));
+
       default:
         return emit(state.copyWith(resumePoint: SetupResumePoint.none));
     }
@@ -61,12 +68,28 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
 
   void _onSaveRouterSettings(
       SaveRouterSettings event, Emitter<SetupState> emit) async {
-    // TODO set SSID and password
     // create admin password
     if (state.adminPassword.isNotEmpty) {
-     await _routerRepository.createAdminPassword(
+      await _routerRepository.createAdminPassword(
           state.adminPassword, state.passwordHint);
     }
-    emit(state.copyWith(resumePoint: SetupResumePoint.finish));
+    //
+    final getRadioInfoResult = await _routerRepository.getRadioInfo();
+    final newRadioSettingsList = List.from(getRadioInfoResult.output['radios'])
+        .map((e) => RouterRadioInfo.fromJson(e))
+        .map(
+          (e) => NewRadioSettings(
+            radioID: e.radioID,
+            settings: e.settings.copyWith(
+              ssid: state.wifiSSID,
+              wpaPersonalSettings: RouterWPAPersonalSettings(
+                passphrase: state.wifiPassword,
+              ),
+            ),
+          ),
+        )
+        .toList();
+    await _routerRepository.setRadioSettings(newRadioSettingsList);
+    emit(state.copyWith(resumePoint: SetupResumePoint.waiting));
   }
 }

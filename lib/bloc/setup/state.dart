@@ -9,6 +9,7 @@ enum SetupResumePoint {
   addChildNode,
   routerPassword,
   createCloudAccount,
+  waiting,
   finish,
 }
 

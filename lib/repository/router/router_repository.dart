@@ -49,21 +49,21 @@ class RouterRepository with StateStreamListener {
   List<String> topics = [];
 
   Future<bool> downloadCert() async {
-    // final caCert = await rootBundle.loadString('assets/keys/server.pem');
-    // final pref = await SharedPreferences.getInstance();
-    // await pref.setString(moabPrefLocalCert, caCert);
-    // return true;
-    const credentials = 'admin:admin';
-    final _client = MoabHttpClient(timeoutMs: 1000);
-    final response = await _client.get(Uri.parse('http://$_brokerUrl/cert.cgi'), headers: {
-      'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
-    });
-    if (response.statusCode != HttpStatus.ok) {
-      return false;
-    }
+    final caCert = await rootBundle.loadString('assets/keys/server.pem');
     final pref = await SharedPreferences.getInstance();
-    await pref.setString(moabPrefLocalCert, response.body);
+    await pref.setString(moabPrefLocalCert, caCert);
     return true;
+    // const credentials = 'admin:admin';
+    // final _client = MoabHttpClient(timeoutMs: 1000);
+    // final response = await _client.get(Uri.parse('http://$_brokerUrl/cert.cgi'), headers: {
+    //   'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
+    // });
+    // if (response.statusCode != HttpStatus.ok) {
+    //   return false;
+    // }
+    // final pref = await SharedPreferences.getInstance();
+    // await pref.setString(moabPrefLocalCert, response.body);
+    // return true;
   }
 
   connectToRemote() async {

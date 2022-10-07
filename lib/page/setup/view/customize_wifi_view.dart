@@ -50,7 +50,7 @@ class _CustomizeWifiViewState extends State<CustomizeWifiView> {
     context.read<NetworkCubit>().getDeviceInfo().then(
         (value) => context.read<NetworkCubit>().getRadioInfo().then((value) {
               final ssid = value[0].settings.ssid;
-              final password = value[0].settings.wpaPersonalSettings.password;
+              final password = value[0].settings.wpaPersonalSettings.passphrase;
               nameController.text = ssid;
               passwordController.text = password;
             }));

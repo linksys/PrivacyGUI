@@ -113,7 +113,7 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
 }
 
 mixin AvailabilityChecker {
-  static const defaultInternetCheckPeriodSec = 30;
+  static const defaultInternetCheckPeriodSec = 60;
   Duration internetCheckPeriod = const Duration(seconds: defaultInternetCheckPeriodSec);
   Timer? timer;
   final _client = MoabHttpClient(timeoutMs: 3000);
@@ -147,7 +147,9 @@ mixin AvailabilityChecker {
       _callback?.call(hasConnection, null);
       return;
     }
-    final cloudAvailability = await testCloudAvailability();
+    // final cloudAvailability = await testCloudAvailability();
+    final cloudAvailability = AvailabilityInfo(isCloudOk: true);
+
     _callback?.call(hasConnection, cloudAvailability);
   }
 

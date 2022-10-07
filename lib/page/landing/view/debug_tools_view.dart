@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -12,20 +11,18 @@ import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
+import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/network/mqtt/mqtt_client_wrap.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
-import 'package:linksys_moab/repository/router/core_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/repository/router/wireless_ap_extension.dart';
 import 'package:linksys_moab/security/app_icon_manager.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -33,7 +30,6 @@ import 'package:linksys_moab/util/storage.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../network/better_action.dart';
-import '../../../network/http/http_client.dart';
 
 class DebugToolsView extends StatefulWidget {
   const DebugToolsView({
@@ -332,59 +328,11 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Connect',
           onPress: () async {
-            final results = await context.read<RouterRepository>().batchCommands([
-              CommandWrap(
-                action: JNAPAction.isAdminPasswordSetByUser.actionValue,
-                needAuth: false,
-              ),
-              CommandWrap(
-                action: JNAPAction.isAdminPasswordDefault.actionValue,
-                needAuth: false,
-              ),
-            ]);
-
+            await context.read<ConnectivityCubit>().connectToLocalBroker();
+            final results = await context.read<RouterRepository>().getRadioInfo();
             logger.d('test results: $results');
           },
         ),
-        Text(
-          'Icon Map:',
-          style: Theme.of(context)
-              .textTheme
-              .headline2
-              ?.copyWith(color: Theme.of(context).colorScheme.primary),
-        ),
-        FutureBuilder<List<String>>(
-          future: AppIconManager.instance().getAppIds(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.done) {
-              _iconData = snapshot.data ?? [];
-              return DropdownButton<String>(
-                  value: _selectedIconKey,
-                  items:
-                      List.from(_iconData.map((e) => DropdownMenuItem<String>(
-                            child: Text(e),
-                            value: e,
-                          ))),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedIconKey = value!;
-                    });
-                  });
-            } else {
-              return CircularProgressIndicator();
-            }
-          },
-        ),
-        FutureBuilder<Uint8List?>(
-            future:
-                AppIconManager.instance().getIconByte(_selectedIconKey ?? ''),
-            builder: (context, snapshot) => snapshot.data == null
-                ? Center()
-                : Image.memory(
-                    snapshot.data!,
-                    width: 96,
-                    height: 96,
-                  )),
         Text(
           'Default Preset:',
           style: Theme.of(context)
