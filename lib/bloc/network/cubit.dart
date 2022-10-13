@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
+import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
 import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
@@ -12,6 +13,7 @@ import 'package:linksys_moab/network/http/model/cloud_network.dart';
 import 'package:linksys_moab/repository/networks/cloud_networks_repository.dart';
 import 'package:linksys_moab/repository/router/batch_extension.dart';
 import 'package:linksys_moab/repository/router/core_extension.dart';
+import 'package:linksys_moab/repository/router/device_list_extension.dart';
 import 'package:linksys_moab/repository/router/router_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/repository/router/wireless_ap_extension.dart';
@@ -79,6 +81,13 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
     return radioInfo;
   }
 
+  Future<List<Device>> getDevices() async {
+    final result = await _routerRepository.getDevices();
+    final devices = List.from(result.output['devices']).map((e) => Device.fromJson(e)).toList();
+    emit(state.copyWith(selected: state.selected!.copyWith(devices: devices)));
+    return devices;
+  }
+
   createAdminPassword(String password, String hint) async {
     await _routerRepository.createAdminPassword('admin', hint);
   }
@@ -88,4 +97,5 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
     final result = await _routerRepository.pollingData();
     logger.d('finish polling data');
   }
+
 }
