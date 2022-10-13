@@ -6,6 +6,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/app_lifecycle/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
@@ -22,12 +23,14 @@ import 'package:linksys_moab/notification/notification_helper.dart';
 import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
 import 'package:linksys_moab/repository/authenticate/impl/cloud_auth_repository.dart';
 import 'package:linksys_moab/repository/config/environment_repository.dart';
+import 'package:linksys_moab/repository/subscription/subscription_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'bloc/setup/bloc.dart';
+import 'bloc/subscription/subscription_cubit.dart';
 import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
 import 'repository/authenticate/impl/fake_local_auth_repository.dart';
@@ -78,6 +81,7 @@ Widget _app() {
       RepositoryProvider(
           create: (context) => MoabEnvironmentRepository(MoabHttpClient())),
       RepositoryProvider(create: (context) => CloudAccountRepository()),
+      RepositoryProvider(create: (context) => SubscriptionRepository())
     ],
     child: MultiBlocProvider(providers: [
       BlocProvider(
@@ -95,9 +99,14 @@ Widget _app() {
       BlocProvider(create: (BuildContext context) => OtpCubit()),
       BlocProvider(create: (BuildContext context) => ProfilesCubit()),
       BlocProvider(create: (BuildContext context) => DeviceCubit()),
-      BlocProvider(create: (BuildContext context) => AccountCubit(repository: context.read<CloudAccountRepository>())),
+      BlocProvider(
+          create: (BuildContext context) =>
+              AccountCubit(repository: context.read<CloudAccountRepository>())),
       BlocProvider(create: (BuildContext context) => ContentFilterCubit()),
       BlocProvider(create: (BuildContext context) => SecurityBloc()),
+      BlocProvider(
+          create: (BuildContext context) => SubscriptionCubit(
+              repository: context.read<SubscriptionRepository>()))
     ], child: const MoabApp()),
   );
 }
@@ -111,11 +120,13 @@ class MoabApp extends StatefulWidget {
 
 class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
   late ConnectivityCubit _cubit;
+  late StreamSubscription<List<PurchaseDetails>> _subscription;
 
   @override
   void initState() {
     logger.d('Moab App init state: ${describeIdentity(this)}');
     _initAuth();
+    _intIAP();
     WidgetsBinding.instance.addObserver(this);
     _cubit = context.read<ConnectivityCubit>();
     _cubit.start();
@@ -127,6 +138,7 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _cubit.stop();
+    _subscription.cancel();
     apnsStreamSubscription?.cancel();
     releaseErrorResponseStream();
     super.dispose();
@@ -153,5 +165,37 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
 
   _initAuth() {
     context.read<AuthBloc>().add(InitAuth());
+  }
+
+  _intIAP() {
+    final Stream<List<PurchaseDetails>> purchaseUpdated =
+        InAppPurchase.instance.purchaseStream;
+    _subscription = purchaseUpdated.listen((purchaseDetailList) {
+      _listenToPurchaseUpdated(purchaseDetailList);
+    }, onDone: () {
+      _subscription.cancel();
+    }, onError: (Object error) {});
+    context.read<SubscriptionCubit>().loadingProducts();
+  }
+
+  void _listenToPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) {
+    purchaseDetailsList.forEach((PurchaseDetails purchaseDetails) async {
+      if (purchaseDetails.status == PurchaseStatus.pending) {
+      } else {
+        if (purchaseDetails.status == PurchaseStatus.error) {
+          logger.e('subscription error : ${purchaseDetails.error!.toString()}');
+        } else if (purchaseDetails.status == PurchaseStatus.purchased ||
+            purchaseDetails.status == PurchaseStatus.restored) {
+          logger.d('subscription cubit purchaseDetails : ${purchaseDetails.purchaseID}');
+          _deliverProduct(purchaseDetails);
+        }
+      }
+    });
+  }
+
+  void _deliverProduct(PurchaseDetails purchaseDetails) {
+    context
+        .read<SubscriptionCubit>()
+        .updatePurchaseToken(purchaseToken: purchaseDetails.purchaseID);
   }
 }

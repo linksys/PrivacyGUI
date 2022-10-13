@@ -75,6 +75,7 @@ dependencies:
   styled_text: ^5.1.0
   image: ^3.2.0
   collection: ^1.16.0
+  in_app_purchase: ^3.0.7
   universal_link_plugin:
     path: plugins/universal_link_plugin
   connecting_wifi_plugin:

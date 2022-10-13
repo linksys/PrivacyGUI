@@ -46,6 +46,7 @@ const authPath = '/auth';
 const tasksPath = '/tasks';
 const primaryTasksPath = '/primary-tasks';
 const verificationsPath = '/verifications';
+const subscriptionPath = '/store';
 
 // Cloud endpoints variables
 const varAccountId = '{accountId}';
@@ -59,6 +60,7 @@ const varFlow = '{flow}';
 const varMethod = '{method}';
 const varTargetValue = '{targetValue}';
 const varCertificateId = '{certificateId}';
+const varSerialNumber = '{serialNumber}';
 
 // Cloud endpoints
 const endpointCreateApps = '$version/apps';
@@ -88,6 +90,10 @@ const endpointPostCommunicationMethods = '$version$accountPath/$varAccountId/com
 const endpointDeleteAuthCommunicationMethod = '$version$accountPath/$varAccountId/communication-methods?method=$varMethod&targetValue=$varTargetValue';
 const endpointPostChangePassword = '$version$accountPath/$varAccountId/password/change';
 const endpointPreferences = '$version$accountPath/$varAccountId/preferences';
+
+const endpointSubscriptionQueryProductListings = '$version$subscriptionPath/product-listings';
+const endpointSubscriptionCreateCloudOrders = '$version$subscriptionPath/orders';
+const endpointSubscriptionGetNetworkEntitlement = '$version$subscriptionPath/network-serial-numbers/$varSerialNumber/entitlements';
 //
 const keyRequire2sv = 'REQUIRE_2SV';
 const keyPasswordRequired ='PASSWORD_REQUIRED';
