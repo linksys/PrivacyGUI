@@ -48,9 +48,3 @@ class SetAdminPasswordHint extends SetupEvent {
 class SaveRouterSettings extends SetupEvent {}
 
 class FetchNetworkId extends SetupEvent {}
-
-class SetDeviceMode extends SetupEvent {
-  const SetDeviceMode({required this.mode});
-
-  final String mode;
-}

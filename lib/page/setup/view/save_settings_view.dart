@@ -74,12 +74,14 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
       if (event.connectivityInfo.ssid != newSSID) {
         return;
       }
+      _setupBloc.add(ResumePointChanged(status: SetupResumePoint.wifiConnectionBackSuccess));
       _tryConnectMQTT().then((value) {
         if (value) {
           logger.d('SaveSettings:: _listenConnectivityChange(): $value');
 
-          _setupBloc
-              .add(FetchNetworkId());
+          _setupBloc.add(FetchNetworkId());
+        } else {
+          _setupBloc.add(ResumePointChanged(status: SetupResumePoint.wifiConnectionBackFailed));
         }
       });
     });
@@ -87,8 +89,8 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
 
   Future _associateNetwork() async {
     await _accountCubit.fetchAccount();
-    // connect to remote broker
-    await _connectivityCubit.connectToRemoteBroker();
+    // connect to local broker again
+    await _connectivityCubit.connectToLocalBroker();
     // get group ID, account ID from cloud
     final accountId = _accountCubit.state.id;
     final groupId = _accountCubit.state.groupId;
@@ -99,7 +101,7 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
 
   Future<bool> _tryConnectMQTT() async {
     logger.d('SaveSettings:: _tryConnectMQTT()');
-    const maxRetry = 10;
+    const maxRetry = 20;
     int retry = 0;
     bool isConnect = false;
     do {
@@ -129,7 +131,7 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
       child: BlocConsumer<SetupBloc, SetupState>(
         listener: (BuildContext context, state) {
           logger.d('SaveSettings:: SetupState changed: ${state.resumePoint}');
-          if (state.resumePoint == SetupResumePoint.waiting) {
+          if (state.resumePoint == SetupResumePoint.wifiInterrupted) {
             //
             _listenConnectivityChange(state.wifiSSID);
           } else if (state.resumePoint == SetupResumePoint.finish) {
@@ -153,7 +155,7 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
   }
 
   Widget _buildContent(SetupState state) {
-    if (state.resumePoint == SetupResumePoint.waiting) {
+    if (state.resumePoint == SetupResumePoint.wifiInterrupted) {
       return Center(
         child: Column(
           children: [
@@ -169,6 +171,37 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
               height: 69,
             ),
             PrimaryButton(
+              text: 'Open settings',
+              onPress: () {
+                openAppSettings();
+              },
+            ),
+          ],
+          mainAxisAlignment: MainAxisAlignment.center,
+        ),
+      );
+    } else if (state.resumePoint == SetupResumePoint.wifiConnectionBackFailed) {
+      return Center(
+        child: Column(
+          children: [
+            image,
+            const SizedBox(
+              height: 130,
+            ),
+            Center(
+              child: Text(
+                  'We\'re not able to establish connection to ${state.wifiSSID}, please check your WiFi connection and try again'),
+            ),
+            const SizedBox(
+              height: 69,
+            ),
+            PrimaryButton(
+              text: 'Try again',
+              onPress: () {
+                _listenConnectivityChange(state.wifiSSID);
+              },
+            ),
+            SecondaryButton(
               text: 'Open settings',
               onPress: () {
                 openAppSettings();

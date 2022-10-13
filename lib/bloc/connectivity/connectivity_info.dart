@@ -6,28 +6,28 @@ class ConnectivityInfo extends Equatable {
     this.type = ConnectivityResult.none,
     this.gatewayIp,
     this.ssid,
-    this.isMoabRouter = false,
+    this.isManagedRouter = false,
   });
 
   final ConnectivityResult type;
   final String? gatewayIp;
   final String? ssid;
-  final bool isMoabRouter;
+  final bool isManagedRouter;
 
   ConnectivityInfo copyWith({
     ConnectivityResult? type,
     String? gatewayIp,
     String? ssid,
-    bool? isMoabRouter,
+    bool? isManagedRouter,
   }) {
     return ConnectivityInfo(
       type: type ?? this.type,
       gatewayIp: gatewayIp ?? this.gatewayIp,
       ssid: ssid ?? this.ssid,
-      isMoabRouter: isMoabRouter ?? this.isMoabRouter,
+      isManagedRouter: isManagedRouter ?? this.isManagedRouter,
     );
   }
 
   @override
-  List<Object?> get props => [type, gatewayIp, ssid, isMoabRouter];
+  List<Object?> get props => [type, gatewayIp, ssid, isManagedRouter];
 }

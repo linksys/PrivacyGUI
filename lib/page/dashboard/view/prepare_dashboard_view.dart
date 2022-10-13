@@ -44,6 +44,7 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
     if (context.read<AuthBloc>().state is AuthCloudLoginState) {
       await context.read<ProfilesCubit>().fetchProfiles();
       await context.read<AccountCubit>().fetchAccount();
+      // TODO #REFACTOR check is connected to moab router
       await context.read<ConnectivityCubit>().connectToRemoteBroker();
       await context.read<NetworkCubit>().getNetworks(accountId: context.read<AccountCubit>().state.id);
     } else {

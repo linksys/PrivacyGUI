@@ -26,6 +26,7 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
 
   final RouterRepository _routerRepository;
 
+  // TODO #REFACTOR to revisit
   void _onResumePointChanged(
       ResumePointChanged event, Emitter<SetupState> emit) {
     switch (event.status) {
@@ -46,8 +47,12 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
             state.copyWith(resumePoint: SetupResumePoint.createCloudAccount));
       case SetupResumePoint.location:
         return emit(state.copyWith(resumePoint: SetupResumePoint.location));
-      case SetupResumePoint.waiting:
-        return emit(state.copyWith(resumePoint: SetupResumePoint.waiting));
+      case SetupResumePoint.wifiInterrupted:
+        return emit(state.copyWith(resumePoint: SetupResumePoint.wifiInterrupted));
+      case SetupResumePoint.wifiConnectionBackSuccess:
+        return emit(state.copyWith(resumePoint: SetupResumePoint.wifiConnectionBackSuccess));
+      case SetupResumePoint.wifiConnectionBackFailed:
+        return emit(state.copyWith(resumePoint: SetupResumePoint.wifiConnectionBackFailed));
       case SetupResumePoint.finish:
         return emit(state.copyWith(resumePoint: SetupResumePoint.finish));
 
@@ -83,7 +88,7 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
                   passphrase: state.wifiPassword,
                 ))
             .toList();
-    // TODO #1 Don't wait for now since there won't have response
+    // TODO #1 Don't wait for now since there won't have response MOABLITE-38 - https://linksys.atlassian.net/browse/MOABLITE-38
     _routerRepository.configureRouter(
       adminPassword: state.adminPassword,
       passwordHint: state.passwordHint,
@@ -91,7 +96,7 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
     );
     // TODO #1 to wait the transaction done since current transaction won't get response back
     await Future.delayed(Duration(seconds: 30));
-    emit(state.copyWith(resumePoint: SetupResumePoint.waiting));
+    emit(state.copyWith(resumePoint: SetupResumePoint.wifiInterrupted));
   }
 
   void _onFetchNetworkId(FetchNetworkId event, Emitter<SetupState> emit) async {

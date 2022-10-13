@@ -24,6 +24,7 @@ import 'package:linksys_moab/notification/notification_helper.dart';
 import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
 import 'package:linksys_moab/repository/authenticate/impl/cloud_auth_repository.dart';
 import 'package:linksys_moab/repository/config/environment_repository.dart';
+import 'package:linksys_moab/repository/networks/cloud_networks_repository.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 
@@ -84,6 +85,7 @@ Widget _app() {
           create: (context) => MoabEnvironmentRepository(MoabHttpClient())),
       RepositoryProvider(create: (context) => CloudAccountRepository()),
       RepositoryProvider(create: (context) => RouterRepository()),
+      RepositoryProvider(create: (context) => CloudNetworksRepository()),
     ],
     child: MultiBlocProvider(providers: [
       BlocProvider(
@@ -109,7 +111,7 @@ Widget _app() {
               AccountCubit(repository: context.read<CloudAccountRepository>())),
       BlocProvider(create: (BuildContext context) => ContentFilterCubit()),
       BlocProvider(
-          create: (BuildContext context) => NetworkCubit(httpClient: MoabHttpClient(),
+          create: (BuildContext context) => NetworkCubit(networksRepository: context.read<CloudNetworksRepository>(),
                 routerRepository: context.read<RouterRepository>(),
               )),
       BlocProvider(

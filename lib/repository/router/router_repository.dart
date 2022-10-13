@@ -75,7 +75,7 @@ class RouterRepository with StateStreamListener {
     return true;
     // const credentials = 'admin:admin';
     // final _client = MoabHttpClient(timeoutMs: 1000);
-    // final response = await _client.get(Uri.parse('http://$_brokerUrl/cert.cgi'), headers: {
+    // final response = await _client.get(Uri.parse('http://$_localBrokerUrl:52000/cert.cgi'), headers: {
     //   'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
     // });
     // if (response.statusCode != HttpStatus.ok) {
@@ -146,7 +146,7 @@ class RouterRepository with StateStreamListener {
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
       await _mqttClient?.disconnect();
     }
-    _mqttClient = MqttClientWrap(_localBrokerUrl ?? '', 8833, clientId);
+    _mqttClient = MqttClientWrap(_localBrokerUrl ?? '', 8333, clientId);
     _mqttClient?.caCert = Int8List.fromList(cert.codeUnits);
     _mqttClient?.cert = Int8List.fromList(publicKey.codeUnits);
     _mqttClient?.keyCert = Int8List.fromList(privateKey.codeUnits);
@@ -173,7 +173,8 @@ class RouterRepository with StateStreamListener {
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
       await _mqttClient?.disconnect();
     }
-    _mqttClient = MqttClientWrap(_brokerUrl ?? '', 8833, clientId);
+    final clientId = Utils.generateMqttClintId().substring(0,23);
+    _mqttClient = MqttClientWrap(_localBrokerUrl ?? '', 8833, clientId);
     _mqttClient?.caCert = Int8List.fromList(cert.codeUnits);
     await _mqttClient?.connect(username: 'linksys', password: 'admin');
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {

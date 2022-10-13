@@ -334,7 +334,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Connect',
           onPress: () async {
-            await context.read<RouterRepository>().connectToLocalWithCloudCert();
+            // await context.read<RouterRepository>().connectToLocalWithCloudCert();
             // await context.read<ConnectivityCubit>().connectToRemoteBroker();
             await context.read<NetworkCubit>().getDeviceInfo();
             // await context.read<NetworkCubit>().getRadioInfo();
@@ -343,8 +343,8 @@ class _DebugToolsViewState extends State<DebugToolsView> {
 
             // await context.read<RouterRepository>().getSupportedDeviceMode();
 
-            final results = await context.read<RouterRepository>().setUnsecuredWiFiWarning(false);
-            final results2 = await context.read<RouterRepository>().getOwnedNetworkID();
+            // final results = await context.read<RouterRepository>().setUnsecuredWiFiWarning(false);
+            final results2 = await context.read<RouterRepository>().getCloudIds();
             //
             // await context.read<RouterRepository>().setUnsecuredWiFiWarning(false);
 

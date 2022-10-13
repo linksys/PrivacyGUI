@@ -35,8 +35,8 @@ extension OwnedNetworkService on RouterRepository {
     final command = createCommand(
       JNAPAction.setCloudIds.actionValue,
       data: {
-        'accountId': accountId,
-        'groupId': groupId,
+        'accountID': accountId,
+        'groupID': groupId,
       },
     );
     final result = await command.publish(mqttClient!);

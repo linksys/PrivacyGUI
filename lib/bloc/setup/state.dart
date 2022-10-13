@@ -9,7 +9,9 @@ enum SetupResumePoint {
   addChildNode,
   routerPassword,
   createCloudAccount,
-  waiting,
+  wifiInterrupted,
+  wifiConnectionBackFailed,
+  wifiConnectionBackSuccess,
   finish,
 }
 

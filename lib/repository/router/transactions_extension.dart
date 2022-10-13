@@ -19,10 +19,11 @@ extension TransactionCommands on RouterRepository {
           'action': JNAPAction.coreSetAdminPassword.actionValue,
           'request': {
             'adminPassword': 'admin',
-            // TODO currently don't modify the password
+            // TODO #REFACTOR currently don't modify the password
             'passwordHint': passwordHint,
           }
         },
+        // TODO #REFACTOR check device mode first
         {
           'action': JNAPAction.setDeviceMode.actionValue,
           'request': {'mode': 'Master'}

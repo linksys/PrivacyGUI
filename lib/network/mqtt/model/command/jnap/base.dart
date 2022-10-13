@@ -184,9 +184,12 @@ class JNAPTransactionSuccess extends JnapSuccess {
   Map<String, dynamic> toJson() {
     return {
       keyJnapResult: result,
-      keyJnapResponses: output,
+      keyJnapResponses: responses,
     };
   }
+
+  @override
+  List<Object?> get props => super.props..add(responses);
 }
 
 // TODO check Authenticate error
