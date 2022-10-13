@@ -120,6 +120,7 @@ enum JNAPAction {
   getDataUploadUserConsent,
   getDeviceInfo,
   getUnsecuredWiFiWarning,
+  setUnsecuredWiFiWarning,
   isAdminPasswordDefault,
   reboot,
   // ddns
@@ -197,8 +198,11 @@ enum JNAPAction {
   verifyRouterResetCode,
   getWANDetectionStatus,
   getInternetConnectionStatus,
+  setSimpleWiFiSettings,
   // smartMode
   getDeviceMode,
+  getSupportedDeviceMode,
+  setDeviceMode,
   // wirelessAP
   getRadioInfo,
   getWPSServerSessionStatus,
@@ -233,6 +237,9 @@ enum _JNAPActionValue {
   getDeviceInfo(value: 'http://linksys.com/jnap/core/GetDeviceInfo'),
   getUnsecuredWiFiWarning(
       value: 'http://linksys.com/jnap/core/GetUnsecuredWiFiWarning'),
+  setUnsecuredWiFiWarning(
+      value: 'http://linksys.com/jnap/core/SetUnsecuredWiFiWarning'
+  ),
   isAdminPasswordDefault(
       value: 'http://linksys.com/jnap/core/IsAdminPasswordDefault'),
   reboot(value: 'http://linksys.com/jnap/core/Reboot'),
@@ -365,6 +372,8 @@ enum _JNAPActionValue {
   verifyRouterResetCode(
       value: 'http://linksys.com/jnap/nodes/setup/VerifyRouterResetCode'),
   getDeviceMode(value: 'http://linksys.com/jnap/nodes/smartmode/GetDeviceMode'),
+  getSupportedDeviceModes(value:'http://linksys.com/jnap/nodes/smartmode/GetSupportedDeviceModes'),
+  setDeviceMode(value: 'http://linksys.com/jnap/nodes/smartmode/SetDeviceMode'),
   getRadioInfo(value: 'http://linksys.com/jnap/wirelessap/GetRadioInfo'),
   getRadioInfo3(value: 'http://linksys.com/jnap/wirelessap/GetRadioInfo3'),
   getWPSServerSessionStatus(
@@ -382,6 +391,9 @@ enum _JNAPActionValue {
   setWANPort(value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings3'),
   getInternetConnectionStatus(
       value: 'http://linksys.com/jnap/nodes/setup/GetInternetConnectionStatus'),
+  setSimpleWiFiSettings(
+    value: 'http://linksys.com/jnap/nodes/setup/SetSimpleWiFiSettings'
+  ),
   getCloudIds(value: 'http://linksys.com/jnap/ownednetwork/GetCloudIDs'),
   setCloudIds(value: 'http://linksys.com/jnap/ownednetwork/SetCloudIDs');
 
@@ -510,6 +522,10 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.ownedNetwork2:
       break;
+    case JNAPService.ownedNetwork3:
+      _betterActionMap[JNAPAction.getCloudIds] = _JNAPActionValue.getCloudIds.value;
+      _betterActionMap[JNAPAction.setCloudIds] = _JNAPActionValue.setCloudIds.value;
+      break;
     case JNAPService.parentalControl:
       break;
     case JNAPService.parentalControl2:
@@ -628,6 +644,8 @@ void initBetterActions() {
       _JNAPActionValue.getDeviceInfo.value;
   _betterActionMap[JNAPAction.getUnsecuredWiFiWarning] =
       _JNAPActionValue.getUnsecuredWiFiWarning.value;
+  _betterActionMap[JNAPAction.setUnsecuredWiFiWarning] =
+      _JNAPActionValue.setUnsecuredWiFiWarning.value;
   _betterActionMap[JNAPAction.isAdminPasswordDefault] =
       _JNAPActionValue.isAdminPasswordDefault.value;
   _betterActionMap[JNAPAction.reboot] = _JNAPActionValue.reboot.value;
@@ -728,6 +746,10 @@ void initBetterActions() {
       _JNAPActionValue.verifyRouterResetCode.value;
   _betterActionMap[JNAPAction.getDeviceMode] =
       _JNAPActionValue.getDeviceMode.value;
+  _betterActionMap[JNAPAction.getSupportedDeviceMode] =
+      _JNAPActionValue.getSupportedDeviceModes.value;
+  _betterActionMap[JNAPAction.setDeviceMode] =
+      _JNAPActionValue.setDeviceMode.value;
   _betterActionMap[JNAPAction.getRadioInfo] =
       _JNAPActionValue.getRadioInfo.value;
   _betterActionMap[JNAPAction.getWPSServerSessionStatus] =
@@ -744,6 +766,8 @@ void initBetterActions() {
   _betterActionMap[JNAPAction.setWANPort] = _JNAPActionValue.setWANPort.value;
   _betterActionMap[JNAPAction.getInternetConnectionStatus] =
       _JNAPActionValue.getInternetConnectionStatus.value;
+  _betterActionMap[JNAPAction.setSimpleWiFiSettings] =
+      _JNAPActionValue.setSimpleWiFiSettings.value;
   _betterActionMap[JNAPAction.getCloudIds] = _JNAPActionValue.getCloudIds.value;
   _betterActionMap[JNAPAction.setCloudIds] = _JNAPActionValue.setCloudIds.value;
 }

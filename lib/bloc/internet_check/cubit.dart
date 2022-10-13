@@ -149,11 +149,20 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
     }
   }
 
-  _finalCheckInternetStatus() {
+  _finalCheckInternetStatus() async {
     if (state.isInternetConnected) {
+      await _checkUnsecureWiFiWarning();
       emit(state.copyWith(status: InternetCheckStatus.connected));
     } else {
       emit(state.copyWith(status: InternetCheckStatus.noInternet));
+    }
+  }
+
+  _checkUnsecureWiFiWarning() async {
+    final result = await _routerRepository.getUnsecuredWiFiWarning();
+    final bool enabled = result.output['enabled'] ?? false;
+    if (enabled) {
+      await _routerRepository.setUnsecuredWiFiWarning(!enabled);
     }
   }
 

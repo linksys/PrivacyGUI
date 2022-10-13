@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/setup/_setup.dart';
 import 'package:linksys_moab/bloc/setup/state.dart';
 
 abstract class SetupEvent extends Equatable {
@@ -43,6 +44,13 @@ class SetAdminPasswordHint extends SetupEvent {
   final String password;
   final String hint;
 }
-class SaveRouterSettings extends SetupEvent {
 
+class SaveRouterSettings extends SetupEvent {}
+
+class FetchNetworkId extends SetupEvent {}
+
+class SetDeviceMode extends SetupEvent {
+  const SetDeviceMode({required this.mode});
+
+  final String mode;
 }

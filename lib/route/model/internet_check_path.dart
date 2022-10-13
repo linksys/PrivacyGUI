@@ -6,6 +6,9 @@ import 'package:linksys_moab/route/navigation_cubit.dart';
 
 abstract class InternetCheckPath extends BasePath {
   @override
+  PageConfig get pageConfig => super.pageConfig..ignoreConnectivityChanged = true;
+
+  @override
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
       case CheckNodeInternetPath:

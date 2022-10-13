@@ -12,8 +12,6 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/repository/router/router_extension.dart';
-import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/model/internet_check_path.dart';
 import 'package:linksys_moab/route/_route.dart';
 
@@ -49,7 +47,7 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
 
   Future<bool> _tryConnectMQTT() async {
     final connCubit = context.read<ConnectivityCubit>();
-    const maxRetry = 3;
+    const maxRetry = 10;
     int retry = 0;
     bool isConnect = false;
     do {
@@ -58,7 +56,7 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
         return isConnect;
       } else {
         retry++;
-        await Future.delayed(const Duration(seconds: 3));
+        await Future.delayed(const Duration(seconds: 5));
       }
     } while (retry < maxRetry);
     return isConnect;

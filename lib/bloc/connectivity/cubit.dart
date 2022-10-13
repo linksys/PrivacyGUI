@@ -56,29 +56,30 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
   @override
   Future onConnectivityChanged(ConnectivityInfo info) async {
     if (info.type != ConnectivityResult.none) {
-      await scheduleCheck(immediate: true);
+      // await scheduleCheck(immediate: true);
+      await check();
     }
     emit(state.copyWith(connectivityInfo: info));
   }
 
   void init() {
     callback = _internetCheckCallback;
-    scheduleCheck();
+    // scheduleCheck();
     start();
   }
 
   Future<ConnectivityState> forceUpdate() async {
     _checkAndroidVersionAndEasyConnect();
-    _updateConnectivity(await _connectivity.checkConnectivity());
+    await _updateConnectivity(await _connectivity.checkConnectivity());
     return state;
   }
 
   void _internetCheckCallback(
       bool hasConnection, AvailabilityInfo? cloudInfo) async {
-    if (hasConnection) {
-      await CloudEnvironmentManager().fetchCloudConfig();
-      await CloudEnvironmentManager().fetchAllCloudConfigs();
-    }
+    // if (hasConnection) {
+    //   await CloudEnvironmentManager().fetchCloudConfig();
+    //   // await CloudEnvironmentManager().fetchAllCloudConfigs();
+    // }
     logger.d('internet check result: $state');
     emit(state.copyWith(
         hasInternet: hasConnection, cloudAvailabilityInfo: cloudInfo));
@@ -100,8 +101,13 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
 
   Future<bool> connectToLocalBroker() async {
     return _routerRepository
-        .downloadCert().onError((error, stackTrace) => false)
+        .downloadLocalCert().onError((error, stackTrace) => false)
         .then((value) => _routerRepository.connectToLocal());
+  }
+  Future<bool> connectToRemoteBroker() async {
+    return _routerRepository
+        .downloadRemoteCert().onError((error, stackTrace) => false)
+        .then((value) => _routerRepository.connectToRemote());
   }
 
   Future<RouterConfiguredData> isRouterConfigured() async {

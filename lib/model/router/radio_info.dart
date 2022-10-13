@@ -1,3 +1,58 @@
+class SimpleWiFiSettings {
+  const SimpleWiFiSettings({
+    required this.ssid,
+    required this.band,
+    required this.security,
+    required this.passphrase,
+  });
+
+  factory SimpleWiFiSettings.fromRadioInfo(RouterRadioInfo radioInfo) {
+    return SimpleWiFiSettings(
+      ssid: radioInfo.settings.ssid,
+      band: radioInfo.band,
+      security: radioInfo.settings.security,
+      passphrase: radioInfo.settings.wpaPersonalSettings.passphrase,
+    );
+  }
+
+  final String ssid;
+  final String band;
+  final String security;
+  final String passphrase;
+
+  SimpleWiFiSettings copyWith({
+    String? ssid,
+    String? band,
+    String? security,
+    String? passphrase,
+  }) {
+    return SimpleWiFiSettings(
+      ssid: ssid ?? this.ssid,
+      band: band ?? this.band,
+      security: security ?? this.security,
+      passphrase: passphrase ?? this.passphrase,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'ssid': ssid,
+      'band': band,
+      'security': security,
+      'passphrase': passphrase,
+    };
+  }
+
+  factory SimpleWiFiSettings.fromMap(Map<String, dynamic> json) {
+    return SimpleWiFiSettings(
+      ssid: json['ssid'],
+      band: json['band'],
+      security: json['security'],
+      passphrase: json['passphrase'],
+    );
+  }
+}
+
 class NewRadioSettings {
   final String radioID;
   final RouterRadioInfoSettings settings;
@@ -31,6 +86,7 @@ class NewRadioSettings {
     );
   }
 }
+
 class RouterRadioInfo {
   final String band;
   final String bssid;

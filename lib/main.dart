@@ -47,9 +47,9 @@ void main() {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    // if (!kReleaseMode) {
-    //   MqttLogger.loggingOn = true;
-    // }
+    if (!kReleaseMode) {
+      MqttLogger.loggingOn = true;
+    }
     logger.d('Done for init Firebase Core');
     initCloudMessage();
     // Pass all uncaught errors from the framework to Crashlytics.
@@ -109,7 +109,7 @@ Widget _app() {
               AccountCubit(repository: context.read<CloudAccountRepository>())),
       BlocProvider(create: (BuildContext context) => ContentFilterCubit()),
       BlocProvider(
-          create: (BuildContext context) => NetworkCubit(
+          create: (BuildContext context) => NetworkCubit(httpClient: MoabHttpClient(),
                 routerRepository: context.read<RouterRepository>(),
               )),
       BlocProvider(
@@ -132,11 +132,11 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
   @override
   void initState() {
     logger.d('Moab App init state: ${describeIdentity(this)}');
-    _initAuth();
+
     WidgetsBinding.instance.addObserver(this);
     _cubit = context.read<ConnectivityCubit>();
     _cubit.init();
-    _cubit.forceUpdate();
+    _cubit.forceUpdate().then((value) => _initAuth());
     super.initState();
   }
 

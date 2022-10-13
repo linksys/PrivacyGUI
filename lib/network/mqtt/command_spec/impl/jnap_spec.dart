@@ -34,3 +34,29 @@ class BasicJnapSpec extends JnapCommandSpec<JnapResponse> {
   }
 
 }
+
+class JNAPTransactionSpec extends CommandSpec<JnapResponse> {
+
+  final List<Map<String, dynamic>> _payload;
+  final String? auth;
+  
+  JNAPTransactionSpec({required List<Map<String, dynamic>> payload, this.auth}): _payload = payload;
+
+  @override
+  String payload() {
+    var header = {keyMqttHeaderAction: 'http://linksys.com/jnap/core/Transaction', keyMqttHeaderId: uuid,};
+    if (auth != null) {
+      header[keyMqttHeaderAuthorization] = auth!;
+    }
+    return json.encode({
+      keyMqttHeader: header,
+      keyMqttBody: _payload,
+    });
+  }
+
+  @override
+  JnapResponse response(String raw) {
+    return JnapResponse.fromJson(json.decode(raw));
+  }
+
+}

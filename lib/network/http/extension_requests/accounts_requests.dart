@@ -7,14 +7,14 @@ import '../http_client.dart';
 
 extension MoabAccountsRequests on MoabHttpClient {
   Future<Response> getAccountSelf() async {
-    final url = combineUrl(endpointGetAccountSelf);
+    final url = await combineUrl(endpointGetAccountSelf);
     final header = defaultHeader..addAll({moabSiteIdKey: moabRetailSiteId});
     return this.get(Uri.parse(url), headers: header);
   }
 
   Future<Response> addCommunicationMethods(
       {required String accountId, required CommunicationMethod method}) async {
-    final url = combineUrl(endpointPostCommunicationMethods,
+    final url = await combineUrl(endpointPostCommunicationMethods,
         args: {varAccountId: accountId, varFlow: 'OTP'});
     final header = defaultHeader;
     return this.post(Uri.parse(url),
@@ -25,7 +25,7 @@ extension MoabAccountsRequests on MoabHttpClient {
       {required String accountId,
       required String method,
       required String targetValue}) async {
-    final url = combineUrl(endpointDeleteAuthCommunicationMethod, args: {
+    final url = await combineUrl(endpointDeleteAuthCommunicationMethod, args: {
       varAccountId: accountId,
       varMethod: method,
       varTargetValue: Uri.encodeQueryComponent(targetValue)
@@ -40,9 +40,9 @@ extension MoabAccountsRequests on MoabHttpClient {
   Future<Response> verifyAccountPassword({
     required String accountId,
     required String password,
-  }) {
+  }) async {
     final url =
-        combineUrl(endpointPostChangePassword, args: {varAccountId: accountId});
+        await combineUrl(endpointPostChangePassword, args: {varAccountId: accountId});
     final header = defaultHeader;
     return this.post(Uri.parse(url),
         headers: header,
@@ -55,8 +55,8 @@ extension MoabAccountsRequests on MoabHttpClient {
     required String accountId,
     required String password,
     required String token,
-  }) {
-    final url = combineUrl(endpointPutVerificationAccept,
+  }) async {
+    final url = await combineUrl(endpointPutVerificationAccept,
         args: {varAccountId: accountId, varVerifyToken: token});
     final header = defaultHeader;
     return this.put(Uri.parse(url),
@@ -72,5 +72,11 @@ extension MoabAccountsRequests on MoabHttpClient {
             ]
           },
         ));
+  }
+
+  Future<Response> getDefaultGroupId({required String accountId}) async {
+    final url = await combineUrl(endpointDefaultNetworkGroup, args: {varAccountId: accountId});
+    final header = defaultHeader;
+    return this.get(Uri.parse(url), headers: header);
   }
 }

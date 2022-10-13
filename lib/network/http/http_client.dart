@@ -92,7 +92,8 @@ class MoabHttpClient extends http.BaseClient {
 
   String getHost() => CloudEnvironmentManager().currentConfig?.apiBase ?? '';
 
-  String combineUrl(String endpoint, {Map<String, String>? args}) {
+  Future<String> combineUrl(String endpoint, {Map<String, String>? args}) async {
+    await CloudEnvironmentManager().fetchCloudConfig();
     String url = '${getHost()}$endpoint';
     if (args != null) {
       args.forEach((key, value) {

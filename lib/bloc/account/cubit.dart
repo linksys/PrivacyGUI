@@ -16,15 +16,27 @@ class AccountCubit extends Cubit<AccountState> {
 
   Future<void> fetchAccount() async {
     final account = await _repo.getAccount();
-    final isBiometricEnabled = (await SharedPreferences.getInstance()).getBool(moabPrefEnableBiometrics) ?? false;
-    emit(state.copyWithAccountInfo(info: account, isBiometricEnabled: isBiometricEnabled));
+    final defaultGroupId = await _repo.getDefaultGroupId(account.id);
+    logger.d('accountId: ${account.id}, defaultGroupId:$defaultGroupId');
+    await SharedPreferences.getInstance().then((pref) async {
+      await pref.setString(moabPrefCloudAccountId, account.id);
+      await pref.setString(moabPrefCloudDefaultGroupId, defaultGroupId);
+    });
+    final isBiometricEnabled = (await SharedPreferences.getInstance())
+            .getBool(moabPrefEnableBiometrics) ??
+        false;
+    emit(state
+        .copyWithAccountInfo(
+            info: account, isBiometricEnabled: isBiometricEnabled)
+        .copyWith(groupId: defaultGroupId));
   }
 
   Future<String> startAddCommunicationMethod(CommunicationMethod method) async {
     return _repo.addCommunicationMethods(state.id, method);
   }
 
-  Future<void> deleteCommunicationMethod(String method, String targetValue) async {
+  Future<void> deleteCommunicationMethod(
+      String method, String targetValue) async {
     return _repo.deleteCommunicationMethods(state.id, method, targetValue);
   }
 

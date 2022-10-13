@@ -25,7 +25,9 @@ abstract class CreateAccountPath extends BasePath {
           next: SaveSettingsPath(),
         );
       case SaveSettingsPath:
-        return SaveSettingsView(args: args,);
+        return SaveSettingsView(
+          args: args,
+        );
       case AlreadyHaveOldAccountPath:
         return const HaveOldAccountView();
       case NoUseCloudAccountPath:
@@ -66,7 +68,9 @@ class CreateCloudAccountSuccessPath extends CreateAccountPath {}
 
 class SaveSettingsPath extends CreateAccountPath {
   @override
-  PageConfig get pageConfig => super.pageConfig..ignoreAuthChanged = true;
+  PageConfig get pageConfig => super.pageConfig
+    ..ignoreAuthChanged = true
+    ..ignoreConnectivityChanged = true;
 }
 
 class AlreadyHaveOldAccountPath extends CreateAccountPath {
@@ -75,4 +79,3 @@ class AlreadyHaveOldAccountPath extends CreateAccountPath {
 }
 
 class NoUseCloudAccountPath extends CreateAccountPath {}
-

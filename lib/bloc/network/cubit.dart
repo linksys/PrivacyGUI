@@ -6,6 +6,8 @@ import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/model/router/wan_status.dart';
 import 'package:linksys_moab/network/better_action.dart';
+import 'package:linksys_moab/network/http/extension_requests/network_requests.dart';
+import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/repository/router/batch_extension.dart';
 import 'package:linksys_moab/repository/router/core_extension.dart';
 import 'package:linksys_moab/repository/router/router_extension.dart';
@@ -14,13 +16,17 @@ import 'package:linksys_moab/repository/router/wireless_ap_extension.dart';
 import 'package:linksys_moab/util/logger.dart';
 
 class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
-  NetworkCubit({required RouterRepository routerRepository})
-      : _routerRepository = routerRepository,
+  NetworkCubit(
+      {required MoabHttpClient httpClient,
+      required RouterRepository routerRepository})
+      : _httpClient = httpClient,
+        _routerRepository = routerRepository,
         super(const NetworkState()) {
     shareStream = stream;
     register(_routerRepository);
   }
 
+  final MoabHttpClient _httpClient;
   final RouterRepository _routerRepository;
 
   @override
@@ -28,6 +34,18 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
     unregisterAll();
     super.close();
   }
+
+  ///
+  /// Cloud API
+  ///
+
+  Future getNetworks({required String accountId}) async {
+    _httpClient.getNetworks(accountId: accountId);
+  }
+
+  ///
+  /// JNAP commands
+  ///
 
   Future<RouterDeviceInfo> getDeviceInfo() async {
     final result = await _routerRepository.getDeviceInfo();
@@ -51,8 +69,11 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
 
   Future<List<RouterRadioInfo>> getRadioInfo() async {
     final result = await _routerRepository.getRadioInfo();
-    final radioInfo = List.from(result.output['radios']).map((e) => RouterRadioInfo.fromJson(e)).toList();
-    emit(state.copyWith(selected: state.selected!.copyWith(radioInfo: radioInfo)));
+    final radioInfo = List.from(result.output['radios'])
+        .map((e) => RouterRadioInfo.fromJson(e))
+        .toList();
+    emit(state.copyWith(
+        selected: state.selected!.copyWith(radioInfo: radioInfo)));
     return radioInfo;
   }
 

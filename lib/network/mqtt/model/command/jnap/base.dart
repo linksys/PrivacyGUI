@@ -10,15 +10,14 @@ class JnapCommand extends BaseMqttCommand<JnapResponse> {
     required String action,
     String? auth,
     required Map<String, dynamic> data,
-  })
-      : _publishTopic = publishTopic,
+  })  : _publishTopic = publishTopic,
         _responseTopic = responseTopic,
         super(
-          spec: BasicJnapSpec(
-            action: action,
-            auth: auth,
-            data: data,
-          ));
+            spec: BasicJnapSpec(
+          action: action,
+          auth: auth,
+          data: data,
+        ));
 
   factory JnapCommand.local({
     required String action,
@@ -63,12 +62,16 @@ class JnapCommand extends BaseMqttCommand<JnapResponse> {
 }
 
 class JnapResponse extends Equatable {
-
-  const JnapResponse({required this.header, required this.body,});
+  const JnapResponse({
+    required this.header,
+    required this.body,
+  });
 
   factory JnapResponse.fromJson(Map<String, dynamic> json) {
-    return JnapResponse(header: JnapHeader.fromJson(json[keyMqttHeader]),
-      body: JnapResult.fromJson(json[keyMqttBody]),);
+    return JnapResponse(
+      header: JnapHeader.fromJson(json[keyMqttHeader]),
+      body: JnapResult.fromJson(json[keyMqttBody]),
+    );
   }
 
   final JnapHeader header;
@@ -86,12 +89,16 @@ class JnapResponse extends Equatable {
 }
 
 class JnapHeader extends Equatable {
-
-  const JnapHeader({required this.action, required this.id,});
+  const JnapHeader({
+    required this.action,
+    required this.id,
+  });
 
   factory JnapHeader.fromJson(Map<String, dynamic> json) {
     return JnapHeader(
-      action: json[keyMqttHeaderAction], id: json[keyMqttHeaderId],);
+      action: json[keyMqttHeaderAction],
+      id: json[keyMqttHeaderId],
+    );
   }
 
   final String action;
@@ -138,10 +145,12 @@ class JnapSuccess extends JnapResult {
   });
 
   factory JnapSuccess.fromJson(Map<String, dynamic> json) {
-    return JnapSuccess(
-      result: json[keyJnapResult],
-      output: json[keyJnapOutput] ?? {},
-    );
+    return json.containsKey(keyJnapResponses)
+        ? JNAPTransactionSuccess.fromJson(json)
+        : JnapSuccess(
+            result: json[keyJnapResult],
+            output: json[keyJnapOutput] ?? {},
+          );
   }
 
   final Map<String, dynamic> output;
@@ -158,11 +167,33 @@ class JnapSuccess extends JnapResult {
   List<Object?> get props => super.props..add(output);
 }
 
+class JNAPTransactionSuccess extends JnapSuccess {
+  const JNAPTransactionSuccess(
+      {required super.result, required this.responses,});
+
+  factory JNAPTransactionSuccess.fromJson(Map<String, dynamic> json) {
+    return JNAPTransactionSuccess(
+      result: json[keyJnapResult],
+      responses: List.from(json[keyJnapResponses]).map((e) => JnapResult.fromJson(e)).toList(),
+    );
+  }
+
+  final List<JnapResult> responses;
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      keyJnapResult: result,
+      keyJnapResponses: output,
+    };
+  }
+}
+
 // TODO check Authenticate error
 class JnapError extends JnapResult {
   const JnapError({
     required super.result,
-    required this.error,
+    this.error,
   });
 
   factory JnapError.fromJson(Map<String, dynamic> json) {
@@ -172,7 +203,7 @@ class JnapError extends JnapResult {
     );
   }
 
-  final String error;
+  final String? error;
 
   @override
   Map<String, dynamic> toJson() {

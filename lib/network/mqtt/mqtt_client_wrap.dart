@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:linksys_moab/network/mqtt/model/command/jnap/side_effects.dart';
 import 'package:linksys_moab/network/mqtt/model/command/mqtt_base_command.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
@@ -31,6 +33,9 @@ class MqttClientWrap {
 
   late MqttServerClient _client;
 
+  final StreamController<MqttCommand> _commandStreamController = StreamController(sync: true);
+  StreamSubscription? _subscription;
+
   MqttClientWrap(this._endpoint, this._port, this._clientId);
 
   Future<void> connect({String? username, String? password, bool secure = true}) async {
@@ -38,7 +43,7 @@ class MqttClientWrap {
     _client = MqttServerClient.withPort(_endpoint, _clientId, _port)
       ..keepAlivePeriod = 20 // Set Keep-Alive
       ..setProtocolV311() // Set the protocol to V3.1.1 for AWS IoT Core, if you fail to do this you will receive a connect ack with the response code
-      // ..logging(on: true); // logging if you wish
+      ..logging(on: true) // logging if you wish
       ..onBadCertificate = _onBadCertificate;
 
     _client.secure = secure;
@@ -53,7 +58,7 @@ class MqttClientWrap {
 
       if (caCert != null) {
         context.setClientAuthoritiesBytes(caCert!);
-        context.setTrustedCertificatesBytes(caCert!);
+        // context.setTrustedCertificatesBytes(caCert!);
       }
       if (cert != null) {
         context.useCertificateChainBytes(cert!);
@@ -92,6 +97,30 @@ class MqttClientWrap {
       /// acknowledge has been set on the client, in which case the user must manually acknowledge the
       /// received publish message on completion of any business logic processing.
       _client.published!.listen(_handlePublishMessage);
+
+      // TODO
+      /// command queue w/ subscription
+      ///
+      _subscription?.cancel();
+      _subscription = _commandStreamController.stream.listen((command) async {
+        if (command is WiFiInterruptCommand) {
+          // wait for MQTT connect back
+          int maxRetry = 30;
+          int delay = 10;
+          int retry = 0;
+          Timer timer = Timer.periodic(Duration(seconds: delay), (timer) async {
+            await connect(username: 'linksys', password: 'admin');
+            if (_client.connectionStatus!.state == MqttConnectionState.connected) {
+              // connected
+              timer.cancel();
+              // check connected router is our target
+            }
+          });
+          //
+        } else {
+          send(command);
+        }
+      });
     }
   }
 

@@ -7,13 +7,16 @@ import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/connectivity/state.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
 import 'package:linksys_moab/network/mqtt/mqtt_client_wrap.dart';
+import 'package:linksys_moab/repository/security_context_loader_mixin.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
+import 'package:logger/logger.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,11 +47,28 @@ class RouterRepository with StateStreamListener {
 
   MqttConnectType connectType = MqttConnectType.none;
 
+  final String clientId = Utils.generateMqttClintId();
+
   String? _brokerUrl;
+  String? _localBrokerUrl;
   String? localPassword;
   List<String> topics = [];
 
-  Future<bool> downloadCert() async {
+  String? _groupId;
+  String? _networkId;
+
+  Future<bool> downloadRemoteCert() async {
+    final _client = MoabHttpClient(timeoutMs: 1000);
+    final response = await _client.get(Uri.parse(awsIoTRootCA));
+    if (response.statusCode != HttpStatus.ok) {
+      return false;
+    }
+    final pref = await SharedPreferences.getInstance();
+    await pref.setString(moabPrefRemoteCaCert, response.body);
+    return true;
+  }
+
+  Future<bool> downloadLocalCert() async {
     final caCert = await rootBundle.loadString('assets/keys/server.pem');
     final pref = await SharedPreferences.getInstance();
     await pref.setString(moabPrefLocalCert, caCert);
@@ -66,23 +86,94 @@ class RouterRepository with StateStreamListener {
     // return true;
   }
 
-  connectToRemote() async {
-    // TODO
-    connectType = MqttConnectType.remote;
+  Future<bool> connectToRemote() async {
+
+    _brokerUrl = CloudEnvironmentManager().currentConfig?.transport.mqttBroker;
+    int port = CloudEnvironmentManager().currentConfig?.transport.port ?? 8883;
+    final pref = await SharedPreferences.getInstance();
+    String cert = pref.getString(moabPrefRemoteCaCert) ?? '';
+    String publicKey = pref.getString(moabPrefCloudPublicKey) ?? '';
+    String privateKey = pref.getString(moabPrefCloudPrivateKey) ?? '';
+    String accountId = pref.getString(moabPrefCloudAccountId) ?? '';
+    if (accountId.isEmpty) {
+      // TODO #ERRORHANDLING No account information
+      return false;
+    }
+    if (cert.isEmpty) {
+      await downloadRemoteCert();
+      cert = pref.getString(moabPrefRemoteCaCert) ?? '';
+    }
+    logger.d('ca root: $cert');
+
+    if (_mqttClient?.connectionState == MqttConnectionState.connected) {
+      await _mqttClient?.disconnect();
+    }
+
+    _mqttClient = MqttClientWrap(_brokerUrl ?? '', port, 'AC:$accountId');
+    _mqttClient?.caCert = Int8List.fromList(cert.codeUnits);
+    _mqttClient?.cert = Int8List.fromList(publicKey.codeUnits);
+    _mqttClient?.keyCert = Int8List.fromList(privateKey.codeUnits);
+    await _mqttClient?.connect();
+    logger.d('MQTT connection status: ${_mqttClient?.connectionState}');
+    if (_mqttClient?.connectionState == MqttConnectionState.connected) {
+      _groupId = pref.getString(moabPrefCloudDefaultGroupId) ?? '';
+      _networkId = pref.getString(moabPrefSelectedNetworkId) ?? '';
+      topics.addAll([
+        mqttRemoteResponseTopic
+            .replaceFirst(varMqttGroupId, _groupId!)
+            .replaceFirst(varMqttNetworkId, _networkId!)
+      ]);
+      for (var topic in topics) {
+        _mqttClient?.subscribe(topic);
+      }
+      connectType = MqttConnectType.remote;
+      return true;
+    } else {
+      connectType = MqttConnectType.none;
+      return false;
+    }
   }
 
-  Future<bool> connectToLocal() async {
+  Future<bool> connectToLocalWithCloudCert() async {
     final pref = await SharedPreferences.getInstance();
     String cert = pref.getString(moabPrefLocalCert) ?? '';
+    String publicKey = pref.getString(moabPrefCloudPublicKey) ?? '';
+    String privateKey = pref.getString(moabPrefCloudPrivateKey) ?? '';
     if (cert.isEmpty) {
-      await downloadCert();
+      await downloadLocalCert();
       cert = pref.getString(moabPrefLocalCert) ?? '';
     }
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
       await _mqttClient?.disconnect();
     }
-    _mqttClient =
-        MqttClientWrap(_brokerUrl ?? '', 8833, Utils.generateMqttClintId());
+    _mqttClient = MqttClientWrap(_localBrokerUrl ?? '', 8833, clientId);
+    _mqttClient?.caCert = Int8List.fromList(cert.codeUnits);
+    _mqttClient?.cert = Int8List.fromList(publicKey.codeUnits);
+    _mqttClient?.keyCert = Int8List.fromList(privateKey.codeUnits);
+    await _mqttClient?.connect();
+    if (_mqttClient?.connectionState == MqttConnectionState.connected) {
+      topics.addAll([mqttLocalResponseTopic]);
+      for (var topic in topics) {
+        _mqttClient?.subscribe(topic);
+      }
+      connectType = MqttConnectType.local;
+      return true;
+    } else {
+      connectType = MqttConnectType.none;
+      return false;
+    }
+  }
+  Future<bool> connectToLocal() async {
+    final pref = await SharedPreferences.getInstance();
+    String cert = pref.getString(moabPrefLocalCert) ?? '';
+    if (cert.isEmpty) {
+      await downloadLocalCert();
+      cert = pref.getString(moabPrefLocalCert) ?? '';
+    }
+    if (_mqttClient?.connectionState == MqttConnectionState.connected) {
+      await _mqttClient?.disconnect();
+    }
+    _mqttClient = MqttClientWrap(_brokerUrl ?? '', 8833, clientId);
     _mqttClient?.caCert = Int8List.fromList(cert.codeUnits);
     await _mqttClient?.connect(username: 'linksys', password: 'admin');
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
@@ -116,7 +207,7 @@ class RouterRepository with StateStreamListener {
         data: data,
       );
     } else if (connectType == MqttConnectType.remote) {
-      return JnapCommand.remote(gid: 'gid', nid: 'nid', action: action);
+      return JnapCommand.remote(gid: _groupId!, nid: _networkId!, action: action, data: data);
     } else {
       //
       throw Exception();
@@ -154,11 +245,12 @@ class RouterRepository with StateStreamListener {
 
   _handleConnectivityChanged(ConnectivityState state) async {
     logger.d('Router repository:: handleConnectivityChanged: $state');
-    _brokerUrl = state.connectivityInfo.gatewayIp;
+    _localBrokerUrl = state.connectivityInfo.gatewayIp;
   }
 
   _handleAuthChanged(AuthState state) async {
-    logger.d('Router repository:: _handleAuthChanged: $state, ${state.runtimeType}');
+    logger.d(
+        'Router repository:: _handleAuthChanged: $state, ${state.runtimeType}');
     final pref = await SharedPreferences.getInstance();
     if (state is AuthCloudLoginState) {
       // get cloud certs and etc...

@@ -24,4 +24,22 @@ extension OwnedNetworkService on RouterRepository {
     final result = await command.publish(mqttClient!);
     return handleJnapResult(result.body);
   }
+
+  Future<JnapSuccess> getCloudIds() async {
+    final command = createCommand(JNAPAction.getCloudIds.actionValue);
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
+
+  Future<JnapSuccess> setCloudIds(String accountId, String groupId) async {
+    final command = createCommand(
+      JNAPAction.setCloudIds.actionValue,
+      data: {
+        'accountId': accountId,
+        'groupId': groupId,
+      },
+    );
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
 }

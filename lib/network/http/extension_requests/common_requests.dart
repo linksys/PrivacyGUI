@@ -18,14 +18,14 @@ extension MoabCommonRequests on MoabHttpClient {
   }
 
   Future<Response> createApp(DeviceInfo deviceInfo) async {
-    final url = combineUrl(endpointCreateApps);
+    final url = await combineUrl(endpointCreateApps);
     final header = defaultHeader;
     return this.post(Uri.parse(url),
         headers: header, body: jsonEncode(deviceInfo.toJson()));
   }
 
   Future<Response> getApp(String appId, String appSecret) async {
-    final url = combineUrl(endpointGetApps, args: {varAppId: appId});
+    final url = await combineUrl(endpointGetApps, args: {varAppId: appId});
     final header = defaultHeader
       ..addAll({moabAppIdKey: appId, moabAppSecretKey: appSecret});
 
@@ -34,7 +34,7 @@ extension MoabCommonRequests on MoabHttpClient {
 
   Future<Response> registerSmartDevice(
       String appId, String appSecret, CloudSmartDevice smartDevice) async {
-    final url = combineUrl(endpointPutSmartDevices, args: {varAppId: appId});
+    final url = await combineUrl(endpointPutSmartDevices, args: {varAppId: appId});
     final header = defaultHeader
       ..addAll({moabAppIdKey: appId, moabAppSecretKey: appSecret});
     return this.put(Uri.parse(url),
@@ -43,7 +43,7 @@ extension MoabCommonRequests on MoabHttpClient {
 
   Future<Response> acceptSmartDevice(
       String appId, String appSecret, String token) async {
-    final url = combineUrl(endpointPutAcceptSmartDevices, args: {varAppId: appId});
+    final url = await combineUrl(endpointPutAcceptSmartDevices, args: {varAppId: appId});
     final header = defaultHeader
       ..addAll({moabAppIdKey: appId, moabAppSecretKey: appSecret});
 
@@ -51,7 +51,7 @@ extension MoabCommonRequests on MoabHttpClient {
   }
 
   Future<Response> getMaskedCommunicationMethods(String username) async {
-    final url = combineUrl(endpointGetMaskedCommunicationMethods,
+    final url = await combineUrl(endpointGetMaskedCommunicationMethods,
         args: {varUsername: Uri.encodeQueryComponent(username)});
     final header = defaultHeader;
     return this.get(Uri.parse(url), headers: header);

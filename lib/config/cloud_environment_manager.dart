@@ -56,6 +56,8 @@ class CloudEnvironmentManager {
 
   static CloudEnvironmentManager? _singleton;
 
+
+
   void update(CloudConfig config) {
     if (_config == config) return;
     _config = config;
@@ -95,6 +97,8 @@ class CloudEnvironmentManager {
     // put secret alone with id as the key
     await pref.setString(app.id, app.appSecret!);
     _app = app;
+    // TODO #REFACTOR to revisit here again
+    await Future.delayed(Duration(seconds: 1));
   }
 
   Future<void> fetchCloudApp() async {

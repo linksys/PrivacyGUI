@@ -19,6 +19,7 @@ class SetupState extends Equatable {
   final String wifiPassword;
   final String adminPassword;
   final String passwordHint;
+  final String networkId;
   final AccountInfo? accountInfo;
 
   const SetupState({
@@ -26,6 +27,7 @@ class SetupState extends Equatable {
     required this.wifiSSID,
     required this.wifiPassword,
     required this.adminPassword,
+    required this.networkId,
     this.passwordHint = '',
     required this.accountInfo,
   });
@@ -35,6 +37,7 @@ class SetupState extends Equatable {
         wifiSSID = '',
         wifiPassword = '',
         adminPassword = '',
+        networkId = '',
         passwordHint = '',
         accountInfo = null;
 
@@ -43,6 +46,7 @@ class SetupState extends Equatable {
     String? wifiSSID,
     String? wifiPassword,
     String? adminPassword,
+    String? networkId,
     String? passwordHint,
     AccountInfo? accountInfo,
   }) {
@@ -51,6 +55,7 @@ class SetupState extends Equatable {
       wifiSSID: wifiSSID ?? this.wifiSSID,
       wifiPassword: wifiPassword ?? this.wifiPassword,
       adminPassword: adminPassword ?? this.adminPassword,
+      networkId: networkId ?? this.networkId,
       passwordHint: passwordHint ?? this.passwordHint,
       accountInfo: accountInfo ?? this.accountInfo,
     );
@@ -59,6 +64,7 @@ class SetupState extends Equatable {
   @override
   List<Object?> get props => [
         resumePoint,
+        networkId,
         wifiSSID,
         wifiPassword,
         adminPassword,

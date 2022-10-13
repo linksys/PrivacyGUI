@@ -29,6 +29,7 @@ class SetupFinishedView extends ArgumentsStatelessView {
   final Widget wifiIcon = Image.asset('assets/images/wifi_logo_grey.png');
   final Widget lockIcon = Image.asset('assets/images/lock_icon.png');
   final Widget portraitIcon = Image.asset('assets/images/portrait_icon.png');
+  final Widget routerIcon = const Icon(Icons.router_sharp);
 
   @override
   Widget build(BuildContext context) {
@@ -37,62 +38,34 @@ class SetupFinishedView extends ArgumentsStatelessView {
         header: BasicHeader(
           title: getAppLocalizations(context).wifi_ready_view_title,
         ),
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(
-              height: 48,
-            ),
-            DescriptionText(
-                text: getAppLocalizations(context).wifi_ready_view_connect_to),
-            const SizedBox(height: 8),
-            BlocBuilder<SetupBloc, SetupState>(
-                buildWhen: (previous, current) =>
-                    previous.wifiSSID != current.wifiSSID,
-                builder: (context, state) {
-                  return infoCard(context, wifiIcon,
-                      getAppLocalizations(context).wifi_name, state.wifiSSID);
-                }),
-            const SizedBox(height: 8),
-            BlocBuilder<SetupBloc, SetupState>(
-                buildWhen: (previous, current) =>
-                    previous.wifiPassword != current.wifiPassword,
-                builder: (context, state) {
-                  return infoCard(
-                      context,
-                      lockIcon,
-                      getAppLocalizations(context).wifi_password,
-                      state.wifiPassword);
-                }),
-            const SizedBox(height: 58),
-            DescriptionText(
-                text: getAppLocalizations(context).wifi_ready_view_login_info),
-            const SizedBox(height: 8),
-            // TODO handle local login
-            FutureBuilder<void>(
-              future: context.read<AccountCubit>().fetchAccount(),
-              builder: (context, snapshot) {
-                return infoCard(
-                    context,
-                    portraitIcon,
-                    getAppLocalizations(context).linksys_account,
-                    context.read<AccountCubit>().state.username);
-                // if (state is AuthCloudLoginState) {
-                //   return infoCard(
-                //       context,
-                //       portraitIcon,
-                //       getAppLocalizations(context).linksys_account,
-                //       state.accountInfo.username);
-                // } else if (state is AuthLocalLoginState) {
-                //   return infoCard(context, portraitIcon, "router password",
-                //       state.localLoginInfo.routerPassword);
-                // } else {
-                //   return const Divider(height: 0);
-                // }
-              },
-            ),
-          ],
-        ),
+        content: BlocBuilder<SetupBloc, SetupState>(builder: (context, state) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(
+                height: 48,
+              ),
+              DescriptionText(
+                  text:
+                      getAppLocalizations(context).wifi_ready_view_connect_to),
+              const SizedBox(height: 8),
+              infoCard(context, wifiIcon,
+                  getAppLocalizations(context).wifi_name, state.wifiSSID),
+              const SizedBox(height: 8),
+              infoCard(
+                  context,
+                  lockIcon,
+                  getAppLocalizations(context).wifi_password,
+                  state.wifiPassword),
+              const SizedBox(height: 58),
+              DescriptionText(
+                  text:
+                      getAppLocalizations(context).wifi_ready_view_login_info),
+              const SizedBox(height: 8),
+              _accountInfoCard(context, state),
+            ],
+          );
+        }),
         footer: PrimaryButton(
           text: getAppLocalizations(context).go_to_dashboard,
           onPress: () {
@@ -102,6 +75,22 @@ class SetupFinishedView extends ArgumentsStatelessView {
         alignment: CrossAxisAlignment.start,
       ),
     );
+  }
+
+  Widget _accountInfoCard(BuildContext context, SetupState state) {
+    return state.adminPassword.isEmpty
+        ? FutureBuilder<void>(
+            future: context.read<AccountCubit>().fetchAccount(),
+            builder: (context, snapshot) {
+              return infoCard(
+                  context,
+                  portraitIcon,
+                  getAppLocalizations(context).linksys_account,
+                  context.read<AccountCubit>().state.username);
+            },
+          )
+        : infoCard(
+            context, routerIcon, "Router password", state.adminPassword);
   }
 }
 

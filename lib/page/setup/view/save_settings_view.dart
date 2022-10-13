@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:linksys_moab/bloc/account/_account.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
@@ -31,12 +32,14 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
   late final SetupBloc _setupBloc;
   late final AuthBloc _authBloc;
   late final ConnectivityCubit _connectivityCubit;
+  late final AccountCubit _accountCubit;
 
   @override
   void initState() {
     _setupBloc = context.read<SetupBloc>();
     _authBloc = context.read<AuthBloc>();
     _connectivityCubit = context.read<ConnectivityCubit>();
+    _accountCubit = context.read<AccountCubit>();
     super.initState();
     _setupBloc.add(SaveRouterSettings());
   }
@@ -57,9 +60,9 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
           .then((value) => _authBloc.add(CloudLogin()));
     } else if (_setupBloc.state.adminPassword.isNotEmpty) {
       logger.d('SaveSettings:: _processLogin(): local login');
-      _authBloc
-          .localLogin(_setupBloc.state.adminPassword);
-    } else if (_authBloc.state is AuthCloudLoginState || _authBloc.state is AuthLocalLoginState) {
+      _authBloc.localLogin(_setupBloc.state.adminPassword);
+    } else if (_authBloc.state is AuthCloudLoginState ||
+        _authBloc.state is AuthLocalLoginState) {
       NavigationCubit.of(context).clearAndPush(SetupFinishPath());
     }
   }
@@ -74,11 +77,24 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
       _tryConnectMQTT().then((value) {
         if (value) {
           logger.d('SaveSettings:: _listenConnectivityChange(): $value');
+
           _setupBloc
-              .add(const ResumePointChanged(status: SetupResumePoint.finish));
+              .add(FetchNetworkId());
         }
       });
     });
+  }
+
+  Future _associateNetwork() async {
+    await _accountCubit.fetchAccount();
+    // connect to remote broker
+    await _connectivityCubit.connectToRemoteBroker();
+    // get group ID, account ID from cloud
+    final accountId = _accountCubit.state.id;
+    final groupId = _accountCubit.state.groupId;
+    // get network ID from router
+    await _setupBloc.associateNetwork(accountId, groupId);
+    //
   }
 
   Future<bool> _tryConnectMQTT() async {
@@ -104,7 +120,8 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
       listener: (BuildContext context, state) {
         logger.d('SaveSettings:: AuthState changed: ${state.status}');
         if (state is AuthCloudLoginState) {
-          NavigationCubit.of(context).clearAndPush(SetupFinishPath());
+          _associateNetwork().then((value) =>
+              NavigationCubit.of(context).clearAndPush(SetupFinishPath()));
         } else if (state is AuthLocalLoginState) {
           NavigationCubit.of(context).clearAndPush(SetupFinishPath());
         }

@@ -4,6 +4,7 @@ const varMqttNetworkId = '{network_id}';
 
 const keyJnapResult = 'result';
 const keyJnapOutput = 'output';
+const keyJnapResponses = 'responses';
 const keyJnapError = 'error';
 
 const jnapResultOk = 'OK';

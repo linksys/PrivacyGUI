@@ -12,6 +12,7 @@ import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
@@ -21,7 +22,12 @@ import 'package:linksys_moab/page/components/base_components/progress_bars/full_
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
+import 'package:linksys_moab/repository/router/core_extension.dart';
+import 'package:linksys_moab/repository/router/health_check_extension.dart';
+import 'package:linksys_moab/repository/router/owend_network_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
+import 'package:linksys_moab/repository/router/smart_mode_extension.dart';
+import 'package:linksys_moab/repository/router/transactions_extension.dart';
 import 'package:linksys_moab/repository/router/wireless_ap_extension.dart';
 import 'package:linksys_moab/security/app_icon_manager.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
@@ -328,9 +334,21 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Connect',
           onPress: () async {
-            await context.read<ConnectivityCubit>().connectToLocalBroker();
-            final results = await context.read<RouterRepository>().getRadioInfo();
-            logger.d('test results: $results');
+            await context.read<RouterRepository>().connectToLocalWithCloudCert();
+            // await context.read<ConnectivityCubit>().connectToRemoteBroker();
+            await context.read<NetworkCubit>().getDeviceInfo();
+            // await context.read<NetworkCubit>().getRadioInfo();
+
+            // await context.read<RouterRepository>().connectToRemote();
+
+            // await context.read<RouterRepository>().getSupportedDeviceMode();
+
+            final results = await context.read<RouterRepository>().setUnsecuredWiFiWarning(false);
+            final results2 = await context.read<RouterRepository>().getOwnedNetworkID();
+            //
+            // await context.read<RouterRepository>().setUnsecuredWiFiWarning(false);
+
+            // logger.d('test results: $results');
           },
         ),
         Text(

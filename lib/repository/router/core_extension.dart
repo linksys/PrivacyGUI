@@ -68,4 +68,17 @@ extension CoreService on RouterRepository {
     final result = await command.publish(mqttClient!);
     return handleJnapResult(result.body);
   }
+
+  Future<JnapSuccess> getUnsecuredWiFiWarning() async {
+    final command = createCommand(JNAPAction.getUnsecuredWiFiWarning.actionValue,);
+
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
+  Future<JnapSuccess> setUnsecuredWiFiWarning(bool enabled) async {
+    final command = createCommand(JNAPAction.setUnsecuredWiFiWarning.actionValue, data: {'enabled': enabled});
+
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
 }
