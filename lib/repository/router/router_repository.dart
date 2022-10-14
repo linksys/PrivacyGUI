@@ -62,7 +62,7 @@ class RouterRepository with StateStreamListener {
   String? _groupId;
   String? _networkId;
 
-  AuthMethod _loginType = AuthMethod.none;
+  LoginFrom _loginType = LoginFrom.none;
   RouterType _routerType = RouterType.others;
 
   Future<bool> downloadRemoteCert() async {
@@ -99,11 +99,11 @@ class RouterRepository with StateStreamListener {
   }
 
   Future<bool> connectToBroker() async {
-    if (_loginType == AuthMethod.remote) {
+    if (_loginType == LoginFrom.remote) {
       return _routerType == RouterType.managedMoab
           ? connectToLocalWithCloudCert()
           : connectToRemote();
-    } else if (_loginType == AuthMethod.local) {
+    } else if (_loginType == LoginFrom.local) {
       return connectToLocalWithPassword();
     } else {
       return false;
@@ -159,7 +159,7 @@ class RouterRepository with StateStreamListener {
   }
 
   Future<bool> connectToLocalWithCloudCert() async {
-    if (_loginType != AuthMethod.remote) {
+    if (_loginType != LoginFrom.remote) {
       return false;
     }
     final pref = await SharedPreferences.getInstance();
@@ -291,16 +291,16 @@ class RouterRepository with StateStreamListener {
         'Router repository:: _handleAuthChanged: $state, ${state.runtimeType}');
     final pref = await SharedPreferences.getInstance();
     if (state is AuthCloudLoginState) {
-      _loginType = AuthMethod.remote;
+      _loginType = LoginFrom.remote;
       _brokerUrl =
           CloudEnvironmentManager().currentConfig?.transport.mqttBroker;
-      // connectToBroker();
+      connectToBroker();
     } else if (state is AuthLocalLoginState) {
-      _loginType = AuthMethod.local;
+      _loginType = LoginFrom.local;
       localPassword = pref.getString(moabPrefLocalPassword);
-      // connectToLocalWithPassword();
+      connectToLocalWithPassword();
     } else if (state is AuthUnAuthorizedState) {
-      _loginType = AuthMethod.none;
+      _loginType = LoginFrom.none;
       connectType = MqttConnectType.none;
       // remove all information
       localPassword = 'admin';
