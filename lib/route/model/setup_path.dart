@@ -99,7 +99,11 @@ class SetupParentQrCodeScanPath extends SetupParentPath {
 
 class SetupParentManualPath extends SetupParentPath {}
 
-class SetupParentLocationPath extends SetupParentPath {}
+class SetupParentLocationPath extends SetupParentPath {
+  @override
+  PageConfig get pageConfig =>
+      super.pageConfig..isFullScreenDialog = true;
+}
 
 class SetupParentManualEnterSSIDPath extends SetupParentPath {}
 

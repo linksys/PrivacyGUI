@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/connectivity/state.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
@@ -94,9 +95,10 @@ class RouterRepository with StateStreamListener {
     _brokerUrl = CloudEnvironmentManager().currentConfig?.transport.mqttBroker;
     int port = CloudEnvironmentManager().currentConfig?.transport.port ?? 8883;
     final pref = await SharedPreferences.getInstance();
+    const storage = FlutterSecureStorage();
     String cert = pref.getString(moabPrefRemoteCaCert) ?? '';
     String publicKey = pref.getString(moabPrefCloudPublicKey) ?? '';
-    String privateKey = pref.getString(moabPrefCloudPrivateKey) ?? '';
+    String privateKey = await storage.read(key: moabPrefCloudPrivateKey) ?? '';
     String accountId = pref.getString(moabPrefCloudAccountId) ?? '';
     if (accountId.isEmpty) {
       // TODO #ERRORHANDLING No account information
@@ -139,9 +141,10 @@ class RouterRepository with StateStreamListener {
 
   Future<bool> connectToLocalWithCloudCert() async {
     final pref = await SharedPreferences.getInstance();
+    const storage = FlutterSecureStorage();
     String cert = pref.getString(moabPrefLocalCert) ?? '';
     String publicKey = pref.getString(moabPrefCloudPublicKey) ?? '';
-    String privateKey = pref.getString(moabPrefCloudPrivateKey) ?? '';
+    String privateKey = await storage.read(key: moabPrefCloudPrivateKey) ?? '';
     if (cert.isEmpty) {
       await downloadLocalCert();
       cert = pref.getString(moabPrefLocalCert) ?? '';
@@ -280,6 +283,6 @@ class RouterRepository with StateStreamListener {
       return;
     }
     // reconnect again
-    await connectToRemote();
+    // await connectToRemote();
   }
 }

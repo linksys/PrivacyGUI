@@ -48,3 +48,9 @@ class SetAdminPasswordHint extends SetupEvent {
 class SaveRouterSettings extends SetupEvent {}
 
 class FetchNetworkId extends SetupEvent {}
+
+class SetRouterLocation extends SetupEvent {
+  const SetRouterLocation({required this.location});
+
+  final String location;
+}

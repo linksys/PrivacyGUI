@@ -23,6 +23,7 @@ class SetupState extends Equatable {
   final String passwordHint;
   final String networkId;
   final AccountInfo? accountInfo;
+  final String deviceLocation;
 
   const SetupState({
     required this.resumePoint,
@@ -32,6 +33,7 @@ class SetupState extends Equatable {
     required this.networkId,
     this.passwordHint = '',
     required this.accountInfo,
+    required this.deviceLocation,
   });
 
   const SetupState.init()
@@ -41,7 +43,8 @@ class SetupState extends Equatable {
         adminPassword = '',
         networkId = '',
         passwordHint = '',
-        accountInfo = null;
+        accountInfo = null,
+        deviceLocation = 'Router';
 
   SetupState copyWith({
     SetupResumePoint? resumePoint,
@@ -51,6 +54,7 @@ class SetupState extends Equatable {
     String? networkId,
     String? passwordHint,
     AccountInfo? accountInfo,
+    String? deviceLocation,
   }) {
     return SetupState(
       resumePoint: resumePoint ?? this.resumePoint,
@@ -60,6 +64,7 @@ class SetupState extends Equatable {
       networkId: networkId ?? this.networkId,
       passwordHint: passwordHint ?? this.passwordHint,
       accountInfo: accountInfo ?? this.accountInfo,
+      deviceLocation: deviceLocation ?? this.deviceLocation,
     );
   }
 
@@ -71,6 +76,7 @@ class SetupState extends Equatable {
         wifiPassword,
         adminPassword,
         passwordHint,
-        accountInfo
+        accountInfo,
+        deviceLocation,
       ];
 }
