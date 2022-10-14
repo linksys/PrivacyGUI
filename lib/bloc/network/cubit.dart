@@ -44,7 +44,12 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   ///
 
   Future<List<CloudNetwork>> getNetworks({required String accountId}) async {
-    return await _networksRepository.getNetworks(accountId: accountId);
+    final networks = await _networksRepository.getNetworks(accountId: accountId);
+    if (networks.length == 1) {
+      await getDeviceInfo();
+    } else {
+    }
+    return networks;
   }
 
   ///

@@ -16,6 +16,7 @@ import 'package:linksys_moab/bloc/device/cubit.dart';
 import 'package:linksys_moab/bloc/internet_check/cubit.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
+import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/better_action.dart';
@@ -48,9 +49,9 @@ void main() {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    if (!kReleaseMode) {
-      MqttLogger.loggingOn = true;
-    }
+    // if (!kReleaseMode) {
+    //   MqttLogger.loggingOn = true;
+    // }
     logger.d('Done for init Firebase Core');
     initCloudMessage();
     // Pass all uncaught errors from the framework to Crashlytics.
@@ -148,6 +149,7 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
     _cubit.stop();
     apnsStreamSubscription?.cancel();
     releaseErrorResponseStream();
+    CloudEnvironmentManager().release();
     super.dispose();
   }
 

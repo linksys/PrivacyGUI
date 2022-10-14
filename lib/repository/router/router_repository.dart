@@ -11,6 +11,7 @@ import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
+import 'package:linksys_moab/network/http/model/cloud_config.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
 import 'package:linksys_moab/network/mqtt/mqtt_client_wrap.dart';
 import 'package:linksys_moab/repository/security_context_loader_mixin.dart';
@@ -39,7 +40,9 @@ class CommandWrap {
 }
 
 class RouterRepository with StateStreamListener {
-  RouterRepository();
+  RouterRepository() {
+    CloudEnvironmentManager().register(this);
+  }
 
   MqttClientWrap? _mqttClient;
 
@@ -241,6 +244,8 @@ class RouterRepository with StateStreamListener {
       _handleConnectivityChanged(event);
     } else if (event is AuthState) {
       _handleAuthChanged(event);
+    } else if (event is CloudConfig) {
+      _onRegionChanged(event);
     }
   }
 
@@ -268,5 +273,13 @@ class RouterRepository with StateStreamListener {
       localPassword = 'admin';
       disconnect();
     }
+  }
+
+  _onRegionChanged(CloudConfig config) async {
+    if (_brokerUrl == config.transport.mqttBroker) {
+      return;
+    }
+    // reconnect again
+    await connectToRemote();
   }
 }

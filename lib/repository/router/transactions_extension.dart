@@ -4,6 +4,7 @@ import 'package:linksys_moab/network/better_action.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/transaction.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
+import 'package:linksys_moab/repository/router/smart_mode_extension.dart';
 
 extension TransactionCommands on RouterRepository {
   Future<JnapSuccess> configureRouter({
@@ -11,32 +12,30 @@ extension TransactionCommands on RouterRepository {
     required String passwordHint,
     required List<SimpleWiFiSettings> settings,
   }) async {
-    final transaction = JNAPTransaction(
-      publishTopic: mqttLocalPublishTopic,
-      responseTopic: mqttLocalResponseTopic,
-      payload: [
-        {
-          'action': JNAPAction.coreSetAdminPassword.actionValue,
-          'request': {
+    final deviceMode = (await getDeviceMode()).output['mode'] ?? 'Unconfigured';
+    var payload = [
+      JNAPTransaction.wrapCommandPayload(
+          action: JNAPAction.coreSetAdminPassword,
+          data: {
             'adminPassword': 'admin',
             // TODO #REFACTOR currently don't modify the password
             'passwordHint': passwordHint,
-          }
-        },
-        // TODO #REFACTOR check device mode first
-        {
-          'action': JNAPAction.setDeviceMode.actionValue,
-          'request': {'mode': 'Master'}
-        },
-        {
-          'action': JNAPAction.setUnsecuredWiFiWarning.actionValue,
-          'request': {'enabled': false}
-        },
-        {
-          'action': JNAPAction.setSimpleWiFiSettings.actionValue,
-          'request': {'simpleWiFiSettings': settings}
-        },
-      ],
+          }),
+      JNAPTransaction.wrapCommandPayload(
+          action: JNAPAction.setDeviceMode, data: {'mode': 'Master'}),
+      JNAPTransaction.wrapCommandPayload(
+          action: JNAPAction.setUnsecuredWiFiWarning, data: {'enabled': false}),
+      JNAPTransaction.wrapCommandPayload(
+          action: JNAPAction.setSimpleWiFiSettings,
+          data: {'simpleWiFiSettings': settings}),
+    ];
+    if (deviceMode == 'Master') {
+      payload.removeWhere((element) => element['action'] == JNAPAction.setDeviceMode);
+    }
+    final transaction = JNAPTransaction(
+      publishTopic: mqttLocalPublishTopic,
+      responseTopic: mqttLocalResponseTopic,
+      payload: payload,
     );
     final result = await transaction.publish(mqttClient!);
     return handleJnapResult(result.body);

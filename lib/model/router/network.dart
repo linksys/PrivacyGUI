@@ -5,12 +5,13 @@ import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/model/router/wan_status.dart';
 
 class MoabNetwork extends Equatable {
-  const MoabNetwork(
-      {required this.id,
-      required this.deviceInfo,
-      this.wanStatus,
-      this.radioInfo,
-      this.devices});
+  const MoabNetwork({
+    required this.id,
+    required this.deviceInfo,
+    this.wanStatus,
+    this.radioInfo,
+    this.devices,
+  });
 
   final String id;
   final RouterDeviceInfo deviceInfo;

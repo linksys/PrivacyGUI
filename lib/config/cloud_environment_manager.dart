@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
+import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
@@ -33,7 +35,7 @@ final resourceDownloadTimeThreshold = {
   CloudResourceType.appSignature: const Duration(days: 1).inMilliseconds,
 };
 
-class CloudEnvironmentManager {
+class CloudEnvironmentManager with StateStreamRegister {
   CloudConfig? _config;
   CloudApp? _app;
   final List<CloudConfig> _allConfigs = [];
@@ -52,12 +54,24 @@ class CloudEnvironmentManager {
     return _singleton!;
   }
 
-  CloudEnvironmentManager._();
+  CloudEnvironmentManager._() {
+    shareStream = stream;
+  }
 
   static CloudEnvironmentManager? _singleton;
 
+  release() {
+    unregisterAll();
+  }
 
-
+  bool applyNewConfig(String region) {
+    final newRegion = _allConfigs.firstWhereOrNull((element) => element.region == region);
+    if (newRegion == null) {
+      return false;
+    }
+    update(newRegion);
+    return true;
+  }
   void update(CloudConfig config) {
     if (_config == config) return;
     _config = config;
