@@ -12,7 +12,7 @@ class CounterCommand extends MqttCommand {
   String get responseTopic => 'immediately/response';
 
   @override
-  String get topic => 'immediately';
+  String get publishTopic => 'immediately';
 
   @override
   Duration get responseTimeout => const Duration(seconds: 5);
@@ -25,7 +25,7 @@ class CounterDelay5Command extends CounterCommand {
   String get responseTopic => 'delay/5s/response';
 
   @override
-  String get topic => 'delay/5s';
+  String get publishTopic => 'delay/5s';
 }
 
 class CounterDelay10Command extends CounterCommand {
@@ -35,5 +35,5 @@ class CounterDelay10Command extends CounterCommand {
   String get responseTopic => 'delay/10s/response';
 
   @override
-  String get topic => 'delay/10s';
+  String get publishTopic => 'delay/10s';
 }

@@ -39,7 +39,7 @@ class _SetLocationViewState extends State<SetLocationView> {
   @override
   void initState() {
     super.initState();
-    context.read<SetupBloc>().add(const ResumePointChanged(status: SetupResumePoint.LOCATION));
+    context.read<SetupBloc>().add(const ResumePointChanged(status: SetupResumePoint.location));
     print('Set Location: initState!');
   }
 

@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
-import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -41,7 +41,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
   @override
   void initState() {
     super.initState();
-    _fromSetup = widget.next is SaveCloudSettingsPath ? true : false;
+    _fromSetup = widget.next is SaveSettingsPath ? true : false;
   }
 
   @override

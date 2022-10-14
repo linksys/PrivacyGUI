@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
+import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/model/group_profile.dart';
+import 'package:linksys_moab/model/router/device.dart';
+import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/shortcuts/profiles.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
@@ -26,45 +30,54 @@ class DashboardHomeView extends StatefulWidget {
 
 class _DashboardHomeViewState extends State<DashboardHomeView> {
   @override
-  Widget build(BuildContext context) {
-    return BasePageView.noNavigationBar(
-      scrollable: true,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _homeTitle(),
-          SizedBox(height: 32),
-          _basicTiles(),
-          SizedBox(height: 32),
-          _speedTestTile(2048000, 1024000),
-          SizedBox(height: 32),
-          GestureDetector(
-            onTap: () {
-              NavigationCubit.of(context).push(DeviceListPath());
-            },
-            child: _usageTile(28),
-          ),
-          SizedBox(height: 32),
-          _profileTile(),
-          SizedBox(height: 64),
-          Text(
-            "Send feedback",
-            style: Theme.of(context)
-                .textTheme
-                .headline2
-                ?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          Text(
-            "We love hearing from you",
-            style: Theme.of(context).textTheme.headline3,
-          ),
-        ],
-      ),
-    );
+  void initState() {
+    super.initState();
+
+    context.read<NetworkCubit>().getRadioInfo();
+    context.read<NetworkCubit>().getDevices();
   }
 
-  Widget _homeTitle() {
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<NetworkCubit, NetworkState>(
+        builder: (context, state) => BasePageView.noNavigationBar(
+              scrollable: true,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _homeTitle(state),
+                  SizedBox(height: 32),
+                  _basicTiles(state),
+                  SizedBox(height: 32),
+                  _speedTestTile(2048000, 1024000),
+                  SizedBox(height: 32),
+                  GestureDetector(
+                    onTap: () {
+                      NavigationCubit.of(context).push(DeviceListPath());
+                    },
+                    child: _usageTile(getConnectionDeviceCount(state.selected?.devices)),
+                  ),
+                  SizedBox(height: 32),
+                  _profileTile(),
+                  SizedBox(height: 64),
+                  Text(
+                    "Send feedback",
+                    style: Theme.of(context)
+                        .textTheme
+                        .headline2
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  Text(
+                    "We love hearing from you",
+                    style: Theme.of(context).textTheme.headline3,
+                  ),
+                ],
+              ),
+            ));
+  }
+
+  Widget _homeTitle(NetworkState state) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,12 +87,10 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Image.asset('assets/images/dashboard_home.png'),
-            SizedBox(
-              width: 8,
-            ),
+            box8(),
             Expanded(
               child: Text(
-                'Home',
+                state.selected?.radioInfo?.first.settings.ssid ?? 'Home',
                 style: Theme.of(context)
                     .textTheme
                     .headline1
@@ -105,7 +116,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
     );
   }
 
-  Widget _basicTiles() {
+  Widget _basicTiles(NetworkState state) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,7 +134,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('2',
+                    Text(getWifiCount(state.selected?.radioInfo),
                         style: Theme.of(context).textTheme.headline1?.copyWith(
                             fontSize: 32, fontWeight: FontWeight.w400)),
                     Text('active', style: Theme.of(context).textTheme.headline3)
@@ -132,7 +143,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
               ),
             ),
             _blockTile(
-              'NODES',
+              'ROUTER + NODES',
               GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onTap: () {
@@ -141,7 +152,8 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('3',
+                    Text(
+                        getRouterCount(state.selected?.devices),
                         style: Theme.of(context).textTheme.headline1?.copyWith(
                             fontSize: 32, fontWeight: FontWeight.w400)),
                     Text('online', style: Theme.of(context).textTheme.headline3)
@@ -335,5 +347,41 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
         child: profileTileShort(context, profile),
       ),
     );
+  }
+
+  String getWifiCount(List<RouterRadioInfo>? radioInfo) {
+    if (radioInfo != null && radioInfo.isNotEmpty) {
+      Map<String, bool> count = {};
+      for (RouterRadioInfo info in radioInfo) {
+        count[info.settings.ssid] = true;
+      }
+      return count.length.toString();
+    }
+    return '0';
+  }
+
+  String getRouterCount(List<Device>? devices) {
+    int routerCount = 0;
+    if (devices != null && devices.isNotEmpty) {
+      for (Device device in devices) {
+        if (device.isAuthority || device.nodeType != null) {
+          routerCount += 1;
+        }
+      }
+    }
+    return routerCount.toString();
+  }
+
+  int getConnectionDeviceCount(List<Device>? devices) {
+    int deviceCount = 0;
+    if (devices != null && devices.isNotEmpty) {
+      for (Device device in devices) {
+        if (!device.isAuthority && device.nodeType == null) {
+          deviceCount += 1;
+        }
+      }
+    }
+
+    return deviceCount;
   }
 }

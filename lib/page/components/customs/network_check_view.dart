@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:linksys_moab/bloc/connectivity/connectivity_info.dart';
 import 'package:linksys_moab/bloc/connectivity/cubit.dart';
+import 'package:linksys_moab/bloc/connectivity/state.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/util/permission.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -44,8 +44,8 @@ class _NetworkCheckViewState extends State<NetworkCheckView> with Permissions {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ConnectivityCubit, ConnectivityInfo>(
-        builder: (context, info) => Column(
+    return BlocBuilder<ConnectivityCubit, ConnectivityState>(
+        builder: (context, state) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -63,7 +63,7 @@ class _NetworkCheckViewState extends State<NetworkCheckView> with Permissions {
                   height: 12,
                 ),
                 Text(
-                  info.ssid,
+                  state.connectivityInfo.ssid ?? '',
                   style: Theme.of(context)
                       .textTheme
                       .headline3

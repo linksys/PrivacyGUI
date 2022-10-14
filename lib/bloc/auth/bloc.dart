@@ -2,9 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
@@ -13,8 +16,10 @@ import 'package:linksys_moab/network/http/model/cloud_session_data.dart';
 import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
 import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
-import 'package:linksys_moab/repository/authenticate/local_auth_repository.dart';
 import 'package:linksys_moab/repository/model/dummy_model.dart';
+import 'package:linksys_moab/repository/router/batch_extension.dart';
+import 'package:linksys_moab/repository/router/core_extension.dart';
+import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,15 +31,16 @@ import '../../network/http/model/cloud_login_state.dart';
 import '../../network/http/model/cloud_preferences.dart';
 import '../../utils.dart';
 
-class AuthBloc extends Bloc<AuthEvent, AuthState> {
+class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
   final AuthRepository _repository;
-  final LocalAuthRepository _localAuthRepository;
+  final RouterRepository _routerRepository;
   StreamSubscription? _errorStreamSubscription;
 
-  AuthBloc(
-      {required AuthRepository repo, required LocalAuthRepository localRepo})
-      : _repository = repo,
-        _localAuthRepository = localRepo,
+  AuthBloc({
+    required AuthRepository repo,
+    required RouterRepository routerRepo,
+  })  : _repository = repo,
+        _routerRepository = routerRepo,
         super(AuthState.unknownAuth()) {
     on<InitAuth>(_onInitAuth);
     on<OnCloudLogin>(_onCloudLogin);
@@ -54,13 +60,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     //
     _errorStreamSubscription = errorResponseStream.listen((error) {
-      logger.e('Receive http response error: ${error.status}, ${error.code}, ${error.errorMessage}');
+      logger.e(
+          'Receive http response error: ${error.status}, ${error.code}, ${error.errorMessage}');
       if (error.status == 401) {
         add(Unauthorized());
       }
     });
+    //
+    shareStream = stream;
+    register(routerRepo);
   }
-
 
   @override
   Future<void> close() {
@@ -69,6 +78,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   _onInitAuth(InitAuth event, Emitter<AuthState> emit) async {
+    // TODO add local auth check
     logger.d('check auth status');
     final isValid = await checkCertValidation();
     logger.d('is auth valid: $isValid');
@@ -77,7 +87,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthState.unAuthorized());
       }
 
-      emit(AuthState.authorized());
+      emit(AuthState.cloudAuthorized());
     } else {
       emit(AuthState.unAuthorized());
     }
@@ -103,8 +113,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   _authorized(Authorized event, Emitter<AuthState> emit) {
     if (event.isDuringSetup) {
+    } else if (event.isCloud) {
+      emit(AuthState.cloudAuthorized());
     } else {
-      emit(AuthState.authorized());
+      emit(AuthState.localAuthorized());
     }
   }
 
@@ -227,9 +239,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
 
       await CloudEnvironmentManager().checkSmartDevice();
-      final publicKey = pref.getString(moabPrefCloudPublicKey) ?? '';
-      final privateKey = pref.getString(moabPrefCloudPrivateKey) ?? '';
-      emit(AuthState.authorized());
+      emit(AuthState.cloudAuthorized());
     } else {
       // TODO
       add(Unauthorized());
@@ -243,15 +253,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } else {}
   }
 
-  void _localLogin(LocalLogin event, Emitter<AuthState> emit) {}
+  void _localLogin(LocalLogin event, Emitter<AuthState> emit) async {
+    // Authorized
+    final pref = await SharedPreferences.getInstance();
+    pref.setString(moabPrefLocalPassword, event.password);
+    emit(AuthState.localAuthorized());
+  }
 
   void _onLogout(Logout event, Emitter<AuthState> emit) {
     // Don't remove all keys on shared preferences when logging out
     SharedPreferences.getInstance().then((prefs) {
       prefs.remove(moabPrefSessionDataKey);
-      // prefs.remove(moabPrefCloudCertDataKey);
       // prefs.remove(moabPrefCloudPublicKey);
-      // prefs.remove(moabPrefCloudPrivateKey);
       emit(AuthState.unAuthorized());
     });
   }
@@ -497,15 +510,19 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<bool> checkCertValidation() async {
+    const storage = FlutterSecureStorage();
+    String? privateKey = await storage.read(key: moabPrefCloudPrivateKey);
+    String? cert = await storage.read(key: moabPrefCloudCertDataKey);
+
     final prefs = await SharedPreferences.getInstance();
     bool isKeyExist = prefs.containsKey(moabPrefCloudPublicKey) &
-        prefs.containsKey(moabPrefCloudPrivateKey) &
-        prefs.containsKey(moabPrefCloudCertDataKey);
+        (privateKey != null) &
+        (cert != null);
     if (!isKeyExist) {
       return false;
     }
     final certData = CloudDownloadCertData.fromJson(
-        jsonDecode(prefs.getString(moabPrefCloudCertDataKey) ?? ''));
+        jsonDecode(cert ?? ''));
     final expiredDate = DateTime.parse(certData.expiration);
     if (expiredDate.millisecondsSinceEpoch -
             DateTime.now().millisecondsSinceEpoch <
@@ -531,13 +548,13 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<void> extendCertification() async {
-    final pref = await SharedPreferences.getInstance();
-    if (!pref.containsKey(moabPrefCloudCertDataKey)) {
+    const storage = FlutterSecureStorage();
+    String? cert = await storage.read(key: moabPrefCloudCertDataKey);
+    if (cert == null) {
       logger.d('extend certification: original cert data does not exist!');
       return;
     }
-    final certStr = pref.getString(moabPrefCloudCertDataKey);
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(certStr!));
+    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert!));
     final newCertInfo =
         await _repository.extendCertificate(certId: certData.id);
     await delayDownloadCertTime(newCertInfo.downloadTime);
@@ -547,14 +564,15 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<void> requestSession() async {
-    final pref = await SharedPreferences.getInstance();
-    if (!pref.containsKey(moabPrefCloudCertDataKey)) {
+    const storage = FlutterSecureStorage();
+    String? cert = await storage.read(key: moabPrefCloudCertDataKey);
+    if (cert == null) {
       logger.d('extend certification: original cert data does not exist!');
       return;
     }
-    final certStr = pref.getString(moabPrefCloudCertDataKey);
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(certStr!));
+    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert!));
     final session = await _repository.requestSession(certId: certData.id);
+    final pref = await SharedPreferences.getInstance();
     pref.setString(moabPrefSessionDataKey, jsonEncode(session.toJson()));
   }
 
@@ -583,34 +601,25 @@ extension AuthBlocCloud on AuthBloc {
 }
 
 extension AuthBlocLocal on AuthBloc {
-  Future<DummyModel> localLogin(String password) async {
-    return await _localAuthRepository.localLogin(password);
-  }
-
-  Future<DummyModel> verifyRecoveryKey(String key) async {
-    return await _localAuthRepository.verifyRecoveryKey(key);
-  }
-
-  Future<String> getMaskedEmail() async {
-    return await _localAuthRepository
-        .getMaskedEmail()
-        .then((value) => value['maskedEmail']);
+  Future<bool> localLogin(String password) async {
+    final result = await _routerRepository.checkAdminPassword(password);
+    if (result.result == jnapResultOk) {
+      add(LocalLogin(password));
+      return true;
+    }
+    return false;
   }
 
   Future<AdminPasswordInfo> getAdminPasswordInfo() async {
-    return await _localAuthRepository.getAdminPasswordInfo().then((value) =>
+    return await _routerRepository.getAdminPasswordHint().then((value) =>
         AdminPasswordInfo(
-            hasAdminPassword: value['hasAdminPassword'] ?? false,
-            hint: value['hint'] ?? ''));
-  }
-
-  Future<DummyModel> getAccountInfo() async {
-    return await _localAuthRepository.getCloudAccount();
+            hasAdminPassword: value.output.containsKey('passwordHint'),
+            hint: value.output['passwordHint'] ?? ''));
   }
 
   Future<DummyModel> createPassword(String password, String hint) async {
-    return await _localAuthRepository
-        .createPassword(password, hint)
+    return await _routerRepository
+        .createAdminPassword(password, hint)
         .then((value) => _handleCreatePassword(password, hint));
   }
 

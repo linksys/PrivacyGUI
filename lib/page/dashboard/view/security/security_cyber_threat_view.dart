@@ -204,8 +204,6 @@ class _SecurityCyberThreatViewState extends State<SecurityCyberThreatView> {
     switch(currentType) {
       case CyberthreatType.virus:
         return 'Virus blocked ${dummyData.length}';
-      case CyberthreatType.malware:
-        return 'Ransomware & Malware blocked ${dummyData.length}';
       case CyberthreatType.botnet:
         return 'Botnet blocked ${dummyData.length}';
       case CyberthreatType.website:
@@ -217,8 +215,6 @@ class _SecurityCyberThreatViewState extends State<SecurityCyberThreatView> {
     switch(currentType) {
       case CyberthreatType.virus:
         return 'VIRUS';
-      case CyberthreatType.malware:
-        return 'MALWARE';
       case CyberthreatType.botnet:
         return 'BOTNET';
       case CyberthreatType.website:

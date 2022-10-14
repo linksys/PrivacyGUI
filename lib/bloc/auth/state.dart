@@ -1,10 +1,12 @@
 import 'package:equatable/equatable.dart';
+import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/network/http/model/cloud_phone.dart';
 
 enum AuthStatus {
   unknownAuth,
   unAuthorized,
-  authorized,
+  cloudAuthorized,
+  localAuthorized,
   pending,
   onCloudLogin,
   onLocalLogin,
@@ -124,15 +126,19 @@ class AuthState extends Equatable {
   });
 
   factory AuthState.unknownAuth() {
-    return const AuthState(status: AuthStatus.unknownAuth);
+    return const AuthUnknownState();
   }
 
   factory AuthState.unAuthorized() {
-    return const AuthState(status: AuthStatus.unAuthorized);
+    return const AuthUnAuthorizedState();
   }
 
-  factory AuthState.authorized() {
+  factory AuthState.cloudAuthorized() {
     return const AuthCloudLoginState();
+  }
+
+  factory AuthState.localAuthorized() {
+    return const AuthLocalLoginState();
   }
 
   factory AuthState.onCloudLogin(
@@ -155,16 +161,25 @@ class AuthState extends Equatable {
       ];
 }
 
+class AuthUnknownState extends AuthState {
+  const AuthUnknownState()
+      : super(status: AuthStatus.unknownAuth);
+}
+
+class AuthUnAuthorizedState extends AuthState {
+  const AuthUnAuthorizedState()
+      : super(status: AuthStatus.unAuthorized);
+}
+
 class AuthCloudLoginState extends AuthState {
   const AuthCloudLoginState()
-      : super(status: AuthStatus.authorized);
+      : super(status: AuthStatus.cloudAuthorized);
 }
 
 class AuthLocalLoginState extends AuthState {
-  const AuthLocalLoginState({required this.localLoginInfo})
-      : super(status: AuthStatus.authorized);
+  const AuthLocalLoginState()
+      : super(status: AuthStatus.localAuthorized);
 
-  final LocalLoginInfo localLoginInfo;
 }
 
 class AuthOnCloudLoginState extends AuthState {

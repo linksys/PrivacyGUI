@@ -18,7 +18,6 @@ class SecurityBloc extends Bloc<SecurityEvent, SecurityState> {
     //TODO: Remove the fake data
     const inspectionCount = 11;
     const blockedVirusCount = 11;
-    const blockedMalwareCount = 11;
     const blockedBotnetCount = 11;
     const blockedWebsiteCount = 11;
     const incidentCount = 11;
@@ -29,7 +28,6 @@ class SecurityBloc extends Bloc<SecurityEvent, SecurityState> {
     emit(UnsubscribedState(
       numOfInspection: inspectionCount,
       numOfBlockedVirus: blockedVirusCount,
-      numOfBlockedMalware: blockedMalwareCount,
       numOfBlockedBotnet: blockedBotnetCount,
       numOfBlockedWebsite: blockedWebsiteCount,
       numOfIncidents: incidentCount,
@@ -43,7 +41,6 @@ class SecurityBloc extends Bloc<SecurityEvent, SecurityState> {
     //TODO: Remove the fake data
     const inspectionCount = 22;
     const blockedVirusCount = 22;
-    const blockedMalwareCount = 22;
     const blockedBotnetCount = 22;
     const blockedWebsiteCount = 22;
     const incidentCount = 22;
@@ -55,7 +52,6 @@ class SecurityBloc extends Bloc<SecurityEvent, SecurityState> {
     emit(TrialActiveState(
       numOfInspection: inspectionCount,
       numOfBlockedVirus: blockedVirusCount,
-      numOfBlockedMalware: blockedMalwareCount,
       numOfBlockedBotnet: blockedBotnetCount,
       numOfBlockedWebsite: blockedWebsiteCount,
       numOfIncidents: incidentCount,
@@ -70,7 +66,6 @@ class SecurityBloc extends Bloc<SecurityEvent, SecurityState> {
     //TODO: Remove the fake data
     const inspectionCount = 33;
     const blockedVirusCount = 33;
-    const blockedMalwareCount = 33;
     const blockedBotnetCount = 33;
     const blockedWebsiteCount = 33;
     const incidentCount = 33;
@@ -81,7 +76,6 @@ class SecurityBloc extends Bloc<SecurityEvent, SecurityState> {
     emit(FormalActiveState(
       numOfInspection: inspectionCount,
       numOfBlockedVirus: blockedVirusCount,
-      numOfBlockedMalware: blockedMalwareCount,
       numOfBlockedBotnet: blockedBotnetCount,
       numOfBlockedWebsite: blockedWebsiteCount,
       numOfIncidents: incidentCount,
@@ -95,7 +89,6 @@ void _onSetTrialExpiredEvent(SetTrialExpiredEvent event, Emitter<SecurityState> 
   //TODO: Remove the fake data
   const inspectionCount = 44;
   const blockedVirusCount = 44;
-  const blockedMalwareCount = 44;
   const blockedBotnetCount = 44;
   const blockedWebsiteCount = 44;
   const incidentCount = 44;
@@ -106,7 +99,6 @@ void _onSetTrialExpiredEvent(SetTrialExpiredEvent event, Emitter<SecurityState> 
   emit(TrialExpiredState(
     numOfInspection: inspectionCount,
     numOfBlockedVirus: blockedVirusCount,
-    numOfBlockedMalware: blockedMalwareCount,
     numOfBlockedBotnet: blockedBotnetCount,
     numOfBlockedWebsite: blockedWebsiteCount,
     numOfIncidents: incidentCount,
@@ -120,7 +112,6 @@ void _onSetTrialExpiredEvent(SetTrialExpiredEvent event, Emitter<SecurityState> 
     //TODO: Remove the fake data
     const inspectionCount = 55;
     const blockedVirusCount = 55;
-    const blockedMalwareCount = 55;
     const blockedBotnetCount = 55;
     const blockedWebsiteCount = 55;
     const incidentCount = 55;
@@ -131,7 +122,6 @@ void _onSetTrialExpiredEvent(SetTrialExpiredEvent event, Emitter<SecurityState> 
     emit(ExpiredState(
       numOfInspection: inspectionCount,
       numOfBlockedVirus: blockedVirusCount,
-      numOfBlockedMalware: blockedMalwareCount,
       numOfBlockedBotnet: blockedBotnetCount,
       numOfBlockedWebsite: blockedWebsiteCount,
       numOfIncidents: incidentCount,
@@ -146,7 +136,6 @@ void _onSetTrialExpiredEvent(SetTrialExpiredEvent event, Emitter<SecurityState> 
     //TODO: Remove the fake data
     const inspectionCount = 66;
     const blockedVirusCount = 66;
-    const blockedMalwareCount = 66;
     const blockedBotnetCount = 66;
     const blockedWebsiteCount = 66;
     const incidentCount = 66;
@@ -157,7 +146,6 @@ void _onSetTrialExpiredEvent(SetTrialExpiredEvent event, Emitter<SecurityState> 
     emit(TurnedOffState(
       numOfInspection: inspectionCount,
       numOfBlockedVirus: blockedVirusCount,
-      numOfBlockedMalware: blockedMalwareCount,
       numOfBlockedBotnet: blockedBotnetCount,
       numOfBlockedWebsite: blockedWebsiteCount,
       numOfIncidents: incidentCount,
@@ -184,15 +172,11 @@ void _onSetTrialExpiredEvent(SetTrialExpiredEvent event, Emitter<SecurityState> 
 
   void _onCyberthreatDetectedEvent(CyberthreatDetectedEvent event, Emitter<SecurityState> emit) {
     int numOfBlockedVirus = state.numOfBlockedVirus;
-    int numOfBlockedMalware = state.numOfBlockedMalware;
     int numOfBlockedBotnet = state.numOfBlockedBotnet;
     int numOfBlockedWebsite = state.numOfBlockedWebsite;
     switch(event.type) {
       case CyberthreatType.virus:
         numOfBlockedVirus += event.number;
-        break;
-      case CyberthreatType.malware:
-        numOfBlockedMalware += event.number;
         break;
       case CyberthreatType.botnet:
         numOfBlockedBotnet += event.number;
@@ -205,14 +189,12 @@ void _onSetTrialExpiredEvent(SetTrialExpiredEvent event, Emitter<SecurityState> 
     if (state is TrialActiveState) {
       emit((state as TrialActiveState).copyWith(
         numOfBlockedVirus: numOfBlockedVirus,
-        numOfBlockedMalware: numOfBlockedMalware,
         numOfBlockedBotnet: numOfBlockedBotnet,
         numOfBlockedWebsite: numOfBlockedWebsite,
       ));
     } else if (state is FormalActiveState) {
       emit((state as FormalActiveState).copyWith(
         numOfBlockedVirus: numOfBlockedVirus,
-        numOfBlockedMalware: numOfBlockedMalware,
         numOfBlockedBotnet: numOfBlockedBotnet,
         numOfBlockedWebsite: numOfBlockedWebsite,
       ));

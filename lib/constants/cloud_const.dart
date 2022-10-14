@@ -15,6 +15,9 @@ const moabRetailSiteId = 'b6b70875-9ec4-45eb-9792-2545ccc2bc5d';
 const moabAppClientId = '991490F1-AD1D-47E0-81AD-190B11757252'; // TODO fake
 
 const moabCloudConfigHost = 'https://config.linksys.cloud/';
+// TODO #1 update resource url
+String get moabCloudResourceHost => 'https://${cloudEnvTarget == CloudEnvironment.prod ? '' : (cloudEnvTarget.name + '-')}resource.linksys.cloud';
+
 const configFileName = 'environment.json';
 const allConfigFileName = 'all-environments.json';
 const countryCodeFileName = 'country-codes.json';
@@ -39,6 +42,9 @@ String get categoryPresetsUrl =>'$moabCloudConfigHost${cloudEnvTarget.name}/$sec
 String get appIconsUrl => 'https://linksys.devvelopcloud.com/moab-assets/sprite-map.png'; //TBD
 String get profilePresetsUrl =>'$moabCloudConfigHost${cloudEnvTarget.name}/$profilePresetsFilename';
 
+// AWS IoT root CA
+String get awsIoTRootCA => 'https://www.amazontrust.com/repository/AmazonRootCA1.pem';
+
 // Cloud path constants
 const version = '/v1';
 const accountPath = '/accounts';
@@ -46,7 +52,6 @@ const authPath = '/auth';
 const tasksPath = '/tasks';
 const primaryTasksPath = '/primary-tasks';
 const verificationsPath = '/verifications';
-const subscriptionPath = '/store';
 
 // Cloud endpoints variables
 const varAccountId = '{accountId}';
@@ -60,7 +65,6 @@ const varFlow = '{flow}';
 const varMethod = '{method}';
 const varTargetValue = '{targetValue}';
 const varCertificateId = '{certificateId}';
-const varSerialNumber = '{serialNumber}';
 
 // Cloud endpoints
 const endpointCreateApps = '$version/apps';
@@ -90,6 +94,11 @@ const endpointPostCommunicationMethods = '$version$accountPath/$varAccountId/com
 const endpointDeleteAuthCommunicationMethod = '$version$accountPath/$varAccountId/communication-methods?method=$varMethod&targetValue=$varTargetValue';
 const endpointPostChangePassword = '$version$accountPath/$varAccountId/password/change';
 const endpointPreferences = '$version$accountPath/$varAccountId/preferences';
+const endpointDefaultNetworkGroup = '$version$accountPath/$varAccountId/network-groups/DEFAULT';
+
+const endpointGetNetworks = '$version$accountPath/$varAccountId/networks';
+const endpointGetNetworkById = '$version$accountPath/$varAccountId/networks/$varNetworkId';
+
 
 const endpointSubscriptionQueryProductListings = '$version$subscriptionPath/product-listings';
 const endpointSubscriptionCreateCloudOrders = '$version$subscriptionPath/orders';

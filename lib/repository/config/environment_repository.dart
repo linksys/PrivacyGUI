@@ -32,7 +32,7 @@ class MoabEnvironmentRepository extends EnvironmentRepository {
 
   @override
   Future<List<CloudConfig>> fetchAllCloudConfig() async {
-    return await _client.fetchCloudConfig().then((response) {
+    return await _client.fetchAllCloudConfig().then((response) {
       final jsonArray = json.decode(response.body) as List<dynamic>;
       return List.from(jsonArray.map((e) => CloudConfig.fromJson(e)));
     });
@@ -40,7 +40,7 @@ class MoabEnvironmentRepository extends EnvironmentRepository {
 
   @override
   Future<CloudConfig> fetchCloudConfig() async {
-    return await _client.fetchAllCloudConfig().then((response) {
+    return await _client.fetchCloudConfig().then((response) {
       final jsonArray = json.decode(response.body) as List<dynamic>;
       return CloudConfig.fromJson(jsonArray.first);
     });
