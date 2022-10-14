@@ -52,6 +52,7 @@ const authPath = '/auth';
 const tasksPath = '/tasks';
 const primaryTasksPath = '/primary-tasks';
 const verificationsPath = '/verifications';
+const subscriptionPath = '/store';
 
 // Cloud endpoints variables
 const varAccountId = '{accountId}';
@@ -65,6 +66,7 @@ const varFlow = '{flow}';
 const varMethod = '{method}';
 const varTargetValue = '{targetValue}';
 const varCertificateId = '{certificateId}';
+const varSerialNumber = '{serialNumber}';
 
 // Cloud endpoints
 const endpointCreateApps = '$version/apps';

@@ -119,7 +119,7 @@ Widget _app() {
       BlocProvider(create: (BuildContext context) => SecurityBloc()),
       BlocProvider(
           create: (BuildContext context) => SubscriptionCubit(
-              repository: context.read<SubscriptionRepository>()))
+              repository: context.read<SubscriptionRepository>())),
       BlocProvider(
           create: (BuildContext context) => NetworkCubit(networksRepository: context.read<CloudNetworksRepository>(),
                 routerRepository: context.read<RouterRepository>(),
