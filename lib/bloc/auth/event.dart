@@ -1,4 +1,5 @@
 import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 
 abstract class AuthEvent {}
 
@@ -33,22 +34,10 @@ class Authorized extends AuthEvent {
   final bool isCloud;
 }
 
-class RequireOtpCode extends AuthEvent {
-  RequireOtpCode({required this.otpInfo});
-
-  final OtpInfo otpInfo;
-}
-
-class SetOtpInfo extends AuthEvent {
-  SetOtpInfo({required this.otpInfo});
-
-  final List<OtpInfo> otpInfo;
-}
-
 class SetLoginType extends AuthEvent {
   SetLoginType({required this.loginType});
 
-  final LoginType loginType;
+  final AuthenticationType loginType;
 }
 
 class SetCloudPassword extends AuthEvent {

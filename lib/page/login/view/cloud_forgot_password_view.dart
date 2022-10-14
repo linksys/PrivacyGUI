@@ -44,7 +44,7 @@ class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
   Widget _contentView(AuthState state) {
     // TODO: need modify
     _hasPhoneNumber =
-        (state as AuthOnCloudLoginState).accountInfo.otpInfo.length > 1;
+        (state as AuthOnCloudLoginState).accountInfo.communicationMethods.length > 1;
     return _isLinkSent ? _linkSentView(state) : _sendLinkView(state);
   }
 
