@@ -59,6 +59,7 @@ class _CustomizeWifiViewState extends State<CustomizeWifiView> {
   @override
   Widget build(BuildContext context) {
     return BasePageView(
+      scrollable: true,
       child: BasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).create_ssid_view_title,

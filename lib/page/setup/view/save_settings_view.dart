@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -71,8 +73,14 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
     logger.d('SaveSettings:: _listenConnectivityChange()');
     _subscription?.cancel();
     _subscription = _connectivityCubit.stream.listen((event) {
-      if (event.connectivityInfo.ssid != newSSID) {
-        return;
+      if (Platform.isIOS) {
+        if (event.connectivityInfo.ssid != newSSID) {
+          return;
+        }
+      } else { // TODO #WORKAROUND Android current cannot get SSID
+        if (event.connectivityInfo.type != ConnectivityResult.wifi) {
+          return;
+        }
       }
       _setupBloc.add(ResumePointChanged(status: SetupResumePoint.wifiConnectionBackSuccess));
       _tryConnectMQTT().then((value) {
