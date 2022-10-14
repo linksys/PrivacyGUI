@@ -48,6 +48,8 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
       // await context.read<ConnectivityCubit>().connectToBroker();
       // TODO #REFACTOR select network and apply new region
       await context.read<NetworkCubit>().getNetworks(accountId: context.read<AccountCubit>().state.id);
+      NavigationCubit.of(context).clearAndPush(SelectNetworkPath());
+      return;
     } else {
       await context.read<ConnectivityCubit>().connectToLocalBroker();
     }

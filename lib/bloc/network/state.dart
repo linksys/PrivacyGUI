@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/model/router/network.dart';
+import 'package:linksys_moab/network/http/model/cloud_network.dart';
 
 class NetworkState extends Equatable {
   const NetworkState({
@@ -11,11 +12,11 @@ class NetworkState extends Equatable {
     return const NetworkState();
   }
 
-  final List<MoabNetwork> networks;
+  final List<CloudNetwork> networks;
   final MoabNetwork? selected;
 
   NetworkState copyWith({
-    List<MoabNetwork>? networks,
+    List<CloudNetwork>? networks,
     MoabNetwork? selected,
   }) {
     return NetworkState(

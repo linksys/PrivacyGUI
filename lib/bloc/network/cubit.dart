@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
+import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
 import 'package:linksys_moab/model/router/network.dart';
@@ -18,11 +19,11 @@ import 'package:linksys_moab/repository/router/router_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/repository/router/wireless_ap_extension.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
-  NetworkCubit(
-      {required CloudNetworksRepository networksRepository,
-      required RouterRepository routerRepository})
+  NetworkCubit({required CloudNetworksRepository networksRepository,
+    required RouterRepository routerRepository})
       : _networksRepository = networksRepository,
         _routerRepository = routerRepository,
         super(const NetworkState()) {
@@ -44,11 +45,12 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   ///
 
   Future<List<CloudNetwork>> getNetworks({required String accountId}) async {
-    final networks = await _networksRepository.getNetworks(accountId: accountId);
+    final networks = await _networksRepository.getNetworks(
+        accountId: accountId);
     if (networks.length == 1) {
       await getDeviceInfo();
-    } else {
-    }
+    } else {}
+    emit(state.copyWith(networks: networks, selected: state.selected));
     return networks;
   }
 
@@ -88,7 +90,8 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
 
   Future<List<Device>> getDevices() async {
     final result = await _routerRepository.getDevices();
-    final devices = List.from(result.output['devices']).map((e) => Device.fromJson(e)).toList();
+    final devices = List.from(result.output['devices']).map((e) =>
+        Device.fromJson(e)).toList();
     emit(state.copyWith(selected: state.selected!.copyWith(devices: devices)));
     return devices;
   }
@@ -101,6 +104,12 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
     logger.d('start polling data');
     final result = await _routerRepository.pollingData();
     logger.d('finish polling data');
+  }
+
+  Future selectNetwork(CloudNetwork network) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.setString(moabPrefSelectedNetworkId, network.networkId);
+    await getDeviceInfo();
   }
 
 }
