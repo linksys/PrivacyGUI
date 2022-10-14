@@ -43,7 +43,7 @@ class MqttClientWrap {
     _client = MqttServerClient.withPort(_endpoint, _clientId, _port)
       ..keepAlivePeriod = 20 // Set Keep-Alive
       ..setProtocolV311() // Set the protocol to V3.1.1 for AWS IoT Core, if you fail to do this you will receive a connect ack with the response code
-      ..logging(on: true) // logging if you wish
+      // ..logging(on: true) // logging if you wish
       ..onBadCertificate = _onBadCertificate;
 
     _client.secure = secure;
@@ -144,7 +144,7 @@ class MqttClientWrap {
     MqttPublishPayload.bytesToStringAsString(message.payload.message);
     final id = BaseMqttCommand.extractUUID(pt);
     logger.i(
-        'MQTT:: Published notification:: id is <$id>, topic is ${message.variableHeader!.topicName}, with Qos ${message.header!.qos}, message $pt');
+        'MQTT:: Published notification:: id is <$id>, topic is ${message.variableHeader!.topicName}, with Qos ${message.header!.qos}');
     if ((id ?? '').isNotEmpty) {
       final command = _commandMap[id];
       if (command?.publishTopic == message.variableHeader!.topicName) {

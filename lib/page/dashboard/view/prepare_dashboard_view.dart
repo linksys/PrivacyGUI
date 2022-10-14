@@ -42,10 +42,10 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
 
   _checkSelfNetworks() async {
     if (context.read<AuthBloc>().state is AuthCloudLoginState) {
+      await context.read<ConnectivityCubit>().forceUpdate();
       await context.read<ProfilesCubit>().fetchProfiles();
       await context.read<AccountCubit>().fetchAccount();
-      // TODO #REFACTOR check is connected to moab router
-      await context.read<ConnectivityCubit>().connectToRemoteBroker();
+      // await context.read<ConnectivityCubit>().connectToBroker();
       // TODO #REFACTOR select network and apply new region
       await context.read<NetworkCubit>().getNetworks(accountId: context.read<AccountCubit>().state.id);
     } else {
