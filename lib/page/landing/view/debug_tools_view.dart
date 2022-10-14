@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
@@ -17,6 +18,8 @@ import 'package:linksys_moab/bloc/security/event.dart';
 import 'package:linksys_moab/bloc/security/state.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
+import 'package:linksys_moab/constants/jnap_const.dart';
+import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -26,12 +29,15 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
 import 'package:linksys_moab/repository/router/core_extension.dart';
+import 'package:linksys_moab/repository/router/device_list_extension.dart';
 import 'package:linksys_moab/repository/router/health_check_extension.dart';
 import 'package:linksys_moab/repository/router/owend_network_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/repository/router/smart_mode_extension.dart';
 import 'package:linksys_moab/repository/router/transactions_extension.dart';
 import 'package:linksys_moab/repository/router/wireless_ap_extension.dart';
+import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/model/setup_path.dart';
 import 'package:linksys_moab/security/app_icon_manager.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -339,15 +345,20 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           onPress: () async {
             // await context.read<RouterRepository>().connectToLocalWithCloudCert();
             // await context.read<ConnectivityCubit>().connectToRemoteBroker();
-            await context.read<NetworkCubit>().getDeviceInfo();
             // await context.read<NetworkCubit>().getRadioInfo();
-
-            // await context.read<RouterRepository>().connectToRemote();
 
             // await context.read<RouterRepository>().getSupportedDeviceMode();
 
             // final results = await context.read<RouterRepository>().setUnsecuredWiFiWarning(false);
-            final results2 = await context.read<RouterRepository>().getCloudIds();
+            // final devicesResult =
+            //     await context.read<RouterRepository>().getDevices();
+            // final devices = List.from(devicesResult.output['devices'])
+            //     .map((e) => Device.fromJson(e))
+            //     .toList();
+            // final results2 = await context
+            //     .read<RouterRepository>()
+            //     .setDeviceProperties(
+            //         deviceId: devices[0].deviceID, propertiesToModify: [{'name': userDefinedDeviceLocation, 'value': 'Kitchen'}]);
             //
             // await context.read<RouterRepository>().setUnsecuredWiFiWarning(false);
 
@@ -409,9 +420,9 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                 text: 'Virus+1',
                 onPress: () {
                   context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
-                    type: CyberthreatType.virus,
-                    number: 1,
-                  ));
+                        type: CyberthreatType.virus,
+                        number: 1,
+                      ));
                 },
               ),
             ),
@@ -421,9 +432,9 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                 text: 'Botnet+1',
                 onPress: () {
                   context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
-                    type: CyberthreatType.botnet,
-                    number: 1,
-                  ));
+                        type: CyberthreatType.botnet,
+                        number: 1,
+                      ));
                 },
               ),
             ),
@@ -434,9 +445,9 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           text: 'Website+1',
           onPress: () {
             context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
-              type: CyberthreatType.website,
-              number: 1,
-            ));
+                  type: CyberthreatType.website,
+                  number: 1,
+                ));
           },
         ),
       ],

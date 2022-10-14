@@ -58,7 +58,7 @@ class MqttClientWrap {
 
       if (caCert != null) {
         context.setClientAuthoritiesBytes(caCert!);
-        // context.setTrustedCertificatesBytes(caCert!);
+        context.setTrustedCertificatesBytes(caCert!);
       }
       if (cert != null) {
         context.useCertificateChainBytes(cert!);

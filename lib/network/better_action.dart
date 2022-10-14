@@ -127,6 +127,8 @@ enum JNAPAction {
   getDDNSStatus,
   // deviceList
   getDevices,
+  getLocalDevice,
+  setDeviceProperties,
   // firewall
   getPortRangeForwardingRules,
   getPortRangeTriggeringRules,
@@ -247,6 +249,8 @@ enum _JNAPActionValue {
   getDDNSStatus2(value: 'http://linksys.com/jnap/ddns/GetDDNSStatus2'),
   getDevices(value: 'http://linksys.com/jnap/devicelist/GetDevices'),
   getDevices3(value: 'http://linksys.com/jnap/devicelist/GetDevices3'),
+  getLocalDevice(value: 'http://linksys.com/jnap/devicelist/GetLocalDevice'),
+  setDeviceProperties(value: 'http://linksys.com/jnap/devicelist/SetDeviceProperties'),
   getPortRangeForwardingRules(
       value: 'http://linksys.com/jnap/firewall/GetPortRangeForwardingRules'),
   getPortRangeTriggeringRules(
@@ -652,6 +656,8 @@ void initBetterActions() {
   _betterActionMap[JNAPAction.getDDNSStatus] =
       _JNAPActionValue.getDDNSStatus.value;
   _betterActionMap[JNAPAction.getDevices] = _JNAPActionValue.getDevices.value;
+  _betterActionMap[JNAPAction.getLocalDevice] = _JNAPActionValue.getLocalDevice.value;
+  _betterActionMap[JNAPAction.setDeviceProperties] = _JNAPActionValue.setDeviceProperties.value;
   _betterActionMap[JNAPAction.getPortRangeForwardingRules] =
       _JNAPActionValue.getPortRangeForwardingRules.value;
   _betterActionMap[JNAPAction.getPortRangeTriggeringRules] =

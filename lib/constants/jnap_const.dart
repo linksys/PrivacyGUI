@@ -19,3 +19,5 @@ const mqttLocalPublishTopic = 'local/command';
 const mqttLocalResponseTopic = '$mqttLocalPublishTopic/response';
 const mqttRemotePublishTopic = 'groups/$varMqttGroupId/nets/$varMqttNetworkId';
 const mqttRemoteResponseTopic = '$mqttRemotePublishTopic/response';
+
+const userDefinedDeviceLocation = 'userDeviceLocation';
