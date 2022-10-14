@@ -17,6 +17,7 @@ import 'package:linksys_moab/bloc/internet_check/cubit.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/bloc/security/bloc.dart';
 import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/better_action.dart';
@@ -32,7 +33,6 @@ import 'package:linksys_moab/route/_route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
-import 'package:mqtt_client/mqtt_client.dart';
 import 'bloc/setup/bloc.dart';
 import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
@@ -40,6 +40,7 @@ import 'repository/authenticate/impl/router_auth_repository.dart';
 import 'route/model/_model.dart';
 
 void main() {
+  // enableFlutterDriverExtension();
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     await Storage.init();
@@ -111,6 +112,7 @@ Widget _app() {
           create: (BuildContext context) =>
               AccountCubit(repository: context.read<CloudAccountRepository>())),
       BlocProvider(create: (BuildContext context) => ContentFilterCubit()),
+      BlocProvider(create: (BuildContext context) => SecurityBloc()),
       BlocProvider(
           create: (BuildContext context) => NetworkCubit(networksRepository: context.read<CloudNetworksRepository>(),
                 routerRepository: context.read<RouterRepository>(),
