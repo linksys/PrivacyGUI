@@ -13,8 +13,9 @@ enum AuthStatus {
   onCreateAccount,
 }
 
+// TODO #RENAME
 enum AuthMethod { none, local, remote }
-
+// TODO #RENAME
 enum LoginType { none, passwordless, password }
 
 enum OtpMethod { sms, email }

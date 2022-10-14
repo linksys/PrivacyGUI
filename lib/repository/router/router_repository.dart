@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
+import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/connectivity/state.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
@@ -61,6 +62,9 @@ class RouterRepository with StateStreamListener {
   String? _groupId;
   String? _networkId;
 
+  AuthMethod _loginType = AuthMethod.none;
+  RouterType _routerType = RouterType.others;
+
   Future<bool> downloadRemoteCert() async {
     final _client = MoabHttpClient(timeoutMs: 1000);
     final response = await _client.get(Uri.parse(awsIoTRootCA));
@@ -73,25 +77,40 @@ class RouterRepository with StateStreamListener {
   }
 
   Future<bool> downloadLocalCert() async {
-    final caCert = await rootBundle.loadString('assets/keys/server.pem');
-    final pref = await SharedPreferences.getInstance();
-    await pref.setString(moabPrefLocalCert, caCert);
-    return true;
-    // const credentials = 'admin:admin';
-    // final _client = MoabHttpClient(timeoutMs: 1000);
-    // final response = await _client.get(Uri.parse('http://$_localBrokerUrl:52000/cert.cgi'), headers: {
-    //   'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
-    // });
-    // if (response.statusCode != HttpStatus.ok) {
-    //   return false;
-    // }
+    // final caCert = await rootBundle.loadString('assets/keys/server.pem');
     // final pref = await SharedPreferences.getInstance();
-    // await pref.setString(moabPrefLocalCert, response.body);
+    // await pref.setString(moabPrefLocalCert, caCert);
     // return true;
+    if (_localBrokerUrl?.isEmpty ?? true) {
+      return false;
+    }
+    const credentials = 'admin:admin';
+    final _client = MoabHttpClient(timeoutMs: 1000);
+    final response = await _client
+        .get(Uri.parse('http://$_localBrokerUrl/cert.cgi'), headers: {
+      'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
+    });
+    if (response.statusCode != HttpStatus.ok) {
+      return false;
+    }
+    final pref = await SharedPreferences.getInstance();
+    await pref.setString(moabPrefLocalCert, response.body);
+    return true;
+  }
+
+  Future<bool> connectToBroker() async {
+    if (_loginType == AuthMethod.remote) {
+      return _routerType == RouterType.managedMoab
+          ? connectToLocalWithCloudCert()
+          : connectToRemote();
+    } else if (_loginType == AuthMethod.local) {
+      return connectToLocalWithPassword();
+    } else {
+      return false;
+    }
   }
 
   Future<bool> connectToRemote() async {
-
     _brokerUrl = CloudEnvironmentManager().currentConfig?.transport.mqttBroker;
     int port = CloudEnvironmentManager().currentConfig?.transport.port ?? 8883;
     final pref = await SharedPreferences.getInstance();
@@ -140,6 +159,9 @@ class RouterRepository with StateStreamListener {
   }
 
   Future<bool> connectToLocalWithCloudCert() async {
+    if (_loginType != AuthMethod.remote) {
+      return false;
+    }
     final pref = await SharedPreferences.getInstance();
     const storage = FlutterSecureStorage();
     String cert = pref.getString(moabPrefLocalCert) ?? '';
@@ -169,7 +191,8 @@ class RouterRepository with StateStreamListener {
       return false;
     }
   }
-  Future<bool> connectToLocal() async {
+
+  Future<bool> connectToLocalWithPassword() async {
     final pref = await SharedPreferences.getInstance();
     String cert = pref.getString(moabPrefLocalCert) ?? '';
     if (cert.isEmpty) {
@@ -179,7 +202,7 @@ class RouterRepository with StateStreamListener {
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
       await _mqttClient?.disconnect();
     }
-    final clientId = Utils.generateMqttClintId().substring(0,23);
+    final clientId = Utils.generateMqttClintId().substring(0, 23);
     _mqttClient = MqttClientWrap(_localBrokerUrl ?? '', 8833, clientId);
     _mqttClient?.caCert = Int8List.fromList(cert.codeUnits);
     await _mqttClient?.connect(username: 'linksys', password: 'admin');
@@ -214,7 +237,8 @@ class RouterRepository with StateStreamListener {
         data: data,
       );
     } else if (connectType == MqttConnectType.remote) {
-      return JnapCommand.remote(gid: _groupId!, nid: _networkId!, action: action, data: data);
+      return JnapCommand.remote(
+          gid: _groupId!, nid: _networkId!, action: action, data: data);
     } else {
       //
       throw Exception();
@@ -254,7 +278,12 @@ class RouterRepository with StateStreamListener {
 
   _handleConnectivityChanged(ConnectivityState state) async {
     logger.d('Router repository:: handleConnectivityChanged: $state');
-    _localBrokerUrl = state.connectivityInfo.gatewayIp;
+    if (_routerType != state.connectivityInfo.routerType ||
+        _localBrokerUrl != state.connectivityInfo.gatewayIp) {
+      _localBrokerUrl = state.connectivityInfo.gatewayIp;
+      _routerType = state.connectivityInfo.routerType;
+      connectToBroker();
+    }
   }
 
   _handleAuthChanged(AuthState state) async {
@@ -262,15 +291,16 @@ class RouterRepository with StateStreamListener {
         'Router repository:: _handleAuthChanged: $state, ${state.runtimeType}');
     final pref = await SharedPreferences.getInstance();
     if (state is AuthCloudLoginState) {
-      // get cloud certs and etc...
+      _loginType = AuthMethod.remote;
       _brokerUrl =
           CloudEnvironmentManager().currentConfig?.transport.mqttBroker;
-      connectToRemote();
+      // connectToBroker();
     } else if (state is AuthLocalLoginState) {
-      // get local password and cert, etc...
+      _loginType = AuthMethod.local;
       localPassword = pref.getString(moabPrefLocalPassword);
-      connectToLocal();
+      // connectToLocalWithPassword();
     } else if (state is AuthUnAuthorizedState) {
+      _loginType = AuthMethod.none;
       connectType = MqttConnectType.none;
       // remove all information
       localPassword = 'admin';
@@ -283,6 +313,6 @@ class RouterRepository with StateStreamListener {
       return;
     }
     // reconnect again
-    // await connectToRemote();
+    await connectToBroker();
   }
 }
