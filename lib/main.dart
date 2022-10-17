@@ -40,6 +40,8 @@ import 'bloc/subscription/subscription_cubit.dart';
 import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
 import 'repository/authenticate/impl/router_auth_repository.dart';
+import 'package:flutter_driver/driver_extension.dart';
+import 'repository/authenticate/otp_repository.dart';
 import 'route/model/_model.dart';
 
 void main() {
@@ -91,6 +93,7 @@ Widget _app() {
       RepositoryProvider(create: (context) => CloudAccountRepository()),
       RepositoryProvider(create: (context) => RouterRepository()),
       RepositoryProvider(create: (context) => CloudNetworksRepository()),
+      RepositoryProvider(create: (context) => OtpRepository(httpClient: MoabHttpClient())),
       RepositoryProvider(create: (context) => SubscriptionRepository())
     ],
     child: MultiBlocProvider(providers: [
@@ -108,6 +111,7 @@ Widget _app() {
                 routerRepository: context.read<RouterRepository>(),
               )),
       BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
+      BlocProvider(create: (BuildContext context) => OtpCubit(otpRepository: context.read<OtpRepository>())),
       BlocProvider(create: (BuildContext context) => SetupBloc(routerRepository: context.read<RouterRepository>())),
       BlocProvider(create: (BuildContext context) => OtpCubit()),
       BlocProvider(create: (BuildContext context) => ProfilesCubit()),

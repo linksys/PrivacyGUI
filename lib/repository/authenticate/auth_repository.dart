@@ -57,29 +57,6 @@ abstract class AuthRepository {
       CreateAccountVerified verified);
 
   ///
-  /// Initiate OTP Verify via EMAIL/SMS, OR resend code
-  /// * Input: [AuthChallengeMethod]
-  /// * return: void
-  /// * error: INVALID_PARAMETER
-  Future<void> authChallenge(BaseAuthChallenge method);
-
-  ///
-  /// Verify OTP code received from EMAIL/SMS
-  /// * Input: token
-  /// * Input: code
-  /// * return: void
-  /// * error: INVALID_OTP
-  Future<void> authChallengeVerify(String token, String code);
-
-  ///
-  /// Verify OTP code received from EMAIL/SMS
-  /// * Input: token
-  /// * Input: code
-  /// * return: void
-  /// * error: INVALID_OTP
-  Future<void> authChallengeVerifyAccept(String token, String code);
-
-  ///
   /// * state = PASSWORD_REQUIRED
   /// * state = REQUIRE_2SV
   Future<CloudLoginState> loginPrepare(String username);

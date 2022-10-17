@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 
 enum OtpStep { init, chooseOtpMethod, inputOtp, addPhone, finish }
 
@@ -26,9 +27,9 @@ class OtpState extends Equatable {
 
   OtpState copyWith({
     OtpStep? step,
-    List<OtpInfo>? methods,
+    List<CommunicationMethod>? methods,
     String? token,
-    OtpInfo? selectedMethod,
+    CommunicationMethod? selectedMethod,
     OtpFunction? function,
     bool? isLoading,
   }) {
@@ -43,9 +44,9 @@ class OtpState extends Equatable {
   }
 
   final OtpStep step;
-  final List<OtpInfo> methods;
+  final List<CommunicationMethod> methods;
   final String token;
-  final OtpInfo? selectedMethod;
+  final CommunicationMethod? selectedMethod;
   final OtpFunction function;
   final bool isLoading;
 

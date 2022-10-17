@@ -100,7 +100,7 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
   }
 
   Future<RouterType> _testRouterType() async {
-    bool canDownloadCert = await _routerRepository.downloadLocalCert();
+    bool canDownloadCert = await _routerRepository.downloadLocalCert().onError((error, stackTrace) => false);
     if (!canDownloadCert) {
       return RouterType.others;
     }

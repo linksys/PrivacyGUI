@@ -6,3 +6,4 @@ export 'prepare_dashboard_view.dart';
 export 'dashboard_security_view.dart'; 
 export 'dashboard_settings_view.dart'; 
 export 'dashboard_bottom_tab_container.dart'; 
+export 'select_network_view.dart';
