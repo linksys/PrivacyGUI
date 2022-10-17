@@ -11,6 +11,9 @@ class OtpCubit extends Cubit<OtpState> {
 
   final OtpRepository _otpRepository;
 
+  void init() {
+    emit(OtpState.init());
+  }
   void updateOtpMethods(
       List<CommunicationMethod> methods, OtpFunction function) {
     var selected = methods.length > 1

@@ -11,26 +11,26 @@ import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 
 
-class OtpFlowView extends ArgumentsStatelessView {
+// class OtpFlowView extends ArgumentsStatelessView {
+//   const OtpFlowView({Key? key, super.args, super.next}) : super(key: key);
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return _ContentView(
+//       args: args,
+//       next: next,
+//     );
+//   }
+// }
+
+class OtpFlowView extends ArgumentsStatefulView {
   const OtpFlowView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return _ContentView(
-      args: args,
-      next: next,
-    );
-  }
+  State<OtpFlowView> createState() => OtpFlowViewState();
 }
 
-class _ContentView extends ArgumentsStatefulView {
-  const _ContentView({Key? key, super.args, super.next}) : super(key: key);
-
-  @override
-  State<_ContentView> createState() => _ContentViewState();
-}
-
-class _ContentViewState extends State<_ContentView> {
+class OtpFlowViewState extends State<OtpFlowView> {
   late final OtpCubit _cubit;
   late String _username;
   late OtpFunction _function;
@@ -38,6 +38,7 @@ class _ContentViewState extends State<_ContentView> {
   @override
   initState() {
     _cubit = context.read<OtpCubit>();
+    _cubit.init();
     OtpFunction _function = OtpFunction.send;
     if (widget.args.containsKey('function')) {
       _function = widget.args['function'] as OtpFunction;

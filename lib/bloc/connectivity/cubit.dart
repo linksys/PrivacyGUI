@@ -56,9 +56,11 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
   Future onConnectivityChanged(ConnectivityInfo info) async {
     if (info.type != ConnectivityResult.none) {
       // await scheduleCheck(immediate: true);
-      await check();
+      final newState = await check(info);
+      emit(newState);
+    } else {
+      emit(state.copyWith(connectivityInfo: info));
     }
-    emit(state.copyWith(connectivityInfo: info));
   }
 
   void init() {
@@ -73,9 +75,9 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
     return state;
   }
 
-  void _internetCheckCallback(
-      bool hasConnection, AvailabilityInfo? cloudInfo) async {
-    logger.d('_internetCheckCallback');
+  Future<ConnectivityState> _internetCheckCallback(
+      bool hasConnection, ConnectivityInfo connectivityInfo, AvailabilityInfo? cloudInfo) async {
+    logger.d('_internetCheckCallback: $hasConnection, $connectivityInfo');
 
     // if (hasConnection) {
     //   await CloudEnvironmentManager().fetchCloudConfig();
@@ -83,13 +85,14 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
     // }
     var routerType = RouterType.others;
     if (hasConnection) {
-      routerType = await _testRouterType();
+      routerType = await _testRouterType(connectivityInfo.gatewayIp);
     }
-    emit(state.copyWith(
+    logger.d('_internetCheckCallback: $routerType');
+    return state.copyWith(
         connectivityInfo:
-            state.connectivityInfo.copyWith(routerType: routerType),
+            connectivityInfo.copyWith(routerType: routerType),
         hasInternet: hasConnection,
-        cloudAvailabilityInfo: cloudInfo));
+        cloudAvailabilityInfo: cloudInfo);
   }
 
   void _checkAndroidVersionAndEasyConnect() async {
@@ -99,12 +102,13 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
         : await ConnectingWifiPlugin().isAndroidTenAndSupportEasyConnect();
   }
 
-  Future<RouterType> _testRouterType() async {
-    bool canDownloadCert = await _routerRepository.downloadLocalCert().onError((error, stackTrace) => false);
+  Future<RouterType> _testRouterType(String? newIp) async {
+    bool canDownloadCert = await _routerRepository.downloadLocalCert(gatewayIp: newIp).onError((error, stackTrace) => false);
     if (!canDownloadCert) {
       return RouterType.others;
     }
-    bool isManaged = await _routerRepository.connectToLocalWithCloudCert();
+    logger.d('test connect to local with cloud cert');
+    bool isManaged = await _routerRepository.connectToLocalWithCloudCert(gatewayIp: newIp);
     return isManaged ? RouterType.managedMoab : RouterType.moab;
   }
 
@@ -147,40 +151,39 @@ mixin AvailabilityChecker {
       const Duration(seconds: defaultInternetCheckPeriodSec);
   Timer? timer;
   final _client = MoabHttpClient(timeoutMs: 3000);
-  Function(bool, AvailabilityInfo?)? _callback;
+  Function(bool, ConnectivityInfo, AvailabilityInfo?)? _callback;
 
-  set callback(Function(bool, AvailabilityInfo?) callback) =>
+  set callback(Function(bool, ConnectivityInfo, AvailabilityInfo?) callback) =>
       _callback = callback;
 
-  scheduleCheck({bool immediate = false, int? periodInSec}) async {
-    logger.d("Connectivity start schedule check");
-    if (periodInSec != null) {
-      internetCheckPeriod = Duration(seconds: periodInSec);
-    }
-    if (immediate) {
-      await check();
-    }
-    timer?.cancel();
-    timer = Timer.periodic(internetCheckPeriod, (timer) async {
-      logger.d('Start period check internet...');
-      await check();
-    });
-  }
+  // scheduleCheck({bool immediate = false, int? periodInSec}) async {
+  //   logger.d("Connectivity start schedule check");
+  //   if (periodInSec != null) {
+  //     internetCheckPeriod = Duration(seconds: periodInSec);
+  //   }
+  //   if (immediate) {
+  //     await check();
+  //   }
+  //   timer?.cancel();
+  //   timer = Timer.periodic(internetCheckPeriod, (timer) async {
+  //     logger.d('Start period check internet...');
+  //     await check();
+  //   });
+  // }
+  //
+  // stopChecking() {
+  //   timer?.cancel();
+  // }
 
-  stopChecking() {
-    timer?.cancel();
-  }
-
-  check() async {
+  Future<ConnectivityState> check(ConnectivityInfo info) async {
     final hasConnection = await testConnection();
     if (!hasConnection) {
-      _callback?.call(hasConnection, null);
-      return;
+      return _callback?.call(hasConnection, info, null);
     }
     // final cloudAvailability = await testCloudAvailability();
     final cloudAvailability = AvailabilityInfo(isCloudOk: true);
 
-    _callback?.call(hasConnection, cloudAvailability);
+    return _callback?.call(hasConnection, info, cloudAvailability);
   }
 
   Future<bool> testConnection() async {
