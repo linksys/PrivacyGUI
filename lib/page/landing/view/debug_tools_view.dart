@@ -343,7 +343,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Connect',
           onPress: () async {
-            // await context.read<RouterRepository>().connectToLocalWithCloudCert();
+            await context.read<RouterRepository>().connectToLocalWithCloudCert();
             // await context.read<ConnectivityCubit>().connectToRemoteBroker();
             // await context.read<NetworkCubit>().getRadioInfo();
 

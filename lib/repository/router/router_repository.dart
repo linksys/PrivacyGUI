@@ -76,7 +76,7 @@ class RouterRepository with StateStreamListener {
     return true;
   }
 
-  Future<bool> downloadLocalCert() async {
+  Future<bool> downloadLocalCert({String? gatewayIp}) async {
     // final caCert = await rootBundle.loadString('assets/keys/server.pem');
     // final pref = await SharedPreferences.getInstance();
     // await pref.setString(moabPrefLocalCert, caCert);
@@ -87,7 +87,7 @@ class RouterRepository with StateStreamListener {
     const credentials = 'admin:admin';
     final _client = MoabHttpClient(timeoutMs: 1000);
     final response = await _client
-        .get(Uri.parse('http://$_localBrokerUrl/cert.cgi'), headers: {
+        .get(Uri.parse('http://${gatewayIp ?? _localBrokerUrl}/cert.cgi'), headers: {
       'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
     });
     if (response.statusCode != HttpStatus.ok) {
@@ -158,10 +158,13 @@ class RouterRepository with StateStreamListener {
     }
   }
 
-  Future<bool> connectToLocalWithCloudCert() async {
+  Future<bool> connectToLocalWithCloudCert({String? gatewayIp}) async {
+    logger.d('connectToLocalWithCloudCert: $_loginType');
+
     if (_loginType != LoginFrom.remote) {
       return false;
     }
+    logger.d('connectToLocalWithCloudCert');
     final pref = await SharedPreferences.getInstance();
     const storage = FlutterSecureStorage();
     String cert = pref.getString(moabPrefLocalCert) ?? '';
@@ -174,7 +177,7 @@ class RouterRepository with StateStreamListener {
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
       await _mqttClient?.disconnect();
     }
-    _mqttClient = MqttClientWrap(_localBrokerUrl ?? '', 8333, clientId);
+    _mqttClient = MqttClientWrap(gatewayIp ?? _localBrokerUrl ?? '', 8333, clientId);
     _mqttClient?.caCert = Int8List.fromList(cert.codeUnits);
     _mqttClient?.cert = Int8List.fromList(publicKey.codeUnits);
     _mqttClient?.keyCert = Int8List.fromList(privateKey.codeUnits);
@@ -294,11 +297,11 @@ class RouterRepository with StateStreamListener {
       _loginType = LoginFrom.remote;
       _brokerUrl =
           CloudEnvironmentManager().currentConfig?.transport.mqttBroker;
-      connectToBroker();
+      // connectToBroker();
     } else if (state is AuthLocalLoginState) {
       _loginType = LoginFrom.local;
       localPassword = pref.getString(moabPrefLocalPassword);
-      connectToLocalWithPassword();
+      // connectToLocalWithPassword();
     } else if (state is AuthUnAuthorizedState) {
       _loginType = LoginFrom.none;
       connectType = MqttConnectType.none;
