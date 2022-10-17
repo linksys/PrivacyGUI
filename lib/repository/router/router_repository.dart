@@ -76,6 +76,36 @@ class RouterRepository with StateStreamListener {
     return true;
   }
 
+  // TODO #WORKAROUND cert download issue
+  Future<bool> testLocalCert({String? gatewayIp}) async {
+    if ((_localBrokerUrl?.isEmpty ?? true) && (gatewayIp?.isEmpty ?? true)) {
+      return false;
+    }
+    const credentials = 'admin:admin';
+    final _client = MoabHttpClient(timeoutMs: 1000, retries: 3);
+    var response = await _client
+        .get(Uri.parse('http://${gatewayIp ?? _localBrokerUrl}/cert.cgi'), headers: {
+      'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
+    });
+    bool ret = response.statusCode == HttpStatus.ok && response.body.contains('BEGIN CERTIFICATE');
+    logger.d('test local cert 1st: $ret');
+    // try with 52000 port if false
+    if (!ret) {
+      response = await _client
+          .get(Uri.parse('http://${gatewayIp ?? _localBrokerUrl}:52000/cert.cgi'), headers: {
+        'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
+      });
+      ret = response.statusCode == HttpStatus.ok && response.body.contains('BEGIN CERTIFICATE');
+      logger.d('test local cert 2nd: $ret');
+      if (!ret) {
+        return false;
+      }
+    }
+
+    final pref = await SharedPreferences.getInstance();
+    await pref.setString(moabPrefLocalCert, response.body);
+    return true;
+  }
   Future<bool> downloadLocalCert({String? gatewayIp}) async {
     // final caCert = await rootBundle.loadString('assets/keys/server.pem');
     // final pref = await SharedPreferences.getInstance();
@@ -142,13 +172,16 @@ class RouterRepository with StateStreamListener {
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
       _groupId = pref.getString(moabPrefCloudDefaultGroupId) ?? '';
       _networkId = pref.getString(moabPrefSelectedNetworkId) ?? '';
+      topics?.clear();
       topics.addAll([
         mqttRemoteResponseTopic
             .replaceFirst(varMqttGroupId, _groupId!)
             .replaceFirst(varMqttNetworkId, _networkId!)
       ]);
       for (var topic in topics) {
-        _mqttClient?.subscribe(topic);
+        final sub = _mqttClient?.subscribe(topic);
+
+        logger.d('Subscribe Topic: ${sub?.topic}');
       }
       connectType = MqttConnectType.remote;
       return true;
@@ -171,7 +204,7 @@ class RouterRepository with StateStreamListener {
     String publicKey = pref.getString(moabPrefCloudPublicKey) ?? '';
     String privateKey = await storage.read(key: moabPrefCloudPrivateKey) ?? '';
     if (cert.isEmpty) {
-      await downloadLocalCert();
+      await testLocalCert();
       cert = pref.getString(moabPrefLocalCert) ?? '';
     }
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
@@ -183,6 +216,7 @@ class RouterRepository with StateStreamListener {
     _mqttClient?.keyCert = Int8List.fromList(privateKey.codeUnits);
     await _mqttClient?.connect();
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
+      topics?.clear();
       topics.addAll([mqttLocalResponseTopic]);
       for (var topic in topics) {
         _mqttClient?.subscribe(topic);
@@ -199,7 +233,8 @@ class RouterRepository with StateStreamListener {
     final pref = await SharedPreferences.getInstance();
     String cert = pref.getString(moabPrefLocalCert) ?? '';
     if (cert.isEmpty) {
-      await downloadLocalCert();
+      logger.d('connectToLocalWithPassword: cert is empty');
+      await testLocalCert();
       cert = pref.getString(moabPrefLocalCert) ?? '';
     }
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {

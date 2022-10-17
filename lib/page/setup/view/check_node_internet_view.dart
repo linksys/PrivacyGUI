@@ -14,6 +14,7 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/route/model/internet_check_path.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/util/logger.dart';
 
 class CheckNodeInternetView extends StatefulWidget {
   const CheckNodeInternetView({
@@ -47,16 +48,17 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
 
   Future<bool> _tryConnectMQTT() async {
     final connCubit = context.read<ConnectivityCubit>();
-    const maxRetry = 10;
+    const maxRetry = 20;
     int retry = 0;
     bool isConnect = false;
     do {
-      isConnect = await connCubit.connectToLocalBroker();
+      isConnect = await connCubit.connectToLocalBroker().onError((error, stackTrace) => false);
+      logger.d('check internet:: _tryConnectMQTT: $isConnect');
       if (isConnect) {
         return isConnect;
       } else {
         retry++;
-        await Future.delayed(const Duration(seconds: 5));
+        await Future.delayed(const Duration(seconds: 6));
       }
     } while (retry < maxRetry);
     return isConnect;
