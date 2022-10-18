@@ -22,6 +22,7 @@ extension MoabSubscriptionRequests on MoabHttpClient {
       String serialNumber,
       String channelIdentifier,
       String productIdentifier,
+      String productListingId,
       String purchaseToken) async {
     final url = await combineUrl(endpointSubscriptionCreateCloudOrders);
     final header = defaultHeader..addAll({moabSiteIdKey: moabRetailSiteId});
@@ -31,12 +32,13 @@ extension MoabSubscriptionRequests on MoabHttpClient {
           'serialNumber': serialNumber,
           'channelIdentifier': channelIdentifier,
           'productIdentifier': productIdentifier,
+          'productListingId': productListingId,
           'purchaseToken': purchaseToken
         }));
   }
 
   Future<Response> getNetworkEntitlement(String serialNumber) async {
-    final url = await combineUrl(endpointSubscriptionGetNetworkEntitlement);
+    final url = await combineUrl(endpointSubscriptionGetNetworkEntitlement, args: {varSerialNumber: serialNumber});
     final header = defaultHeader
       ..addAll({
         moabSiteIdKey: moabRetailSiteId,

@@ -254,21 +254,21 @@ class SubscriptionOrderResponse extends Equatable {
   final String productId;
   final String channelId;
   final String status;
-  final bool purchaseInProgress;
+  final bool? purchaseInProgress;
   final String planId;
   final String providerId;
-  final ProviderOrder providerOrder;
+  final ProviderOrder? providerOrder;
   final String purchasedAt;
-  final String verifiedAt;
-  final String providerVerifiedAt;
-  final String cancelledAt;
-  final String startTime;
-  final String renewTime;
-  final String endTime;
-  final String serviceEndTime;
-  final String expireTime;
-  final bool active;
-  final String linksysPurchaseId;
+  final String? verifiedAt;
+  final String? providerVerifiedAt;
+  final String? cancelledAt;
+  final String? startTime;
+  final String? renewTime;
+  final String? endTime;
+  final String? serviceEndTime;
+  final String? expireTime;
+  final bool? active;
+  final String? linksysPurchaseId;
 
   const SubscriptionOrderResponse(
       {required this.id,
@@ -323,7 +323,7 @@ class SubscriptionOrderResponse extends Equatable {
       'productId': productId,
       'channelId': channelId,
       'status': status,
-      'purchaseInProgress': purchaseInProgress,
+      // 'purchaseInProgress': purchaseInProgress,
       'planId': planId,
       'providerId': providerId,
       'providerOrder': providerOrder,
@@ -342,13 +342,13 @@ class SubscriptionOrderResponse extends Equatable {
   }
 
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
         id,
         serialNumber,
         productId,
         channelId,
         status,
-        purchaseInProgress,
+        // purchaseInProgress,
         planId,
         providerId,
         providerOrder,
@@ -402,14 +402,14 @@ class NetworkEntitlementResponse extends Equatable {
   final SubscriptionPlan plan;
   final SubscriptionProvider provider;
   final String status;
-  final bool active;
+  final bool? active;
   final SubscriptionOrderResponse order;
-  final ProviderOrder providerOrder;
-  final String startTime;
-  final String renewTime;
-  final String endTime;
-  final String serviceEndTime;
-  final String expireTime;
+  final ProviderOrder? providerOrder;
+  final String? startTime;
+  final String? renewTime;
+  final String? endTime;
+  final String? serviceEndTime;
+  final String? expireTime;
 
   const NetworkEntitlementResponse({
     required this.siteId,
@@ -461,7 +461,7 @@ class NetworkEntitlementResponse extends Equatable {
       'status': status,
       'active': active,
       'order': order.toJson(),
-      'providerOrder': providerOrder.toJson(),
+      'providerOrder': providerOrder?.toJson(),
       'startTime': startTime,
       'renewTime': renewTime,
       'endTime': endTime,
@@ -481,7 +481,7 @@ class NetworkEntitlementResponse extends Equatable {
       status: json['status'],
       active: json['active'],
       order: SubscriptionOrderResponse.fromJson(json['order']),
-      providerOrder: ProviderOrder.fromJson(json['providerOrder']),
+      providerOrder: json['providerOrder'] != null ? ProviderOrder.fromJson(json['providerOrder']) : null,
       startTime: json['startTime'],
       renewTime: json['renewTime'],
       endTime: json['endTime'],
@@ -491,7 +491,7 @@ class NetworkEntitlementResponse extends Equatable {
   }
 
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
     siteId,
     serialNumber,
     product,
@@ -499,7 +499,7 @@ class NetworkEntitlementResponse extends Equatable {
     plan,
     provider,
     status,
-    active,
+    active ?? false,
     order,
     providerOrder,
     startTime,

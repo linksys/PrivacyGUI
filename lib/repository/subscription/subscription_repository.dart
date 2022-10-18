@@ -24,10 +24,12 @@ class SubscriptionRepository with SCLoader {
 
   Future<SubscriptionOrderResponse> createCloudOrders(
       String serialNumber,
-      String purchaseToken) {
+      String productListingId,
+      String purchaseToken
+      ) {
     return _instance
         .then((client) => client.createCloudOrder(
-            serialNumber, CHANNELIDENTIFIER, PRODUCTIDENTIFIER, purchaseToken))
+            serialNumber, CHANNELIDENTIFIER, PRODUCTIDENTIFIER, productListingId, purchaseToken))
         .then((response) =>
             SubscriptionOrderResponse.fromJson(json.decode(response.body)));
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/security/bloc.dart';
 import 'package:linksys_moab/bloc/security/event.dart';
@@ -291,10 +292,16 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                     text: 'Subscribe',
                     onPress: () {
                       // context.read<SecurityBloc>().add(SetFormalActiveEvent());
-                      final item = subscriptionState.products?.first;
-                      logger.d('subscription products : ${subscriptionState.products?.length}');
-                      if(item != null) {
-                        context.read<SubscriptionCubit>().buy(item);
+                      if(subscriptionState.purchaseToken == null) {
+                        final item = subscriptionState.products?.first;
+                        logger.d('subscription products : ${subscriptionState.products?.length}');
+                        if(item != null) {
+                          context.read<SubscriptionCubit>().buy(item);
+                        }
+                      } else {
+                        // GPA.3323-4766-3982-48026
+                        // context.read<SubscriptionCubit>().createOrderToCloud('54J10M28C00028', subscriptionState.subscriptionProductDetails!.first!.id, 'GPA.3323-4766-3982-48026');
+                        // context.read<SubscriptionCubit>().getNetworkEntitlement('54J10M28C00028');
                       }
                     },
                   );

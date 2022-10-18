@@ -113,7 +113,6 @@ Widget _app() {
       BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
       BlocProvider(create: (BuildContext context) => OtpCubit(otpRepository: context.read<OtpRepository>())),
       BlocProvider(create: (BuildContext context) => SetupBloc(routerRepository: context.read<RouterRepository>())),
-      BlocProvider(create: (BuildContext context) => OtpCubit()),
       BlocProvider(create: (BuildContext context) => ProfilesCubit()),
       BlocProvider(create: (BuildContext context) => DeviceCubit()),
       BlocProvider(
