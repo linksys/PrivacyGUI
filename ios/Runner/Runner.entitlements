@@ -7,7 +7,8 @@
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>webcredentials:com.linksys.moab.poc</string>
-		<string>applinks:*.devvelopcloud.com</string>
+		<string>applinks:qa.linksys.cloud</string>
+		<string>applinks:dev.linksys.cloud</string>
 	</array>
 	<key>com.apple.developer.networking.HotspotConfiguration</key>
 	<true/>

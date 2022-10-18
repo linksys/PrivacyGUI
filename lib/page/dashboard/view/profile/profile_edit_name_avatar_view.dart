@@ -5,6 +5,7 @@ import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/route/model/profile_group_path.dart';
 
 import '../../../../design/colors.dart';
 import '../../../../localization/localization_hook.dart';

@@ -1,0 +1,22 @@
+PODS:
+  - Flutter (1.0.0)
+  - ios_push_notification_plugin (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - ios_push_notification_plugin (from `.symlinks/plugins/ios_push_notification_plugin/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  ios_push_notification_plugin:
+    :path: ".symlinks/plugins/ios_push_notification_plugin/ios"
+
+SPEC CHECKSUMS:
+  Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
+  ios_push_notification_plugin: 03bb717c43edbd16157a04e84406f0a602b1923a
+
+PODFILE CHECKSUM: ef19549a9bc3046e7bb7d2fab4d021637c0c58a3
+
+COCOAPODS: 1.11.3

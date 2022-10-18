@@ -13,13 +13,13 @@ class BaseResponse <T> {
 
 class ErrorResponse {
 
-  const ErrorResponse({required this.code, this.errorMessage, this.parameters});
+  const ErrorResponse({required this.status, required this.code, this.errorMessage, this.parameters});
 
-  factory ErrorResponse.fromJson(Map<String, dynamic> json) {
+  factory ErrorResponse.fromJson(int status, Map<String, dynamic> json) {
     final String code = json['code'];
     final String? errorMessage = json['errorMessage'];
     final List<Map<String, dynamic>>? parameters = List.from(json['parameters']) ;
-    return ErrorResponse(code: code, errorMessage: errorMessage, parameters: parameters);
+    return ErrorResponse(status: status,code: code, errorMessage: errorMessage, parameters: parameters);
   }
 
   Map<String, dynamic> toJson() {
@@ -35,6 +35,7 @@ class ErrorResponse {
     return result;
   }
 
+  final int status;
   final String code;
   final String? errorMessage;
   final List<Map<String, dynamic>>? parameters;

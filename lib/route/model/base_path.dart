@@ -3,8 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/design/themes.dart';
-import 'package:linksys_moab/page/landing/view/view.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/page/landing/view/_view.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:linksys_moab/util/logger.dart';
 
 enum PageNavigationType { back, close, none }
@@ -78,7 +79,8 @@ abstract class BasePath {
   }
 }
 
-class HomePath extends BasePath {}
+class HomePath extends BasePath {
+}
 
 class UnknownPath extends BasePath {}
 

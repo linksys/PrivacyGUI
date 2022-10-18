@@ -8,12 +8,12 @@ import 'package:linksys_moab/page/components/base_components/base_page_view.dart
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/_route.dart';
 
 import '../../../bloc/setup/bloc.dart';
 import '../../../bloc/setup/event.dart';
 import '../../components/base_components/button/primary_button.dart';
-import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 
 class SetLocationView extends StatefulWidget {
   const SetLocationView({
@@ -38,14 +38,16 @@ class _SetLocationViewState extends State<SetLocationView> {
   @override
   void initState() {
     super.initState();
-    context.read<SetupBloc>().add(const ResumePointChanged(status: SetupResumePoint.LOCATION));
+    context
+        .read<SetupBloc>()
+        .add(const ResumePointChanged(status: SetupResumePoint.location));
     print('Set Location: initState!');
   }
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
-        child: _selected != 8
+    return BasePageView.withCloseButton(context,
+        child: _selected != locationList.indexOf(locationList.last)
             ? BasicLayout(
                 header: BasicHeader(
                   title: getAppLocalizations(context).name_node_view_title,
@@ -61,10 +63,9 @@ class _SetLocationViewState extends State<SetLocationView> {
                   children: [
                     if (_selected >= 0)
                       PrimaryButton(
-                        text: getAppLocalizations(context).next,
+                        text: getAppLocalizations(context).done,
                         onPress: _selected >= 0
-                            ? () =>
-                            NavigationCubit.of(context).push(SetupCustomizeSSIDPath())
+                            ? () => _onSelect()
                             : null,
                       ),
                   ],
@@ -78,21 +79,22 @@ class _SetLocationViewState extends State<SetLocationView> {
                 content: Padding(
                   padding: const EdgeInsets.fromLTRB(0, 24.0, 0, 0),
                   child: InputField(
-                    titleText: getAppLocalizations(context).name_node_view_custom_name,
-                    hintText: getAppLocalizations(context).name_node_view_hint_text,
+                    titleText:
+                        getAppLocalizations(context).name_node_view_custom_name,
+                    hintText:
+                        getAppLocalizations(context).name_node_view_hint_text,
                     controller: nameController,
                     onChanged: _nameOnChange,
                   ),
                 ),
                 footer: Column(
                   children: [
-                      PrimaryButton(
-                        text: getAppLocalizations(context).save,
-                        onPress: _selected >= 0
-                            ? () =>
-                            NavigationCubit.of(context).push(SetupCustomizeSSIDPath())
-                            : null,
-                      ),
+                    PrimaryButton(
+                      text: getAppLocalizations(context).save,
+                      onPress: _selected >= 0
+                          ? () => _onSelect()
+                          : null,
+                    ),
                   ],
                 ),
                 alignment: CrossAxisAlignment.start,
@@ -133,6 +135,12 @@ class _SetLocationViewState extends State<SetLocationView> {
   void dispose() {
     super.dispose();
     print('Set Location: dispose!');
+  }
+
+  _onSelect() {
+    context.read<SetupBloc>().add(SetRouterLocation(
+        location: locationList[_selected]));
+    NavigationCubit.of(context).pop();
   }
 }
 

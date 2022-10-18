@@ -6,12 +6,14 @@ import 'dart:math';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/util/uuid.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -53,18 +55,17 @@ class Utils {
     return '$m:$s';
   }
 
-
   static String formatTimeInterval(int startTimeInSecond, int endTimeInSecond) {
     bool isNextDay = startTimeInSecond > endTimeInSecond;
-    return '${formatTimeAmPm(startTimeInSecond)} - ${formatTimeAmPm(endTimeInSecond)} ${isNextDay?'next day':''}';
+    return '${formatTimeAmPm(startTimeInSecond)} - ${formatTimeAmPm(endTimeInSecond)} ${isNextDay ? 'next day' : ''}';
   }
 
   static String formatTimeAmPm(int timeInSecond) {
     final Duration timeAmount = Duration(seconds: timeInSecond);
     final String h =
-    timeAmount.inHours.remainder(12).toString().padLeft(2, '0');
+        timeAmount.inHours.remainder(12).toString().padLeft(2, '0');
     final String m =
-    timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
+        timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
     final String ampm = timeAmount.inHours.remainder(24) >= 12 ? 'pm' : 'am';
     return '$h:$m $ampm';
   }
@@ -247,8 +248,22 @@ class Utils {
       'privateKey',
       'X-Linksys-Moab-App-Secret',
       'adminPassword',
+      'passphrase',
     ];
     return maskJsonValue(raw, keys);
+  }
+
+  static String replaceHttpScheme(String raw) {
+    const pattern = '(^https?:)//';
+    RegExp regex = RegExp(pattern, multiLine: true);
+    String result = raw;
+    regex.allMatches(raw).forEach((element) {
+      final target = element.group(1);
+      if (element.groupCount > 0 && target != null) {
+        result = raw.replaceFirst(target, target.replaceFirst(':', '-'));
+      }
+    });
+    return result;
   }
 
   static Future<bool> canUseBiometrics() async {
@@ -267,21 +282,36 @@ class Utils {
   }
 
   static Future<bool> checkCertValidation() async {
+    const storage = FlutterSecureStorage();
+    String? privateKey = await storage.read(key: moabPrefCloudPrivateKey);
+    String? cert = await storage.read(key: moabPrefCloudCertDataKey);
+
     final prefs = await SharedPreferences.getInstance();
     bool isKeyExist = prefs.containsKey(moabPrefCloudPublicKey) &
-    prefs.containsKey(moabPrefCloudPrivateKey) &
-    prefs.containsKey(moabPrefCloudCertDataKey);
+        (privateKey != null) &
+        (cert != null);
     if (!isKeyExist) {
       return false;
     }
-    final certData = CloudDownloadCertData.fromJson(
-        jsonDecode(prefs.getString(moabPrefCloudCertDataKey) ?? ''));
+    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert ?? ''));
     final expiredDate = DateTime.parse(certData.expiration);
     if (expiredDate.millisecondsSinceEpoch -
-        DateTime.now().millisecondsSinceEpoch <
+            DateTime.now().millisecondsSinceEpoch <
         0) {
       return false;
     }
     return true;
+  }
+
+  static String stringBase64Encode(String value) {
+    return utf8.fuse(base64).encode(value);
+  }
+  static String stringBase64Decode(String base64String) {
+    return utf8.fuse(base64).decode(base64String);
+  }
+
+  static String generateMqttClintId() {
+    final platform = Platform.isIOS ? 'iOS' : 'Android';
+    return '$platform-${uuid.v1()}';
   }
 }

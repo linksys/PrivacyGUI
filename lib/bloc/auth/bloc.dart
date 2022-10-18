@@ -1,18 +1,25 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
+import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
 import 'package:linksys_moab/network/http/model/cloud_session_data.dart';
 import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
 import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
-import 'package:linksys_moab/repository/authenticate/local_auth_repository.dart';
 import 'package:linksys_moab/repository/model/dummy_model.dart';
+import 'package:linksys_moab/repository/router/batch_extension.dart';
+import 'package:linksys_moab/repository/router/core_extension.dart';
+import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -24,14 +31,16 @@ import '../../network/http/model/cloud_login_state.dart';
 import '../../network/http/model/cloud_preferences.dart';
 import '../../utils.dart';
 
-class AuthBloc extends Bloc<AuthEvent, AuthState> {
+class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
   final AuthRepository _repository;
-  final LocalAuthRepository _localAuthRepository;
+  final RouterRepository _routerRepository;
+  StreamSubscription? _errorStreamSubscription;
 
-  AuthBloc(
-      {required AuthRepository repo, required LocalAuthRepository localRepo})
-      : _repository = repo,
-        _localAuthRepository = localRepo,
+  AuthBloc({
+    required AuthRepository repo,
+    required RouterRepository routerRepo,
+  })  : _repository = repo,
+        _routerRepository = routerRepo,
         super(AuthState.unknownAuth()) {
     on<InitAuth>(_onInitAuth);
     on<OnCloudLogin>(_onCloudLogin);
@@ -39,8 +48,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<OnCreateAccount>(_onCreateAccount);
     on<Unauthorized>(_unauthorized);
     on<Authorized>(_authorized);
-    on<RequireOtpCode>(_onRequireOtpCode);
-    on<SetOtpInfo>(_onSetOtpInfo);
     on<SetLoginType>(_onSetLoginType);
     on<SetCloudPassword>(_onSetCloudPassword);
     on<SetEnableBiometrics>(_onSetEnableBiometrics);
@@ -48,9 +55,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LocalLogin>(_localLogin);
     on<Logout>(_onLogout);
     on<OnRequestSession>(_onRequestSession);
+
+    //
+    _errorStreamSubscription = errorResponseStream.listen((error) {
+      logger.e(
+          'Receive http response error: ${error.status}, ${error.code}, ${error.errorMessage}');
+      if (error.status == 401) {
+        add(Unauthorized());
+      }
+    });
+    //
+    shareStream = stream;
+    register(routerRepo);
+  }
+
+  @override
+  Future<void> close() {
+    _errorStreamSubscription?.cancel();
+    return super.close();
   }
 
   _onInitAuth(InitAuth event, Emitter<AuthState> emit) async {
+    // TODO add local auth check
     logger.d('check auth status');
     final isValid = await checkCertValidation();
     logger.d('is auth valid: $isValid');
@@ -59,7 +85,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthState.unAuthorized());
       }
 
-      emit(AuthState.authorized());
+      emit(AuthState.cloudAuthorized());
     } else {
       emit(AuthState.unAuthorized());
     }
@@ -85,37 +111,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   _authorized(Authorized event, Emitter<AuthState> emit) {
     if (event.isDuringSetup) {
+    } else if (event.isCloud) {
+      emit(AuthState.cloudAuthorized());
     } else {
-      emit(AuthState.authorized());
-    }
-  }
-
-  void _onRequireOtpCode(RequireOtpCode event, Emitter<AuthState> emit) {
-    switch (state.runtimeType) {
-      case AuthOnCreateAccountState:
-        createAccountPreparationUpdateMethod(event.otpInfo)
-            .then((_) => authChallenge(event.otpInfo));
-        break;
-      case AuthOnCloudLoginState:
-        authChallenge(event.otpInfo);
-        break;
-      default:
-        break;
-    }
-  }
-
-  void _onSetOtpInfo(SetOtpInfo event, Emitter<AuthState> emit) {
-    final _state = state;
-    if (_state is AuthOnCloudLoginState) {
-      AccountInfo accountInfo =
-          _state.accountInfo.copyWith(otpInfo: event.otpInfo);
-      emit(_state.copyWith(accountInfo: accountInfo));
-    } else if (_state is AuthOnCreateAccountState) {
-      AccountInfo accountInfo =
-          _state.accountInfo.copyWith(otpInfo: event.otpInfo);
-      emit(_state.copyWith(accountInfo: accountInfo));
-    } else {
-      logger.d('ERROR: _onSetOtpInfo: Unexpected state type');
+      emit(AuthState.localAuthorized());
     }
   }
 
@@ -123,11 +122,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final _state = state;
     if (_state is AuthOnCloudLoginState) {
       AccountInfo accountInfo =
-          _state.accountInfo.copyWith(loginType: event.loginType);
+          _state.accountInfo.copyWith(authenticationType: event.loginType);
       emit(_state.copyWith(accountInfo: accountInfo));
     } else if (_state is AuthOnCreateAccountState) {
       AccountInfo accountInfo =
-          _state.accountInfo.copyWith(loginType: event.loginType);
+          _state.accountInfo.copyWith(authenticationType: event.loginType);
       emit(_state.copyWith(accountInfo: accountInfo));
     } else {
       logger.d('ERROR: _onSetOtpInfo: Unexpected state type');
@@ -139,9 +138,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (_state is AuthOnCreateAccountState) {
       AccountInfo accountInfo = _state.accountInfo.copyWith(
           password: event.password,
-          loginType: event.password.isEmpty
-              ? LoginType.passwordless
-              : LoginType.password);
+          authenticationType: event.password.isEmpty
+              ? AuthenticationType.passwordless
+              : AuthenticationType.password);
       emit(_state.copyWith(accountInfo: accountInfo));
     } else {
       logger.d('ERROR: _onSetCloudPassword: Unexpected state type');
@@ -209,9 +208,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
 
       await CloudEnvironmentManager().checkSmartDevice();
-      final publicKey = pref.getString(moabPrefCloudPublicKey) ?? '';
-      final privateKey = pref.getString(moabPrefCloudPrivateKey) ?? '';
-      emit(AuthState.authorized());
+      emit(AuthState.cloudAuthorized());
     } else {
       // TODO
       add(Unauthorized());
@@ -225,15 +222,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } else {}
   }
 
-  void _localLogin(LocalLogin event, Emitter<AuthState> emit) {}
+  void _localLogin(LocalLogin event, Emitter<AuthState> emit) async {
+    // Authorized
+    final pref = await SharedPreferences.getInstance();
+    pref.setString(moabPrefLocalPassword, event.password);
+    emit(AuthState.localAuthorized());
+  }
 
   void _onLogout(Logout event, Emitter<AuthState> emit) {
-    // Don't remove all keys on shared preferences when logging out
+    // Don't remove all keys on shared preferences when logging out if biometric is enabled
     SharedPreferences.getInstance().then((prefs) {
-      prefs.remove(moabPrefSessionDataKey);
-      // prefs.remove(moabPrefCloudCertDataKey);
-      // prefs.remove(moabPrefCloudPublicKey);
-      // prefs.remove(moabPrefCloudPrivateKey);
+      final isEnableBiometric = prefs.getBool(moabPrefEnableBiometrics) ?? false;
+      if (isEnableBiometric) {
+        prefs.remove(moabPrefSessionDataKey);
+      } else {
+        prefs.remove(moabPrefCloudCertDataKey);
+        prefs.remove(moabPrefCloudPublicKey);
+        prefs.remove(moabPrefCloudPrivateKey);
+      }
       emit(AuthState.unAuthorized());
     });
   }
@@ -264,56 +270,9 @@ extension AuthBlocCloud on AuthBloc {
         .then((value) => _handleGetMaskedCommunicationMethods(value));
   }
 
-  Future<void> authChallenge(OtpInfo method, {String? token}) async {
-    String vToken = '';
-    final _state = state;
-    if (_state is AuthOnCloudLoginState) {
-      vToken = _state.vToken;
-    } else if (_state is AuthOnCreateAccountState) {
-      vToken = _state.vToken;
-    } else if (token != null) {
-      vToken = token;
-    } else {
-      logger.d('ERROR: authChallenge: Unexpected state type');
-    }
-
-    BaseAuthChallenge challenge;
-    if (method.methodId.isNotEmpty) {
-      challenge =
-          AuthChallengeMethodId(token: vToken, commMethodId: method.methodId);
-    } else {
-      challenge = AuthChallengeMethod(
-        token: vToken,
-        method: method.method.name.toUpperCase(),
-        target: method.data,
-      );
-    }
-    return await _repository.authChallenge(challenge);
-  }
-
-  Future<void> authChallengeVerify(String code, {String? token}) async {
-    String vToken = '';
-    final _state = state;
-    if (_state is AuthOnCloudLoginState) {
-      vToken = _state.vToken;
-    } else if (_state is AuthOnCreateAccountState) {
-      vToken = _state.vToken;
-    } else if (token != null) {
-      vToken = token;
-    } else {
-      logger.d('ERROR: authChallengeVerify: Unexpected state type');
-    }
-
-    return await _repository.authChallengeVerify(vToken, code);
-  }
-
-  Future<void> authChallengeVerifyAccept(String code, String token) async {
-    return await _repository.authChallengeVerifyAccept(token, code);
-  }
-
   Future<void> loginPassword(String password) async {
     // Reset state
-    add(SetLoginType(loginType: LoginType.password));
+    add(SetLoginType(loginType: AuthenticationType.password));
     return await _repository
         .loginPassword((state as AuthOnCloudLoginState).vToken, password)
         .then((value) => _handleLoginPassword(value));
@@ -333,36 +292,38 @@ extension AuthBlocCloud on AuthBloc {
         .then((value) => _handleCreateAccountPreparation(email, value));
   }
 
-  Future<void> createAccountPreparationUpdateMethod(OtpInfo otpInfo) async {
-    CommunicationMethod method = CommunicationMethod(
-        method: OtpMethod.email.name.toUpperCase(), targetValue: otpInfo.data);
-    switch (otpInfo.method) {
-      case OtpMethod.email:
-        break;
-      case OtpMethod.sms:
-        // TODO throw exception if there has no phone number information
-        assert(otpInfo.phoneNumber != null);
-        final phoneNumber = otpInfo.phoneNumber!;
-        method = CommunicationMethod(
-            method: OtpMethod.sms.name.toUpperCase(),
-            targetValue: otpInfo.data,
-            phone: phoneNumber);
-        break;
-      default:
-        break;
-    }
-    return await _repository.createAccountPreparationUpdateMethod(
-        (state as AuthOnCreateAccountState).vToken, method);
+  Future<void> createAccountPreparationUpdateMethod(
+      {required CommunicationMethod method, required String token}) async {
+    // CommunicationMethod method = CommunicationMethod(
+    //     method: CommunicationMethodType.email.name.toUpperCase(), targetValue: otpInfo.data);
+    // switch (otpInfo.method) {
+    //   case CommunicationMethodType.email:
+    //     break;
+    //   case CommunicationMethodType.sms:
+    //     // TODO throw exception if there has no phone number information
+    //     assert(otpInfo.phoneNumber != null);
+    //     final phoneNumber = otpInfo.phoneNumber!;
+    //     method = CommunicationMethod(
+    //         method: CommunicationMethodType.sms.name.toUpperCase(),
+    //         targetValue: otpInfo.data,
+    //         phone: phoneNumber);
+    //     break;
+    //   default:
+    //     break;
+    // }
+    return await _repository.createAccountPreparationUpdateMethod(token, method);
   }
 
   Future<void> createVerifiedAccount() async {
     final _state = state as AuthOnCreateAccountState;
     CreateAccountVerified verified = CreateAccountVerified(
         token: _state.vToken,
-        authenticationMode: _state.accountInfo.loginType.name.toUpperCase(),
-        password: _state.accountInfo.loginType == LoginType.password
-            ? _state.accountInfo.password
-            : null,
+        authenticationMode:
+            _state.accountInfo.authenticationType.name.toUpperCase(),
+        password:
+            _state.accountInfo.authenticationType == AuthenticationType.password
+                ? _state.accountInfo.password
+                : null,
         preferences: CloudPreferences(
             isoLanguageCode: Utils.getLanguageCode(),
             isoCountryCode: Utils.getCountryCode(),
@@ -372,51 +333,53 @@ extension AuthBlocCloud on AuthBloc {
         .then((value) => _handleCreateVerifiedAccount(value));
   }
 
-  Future<AccountInfo> fetchOtpInfo(String username) async {
-    switch (state.runtimeType) {
-      case AuthOnCreateAccountState:
-        List<OtpInfo> list = [];
-        list.add(const OtpInfo(
-          method: OtpMethod.sms,
-          data: '',
-        ));
-        list.add(OtpInfo(
-          method: OtpMethod.email,
-          data: username,
-        ));
-
-        add(SetOtpInfo(otpInfo: list));
-        AccountInfo accountInfo = (state as AuthOnCreateAccountState)
-            .accountInfo
-            .copyWith(otpInfo: list);
-        return accountInfo;
-      case AuthOnCloudLoginState:
-        return await getMaskedCommunicationMethods(username);
-      default:
-        return AccountInfo(
-            username: username, loginType: LoginType.passwordless, otpInfo: []);
-    }
-  }
+  // Future<AccountInfo> fetchOtpInfo(String username) async {
+  //   switch (state.runtimeType) {
+  //     case AuthOnCreateAccountState:
+  //       List<OtpInfo> list = [];
+  //       list.add(const OtpInfo(
+  //         method: CommunicationMethodType.sms,
+  //         data: '',
+  //       ));
+  //       list.add(OtpInfo(
+  //         method: CommunicationMethodType.email,
+  //         data: username,
+  //       ));
+  //
+  //       add(SetOtpInfo(otpInfo: list));
+  //       AccountInfo accountInfo = (state as AuthOnCreateAccountState)
+  //           .accountInfo
+  //           .copyWith(otpInfo: list);
+  //       return accountInfo;
+  //     case AuthOnCloudLoginState:
+  //       return await getMaskedCommunicationMethods(username);
+  //     default:
+  //       return AccountInfo(
+  //           username: username, loginType: LoginType.passwordless, otpInfo: []);
+  //   }
+  // }
 
   Future<void> _handleLoginPrepare(
       String username, CloudLoginState cloudLoginState) async {
     logger.d("handle login prepare: $cloudLoginState");
 
-    LoginType loginType = LoginType.passwordless;
+    AuthenticationType loginType = AuthenticationType.passwordless;
     switch (cloudLoginState.state) {
       case keyRequire2sv:
-        loginType = LoginType.passwordless;
+        loginType = AuthenticationType.passwordless;
         break;
       case keyPasswordRequired:
-        loginType = LoginType.password;
+        loginType = AuthenticationType.password;
         break;
       default:
         logger.d("error: cloud Login State = ${cloudLoginState.state}");
         break;
     }
 
-    AccountInfo accountInfo =
-        AccountInfo(username: username, loginType: loginType, otpInfo: []);
+    AccountInfo accountInfo = AccountInfo(
+        username: username,
+        authenticationType: loginType,
+        communicationMethods: []);
     add(OnCloudLogin(
         accountInfo: accountInfo, vToken: cloudLoginState.data?.token ?? ''));
   }
@@ -424,32 +387,32 @@ extension AuthBlocCloud on AuthBloc {
   Future<AccountInfo> _handleGetMaskedCommunicationMethods(
       List<CommunicationMethod> methods) async {
     logger.d("handle get Masked Communication Methods: $methods");
+    //
+    // List<OtpInfo> list = [];
+    // for (var data in methods) {
+    //   final method = CommunicationMethodType.values
+    //       .firstWhere((element) => element.name == data.method.toLowerCase());
+    //   final String target = method == CommunicationMethodType.email
+    //       ? (state as AuthOnCloudLoginState).accountInfo.username
+    //       : data.targetValue;
+    //   list.add(OtpInfo(
+    //       method: method,
+    //       methodId: data.id ?? '',
+    //       data: target,
+    //       maskedData: data.targetValue));
+    // }
 
-    List<OtpInfo> list = [];
-    for (var data in methods) {
-      final method = OtpMethod.values
-          .firstWhere((element) => element.name == data.method.toLowerCase());
-      final String target = method == OtpMethod.email
-          ? (state as AuthOnCloudLoginState).accountInfo.username
-          : data.targetValue;
-      list.add(OtpInfo(
-          method: method,
-          methodId: data.id ?? '',
-          data: target,
-          maskedData: data.targetValue));
-    }
-
-    add(SetOtpInfo(otpInfo: list));
-    AccountInfo accountInfo =
-        (state as AuthOnCloudLoginState).accountInfo.copyWith(otpInfo: list);
+    AccountInfo accountInfo = (state as AuthOnCloudLoginState)
+        .accountInfo
+        .copyWith(communicationMethods: methods);
     return accountInfo;
   }
 
   Future<void> _handleLoginPassword(CloudLoginState cloudLoginState) async {
     logger.d("handle login password: $cloudLoginState");
-    final LoginType loginType = cloudLoginState.state == keyRequire2sv
-        ? LoginType.passwordless
-        : LoginType.password;
+    final AuthenticationType loginType = cloudLoginState.state == keyRequire2sv
+        ? AuthenticationType.passwordless
+        : AuthenticationType.password;
 
     add(SetLoginType(loginType: loginType));
   }
@@ -466,8 +429,21 @@ extension AuthBlocCloud on AuthBloc {
   Future<void> _handleCreateAccountPreparation(
       String email, String token) async {
     logger.d("handle create Account Preparation: $token");
+    List<CommunicationMethod> methods = [
+      CommunicationMethod(
+        method: CommunicationMethodType.sms.name.toUpperCase(),
+        targetValue: '',
+      ),
+      CommunicationMethod(
+        method: CommunicationMethodType.email.name.toUpperCase(),
+        targetValue: email,
+      )
+    ];
+
     AccountInfo accountInfo = AccountInfo(
-        username: email, loginType: LoginType.passwordless, otpInfo: []);
+        username: email,
+        authenticationType: AuthenticationType.passwordless,
+        communicationMethods: methods);
     add(OnCreateAccount(accountInfo: accountInfo, vToken: token));
   }
 
@@ -479,15 +455,19 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<bool> checkCertValidation() async {
+    const storage = FlutterSecureStorage();
+    String? privateKey = await storage.read(key: moabPrefCloudPrivateKey);
+    String? cert = await storage.read(key: moabPrefCloudCertDataKey);
+
     final prefs = await SharedPreferences.getInstance();
     bool isKeyExist = prefs.containsKey(moabPrefCloudPublicKey) &
-        prefs.containsKey(moabPrefCloudPrivateKey) &
-        prefs.containsKey(moabPrefCloudCertDataKey);
+        (privateKey != null) &
+        (cert != null);
     if (!isKeyExist) {
       return false;
     }
     final certData = CloudDownloadCertData.fromJson(
-        jsonDecode(prefs.getString(moabPrefCloudCertDataKey) ?? ''));
+        jsonDecode(cert ?? ''));
     final expiredDate = DateTime.parse(certData.expiration);
     if (expiredDate.millisecondsSinceEpoch -
             DateTime.now().millisecondsSinceEpoch <
@@ -513,13 +493,13 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<void> extendCertification() async {
-    final pref = await SharedPreferences.getInstance();
-    if (!pref.containsKey(moabPrefCloudCertDataKey)) {
+    const storage = FlutterSecureStorage();
+    String? cert = await storage.read(key: moabPrefCloudCertDataKey);
+    if (cert == null) {
       logger.d('extend certification: original cert data does not exist!');
       return;
     }
-    final certStr = pref.getString(moabPrefCloudCertDataKey);
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(certStr!));
+    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert!));
     final newCertInfo =
         await _repository.extendCertificate(certId: certData.id);
     await delayDownloadCertTime(newCertInfo.downloadTime);
@@ -529,14 +509,15 @@ extension AuthBlocCloud on AuthBloc {
   }
 
   Future<void> requestSession() async {
-    final pref = await SharedPreferences.getInstance();
-    if (!pref.containsKey(moabPrefCloudCertDataKey)) {
+    const storage = FlutterSecureStorage();
+    String? cert = await storage.read(key: moabPrefCloudCertDataKey);
+    if (cert == null) {
       logger.d('extend certification: original cert data does not exist!');
       return;
     }
-    final certStr = pref.getString(moabPrefCloudCertDataKey);
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(certStr!));
+    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert!));
     final session = await _repository.requestSession(certId: certData.id);
+    final pref = await SharedPreferences.getInstance();
     pref.setString(moabPrefSessionDataKey, jsonEncode(session.toJson()));
   }
 
@@ -565,34 +546,25 @@ extension AuthBlocCloud on AuthBloc {
 }
 
 extension AuthBlocLocal on AuthBloc {
-  Future<DummyModel> localLogin(String password) async {
-    return await _localAuthRepository.localLogin(password);
-  }
-
-  Future<DummyModel> verifyRecoveryKey(String key) async {
-    return await _localAuthRepository.verifyRecoveryKey(key);
-  }
-
-  Future<String> getMaskedEmail() async {
-    return await _localAuthRepository
-        .getMaskedEmail()
-        .then((value) => value['maskedEmail']);
+  Future<bool> localLogin(String password) async {
+    final result = await _routerRepository.checkAdminPassword(password);
+    if (result.result == jnapResultOk) {
+      add(LocalLogin(password));
+      return true;
+    }
+    return false;
   }
 
   Future<AdminPasswordInfo> getAdminPasswordInfo() async {
-    return await _localAuthRepository.getAdminPasswordInfo().then((value) =>
+    return await _routerRepository.getAdminPasswordHint().then((value) =>
         AdminPasswordInfo(
-            hasAdminPassword: value['hasAdminPassword'] ?? false,
-            hint: value['hint'] ?? ''));
-  }
-
-  Future<DummyModel> getAccountInfo() async {
-    return await _localAuthRepository.getCloudAccount();
+            hasAdminPassword: value.output.containsKey('passwordHint'),
+            hint: value.output['passwordHint'] ?? ''));
   }
 
   Future<DummyModel> createPassword(String password, String hint) async {
-    return await _localAuthRepository
-        .createPassword(password, hint)
+    return await _routerRepository
+        .createAdminPassword(password, hint)
         .then((value) => _handleCreatePassword(password, hint));
   }
 

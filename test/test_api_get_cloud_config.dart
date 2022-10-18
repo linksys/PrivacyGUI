@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:linksys_moab/network/http/model/cloud_config.dart';
-import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/repository/config/environment_repository.dart';
 import 'package:test/test.dart';

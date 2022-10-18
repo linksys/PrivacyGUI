@@ -17,8 +17,9 @@ import 'package:linksys_moab/page/components/base_components/text/description_te
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/validator.dart';
@@ -66,7 +67,7 @@ class _AddAccountState extends State<AddAccountView> {
   void initState() {
     super.initState();
     context.read<SetupBloc>().add(
-        const ResumePointChanged(status: SetupResumePoint.CREATECLOUDACCOUNT));
+        const ResumePointChanged(status: SetupResumePoint.createCloudAccount));
   }
 
   Widget _buildAccountTipsWidget() {
@@ -113,10 +114,14 @@ class _AddAccountState extends State<AddAccountView> {
         listener: (context, state) {
           if (state is AuthOnCreateAccountState) {
             if (state.vToken.isNotEmpty) {
+              context.read<AuthBloc>().add(SetCloudPassword(password: ''));
+              context.read<AuthBloc>().add(SetLoginType(loginType: AuthenticationType.passwordless));
               NavigationCubit.of(context).push(CreateAccountOtpPath()
                 ..args = {
                   'username': _emailController.text,
                   'function': OtpFunction.setting,
+                  'commMethods': state.accountInfo.communicationMethods,
+                  'token': state.vToken,
                 });
             }
           }

@@ -7,10 +7,22 @@ import 'package:async/async.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
-import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:http/io_client.dart';
+import 'package:linksys_moab/util/storage.dart';
 import 'model/base_response.dart';
+
+/// A error response stream
+/// Everytime occurs error response the stream will emit #ErrorResponse
+StreamController<ErrorResponse> _errorResponseStreamController =
+    StreamController();
+
+Stream<ErrorResponse> get errorResponseStream => _errorResponseStreamController.stream;
+
+void releaseErrorResponseStream() {
+  _errorResponseStreamController.close();
+}
 
 ///
 /// timeout - will throw Timeout exception on ${timeout} seconds
@@ -73,14 +85,15 @@ class MoabHttpClient extends http.BaseClient {
   final FutureOr<void> Function(BaseRequest, http.BaseResponse?, int)? _onRetry;
 
   Map<String, String> get defaultHeader => {
-    moabSiteIdKey: moabRetailSiteId,
-    HttpHeaders.contentTypeHeader: ContentType.json.value,
-    HttpHeaders.acceptHeader: ContentType.json.value
-  };
+        moabSiteIdKey: moabRetailSiteId,
+        HttpHeaders.contentTypeHeader: ContentType.json.value,
+        HttpHeaders.acceptHeader: ContentType.json.value
+      };
 
   String getHost() => CloudEnvironmentManager().currentConfig?.apiBase ?? '';
 
-  String combineUrl(String endpoint, {Map<String, String>? args}) {
+  Future<String> combineUrl(String endpoint, {Map<String, String>? args}) async {
+    await CloudEnvironmentManager().fetchCloudConfig();
     String url = '${getHost()}$endpoint';
     if (args != null) {
       args.forEach((key, value) {
@@ -198,6 +211,20 @@ class MoabHttpClient extends http.BaseClient {
     return response;
   }
 
+  Future<bool> download(Uri url, Uri savedPathUri, {Map<String, String>? headers}) async {
+    try {
+      final response = await super
+          .get(url, headers: headers)
+          .then((response) => _handleResponse(response));
+      _logResponse(response, ignoreResponse: true);
+      Storage.saveByteFile(savedPathUri, response.bodyBytes);
+    } catch (e) {
+      logger.e('Download data failed!', e);
+      return false;
+    }
+    return true;
+  }
+
   _logRequest(http.BaseRequest request, {int retry = 0}) {
     logger.i('\nREQUEST---------------------------------------------------\n'
         '${retry == 0 ? '' : 'RETRY: $retry\n'}'
@@ -207,14 +234,14 @@ class MoabHttpClient extends http.BaseClient {
         '---------------------------------------------------REQUEST END\n');
   }
 
-  _logResponse(http.Response response) {
+  _logResponse(http.Response response, {bool ignoreResponse = false}) {
     final request = response.request;
     if (request != null) {
       logger.i('\nRESPONSE---------------------------------------------------\n'
           'URL: ${request.url}, METHOD: ${request.method}\n'
           'HEADERS: ${request.headers}\n'
           '${request is http.Request ? 'BODY: ${request.body}' : ''}\n'
-          'RESPONSE: ${response.statusCode}, ${response.body}\n'
+          'RESPONSE: ${response.statusCode}, ${ignoreResponse ? '' : response.body}\n'
           '---------------------------------------------------RESPONSE END\n');
     }
   }
@@ -230,13 +257,26 @@ class MoabHttpClient extends http.BaseClient {
     // TODO Revisit - needs to considering about 500 internal server error, 502/503 bad requests
     if (response.statusCode >= 400) {
       logger.i('Cloud Error: ${response.statusCode}, ${response.body}');
-      throw ErrorResponse.fromJson(json.decode(response.body));
+      final error = ErrorResponse.fromJson(response.statusCode, json.decode(response.body));
+      _errorResponseStreamController.add(error);
+      throw error;
     }
     return response;
   }
 }
 
-bool _defaultWhen(http.BaseResponse response) => response.statusCode == 503;
+bool _defaultWhen(http.BaseResponse response)  {
+   if (response.statusCode == 503) {
+     return true;
+   }
+   if (response.statusCode == 404) {
+     final error = ErrorResponse.fromJson(response.statusCode, json.decode((response as Response).body));
+     if (error.code == errorResourceNotReady) {
+       return true;
+     }
+   }
+   return false;
+}
 
 bool _defaultWhenError(Object error, StackTrace stackTrace) =>
     error is TimeoutException;

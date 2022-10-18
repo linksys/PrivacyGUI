@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
+import 'package:linksys_moab/model/group_profile.dart';
+import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/route.dart';
-import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/route/model/internet_schedule_path.dart';
+import 'package:linksys_moab/route/_route.dart';
 
-import '../../../../route/model/dashboard_path.dart';
-
-typedef ValueChanged<T> = void Function(T value);
 
 class InternetScheduleOverviewView extends ArgumentsStatefulView {
   const InternetScheduleOverviewView({Key? key, super.args, super.next})
@@ -31,7 +30,7 @@ class _InternetScheduleOverviewViewState
   Widget build(BuildContext context) {
     return BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
       final profile = state.selectedProfile;
-      final data = profile?.serviceDetails?[PService.internetSchedule]
+      final data = profile?.serviceDetails[PService.internetSchedule]
           as InternetScheduleData?;
       return BasePageView.onDashboardSecondary(
         appBar: AppBar(

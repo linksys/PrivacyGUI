@@ -1,3 +1,5 @@
+import 'package:linksys_moab/util/logger.dart';
+
 enum SecurityType { wpa, wep, none }
 
 class WiFiCredential {
@@ -21,10 +23,9 @@ class WiFiCredential {
     SecurityType type = SecurityType.none;
 
     RegExp regex =
-    RegExp(r"([(?=S|T|P|H):]{1}:[\S\s]*?(?=;T:|;H:|;P:|;S:|;;$))");
+    RegExp(r"([(?=S|T|P|H):]{1}:[\S\s]*?(?=;T:|;H:|;P:|;S:|;$|;;$))");
     regex.allMatches(raw).forEach((element) {
       final data = element.group(0) ?? "";
-      print(data);
       RegExp regex = RegExp(r"([(?=S|T|P|H):]{1}):([\S\s]*)");
       regex.allMatches(data).forEach((element) {
         switch (element.group(1)) {

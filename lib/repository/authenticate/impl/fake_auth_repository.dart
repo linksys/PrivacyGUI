@@ -32,6 +32,7 @@ class FakeAuthRepository extends AuthRepository {
     await Future.delayed(waitDuration);
     if (password == 'Showmeerror123!') {
       throw const ErrorResponse(
+          status: 400,
           code: 'OLD_PASSWORD',
           errorMessage: "You cannot use an old password.");
     }
@@ -44,6 +45,7 @@ class FakeAuthRepository extends AuthRepository {
 
     if (_resendCodeTimer != null && (_resendCodeTimer!.isActive)) {
       throw ErrorResponse(
+          status: 400,
           code: 'RESEND_CODE_TIMER',
           errorMessage: 'A new code can be sent in 0:$_resendCountdown');
     } else {
@@ -72,6 +74,7 @@ class FakeAuthRepository extends AuthRepository {
 
     if (code == '1111') {
       throw const ErrorResponse(
+          status: 400,
           code: 'OTP_INVALID_TOO_MANY_TIMES',
           errorMessage:
               "You've enter an incorrect code too many times. Resend a code to continue.");
@@ -123,7 +126,9 @@ class FakeAuthRepository extends AuthRepository {
 
     if (username.endsWith('error.com')) {
       throw ErrorResponse(
-          code: 'NOT_FOUND', errorMessage: "Can't find account $username");
+          status: 400,
+          code: 'NOT_FOUND',
+          errorMessage: "Can't find account $username");
     } else {
       return list;
     }
@@ -144,7 +149,9 @@ class FakeAuthRepository extends AuthRepository {
     await Future.delayed(waitDuration);
     if (password == 'Showmeerror123!') {
       throw const ErrorResponse(
-          code: 'INCORRECT_PASSWORD', errorMessage: "Incorrect password");
+          status: 400,
+          code: 'INCORRECT_PASSWORD',
+          errorMessage: "Incorrect password");
     } else {
       return const CloudLoginState(
           state: 'REQUIRE_2SV',
@@ -172,7 +179,7 @@ class FakeAuthRepository extends AuthRepository {
     }
 
     throw const ErrorResponse(
-        code: 'RESOURCE_NOT_FOUND', errorMessage: 'errorMessage');
+        status: 400, code: 'RESOURCE_NOT_FOUND', errorMessage: 'errorMessage');
   }
 
   @override
@@ -184,11 +191,7 @@ class FakeAuthRepository extends AuthRepository {
   Future<List<RegionCode>> fetchRegionCodes() async {
     await Future.delayed(waitDuration);
     final jsonArray = [
-      {
-        "isoCode" : "US",
-        "country" : "United States",
-        "countryCode" : 1
-      }
+      {"isoCode": "US", "country": "United States", "countryCode": 1}
     ];
     return List.from(jsonArray.map((e) => RegionCode.fromJson(e)));
   }

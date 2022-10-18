@@ -1,11 +1,10 @@
 import 'package:flutter/widgets.dart';
-import 'package:linksys_moab/page/create_account/view/view.dart';
-import 'package:linksys_moab/page/otp_flow/otp_flow.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/page/create_account/view/_view.dart';
+import 'package:linksys_moab/page/otp_flow/view/_view.dart';
+import 'package:linksys_moab/page/setup/view/_view.dart';
 
-import '../../page/setup/view/no_use_account_confirm_view.dart';
-import '../../page/setup/view/save_settings_view.dart';
-import '../../page/setup/view/use_same_account_prompt_view.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'base_path.dart';
 
 abstract class CreateAccountPath extends BasePath {
@@ -23,10 +22,12 @@ abstract class CreateAccountPath extends BasePath {
       case CreateAccountOtpPath:
         return OtpFlowView(
           args: args,
-          next: SaveCloudSettingsPath(),
+          next: SaveSettingsPath(),
         );
-      case SaveCloudSettingsPath:
-        return SaveSettingsView(args: args,);
+      case SaveSettingsPath:
+        return SaveSettingsView(
+          args: args,
+        );
       case AlreadyHaveOldAccountPath:
         return const HaveOldAccountView();
       case NoUseCloudAccountPath:
@@ -40,7 +41,7 @@ abstract class CreateAccountPath extends BasePath {
       case CreateAccount2SVPath:
         return OtpFlowView(
           args: args,
-          next: SaveCloudSettingsPath(),
+          next: SaveSettingsPath(),
         );
       default:
         return const Center();
@@ -65,9 +66,11 @@ class CreateCloudPasswordPath extends CreateAccountPath {}
 
 class CreateCloudAccountSuccessPath extends CreateAccountPath {}
 
-class SaveCloudSettingsPath extends CreateAccountPath {
+class SaveSettingsPath extends CreateAccountPath {
   @override
-  PageConfig get pageConfig => super.pageConfig..ignoreAuthChanged = true;
+  PageConfig get pageConfig => super.pageConfig
+    ..ignoreAuthChanged = true
+    ..ignoreConnectivityChanged = true;
 }
 
 class AlreadyHaveOldAccountPath extends CreateAccountPath {
@@ -76,4 +79,3 @@ class AlreadyHaveOldAccountPath extends CreateAccountPath {
 }
 
 class NoUseCloudAccountPath extends CreateAccountPath {}
-

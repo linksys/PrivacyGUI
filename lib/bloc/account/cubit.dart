@@ -1,8 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/account/state.dart';
-import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,15 +16,27 @@ class AccountCubit extends Cubit<AccountState> {
 
   Future<void> fetchAccount() async {
     final account = await _repo.getAccount();
-    final isBiometricEnabled = (await SharedPreferences.getInstance()).getBool(moabPrefEnableBiometrics) ?? false;
-    emit(state.copyWithAccountInfo(info: account, isBiometricEnabled: isBiometricEnabled));
+    final defaultGroupId = await _repo.getDefaultGroupId(account.id);
+    logger.d('accountId: ${account.id}, defaultGroupId:$defaultGroupId');
+    await SharedPreferences.getInstance().then((pref) async {
+      await pref.setString(moabPrefCloudAccountId, account.id);
+      await pref.setString(moabPrefCloudDefaultGroupId, defaultGroupId);
+    });
+    final isBiometricEnabled = (await SharedPreferences.getInstance())
+            .getBool(moabPrefEnableBiometrics) ??
+        false;
+    emit(state
+        .copyWithAccountInfo(
+            info: account, isBiometricEnabled: isBiometricEnabled)
+        .copyWith(groupId: defaultGroupId));
   }
 
   Future<String> startAddCommunicationMethod(CommunicationMethod method) async {
     return _repo.addCommunicationMethods(state.id, method);
   }
 
-  Future<void> deleteCommunicationMethod(String method, String targetValue) async {
+  Future<void> deleteCommunicationMethod(
+      String method, String targetValue) async {
     return _repo.deleteCommunicationMethods(state.id, method, targetValue);
   }
 

@@ -23,6 +23,8 @@ abstract class EnvironmentRepository {
   Future<void> registerSmartDevice(CloudSmartDevice smartDevice);
 
   Future<void> acceptSmartDevice(String token);
+
+  Future<bool> downloadResources(Uri url, Uri savedPathUri);
 }
 
 class MoabEnvironmentRepository extends EnvironmentRepository {
@@ -30,7 +32,7 @@ class MoabEnvironmentRepository extends EnvironmentRepository {
 
   @override
   Future<List<CloudConfig>> fetchAllCloudConfig() async {
-    return await _client.fetchCloudConfig().then((response) {
+    return await _client.fetchAllCloudConfig().then((response) {
       final jsonArray = json.decode(response.body) as List<dynamic>;
       return List.from(jsonArray.map((e) => CloudConfig.fromJson(e)));
     });
@@ -38,7 +40,7 @@ class MoabEnvironmentRepository extends EnvironmentRepository {
 
   @override
   Future<CloudConfig> fetchCloudConfig() async {
-    return await _client.fetchAllCloudConfig().then((response) {
+    return await _client.fetchCloudConfig().then((response) {
       final jsonArray = json.decode(response.body) as List<dynamic>;
       return CloudConfig.fromJson(jsonArray.first);
     });
@@ -81,5 +83,10 @@ class MoabEnvironmentRepository extends EnvironmentRepository {
         .loadCloudApp()
         .then(
             (cloudApp) => _client.acceptSmartDevice(cloudApp.id, cloudApp.appSecret!, token));
+  }
+
+  @override
+  Future<bool> downloadResources(Uri url, Uri savedPathUri) async {
+    return await _client.download(url, savedPathUri);
   }
 }

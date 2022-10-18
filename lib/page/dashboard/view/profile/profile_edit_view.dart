@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/content_filter/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
+import 'package:linksys_moab/model/group_profile.dart';
+import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/profiles.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
-import 'package:linksys_moab/page/dashboard/view/dashboard_home_view.dart';
-import 'package:linksys_moab/route/model/dashboard_path.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/content_filter_path.dart';
+import 'package:linksys_moab/route/model/internet_schedule_path.dart';
+import 'package:linksys_moab/route/model/profile_group_path.dart';
+import 'package:linksys_moab/route/_route.dart';
 
 import '../../../../design/colors.dart';
 import '../../../../localization/localization_hook.dart';
@@ -72,10 +75,11 @@ class _ProfileEditViewViewState extends State<ProfileEditView> {
               value: Text('${state.selectedProfile!.devices.length}'),
               onPress: () {
                 showPopup(
-                    context: context,
-                    config: CreateProfileDevicesSelectedPath()
-                      ..args = {'return': true}).then((value) {
-                        //TODO update selected devices
+                        context: context,
+                        config: CreateProfileDevicesSelectedPath()
+                          ..args = {'return': true})
+                    .then((value) {
+                  //TODO update selected devices
                 });
               },
             ),
@@ -91,7 +95,8 @@ class _ProfileEditViewViewState extends State<ProfileEditView> {
                   NavigationCubit.of(context)
                       .push(ContentFilteringOverviewPath());
                 } else {
-                  NavigationCubit.of(context).push(CFPresetsPath());
+                  context.read<ContentFilterCubit>().selectSecureProfile(null);
+                  NavigationCubit.of(context).push(CFPresetsPath()..args = {'profileId': state.selectedProfile?.id});
                 }
               },
             ),

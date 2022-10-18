@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/device/device.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
-import 'package:linksys_moab/bloc/profiles/state.dart';
+import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 
 class DeviceDetailView extends ArgumentsStatefulView {
   const DeviceDetailView({Key? key, super.args, super.next}) : super(key: key);
@@ -87,7 +88,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
                   ?.name,
               () {
                 String? profileId = state.selectedDeviceInfo?.profileId;
-                Profile? profile = context
+                GroupProfile? profile = context
                     .read<ProfilesCubit>().state.profiles[profileId ?? ''];
                 if (profile != null) {
                   context

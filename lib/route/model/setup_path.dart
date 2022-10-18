@@ -1,8 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:linksys_moab/page/setup/view/nodes_doesnt_find_view.dart';
-import 'package:linksys_moab/page/setup/view/view.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/page/setup/view/_view.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 
 import 'base_path.dart';
 
@@ -36,7 +35,7 @@ class SetupCustomizeSSIDPath extends SetupPath {}
 
 class SetupNodesDonePath extends SetupPath {
   @override
-  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = false;
 }
 
 class SetupNodesDoneUnFoundPath extends SetupPath {}
@@ -50,6 +49,9 @@ class SetupAddingNodesPath extends SetupPath {
 
 // Setup Parent Flow
 abstract class SetupParentPath extends SetupPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..ignoreConnectivityChanged = true;
+  
   @override
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
@@ -97,7 +99,11 @@ class SetupParentQrCodeScanPath extends SetupParentPath {
 
 class SetupParentManualPath extends SetupParentPath {}
 
-class SetupParentLocationPath extends SetupParentPath {}
+class SetupParentLocationPath extends SetupParentPath {
+  @override
+  PageConfig get pageConfig =>
+      super.pageConfig..isFullScreenDialog = true;
+}
 
 class SetupParentManualEnterSSIDPath extends SetupParentPath {}
 

@@ -2,21 +2,40 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
+import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/constants/build_config.dart';
-import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/network/http/model/cloud_config.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_smart_device.dart';
 import 'package:linksys_moab/repository/config/environment_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/util/storage.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class CloudEnvironmentManager {
+enum CloudResourceType {
+  appIcons,
+  securityProfiles,
+  securityCategories,
+  webFilters,
+  appSignature
+}
+
+final resourceDownloadTimeThreshold = {
+  CloudResourceType.appIcons: const Duration(days: 1).inMilliseconds,
+  CloudResourceType.securityProfiles: const Duration(minutes: 1).inMilliseconds,
+  CloudResourceType.securityCategories: const Duration(minutes: 1).inMilliseconds,
+  CloudResourceType.webFilters: const Duration(days: 1).inMilliseconds,
+  CloudResourceType.appSignature: const Duration(days: 1).inMilliseconds,
+};
+
+class CloudEnvironmentManager with StateStreamRegister {
   CloudConfig? _config;
   CloudApp? _app;
   final List<CloudConfig> _allConfigs = [];
@@ -35,10 +54,24 @@ class CloudEnvironmentManager {
     return _singleton!;
   }
 
-  CloudEnvironmentManager._();
+  CloudEnvironmentManager._() {
+    shareStream = stream;
+  }
 
   static CloudEnvironmentManager? _singleton;
 
+  release() {
+    unregisterAll();
+  }
+
+  bool applyNewConfig(String region) {
+    final newRegion = _allConfigs.firstWhereOrNull((element) => element.region == region);
+    if (newRegion == null) {
+      return false;
+    }
+    update(newRegion);
+    return true;
+  }
   void update(CloudConfig config) {
     if (_config == config) return;
     _config = config;
@@ -46,6 +79,9 @@ class CloudEnvironmentManager {
   }
 
   Future<void> fetchCloudConfig() async {
+    if (_config != null) {
+      return;
+    }
     final config = await _repository.fetchCloudConfig();
     logger.d('Cloud config fetched: $config');
     if (config == _config) {
@@ -56,6 +92,9 @@ class CloudEnvironmentManager {
   }
 
   Future<List<CloudConfig>> fetchAllCloudConfigs() async {
+    if (_allConfigs.isNotEmpty) {
+      return [];
+    }
     final configs = await _repository.fetchAllCloudConfig();
     _allConfigs
       ..clear()
@@ -72,6 +111,8 @@ class CloudEnvironmentManager {
     // put secret alone with id as the key
     await pref.setString(app.id, app.appSecret!);
     _app = app;
+    // TODO #REFACTOR to revisit here again
+    await Future.delayed(Duration(seconds: 1));
   }
 
   Future<void> fetchCloudApp() async {
@@ -115,7 +156,6 @@ class CloudEnvironmentManager {
   }
 
   Future<void> checkSmartDevice() async {
-
     final pref = await SharedPreferences.getInstance();
     if (pref.getString(moabPrefDeviceToken) == null) {
       return;
@@ -179,6 +219,30 @@ class CloudEnvironmentManager {
   }
 
   CloudApp _buildCloudApp(Map<String, dynamic> json) {
-    return json['smartDeviceStatus'] == null ? CloudApp.fromJson(json) : CloudSmartDeviceApp.fromJson(json);
+    return json['smartDeviceStatus'] == null
+        ? CloudApp.fromJson(json)
+        : CloudSmartDeviceApp.fromJson(json);
+  }
+
+  //
+  Future<bool> downloadResources(CloudResourceType type) {
+    if (type == CloudResourceType.appSignature) {
+      return _repository.downloadResources(
+          Uri.parse(appSignaturesUrl), Storage.appSignaturesFileUri);
+    } else if (type == CloudResourceType.webFilters) {
+      return _repository.downloadResources(
+          Uri.parse(webFilteringUrl), Storage.webFiltersFileUri);
+    } else if (type == CloudResourceType.securityCategories) {
+      return _repository.downloadResources(
+          Uri.parse(categoryPresetsUrl), Storage.categoryPresetsFileUri);
+    } else if (type == CloudResourceType.securityProfiles) {
+      return _repository.downloadResources(
+          Uri.parse(profilePresetsUrl), Storage.secureProfilePresetsFileUri);
+    } else if (type == CloudResourceType.appIcons) {
+      return _repository.downloadResources(
+          Uri.parse(appIconsUrl), Storage.iconFileUri);
+    } else {
+      throw Exception('Unsupported resource type! ${type.name}');
+    }
   }
 }

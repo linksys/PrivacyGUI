@@ -1,7 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
-import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/network/http/extension_requests/extension_requests.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_account_info.dart';
@@ -34,23 +35,6 @@ class CloudAuthRepository extends AuthRepository with SCLoader {
   Future<DummyModel> resetPassword(String password) {
     // TODO: implement resetPassword
     throw UnimplementedError();
-  }
-
-  @override
-  Future<void> authChallenge(BaseAuthChallenge method) {
-    return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
-        _httpClient.authChallenge(method,
-            id: cloudApp.id, secret: cloudApp.appSecret!));
-  }
-
-  @override
-  Future<void> authChallengeVerify(String token, String code) {
-    return _httpClient.authChallengeVerify(token: token, code: code);
-  }
-
-  @override
-  Future<void> authChallengeVerifyAccept(String token, String code) {
-    return _httpClient.authChallengeVerifyAccepted(token: token, code: code);
   }
 
   @override
@@ -115,15 +99,16 @@ class CloudAuthRepository extends AuthRepository with SCLoader {
   Future<void> downloadCloudCert({required taskId, required secret}) {
     return _httpClient
         .downloadCloudCerts(taskId: taskId, secret: secret)
-        .then((response) {
+        .then((response) async {
       final task = CloudDownloadCertTask.fromJson(json.decode(response.body));
       String publicKey = task.data.publicKey;
       String privateKey = task.data.privateKey;
 
+      const storage = FlutterSecureStorage();
+      await storage.write(key: moabPrefCloudCertDataKey, value: jsonEncode(task.data.toJson()));
+      await storage.write(key: moabPrefCloudPrivateKey, value: privateKey);
+
       SharedPreferences.getInstance().then((pref) {
-        pref.setString(
-            moabPrefCloudCertDataKey, jsonEncode(task.data.toJson()));
-        pref.setString(moabPrefCloudPrivateKey, privateKey);
         pref.setString(moabPrefCloudPublicKey, publicKey);
       });
     });

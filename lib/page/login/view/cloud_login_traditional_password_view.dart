@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -12,7 +13,7 @@ import '../../../route/navigation_cubit.dart';
 import '../../../util/logger.dart';
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 import '../../components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 
 class CloudLoginPasswordView extends ArgumentsStatefulView {
   const CloudLoginPasswordView({Key? key, super.args, super.next})
@@ -35,14 +36,15 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
         listenWhen: (previous, current) {
           if (previous is AuthOnCloudLoginState &&
               current is AuthOnCloudLoginState) {
-            return previous.accountInfo.loginType !=
-                current.accountInfo.loginType;
+            return previous.accountInfo.authenticationType !=
+                current.accountInfo.authenticationType;
           }
           return false;
         },
         listener: (context, state) {
           if (state is AuthOnCloudLoginState) {
-            if (state.accountInfo.loginType == LoginType.passwordless) {
+            if (state.accountInfo.authenticationType == AuthenticationType.passwordless) {
+              context.read<AuthBloc>().add(SetLoginType(loginType: AuthenticationType.password));
               NavigationCubit.of(context).push(AuthCloudLoginOtpPath()
                 ..args = {'username': _username, ...widget.args}
                 ..next = widget.next);
@@ -69,6 +71,7 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             PasswordInputField(
+              key: const Key('login_password_view_input_field_password'),
               titleText: getAppLocalizations(context).password,
               hintText: getAppLocalizations(context).password,
               isError: _errorCode.isNotEmpty,
@@ -84,6 +87,7 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
               height: 15,
             ),
             SimpleTextButton(
+                key: const Key('login_password_view_button_forgot_password'),
                 text: getAppLocalizations(context).forgot_password,
                 onPressed: () {
                   NavigationCubit.of(context)
@@ -93,6 +97,7 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
               height: 38,
             ),
             PrimaryButton(
+              key: const Key('login_password_view_button_continue'),
               text: getAppLocalizations(context).text_continue,
               onPress: passwordController.text.isEmpty
                   ? null

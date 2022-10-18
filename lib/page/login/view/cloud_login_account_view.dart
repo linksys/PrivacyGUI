@@ -5,17 +5,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
-import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/validator.dart';
-import 'package:linksys_moab/route/model/model.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 
 import '../../../utils.dart';
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
@@ -40,7 +41,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
   @override
   void initState() {
     super.initState();
-    _fromSetup = widget.next is SaveCloudSettingsPath ? true : false;
+    _fromSetup = widget.next is SaveSettingsPath ? true : false;
   }
 
   @override
@@ -55,24 +56,34 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
         listenWhen: (previous, current) {
           if (previous is AuthOnCloudLoginState &&
               current is AuthOnCloudLoginState) {
-            return (previous.accountInfo.loginType == LoginType.none) &&
-                (current.accountInfo.loginType != LoginType.none);
+            return (previous.accountInfo.authenticationType == AuthenticationType.none) &&
+                (current.accountInfo.authenticationType != AuthenticationType.none);
           } else {
             return false;
           }
         },
-        listener: (context, state) {
+        listener: (context, state) async {
           if (state is AuthOnCloudLoginState) {
-            if (state.accountInfo.loginType == LoginType.password) {
+            final accInfo = await context
+                .read<AuthBloc>()
+                .getMaskedCommunicationMethods(state.accountInfo.username);
+
+            if (state.accountInfo.authenticationType == AuthenticationType.password) {
               logger.d('Go Password');
               NavigationCubit.of(context).push(AuthCloudLoginWithPasswordPath()
-                ..args = widget.args
+                ..args = {
+                  'commMethods': accInfo.communicationMethods,
+                  'token': state.vToken,
+                  ...widget.args
+                }
                 ..next = widget.next);
-            } else if (state.accountInfo.loginType == LoginType.passwordless) {
+            } else if (state.accountInfo.authenticationType == AuthenticationType.passwordless) {
               logger.d('Go Password-less');
               NavigationCubit.of(context).push(AuthCloudLoginOtpPath()
                 ..args = {
                   'username': state.accountInfo.username,
+                  'commMethods': accInfo.communicationMethods,
+                  'token': state.vToken,
                   ...widget.args
                 }
                 ..next = widget.next);
@@ -98,6 +109,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               InputField(
+                key: const Key('login_view_input_field_email'),
                 titleText: getAppLocalizations(context).email,
                 hintText: getAppLocalizations(context).email,
                 controller: _accountController,
@@ -110,6 +122,8 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: SimpleTextButton(
+                      key: const Key(
+                          'login_view_button_email_with_another_linksys_app'),
                       text: getAppLocalizations(context)
                           .cloud_account_login_email_with_linksys_app,
                       onPressed: () => NavigationCubit.of(context)
@@ -120,6 +134,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: SimpleTextButton(
+                      key: const Key('login_view_button_forgot_email'),
                       text: getAppLocalizations(context).forgot_email,
                       onPressed: () => NavigationCubit.of(context)
                           .push(AuthForgotEmailPath())),
@@ -132,6 +147,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
                   return Offstage(
                     offstage: !(canUseBiometrics.data ?? false),
                     child: InkWell(
+                      key: const Key('login_view_button_enable_biometrics'),
                       onTap: () {
                         setState(() {
                           _enableBiometrics = !_enableBiometrics;
@@ -148,6 +164,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24.0),
                 child: PrimaryButton(
+                  key: const Key('login_view_button_continue'),
                   text: getAppLocalizations(context).text_continue,
                   onPress:
                       _accountController.text.isNotEmpty ? _prepareLogin : null,
@@ -157,6 +174,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
                 offstage: _fromSetup,
                 child: Center(
                   child: SimpleTextButton(
+                      key: const Key('login_view_button_login_router_password'),
                       text: getAppLocalizations(context)
                           .cloud_account_login_with_router_password,
                       onPressed: () => NavigationCubit.of(context)

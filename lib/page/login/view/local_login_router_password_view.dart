@@ -2,21 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
-import 'package:linksys_moab/bloc/profiles/cubit.dart';
+import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
-import 'package:linksys_moab/page/components/base_components/button/primary_button.dart';
-import 'package:linksys_moab/page/components/base_components/button/simple_text_button.dart';
-import 'package:linksys_moab/page/components/base_components/input_fields/input_field.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/customs/network_check_view.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/repository/model/dummy_model.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:linksys_moab/util/logger.dart';
 
 class EnterRouterPasswordView extends StatefulWidget {
@@ -66,13 +63,18 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     // TODO: check if connect to router
     setState(() {
       _isLoading = true;
-      _isConnectedToRouter = true;
     });
-    await context
-        .read<AuthBloc>()
-        .getAdminPasswordInfo()
-        .then((value) => _handleAdminPasswordInfo(value));
+
+    final bloc = context.read<AuthBloc>();
+    bool isConnected = await context.read<ConnectivityCubit>().connectToLocalBroker();
+    if (isConnected) {
+      await context.read<NetworkCubit>().getDeviceInfo();
+      await bloc
+          .getAdminPasswordInfo()
+          .then((value) => _handleAdminPasswordInfo(value));
+    }
     setState(() {
+      _isConnectedToRouter = isConnected;
       _isLoading = false;
     });
   }
@@ -146,8 +148,6 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     await context
         .read<AuthBloc>()
         .localLogin(_passwordController.text)
-        .then((value) =>
-            NavigationCubit.of(context).clearAndPush(DashboardHomePath()))
         .onError((error, stackTrace) => _handleError(error, stackTrace));
     setState(() {
       _isLoading = false;
@@ -169,7 +169,8 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
       setState(() {
         _errorReason = e.code;
       });
-    } else { // Unknown error or error parsing
+    } else {
+      // Unknown error or error parsing
       logger.d('Unknown error: $e');
     }
   }

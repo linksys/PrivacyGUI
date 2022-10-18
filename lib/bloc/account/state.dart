@@ -6,6 +6,7 @@ import 'package:linksys_moab/network/http/model/cloud_preferences.dart';
 class AccountState extends Equatable {
   const AccountState({
     required this.id,
+    required this.groupId,
     required this.username,
     required this.status,
     required this.type,
@@ -18,6 +19,7 @@ class AccountState extends Equatable {
   factory AccountState.empty() {
     return AccountState(
       id: '',
+      groupId: '',
       username: '',
       status: '',
       type: '',
@@ -28,6 +30,7 @@ class AccountState extends Equatable {
   }
 
   final String id;
+  final String groupId;
   final String username;
   final String status;
   final String type;
@@ -38,6 +41,7 @@ class AccountState extends Equatable {
 
   AccountState copyWith({
     String? id,
+    String? groupId,
     String? username,
     String? status,
     String? type,
@@ -48,6 +52,7 @@ class AccountState extends Equatable {
   }) {
     return AccountState(
       id: id ?? this.id,
+      groupId: groupId ?? this.groupId,
       username: username ?? this.username,
       status: status ?? this.status,
       type: type ?? this.type,
@@ -62,6 +67,7 @@ class AccountState extends Equatable {
       {required CloudAccountInfo info, bool isBiometricEnabled = false}) {
     return AccountState(
       id: info.id,
+      groupId: '',
       username: info.username,
       status: info.status,
       type: info.type,
@@ -76,6 +82,7 @@ class AccountState extends Equatable {
       {required CloudAccountVerifyInfo info, bool isBiometricEnabled = false}) {
     return AccountState(
       id: info.id,
+      groupId: '',
       username: info.username,
       status: info.status,
       type: info.type,
@@ -89,6 +96,7 @@ class AccountState extends Equatable {
   @override
   List<Object?> get props => [
         id,
+        groupId,
         username,
         status,
         type,

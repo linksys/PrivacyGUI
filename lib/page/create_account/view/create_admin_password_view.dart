@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/setup/bloc.dart';
 import 'package:linksys_moab/bloc/setup/event.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -13,8 +15,9 @@ import 'package:linksys_moab/page/components/base_components/progress_bars/full_
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/model.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:linksys_moab/util/in_app_browser.dart';
 
 import '../../../bloc/setup/state.dart';
@@ -53,7 +56,7 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
     }
     context
         .read<SetupBloc>()
-        .add(const ResumePointChanged(status: SetupResumePoint.ROUTERPASSWORD));
+        .add(const ResumePointChanged(status: SetupResumePoint.routerPassword));
   }
 
   @override
@@ -138,7 +141,12 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
           child: PrimaryButton(
             text: getAppLocalizations(context).next,
             onPress: () {
-              _createPassword(passwordController.text, hintController.text);
+              if (_type == AdminPasswordType.create) {
+                context.read<SetupBloc>().add(SetAdminPasswordHint(password: passwordController.text, hint:hintController.text));
+                NavigationCubit.of(context).push(SaveSettingsPath());
+              } else {
+                _createPassword(passwordController.text, hintController.text);
+              }
             },
           ),
         ),
@@ -149,14 +157,13 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
 
   _createPassword(String password, String hint) async {
     _setLoading(true);
-    await context.read<AuthBloc>().createPassword(password, hint).then((value) {
-      if (_type == AdminPasswordType.create) {
-        NavigationCubit.of(context).clearAndPush(DashboardHomePath());
-      } else {
-        setState(() {
-          _isSuccess = true;
-        });
-      }
+    await context
+        .read<NetworkCubit>()
+        .createAdminPassword(password, hint)
+        .then((value) {
+      setState(() {
+        _isSuccess = true;
+      });
     });
     _setLoading(false);
   }

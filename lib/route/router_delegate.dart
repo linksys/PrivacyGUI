@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,25 +8,32 @@ import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/connectivity/connectivity_info.dart';
 import 'package:linksys_moab/bloc/connectivity/cubit.dart';
+import 'package:linksys_moab/bloc/connectivity/state.dart';
+import 'package:linksys_moab/page/dashboard/view/dashboard_bottom_tab_container.dart';
 import 'package:linksys_moab/route/moab_page.dart';
-import 'package:linksys_moab/route/route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/_route.dart';
+
 import 'package:linksys_moab/util/analytics.dart';
 import 'package:linksys_moab/util/logger.dart';
-import 'package:linksys_moab/route/model/model.dart';
+import 'package:universal_link_plugin/universal_link_plugin.dart';
 
-import '../page/dashboard/view/view.dart';
+import '../page/dashboard/view/_view.dart';
 
 class MoabRouterDelegate extends RouterDelegate<BasePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<BasePath> {
-  MoabRouterDelegate(this._cubit) : navigatorKey = GlobalKey();
 
-  final NavigationCubit _cubit;
-
-  static MoabRouterDelegate of(BuildContext context) {
-    final delegate = Router.of(context).routerDelegate;
-    assert(delegate is MoabRouterDelegate, 'Delegate type must match');
-    return delegate as MoabRouterDelegate;
+  MoabRouterDelegate(this._cubit) : navigatorKey = GlobalKey() {
+    _universalLinkSubscription = UniversalLinkPlugin().universalLinkStream.listen(_handleUniversalLink);
   }
+  late StreamSubscription _universalLinkSubscription;
+  final NavigationCubit _cubit;
+  //
+  // static MoabRouterDelegate of(BuildContext context) {
+  //   final delegate = Router.of(context).routerDelegate;
+  //   assert(delegate is MoabRouterDelegate, 'Delegate type must match');
+  //   return delegate as MoabRouterDelegate;
+  // }
 
   @override
   BasePath get currentConfiguration => _cubit.state.last;
@@ -84,6 +93,13 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
     return path.buildPage(_cubit);
   }
 
+
+  @override
+  void dispose() {
+    _universalLinkSubscription.cancel();
+    super.dispose();
+  }
+
   bool _onPopPage(Route<dynamic> route, dynamic result) {
     logger.d('MoabRouterDelegate:: onPopPage: $result');
 
@@ -109,10 +125,12 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
           previous.status != current.status &&
           !currentConfiguration.pageConfig.ignoreAuthChanged,
       listener: (context, state) {
-        logger.d("Auth Listener: $state}");
+        logger.d("Auth Listener: $state");
         if (state.status == AuthStatus.unAuthorized) {
           _cubit.clearAndPush(HomePath());
-        } else if (state.status == AuthStatus.authorized) {
+        } else if (state.status == AuthStatus.cloudAuthorized) {
+          _cubit.clearAndPush(PrepareDashboardPath());
+        } else if (state.status == AuthStatus.localAuthorized) {
           _cubit.clearAndPush(PrepareDashboardPath());
         }
       },
@@ -120,12 +138,12 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
   }
 
   BlocListener _listenForConnectivity() {
-    return BlocListener<ConnectivityCubit, ConnectivityInfo>(
+    return BlocListener<ConnectivityCubit, ConnectivityState>(
       listenWhen: (previous, current) =>
           !currentConfiguration.pageConfig.ignoreConnectivityChanged,
       listener: (context, state) {
-        logger.d("Connectivity Listener: ${state.type}, ${state.ssid}");
-        if (state.type == ConnectivityResult.none &&
+        logger.d("Connectivity Listener: ${state.connectivityInfo.type}, ${state.connectivityInfo.ssid}");
+        if (state.connectivityInfo.type == ConnectivityResult.none &&
             currentConfiguration is! NoInternetConnectionPath) {
           _cubit.push(NoInternetConnectionPath());
         } else {
@@ -135,6 +153,10 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
         }
       },
     );
+  }
+
+  _handleUniversalLink(dynamic event) {
+    logger.d('received an universal link: $event');
   }
 
   @override

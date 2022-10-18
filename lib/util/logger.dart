@@ -20,15 +20,16 @@ class CustomOutput extends LogOutput {
     for (var line in event.lines) {
       printWrapped(line);
       if (_file.existsSync()) {
-        await _file.writeAsBytes("${Utils.maskSensitiveJsonValues(line.toString())}\n".codeUnits,
+        await _file.writeAsBytes("${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(line.toString()))}\n".codeUnits,
             mode: FileMode.writeOnlyAppend);
       }
     }
   }
 
   void printWrapped(String text) {
-    final pattern = RegExp('.{1,800}'); // 800 is the size of each chunk
-    pattern.allMatches(text).forEach((match) => print(match.group(0)));
+    print(text);
+    // final pattern = RegExp('.{1,800}'); // 800 is the size of each chunk
+    // pattern.allMatches(text).forEach((match) => print(match.group(0)));
   }
 }
 
