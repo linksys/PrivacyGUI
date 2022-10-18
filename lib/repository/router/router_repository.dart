@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:equatable/equatable.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
@@ -41,6 +42,8 @@ class CommandWrap {
   Map<String, dynamic> data;
 }
 
+typedef MqttConnectionCallback = void Function(bool isConnected);
+
 class RouterRepository with StateStreamListener {
   RouterRepository() {
     CloudEnvironmentManager().register(this);
@@ -50,7 +53,7 @@ class RouterRepository with StateStreamListener {
 
   MqttClientWrap? get mqttClient => _mqttClient;
 
-  MqttConnectType connectType = MqttConnectType.none;
+  MqttConnectType _connectType = MqttConnectType.none;
 
   final String clientId = Utils.generateMqttClintId();
 
@@ -64,6 +67,21 @@ class RouterRepository with StateStreamListener {
 
   LoginFrom _loginType = LoginFrom.none;
   RouterType _routerType = RouterType.others;
+
+  final List<MqttConnectionCallback> _callbacks = [];
+
+  void addMqttConnectionCallback(MqttConnectionCallback callback) {
+    if (_callbacks.contains(callback)) {
+      return;
+    }
+    _callbacks.add(callback);
+  }
+
+  void removeMqttConnectionCallback(MqttConnectionCallback callback) {
+    if (_callbacks.contains(callback)) {
+      _callbacks.remove(callback);
+    }
+  }
 
   Future<bool> downloadRemoteCert() async {
     final _client = MoabHttpClient(timeoutMs: 1000);
@@ -83,19 +101,23 @@ class RouterRepository with StateStreamListener {
     }
     const credentials = 'admin:admin';
     final _client = MoabHttpClient(timeoutMs: 1000, retries: 3);
-    var response = await _client
-        .get(Uri.parse('http://${gatewayIp ?? _localBrokerUrl}/cert.cgi'), headers: {
-      'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
-    });
-    bool ret = response.statusCode == HttpStatus.ok && response.body.contains('BEGIN CERTIFICATE');
+    var response = await _client.get(
+        Uri.parse('http://${gatewayIp ?? _localBrokerUrl}/cert.cgi'),
+        headers: {
+          'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
+        });
+    bool ret = response.statusCode == HttpStatus.ok &&
+        response.body.contains('BEGIN CERTIFICATE');
     logger.d('test local cert 1st: $ret');
     // try with 52000 port if false
     if (!ret) {
-      response = await _client
-          .get(Uri.parse('http://${gatewayIp ?? _localBrokerUrl}:52000/cert.cgi'), headers: {
-        'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
-      });
-      ret = response.statusCode == HttpStatus.ok && response.body.contains('BEGIN CERTIFICATE');
+      response = await _client.get(
+          Uri.parse('http://${gatewayIp ?? _localBrokerUrl}:52000/cert.cgi'),
+          headers: {
+            'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
+          });
+      ret = response.statusCode == HttpStatus.ok &&
+          response.body.contains('BEGIN CERTIFICATE');
       logger.d('test local cert 2nd: $ret');
       if (!ret) {
         return false;
@@ -106,6 +128,7 @@ class RouterRepository with StateStreamListener {
     await pref.setString(moabPrefLocalCert, response.body);
     return true;
   }
+
   Future<bool> downloadLocalCert({String? gatewayIp}) async {
     // final caCert = await rootBundle.loadString('assets/keys/server.pem');
     // final pref = await SharedPreferences.getInstance();
@@ -116,10 +139,11 @@ class RouterRepository with StateStreamListener {
     }
     const credentials = 'admin:admin';
     final _client = MoabHttpClient(timeoutMs: 1000);
-    final response = await _client
-        .get(Uri.parse('http://${gatewayIp ?? _localBrokerUrl}/cert.cgi'), headers: {
-      'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
-    });
+    final response = await _client.get(
+        Uri.parse('http://${gatewayIp ?? _localBrokerUrl}/cert.cgi'),
+        headers: {
+          'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
+        });
     if (response.statusCode != HttpStatus.ok) {
       return false;
     }
@@ -164,6 +188,7 @@ class RouterRepository with StateStreamListener {
     }
 
     _mqttClient = MqttClientWrap(_brokerUrl ?? '', port, 'AC:$accountId');
+    _initCallbacks();
     _mqttClient?.caCert = Int8List.fromList(cert.codeUnits);
     _mqttClient?.cert = Int8List.fromList(publicKey.codeUnits);
     _mqttClient?.keyCert = Int8List.fromList(privateKey.codeUnits);
@@ -172,7 +197,7 @@ class RouterRepository with StateStreamListener {
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
       _groupId = pref.getString(moabPrefCloudDefaultGroupId) ?? '';
       _networkId = pref.getString(moabPrefSelectedNetworkId) ?? '';
-      topics?.clear();
+      topics.clear();
       topics.addAll([
         mqttRemoteResponseTopic
             .replaceFirst(varMqttGroupId, _groupId!)
@@ -180,13 +205,12 @@ class RouterRepository with StateStreamListener {
       ]);
       for (var topic in topics) {
         final sub = _mqttClient?.subscribe(topic);
-
         logger.d('Subscribe Topic: ${sub?.topic}');
       }
-      connectType = MqttConnectType.remote;
+      _connectType = MqttConnectType.remote;
       return true;
     } else {
-      connectType = MqttConnectType.none;
+      _connectType = MqttConnectType.none;
       return false;
     }
   }
@@ -210,21 +234,24 @@ class RouterRepository with StateStreamListener {
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
       await _mqttClient?.disconnect();
     }
-    _mqttClient = MqttClientWrap(gatewayIp ?? _localBrokerUrl ?? '', 8333, clientId);
+    _mqttClient =
+        MqttClientWrap(gatewayIp ?? _localBrokerUrl ?? '', 8333, clientId);
+    _initCallbacks();
     _mqttClient?.caCert = Int8List.fromList(cert.codeUnits);
     _mqttClient?.cert = Int8List.fromList(publicKey.codeUnits);
     _mqttClient?.keyCert = Int8List.fromList(privateKey.codeUnits);
     await _mqttClient?.connect();
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
-      topics?.clear();
+      topics.clear();
       topics.addAll([mqttLocalResponseTopic]);
       for (var topic in topics) {
-        _mqttClient?.subscribe(topic);
+        final sub = _mqttClient?.subscribe(topic);
+        logger.d('Subscribe Topic: ${sub?.topic}');
       }
-      connectType = MqttConnectType.local;
+      _connectType = MqttConnectType.local;
       return true;
     } else {
-      connectType = MqttConnectType.none;
+      _connectType = MqttConnectType.none;
       return false;
     }
   }
@@ -242,17 +269,20 @@ class RouterRepository with StateStreamListener {
     }
     final clientId = Utils.generateMqttClintId().substring(0, 23);
     _mqttClient = MqttClientWrap(_localBrokerUrl ?? '', 8833, clientId);
+    _initCallbacks();
     _mqttClient?.caCert = Int8List.fromList(cert.codeUnits);
     await _mqttClient?.connect(username: 'linksys', password: 'admin');
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
+      topics.clear();
       topics.addAll([mqttLocalResponseTopic]);
       for (var topic in topics) {
-        _mqttClient?.subscribe(topic);
+        final sub = _mqttClient?.subscribe(topic);
+        logger.d('Subscribe Topic: ${sub?.topic}');
       }
-      connectType = MqttConnectType.local;
+      _connectType = MqttConnectType.local;
       return true;
     } else {
-      connectType = MqttConnectType.none;
+      _connectType = MqttConnectType.none;
       return false;
     }
   }
@@ -266,7 +296,7 @@ class RouterRepository with StateStreamListener {
 
   JnapCommand createCommand(String action,
       {Map<String, dynamic> data = const {}, bool needAuth = false}) {
-    if (connectType == MqttConnectType.local) {
+    if (_connectType == MqttConnectType.local) {
       return JnapCommand.local(
         action: action,
         auth: needAuth
@@ -274,7 +304,7 @@ class RouterRepository with StateStreamListener {
             : null,
         data: data,
       );
-    } else if (connectType == MqttConnectType.remote) {
+    } else if (_connectType == MqttConnectType.remote) {
       return JnapCommand.remote(
           gid: _groupId!, nid: _networkId!, action: action, data: data);
     } else {
@@ -339,7 +369,7 @@ class RouterRepository with StateStreamListener {
       // connectToLocalWithPassword();
     } else if (state is AuthUnAuthorizedState) {
       _loginType = LoginFrom.none;
-      connectType = MqttConnectType.none;
+      _connectType = MqttConnectType.none;
       // remove all information
       localPassword = 'admin';
       disconnect();
@@ -352,5 +382,22 @@ class RouterRepository with StateStreamListener {
     }
     // reconnect again
     await connectToBroker();
+  }
+
+  _setConnectType(MqttConnectType type) {
+    _connectType = type;
+  }
+
+  _initCallbacks() {
+    _mqttClient?.disconnectCallback = () {
+      for (var callback in _callbacks) {
+        callback.call(false);
+      }
+    };
+    _mqttClient?.connectCallback = () {
+      for (var callback in _callbacks) {
+        callback.call(true);
+      }
+    };
   }
 }
