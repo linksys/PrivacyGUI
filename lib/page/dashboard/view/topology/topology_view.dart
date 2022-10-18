@@ -209,8 +209,10 @@ class _TreeViewPageState extends State<TreeViewPage> {
     return InteractiveViewer(
         constrained: false,
         boundaryMargin: EdgeInsets.all(0),
-        minScale: 0.01,
-        maxScale: 5.6,
+        // minScale: 1,
+        // maxScale: 5.6,
+        // scaleFactor: 4,
+        scaleEnabled: false,
         child: GraphView(
           graph: graph,
           algorithm: CustomBuchheimWalkerAlgorithm(

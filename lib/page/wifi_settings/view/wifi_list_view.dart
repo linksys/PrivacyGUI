@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/design/colors.dart';
+import 'package:linksys_moab/model/router/device.dart';
+import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/customs/hidden_password_widget.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/wifi_settings/view/wifi_settings_view.dart';
 import 'package:linksys_moab/route/model/wifi_settings_path.dart';
 import 'package:linksys_moab/route/_route.dart';
-
+import 'package:linksys_moab/util/logger.dart';
 
 class WifiListView extends StatefulWidget {
   const WifiListView({Key? key}) : super(key: key);
@@ -17,12 +21,38 @@ class WifiListView extends StatefulWidget {
 
 class _WifiListViewState extends State<WifiListView> {
   //TODO: Remove the dummy data
-  final List<WifiListItem> items = [
-    WifiListItem(WifiType.main, 'MyMainNetwork', '01234567', WifiSecurityType.wpa2Wpa3Mixed, WifiMode.mixed, true, 22, 100),
-    WifiListItem(WifiType.guest, 'MyGuestNetwork', '12345678', WifiSecurityType.wpa2, WifiMode.mixed, false, 33, 100),
-    WifiListItem(WifiType.iot, 'MyIotNetwork_1', '23456789', WifiSecurityType.openAndEnhancedOpen, WifiMode.mixed, false, 44, 100),
-    WifiListItem(WifiType.iot, 'MyIotNetwork_2', '34567890', WifiSecurityType.open, WifiMode.mixed, true, 55, 100),
-  ];
+  List<WifiListItem> items = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    items = _getWifiInfo();
+  }
+
+  List<WifiListItem> _getWifiInfo() {
+    List<WifiListItem> _items = [];
+    final state = context.read<NetworkCubit>().state;
+    List<RouterRadioInfo>? radioInfo = state.selected?.radioInfo;
+    if (radioInfo != null) {
+      Map<String, RouterRadioInfo> infoMap =
+          Map.fromEntries(radioInfo.map((e) => MapEntry(e.settings.ssid, e)));
+      _items = List.from(infoMap.values).map((e) {
+        RouterRadioInfo info = e as RouterRadioInfo;
+        return WifiListItem(
+          WifiType.main,
+          info.settings.ssid,
+          info.settings.wpaPersonalSettings.passphrase,
+          WifiListItem.convertToWifiSecurityType(info.settings.security),
+          WifiListItem.convertToWifiMode(info.settings.mode),
+          info.settings.isEnabled,
+          getConnectionDeviceCount(state.selected?.devices),
+          100,
+        );
+      }).toList();
+    }
+    return _items;
+  }
 
   Widget _wifiList() {
     return Column(
@@ -129,5 +159,17 @@ class _WifiListViewState extends State<WifiListView> {
         content: _wifiList(),
       ),
     );
+  }
+
+  int getConnectionDeviceCount(List<Device>? devices) {
+    int deviceCount = 0;
+    if (devices != null && devices.isNotEmpty) {
+      for (Device device in devices) {
+        if (!device.isAuthority && device.nodeType == null) {
+          deviceCount += 1;
+        }
+      }
+    }
+    return deviceCount;
   }
 }

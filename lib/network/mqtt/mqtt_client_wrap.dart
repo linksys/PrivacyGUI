@@ -42,11 +42,10 @@ class MqttClientWrap {
     // Create the client
     _client = MqttServerClient.withPort(_endpoint, _clientId, _port)
       ..keepAlivePeriod = 20 // Set Keep-Alive
-      ..autoReconnect = true
+      // ..autoReconnect = true
       ..setProtocolV311() // Set the protocol to V3.1.1 for AWS IoT Core, if you fail to do this you will receive a connect ack with the response code
       // ..logging(on: true) // logging if you wish
       ..onBadCertificate = _onBadCertificate;
-
     _client.secure = secure;
     if (secure) {
       // Set the security context as you need, note this is the standard Dart SecurityContext class.

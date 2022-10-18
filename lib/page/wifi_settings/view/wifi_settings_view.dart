@@ -4,6 +4,7 @@ import 'package:linksys_moab/page/components/base_components/base_components.dar
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/route/model/wifi_settings_path.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:linksys_moab/util/logger.dart';
 
 class WifiSettingsView extends StatefulWidget {
   const WifiSettingsView({Key? key}) : super(key: key);
@@ -33,6 +34,40 @@ class WifiListItem {
     this.numOfDevices,
     this.signal,
   );
+
+  static WifiSecurityType convertToWifiSecurityType(String security) {
+    switch (security) {
+      case 'Enhanced-Open+None':
+        return WifiSecurityType.openAndEnhancedOpen;
+      case 'Enhanced-Open-Only':
+        return WifiSecurityType.enhancedOpen;
+      case 'None':
+        return WifiSecurityType.open;
+      case 'WPA2-Personal':
+        return WifiSecurityType.wpa3;
+      case 'WPA2/WPA3-Mixed-Personal':
+        return WifiSecurityType.wpa2Wpa3Mixed;
+      case 'WPA3-Personal':
+        return WifiSecurityType.wpa3;
+      default:
+        logger.d('ERROR: convertToWifiSecurityType: security = $security');
+        return WifiSecurityType.open;
+    }
+  }
+
+  static WifiMode convertToWifiMode(String wifiMode) {
+    switch (wifiMode) {
+      case '802.11bg':
+        return WifiMode.bg;
+      case '802.11bgn':
+        return WifiMode.bgn;
+      case '802.11mixed':
+        return WifiMode.mixed;
+      default:
+        logger.d('ERROR: convertToWifiMode: wifiMode = $wifiMode');
+        return WifiMode.mixed;
+    }
+  }
 }
 
 class _WifiSettingsViewState extends State<WifiSettingsView> {
@@ -193,7 +228,9 @@ enum WifiSecurityType {
 }
 
 enum WifiMode {
-  mixed(displayTitle: 'Mixed');
+  mixed(displayTitle: 'Mixed'),
+  bg(displayTitle: 'bg'),
+  bgn(displayTitle: 'bgn');
 
   const WifiMode({required this.displayTitle});
 
@@ -202,6 +239,8 @@ enum WifiMode {
   static List<WifiMode> get allModes {
     return [
       WifiMode.mixed,
+      WifiMode.bg,
+      WifiMode.bgn,
     ];
   }
 }

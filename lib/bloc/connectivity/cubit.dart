@@ -103,7 +103,7 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
   }
 
   Future<RouterType> _testRouterType(String? newIp) async {
-    bool canDownloadCert = await _routerRepository.downloadLocalCert(gatewayIp: newIp).onError((error, stackTrace) => false);
+    bool canDownloadCert = await _routerRepository.testLocalCert(gatewayIp: newIp).onError((error, stackTrace) => false);
     if (!canDownloadCert) {
       return RouterType.others;
     }
@@ -120,8 +120,8 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
   }
 
   Future<bool> connectToLocalBroker() async {
-    return _routerRepository
-        .downloadLocalCert()
+    return await _routerRepository
+        .testLocalCert()
         .onError((error, stackTrace) => false)
         .then((value) => _routerRepository.connectToLocalWithPassword());
   }
@@ -257,6 +257,10 @@ mixin ConnectivityListener {
       wifiGatewayIP = 'Unknown Gateway IP';
     }
 
+    if ((wifiGatewayIP?.isNotEmpty ?? false) && (wifiName?.isEmpty ?? true)) {
+      // get wifi name again if there has gateway ip but no wifi name
+      wifiName = await _networkInfo.getWifiName();
+    }
     final info = ConnectivityInfo(
         type: result, gatewayIp: wifiGatewayIP ?? "", ssid: wifiName ?? "");
     return info;

@@ -59,9 +59,12 @@ class _DashboardViewState extends State<DashboardBottomTabContainer> with DebugO
           ),
           kReleaseMode ? Center() : Positioned(
             left: Utils.getScreenWidth(context) - Utils.getScreenWidth(context) / 2,
-            child: Padding(
-              padding: EdgeInsets.only(top: Utils.getTopSafeAreaPadding(context)),
-              child: OverlayInfoView(),
+            child: IgnorePointer(
+              ignoring: true,
+              child: Padding(
+                padding: EdgeInsets.only(top: Utils.getTopSafeAreaPadding(context)),
+                child: OverlayInfoView(),
+              ),
             ),
           ),
         ],
