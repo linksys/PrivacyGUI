@@ -163,16 +163,24 @@ class _AccountViewState extends State<AccountView> {
                         targetValue: username,
                       ),
                     );
-                final otpInfo = OtpInfo(
-                  method: OtpMethod.email,
-                  data: username,
+                final selectedMethod = CommunicationMethod(
+                  method: CommunicationMethodType.email.name.toUpperCase(),
+                  targetValue: username,
                 );
-                context.read<OtpCubit>().updateToken(token);
-                context.read<OtpCubit>().selectOtpMethod(otpInfo);
-                context.read<AuthBloc>().authChallenge(otpInfo, token: token);
-                NavigationCubit.of(context).push(OtpInputCodePath()
+                // context.read<OtpCubit>().updateToken(token);
+                // context.read<OtpCubit>().selectOtpMethod(otpInfo);
+                // context
+                //     .read<AuthBloc>()
+                //     .authChallenge(method: otpInfo, token: token);
+                NavigationCubit.of(context).push(OtpPreparePath()
                   ..next = AccountDetailPath()
-                  ..args = {'function': OtpFunction.add});
+                  ..args = {
+                    'function': OtpFunction.add,
+                    'username': username,
+                    'commMethods': methods,
+                    'token': token,
+                    'selected': selectedMethod,
+                  });
               },
             )),
       );
@@ -189,7 +197,9 @@ class _AccountViewState extends State<AccountView> {
         onPress: () {
           NavigationCubit.of(context).push(OtpAddPhonePath()
             ..next = AccountDetailPath()
-            ..args = {'function': OtpFunction.add});
+            ..args = {
+              'function': OtpFunction.add,
+            });
         },
       ));
     }
@@ -232,7 +242,7 @@ class _AccountViewState extends State<AccountView> {
           Text(
               'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.'),
           box8(),
-          state.authMode == LoginType.passwordless.name
+          state.authMode == AuthenticationType.passwordless.name
               ? Center()
               : SettingTile(
                   title: Text(
@@ -243,18 +253,18 @@ class _AccountViewState extends State<AccountView> {
                         ?.copyWith(fontSize: 20),
                   ),
                   value: Center(),
-                  onPress:
-                      state.authMode == LoginType.password.name.toUpperCase()
-                          ? () {
-                              NavigationCubit.of(context)
-                                  .push(CloudPasswordValidationPath());
-                            }
-                          : null,
+                  onPress: state.authMode ==
+                          AuthenticationType.password.name.toUpperCase()
+                      ? () {
+                          NavigationCubit.of(context)
+                              .push(CloudPasswordValidationPath());
+                        }
+                      : null,
                 )
         ],
       ),
       value: Switch.adaptive(
-        value: state.authMode == LoginType.passwordless.name,
+        value: state.authMode == AuthenticationType.passwordless.name,
         onChanged: (value) {},
       ),
     );
@@ -294,9 +304,7 @@ class _AccountViewState extends State<AccountView> {
           SimpleTextButton(
               text: 'Turn off',
               onPressed: () async {
-                await context
-                    .read<AccountCubit>()
-                    .toggleBiometrics(value);
+                await context.read<AccountCubit>().toggleBiometrics(value);
                 context.read<AuthBloc>().add(Logout());
                 Navigator.pop(context);
               }),

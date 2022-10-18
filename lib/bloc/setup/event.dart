@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/setup/_setup.dart';
 import 'package:linksys_moab/bloc/setup/state.dart';
 
 abstract class SetupEvent extends Equatable {
@@ -18,6 +19,8 @@ class ResumePointChanged extends SetupEvent {
   List<Object> get props => [status];
 }
 
+class Init extends SetupEvent {}
+
 class SetWIFISSIDAndPassword extends SetupEvent {
   const SetWIFISSIDAndPassword({required this.ssid, required this.password});
 
@@ -29,9 +32,27 @@ class SetWIFISSIDAndPassword extends SetupEvent {
 }
 
 class SetAccountInfo extends SetupEvent {
-
   const SetAccountInfo({required this.accountInfo});
 
   final AccountInfo accountInfo;
 }
 
+class SetAdminPasswordHint extends SetupEvent {
+  const SetAdminPasswordHint({
+    required this.password,
+    this.hint = '',
+  });
+
+  final String password;
+  final String hint;
+}
+
+class SaveRouterSettings extends SetupEvent {}
+
+class FetchNetworkId extends SetupEvent {}
+
+class SetRouterLocation extends SetupEvent {
+  const SetRouterLocation({required this.location});
+
+  final String location;
+}

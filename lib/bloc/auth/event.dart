@@ -1,4 +1,5 @@
 import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 
 abstract class AuthEvent {}
 
@@ -27,27 +28,16 @@ class OnCreateAccount extends AuthEvent {
 class Unauthorized extends AuthEvent {}
 
 class Authorized extends AuthEvent {
-  Authorized({this.isDuringSetup = false});
+  Authorized({this.isDuringSetup = false, this.isCloud = false});
 
-  final bool isDuringSetup;
-}
-
-class RequireOtpCode extends AuthEvent {
-  RequireOtpCode({required this.otpInfo});
-
-  final OtpInfo otpInfo;
-}
-
-class SetOtpInfo extends AuthEvent {
-  SetOtpInfo({required this.otpInfo});
-
-  final List<OtpInfo> otpInfo;
+  final bool isDuringSetup; // TODO seems this is not used anymore
+  final bool isCloud;
 }
 
 class SetLoginType extends AuthEvent {
   SetLoginType({required this.loginType});
 
-  final LoginType loginType;
+  final AuthenticationType loginType;
 }
 
 class SetCloudPassword extends AuthEvent {
@@ -66,7 +56,10 @@ class OnRequestSession extends AuthEvent {}
 
 class CloudLogin extends AuthEvent {}
 
-class LocalLogin extends AuthEvent {}
+class LocalLogin extends AuthEvent {
+  LocalLogin(this.password);
+  final String password;
+}
 
 class Logout extends AuthEvent {
   Logout({this.reason = 0});

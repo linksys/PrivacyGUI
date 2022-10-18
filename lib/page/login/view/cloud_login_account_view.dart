@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
-import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -41,7 +41,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
   @override
   void initState() {
     super.initState();
-    _fromSetup = widget.next is SaveCloudSettingsPath ? true : false;
+    _fromSetup = widget.next is SaveSettingsPath ? true : false;
   }
 
   @override
@@ -56,24 +56,34 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
         listenWhen: (previous, current) {
           if (previous is AuthOnCloudLoginState &&
               current is AuthOnCloudLoginState) {
-            return (previous.accountInfo.loginType == LoginType.none) &&
-                (current.accountInfo.loginType != LoginType.none);
+            return (previous.accountInfo.authenticationType == AuthenticationType.none) &&
+                (current.accountInfo.authenticationType != AuthenticationType.none);
           } else {
             return false;
           }
         },
-        listener: (context, state) {
+        listener: (context, state) async {
           if (state is AuthOnCloudLoginState) {
-            if (state.accountInfo.loginType == LoginType.password) {
+            final accInfo = await context
+                .read<AuthBloc>()
+                .getMaskedCommunicationMethods(state.accountInfo.username);
+
+            if (state.accountInfo.authenticationType == AuthenticationType.password) {
               logger.d('Go Password');
               NavigationCubit.of(context).push(AuthCloudLoginWithPasswordPath()
-                ..args = widget.args
+                ..args = {
+                  'commMethods': accInfo.communicationMethods,
+                  'token': state.vToken,
+                  ...widget.args
+                }
                 ..next = widget.next);
-            } else if (state.accountInfo.loginType == LoginType.passwordless) {
+            } else if (state.accountInfo.authenticationType == AuthenticationType.passwordless) {
               logger.d('Go Password-less');
               NavigationCubit.of(context).push(AuthCloudLoginOtpPath()
                 ..args = {
                   'username': state.accountInfo.username,
+                  'commMethods': accInfo.communicationMethods,
+                  'token': state.vToken,
                   ...widget.args
                 }
                 ..next = widget.next);

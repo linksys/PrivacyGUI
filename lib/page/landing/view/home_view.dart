@@ -4,9 +4,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
+import 'package:linksys_moab/bloc/setup/_setup.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
-import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/cloud_account_info.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
@@ -48,7 +49,6 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    logger.d('DEBUG:: HomeView: build');
     return _isLoading
         ? BasePageView.noNavigationBar(
             child: const FullScreenSpinner(
@@ -82,6 +82,7 @@ class _HomeViewState extends State<HomeView> {
         key: const Key('home_view_button_login'),
         text: getAppLocalizations(context).login,
         onPress: () async {
+          // TODO local auth check
           final pref = await SharedPreferences.getInstance();
           if (pref.containsKey(moabPrefEnableBiometrics)) {
             if (await Utils.checkCertValidation()) {
@@ -92,7 +93,7 @@ class _HomeViewState extends State<HomeView> {
               if (isPass) {
                 final authBloc = context.read<AuthBloc>();
                 await authBloc.requestSession();
-                authBloc.add(Authorized());
+                authBloc.add(Authorized(isCloud: true));
               } else {
                 NavigationCubit.of(context).push(AuthInputAccountPath());
               }
@@ -111,6 +112,7 @@ class _HomeViewState extends State<HomeView> {
         key: const Key('home_view_button_setup'),
         text: getAppLocalizations(context).setup_new_router,
         onPress: () {
+          context.read<SetupBloc>().add(Init());
           NavigationCubit.of(context).push(SetupWelcomeEulaPath());
         },
       ),
@@ -150,17 +152,5 @@ class _HomeViewState extends State<HomeView> {
   }
 
   _initialize() async {
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _isLoading = true;
-    });
-    // TODO what if there has no network???
-    await CloudEnvironmentManager().fetchCloudConfig();
-    await CloudEnvironmentManager().fetchAllCloudConfigs();
-    setState(() {
-      _isLoading = false;
-    });
   }
 }

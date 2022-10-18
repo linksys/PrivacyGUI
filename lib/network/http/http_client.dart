@@ -7,7 +7,7 @@ import 'package:async/async.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
-import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:http/io_client.dart';
 import 'package:linksys_moab/util/storage.dart';
@@ -92,7 +92,8 @@ class MoabHttpClient extends http.BaseClient {
 
   String getHost() => CloudEnvironmentManager().currentConfig?.apiBase ?? '';
 
-  String combineUrl(String endpoint, {Map<String, String>? args}) {
+  Future<String> combineUrl(String endpoint, {Map<String, String>? args}) async {
+    await CloudEnvironmentManager().fetchCloudConfig();
     String url = '${getHost()}$endpoint';
     if (args != null) {
       args.forEach((key, value) {
@@ -264,7 +265,18 @@ class MoabHttpClient extends http.BaseClient {
   }
 }
 
-bool _defaultWhen(http.BaseResponse response) => response.statusCode == 503;
+bool _defaultWhen(http.BaseResponse response)  {
+   if (response.statusCode == 503) {
+     return true;
+   }
+   if (response.statusCode == 404) {
+     final error = ErrorResponse.fromJson(response.statusCode, json.decode((response as Response).body));
+     if (error.code == errorResourceNotReady) {
+       return true;
+     }
+   }
+   return false;
+}
 
 bool _defaultWhenError(Object error, StackTrace stackTrace) =>
     error is TimeoutException;

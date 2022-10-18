@@ -1,53 +1,57 @@
 import 'package:equatable/equatable.dart';
+import 'package:linksys_moab/bloc/auth/_auth.dart';
+import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_phone.dart';
 
 enum AuthStatus {
   unknownAuth,
   unAuthorized,
-  authorized,
+  cloudAuthorized,
+  localAuthorized,
   pending,
   onCloudLogin,
   onLocalLogin,
   onCreateAccount,
 }
 
-enum AuthMethod { none, local, remote }
+// TODO #RENAME
+enum LoginFrom { none, local, remote }
+// TODO #RENAME
+enum AuthenticationType { none, passwordless, password }
 
-enum LoginType { none, passwordless, password }
-
-enum OtpMethod { sms, email }
+enum CommunicationMethodType { sms, email }
 
 class AccountInfo {
   final String username;
   final String password;
-  final LoginType loginType;
-  final List<OtpInfo> otpInfo;
+  final AuthenticationType authenticationType;
+  final List<CommunicationMethod> communicationMethods;
   final bool enableBiometrics;
 
   const AccountInfo(
       {required this.username,
-      required this.loginType,
-      required this.otpInfo,
+      required this.authenticationType,
+      required this.communicationMethods,
       this.password = '',
       this.enableBiometrics = false});
 
   factory AccountInfo.empty() {
     return const AccountInfo(
-        username: '', loginType: LoginType.none, otpInfo: []);
+        username: '', authenticationType: AuthenticationType.none, communicationMethods: []);
   }
 
   AccountInfo copyWith({
     String? username,
     String? password,
-    LoginType? loginType,
-    List<OtpInfo>? otpInfo,
+    AuthenticationType? authenticationType,
+    List<CommunicationMethod>? communicationMethods,
     bool? enableBiometrics,
   }) {
     return AccountInfo(
       username: username ?? this.username,
       password: password ?? this.password,
-      loginType: loginType ?? this.loginType,
-      otpInfo: otpInfo ?? this.otpInfo,
+      authenticationType: authenticationType ?? this.authenticationType,
+      communicationMethods: communicationMethods ?? this.communicationMethods,
       enableBiometrics: enableBiometrics ?? this.enableBiometrics,
     );
   }
@@ -77,8 +81,9 @@ class LocalLoginInfo {
   }
 }
 
+@Deprecated('Please use CommunicationMethod')
 class OtpInfo {
-  final OtpMethod method;
+  final CommunicationMethodType method;
   final String methodId;
   final String data;
   final String maskedData;
@@ -93,7 +98,7 @@ class OtpInfo {
   });
 
   OtpInfo copyWith({
-    OtpMethod? method,
+    CommunicationMethodType? method,
     String? data,
     String? methodId,
     String? maskedData,
@@ -124,15 +129,19 @@ class AuthState extends Equatable {
   });
 
   factory AuthState.unknownAuth() {
-    return const AuthState(status: AuthStatus.unknownAuth);
+    return const AuthUnknownState();
   }
 
   factory AuthState.unAuthorized() {
-    return const AuthState(status: AuthStatus.unAuthorized);
+    return const AuthUnAuthorizedState();
   }
 
-  factory AuthState.authorized() {
+  factory AuthState.cloudAuthorized() {
     return const AuthCloudLoginState();
+  }
+
+  factory AuthState.localAuthorized() {
+    return const AuthLocalLoginState();
   }
 
   factory AuthState.onCloudLogin(
@@ -155,16 +164,25 @@ class AuthState extends Equatable {
       ];
 }
 
+class AuthUnknownState extends AuthState {
+  const AuthUnknownState()
+      : super(status: AuthStatus.unknownAuth);
+}
+
+class AuthUnAuthorizedState extends AuthState {
+  const AuthUnAuthorizedState()
+      : super(status: AuthStatus.unAuthorized);
+}
+
 class AuthCloudLoginState extends AuthState {
   const AuthCloudLoginState()
-      : super(status: AuthStatus.authorized);
+      : super(status: AuthStatus.cloudAuthorized);
 }
 
 class AuthLocalLoginState extends AuthState {
-  const AuthLocalLoginState({required this.localLoginInfo})
-      : super(status: AuthStatus.authorized);
+  const AuthLocalLoginState()
+      : super(status: AuthStatus.localAuthorized);
 
-  final LocalLoginInfo localLoginInfo;
 }
 
 class AuthOnCloudLoginState extends AuthState {

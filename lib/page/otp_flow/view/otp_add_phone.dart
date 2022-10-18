@@ -5,7 +5,7 @@ import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/otp/otp.dart';
-import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_phone.dart';
@@ -14,7 +14,6 @@ import 'package:linksys_moab/page/components/base_components/base_components.dar
 import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/model/otp_path.dart';
 import 'package:linksys_moab/route/_route.dart';
 
 import 'package:linksys_moab/util/error_code_handler.dart';
@@ -67,22 +66,23 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
     try {
       final phoneNumber = await phoneNumberUtil.parse(userInputPhoneNumber,
           regionCode: currentRegion.countryCode);
-      final otpInfo = OtpInfo(
-        method: OtpMethod.sms,
-        data: phoneNumber.e164,
-        phoneNumber: CloudPhoneModel(
-          country: currentRegion.countryCode,
-          countryCallingCode: '+${currentRegion.countryCallingCode}',
-          phoneNumber: phoneNumber.nationalNumber,
-        ),
-      );
-      context.read<OtpCubit>().onInputOtp(
-              info: otpInfo);
+      final phoneMethod = CommunicationMethod(
+          method: CommunicationMethodType.sms.name.toUpperCase(),
+          targetValue: phoneNumber.e164,
+          phone: CloudPhoneModel(
+            country: currentRegion.countryCode,
+            countryCallingCode: '+${currentRegion.countryCallingCode}',
+            phoneNumber: phoneNumber.nationalNumber,
+          ));
+
+      context.read<OtpCubit>().onInputOtp(method: phoneMethod);
       final OtpFunction function = widget.args['function'] ?? OtpFunction.send;
       if (function == OtpFunction.add) {
-        String token = await context.read<AccountCubit>().startAddCommunicationMethod(
+        String token = await context
+            .read<AccountCubit>()
+            .startAddCommunicationMethod(
               CommunicationMethod(
-                method: OtpMethod.sms.name.toUpperCase(),
+                method: CommunicationMethodType.sms.name.toUpperCase(),
                 targetValue: phoneNumber.e164,
                 phone: CloudPhoneModel(
                   country: currentRegion.countryCode,
@@ -92,7 +92,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
               ),
             );
         context.read<OtpCubit>().updateToken(token);
-        context.read<AuthBloc>().authChallenge(otpInfo, token: token);
+        context.read<OtpCubit>().authChallenge(method: phoneMethod, token: token);
       }
       NavigationCubit.of(context).push(OtpInputCodePath()
         ..next = widget.next

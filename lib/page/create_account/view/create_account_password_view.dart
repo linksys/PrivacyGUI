@@ -62,7 +62,9 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
               NavigationCubit.of(context).push(CreateAccount2SVPath()
                 ..args = {
                   'username': username,
-                  'function': OtpFunction.setting2sv
+                  'function': OtpFunction.setting2sv,
+                  'commMethods': state.accountInfo.communicationMethods,
+                  'token': state.vToken,
                 });
             }
           }

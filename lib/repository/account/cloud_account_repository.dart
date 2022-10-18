@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:linksys_moab/network/http/extension_requests/extension_requests.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
@@ -36,9 +35,19 @@ class CloudAccountRepository with SCLoader {
         .then((response) => json.decode(response.body)['token']);
   }
 
-  Future<void> changePassword(String accountId, String password, String token) async {
-    return _instance
-        .then((client) => client.acceptNewPassword(
+  Future<void> changePassword(
+      String accountId, String password, String token) async {
+    return _instance.then((client) => client.acceptNewPassword(
         accountId: accountId, password: password, token: token));
+  }
+
+  Future<String> getDefaultGroupId(String accountId) async {
+    return _instance
+        .then((client) => client.getDefaultGroupId(accountId: accountId))
+        .then((response) {
+      return List.from(json.decode(response.body)['members']).firstWhere((element) =>
+          element['owner']['entityId'] == accountId &&
+          element['asset']['type'] == 'NETWORK_GROUP')['asset']['entityId'];
+    });
   }
 }

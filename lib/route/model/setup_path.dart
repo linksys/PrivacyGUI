@@ -35,7 +35,7 @@ class SetupCustomizeSSIDPath extends SetupPath {}
 
 class SetupNodesDonePath extends SetupPath {
   @override
-  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = false;
 }
 
 class SetupNodesDoneUnFoundPath extends SetupPath {}
@@ -49,6 +49,9 @@ class SetupAddingNodesPath extends SetupPath {
 
 // Setup Parent Flow
 abstract class SetupParentPath extends SetupPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..ignoreConnectivityChanged = true;
+  
   @override
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
@@ -96,7 +99,11 @@ class SetupParentQrCodeScanPath extends SetupParentPath {
 
 class SetupParentManualPath extends SetupParentPath {}
 
-class SetupParentLocationPath extends SetupParentPath {}
+class SetupParentLocationPath extends SetupParentPath {
+  @override
+  PageConfig get pageConfig =>
+      super.pageConfig..isFullScreenDialog = true;
+}
 
 class SetupParentManualEnterSSIDPath extends SetupParentPath {}
 

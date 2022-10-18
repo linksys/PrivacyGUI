@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
-import 'package:linksys_moab/constants/constants.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/network/http/extension_requests/extension_requests.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_account_info.dart';
@@ -35,23 +35,6 @@ class CloudAuthRepository extends AuthRepository with SCLoader {
   Future<DummyModel> resetPassword(String password) {
     // TODO: implement resetPassword
     throw UnimplementedError();
-  }
-
-  @override
-  Future<void> authChallenge(BaseAuthChallenge method) {
-    return CloudEnvironmentManager().loadCloudApp().then((cloudApp) =>
-        _httpClient.authChallenge(method,
-            id: cloudApp.id, secret: cloudApp.appSecret!));
-  }
-
-  @override
-  Future<void> authChallengeVerify(String token, String code) {
-    return _httpClient.authChallengeVerify(token: token, code: code);
-  }
-
-  @override
-  Future<void> authChallengeVerifyAccept(String token, String code) {
-    return _httpClient.authChallengeVerifyAccepted(token: token, code: code);
   }
 
   @override

@@ -8,6 +8,7 @@ import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/connectivity/connectivity_info.dart';
 import 'package:linksys_moab/bloc/connectivity/cubit.dart';
+import 'package:linksys_moab/bloc/connectivity/state.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_bottom_tab_container.dart';
 import 'package:linksys_moab/route/moab_page.dart';
 import 'package:linksys_moab/route/model/_model.dart';
@@ -124,10 +125,12 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
           previous.status != current.status &&
           !currentConfiguration.pageConfig.ignoreAuthChanged,
       listener: (context, state) {
-        logger.d("Auth Listener: $state}");
+        logger.d("Auth Listener: $state");
         if (state.status == AuthStatus.unAuthorized) {
           _cubit.clearAndPush(HomePath());
-        } else if (state.status == AuthStatus.authorized) {
+        } else if (state.status == AuthStatus.cloudAuthorized) {
+          _cubit.clearAndPush(PrepareDashboardPath());
+        } else if (state.status == AuthStatus.localAuthorized) {
           _cubit.clearAndPush(PrepareDashboardPath());
         }
       },
@@ -135,12 +138,12 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
   }
 
   BlocListener _listenForConnectivity() {
-    return BlocListener<ConnectivityCubit, ConnectivityInfo>(
+    return BlocListener<ConnectivityCubit, ConnectivityState>(
       listenWhen: (previous, current) =>
           !currentConfiguration.pageConfig.ignoreConnectivityChanged,
       listener: (context, state) {
-        logger.d("Connectivity Listener: ${state.type}, ${state.ssid}");
-        if (state.type == ConnectivityResult.none &&
+        logger.d("Connectivity Listener: ${state.connectivityInfo.type}, ${state.connectivityInfo.ssid}");
+        if (state.connectivityInfo.type == ConnectivityResult.none &&
             currentConfiguration is! NoInternetConnectionPath) {
           _cubit.push(NoInternetConnectionPath());
         } else {

@@ -13,6 +13,7 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/util/uuid.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -247,8 +248,22 @@ class Utils {
       'privateKey',
       'X-Linksys-Moab-App-Secret',
       'adminPassword',
+      'passphrase',
     ];
     return maskJsonValue(raw, keys);
+  }
+
+  static String replaceHttpScheme(String raw) {
+    const pattern = '(^https?:)//';
+    RegExp regex = RegExp(pattern, multiLine: true);
+    String result = raw;
+    regex.allMatches(raw).forEach((element) {
+      final target = element.group(1);
+      if (element.groupCount > 0 && target != null) {
+        result = raw.replaceFirst(target, target.replaceFirst(':', '-'));
+      }
+    });
+    return result;
   }
 
   static Future<bool> canUseBiometrics() async {
@@ -286,5 +301,17 @@ class Utils {
       return false;
     }
     return true;
+  }
+
+  static String stringBase64Encode(String value) {
+    return utf8.fuse(base64).encode(value);
+  }
+  static String stringBase64Decode(String base64String) {
+    return utf8.fuse(base64).decode(base64String);
+  }
+
+  static String generateMqttClintId() {
+    final platform = Platform.isIOS ? 'iOS' : 'Android';
+    return '$platform-${uuid.v1()}';
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
@@ -10,11 +11,15 @@ import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
+import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/security/bloc.dart';
 import 'package:linksys_moab/bloc/security/event.dart';
 import 'package:linksys_moab/bloc/security/state.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
+import 'package:linksys_moab/constants/jnap_const.dart';
+import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -23,13 +28,24 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
-import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/repository/router/core_extension.dart';
+import 'package:linksys_moab/repository/router/device_list_extension.dart';
+import 'package:linksys_moab/repository/router/health_check_extension.dart';
+import 'package:linksys_moab/repository/router/owend_network_extension.dart';
+import 'package:linksys_moab/repository/router/router_repository.dart';
+import 'package:linksys_moab/repository/router/smart_mode_extension.dart';
+import 'package:linksys_moab/repository/router/transactions_extension.dart';
+import 'package:linksys_moab/repository/router/wireless_ap_extension.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/model/setup_path.dart';
 import 'package:linksys_moab/security/app_icon_manager.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
+import 'package:linksys_moab/utils.dart';
 import 'package:share_plus/share_plus.dart';
+
+import '../../../network/better_action.dart';
 
 class DebugToolsView extends StatefulWidget {
   const DebugToolsView({
@@ -312,67 +328,44 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Test Get Profile',
           onPress: () async {
-            context.read<AccountCubit>().fetchAccount();
+            print('${Utils.replaceHttpScheme('https://abc.com')}');
           },
         ),
         const SizedBox(
           height: 16,
         ),
         Text(
-          'Create Account:',
+          'MQTT test:',
           style: Theme.of(context)
               .textTheme
               .headline2
               ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
         SecondaryButton(
-          text: 'Create account',
-          onPress: () {
-            NavigationCubit.of(context).push(CreateCloudAccountPath());
+          text: 'Connect',
+          onPress: () async {
+            // await context.read<RouterRepository>().connectToLocalWithCloudCert();
+            await context.read<RouterRepository>().getCloudIds();
+            // await context.read<ConnectivityCubit>().connectToRemoteBroker();
+            // await context.read<NetworkCubit>().getRadioInfo();
+
+            // await context.read<RouterRepository>().getSupportedDeviceMode();
+
+            // final results = await context.read<RouterRepository>().setUnsecuredWiFiWarning(false);
+            // final devicesResult =
+            //     await context.read<RouterRepository>().getDevices();
+            // final devices = List.from(devicesResult.output['devices'])
+            //     .map((e) => Device.fromJson(e))
+            //     .toList();
+            // final results2 = await context
+            //     .read<RouterRepository>()
+            //     .setDeviceProperties(
+            //         deviceId: devices[0].deviceID, propertiesToModify: [{'name': userDefinedDeviceLocation, 'value': 'Kitchen'}]);
+            //
+            // await context.read<RouterRepository>().setUnsecuredWiFiWarning(false);
+
+            // logger.d('test results: $results');
           },
-        ),
-        Text(
-          'Icon Map:',
-          style: Theme.of(context)
-            .textTheme
-            .headline2
-            ?.copyWith(color: Theme.of(context).colorScheme.primary),
-        ),
-        const SizedBox(
-          height: 16,
-        ),
-        FutureBuilder<List<String>>(
-          future: AppIconManager.instance().getAppIds(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.done) {
-              _iconData = snapshot.data ?? [];
-              return DropdownButton<String>(
-                  value: _selectedIconKey,
-                  items:
-                  List.from(_iconData.map((e) => DropdownMenuItem<String>(
-                    child: Text(e),
-                    value: e,
-                  ))),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedIconKey = value!;
-                    });
-                  });
-            } else {
-              return CircularProgressIndicator();
-            }
-          },
-        ),
-        FutureBuilder<Uint8List?>(
-            future:
-            AppIconManager.instance().getIconByte(_selectedIconKey ?? ''),
-            builder: (context, snapshot) => snapshot.data == null
-                ? Center()
-                : Image.memory(
-              snapshot.data!,
-              width: 96,
-              height: 96,
-            )
         ),
         Text(
           'Default Preset:',
@@ -429,9 +422,9 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                 text: 'Virus+1',
                 onPress: () {
                   context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
-                    type: CyberthreatType.virus,
-                    number: 1,
-                  ));
+                        type: CyberthreatType.virus,
+                        number: 1,
+                      ));
                 },
               ),
             ),
@@ -441,9 +434,9 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                 text: 'Botnet+1',
                 onPress: () {
                   context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
-                    type: CyberthreatType.botnet,
-                    number: 1,
-                  ));
+                        type: CyberthreatType.botnet,
+                        number: 1,
+                      ));
                 },
               ),
             ),
@@ -454,9 +447,9 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           text: 'Website+1',
           onPress: () {
             context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
-              type: CyberthreatType.website,
-              number: 1,
-            ));
+                  type: CyberthreatType.website,
+                  number: 1,
+                ));
           },
         ),
       ],

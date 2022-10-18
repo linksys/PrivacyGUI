@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -35,14 +36,15 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
         listenWhen: (previous, current) {
           if (previous is AuthOnCloudLoginState &&
               current is AuthOnCloudLoginState) {
-            return previous.accountInfo.loginType !=
-                current.accountInfo.loginType;
+            return previous.accountInfo.authenticationType !=
+                current.accountInfo.authenticationType;
           }
           return false;
         },
         listener: (context, state) {
           if (state is AuthOnCloudLoginState) {
-            if (state.accountInfo.loginType == LoginType.passwordless) {
+            if (state.accountInfo.authenticationType == AuthenticationType.passwordless) {
+              context.read<AuthBloc>().add(SetLoginType(loginType: AuthenticationType.password));
               NavigationCubit.of(context).push(AuthCloudLoginOtpPath()
                 ..args = {'username': _username, ...widget.args}
                 ..next = widget.next);

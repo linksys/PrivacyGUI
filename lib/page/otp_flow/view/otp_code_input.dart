@@ -10,6 +10,7 @@ import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
+import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/base_components/button/simple_text_button.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
@@ -85,11 +86,11 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
         header: BasicHeader(
-          title: state.selectedMethod?.method == OtpMethod.sms
+          title: state.selectedMethod?.method == CommunicationMethodType.sms.name.toUpperCase()
               ? getAppLocalizations(context)
-                  .otp_enter_code_sms_title(state.selectedMethod?.data ?? '')
+                  .otp_enter_code_sms_title(state.selectedMethod?.targetValue ?? '')
               : getAppLocalizations(context)
-                  .otp_enter_code_email_title(state.selectedMethod?.data ?? ''),
+                  .otp_enter_code_email_title(state.selectedMethod?.targetValue ?? ''),
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,7 +129,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
                 text: getAppLocalizations(context).otp_resend_code,
                 onPressed: () {
                   _setLoading(true);
-                  _onSend(state.selectedMethod!)
+                  _onSend(state.selectedMethod!, state.token)
                       .then((_) => _showCodeResentHint())
                       .onError((error, stackTrace) {
                     logger.e('Error OTP input: $error', stackTrace);
@@ -157,15 +158,15 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
 
   _onNext(String? value, String token) async {
     _setLoading(true);
-    final _authBloc = context.read<AuthBloc>();
+    final _otpCubit = context.read<OtpCubit>();
     final function = widget.args['function'] ?? OtpFunction.send;
 
-    await _authBloc
-        .authChallengeVerify(value!,
-            token: function == OtpFunction.add ? token : null)
+    await _otpCubit
+        .authChallengeVerify(code: value!,
+            token: token)
         .onError((error, stackTrace) => _handleError(error, stackTrace));
     if (function == OtpFunction.add) {
-      await _authBloc
+      await _otpCubit
           .authChallengeVerifyAccept(value, token)
           .then((value) async => await context.read<AccountCubit>().fetchAccount())
           .onError((error, stackTrace) => _handleError(error, stackTrace));
@@ -202,20 +203,19 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     context.read<OtpCubit>().setLoading(isLoading);
   }
 
-  Future<void> _onSend(OtpInfo method) async {
-    await context.read<AuthBloc>().authChallenge(method);
+  Future<void> _onSend(CommunicationMethod method, String token) async {
+    await context.read<OtpCubit>().authChallenge(method: method, token: token);
   }
 
-  void _onInit(OtpState state) {
-    final authBloc = context.read<AuthBloc>();
-    // Set state if on setting
-    if (state.isSettingFunction()) {
-      authBloc.add(SetCloudPassword(password: ''));
-      authBloc.add(SetLoginType(loginType: LoginType.passwordless));
-    } else if (state.isSetting2svFunction()) {
-      authBloc.add(SetLoginType(loginType: LoginType.password));
+  void _onInit(OtpState state) async {
+    final otpCubit = context.read<OtpCubit>();
+    // setting2sv, setting means create account????
+    if (state.function == OtpFunction.setting || state.function == OtpFunction.setting2sv) {
+      await context.read<AuthBloc>().createAccountPreparationUpdateMethod(method: state.selectedMethod!, token: state.token);
     }
     // Require otp code
-    authBloc.add(RequireOtpCode(otpInfo: state.selectedMethod!));
+    // authBloc.add(RequireOtpCode(communicationMethod: state.selectedMethod!));
+    // TODO if is create account, do create account preparation first
+    otpCubit.authChallenge(method: state.selectedMethod!, token: state.token);
   }
 }

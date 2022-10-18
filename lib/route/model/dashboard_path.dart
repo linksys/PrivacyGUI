@@ -26,7 +26,9 @@ abstract class DashboardPath extends BasePath {
       case NoRouterPath:
         return const NoRouterView();
       case PrepareDashboardPath:
-        return PrepareDashboardView();
+        return const PrepareDashboardView();
+      case SelectNetworkPath:
+        return const SelectNetworkView();
       default:
         return const Center();
     }
@@ -56,3 +58,5 @@ class DashboardHealthPath extends DashboardPath {
 class NoRouterPath extends DashboardPath {}
 
 class PrepareDashboardPath extends DashboardPath {}
+
+class SelectNetworkPath extends DashboardPath {}

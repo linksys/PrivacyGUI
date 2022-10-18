@@ -1,9 +1,13 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:graphview/GraphView.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
+import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -34,26 +38,31 @@ class _TopologyViewState extends State<TopologyView> {
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
-      padding: EdgeInsets.zero,
-      child: BasicLayout(
-        header: _checkInternetConnection() ? Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            SimpleTextButton(
-              text: '+ Add Node',
-              onPressed: () {},
-            )
-          ],
-        ) : _noInternetConnectionWidget(),
-        content: TreeViewPage(root: _root,),
-        footer: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SimpleTextButton(text: 'Restart mesh system', onPressed: () {})
-          ],
-        ),
-      ),
+    return BlocBuilder<NetworkCubit, NetworkState>(
+        builder: (context, state) {
+          return BasePageView(
+            padding: EdgeInsets.zero,
+            child: BasicLayout(
+              header: _checkInternetConnection() ? Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  SimpleTextButton(
+                    text: '+ Add Node',
+                    onPressed: () {},
+                  )
+                ],
+              ) : _noInternetConnectionWidget(),
+              content: TreeViewPage(root: _transferData(state.selected),),
+              footer: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SimpleTextButton(
+                      text: 'Restart mesh system', onPressed: () {})
+                ],
+              ),
+            ),
+          );
+        }
     );
   }
 
@@ -83,13 +92,20 @@ class _TopologyViewState extends State<TopologyView> {
                 )
               ],
             ),
-            SimpleTextButton(text: 'See what I can do', onPressed: () {}, padding: EdgeInsets.all(4),),
+            SimpleTextButton(text: 'See what I can do',
+              onPressed: () {},
+              padding: EdgeInsets.all(4),),
           ],
         ));
   }
 
   bool _checkInternetConnection() {
     return _root.isOnline;
+  }
+
+
+  DataNode _transferData(MoabNetwork? network) {
+    return DataNode.fromNetwork(network!);
   }
 
   DataNode _createFakeDataNodes() {
@@ -179,6 +195,7 @@ class _TopologyViewState extends State<TopologyView> {
 
 class TreeViewPage extends StatefulWidget {
   final DataNode root;
+
   const TreeViewPage({Key? key, required this.root}) : super(key: key);
 
   @override
@@ -192,8 +209,10 @@ class _TreeViewPageState extends State<TreeViewPage> {
     return InteractiveViewer(
         constrained: false,
         boundaryMargin: EdgeInsets.all(0),
-        minScale: 0.01,
-        maxScale: 5.6,
+        // minScale: 1,
+        // maxScale: 5.6,
+        // scaleFactor: 4,
+        scaleEnabled: false,
         child: GraphView(
           graph: graph,
           algorithm: CustomBuchheimWalkerAlgorithm(
@@ -379,6 +398,20 @@ class DataNode {
     this.parentName = '',
     this.children = const [],
   });
+
+  factory DataNode.fromNetwork(MoabNetwork network) {
+    final device = network.devices!.firstWhere((element) =>
+    element.unit.serialNumber == network.deviceInfo.serialNumber);
+    return DataNode(
+        role: device.isAuthority ? DeviceRole.router : DeviceRole.addon,
+        serialNumber: device.unit.serialNumber ?? '',
+        modelNumber: device.model.modelNumber ?? '',
+        firmwareVersion: device.unit.firmwareVersion ?? '',
+        isLatest: true,
+        friendlyName: device.friendlyName ?? '',
+        connectedDevice: 0,
+        signal: WiFiSignal.none);
+  }
 
   final DeviceRole role;
   final String serialNumber;

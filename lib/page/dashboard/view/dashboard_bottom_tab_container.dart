@@ -1,5 +1,9 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/design/colors.dart';
+import 'package:linksys_moab/page/components/customs/debug_overlay_view.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
@@ -7,6 +11,7 @@ import 'package:linksys_moab/route/_route.dart';
 
 import 'package:linksys_moab/util/debug_mixin.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/utils.dart';
 
 enum DashboardBottomItemType { home, security, health, settings }
 
@@ -38,17 +43,31 @@ class _DashboardViewState extends State<DashboardBottomTabContainer> with DebugO
 
   Widget _contentView() {
     return Scaffold(
-      body: GestureDetector(
-        onTap: () {
-          if (increase()) {
-            logger.d('Triggered!');
-            NavigationCubit.of(context).push(DebugToolsMainPath());
-          }
-        },
-        child: BasicLayout(
-          alignment: CrossAxisAlignment.start,
-          content: widget.navigator,
-        ),
+      body: Stack(
+        children: [
+          GestureDetector(
+            onTap: () {
+              if (increase()) {
+                logger.d('Triggered!');
+                NavigationCubit.of(context).push(DebugToolsMainPath());
+              }
+            },
+            child: BasicLayout(
+              alignment: CrossAxisAlignment.start,
+              content: widget.navigator,
+            ),
+          ),
+          kReleaseMode ? Center() : Positioned(
+            left: Utils.getScreenWidth(context) - Utils.getScreenWidth(context) / 2,
+            child: IgnorePointer(
+              ignoring: true,
+              child: Padding(
+                padding: EdgeInsets.only(top: Utils.getTopSafeAreaPadding(context)),
+                child: OverlayInfoView(),
+              ),
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: Offstage(
         offstage: widget.cubit.state.last.pageConfig.isHideBottomNavBar,

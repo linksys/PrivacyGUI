@@ -67,7 +67,7 @@ class _AddAccountState extends State<AddAccountView> {
   void initState() {
     super.initState();
     context.read<SetupBloc>().add(
-        const ResumePointChanged(status: SetupResumePoint.CREATECLOUDACCOUNT));
+        const ResumePointChanged(status: SetupResumePoint.createCloudAccount));
   }
 
   Widget _buildAccountTipsWidget() {
@@ -114,10 +114,14 @@ class _AddAccountState extends State<AddAccountView> {
         listener: (context, state) {
           if (state is AuthOnCreateAccountState) {
             if (state.vToken.isNotEmpty) {
+              context.read<AuthBloc>().add(SetCloudPassword(password: ''));
+              context.read<AuthBloc>().add(SetLoginType(loginType: AuthenticationType.passwordless));
               NavigationCubit.of(context).push(CreateAccountOtpPath()
                 ..args = {
                   'username': _emailController.text,
                   'function': OtpFunction.setting,
+                  'commMethods': state.accountInfo.communicationMethods,
+                  'token': state.vToken,
                 });
             }
           }

@@ -10,6 +10,9 @@ import 'package:equatable/equatable.dart';
 
   final bool isCloudOk;
 
+  AvailabilityInfo copyWith({bool? isCloudOk}) {
+   return AvailabilityInfo(isCloudOk: isCloudOk?? this.isCloudOk);
+  }
   @override
   List<Object?> get props => [isCloudOk];
 
