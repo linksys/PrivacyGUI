@@ -44,7 +44,7 @@ class MqttClientWrap {
       ..keepAlivePeriod = 20 // Set Keep-Alive
       // ..autoReconnect = true
       ..setProtocolV311() // Set the protocol to V3.1.1 for AWS IoT Core, if you fail to do this you will receive a connect ack with the response code
-      // ..logging(on: true) // logging if you wish
+      ..logging(on: true) // logging if you wish
       ..onBadCertificate = _onBadCertificate;
     _client.secure = secure;
     if (secure) {

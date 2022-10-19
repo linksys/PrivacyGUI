@@ -3,6 +3,7 @@ import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
+import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
 import 'package:linksys_moab/repository/router/core_extension.dart';
 import 'package:linksys_moab/repository/router/device_list_extension.dart';
 import 'package:linksys_moab/repository/router/owend_network_extension.dart';
@@ -125,7 +126,10 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
       adminPassword: state.adminPassword,
       passwordHint: state.passwordHint,
       settings: simpleWiFiSettingsList,
-    );
+    ).onError((error, stackTrace) {
+      logger.e('configure router: $error');
+      return JnapSuccess(result: 'error!');
+    });
     // TODO #1 to wait the transaction done since current transaction won't get response back
     await Future.delayed(Duration(seconds: 30));
     emit(state.copyWith(resumePoint: SetupResumePoint.wifiInterrupted));

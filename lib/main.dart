@@ -6,6 +6,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/app_lifecycle/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
@@ -43,7 +44,8 @@ import 'route/model/_model.dart';
 void main() {
   // enableFlutterDriverExtension();
   runZonedGuarded(() async {
-    WidgetsFlutterBinding.ensureInitialized();
+    WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
     await Storage.init();
     logger.v('App Start');
     await initLog();
@@ -60,20 +62,24 @@ void main() {
     FlutterError.onError = (FlutterErrorDetails details) {
       logger.e('Uncaught Flutter Error:\n', details);
       FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-      if (kReleaseMode) {
-        // Only exit app on release mode
-        exit(1);
-      }
+      // if (kReleaseMode) {
+      //   // Only exit app on release mode
+      //   exit(1);
+      // }
+      exit(1);
+
     };
     initBetterActions();
     runApp(_app());
   }, (Object error, StackTrace stack) {
     logger.e('Uncaught Error:\n', error);
     FirebaseCrashlytics.instance.recordError(error, stack);
-    if (kReleaseMode) {
-      // Only exit app on release mode
-      exit(1);
-    }
+    // if (kReleaseMode) {
+    //   // Only exit app on release mode
+    //   exit(1);
+    // }
+    exit(1);
+
   });
 }
 
@@ -145,6 +151,8 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
     _cubit.init();
     _cubit.forceUpdate().then((value) => _initAuth());
     super.initState();
+    FlutterNativeSplash.remove();
+
   }
 
   @override
