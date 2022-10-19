@@ -33,12 +33,14 @@ class MqttClientWrap {
 
   late MqttServerClient _client;
 
-  final StreamController<MqttCommand> _commandStreamController = StreamController(sync: true);
+  final StreamController<MqttCommand> _commandStreamController =
+      StreamController(sync: true);
   StreamSubscription? _subscription;
 
   MqttClientWrap(this._endpoint, this._port, this._clientId);
 
-  Future<void> connect({String? username, String? password, bool secure = true}) async {
+  Future<void> connect(
+      {String? username, String? password, bool secure = true}) async {
     // Create the client
     _client = MqttServerClient.withPort(_endpoint, _clientId, _port)
       // ..keepAlivePeriod = 20 // Set Keep-Alive
@@ -76,14 +78,14 @@ class MqttClientWrap {
     _client.onSubscribed = subscribeCallback;
     _client.onUnsubscribed = unsubscribeCallback;
 
-    // Connect the client
-    try {
+    await runZonedGuarded(() async {
+      // Connect the client
       logger.i('MQTT client connecting to endpoint: $_endpoint');
       await _client.connect(username, password);
-    } on Exception catch (e) {
-      logger.i('MQTT client exception - $e');
+    }, (error, stack) {
+      logger.i('MQTT client exception - $error');
       _client.disconnect();
-    }
+    });
 
     logger.i('MQTT client status: ${_client.connectionStatus!.state}');
     if (_client.connectionStatus!.state == MqttConnectionState.connected) {
@@ -109,7 +111,8 @@ class MqttClientWrap {
           int retry = 0;
           Timer timer = Timer.periodic(Duration(seconds: delay), (timer) async {
             await connect(username: 'linksys', password: 'admin');
-            if (_client.connectionStatus!.state == MqttConnectionState.connected) {
+            if (_client.connectionStatus!.state ==
+                MqttConnectionState.connected) {
               // connected
               timer.cancel();
               // check connected router is our target
@@ -126,7 +129,7 @@ class MqttClientWrap {
   _handleReceiveMessage(List<MqttReceivedMessage<MqttMessage>> c) {
     final recMess = c[0].payload as MqttPublishMessage;
     final pt =
-    MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+        MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
     final id = BaseMqttCommand.extractUUID(pt);
     logger.i(
         'MQTT:: onReceived: message id is <$id>, topic is <${c[0].topic}>, payload is <-- $pt -->');
@@ -140,7 +143,7 @@ class MqttClientWrap {
 
   _handlePublishMessage(MqttPublishMessage message) {
     final pt =
-    MqttPublishPayload.bytesToStringAsString(message.payload.message);
+        MqttPublishPayload.bytesToStringAsString(message.payload.message);
     final id = BaseMqttCommand.extractUUID(pt);
     logger.i(
         'MQTT:: Published notification:: id is <$id>, topic is ${message.variableHeader!.topicName}, with Qos ${message.header!.qos}');

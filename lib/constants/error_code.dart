@@ -7,3 +7,6 @@ const errorExceedThreshold = 'EXCEEDS_THRESHOLD';
 const errorUsernameExists = 'USERNAME_ALREADY_EXISTS';
 const errorInvalidPhone = 'INVALID_PHONE_NUMBER';
 const errorResourceNotReady = 'RESOURCE_NOT_READY';
+const errorSubjectNotFound = 'SUBJECT_NOT_FOUND';
+// JNAP Error
+const errorJNAPUnauthorized = '_ErrorUnauthorized';

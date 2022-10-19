@@ -112,7 +112,7 @@ class CloudEnvironmentManager with StateStreamRegister {
     await pref.setString(app.id, app.appSecret!);
     _app = app;
     // TODO #REFACTOR to revisit here again
-    await Future.delayed(Duration(seconds: 1));
+    await Future.delayed(Duration(seconds: 3));
   }
 
   Future<void> fetchCloudApp() async {

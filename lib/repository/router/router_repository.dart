@@ -105,7 +105,7 @@ class RouterRepository with StateStreamListener {
         Uri.parse('http://${gatewayIp ?? _localBrokerUrl}/cert.cgi'),
         headers: {
           'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
-        });
+        }, ignoreResponse: true);
     bool ret = response.statusCode == HttpStatus.ok &&
         response.body.contains('BEGIN CERTIFICATE');
     logger.d('test local cert 1st: $ret');

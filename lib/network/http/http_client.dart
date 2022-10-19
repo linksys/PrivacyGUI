@@ -30,7 +30,7 @@ void releaseErrorResponseStream() {
 class MoabHttpClient extends http.BaseClient {
   MoabHttpClient({
     IOClient? client,
-    int timeoutMs = 5000,
+    int timeoutMs = 10000,
     int retries = 3,
     FutureOr<bool> Function(http.BaseResponse) when = _defaultWhen,
     FutureOr<bool> Function(Object, StackTrace) whenError = _defaultWhenError,
@@ -49,7 +49,7 @@ class MoabHttpClient extends http.BaseClient {
 
   MoabHttpClient.withCert(
     SecurityContext context, {
-    int timeoutMs = 5000,
+    int timeoutMs = 10000,
     int retries = 3,
     FutureOr<bool> Function(http.BaseResponse) when = _defaultWhen,
     FutureOr<bool> Function(Object, StackTrace) whenError = _defaultWhenError,
@@ -112,10 +112,12 @@ class MoabHttpClient extends http.BaseClient {
       StreamedResponse? response;
       try {
         _logRequest(request, retry: i);
+        final copied = _copyRequest(request, splitter.split());
         response = await _inner
-            .send(_copyRequest(request, splitter.split()))
+            .send(copied)
             .timeout(Duration(milliseconds: _timeoutMs));
       } catch (error, stackTrace) {
+        logger.e('Http Request Error: $error');
         if (i == _retries || !await _whenError(error, stackTrace)) rethrow;
       }
 
@@ -194,11 +196,11 @@ class MoabHttpClient extends http.BaseClient {
   }
 
   @override
-  Future<Response> get(Uri url, {Map<String, String>? headers}) async {
+  Future<Response> get(Uri url, {Map<String, String>? headers, bool ignoreResponse = false}) async {
     final response = await super
         .get(url, headers: headers)
         .then((response) => _handleResponse(response));
-    _logResponse(response);
+    _logResponse(response, ignoreResponse: ignoreResponse);
     return response;
   }
 
@@ -272,6 +274,12 @@ bool _defaultWhen(http.BaseResponse response)  {
    if (response.statusCode == 404) {
      final error = ErrorResponse.fromJson(response.statusCode, json.decode((response as Response).body));
      if (error.code == errorResourceNotReady) {
+       return true;
+     }
+   }
+   if (response.statusCode == 401) {
+     final error = ErrorResponse.fromJson(response.statusCode, json.decode((response as Response).body));
+     if (error.code == errorSubjectNotFound) {
        return true;
      }
    }

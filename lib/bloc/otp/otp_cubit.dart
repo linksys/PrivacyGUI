@@ -82,7 +82,7 @@ class OtpCubit extends Cubit<OtpState> {
         target: method.targetValue,
       );
     }
-    return await _otpRepository.authChallenge(challenge);
+    return await _otpRepository.authChallenge(challenge).onError((error, stackTrace) => null);
   }
 
   Future<void> authChallengeVerify(

@@ -41,36 +41,45 @@ import 'repository/authenticate/impl/router_auth_repository.dart';
 import 'repository/authenticate/otp_repository.dart';
 import 'route/model/_model.dart';
 
-void main() {
+void main() async {
   // enableFlutterDriverExtension();
-  runZonedGuarded(() async {
-    WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-    await Storage.init();
-    logger.v('App Start');
-    await initLog();
-    logger.d('Start to init Firebase Core');
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    // if (!kReleaseMode) {
-    //   MqttLogger.loggingOn = true;
-    // }
-    logger.d('Done for init Firebase Core');
-    initCloudMessage();
-    // Pass all uncaught errors from the framework to Crashlytics.
-    FlutterError.onError = (FlutterErrorDetails details) {
-      logger.e('Uncaught Flutter Error:\n', details);
-      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-      if (kReleaseMode) {
-        // Only exit app on release mode
-        exit(1);
-      }
-
-    };
-    initBetterActions();
-    runApp(_app());
-  }, (Object error, StackTrace stack) {
+  // runZonedGuarded(() async {
+  //
+  // }, (Object error, StackTrace stack) {
+  //   logger.e('Uncaught Error:\n', error, stack);
+  //   logger.e(stack.toString());
+  //   FirebaseCrashlytics.instance.recordError(error, stack);
+  //   // if (kReleaseMode) {
+  //   //   // Only exit app on release mode
+  //   //   exit(1);
+  //   // }
+  //   exit(1);
+  // });
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  await Storage.init();
+  logger.v('App Start');
+  await initLog();
+  logger.d('Start to init Firebase Core');
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  // if (!kReleaseMode) {
+  //   MqttLogger.loggingOn = true;
+  // }
+  logger.d('Done for init Firebase Core');
+  initCloudMessage();
+  // Pass all uncaught errors from the framework to Crashlytics.
+  FlutterError.onError = (FlutterErrorDetails details) {
+    logger.e('Uncaught Flutter Error:\n', details);
+    FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    if (kReleaseMode) {
+      // Only exit app on release mode
+      exit(1);
+    }
+    exit(1);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
     logger.e('Uncaught Error:\n', error, stack);
     logger.e(stack.toString());
     FirebaseCrashlytics.instance.recordError(error, stack);
@@ -78,7 +87,10 @@ void main() {
       // Only exit app on release mode
       exit(1);
     }
-  });
+    return true;
+  };
+  initBetterActions();
+  runApp(_app());
 }
 
 Widget _app() {
