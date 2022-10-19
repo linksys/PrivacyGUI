@@ -137,7 +137,7 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
 
   void _onFetchNetworkId(FetchNetworkId event, Emitter<SetupState> emit) async {
     final result = await _routerRepository.getOwnedNetworkID();
-    final networkId = result.output['ownedNetworkID'];
+    final networkId = result.output['ownedNetworkID'] ?? '';
     await SharedPreferences.getInstance().then((pref) async =>
         await pref.setString(moabPrefSelectedNetworkId, networkId));
     return emit(state.copyWith(
