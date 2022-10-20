@@ -222,5 +222,6 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
         .read<SubscriptionCubit>()
         .updatePurchaseToken(purchaseToken: purchaseDetails.purchaseID);
     context.read<SubscriptionCubit>().createOrderToCloud();
+    context.read<NavigationCubit>().popTo(DashboardSecurityPath());
   }
 }

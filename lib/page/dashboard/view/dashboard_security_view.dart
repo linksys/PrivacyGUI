@@ -298,20 +298,9 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                 child: PrimaryButton(
                   text: 'Subscribe',
                   onPress: () {
-                    final item =
-                        context.read<SubscriptionCubit>().state.products?.first;
-                    logger.d(
-                        'subscription products : ${context.read<SubscriptionCubit>().state.products?.length}');
-                    String serialNumber = context
-                        .read<NetworkCubit>()
-                        .state
-                        .selected!
-                        .deviceInfo
-                        .serialNumber;
-                    if (item != null) {
-                      context.read<SubscriptionCubit>().buy(item, serialNumber);
-                      // context.read<SubscriptionCubit>().getNetworkEntitlement('54J10M28C00028');
-                    }
+                    context
+                        .read<NavigationCubit>()
+                        .push(SecurityMarketingPath());
                   },
                 ))),
       ],
