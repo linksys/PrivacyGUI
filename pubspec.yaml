@@ -19,6 +19,7 @@ version: 0.1.1+1010
 
 environment:
   sdk: ">=2.17.0 <3.0.0"
+  flutter: ">=3.3.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -40,7 +41,7 @@ dependencies:
   flutter_svg: ^1.0.3
   http: ^0.13.4
   mobile_scanner: ^2.0.0
-  flutter_native_splash: ^2.1.5
+  flutter_native_splash: ^2.2.11
   test: ^1.19.5
   bloc_test: ^9.0.0
   equatable: ^2.0.0
@@ -61,7 +62,7 @@ dependencies:
   phone_number: ^0.12.0+2
   mqtt_client: ^9.7.2
   uuid: ^3.0.6
-  flutter_inappwebview: ^5.4.3+7
+  flutter_inappwebview: 5.4.3+7
   shared_preferences: ^2.0.15
   flutter_native_timezone: ^2.0.0
   qr_flutter: ^4.0.0
@@ -86,10 +87,7 @@ dependencies:
     path: plugins/ios_push_notification_plugin
 
 dev_dependencies:
-  test: any
   flutter_test:
-    sdk: flutter
-  flutter_driver:
     sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to

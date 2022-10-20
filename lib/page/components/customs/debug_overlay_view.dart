@@ -30,19 +30,21 @@ class _OverlayInfoViewState extends State<OverlayInfoView> {
         builder: (context, state) => Container(
           padding: EdgeInsets.all(12),
           width: Utils.getScreenWidth(context) / 2,
-              height: Utils.getScreenHeight(context)/ 10,
+              height: 100,
               decoration: BoxDecoration(
                 color: Color(0x66000000),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Router: ${state.connectivityInfo.routerType.name}'),
-                  Text('Connectivity: ${state.connectivityInfo.type.name}'),
-                  Text('Gateway IP: ${state.connectivityInfo.gatewayIp}'),
-                  Text('SSID: ${state.connectivityInfo.ssid}'),
-                ],
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Router: ${state.connectivityInfo.routerType.name}'),
+                    Text('Connectivity: ${state.connectivityInfo.type.name}'),
+                    Text('Gateway IP: ${state.connectivityInfo.gatewayIp}'),
+                    Text('SSID: ${state.connectivityInfo.ssid}'),
+                  ],
+                ),
               ),
             ));
   }

@@ -42,7 +42,10 @@ function updateLinks() {
 
 version=$1
 pod repo update
+flutter --version
+flutter pub deps
 flutter clean
+flutter pub cache repair
 if ! buildInHouse "$version"; then
   echo InHouse "$version" build failed
   exit 1

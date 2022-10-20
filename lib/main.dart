@@ -6,6 +6,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/app_lifecycle/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
@@ -37,45 +38,61 @@ import 'bloc/setup/bloc.dart';
 import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
 import 'repository/authenticate/impl/router_auth_repository.dart';
-import 'package:flutter_driver/driver_extension.dart';
 import 'repository/authenticate/otp_repository.dart';
 import 'route/model/_model.dart';
 
-void main() {
+void main() async {
   // enableFlutterDriverExtension();
-  runZonedGuarded(() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    await Storage.init();
-    logger.v('App Start');
-    await initLog();
-    logger.d('Start to init Firebase Core');
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    // if (!kReleaseMode) {
-    //   MqttLogger.loggingOn = true;
-    // }
-    logger.d('Done for init Firebase Core');
-    initCloudMessage();
-    // Pass all uncaught errors from the framework to Crashlytics.
-    FlutterError.onError = (FlutterErrorDetails details) {
-      logger.e('Uncaught Flutter Error:\n', details);
-      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-      if (kReleaseMode) {
-        // Only exit app on release mode
-        exit(1);
-      }
-    };
-    initBetterActions();
-    runApp(_app());
-  }, (Object error, StackTrace stack) {
-    logger.e('Uncaught Error:\n', error);
+  // runZonedGuarded(() async {
+  //
+  // }, (Object error, StackTrace stack) {
+  //   logger.e('Uncaught Error:\n', error, stack);
+  //   logger.e(stack.toString());
+  //   FirebaseCrashlytics.instance.recordError(error, stack);
+  //   // if (kReleaseMode) {
+  //   //   // Only exit app on release mode
+  //   //   exit(1);
+  //   // }
+  //   exit(1);
+  // });
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  await Storage.init();
+  logger.v('App Start');
+  await initLog();
+  logger.d('Start to init Firebase Core');
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  // if (!kReleaseMode) {
+  //   MqttLogger.loggingOn = true;
+  // }
+  logger.d('Done for init Firebase Core');
+  initCloudMessage();
+  // Pass all uncaught errors from the framework to Crashlytics.
+  FlutterError.onError = (FlutterErrorDetails details) {
+    logger.e('Uncaught Flutter Error:\n', details);
+    FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    if (kReleaseMode) {
+      // Only exit app on release mode
+      exit(1);
+    }
+    // exit(1);
+
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    logger.e('Uncaught Error:\n', error, stack);
+    logger.e(stack.toString());
     FirebaseCrashlytics.instance.recordError(error, stack);
     if (kReleaseMode) {
       // Only exit app on release mode
       exit(1);
     }
-  });
+    // exit(1);
+    return true;
+  };
+  initBetterActions();
+  runApp(_app());
 }
 
 Widget _app() {
@@ -146,6 +163,8 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
     _cubit.init();
     _cubit.forceUpdate().then((value) => _initAuth());
     super.initState();
+    FlutterNativeSplash.remove();
+
   }
 
   @override

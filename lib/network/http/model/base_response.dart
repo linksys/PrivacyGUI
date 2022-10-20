@@ -18,7 +18,7 @@ class ErrorResponse {
   factory ErrorResponse.fromJson(int status, Map<String, dynamic> json) {
     final String code = json['code'];
     final String? errorMessage = json['errorMessage'];
-    final List<Map<String, dynamic>>? parameters = List.from(json['parameters']) ;
+    final List<Map<String, dynamic>>? parameters = json['parameters'] == null ? [] : List.from(json['parameters']) ;
     return ErrorResponse(status: status,code: code, errorMessage: errorMessage, parameters: parameters);
   }
 

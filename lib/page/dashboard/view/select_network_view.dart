@@ -96,15 +96,15 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
                   ],
                 ),
               ),
-              onTap: () {
+              onTap: () async {
                 setState(() {
                   isLoading = true;
                 });
-                context
+                await context
                     .read<NetworkCubit>()
-                    .selectNetwork(state.networks[index]);
-
-                NavigationCubit.of(context).clearAndPush(DashboardHomePath());
+                    .selectNetwork(state.networks[index])
+                    .then((value) => NavigationCubit.of(context)
+                        .clearAndPush(PrepareDashboardPath()));
               },
             ),
           )

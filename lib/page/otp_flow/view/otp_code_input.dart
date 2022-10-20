@@ -86,11 +86,12 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
       child: BasicLayout(
         alignment: CrossAxisAlignment.start,
         header: BasicHeader(
-          title: state.selectedMethod?.method == CommunicationMethodType.sms.name.toUpperCase()
-              ? getAppLocalizations(context)
-                  .otp_enter_code_sms_title(state.selectedMethod?.targetValue ?? '')
-              : getAppLocalizations(context)
-                  .otp_enter_code_email_title(state.selectedMethod?.targetValue ?? ''),
+          title: state.selectedMethod?.method ==
+                  CommunicationMethodType.sms.name.toUpperCase()
+              ? getAppLocalizations(context).otp_enter_code_sms_title(
+                  state.selectedMethod?.targetValue ?? '')
+              : getAppLocalizations(context).otp_enter_code_email_title(
+                  state.selectedMethod?.targetValue ?? ''),
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,17 +126,6 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
             const SizedBox(
               height: 25,
             ),
-            SimpleTextButton(
-                text: getAppLocalizations(context).otp_resend_code,
-                onPressed: () {
-                  _setLoading(true);
-                  _onSend(state.selectedMethod!, state.token)
-                      .then((_) => _showCodeResentHint())
-                      .onError((error, stackTrace) {
-                    logger.e('Error OTP input: $error', stackTrace);
-                  });
-                  _setLoading(false);
-                }),
             if (_errorCode.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -147,6 +137,17 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
                       ?.copyWith(color: Colors.red),
                 ),
               ),
+            SimpleTextButton(
+                text: getAppLocalizations(context).otp_resend_code,
+                onPressed: () {
+                  _setLoading(true);
+                  _onSend(state.selectedMethod!, state.token)
+                      .then((_) => _showCodeResentHint())
+                      .onError((error, stackTrace) {
+                    logger.e('Error OTP input: $error', stackTrace);
+                  });
+                  _setLoading(false);
+                }),
             const SizedBox(
               height: 41,
             ),
@@ -161,14 +162,19 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     final _otpCubit = context.read<OtpCubit>();
     final function = widget.args['function'] ?? OtpFunction.send;
 
-    await _otpCubit
-        .authChallengeVerify(code: value!,
-            token: token)
+    bool isPassed = await _otpCubit
+        .authChallengeVerify(code: value!, token: token)
+        .then((value) => true)
         .onError((error, stackTrace) => _handleError(error, stackTrace));
+    if (!isPassed) {
+      _setLoading(false);
+      return;
+    }
     if (function == OtpFunction.add) {
       await _otpCubit
           .authChallengeVerifyAccept(value, token)
-          .then((value) async => await context.read<AccountCubit>().fetchAccount())
+          .then((value) async =>
+              await context.read<AccountCubit>().fetchAccount())
           .onError((error, stackTrace) => _handleError(error, stackTrace));
     }
     context.read<OtpCubit>().finish();
@@ -188,7 +194,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     ));
   }
 
-  _handleError(Object? e, StackTrace trace) {
+  bool _handleError(Object? e, StackTrace trace) {
     if (e is ErrorResponse) {
       setState(() {
         _errorCode = e.code;
@@ -197,6 +203,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
       // Unknown error or error parsing
       logger.d('Unknown error: $e');
     }
+    return false;
   }
 
   _setLoading(bool isLoading) {
@@ -210,8 +217,10 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
   void _onInit(OtpState state) async {
     final otpCubit = context.read<OtpCubit>();
     // setting2sv, setting means create account????
-    if (state.function == OtpFunction.setting || state.function == OtpFunction.setting2sv) {
-      await context.read<AuthBloc>().createAccountPreparationUpdateMethod(method: state.selectedMethod!, token: state.token);
+    if (state.function == OtpFunction.setting ||
+        state.function == OtpFunction.setting2sv) {
+      await context.read<AuthBloc>().createAccountPreparationUpdateMethod(
+          method: state.selectedMethod!, token: state.token);
     }
     // Require otp code
     // authBloc.add(RequireOtpCode(communicationMethod: state.selectedMethod!));
