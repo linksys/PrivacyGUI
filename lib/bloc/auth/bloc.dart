@@ -7,6 +7,7 @@ import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
@@ -60,7 +61,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
     _errorStreamSubscription = errorResponseStream.listen((error) {
       logger.e(
           'Receive http response error: ${error.status}, ${error.code}, ${error.errorMessage}');
-      if (error.status == 401) {
+      if (error.status == 401 &&
+          (error.code == errorBadAuthentication ||
+              error.code == errorNotAuthenticated ||
+              error.code == errorAuthenticationMissing)) {
         add(Unauthorized());
       }
     });
@@ -315,7 +319,8 @@ extension AuthBlocCloud on AuthBloc {
     //   default:
     //     break;
     // }
-    return await _repository.createAccountPreparationUpdateMethod(token, method);
+    return await _repository.createAccountPreparationUpdateMethod(
+        token, method);
   }
 
   Future<void> createVerifiedAccount() async {
@@ -467,6 +472,7 @@ extension AuthBlocCloud on AuthBloc {
       return _routerRepository.testLocalCert();
     }
   }
+
   Future<bool> checkCertValidation() async {
     const storage = FlutterSecureStorage();
     String? privateKey = await storage.read(key: moabPrefCloudPrivateKey);
@@ -479,8 +485,7 @@ extension AuthBlocCloud on AuthBloc {
     if (!isKeyExist) {
       return false;
     }
-    final certData = CloudDownloadCertData.fromJson(
-        jsonDecode(cert ?? ''));
+    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert ?? ''));
     final expiredDate = DateTime.parse(certData.expiration);
     if (expiredDate.millisecondsSinceEpoch -
             DateTime.now().millisecondsSinceEpoch <

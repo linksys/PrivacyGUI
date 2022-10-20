@@ -77,6 +77,8 @@ void main() async {
       // Only exit app on release mode
       exit(1);
     }
+    // exit(1);
+
   };
   PlatformDispatcher.instance.onError = (error, stack) {
     logger.e('Uncaught Error:\n', error, stack);
@@ -86,6 +88,7 @@ void main() async {
       // Only exit app on release mode
       exit(1);
     }
+    // exit(1);
     return true;
   };
   initBetterActions();

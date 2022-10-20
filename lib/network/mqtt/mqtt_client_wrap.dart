@@ -81,9 +81,12 @@ class MqttClientWrap {
     await runZonedGuarded(() async {
       // Connect the client
       logger.i('MQTT client connecting to endpoint: $_endpoint');
-      await _client.connect(username, password);
+      await _client.connect(username, password).onError((error, stackTrace) {
+        logger.i('MQTT client exception - $error');
+        _client.disconnect();
+      });
     }, (error, stack) {
-      logger.i('MQTT client exception - $error');
+      logger.i('MQTT client uncaught exception - $error');
       _client.disconnect();
     });
 
