@@ -11,20 +11,23 @@ class SubscriptionState extends Equatable {
   final List<SubscriptionProductDetails>? subscriptionProductDetails;
   final SubscriptionOrderResponse? subscriptionOrderResponse;
   final List<NetworkEntitlementResponse>? networkEntitlementResponse;
+  final String? serialNumber;
 
   const SubscriptionState(
       {this.products,
       this.purchaseToken,
       this.subscriptionProductDetails,
       this.subscriptionOrderResponse,
-      this.networkEntitlementResponse});
+      this.networkEntitlementResponse,
+      this.serialNumber});
 
   SubscriptionState copyWith(
       {List<ProductDetails>? products,
       String? purchaseToken,
       List<SubscriptionProductDetails>? subscriptionProductDetails,
       SubscriptionOrderResponse? subscriptionOrderResponse,
-      List<NetworkEntitlementResponse>? networkEntitlementResponse}) {
+      List<NetworkEntitlementResponse>? networkEntitlementResponse,
+      String? serialNumber}) {
     return SubscriptionState(
         products: products ?? this.products,
         purchaseToken: purchaseToken ?? this.purchaseToken,
@@ -33,7 +36,8 @@ class SubscriptionState extends Equatable {
         subscriptionOrderResponse:
             subscriptionOrderResponse ?? this.subscriptionOrderResponse,
         networkEntitlementResponse:
-            networkEntitlementResponse ?? this.networkEntitlementResponse);
+            networkEntitlementResponse ?? this.networkEntitlementResponse,
+        serialNumber: serialNumber ?? this.serialNumber);
   }
 
   @override
@@ -42,6 +46,7 @@ class SubscriptionState extends Equatable {
         purchaseToken,
         subscriptionProductDetails,
         subscriptionOrderResponse,
-        networkEntitlementResponse
+        networkEntitlementResponse,
+        serialNumber
       ];
 }

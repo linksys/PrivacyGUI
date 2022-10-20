@@ -200,7 +200,6 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
     }, onDone: () {
       _subscription.cancel();
     }, onError: (Object error) {});
-    context.read<SubscriptionCubit>().loadingProducts();
   }
 
   void _listenToPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) {
@@ -222,5 +221,6 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
     context
         .read<SubscriptionCubit>()
         .updatePurchaseToken(purchaseToken: purchaseDetails.purchaseID);
+    context.read<SubscriptionCubit>().createOrderToCloud();
   }
 }

@@ -30,9 +30,10 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     InAppPurchase.instance.restorePurchases();
   }
 
-  void buy(ProductDetails productDetails) async {
+  void buy(ProductDetails productDetails, String serialNumber) async {
     final PurchaseParam purchaseParam =
         PurchaseParam(productDetails: productDetails);
+    emit(state.copyWith(serialNumber: serialNumber));
     InAppPurchase.instance.buyNonConsumable(purchaseParam: purchaseParam);
   }
 
@@ -45,8 +46,8 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     emit(state.copyWith(subscriptionProductDetails: productList));
   }
 
-  void createOrderToCloud(String serialNumber, String productListingId, String purchaseToken) async {
-    final orderResponse = await _repo.createCloudOrders(serialNumber, productListingId, purchaseToken);
+  void createOrderToCloud() async {
+    final orderResponse = await _repo.createCloudOrders(state.serialNumber!, state.subscriptionProductDetails!.first.id, state.purchaseToken!);
     emit(state.copyWith(subscriptionOrderResponse: orderResponse));
   }
 

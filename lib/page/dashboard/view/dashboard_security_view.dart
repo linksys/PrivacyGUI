@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/security/bloc.dart';
@@ -23,10 +24,13 @@ class DashboardSecurityView extends StatefulWidget {
 }
 
 class _DashboardSecurityViewState extends State<DashboardSecurityView> {
+  String serialNumber = '';
 
   @override
   void initState() {
+    super.initState();
     context.read<SubscriptionCubit>().queryProductsFromCloud();
+    context.read<SecurityBloc>().add(SetTrialActiveEvent());
   }
 
   Widget _unsubscribedView(SecurityState state) {
@@ -48,8 +52,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                 _contentFilterInfo(state),
                 _lastUpdate(state),
               ],
-            )
-        ),
+            )),
       ],
     );
   }
@@ -77,7 +80,6 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             ],
           ),
         ),
-
       ],
     );
   }
@@ -214,8 +216,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             box4(),
             Text(
               state.subscriptionStatus.displayTitle,
-              style: Theme
-                  .of(context)
+              style: Theme.of(context)
                   .textTheme
                   .headline3
                   ?.copyWith(fontWeight: FontWeight.w500),
@@ -228,10 +229,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
 
   Widget _getSubscriptionStatusImage() {
     String imageName;
-    switch (context
-        .read<SecurityBloc>()
-        .state
-        .subscriptionStatus) {
+    switch (context.read<SecurityBloc>().state.subscriptionStatus) {
       case SubscriptionStatus.unsubscribed:
         imageName = 'assets/images/icon_checked_circle.png';
         break;
@@ -255,60 +253,69 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
   }
 
   Widget _subscriptionPrompt(SecurityState state) {
-    return
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          box24(),
-          GestureDetector(
-            child: Container(
-              alignment: Alignment.centerLeft,
-              height: 52,
-              color: MoabColor.dashboardBottomBackground,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  _getSubscriptionPromptText(state),
-                  style: Theme
-                      .of(context)
-                      .textTheme
-                      .headline3
-                      ?.copyWith(
-                      fontWeight: FontWeight.w500
-                  ),
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        box24(),
+        GestureDetector(
+          child: Container(
+            alignment: Alignment.centerLeft,
+            height: 52,
+            color: MoabColor.dashboardBottomBackground,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                _getSubscriptionPromptText(state),
+                style: Theme.of(context)
+                    .textTheme
+                    .headline3
+                    ?.copyWith(fontWeight: FontWeight.w500),
               ),
             ),
-            onTap: () {
-              NavigationCubit.of(context).push(SecurityMarketingPath());
-            },
           ),
-          box16(),
-          Container(
+          onTap: () {
+            NavigationCubit.of(context).push(SecurityMarketingPath());
+          },
+        ),
+        box16(),
+        Container(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: BlocBuilder<SubscriptionCubit, SubscriptionState>(
-                builder: (context, subscriptionState) {
-                  return PrimaryButton(
-                    text: 'Subscribe',
-                    onPress: () {
-                      // context.read<SecurityBloc>().add(SetFormalActiveEvent());
-                      if(subscriptionState.purchaseToken == null) {
-                        final item = subscriptionState.products?.first;
-                        logger.d('subscription products : ${subscriptionState.products?.length}');
-                        if(item != null) {
-                          context.read<SubscriptionCubit>().buy(item);
-                        }
-                      } else {
-                        // GPA.3323-4766-3982-48026
-                        // context.read<SubscriptionCubit>().createOrderToCloud('54J10M28C00028', subscriptionState.subscriptionProductDetails!.first!.id, 'GPA.3323-4766-3982-48026');
-                        // context.read<SubscriptionCubit>().getNetworkEntitlement('54J10M28C00028');
-                      }
-                    },
-                  );
-                }),
-          ),
-        ],
-      );
+            child: BlocListener<SubscriptionCubit, SubscriptionState>(
+                listener: (context, state) {
+                  if (state.subscriptionOrderResponse != null &&
+                      state.networkEntitlementResponse == null) {
+                    context.read<SubscriptionCubit>().getNetworkEntitlement(
+                        context
+                            .read<NetworkCubit>()
+                            .state
+                            .selected!
+                            .deviceInfo!
+                            .serialNumber);
+                  } else if (state.networkEntitlementResponse != null) {
+                    context.read<SecurityBloc>().add(SetFormalActiveEvent());
+                  }
+                },
+                child: PrimaryButton(
+                  text: 'Subscribe',
+                  onPress: () {
+                    final item =
+                        context.read<SubscriptionCubit>().state.products?.first;
+                    logger.d(
+                        'subscription products : ${context.read<SubscriptionCubit>().state.products?.length}');
+                    String serialNumber = context
+                        .read<NetworkCubit>()
+                        .state
+                        .selected!
+                        .deviceInfo
+                        .serialNumber;
+                    if (item != null) {
+                      context.read<SubscriptionCubit>().buy(item, serialNumber);
+                      // context.read<SubscriptionCubit>().getNetworkEntitlement('54J10M28C00028');
+                    }
+                  },
+                ))),
+      ],
+    );
   }
 
   String _getSubscriptionPromptText(SecurityState state) {
@@ -335,8 +342,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
       child: TitleWithIcons(
         text: Text(
           'Cyberthreats blocked',
-          style: Theme
-              .of(context)
+          style: Theme.of(context)
               .textTheme
               .headline3
               ?.copyWith(fontWeight: FontWeight.w700),
@@ -357,7 +363,8 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
   }
 
   Widget _cyberthreatGrid(SecurityState state) {
-    final isGridEnabled = state.subscriptionStatus != SubscriptionStatus.turnedOff;
+    final isGridEnabled =
+        state.subscriptionStatus != SubscriptionStatus.turnedOff;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -366,13 +373,9 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
           visible: state.hasBlockedThreat,
           replacement: Text(
             'No one has tried any funny business yet, but we are monitoring 24/7',
-            style: Theme
-                .of(context)
-                .textTheme
-                .headline3
-                ?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
+            style: Theme.of(context).textTheme.headline3?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
           ),
           child: Row(
             children: [
@@ -384,8 +387,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                   height: 96,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
-                      ..args = {'type': CyberthreatType.virus}
-                    );
+                      ..args = {'type': CyberthreatType.virus});
                   },
                 ),
               ),
@@ -398,8 +400,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                   height: 96,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
-                      ..args = {'type': CyberthreatType.botnet}
-                    );
+                      ..args = {'type': CyberthreatType.botnet});
                   },
                 ),
               ),
@@ -412,8 +413,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                   height: 96,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
-                      ..args = {'type': CyberthreatType.website}
-                    );
+                      ..args = {'type': CyberthreatType.website});
                   },
                 ),
               ),
@@ -432,13 +432,10 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
           box8(),
           Text(
             '${state.numOfInspection} total inspections performed',
-            style: Theme
-                .of(context)
+            style: Theme.of(context)
                 .textTheme
                 .headline3
-                ?.copyWith(
-                fontWeight: FontWeight.w400
-            ),
+                ?.copyWith(fontWeight: FontWeight.w400),
           ),
         ],
       ),
@@ -461,13 +458,10 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
       child: TitleWithIcons(
         text: Text(
           'Content filtered',
-          style: Theme
-              .of(context)
+          style: Theme.of(context)
               .textTheme
               .headline3
-              ?.copyWith(
-              fontWeight: FontWeight.w700
-          ),
+              ?.copyWith(fontWeight: FontWeight.w700),
         ),
         leadingIcon: Image.asset(
           'assets/images/icon_block.png',
@@ -492,13 +486,10 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
     if (state is UnsubscribedState) {
       return Text(
         'Create healthy digital lifestyle for your family and feel safe with the content on your network. Filter out categories and apps you don’t want.',
-        style: Theme
-            .of(context)
+        style: Theme.of(context)
             .textTheme
             .headline3
-            ?.copyWith(
-            fontWeight: FontWeight.w500
-        ),
+            ?.copyWith(fontWeight: FontWeight.w500),
       );
     } else {
       return Visibility(
@@ -508,13 +499,10 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
           child: _incidentsOnProfiles(),
           replacement: Text(
             'No incidents yet',
-            style: Theme
-                .of(context)
+            style: Theme.of(context)
                 .textTheme
                 .headline3
-                ?.copyWith(
-                fontWeight: FontWeight.w500
-            ),
+                ?.copyWith(fontWeight: FontWeight.w500),
           ),
         ),
         replacement: _createFilter(),
@@ -527,13 +515,10 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
       children: [
         Text(
           'Create healthy digital lifestyle for your family and feel safe with the content on your network. Filter out categories and apps you don’t want.',
-          style: Theme
-              .of(context)
+          style: Theme.of(context)
               .textTheme
               .headline3
-              ?.copyWith(
-              fontWeight: FontWeight.w500
-          ),
+              ?.copyWith(fontWeight: FontWeight.w500),
         ),
         box24(),
         PrimaryButton(
@@ -548,26 +533,14 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
   }
 
   Widget _incidentsOnProfiles() {
-    final _mockProfiles = context
-        .read<ProfilesCubit>()
-        .state
-        .profileList;
-    final status = context
-        .read<SecurityBloc>()
-        .state
-        .subscriptionStatus;
-    final range = context
-        .read<SecurityBloc>()
-        .state
-        .evaluatedRange;
+    final _mockProfiles = context.read<ProfilesCubit>().state.profileList;
+    final status = context.read<SecurityBloc>().state.subscriptionStatus;
+    final range = context.read<SecurityBloc>().state.evaluatedRange;
     final double listHeight = _mockProfiles.length * 80;
     return Column(
       children: [
         InfoBlockWidget(
-          count: context
-              .read<SecurityBloc>()
-              .state
-              .numOfIncidents,
+          count: context.read<SecurityBloc>().state.numOfIncidents,
           text: 'Blocked content this ${range.displayTitle}',
           isEnabled: status != SubscriptionStatus.turnedOff,
           isVertical: false,
@@ -579,31 +552,29 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _mockProfiles.length,
-            itemBuilder: (context, index) =>
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: ListTile(
-                    shape: const BeveledRectangleBorder(
-                      side: BorderSide(color: Colors.black, width: 1),
-                    ),
-                    leading: Image.asset(
-                      _mockProfiles[index].icon,
-                      width: 32,
-                      height: 32,
-                    ),
-                    title: Text(
-                      _mockProfiles[index].name,
-                      style: Theme
-                          .of(context)
-                          .textTheme
-                          .bodyText1
-                          ?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    onTap: () {
-                      NavigationCubit.of(context).push(CFFilteredContentPath());
-                    },
-                  ),
+            itemBuilder: (context, index) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: ListTile(
+                shape: const BeveledRectangleBorder(
+                  side: BorderSide(color: Colors.black, width: 1),
                 ),
+                leading: Image.asset(
+                  _mockProfiles[index].icon,
+                  width: 32,
+                  height: 32,
+                ),
+                title: Text(
+                  _mockProfiles[index].name,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyText1
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                onTap: () {
+                  NavigationCubit.of(context).push(CFFilteredContentPath());
+                },
+              ),
+            ),
           ),
         ),
       ],
@@ -617,23 +588,17 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
         box48(),
         Text(
           'Fortinet threat database',
-          style: Theme
-              .of(context)
+          style: Theme.of(context)
               .textTheme
               .headline4
-              ?.copyWith(
-              fontWeight: FontWeight.w700
-          ),
+              ?.copyWith(fontWeight: FontWeight.w700),
         ),
         Text(
           'Last updated on ${state.latestUpdateDate}',
-          style: Theme
-              .of(context)
+          style: Theme.of(context)
               .textTheme
               .headline4
-              ?.copyWith(
-              fontWeight: FontWeight.w500
-          ),
+              ?.copyWith(fontWeight: FontWeight.w500),
         ),
       ],
     );
@@ -708,20 +673,18 @@ class InfoBlockWidget extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: isVertical
             ? Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: _content(context),
-        )
-            : Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: _content(
-              context,
-              space: const SizedBox(
-                width: 16,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: _content(context),
               )
-          ),
-        ),
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: _content(context,
+                    space: const SizedBox(
+                      width: 16,
+                    )),
+              ),
       ),
     );
   }
@@ -732,15 +695,13 @@ class InfoBlockWidget extends StatelessWidget {
       )}) {
     return [
       Text('$count',
-          style: Theme
-              .of(context)
+          style: Theme.of(context)
               .textTheme
               .headline1
               ?.copyWith(fontSize: 25, fontWeight: FontWeight.w400)),
       space,
       Text(text,
-          style: Theme
-              .of(context)
+          style: Theme.of(context)
               .textTheme
               .headline3
               ?.copyWith(fontWeight: FontWeight.w700))
