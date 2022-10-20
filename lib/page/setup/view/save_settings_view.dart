@@ -73,14 +73,18 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
     logger.d('SaveSettings:: _listenConnectivityChange()');
     _subscription?.cancel();
     _subscription = _connectivityCubit.stream.listen((event) {
-      if (Platform.isIOS) {
-        if (event.connectivityInfo.ssid != newSSID) {
-          return;
-        }
-      } else { // TODO #WORKAROUND Android current cannot get SSID
-        if (event.connectivityInfo.type != ConnectivityResult.wifi) {
-          return;
-        }
+      // if (Platform.isIOS) {
+      //   if (event.connectivityInfo.ssid != newSSID) {
+      //     return;
+      //   }
+      // } else { // TODO #WORKAROUND Android current cannot get SSID
+      //   if (event.connectivityInfo.type != ConnectivityResult.wifi) {
+      //     return;
+      //   }
+      // }
+      // TODO #WORKAROUND Android current cannot get SSID, iOS sometimes cannot get SSID as well
+      if (event.connectivityInfo.type != ConnectivityResult.wifi) {
+        return;
       }
       _setupBloc.add(ResumePointChanged(status: SetupResumePoint.wifiConnectionBackSuccess));
       _tryConnectMQTT().then((value) {
@@ -113,7 +117,7 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
     int retry = 0;
     bool isConnect = false;
     do {
-      isConnect = await _connectivityCubit.connectToLocalBroker();
+      isConnect = await _connectivityCubit.connectToLocalBroker().onError((error, stackTrace) => false);
       if (isConnect) {
         return isConnect;
       } else {

@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/services.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/model/app_signature.dart';
-import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/secure_profile.dart';
 import 'package:linksys_moab/util/logger.dart';
 import '../util/storage.dart';

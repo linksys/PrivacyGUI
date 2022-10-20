@@ -36,17 +36,18 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
     return isLoading
         ? FullScreenSpinner(text: getAppLocalizations(context).processing)
         : BlocBuilder<NetworkCubit, NetworkState>(
-            builder: (context, state) => BasePageView.withCloseButton(
-                  context,
-                  child: BasicLayout(
-                    alignment: CrossAxisAlignment.start,
-                    content: Column(
-                      children: [
-                        _networkSection(state, title: 'Network'),
-                      ],
-                    ),
-                  ),
-                ));
+        builder: (context, state) =>
+            BasePageView.withCloseButton(
+              context,
+              child: BasicLayout(
+                alignment: CrossAxisAlignment.start,
+                content: Column(
+                  children: [
+                    _networkSection(state, title: 'Network'),
+                  ],
+                ),
+              ),
+            ));
   }
 
   Widget _networkSection(NetworkState state, {String title = ''}) {
@@ -66,50 +67,53 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
           ListView.builder(
             shrinkWrap: true,
             itemCount: state.networks.length,
-            itemBuilder: (context, index) => InkWell(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Row(
-                  children: [
-                    Image.asset(
-                      'assets/images/icon_device.png',
-                      width: 40,
-                      height: 40,
-                    ),
-                    box24(),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+            itemBuilder: (context, index) =>
+                InkWell(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Row(
                       children: [
-                        Text(
-                          state.networks[index].serialNumber,
-                          style: const TextStyle(
-                            fontSize: 18,
-                          ),
+                        Image.asset(
+                          'assets/images/icon_device.png',
+                          width: 40,
+                          height: 40,
                         ),
-                        box4(),
-                        Text(
-                          state.networks[index].macAddress,
-                          style: const TextStyle(
-                            fontSize: 12,
-                          ),
+                        box24(),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              state.networks[index].serialNumber,
+                              style: const TextStyle(
+                                fontSize: 18,
+                              ),
+                            ),
+                            box4(),
+                            Text(
+                              state.networks[index].macAddress,
+                              style: const TextStyle(
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
+                  onTap: () {
+                    setState(() {
+                      isLoading = true;
+                    });
+                    context
+                        .read<NetworkCubit>()
+                        .selectNetwork(state.networks[index])
+                        .then((value) {
+                      context.read<SubscriptionCubit>().loadingProducts();
+                      NavigationCubit.of(context)
+                          .clearAndPush(PrepareDashboardPath());
+                    });
+                  },
                 ),
-              ),
-              onTap: () {
-                setState(() {
-                  isLoading = true;
-                });
-                context
-                    .read<NetworkCubit>()
-                    .selectNetwork(state.networks[index]);
-
-                NavigationCubit.of(context).clearAndPush(DashboardHomePath());
-                context.read<SubscriptionCubit>().loadingProducts();
-              },
-            ),
           )
         ],
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
+import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
@@ -48,7 +49,7 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
     final networks = await _networksRepository.getNetworks(
         accountId: accountId);
     if (networks.length == 1) {
-      await getDeviceInfo();
+      // await getDeviceInfo();
     } else {}
     emit(state.copyWith(networks: networks, selected: state.selected));
     return networks;
@@ -109,7 +110,8 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   Future selectNetwork(CloudNetwork network) async {
     final pref = await SharedPreferences.getInstance();
     await pref.setString(moabPrefSelectedNetworkId, network.networkId);
-    await getDeviceInfo();
+    CloudEnvironmentManager().applyNewConfig(network.region);
+    emit(state.copyWith(selected: MoabNetwork(id: network.networkId)));
   }
 
 }

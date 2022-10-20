@@ -30,7 +30,7 @@ extension TransactionCommands on RouterRepository {
           data: {'simpleWiFiSettings': settings}),
     ];
     if (deviceMode == 'Master') {
-      payload.removeWhere((element) => element['action'] == JNAPAction.setDeviceMode);
+      payload.removeWhere((element) => element['action'] == JNAPAction.setDeviceMode.actionValue);
     }
     final transaction = JNAPTransaction(
       publishTopic: mqttLocalPublishTopic,

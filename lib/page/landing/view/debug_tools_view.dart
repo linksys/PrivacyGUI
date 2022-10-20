@@ -42,6 +42,7 @@ import 'package:linksys_moab/security/app_icon_manager.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
+import 'package:linksys_moab/utils.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../network/better_action.dart';
@@ -327,7 +328,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Test Get Profile',
           onPress: () async {
-            context.read<AccountCubit>().fetchAccount();
+            print('${Utils.replaceHttpScheme('https://abc.com')}');
           },
         ),
         const SizedBox(

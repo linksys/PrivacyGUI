@@ -30,9 +30,9 @@ late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
 /// Push notification initialize
 void initCloudMessage() async {
-  if (Platform.isIOS) {
+  if (Platform.isIOS ) {
     // Get the device token from the native
-    final token = await IosPushNotificationPlugin().readApnsToken() ?? '';
+    final token = await IosPushNotificationPlugin().readApnsToken().onError((error, stackTrace) => '') ?? '';
     logger.i('APNS: Read device token: $token');
     CloudEnvironmentManager().updateDeviceToken(token);
     // Start listening the push notifications

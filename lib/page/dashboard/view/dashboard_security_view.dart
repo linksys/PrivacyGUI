@@ -307,7 +307,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                         .state
                         .selected!
                         .deviceInfo
-                        .serialNumber;
+                        ?.serialNumber ?? '';
                     if (item != null) {
                       context.read<SubscriptionCubit>().buy(item, serialNumber);
                       // context.read<SubscriptionCubit>().getNetworkEntitlement('54J10M28C00028');

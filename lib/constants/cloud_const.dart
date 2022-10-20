@@ -101,7 +101,6 @@ const endpointDefaultNetworkGroup = '$version$accountPath/$varAccountId/network-
 const endpointGetNetworks = '$version$accountPath/$varAccountId/networks';
 const endpointGetNetworkById = '$version$accountPath/$varAccountId/networks/$varNetworkId';
 
-
 const endpointSubscriptionQueryProductListings = '$version$subscriptionPath/product-listings';
 const endpointSubscriptionCreateCloudOrders = '$version$subscriptionPath/orders';
 const endpointSubscriptionGetNetworkEntitlement = '$version$subscriptionPath/network-serial-numbers/$varSerialNumber/entitlements';
