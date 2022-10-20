@@ -107,6 +107,9 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
     logger.d('finish polling data');
   }
 
+  init() {
+    emit(const NetworkState());
+  }
   Future selectNetwork(CloudNetwork network) async {
     final pref = await SharedPreferences.getInstance();
     await pref.setString(moabPrefSelectedNetworkId, network.networkId);

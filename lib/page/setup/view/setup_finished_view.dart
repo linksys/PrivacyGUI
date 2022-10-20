@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/setup/bloc.dart';
 import 'package:linksys_moab/bloc/setup/state.dart';
 import 'package:linksys_moab/design/colors.dart';
@@ -69,6 +70,7 @@ class SetupFinishedView extends ArgumentsStatelessView {
         footer: PrimaryButton(
           text: getAppLocalizations(context).go_to_dashboard,
           onPress: () {
+            context.read<NetworkCubit>().init(); // Reset all the network during setup
             NavigationCubit.of(context).push(PrepareDashboardPath());
           },
         ),
