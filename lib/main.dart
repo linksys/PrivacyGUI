@@ -195,33 +195,10 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
   _intIAP() {
     final Stream<List<PurchaseDetails>> purchaseUpdated =
         InAppPurchase.instance.purchaseStream;
-    _subscription = purchaseUpdated.listen((purchaseDetailList) {
-      _listenToPurchaseUpdated(purchaseDetailList);
+    _subscription = purchaseUpdated.listen((purchaseList) {
+      context.read<SubscriptionCubit>().onPurchaseUpdated(purchaseList);
     }, onDone: () {
       _subscription.cancel();
     }, onError: (Object error) {});
-  }
-
-  void _listenToPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) {
-    purchaseDetailsList.forEach((PurchaseDetails purchaseDetails) async {
-      if (purchaseDetails.status == PurchaseStatus.pending) {
-      } else {
-        if (purchaseDetails.status == PurchaseStatus.error) {
-          logger.e('subscription error : ${purchaseDetails.error!.toString()}');
-        } else if (purchaseDetails.status == PurchaseStatus.purchased ||
-            purchaseDetails.status == PurchaseStatus.restored) {
-          logger.d('subscription cubit purchaseDetails : ${purchaseDetails.purchaseID}');
-          _deliverProduct(purchaseDetails);
-        }
-      }
-    });
-  }
-
-  void _deliverProduct(PurchaseDetails purchaseDetails) {
-    context
-        .read<SubscriptionCubit>()
-        .updatePurchaseToken(purchaseToken: purchaseDetails.purchaseID);
-    context.read<SubscriptionCubit>().createOrderToCloud();
-    context.read<NavigationCubit>().popTo(DashboardSecurityPath());
   }
 }

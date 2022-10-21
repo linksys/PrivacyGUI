@@ -47,6 +47,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   void createOrderToCloud() async {
     final orderResponse = await _repo.createCloudOrders(state.serialNumber!, state.subscriptionProductDetails!.first.id, state.purchaseToken!);
     emit(state.copyWith(subscriptionOrderResponse: orderResponse));
+    getNetworkEntitlement(state.serialNumber!!);
   }
 
   void getNetworkEntitlement(String serialNumber) async {
@@ -57,5 +58,25 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   @override
   void onChange(Change<SubscriptionState> change) {
     logger.d('subscription cubit state change : ${change.nextState}');
+  }
+
+  void onPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) {
+    purchaseDetailsList.forEach((PurchaseDetails purchaseDetails) async {
+      if (purchaseDetails.status == PurchaseStatus.pending) {
+      } else {
+        if (purchaseDetails.status == PurchaseStatus.error) {
+          logger.e('subscription error : ${purchaseDetails.error!.toString()}');
+        } else if (purchaseDetails.status == PurchaseStatus.purchased ||
+            purchaseDetails.status == PurchaseStatus.restored) {
+          logger.d('subscription cubit purchaseDetails : ${purchaseDetails.purchaseID}');
+          _deliverProduct(purchaseDetails);
+        }
+      }
+    });
+  }
+
+  void _deliverProduct(PurchaseDetails purchaseDetails) {
+    emit(state.copyWith(purchaseToken: purchaseDetails.purchaseID));
+    createOrderToCloud();
   }
 }

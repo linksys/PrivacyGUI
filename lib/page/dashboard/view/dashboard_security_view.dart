@@ -280,29 +280,12 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
         box16(),
         Container(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: BlocListener<SubscriptionCubit, SubscriptionState>(
-                listener: (context, state) {
-                  if (state.subscriptionOrderResponse != null &&
-                      state.networkEntitlementResponse == null) {
-                    context.read<SubscriptionCubit>().getNetworkEntitlement(
-                        context
-                            .read<NetworkCubit>()
-                            .state
-                            .selected!
-                            .deviceInfo!
-                            .serialNumber);
-                  } else if (state.networkEntitlementResponse != null) {
-                    context.read<SecurityBloc>().add(SetFormalActiveEvent());
-                  }
-                },
-                child: PrimaryButton(
-                  text: 'Subscribe',
-                  onPress: () {
-                    context
-                        .read<NavigationCubit>()
-                        .push(SecurityMarketingPath());
-                  },
-                ))),
+            child: PrimaryButton(
+              text: 'Subscribe',
+              onPress: () {
+                context.read<NavigationCubit>().push(SecurityMarketingPath());
+              },
+            )),
       ],
     );
   }
