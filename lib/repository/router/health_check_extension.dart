@@ -18,4 +18,20 @@ extension HealthCheckService on RouterRepository {
     final result = await command.publish(mqttClient!);
     return handleJnapResult(result.body);
   }
+
+  // TODO: #REFACTOR : Support other type health check
+  Future<JnapSuccess> runHealthCheck() async {
+    final command = createCommand(JNAPAction.runHealthCheck.actionValue,
+        data: {'runHealthCheckModule': 'SpeedTest'});
+
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
+
+  Future<JnapSuccess> getHealthCheckStatus() async {
+    final command = createCommand(JNAPAction.getHealthCheckStatus.actionValue);
+
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
 }

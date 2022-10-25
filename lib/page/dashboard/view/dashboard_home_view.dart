@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
@@ -12,14 +13,10 @@ import 'package:linksys_moab/page/components/base_components/base_components.dar
 import 'package:linksys_moab/page/components/shortcuts/profiles.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/chart/LineChartSample.dart';
-import 'package:linksys_moab/route/model/devices_path.dart';
-import 'package:linksys_moab/route/model/nodes_path.dart';
-import 'package:linksys_moab/route/model/profile_group_path.dart';
-import 'package:linksys_moab/route/model/wifi_settings_path.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
-
-import '../../../route/navigation_cubit.dart';
 
 class DashboardHomeView extends StatefulWidget {
   const DashboardHomeView({Key? key}) : super(key: key);
@@ -33,8 +30,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
   void initState() {
     super.initState();
 
-    context.read<NetworkCubit>().getRadioInfo();
-    context.read<NetworkCubit>().getDevices();
+    context.read<NetworkCubit>().pollingData();
   }
 
   @override
@@ -47,20 +43,21 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _homeTitle(state),
-                  SizedBox(height: 32),
+                  box(32),
                   _basicTiles(state),
-                  SizedBox(height: 32),
-                  _speedTestTile(2048000, 1024000),
-                  SizedBox(height: 32),
+                  box(32),
+                  _speedTestTile(state),
+                  box(32),
                   GestureDetector(
                     onTap: () {
                       NavigationCubit.of(context).push(DeviceListPath());
                     },
-                    child: _usageTile(getConnectionDeviceCount(state.selected?.devices)),
+                    child: _usageTile(
+                        getConnectionDeviceCount(state.selected?.devices)),
                   ),
-                  SizedBox(height: 32),
+                  box(32),
                   _profileTile(),
-                  SizedBox(height: 64),
+                  box(64),
                   Text(
                     "Send feedback",
                     style: Theme.of(context)
@@ -152,8 +149,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                        getRouterCount(state.selected?.devices),
+                    Text(getRouterCount(state.selected?.devices),
                         style: Theme.of(context).textTheme.headline1?.copyWith(
                             fontSize: 32, fontWeight: FontWeight.w400)),
                     Text('online', style: Theme.of(context).textTheme.headline3)
@@ -167,48 +163,73 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
     );
   }
 
-  Widget _speedTestTile(int downloadMbps, int uploadMbps) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('SPEED TEST'),
-        SizedBox(
-          height: 8,
-        ),
-        Container(
-          width: double.infinity,
-          height: 100,
-          child: Card(
-            color: MoabColor.dashboardTileBackground,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        Expanded(
-                            child: _speedItem(
-                                downloadMbps, Icon(Icons.arrow_downward))),
-                        Expanded(
-                            child: _speedItem(
-                                uploadMbps, Icon(Icons.arrow_upward)))
-                      ],
-                    ),
-                  ),
-                  Text('a week ago',
-                      style: Theme.of(context).textTheme.headline2),
-                ],
+  Widget _speedTestTile(NetworkState state) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        NavigationCubit.of(context).push(SpeedCheckPath());
+      },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('SPEED TEST'),
+          box8(),
+          Container(
+            width: double.infinity,
+            height: 100,
+            child: Card(
+              color: MoabColor.dashboardTileBackground,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: _speedResult(state),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  Widget _speedResult(NetworkState state) {
+    final healthCheckResults = state.selected?.healthCheckResults;
+    if (healthCheckResults != null && healthCheckResults.isNotEmpty) {
+      final result = context
+          .read<NetworkCubit>()
+          .getLatestHealthCheckResult(healthCheckResults);
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Expanded(
+                    child: _speedItem(
+                        result.speedTestResult?.downloadBandwidth ?? 0,
+                        Icon(Icons.arrow_downward))),
+                Expanded(
+                    child: _speedItem(
+                        result.speedTestResult?.uploadBandwidth ?? 0,
+                        Icon(Icons.arrow_upward)))
+              ],
+            ),
+          ),
+          Text(
+              DateFormat("yyyy-MM-dd hh:mm:ss").format(
+                DateFormat("yyyy-MM-ddThh:mm:ssZ")
+                    .parseUTC(result.timestamp)
+                    .toLocal(),
+              ),
+              style: Theme.of(context).textTheme.headline2),
+        ],
+      );
+    } else {
+      return const Center(
+        child: Text('Run Speed Test'),
+      );
+    }
   }
 
   Widget _speedItem(int speed, Icon icon) {

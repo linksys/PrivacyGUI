@@ -3,6 +3,7 @@ import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/model/router/wan_status.dart';
+import 'package:linksys_moab/model/router/health_check_result.dart';
 
 class MoabNetwork extends Equatable {
   const MoabNetwork({
@@ -11,6 +12,8 @@ class MoabNetwork extends Equatable {
     this.wanStatus,
     this.radioInfo,
     this.devices,
+    this.healthCheckResults,
+    this.currentSpeedTestStatus,
   });
 
   final String id;
@@ -18,6 +21,8 @@ class MoabNetwork extends Equatable {
   final RouterWANStatus? wanStatus;
   final List<RouterRadioInfo>? radioInfo;
   final List<Device>? devices;
+  final List<HealthCheckResult>? healthCheckResults;
+  final SpeedTestResult? currentSpeedTestStatus;
 
   @override
   List<Object?> get props => [
@@ -26,6 +31,8 @@ class MoabNetwork extends Equatable {
         wanStatus,
         radioInfo,
         devices,
+        healthCheckResults,
+        currentSpeedTestStatus,
       ];
 
   MoabNetwork copyWith({
@@ -34,6 +41,8 @@ class MoabNetwork extends Equatable {
     RouterWANStatus? wanStatus,
     List<RouterRadioInfo>? radioInfo,
     List<Device>? devices,
+    List<HealthCheckResult>? healthCheckResults,
+    SpeedTestResult? currentSpeedTestStatus,
   }) {
     return MoabNetwork(
       id: id ?? this.id,
@@ -41,6 +50,9 @@ class MoabNetwork extends Equatable {
       wanStatus: wanStatus ?? this.wanStatus,
       radioInfo: radioInfo ?? this.radioInfo,
       devices: devices ?? this.devices,
+      healthCheckResults: healthCheckResults ?? this.healthCheckResults,
+      currentSpeedTestStatus:
+          currentSpeedTestStatus ?? this.currentSpeedTestStatus,
     );
   }
 }
