@@ -26,34 +26,37 @@ class CheckNodeInternetView extends StatefulWidget {
 }
 
 class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
+  late final SetupBloc _setupBloc;
+  late final InternetCheckCubit _internetCheckCubit;
+  late final ConnectivityCubit _connectivityCubit;
 
   @override
   void initState() {
+    _setupBloc = context.read<SetupBloc>();
+    _internetCheckCubit = context.read<InternetCheckCubit>();
+    _connectivityCubit = context.read<ConnectivityCubit>();
     super.initState();
-    _fakeInternetChecking();
+    _tryInternetChecking();
   }
 
-  _fakeInternetChecking() async {
-    context
-        .read<SetupBloc>()
+  _tryInternetChecking() async {
+    _setupBloc
         .add(const ResumePointChanged(status: SetupResumePoint.internetCheck));
-    final connCubit = context.read<ConnectivityCubit>();
-    final internetCheckCubit = context.read<InternetCheckCubit>();
-    // await connCubit.stopChecking();
 
     bool isConnected = await _tryConnectMQTT();
 
-    internetCheckCubit.setConnectToRouter(isConnected);
+    _internetCheckCubit.setConnectToRouter(isConnected);
   }
 
   Future<bool> _tryConnectMQTT() async {
-    final connCubit = context.read<ConnectivityCubit>();
     const maxRetry = 20;
     int retry = 0;
     bool isConnect = false;
     do {
-      isConnect = await connCubit.connectToLocalBroker().onError((error, stackTrace) => false);
-      logger.d('check internet:: _tryConnectMQTT: $isConnect');
+      isConnect = await _connectivityCubit
+          .connectToLocalBroker()
+          .onError((error, stackTrace) => false);
+      logger.d('check internet:: _tryConnectMQTT: retry: $retry, $isConnect');
       if (isConnect) {
         return isConnect;
       } else {
@@ -70,21 +73,27 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
       listenWhen: (previous, current) => previous.status != current.status,
       listener: (context, state) {
         if (state.status == InternetCheckStatus.detectWANStatus) {
-          context.read<InternetCheckCubit>().detectWANStatus();
+          _internetCheckCubit.detectWANStatus();
         } else if (state.status == InternetCheckStatus.pppoe) {
           // go pppoe page
+          NavigationCubit.of(context).push(EnterIspSettingsPath());
         } else if (state.status == InternetCheckStatus.static) {
           // go static page
+          NavigationCubit.of(context).push(EnterStaticIpPath());
         } else if (state.status == InternetCheckStatus.connectedToRouter) {
-          context.read<InternetCheckCubit>().initDevice();
+          _internetCheckCubit.initDevice();
         } else if (state.status == InternetCheckStatus.errorConnectedToRouter) {
           // Not a moab/linksys router
+          NavigationCubit.of(context).push(UnplugModemPath());
         } else if (state.status == InternetCheckStatus.checkWiring) {
           // go check wiring page
-        } else if (state.status == InternetCheckStatus.getInternetConnectionStatus) {
-          context.read<InternetCheckCubit>().getInternetConnectionStatus();
+          NavigationCubit.of(context).push(CheckWiringPath());
+        } else if (state.status ==
+            InternetCheckStatus.getInternetConnectionStatus) {
+          _internetCheckCubit.getInternetConnectionStatus();
         } else if (state.status == InternetCheckStatus.noInternet) {
           // Go no internet page
+          NavigationCubit.of(context).push(NoInternetOptionsPath());
         } else if (state.status == InternetCheckStatus.manually) {
           // go manually
           NavigationCubit.of(context).push(SelectIspSettingsPath());
@@ -108,7 +117,7 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
               child: SimpleTextButton(
                 text: getAppLocalizations(context).enter_isp_settings,
                 onPressed: () {
-                  context.read<InternetCheckCubit>().setManuallyInput();
+                  _internetCheckCubit.setManuallyInput();
                 },
               ),
             ),

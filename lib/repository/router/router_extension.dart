@@ -1,3 +1,4 @@
+import 'package:linksys_moab/model/router/wan_settings.dart';
 import 'package:linksys_moab/network/better_action.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
@@ -39,6 +40,14 @@ extension RouterService on RouterRepository {
     return handleJnapResult(result.body);
   }
 
+  Future<JnapSuccess> setWANSettings(RouterWANSettings newWANSettings) async {
+    final command = createCommand(JNAPAction.setWANSettings.actionValue,
+        data: newWANSettings.toJson());
+
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
+
   Future<JnapSuccess> getWANStatus() async {
     final command = createCommand(JNAPAction.getWANStatus.actionValue);
 
@@ -54,12 +63,15 @@ extension RouterService on RouterRepository {
     final command = createCommand(JNAPAction.getWANDetectionStatus.actionValue);
     return command
         .publishWithRetry(mqttClient!,
-            retryDelayInSec: retryDelayInSec, maxRetry: maxRetry, condition: condition)
+            retryDelayInSec: retryDelayInSec,
+            maxRetry: maxRetry,
+            condition: condition)
         .map((event) => handleJnapResult(event.body));
   }
 
   Future<JnapSuccess> getWANDetectionStatus() async {
-    final command = createCommand(JNAPAction.getWANDetectionStatus.actionValue, needAuth: true);
+    final command = createCommand(JNAPAction.getWANDetectionStatus.actionValue,
+        needAuth: true);
 
     final result = await command.publish(mqttClient!);
     return handleJnapResult(result.body);

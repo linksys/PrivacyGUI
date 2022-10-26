@@ -2,7 +2,7 @@
 import 'dart:io';
 
 import 'package:image/image.dart';
-import 'package:linksys_moab/util/validator.dart';
+import 'package:linksys_moab/validator_rules/validators.dart';
 import 'package:test/test.dart';
 
 void main() {

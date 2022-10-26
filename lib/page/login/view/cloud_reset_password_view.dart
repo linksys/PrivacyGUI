@@ -3,23 +3,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
-import 'package:linksys_moab/page/components/base_components/button/primary_button.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/util/logger.dart';
-import 'package:linksys_moab/util/validator.dart';
+import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
 import '../../../bloc/auth/bloc.dart';
 import '../../../bloc/auth/state.dart';
-import '../../../repository/model/dummy_model.dart';
 import '../../../route/navigation_cubit.dart';
-import '../../components/base_components/input_fields/input_field.dart';
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
-import '../../components/customs/password_validity_widget.dart';
-import '../../create_account/view/create_account_password_view.dart';
 
 class CloudResetPasswordView extends ArgumentsStatefulView {
   const CloudResetPasswordView({Key? key}) : super(key: key);

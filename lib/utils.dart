@@ -306,6 +306,7 @@ class Utils {
   static String stringBase64Encode(String value) {
     return utf8.fuse(base64).encode(value);
   }
+
   static String stringBase64Decode(String base64String) {
     return utf8.fuse(base64).decode(base64String);
   }
@@ -313,5 +314,80 @@ class Utils {
   static String generateMqttClintId() {
     final platform = Platform.isIOS ? 'iOS' : 'Android';
     return '$platform-${uuid.v1()}';
+  }
+
+  static int ipToNum(String ipAddress) {
+    final octets = ipAddress.split('.');
+    return (((((int.parse(octets[0]) * 256) + int.parse(octets[1])) * 256) +
+                int.parse(octets[2])) *
+            256) +
+        int.parse(octets[3]);
+  }
+
+  static String numToIp(int num) {
+    var octets = '${num % 256}';
+    for (var _ in [1, 2, 3]) {
+      num = (num / 256).floor();
+      octets = '${num % 256}.$octets';
+    }
+    return octets;
+  }
+
+  static bool ipInRange(ipAddress, ipAddressMin, ipAddressMax) {
+    return ipToNum(ipAddress) >= ipToNum(ipAddressMin) &&
+        ipToNum(ipAddress) <= ipToNum(ipAddressMax);
+  }
+
+  static bool isValidSubnetMask(String subnetMask,
+      {int minNetworkPrefixLength = 8, int maxNetworkPrefixLength = 30}) {
+    if (subnetMask.isEmpty) {
+      return false;
+    }
+
+    if (minNetworkPrefixLength < 1 || minNetworkPrefixLength > 31) {
+      throw Exception(
+          'Invalid minNetworkPrefixLength passed, must be between 1 and 31');
+    }
+    if (maxNetworkPrefixLength < 1 || maxNetworkPrefixLength > 31) {
+      throw Exception(
+          'Invalid maxNetworkPrefixLength passed, must be between 1 and 31');
+    }
+    if (maxNetworkPrefixLength < minNetworkPrefixLength) {
+      throw Exception(
+          'maxNetworkPrefixLength cannot be less than minNetworkPrefixLength');
+    }
+
+    var subnetMaskBits = ipToNum(subnetMask).toRadixString(2);
+    var prefixLength = subnetMaskBits.indexOf('0');
+    if (prefixLength == -1) {
+      return false;
+    }
+    final subnetMaskTestBits =
+        List.filled(prefixLength, '1').join().padRight(32, '0');
+    if (subnetMaskBits != subnetMaskTestBits ||
+        prefixLength < minNetworkPrefixLength ||
+        prefixLength > maxNetworkPrefixLength) {
+      return false;
+    }
+
+    return true;
+  }
+
+  static String prefixLengthToSubnetMask(int prefixLength) {
+    final subnetMaskTestBits =
+        List.filled(prefixLength, '1').join().padRight(32, '0');
+    return RegExp(r'.{1,8}')
+        .allMatches(subnetMaskTestBits)
+        .map((e) => int.parse(e.group(0)!, radix: 2))
+        .toList().join('.');
+  }
+  static int subnetMaskToPrefixLength(String subnetMask) {
+    final prefixLength = ipToNum(subnetMask).toRadixString(2).indexOf('0');
+
+    if (!isValidSubnetMask(subnetMask, minNetworkPrefixLength: 1, maxNetworkPrefixLength: 31)) {
+      throw Exception('Invalid subnet mask passed');
+    }
+
+    return prefixLength == -1 ? 32 : prefixLength;
   }
 }

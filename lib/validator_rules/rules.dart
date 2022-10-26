@@ -1,5 +1,7 @@
+import 'package:linksys_moab/utils.dart';
+
 abstract class ValidationRule {
-  String get name;
+  String get name => runtimeType.toString();
 
   bool validate(String input);
 }
@@ -7,8 +9,11 @@ abstract class ValidationRule {
 abstract class RegExValidationRule extends ValidationRule {
   RegExp get _rule;
 
+  bool get notCheck => false;
+
   @override
-  bool validate(String input) => _rule.hasMatch(input);
+  bool validate(String input) =>
+      notCheck ? !_rule.hasMatch(input) : _rule.hasMatch(input);
 }
 
 class EmailRule extends RegExValidationRule {
@@ -88,37 +93,70 @@ class IpAddressRule extends RegExValidationRule {
 
   @override
   RegExp get _rule => RegExp(
-    r"^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
-  );
+      r"^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
 }
 
-class InputValidator {
-  final List<ValidationRule> rules;
+class NoSurroundWhitespaceRule extends RegExValidationRule {
+  @override
+  bool notCheck = true;
 
-  InputValidator(this.rules);
+  @override
+  RegExp get _rule => RegExp(r'^\s+|\s+$');
 
+  @override
+  String get name => 'SurroundWhitespace';
+}
+
+class IpAddressHasFourOctetsRule extends ValidationRule {
+  @override
+  bool validate(String input) => input.split('.').length == 4;
+}
+
+class SubnetMaskRule extends ValidationRule {
+  final int minNetworkPrefixLength;
+  final int maxNetworkPrefixLength;
+
+  SubnetMaskRule(
+      {this.minNetworkPrefixLength = 8, this.maxNetworkPrefixLength = 30});
+
+  @override
   bool validate(String input) {
-    return !rules.any((rule) => !rule.validate(input));
-  }
-
-  Map<String, bool> validateDetail(String input, {bool onlyFailed = false}) {
-    return rules
-        .map((rule) => {rule.name: rule.validate(input)})
-        .where((pair) => onlyFailed ? !pair.values.first : true)
-        .reduce((value, element) => value..addAll(element));
+    return Utils.isValidSubnetMask(input,
+        minNetworkPrefixLength: maxNetworkPrefixLength,
+        maxNetworkPrefixLength: maxNetworkPrefixLength);
   }
 }
 
-class ComplexPasswordValidator extends InputValidator {
-  ComplexPasswordValidator()
-      : super([
-          LengthRule(),
-          HybridCaseRule(),
-          DigitalCheckRule(),
-          SpecialCharCheckRule()
-        ]);
+class RequiredRule extends ValidationRule {
+  @override
+  bool validate(String input) {
+    return input.isNotEmpty;
+  }
 }
 
-class EmailValidator extends InputValidator {
-  EmailValidator() : super([EmailRule()]);
+class IpAddressNoReservedRule extends ValidationRule {
+  @override
+  bool validate(String input) {
+    return input != '0.0.0.0' &&
+        input != '127.0.0.1' &&
+        input != '255.255.255.255';
+  }
 }
+
+class AsciiRule extends RegExValidationRule {
+  @override
+  RegExp get _rule => RegExp(r'^[\x20-\x7E]+$');
+}
+
+// class IpAddressOctetValidation extends ValidationRule {
+//   final int octet;
+//   final int min;
+//   final int max;
+//
+//   IpAddressOctetValidation(this.octet, {this.min = 0, this.max = 255});
+//
+//   @override
+//   bool validate(String input) {
+//     final all = input.split('.');
+//   }
+// }

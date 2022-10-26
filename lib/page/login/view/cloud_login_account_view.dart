@@ -15,8 +15,8 @@ import 'package:linksys_moab/route/_route.dart';
 
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
-import 'package:linksys_moab/util/validator.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
 import '../../../utils.dart';
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
