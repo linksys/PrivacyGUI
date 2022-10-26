@@ -75,7 +75,8 @@ dependencies:
   styled_text: ^5.1.0
   image: ^3.2.0
   collection: ^1.16.0
-  in_app_purchase: ^3.0.7
+  in_app_purchase:
+    path: plugins/iap_plugin/in_app_purchase
   flutter_secure_storage: ^6.0.0
   universal_link_plugin:
     path: plugins/universal_link_plugin
