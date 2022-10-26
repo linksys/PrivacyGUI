@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/_constants.dart';
+import 'package:linksys_moab/constants/default_country_codes.dart';
 import 'package:linksys_moab/network/http/extension_requests/extension_requests.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_account_info.dart';
@@ -17,6 +19,7 @@ import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
 import 'package:linksys_moab/repository/model/dummy_model.dart';
 import 'package:linksys_moab/repository/security_context_loader_mixin.dart';
+import 'package:linksys_moab/util/storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CloudAuthRepository extends AuthRepository with SCLoader {
@@ -141,10 +144,18 @@ class CloudAuthRepository extends AuthRepository with SCLoader {
   @override
   Future<List<RegionCode>> fetchRegionCodes() async {
     List<RegionCode> regions = [];
-    final response = await _httpClient.fetchRegionCodes();
-    final jsonMap = json.decode(response.body) as Map<String, dynamic>;
-    if (jsonMap.containsKey('countryCodes')) {
-      final jsonArray = jsonMap['countryCodes'] as List<dynamic>;
+    var countryCodeJson = defaultCountryCodes;
+    final isSuccess = await CloudEnvironmentManager().downloadResources(CloudResourceType.countryCodes).onError((error, stackTrace) => false);
+    if (isSuccess) {
+      final regionFile = File.fromUri(Storage.countryCodesFileUri);
+      if (regionFile.existsSync()) {
+        final countryCodeString = regionFile.readAsStringSync();
+        countryCodeJson = json.decode(countryCodeString);
+      }
+    }
+    
+    if (countryCodeJson.containsKey('countryCodes')) {
+      final jsonArray = countryCodeJson['countryCodes'] as List<dynamic>;
       regions = List.from(jsonArray.map((e) => RegionCode.fromJson(e)));
     }
     return regions;

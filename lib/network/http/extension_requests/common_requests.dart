@@ -12,8 +12,8 @@ extension MoabCommonRequests on MoabHttpClient {
     return this.get(Uri.parse(url));
   }
 
-  Future<Response> fetchAllCloudConfig() async {
-    final url = allCloudConfigUrl;
+  Future<Response> fetchAllCloudConfig(String configBaseUrl) async {
+    final url = '$configBaseUrl/$allConfigFileName';
     return this.get(Uri.parse(url));
   }
 

@@ -16,15 +16,19 @@ class Storage {
   static final String appPublicKeyFilename = '${cloudEnvTarget.name}_key.pem';
   static final String appPrivateKeyFilename = '${cloudEnvTarget.name}_key.key';
   static const String iconMapFilename = 'sprite-icons-map.png';
+  static const String iconKeysFilename = 'icon-keys.json';
   static const String appSignaturesFilename = 'app-signatures.json';
   static const String webFiltersFilename = 'web-filters.json';
   static const String categoryPresetsFilename = 'security-category-presets.json';
   static const String secureProfilePresets = 'profile-presets.json';
+  static const String countryCodesFilename = 'country-codes.json';
 
   static Uri get logFileUri => Uri.parse('${_tempDirectory?.path}/$loggerFilename');
   static Uri get shareLogFileUri => Uri.parse('${_tempDirectory?.path}/$loggerFilename');
 
-  static Uri get iconFileUri => Uri.parse('${Storage.tempDirectory?.path}/$iconMapFilename');
+  static Uri get iconsFileUri => Uri.parse('${Storage.tempDirectory?.path}/$iconMapFilename');
+  static Uri get iconKeysFileUri => Uri.parse('${Storage.tempDirectory?.path}/$iconKeysFilename');
+  static Uri get countryCodesFileUri => Uri.parse('${Storage.tempDirectory?.path}/$countryCodesFilename');
   static Uri get appSignaturesFileUri => Uri.parse('${Storage.tempDirectory?.path}/$appSignaturesFilename');
   static Uri get webFiltersFileUri => Uri.parse('${Storage.tempDirectory?.path}/$webFiltersFilename');
   static Uri get categoryPresetsFileUri => Uri.parse('${Storage.tempDirectory?.path}/$categoryPresetsFilename');

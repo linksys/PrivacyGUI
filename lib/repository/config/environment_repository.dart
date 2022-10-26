@@ -14,7 +14,7 @@ abstract class EnvironmentRepository {
 
   Future<CloudConfig> fetchCloudConfig();
 
-  Future<List<CloudConfig>> fetchAllCloudConfig();
+  Future<List<CloudConfig>> fetchAllCloudConfig(String configBaseUrl);
 
   Future<CloudApp> createApps(DeviceInfo deviceInfo);
 
@@ -31,8 +31,8 @@ class MoabEnvironmentRepository extends EnvironmentRepository {
   MoabEnvironmentRepository(super.client);
 
   @override
-  Future<List<CloudConfig>> fetchAllCloudConfig() async {
-    return await _client.fetchAllCloudConfig().then((response) {
+  Future<List<CloudConfig>> fetchAllCloudConfig(String configBaseUrl) async {
+    return await _client.fetchAllCloudConfig(configBaseUrl).then((response) {
       final jsonArray = json.decode(response.body) as List<dynamic>;
       return List.from(jsonArray.map((e) => CloudConfig.fromJson(e)));
     });

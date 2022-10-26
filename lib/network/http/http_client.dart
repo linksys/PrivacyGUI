@@ -219,7 +219,7 @@ class MoabHttpClient extends http.BaseClient {
       final response = await super
           .get(url, headers: headers)
           .then((response) => _handleResponse(response));
-      _logResponse(response, ignoreResponse: true);
+      _logResponse(response, ignoreResponse: false);
       Storage.saveByteFile(savedPathUri, response.bodyBytes);
     } catch (e) {
       logger.e('Download data failed!', e);
