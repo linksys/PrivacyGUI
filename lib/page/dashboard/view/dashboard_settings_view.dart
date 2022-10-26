@@ -131,6 +131,9 @@ _networkSettingsSection() => DashboardSettingsSection(
       title: 'NETWORK',
       items: [
         DashboardSettingsItem(title: 'WiFi', path: WifiSettingsOverviewPath()),
+        DashboardSettingsItem(title: 'Administration', path: UnknownPath()),
+        DashboardSettingsItem(title: 'Priority', path: UnknownPath()),
+        DashboardSettingsItem(title: 'Smart home', path: UnknownPath()),
         DashboardSettingsItem(
           title: 'Internet schedule',
           path: ProfileListPath()..args = {'category': PService.internetSchedule},
@@ -140,9 +143,6 @@ _networkSettingsSection() => DashboardSettingsSection(
           path: ProfileListPath()..args = {'category': PService.contentFilter},
         ),
         DashboardSettingsItem(title: 'Profiles', path: ProfileListPath()),
-        DashboardSettingsItem(title: 'Priority', path: UnknownPath()),
-        DashboardSettingsItem(title: 'Administration', path: UnknownPath()),
-        DashboardSettingsItem(title: 'Smart home', path: UnknownPath()),
       ],
     );
 //
