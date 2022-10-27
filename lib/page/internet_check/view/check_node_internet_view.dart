@@ -12,13 +12,14 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/internet_check_path.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-class CheckNodeInternetView extends StatefulWidget {
+class CheckNodeInternetView extends ArgumentsStatefulView {
   const CheckNodeInternetView({
-    Key? key,
+    Key? key, super.next, super.args,
   }) : super(key: key);
 
   @override
@@ -35,6 +36,8 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
     _setupBloc = context.read<SetupBloc>();
     _internetCheckCubit = context.read<InternetCheckCubit>();
     _connectivityCubit = context.read<ConnectivityCubit>();
+    final isPlugModemBack = widget.args['isPlugModemBack'] ?? false;
+    _internetCheckCubit.init(isPlugModemBack: isPlugModemBack);
     super.initState();
     _tryInternetChecking();
   }
@@ -49,7 +52,7 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
   }
 
   Future<bool> _tryConnectMQTT() async {
-    const maxRetry = 20;
+    const maxRetry = 30;
     int retry = 0;
     bool isConnect = false;
     do {
@@ -93,7 +96,7 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
           _internetCheckCubit.getInternetConnectionStatus();
         } else if (state.status == InternetCheckStatus.noInternet) {
           // Go no internet page
-          NavigationCubit.of(context).push(NoInternetOptionsPath());
+          NavigationCubit.of(context).push(NoInternetOptionsPath()..args = {'isSecondTime': state.afterPlugModemBack});
         } else if (state.status == InternetCheckStatus.manually) {
           // go manually
           NavigationCubit.of(context).push(SelectIspSettingsPath());

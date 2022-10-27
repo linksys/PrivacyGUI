@@ -98,6 +98,7 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
 
   void _onSaveRouterSettings(
       SaveRouterSettings event, Emitter<SetupState> emit) async {
+    // TODO check network id is exist if has cloud account
     final getRadioInfoResult = await _routerRepository.getRadioInfo();
     final devices = await _routerRepository.getDevices().then((result) =>
         List.from(result.output['devices'])

@@ -346,9 +346,18 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Connect',
           onPress: () async {
-            await context.read<RouterRepository>().connectToLocalWithPassword();
-            await context.read<RouterRepository>().getWANSettings();
-            NavigationCubit.of(context).push(EnterIspSettingsPath());
+
+            NavigationCubit.of(context).push(CheckNodeInternetPath());
+
+            // await context.read<RouterRepository>().connectToLocalWithPassword();
+            // await context.read<AccountCubit>().fetchAccount();
+            // final account = context.read<AccountCubit>().state.id;
+            // final group = context.read<AccountCubit>().state.groupId;
+            // // await context.read<RouterRepository>().setCloudIds(account, group);
+            //
+            // await context.read<RouterRepository>().getOwnedNetworkID();
+            // await context.read<RouterRepository>().getCloudIds();
+
             // await context.read<RouterRepository>().connectToLocalWithPassword();
             // await context.read<RouterRepository>().getCloudIds();
             // await context.read<ConnectivityCubit>().connectToRemoteBroker();

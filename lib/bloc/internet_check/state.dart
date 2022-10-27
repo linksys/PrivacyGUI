@@ -26,6 +26,8 @@ class InternetCheckState extends Equatable {
     this.isDetectingWANType = false,
     this.isInternetConnected = false,
     this.routerWANSettings,
+    this.isSetup = true,
+    this.afterPlugModemBack = false,
   });
 
   final InternetCheckStatus status;
@@ -34,6 +36,8 @@ class InternetCheckState extends Equatable {
   final String wanConnectionStatus;
   final bool isDetectingWANType;
   final bool isInternetConnected;
+  final bool isSetup;
+  final bool afterPlugModemBack;
 
   // For PPPoE and Static
   final RouterWANSettings? routerWANSettings;
@@ -47,6 +51,8 @@ class InternetCheckState extends Equatable {
         isDetectingWANType,
         isInternetConnected,
         runtimeType,
+        isSetup,
+        afterPlugModemBack,
       ];
 
   InternetCheckState copyWith({
@@ -57,6 +63,8 @@ class InternetCheckState extends Equatable {
     bool? isDetectingWANType,
     bool? isInternetConnected,
     RouterWANSettings? routerWANSettings,
+    bool? isSetup,
+    bool? afterPlugModemBack,
   }) {
     return InternetCheckState(
       status: status ?? this.status,
@@ -66,6 +74,8 @@ class InternetCheckState extends Equatable {
       isDetectingWANType: isDetectingWANType ?? this.isDetectingWANType,
       isInternetConnected: isInternetConnected ?? this.isInternetConnected,
       routerWANSettings: routerWANSettings ?? this.routerWANSettings,
+      isSetup: isSetup ?? this.isSetup,
+      afterPlugModemBack: afterPlugModemBack ?? this.afterPlugModemBack,
     );
   }
 }

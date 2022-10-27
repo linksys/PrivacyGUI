@@ -12,51 +12,48 @@ class CheckWiringView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async { return true; },
-      child: BasePageView.noNavigationBar(
-        child: BasicLayout(
-          header: BasicHeader(
-            title: getAppLocalizations(context).check_wiring_title,
-          ),
-          content: Column(
-            children: [
-              Image.asset('assets/images/check_wiring.png'),
-              const SizedBox(
-                height: 40,
+    return BasePageView.noNavigationBar(
+      child: BasicLayout(
+        header: BasicHeader(
+          title: getAppLocalizations(context).check_wiring_title,
+        ),
+        content: Column(
+          children: [
+            Image.asset('assets/images/check_wiring.png'),
+            const SizedBox(
+              height: 40,
+            ),
+            Text(
+              getAppLocalizations(context).check_wiring_description_1,
+              style: Theme.of(context).textTheme.headline3?.copyWith(
+                color: Theme.of(context).colorScheme.tertiary
               ),
-              Text(
-                getAppLocalizations(context).check_wiring_description_1,
-                style: Theme.of(context).textTheme.headline3?.copyWith(
-                  color: Theme.of(context).colorScheme.tertiary
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 40),
-                child: Text(
-                  getAppLocalizations(context).check_wiring_description_2,
-                  style: Theme.of(context).textTheme.headline3?.copyWith(
-                      color: Theme.of(context).colorScheme.tertiary
-                  ),
-                ),
-              ),
-              Text(
-                getAppLocalizations(context).check_wiring_description_3,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Text(
+                getAppLocalizations(context).check_wiring_description_2,
                 style: Theme.of(context).textTheme.headline3?.copyWith(
                     color: Theme.of(context).colorScheme.tertiary
                 ),
               ),
-            ],
-            crossAxisAlignment: CrossAxisAlignment.start,
-          ),
-          footer: PrimaryButton(
-            text: 'Check again',
-            onPress: () {
-              NavigationCubit.of(context).clearAndPush(CheckNodeInternetPath());
-            },
-          ),
-          alignment: CrossAxisAlignment.start,
+            ),
+            Text(
+              getAppLocalizations(context).check_wiring_description_3,
+              style: Theme.of(context).textTheme.headline3?.copyWith(
+                  color: Theme.of(context).colorScheme.tertiary
+              ),
+            ),
+          ],
+          crossAxisAlignment: CrossAxisAlignment.start,
         ),
+        footer: PrimaryButton(
+          text: 'Check again',
+          onPress: () {
+            NavigationCubit.of(context).push(CheckNodeInternetPath());
+          },
+        ),
+        alignment: CrossAxisAlignment.start,
       ),
     );
   }

@@ -63,7 +63,7 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
                           opaque: path.pageConfig.isOpaque,
                           child: Theme(
                             data: path.pageConfig.themeData,
-                            child: _buildPageView(path),
+                            child: path.pageConfig.isBackAvailable ? _buildPageView(path) : WillPopScope(child: _buildPageView(path), onWillPop: () async => true),
                           ),
                         ),
                     ],

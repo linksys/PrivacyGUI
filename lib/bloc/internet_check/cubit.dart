@@ -7,6 +7,7 @@ import 'package:linksys_moab/model/router/device_info.dart';
 import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/model/router/wan_settings.dart';
 import 'package:linksys_moab/model/router/wan_status.dart';
+import 'package:linksys_moab/network/better_action.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
 import 'package:linksys_moab/repository/router/batch_extension.dart';
 import 'package:linksys_moab/repository/router/core_extension.dart';
@@ -32,8 +33,8 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
             : InternetCheckStatus.errorConnectedToRouter));
   }
 
-  init() {
-    emit(const InternetCheckState());
+  init({bool isPlugModemBack = false}) {
+    emit(InternetCheckState(afterPlugModemBack: isPlugModemBack));
   }
 
   setManuallyInput() {
@@ -95,7 +96,8 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
       bool Function()? condition}) async {
     _detectWANStatusSubscription?.cancel();
     _detectWANStatusSubscription = _routerRepository
-        .testGetWANDetectionStatus(
+        .scheduledCommand(
+            action: JNAPAction.getWANDetectionStatus,
             retryDelayInSec: retryDelayInSec,
             maxRetry: maxRetry,
             condition: condition ??
@@ -109,7 +111,6 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
         final String wanStatus = output['wanStatus'];
         final bool isDetectingWANType = output['isDetectingWANType'];
         emit(state.copyWith(
-            status: InternetCheckStatus.detectWANStatus,
             wanConnectionStatus: wanStatus,
             isDetectingWANType: isDetectingWANType));
       }
@@ -126,7 +127,8 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
   getInternetConnectionStatus() {
     _getInternetStatusSubscription?.cancel();
     _getInternetStatusSubscription = _routerRepository
-        .testGetInternetConnectionStatus(
+        .scheduledCommand(
+            action: JNAPAction.getInternetConnectionStatus,
             condition: () => state.isInternetConnected)
         .listen((event) {
       if (event is JnapSuccess) {
@@ -141,6 +143,8 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
       _finalCheckInternetStatus();
     });
   }
+
+  testGetOwnedNetworkId() {}
 
   Future fetchRouterWANSettings() async {
     final routerWANSettings = await _routerRepository
@@ -249,20 +253,22 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
   }
 
   _finalCheckWANStatus({bool Function()? condition}) {
-    if (condition != null
-        ? condition.call()
-        : (state.wanConnectionStatus == 'Connected' ||
-            state.wanConnectionStatus == 'Connecting' ||
-            state.wanConnectionStatus == 'DHCP')) {
-      emit(state.copyWith(
-          status: InternetCheckStatus.getInternetConnectionStatus));
-    } else if (state.wanConnectionStatus == 'PPPoE') {
-      emit(state.copyWith(status: InternetCheckStatus.pppoe));
-    } else if (state.wanConnectionStatus == 'Static') {
-      emit(state.copyWith(status: InternetCheckStatus.static));
-    } else {
-      emit(state.copyWith(status: InternetCheckStatus.checkWiring));
-    }
+    // if (condition != null
+    //     ? condition.call()
+    //     : (state.wanConnectionStatus == 'Connected' ||
+    //         state.wanConnectionStatus == 'Connecting' ||
+    //         state.wanConnectionStatus == 'DHCP')) {
+    //   emit(state.copyWith(
+    //       status: InternetCheckStatus.getInternetConnectionStatus));
+    // } else if (state.wanConnectionStatus == 'PPPoE') {
+    //   emit(state.copyWith(status: InternetCheckStatus.pppoe));
+    // } else if (state.wanConnectionStatus == 'Static') {
+    //   emit(state.copyWith(status: InternetCheckStatus.static));
+    // } else {
+    //   emit(state.copyWith(status: InternetCheckStatus.checkWiring));
+    // }
+    emit(state.copyWith(
+        status: InternetCheckStatus.getInternetConnectionStatus));
   }
 
   _finalCheckInternetStatus() async {
@@ -270,7 +276,9 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
       await _checkUnsecureWiFiWarning();
       emit(state.copyWith(status: InternetCheckStatus.connected));
     } else {
-      emit(state.copyWith(status: InternetCheckStatus.noInternet));
+      emit(state.copyWith(
+        status: InternetCheckStatus.noInternet,
+      ));
     }
   }
 

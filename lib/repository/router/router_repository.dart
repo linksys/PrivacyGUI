@@ -13,6 +13,7 @@ import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
+import 'package:linksys_moab/network/better_action.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_config.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
@@ -320,6 +321,19 @@ class RouterRepository with StateStreamListener {
       //
       throw Exception();
     }
+  }
+
+  Stream<JnapResult> scheduledCommand({
+    required JNAPAction action,
+    int retryDelayInSec = 5,
+    int maxRetry = 10,
+    bool Function()? condition,
+  }) {
+    final command = createCommand(action.actionValue);
+    return command
+        .publishWithRetry(mqttClient!,
+        retryDelayInSec: retryDelayInSec, maxRetry: maxRetry, condition: condition)
+        .map((event) => handleJnapResult(event.body));
   }
 
   JnapSuccess handleJnapResult(JnapResult result) {
