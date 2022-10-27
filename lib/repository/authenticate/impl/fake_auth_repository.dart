@@ -213,4 +213,16 @@ class FakeAuthRepository extends AuthRepository {
     // TODO: implement requestSession
     throw UnimplementedError();
   }
+
+  @override
+  Future<void> changeAuthenticationMode(String accountId, String token, String? password) {
+    // TODO: implement changeAuthenticationMode
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ChangeAuthenticationModeChallenge> changeAuthenticationModePrepare(String accountId, String? password, String authenticationMode) {
+    // TODO: implement changeAuthenticationModePrepare
+    throw UnimplementedError();
+  }
 }

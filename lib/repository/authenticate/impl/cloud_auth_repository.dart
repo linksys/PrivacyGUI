@@ -149,4 +149,16 @@ class CloudAuthRepository extends AuthRepository with SCLoader {
     }
     return regions;
   }
+
+  @override
+  Future<void> changeAuthenticationMode(String accountId, String token, String? password) {
+    return _httpClient.changeAuthenticationMode(accountId, token, password);
+  }
+
+  @override
+  Future<ChangeAuthenticationModeChallenge> changeAuthenticationModePrepare(String accountId, String? password, String authenticationMode) async {
+    final response = await _httpClient.changeAuthenticationModePrepare(
+      accountId, password, authenticationMode);
+    return ChangeAuthenticationModeChallenge.fromJson(json.decode(response.body));
+  }
 }

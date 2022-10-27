@@ -8,6 +8,25 @@ abstract class BaseAuthChallenge extends Equatable {
   final String token;
 }
 
+class ChangeAuthenticationModeChallenge extends BaseAuthChallenge {
+  const ChangeAuthenticationModeChallenge({required super.token});
+
+  factory ChangeAuthenticationModeChallenge.fromJson(Map<String, dynamic> json) {
+    return ChangeAuthenticationModeChallenge(token: json['token']);
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> json = {
+      'token': token
+    };
+    return json;
+  }
+
+  @override
+  List<Object?> get props => [token];
+}
+
 ///
 /// {
 ///   "token": "string",
