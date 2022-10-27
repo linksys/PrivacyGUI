@@ -234,39 +234,15 @@ class _AccountViewState extends State<AccountView> {
   }
 
   Widget _passwordLessTile(AccountState state) {
-    return SettingTileWithDescription(
-      title: Text('Password-less login'),
-      description: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-              'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.'),
-          box8(),
-          state.authMode == AuthenticationType.passwordless.name
-              ? Center()
-              : SettingTile(
-                  title: Text(
-                    '\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyText1
-                        ?.copyWith(fontSize: 20),
-                  ),
-                  value: Center(),
-                  onPress: state.authMode ==
-                          AuthenticationType.password.name.toUpperCase()
-                      ? () {
-                          NavigationCubit.of(context)
-                              .push(CloudPasswordValidationPath());
-                        }
-                      : null,
-                )
-        ],
-      ),
-      value: Switch.adaptive(
-        value: state.authMode == AuthenticationType.passwordless.name,
-        onChanged: (value) {},
-      ),
+    return SettingTile(
+      title: const Text('Log in method'),
+      value: Text(state.authMode == AuthenticationType.passwordless.name
+          ? "One-time passcode"
+          : "Password", style: TextStyle(color: Colors.black.withOpacity(0.5))),
+      onPress: () {
+        NavigationCubit.of(context)
+            .push(LoginMethodOptionsPath());
+      },
     );
   }
 
