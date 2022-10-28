@@ -12,10 +12,12 @@ class SimpleTextButton extends StatelessWidget {
   factory SimpleTextButton.noPadding({
     Key? key,
     required String text,
+    TextStyle? style,
     void Function()? onPressed,
   }) {
     return SimpleTextButton(
       text: text,
+      style: style,
       onPressed: onPressed,
       padding: EdgeInsets.zero,
     );

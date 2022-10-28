@@ -87,10 +87,10 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
     return radioInfo;
   }
 
-  Future<List<Device>> getDevices() async {
+  Future<List<RouterDevice>> getDevices() async {
     final result = await _routerRepository.getDevices();
     final devices = List.from(result.output['devices'])
-        .map((e) => Device.fromJson(e))
+        .map((e) => RouterDevice.fromJson(e))
         .toList();
     _handleDevicesResult(devices);
     return devices;
@@ -167,7 +167,7 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
         selected: state.selected!.copyWith(radioInfo: radioInfo)));
   }
 
-  _handleDevicesResult(List<Device> devices) {
+  _handleDevicesResult(List<RouterDevice> devices) {
     emit(state.copyWith(selected: state.selected!.copyWith(devices: devices)));
   }
 
@@ -204,7 +204,7 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
     if (result.containsKey(JNAPAction.getDevices.actionValue)) {
       final devices = List.from(
               result[JNAPAction.getDevices.actionValue]!.output['devices'])
-          .map((e) => Device.fromJson(e))
+          .map((e) => RouterDevice.fromJson(e))
           .toList();
       _handleDevicesResult(devices);
     }

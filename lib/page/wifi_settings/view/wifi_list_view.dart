@@ -161,10 +161,10 @@ class _WifiListViewState extends State<WifiListView> {
     );
   }
 
-  int getConnectionDeviceCount(List<Device>? devices) {
+  int getConnectionDeviceCount(List<RouterDevice>? devices) {
     int deviceCount = 0;
     if (devices != null && devices.isNotEmpty) {
-      for (Device device in devices) {
+      for (RouterDevice device in devices) {
         if (!device.isAuthority && device.nodeType == null) {
           deviceCount += 1;
         }

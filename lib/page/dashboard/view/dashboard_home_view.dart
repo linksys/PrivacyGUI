@@ -381,10 +381,10 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
     return '0';
   }
 
-  String getRouterCount(List<Device>? devices) {
+  String getRouterCount(List<RouterDevice>? devices) {
     int routerCount = 0;
     if (devices != null && devices.isNotEmpty) {
-      for (Device device in devices) {
+      for (RouterDevice device in devices) {
         if (device.isAuthority || device.nodeType != null) {
           routerCount += 1;
         }
@@ -393,10 +393,10 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
     return routerCount.toString();
   }
 
-  int getConnectionDeviceCount(List<Device>? devices) {
+  int getConnectionDeviceCount(List<RouterDevice>? devices) {
     int deviceCount = 0;
     if (devices != null && devices.isNotEmpty) {
-      for (Device device in devices) {
+      for (RouterDevice device in devices) {
         if (!device.isAuthority && device.nodeType == null) {
           deviceCount += 1;
         }

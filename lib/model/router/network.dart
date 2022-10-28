@@ -20,7 +20,7 @@ class MoabNetwork extends Equatable {
   final RouterDeviceInfo? deviceInfo;
   final RouterWANStatus? wanStatus;
   final List<RouterRadioInfo>? radioInfo;
-  final List<Device>? devices;
+  final List<RouterDevice>? devices;
   final List<HealthCheckResult>? healthCheckResults;
   final SpeedTestResult? currentSpeedTestStatus;
 
@@ -40,7 +40,7 @@ class MoabNetwork extends Equatable {
     RouterDeviceInfo? deviceInfo,
     RouterWANStatus? wanStatus,
     List<RouterRadioInfo>? radioInfo,
-    List<Device>? devices,
+    List<RouterDevice>? devices,
     List<HealthCheckResult>? healthCheckResults,
     SpeedTestResult? currentSpeedTestStatus,
   }) {

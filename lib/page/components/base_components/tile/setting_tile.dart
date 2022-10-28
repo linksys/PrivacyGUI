@@ -1,6 +1,7 @@
 import 'dart:ffi';
 
 import 'package:flutter/material.dart';
+import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 
 class SettingTile extends StatelessWidget {
@@ -10,19 +11,29 @@ class SettingTile extends StatelessWidget {
     required this.value,
     this.icon,
     this.onPress,
+    this.background,
+    this.tileHeight,
+    this.padding,
   }) : super(key: key);
 
   final Widget title;
   final Widget value;
   final Widget? icon;
   final VoidCallback? onPress;
+  final Color? background;
+  final double? tileHeight;
+  final EdgeInsets? padding;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        InkWell(
-          onTap: onPress,
+    return InkWell(
+      onTap: onPress,
+      child: Container(
+        decoration: BoxDecoration(
+            color: background ?? MoabColor.dashboardTileBackground),
+        height: tileHeight ?? 64,
+        child: Padding(
+          padding: padding ?? EdgeInsets.zero,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -33,7 +44,7 @@ class SettingTile extends StatelessWidget {
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -45,71 +56,94 @@ class SettingTileWithDescription extends StatelessWidget {
     required this.value,
     required this.description,
     this.onPress,
+    this.background,
+    this.tileHeight,
+    this.padding,
   }) : super(key: key);
 
   final Widget title;
   final Widget value;
   final VoidCallback? onPress;
   final Widget description;
+  final Color? background;
+  final double? tileHeight;
+  final EdgeInsets? padding;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: onPress,
-          child: Row(
-            children: [
-              Expanded(child: title),
-              value,
-              box8(),
-              if (onPress != null) const Icon(Icons.arrow_forward_ios)
-            ],
+    return Container(
+      decoration:
+          BoxDecoration(color: background ?? MoabColor.dashboardTileBackground),
+      height: tileHeight ?? 64,
+      padding: padding?? EdgeInsets.zero,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: onPress,
+            child: Row(
+              children: [
+                Expanded(child: title),
+                value,
+                box8(),
+                if (onPress != null) const Icon(Icons.arrow_forward_ios)
+              ],
+            ),
           ),
-        ),
-        description,
-      ],
+          description,
+        ],
+      ),
     );
   }
 }
 
 class SettingTileTwoLine extends StatelessWidget {
-  const SettingTileTwoLine(
-      {Key? key,
-      required this.title,
-      required this.value,
-      this.icon,
-      this.onPress})
-      : super(key: key);
+  const SettingTileTwoLine({
+    Key? key,
+    required this.title,
+    required this.value,
+    this.icon,
+    this.onPress,
+    this.background,
+    this.tileHeight,
+    this.padding,
+  }) : super(key: key);
 
   final Widget title;
   final Widget value;
   final Widget? icon;
   final VoidCallback? onPress;
+  final Color? background;
+  final double? tileHeight;
+  final EdgeInsets? padding;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onPress,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Container(
+        height: tileHeight ?? 64,
+        padding: padding ?? const EdgeInsets.symmetric(vertical: 8.0),
+        decoration: BoxDecoration(
+            color: background ?? MoabColor.dashboardTileBackground),
+        alignment: Alignment.centerLeft,
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
-                    child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    title,
-                    box8(),
-                    value,
+                title,
+                box8(),
+                value,
                   ],
-                )),
+                ),
                 box8(),
                 if (onPress != null) icon ?? const Icon(Icons.arrow_forward_ios)
               ],
@@ -138,7 +172,7 @@ class SectionTile extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         header,
-        box16(),
+        box8(),
         child,
       ],
     );

@@ -14,7 +14,7 @@ class AdministrationPath extends DashboardPath {
       case FirmwareUpdateViewPath:
         return const FirmwareUpdateView();
       case TimeZoneViewPath:
-        return const TimeZoneView();
+        return const TimezoneView();
       case IpDetailsViewPath:
         return const IpDetailsView();
       case WebUiAccessViewPath:
