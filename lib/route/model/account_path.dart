@@ -4,7 +4,9 @@ import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/page/dashboard/view/account/account_view.dart';
 import 'package:linksys_moab/page/dashboard/view/account/cloud_password_validation_view.dart';
 import 'package:linksys_moab/page/dashboard/view/account/input_new_password_view.dart';
+import '../../page/dashboard/view/account/change_auth_mode_password_view.dart';
 import '../../page/dashboard/view/account/login_method_options_view.dart';
+import '../../page/otp_flow/view/otp_view.dart';
 import '_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 
@@ -16,7 +18,7 @@ class AccountPath extends DashboardPath {
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
       case AccountDetailPath:
-        return AccountView();
+        return const AccountView();
       case CloudPasswordValidationPath:
         return CloudPasswordValidationView(
           args: args,
@@ -31,6 +33,16 @@ class AccountPath extends DashboardPath {
         return LoginMethodOptionsView(
           next: LoginMethodOptionsPath(),
         );
+      case OTPViewPath:
+        return OtpFlowView(
+          args: args,
+          next: next,
+        );
+      case ChangeAuthModePasswordPath:
+        return ChangeAuthModePasswordView(
+          args: args,
+          next: next,
+        );
       default:
         return const Center();
     }
@@ -44,3 +56,7 @@ class CloudPasswordValidationPath extends AccountPath {}
 class InputNewPasswordPath extends AccountPath {}
 
 class LoginMethodOptionsPath extends AccountPath {}
+
+class OTPViewPath extends AccountPath {}
+
+class ChangeAuthModePasswordPath extends AccountPath {}

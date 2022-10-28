@@ -5,6 +5,10 @@ import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 
+import '../../../../bloc/auth/bloc.dart';
+import '../../../../bloc/auth/state.dart';
+import '../../../../network/http/model/cloud_auth_clallenge_method.dart';
+import '../../../../route/model/account_path.dart';
 import '../../../../route/navigation_cubit.dart';
 import '../../../components/base_components/base_page_view.dart';
 
@@ -20,8 +24,17 @@ class LoginMethodOptionsView extends ArgumentsStatefulView {
 
 class _LoginMethodOptionsViewState extends State<LoginMethodOptionsView> {
   LoginMethod? _choose = LoginMethod.otp;
-  String? password = 'asdf';
+  String? password;
   bool isShowPainText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _choose = context.read<AccountCubit>().state.authMode.toLowerCase() ==
+            AuthenticationType.passwordless.name
+        ? LoginMethod.otp
+        : LoginMethod.password;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,47 +82,50 @@ class _LoginMethodOptionsViewState extends State<LoginMethodOptionsView> {
           ListTile(
             title: password == null
                 ? const Text('Password',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w400))
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w400))
                 : Column(
-              children: [
-                Row(children: [
-                  const Text('Password',
-                      style: TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w400)),
-                  const Expanded(child: Center()),
-                  TextButton(
-                      onPressed: () {},
-                      child: const Text('Edit',
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                              color: MoabColor.primaryBlue)))
-                ]),
-                Row(
-                  children: [
-                    isShowPainText
-                        ? Text(password!,
-                        style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400))
-                        : const Text(
-                        '\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf',
-                        style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400)),
-                    box8(),
-                    GestureDetector(
-                        child: Image.asset(
-                            'assets/images/eye_closed.png',width: 26, height: 26,),
-                        onTap: () {
-                          setState(() {
-                            isShowPainText = !isShowPainText;
-                          });
-                        })
-                  ],
-                )
-              ],
-            ),
+                    children: [
+                      Row(children: [
+                        const Text('Password',
+                            style: TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w400)),
+                        const Expanded(child: Center()),
+                        TextButton(
+                            onPressed: () {},
+                            child: const Text('Edit',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w400,
+                                    color: MoabColor.primaryBlue)))
+                      ]),
+                      Row(
+                        children: [
+                          isShowPainText
+                              ? Text(password!,
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w400))
+                              : const Text(
+                                  '\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf',
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w400)),
+                          box8(),
+                          GestureDetector(
+                              child: Image.asset(
+                                'assets/images/eye_closed.png',
+                                width: 26,
+                                height: 26,
+                              ),
+                              onTap: () {
+                                setState(() {
+                                  isShowPainText = !isShowPainText;
+                                });
+                              })
+                        ],
+                      )
+                    ],
+                  ),
             leading: Radio<LoginMethod>(
               value: LoginMethod.password,
               groupValue: _choose,
@@ -117,6 +133,7 @@ class _LoginMethodOptionsViewState extends State<LoginMethodOptionsView> {
                 setState(() {
                   _choose = value;
                   if (password == null) {
+                    changeAuthModeToPassword(context, state);
                   }
                 });
               },
@@ -129,6 +146,17 @@ class _LoginMethodOptionsViewState extends State<LoginMethodOptionsView> {
         ],
         crossAxisAlignment: CrossAxisAlignment.start,
       ),
+    );
+  }
+
+  Future<void> changeAuthModeToPassword(BuildContext context, AccountState state) async {
+    ChangeAuthenticationModeChallenge challenge = await context.read<AuthBloc>().changeAuthModePrepare(state.id, null, AuthenticationType.password.name.toUpperCase());
+    NavigationCubit.of(context).push(
+        OTPViewPath()..next = state.authMode.toUpperCase() == 'PASSWORDLESS'? ChangeAuthModePasswordPath() : LoginMethodOptionsPath()
+          ..args = {
+          'commMethods' : context.read<AccountCubit>().state.communicationMethods,
+          'token': challenge.token
+        }
     );
   }
 }

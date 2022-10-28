@@ -55,7 +55,7 @@ class OtpFlowViewState extends State<OtpFlowView> {
     });
 
     ///////////
-    _username = widget.args['username'] as String;
+    // _username = widget.args['username'] as String;
     // _fetchToken();
     // _fetchOtpInfo(_function);
     //////////

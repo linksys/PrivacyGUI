@@ -173,13 +173,13 @@ extension MoabAuthRequests on MoabHttpClient {
       String accountId, String? password, String authenticationMode) async {
     final url = await combineUrl(endpointAuthenticationModePrepare,
         args: {varAccountId: accountId});
-    final header = defaultHeader;
+    final header = defaultHeader..addAll({moabSiteIdKey: moabRetailSiteId});
     final bodyPayload = password == null
         ? {
-            'authenticationMode': authenticationMode,
+            'authenticationMode': authenticationMode.toUpperCase(),
           }
         : {
-            'authenticationMode': authenticationMode,
+            'authenticationMode': authenticationMode.toUpperCase(),
             'password': password,
           };
     return this

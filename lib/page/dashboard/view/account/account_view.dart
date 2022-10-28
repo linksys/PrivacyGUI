@@ -236,7 +236,7 @@ class _AccountViewState extends State<AccountView> {
   Widget _passwordLessTile(AccountState state) {
     return SettingTile(
       title: const Text('Log in method'),
-      value: Text(state.authMode == AuthenticationType.passwordless.name
+      value: Text(state.authMode.toLowerCase() == AuthenticationType.passwordless.name
           ? "One-time passcode"
           : "Password", style: TextStyle(color: Colors.black.withOpacity(0.5))),
       onPress: () {

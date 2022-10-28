@@ -256,6 +256,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
     return _repository.fetchRegionCodes();
   }
 
+  Future<ChangeAuthenticationModeChallenge> changeAuthModePrepare(String accountId, String? password , String authenticationMode) async {
+    return await _repository.changeAuthenticationModePrepare(accountId, password, authenticationMode);
+  }
+
+  Future<void> changeAuthMode(String accountId, String token, String? password) {
+    return _repository.changeAuthenticationMode(accountId, token, password);
+  }
+
   @override
   void onTransition(Transition<AuthEvent, AuthState> transition) {
     super.onTransition(transition);

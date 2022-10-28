@@ -105,7 +105,8 @@ class CloudAuthRepository extends AuthRepository with SCLoader {
       String privateKey = task.data.privateKey;
 
       const storage = FlutterSecureStorage();
-      await storage.write(key: moabPrefCloudCertDataKey, value: jsonEncode(task.data.toJson()));
+      await storage.write(
+          key: moabPrefCloudCertDataKey, value: jsonEncode(task.data.toJson()));
       await storage.write(key: moabPrefCloudPrivateKey, value: privateKey);
 
       SharedPreferences.getInstance().then((pref) {
@@ -132,7 +133,7 @@ class CloudAuthRepository extends AuthRepository with SCLoader {
     return CloudEnvironmentManager()
         .loadCloudApp()
         .then((cloudApp) => _secureClient.requestAuthSession(
-        certId, cloudApp.id, cloudApp.appSecret!))
+            certId, cloudApp.id, cloudApp.appSecret!))
         .then((response) {
       return CloudSessionData.fromJson(json.decode(response.body));
     });
@@ -151,14 +152,29 @@ class CloudAuthRepository extends AuthRepository with SCLoader {
   }
 
   @override
-  Future<void> changeAuthenticationMode(String accountId, String token, String? password) {
-    return _httpClient.changeAuthenticationMode(accountId, token, password);
+  Future<void> changeAuthenticationMode(
+      String accountId, String token, String? password) async {
+    final _secureClient = MoabHttpClient.withCert(await get());
+    return CloudEnvironmentManager()
+        .loadCloudApp()
+        .then((cloudApp) =>
+            _secureClient.changeAuthenticationMode(accountId, token, password))
+        .then((response) {
+      ChangeAuthenticationModeChallenge.fromJson(json.decode(response.body));
+    });
   }
 
   @override
-  Future<ChangeAuthenticationModeChallenge> changeAuthenticationModePrepare(String accountId, String? password, String authenticationMode) async {
-    final response = await _httpClient.changeAuthenticationModePrepare(
-      accountId, password, authenticationMode);
-    return ChangeAuthenticationModeChallenge.fromJson(json.decode(response.body));
+  Future<ChangeAuthenticationModeChallenge> changeAuthenticationModePrepare(
+      String accountId, String? password, String authenticationMode) async {
+    final _secureClient = MoabHttpClient.withCert(await get());
+    return CloudEnvironmentManager()
+        .loadCloudApp()
+        .then((cloudApp) => _secureClient.changeAuthenticationModePrepare(
+            accountId, password, authenticationMode))
+        .then((response) {
+      return ChangeAuthenticationModeChallenge.fromJson(
+          json.decode(response.body));
+    });
   }
 }
