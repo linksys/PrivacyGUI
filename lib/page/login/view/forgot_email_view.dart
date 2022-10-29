@@ -31,7 +31,7 @@ class _ForgotEmailViewState extends State<ForgotEmailView> {
     return BasePageView.withCloseButton(
       context,
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: getAppLocalizations(context).forgot_email,
         ),

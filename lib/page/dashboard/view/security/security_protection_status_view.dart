@@ -11,7 +11,7 @@ class SecurityProtectionStatusView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BasePageView(
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: const BasicHeader(
           title: 'You’re protected',
         ),

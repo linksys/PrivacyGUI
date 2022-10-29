@@ -64,4 +64,16 @@ extension RouterService on RouterRepository {
     final result = await command.publish(mqttClient!);
     return handleJnapResult(result.body);
   }
+  Future<JnapSuccess> renewDHCPWANLease() async {
+    final command = createCommand(JNAPAction.renewDHCPWANLease.actionValue);
+
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
+  Future<JnapSuccess> renewDHCPIPv6WANLease() async {
+    final command = createCommand(JNAPAction.renewDHCPIPv6WANLease.actionValue);
+
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
 }

@@ -236,7 +236,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
               ),
             ],
           ),
-          alignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
         ),
       ),
     );

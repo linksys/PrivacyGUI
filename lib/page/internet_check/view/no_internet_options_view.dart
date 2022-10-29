@@ -83,7 +83,7 @@ class _NoInternetOptionsViewState extends State<NoInternetOptionsView> {
           ],
           crossAxisAlignment: CrossAxisAlignment.start,
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

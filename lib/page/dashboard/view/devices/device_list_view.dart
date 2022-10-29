@@ -59,7 +59,7 @@ class _DeviceListViewState extends State<DeviceListView> {
           elevation: 0,
         ),
         child: BasicLayout(
-          alignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           header: _header(),
           content: _content(state),
         ),

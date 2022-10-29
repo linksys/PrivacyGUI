@@ -39,7 +39,7 @@ class UnplugModemView extends StatelessWidget {
             ),
           ],
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

@@ -16,4 +16,32 @@ extension LocaleService on RouterRepository {
     final result = await command.publish(mqttClient!);
     return handleJnapResult(result.body);
   }
+
+  Future<JnapSuccess> getLocale() async {
+    final command = createCommand(JNAPAction.getLocale.actionValue);
+
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
+
+  Future<JnapSuccess> setLocale(String locale) async {
+    final command = createCommand(JNAPAction.setLocale.actionValue, data: {
+      'locale': locale,
+    });
+
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
+
+  Future<JnapSuccess> setTimeSettings(
+      String timezoneId, bool autoAdjustForDST) async {
+    final command =
+        createCommand(JNAPAction.setTimeSettings.actionValue, data: {
+      'timeZoneID': timezoneId,
+      'autoAdjustForDST': autoAdjustForDST,
+    });
+
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
 }

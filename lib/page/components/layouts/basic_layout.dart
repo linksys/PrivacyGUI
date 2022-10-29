@@ -5,14 +5,14 @@ class BasicLayout extends StatelessWidget {
   final Widget? header;
   final Widget? content;
   final Widget? footer;
-  final CrossAxisAlignment? alignment;
+  final CrossAxisAlignment? crossAxisAlignment;
 
   const BasicLayout({
     Key? key,
     this.header,
     this.content,
     this.footer,
-    this.alignment,
+    this.crossAxisAlignment,
   }) : super(key: key);
 
   @override
@@ -23,7 +23,7 @@ class BasicLayout extends StatelessWidget {
     if (footer != null) widgets.add(footer!);
 
     return Column(
-      crossAxisAlignment: alignment ?? CrossAxisAlignment.center,
+      crossAxisAlignment: crossAxisAlignment ?? CrossAxisAlignment.center,
       children: widgets,
     );
   }

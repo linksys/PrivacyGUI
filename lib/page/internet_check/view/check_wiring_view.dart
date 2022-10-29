@@ -51,7 +51,7 @@ class CheckWiringView extends StatelessWidget {
             //TODO: Go to next page
           },
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

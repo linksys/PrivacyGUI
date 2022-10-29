@@ -330,16 +330,16 @@ class RouterRepository with StateStreamListener {
     }
   }
 
-  Future<List<JnapSuccess>> batchCommands(List<CommandWrap> commands) async {
-    return Future.wait(
-      commands.map(
-        (e) => createCommand(e.action, needAuth: e.needAuth, data: e.data)
-            .publish(mqttClient!)
-            .then(
-              (value) => handleJnapResult(value.body),
-            ),
-      ),
-    );
+  Future<Map<String, JnapSuccess>> batchCommands(List<CommandWrap> commands) async {
+    Map<String, JnapSuccess> _map = {};
+    for (CommandWrap e in commands) {
+      _map[e.action] = await createCommand(e.action, needAuth: e.needAuth, data: e.data)
+          .publish(mqttClient!)
+          .then(
+            (value) => handleJnapResult(value.body),
+      );
+    }
+    return _map;
   }
 
   @override

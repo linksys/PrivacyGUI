@@ -52,7 +52,7 @@ class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
     return BasePageView.withCloseButton(
       context,
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: getAppLocalizations(context).cloud_forgot_password_title,
           description:
@@ -130,7 +130,7 @@ class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
   Widget _linkSentView(AuthState state) {
     return BasePageView.noNavigationBar(
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: getAppLocalizations(context).link_sent,
           description: _sendLinkViaEmail

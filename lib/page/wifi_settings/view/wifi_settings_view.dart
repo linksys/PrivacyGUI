@@ -87,7 +87,7 @@ class _WifiSettingsViewState extends State<WifiSettingsView> {
   Widget build(BuildContext context) {
     return BasePageView(
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         content: ListView.separated(
           physics: const ClampingScrollPhysics(),
           itemCount: items.length,

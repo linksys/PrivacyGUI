@@ -37,7 +37,7 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
             builder: (context, state) => BasePageView.withCloseButton(
                   context,
                   child: BasicLayout(
-                    alignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     content: Column(
                       children: [
                         _networkSection(state, title: 'Network'),

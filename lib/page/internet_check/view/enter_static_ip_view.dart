@@ -172,7 +172,7 @@ class _EnterStaticIpViewState extends State<EnterStaticIpView> {
           text: getAppLocalizations(context).next,
           onPress: _validateInputData,
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

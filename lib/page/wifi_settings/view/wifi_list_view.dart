@@ -152,7 +152,7 @@ class _WifiListViewState extends State<WifiListView> {
       context,
       scrollable: true,
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: 'WiFi(${items.length})',
         ),
@@ -161,10 +161,10 @@ class _WifiListViewState extends State<WifiListView> {
     );
   }
 
-  int getConnectionDeviceCount(List<Device>? devices) {
+  int getConnectionDeviceCount(List<RouterDevice>? devices) {
     int deviceCount = 0;
     if (devices != null && devices.isNotEmpty) {
-      for (Device device in devices) {
+      for (RouterDevice device in devices) {
         if (!device.isAuthority && device.nodeType == null) {
           deviceCount += 1;
         }

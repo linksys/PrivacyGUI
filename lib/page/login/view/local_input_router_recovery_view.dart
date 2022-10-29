@@ -45,7 +45,7 @@ class _LocalResetRouterPasswordState
   Widget _contentView() {
     return BasePageView(
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: getAppLocalizations(context).reset_router_password,
         ),

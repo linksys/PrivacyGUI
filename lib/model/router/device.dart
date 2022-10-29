@@ -1,4 +1,4 @@
-class Device {
+class RouterDevice {
   final List<ConnectionDevice> connections;
   final List<PropertyDevice> properties;
   final UnitDevice unit;
@@ -12,7 +12,7 @@ class Device {
   final List<String>? knownMACAddresses;
   final String? nodeType;
 
-  const Device({
+  const RouterDevice({
     required this.connections,
     required this.properties,
     required this.unit,
@@ -27,7 +27,7 @@ class Device {
     this.nodeType,
   });
 
-  Device copyWith({
+  RouterDevice copyWith({
     List<ConnectionDevice>? connections,
     List<PropertyDevice>? properties,
     UnitDevice? unit,
@@ -41,7 +41,7 @@ class Device {
     List<String>? knownMACAddresses,
     String? nodeType,
   }) {
-    return Device(
+    return RouterDevice(
       connections: connections ?? this.connections,
       properties: properties ?? this.properties,
       unit: unit ?? this.unit,
@@ -74,8 +74,8 @@ class Device {
     };
   }
 
-  factory Device.fromJson(Map<String, dynamic> json) {
-    return Device(
+  factory RouterDevice.fromJson(Map<String, dynamic> json) {
+    return RouterDevice(
       connections: List.from(json['connections']).map((e) => ConnectionDevice.fromJson(e)).toList(),
       properties: List.from(json['properties']).map((e) => PropertyDevice.fromJson(e)).toList(),
       unit: UnitDevice.fromJson(json['unit']),

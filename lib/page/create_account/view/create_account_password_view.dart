@@ -109,7 +109,7 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
           ],
           crossAxisAlignment: CrossAxisAlignment.start,
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

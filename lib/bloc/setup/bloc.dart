@@ -101,7 +101,7 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
     final getRadioInfoResult = await _routerRepository.getRadioInfo();
     final devices = await _routerRepository.getDevices().then((result) =>
         List.from(result.output['devices'])
-            .map((e) => Device.fromJson(e))
+            .map((e) => RouterDevice.fromJson(e))
             .toList());
     final simpleWiFiSettingsList =
         List.from(getRadioInfoResult.output['radios'])

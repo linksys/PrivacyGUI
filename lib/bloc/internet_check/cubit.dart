@@ -33,6 +33,7 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
   init() {
     emit(const InternetCheckState());
   }
+
   setManuallyInput() {
     _detectWANStatusSubscription?.cancel();
     _getInternetStatusSubscription?.cancel();
@@ -45,14 +46,10 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
     final wanStatusResult = await _routerRepository.getWANStatus();
     final wanStatus = RouterWANStatus.fromJson(wanStatusResult.output);
     final configuredResults = await _routerRepository.fetchIsConfigured();
-    bool isDefaultPassword = configuredResults
-        .firstWhere(
-            (element) => element.output.containsKey('isAdminPasswordDefault'))
-        .output['isAdminPasswordDefault'];
-    bool isSetByUser = configuredResults
-        .firstWhere(
-            (element) => element.output.containsKey('isAdminPasswordSetByUser'))
-        .output['isAdminPasswordSetByUser'];
+    bool isDefaultPassword = configuredResults['isAdminPasswordDefault']
+        ?.output['isAdminPasswordDefault'] ?? false;
+    bool isSetByUser = configuredResults['isAdminPasswordSetByUser']
+        ?.output['isAdminPasswordSetByUser'] ?? false;
     final configuredData = RouterConfiguredData(
         isDefaultPassword: isDefaultPassword, isSetByUser: isSetByUser);
     bool hasConfigured =
@@ -143,7 +140,8 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
     if (state.wanConnectionStatus == "Connected" ||
         state.wanConnectionStatus == "Connecting" ||
         state.wanConnectionStatus == "DHCP") {
-      emit(state.copyWith(status: InternetCheckStatus.getInternetConnectionStatus));
+      emit(state.copyWith(
+          status: InternetCheckStatus.getInternetConnectionStatus));
     } else {
       emit(state.copyWith(status: InternetCheckStatus.checkWiring));
     }

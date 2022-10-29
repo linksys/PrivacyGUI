@@ -7,39 +7,57 @@ class PrimaryTextField extends StatefulWidget {
     this.hintText = '',
     this.inputType = TextInputType.text,
     this.onChanged,
+    this.onFocusChanged,
     this.customPrimaryColor,
     this.isError = false,
     this.errorColor = Colors.red,
     this.secured = false,
     this.prefixIcon,
     this.suffixIcon,
+    this.readOnly = false,
   }) : super(key: key);
 
   final TextEditingController controller;
   final String hintText;
   final TextInputType inputType;
   final void Function(String text)? onChanged;
+  final void Function(bool hasFocus)? onFocusChanged;
   final Color? customPrimaryColor;
   final bool isError;
   final Color errorColor;
   final bool secured;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
+  final bool readOnly;
 
   @override
   _PrimaryTextFieldState createState() => _PrimaryTextFieldState();
 }
 
 class _PrimaryTextFieldState extends State<PrimaryTextField> {
+  final FocusNode _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+
+    _focus.addListener(_onFocusChange);
+  }
+
   @override
   void dispose() {
     super.dispose();
+
+    _focus.removeListener(_onFocusChange);
+    _focus.dispose();
   }
 
   void _onChanged(String value) {
-    if (widget.onChanged != null) {
-      widget.onChanged!(value);
-    }
+    widget.onChanged?.call(value);
+  }
+
+  void _onFocusChange() {
+    widget.onFocusChanged?.call(_focus.hasFocus);
   }
 
   @override
@@ -47,6 +65,7 @@ class _PrimaryTextFieldState extends State<PrimaryTextField> {
     final primaryColor =
         widget.customPrimaryColor ?? Theme.of(context).colorScheme.primary;
     return TextField(
+      readOnly: widget.readOnly,
       obscureText: widget.secured,
       controller: widget.controller,
       style: Theme.of(context).textTheme.bodyText1?.copyWith(
@@ -74,6 +93,7 @@ class _PrimaryTextFieldState extends State<PrimaryTextField> {
       ),
       onChanged: _onChanged,
       keyboardType: widget.inputType,
+      focusNode: _focus,
     );
   }
 }

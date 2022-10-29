@@ -33,7 +33,7 @@ class UseSameAccountPromptView extends StatelessWidget {
           ],
           crossAxisAlignment: CrossAxisAlignment.start,
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

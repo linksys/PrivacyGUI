@@ -9,6 +9,7 @@ class InputField extends StatelessWidget {
     this.hintText = '',
     this.inputType = TextInputType.text,
     this.onChanged,
+    this.onFocusChanged,
     this.customPrimaryColor,
     this.isError = false,
     this.errorText = '',
@@ -16,6 +17,7 @@ class InputField extends StatelessWidget {
     this.secured = false,
     this.prefixIcon,
     this.suffixIcon,
+    this.readOnly = false,
   }) : super(key: key);
 
   final String titleText;
@@ -23,6 +25,7 @@ class InputField extends StatelessWidget {
   final String hintText;
   final TextInputType inputType;
   final void Function(String text)? onChanged;
+  final void Function(bool hasFocus)? onFocusChanged;
   final Color? customPrimaryColor;
   final bool isError;
   final String errorText;
@@ -30,6 +33,7 @@ class InputField extends StatelessWidget {
   final bool secured;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +41,7 @@ class InputField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
+        titleText.isEmpty ? Center() : Padding(
           child: Text(
             titleText,
             style: Theme.of(context).textTheme.headline4?.copyWith(
@@ -52,11 +56,13 @@ class InputField extends StatelessWidget {
           hintText: hintText,
           inputType: inputType,
           onChanged: onChanged,
+          onFocusChanged: onFocusChanged,
           customPrimaryColor: primaryColor,
           isError: isError,
           prefixIcon: prefixIcon,
           suffixIcon: suffixIcon,
           secured: secured,
+          readOnly: readOnly,
         ),
         Visibility(
             visible: isError && errorText.isNotEmpty,

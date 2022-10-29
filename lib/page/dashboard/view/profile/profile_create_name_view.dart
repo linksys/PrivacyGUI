@@ -28,7 +28,7 @@ class _CreateProfileNameViewState extends State<CreateProfileNameView> {
   Widget build(BuildContext context) {
     return BasePageView.bottomSheetModal(
       bottomSheet: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: BaseAppBar(
           title: Text(
             getAppLocalizations(context).add_profile,

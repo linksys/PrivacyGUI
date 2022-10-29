@@ -1,0 +1,22 @@
+import 'package:flutter/widgets.dart';
+import 'package:linksys_moab/page/dashboard/view/_view.dart';
+import '_model.dart';
+import 'package:linksys_moab/route/_route.dart';
+
+
+class HealthCheckPath extends DashboardPath {
+  @override
+  Widget buildPage(NavigationCubit cubit) {
+    switch (runtimeType) {
+      case SpeedCheckPath:
+        return const SpeedTestView();
+      default:
+        return const Center();
+    }
+  }
+}
+
+class SpeedCheckPath extends HealthCheckPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}

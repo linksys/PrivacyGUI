@@ -149,6 +149,9 @@ enum JNAPAction {
   // locale
   getLocalTime,
   getTimeSettings,
+  getLocale,
+  setLocale,
+  setTimeSettings,
   // macFilter
   getMACFilterSettings,
   // motionSensing
@@ -187,6 +190,8 @@ enum JNAPAction {
   getWANStatus,
   setIPv6Settings,
   setWANSettings,
+  renewDHCPWANLease,
+  renewDHCPIPv6WANLease,
   // routerManagement
   getManagementSettings,
   setManagementSettings,
@@ -289,6 +294,9 @@ enum _JNAPActionValue {
   stopHealthCheck(value: 'http://linksys.com/jnap/healthcheck/StopHealthCheck'),
   getLocalTime(value: 'http://linksys.com/jnap/locale/GetLocalTime'),
   getTimeSettings(value: 'http://linksys.com/jnap/locale/GetTimeSettings'),
+  getLocale(value: 'http://linksys.com/jnap/locale/GetLocale'),
+  setLocale(value: 'http://linksys.com/jnap/locale/SetLocale'),
+  setTimeSettings(value: 'http://linksys.com/jnap/locale/SetTimeSettings'),
   getMACFilterSettings(
       value: 'http://linksys.com/jnap/macfilter/GetMACFilterSettings'),
   getActiveMotionSensingBots(
@@ -359,6 +367,8 @@ enum _JNAPActionValue {
   setWANSettings(value: 'http://linksys.com/jnap/router/SetWANSettings'),
   setWANSettings3(value: 'http://linksys.com/jnap/router/SetWANSettings3'),
   setWANSettings4(value: 'http://linksys.com/jnap/router/SetWANSettings4'),
+  renewDHCPWANLease(value: 'http://linksys.com/jnap/router/RenewDHCPWANLease'),
+  renewDHCPIPv6Lease(value: 'http://linksys.com/jnap/router/RenewDHCPIPv6WANLease'),
   getManagementSettings(
       value: 'http://linksys.com/jnap/routermanagement/GetManagementSettings'),
   getManagementSettings2(
@@ -690,6 +700,12 @@ void initBetterActions() {
       _JNAPActionValue.getLocalTime.value;
   _betterActionMap[JNAPAction.getTimeSettings] =
       _JNAPActionValue.getTimeSettings.value;
+  _betterActionMap[JNAPAction.getLocale] =
+      _JNAPActionValue.getLocale.value;
+  _betterActionMap[JNAPAction.setLocale] =
+      _JNAPActionValue.setLocale.value;
+  _betterActionMap[JNAPAction.setTimeSettings] =
+      _JNAPActionValue.setTimeSettings.value;
   _betterActionMap[JNAPAction.getMACFilterSettings] =
       _JNAPActionValue.getMACFilterSettings.value;
   _betterActionMap[JNAPAction.getActiveMotionSensingBots] =
@@ -776,6 +792,8 @@ void initBetterActions() {
       _JNAPActionValue.setSimpleWiFiSettings.value;
   _betterActionMap[JNAPAction.getCloudIds] = _JNAPActionValue.getCloudIds.value;
   _betterActionMap[JNAPAction.setCloudIds] = _JNAPActionValue.setCloudIds.value;
+  _betterActionMap[JNAPAction.renewDHCPWANLease] = _JNAPActionValue.renewDHCPWANLease.value;
+  _betterActionMap[JNAPAction.renewDHCPIPv6WANLease] = _JNAPActionValue.renewDHCPIPv6Lease.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

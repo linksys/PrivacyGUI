@@ -26,7 +26,7 @@ class PlugModemBackView extends StatelessWidget {
             NavigationCubit.of(context).push(CheckNodeInternetPath());
           },
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

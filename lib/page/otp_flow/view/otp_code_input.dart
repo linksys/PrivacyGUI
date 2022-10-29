@@ -84,7 +84,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: state.selectedMethod?.method ==
                   CommunicationMethodType.sms.name.toUpperCase()

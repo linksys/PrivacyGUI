@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
+import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -35,7 +36,7 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
             _title(),
             box36(),
             _section(
-              _networkSettingsSection(),
+              _networkSettingsSection(context),
               (index, item) {
                 logger.d('MenuItem click $index');
                 NavigationCubit.of(context).push(item.path);
@@ -127,11 +128,11 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
   }
 }
 
-_networkSettingsSection() => DashboardSettingsSection(
+_networkSettingsSection(BuildContext context) => DashboardSettingsSection(
       title: 'NETWORK',
       items: [
         DashboardSettingsItem(title: 'WiFi', path: WifiSettingsOverviewPath()),
-        DashboardSettingsItem(title: 'Administration', path: UnknownPath()),
+        DashboardSettingsItem(title: getAppLocalizations(context).administration, path: AdministrationViewPath()),
         DashboardSettingsItem(title: 'Priority', path: UnknownPath()),
         DashboardSettingsItem(title: 'Smart home', path: UnknownPath()),
         DashboardSettingsItem(

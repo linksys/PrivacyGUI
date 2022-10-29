@@ -39,7 +39,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
                 ),
               ),
               child: BasicLayout(
-                alignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 header: _header(state),
                 content: _content(state),
               ),
