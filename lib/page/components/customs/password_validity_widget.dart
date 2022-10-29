@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/util/validator.dart';
+import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
 class PasswordValidityWidget extends StatelessWidget {
   final List<PasswordValidation> _validityList = [

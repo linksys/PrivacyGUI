@@ -25,7 +25,7 @@ export 'add_child_finished_view.dart';
 export 'parent_scan_qrcode_view.dart'; 
 export 'permissions_primer_view.dart'; 
 export 'add_child_searching_view.dart'; 
-export 'check_node_internet_view.dart'; 
+export '../../internet_check/view/check_node_internet_view.dart';
 export 'add_child_scan_qrcode_view.dart'; 
 export 'no_use_account_confirm_view.dart'; 
 export 'use_same_account_prompt_view.dart'; 

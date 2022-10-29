@@ -32,11 +32,13 @@ import 'package:linksys_moab/repository/router/core_extension.dart';
 import 'package:linksys_moab/repository/router/device_list_extension.dart';
 import 'package:linksys_moab/repository/router/health_check_extension.dart';
 import 'package:linksys_moab/repository/router/owend_network_extension.dart';
+import 'package:linksys_moab/repository/router/router_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/repository/router/smart_mode_extension.dart';
 import 'package:linksys_moab/repository/router/transactions_extension.dart';
 import 'package:linksys_moab/repository/router/wireless_ap_extension.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/model/setup_path.dart';
 import 'package:linksys_moab/security/app_icon_manager.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
@@ -344,8 +346,20 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Connect',
           onPress: () async {
-            // await context.read<RouterRepository>().connectToLocalWithCloudCert();
-            await context.read<RouterRepository>().getCloudIds();
+
+            NavigationCubit.of(context).push(CheckNodeInternetPath());
+
+            // await context.read<RouterRepository>().connectToLocalWithPassword();
+            // await context.read<AccountCubit>().fetchAccount();
+            // final account = context.read<AccountCubit>().state.id;
+            // final group = context.read<AccountCubit>().state.groupId;
+            // // await context.read<RouterRepository>().setCloudIds(account, group);
+            //
+            // await context.read<RouterRepository>().getOwnedNetworkID();
+            // await context.read<RouterRepository>().getCloudIds();
+
+            // await context.read<RouterRepository>().connectToLocalWithPassword();
+            // await context.read<RouterRepository>().getCloudIds();
             // await context.read<ConnectivityCubit>().connectToRemoteBroker();
             // await context.read<NetworkCubit>().getRadioInfo();
 

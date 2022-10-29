@@ -6,13 +6,20 @@ import 'package:linksys_moab/route/navigation_cubit.dart';
 
 abstract class InternetCheckPath extends BasePath {
   @override
-  PageConfig get pageConfig => super.pageConfig..ignoreConnectivityChanged = true;
+  PageConfig get pageConfig =>
+      super.pageConfig..ignoreConnectivityChanged = true;
+
+  @override
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
 
   @override
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
       case CheckNodeInternetPath:
-        return const CheckNodeInternetView();
+        return CheckNodeInternetView(
+          next: next,
+          args: args,
+        );
       case SelectIspSettingsPath:
         return const SelectIspSettingsView();
       case CheckWiringPath:
@@ -35,6 +42,11 @@ abstract class InternetCheckPath extends BasePath {
         return const LearnBatteryModemView();
       case InternetConnectedPath:
         return InternetConnectedView();
+      case NoInternetOptionsAfterPlugModemPath:
+        return NoInternetOptionsView(
+          next: next,
+          args: args,
+        );
       default:
         return const Center();
     }
@@ -43,18 +55,27 @@ abstract class InternetCheckPath extends BasePath {
 
 class CheckNodeInternetPath extends InternetCheckPath {
   @override
-  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
-
-  @override
-  PageConfig get pageConfig =>
-      super.pageConfig..navType = PageNavigationType.none;
+  PageConfig get pageConfig => super.pageConfig
+    ..navType = PageNavigationType.none
+    ..isBackAvailable = false;
 }
 
-class SelectIspSettingsPath extends InternetCheckPath {}
+class SelectIspSettingsPath extends InternetCheckPath {
+  @override
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = false;
+}
 
 class CheckWiringPath extends InternetCheckPath {}
 
-class NoInternetOptionsPath extends InternetCheckPath {}
+class NoInternetOptionsPath extends InternetCheckPath {
+  @override
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = false;
+}
+
+class NoInternetOptionsAfterPlugModemPath extends InternetCheckPath {
+  @override
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = false;
+}
 
 class EnterIspSettingsPath extends InternetCheckPath {}
 

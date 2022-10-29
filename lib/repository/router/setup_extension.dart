@@ -35,18 +35,7 @@ extension SetupService on RouterRepository {
     final result = await command.publish(mqttClient!);
     return handleJnapResult(result.body);
   }
-  // TODO extract a RetryCommandWrap
-  Stream<JnapResult> testGetInternetConnectionStatus({
-    int retryDelayInSec = 5,
-    int maxRetry = 10,
-    bool Function()? condition,
-  }) {
-    final command = createCommand(JNAPAction.getInternetConnectionStatus.actionValue);
-    return command
-        .publishWithRetry(mqttClient!,
-        retryDelayInSec: retryDelayInSec, maxRetry: maxRetry, condition: condition)
-        .map((event) => handleJnapResult(event.body));
-  }
+
   ///
   /// Value -
   /// NoPortConnected -	There are no physical ethernet ports connected.
