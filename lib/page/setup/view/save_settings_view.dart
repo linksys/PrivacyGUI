@@ -158,7 +158,7 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
                 title: getAppLocalizations(context).saving_settings_view_title,
               ),
               content: _buildContent(state),
-              alignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
             ),
           );
         },

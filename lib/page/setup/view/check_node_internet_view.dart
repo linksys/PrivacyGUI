@@ -113,7 +113,7 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
               ),
             ),
           ),
-          alignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
         ),
       ),
     );

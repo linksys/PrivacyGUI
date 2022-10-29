@@ -69,7 +69,7 @@ class _TimezoneContentViewState extends State<TimezoneContentView> {
               text: getAppLocalizations(context).save,
               onPressed: () {
                 _cubit.save().then((_) => showSuccessSnackBar(
-                    context, getAppLocalizations(context).timezoneUpdated));
+                    context, getAppLocalizations(context).timezone_updated));
               },
             ),
           ],

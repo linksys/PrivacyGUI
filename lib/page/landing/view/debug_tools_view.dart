@@ -76,7 +76,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: const BasicHeader(
           title: 'Debug Tools',
         ),

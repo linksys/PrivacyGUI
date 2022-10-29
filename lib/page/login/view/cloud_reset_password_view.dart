@@ -54,7 +54,7 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
       context,
       scrollable: true,
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: getAppLocalizations(context).enter_your_new_password,
         ),
@@ -106,7 +106,7 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
   Widget _newPasswordSetView() {
     return BasePageView.noNavigationBar(
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: getAppLocalizations(context).new_password_set,
         ),
@@ -132,7 +132,7 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
     return BasePageView.withCloseButton(
       context,
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: getAppLocalizations(context).error_reset_password_link_expired,
         ),

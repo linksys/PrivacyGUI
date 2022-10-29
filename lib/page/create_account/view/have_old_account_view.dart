@@ -14,7 +14,7 @@ class HaveOldAccountView extends StatelessWidget {
     return BasePageView.withCloseButton(
       context,
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

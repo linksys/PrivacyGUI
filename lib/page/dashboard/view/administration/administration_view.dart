@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
@@ -41,8 +43,8 @@ class _AdministrationViewState extends State<AdministrationView> {
               content: Column(
                 children: [
                   administrationTile(
-                    title: _title(getAppLocalizations(context)
-                        .router_password_and_hint),
+                    title: _title(
+                        getAppLocalizations(context).router_password_and_hint),
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
                     onPress: () => NavigationCubit.of(context)
@@ -52,15 +54,15 @@ class _AdministrationViewState extends State<AdministrationView> {
                     title: _title(getAppLocalizations(context).time_zone),
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () => NavigationCubit.of(context)
-                        .push(TimeZoneViewPath()),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(TimeZoneViewPath()),
                   ),
                   administrationTile(
                     title: _title(getAppLocalizations(context).ip_details),
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () => NavigationCubit.of(context)
-                        .push(IpDetailsViewPath()),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(IpDetailsViewPath()),
                   ),
                 ],
               ),
@@ -70,70 +72,85 @@ class _AdministrationViewState extends State<AdministrationView> {
               content: Column(
                 children: [
                   administrationTile(
-                    title: _title(getAppLocalizations(context).internet_settings),
+                    title:
+                        _title(getAppLocalizations(context).internet_settings),
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
                     onPress: () => NavigationCubit.of(context)
-                        .push(RouterPasswordViewPath()),
+                        .push(InternetSettingsPath()),
                   ),
                   administrationTile(
                     title: _title(getAppLocalizations(context).lan),
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () => NavigationCubit.of(context)
-                        .push(TimeZoneViewPath()),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(LANSettingsPath()),
                   ),
                   administrationTile(
                     title: _title(getAppLocalizations(context).port_forwarding),
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () => NavigationCubit.of(context)
-                        .push(IpDetailsViewPath()),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(IpDetailsViewPath()),
                   ),
                   administrationTile(
                     title: _title(getAppLocalizations(context).mac_filtering),
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () => NavigationCubit.of(context)
-                        .push(IpDetailsViewPath()),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(IpDetailsViewPath()),
                   ),
                   administrationTile(
                     title: _title(getAppLocalizations(context).vlan),
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () => NavigationCubit.of(context)
-                        .push(IpDetailsViewPath()),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(IpDetailsViewPath()),
                   ),
                   administrationTile(
-                    title: _title(getAppLocalizations(context).advanced_routing),
+                    title:
+                        _title(getAppLocalizations(context).advanced_routing),
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () => NavigationCubit.of(context)
-                        .push(IpDetailsViewPath()),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(IpDetailsViewPath()),
                   ),
                   administrationTile(
                     title: _title(getAppLocalizations(context).other),
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () => NavigationCubit.of(context)
-                        .push(IpDetailsViewPath()),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(IpDetailsViewPath()),
                   ),
-                  administrationSection(
-                    title: getAppLocalizations(context).firmware.toUpperCase(),
-                    content: Column(
+                ],
+              ),
+            ),
+            administrationSection(
+              title: getAppLocalizations(context).firmware.toUpperCase(),
+              content: Column(
+                children: [
+                  administrationTile(
+                    title: _title(getAppLocalizations(context)
+                        .automatic_firmware_update),
+                    value: const Text('On'),
+                    icon: Image.asset('assets/images/icon_chevron.png'),
+                    onPress: () => NavigationCubit.of(context)
+                        .push(RouterPasswordViewPath()),
+                  ),
+                  administrationTileDesc(
+                    title: _title(getAppLocalizations(context)
+                        .node_detail_label_firmware_version),
+                    value: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        administrationTile(
-                          title: _title(getAppLocalizations(context)
-                              .automatic_firmware_update),
-                          value: const Text('On'),
-                          icon: Image.asset('assets/images/icon_chevron.png'),
-                          onPress: () => NavigationCubit.of(context)
-                              .push(RouterPasswordViewPath()),
-                        ),
-                        _firmwareVersion(),
+                        _subTitle(
+                            getAppLocalizations(context).up_to_date),
+                        Image.asset(
+                            'assets/images/icon_check_green.png')
                       ],
                     ),
-                  ),
+                    description: _subTitle(context.read<NetworkCubit>().state.selected!.deviceInfo!.firmwareVersion),
+                  )
                 ],
               ),
             ),
@@ -153,7 +170,6 @@ class _AdministrationViewState extends State<AdministrationView> {
   }
 
   Widget _firmwareVersion() {
-
     // TODO: Get data from cubit
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 18),

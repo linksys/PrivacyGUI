@@ -136,7 +136,7 @@ class _RouterPasswordContentViewState extends State<RouterPasswordContentView> {
 
   _createRouterPasswordView(RouterPasswordState state) {
     return BasicLayout(
-      alignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       header: Text(
         getAppLocalizations(context).set_a_router_password,
         style: const TextStyle(

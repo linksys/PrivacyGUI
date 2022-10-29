@@ -56,7 +56,7 @@ class _EditDeviceNameViewState extends State<EditDeviceNameView> {
         ],
       ),
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         content: Column(
           children: [
             Row(

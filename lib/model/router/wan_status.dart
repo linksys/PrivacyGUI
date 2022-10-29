@@ -8,6 +8,8 @@ class RouterWANStatus extends Equatable {
   final WANConnectionInfo? wanConnection;
   final WANIPv6ConnectionInfo? wanIPv6Connection;
   final List<String> supportedWANTypes;
+  final List<String> supportedIPv6WANTypes;
+  final List<SupportedWANCombination> supportedWANCombinations;
 
   const RouterWANStatus({
     required this.macAddress,
@@ -17,6 +19,8 @@ class RouterWANStatus extends Equatable {
     this.wanConnection,
     this.wanIPv6Connection,
     required this.supportedWANTypes,
+    required this.supportedIPv6WANTypes,
+    required this.supportedWANCombinations,
   });
 
   RouterWANStatus copyWith({
@@ -27,6 +31,8 @@ class RouterWANStatus extends Equatable {
     WANConnectionInfo? wanConnection,
     WANIPv6ConnectionInfo? wanIPv6Connection,
     List<String>? supportedWANTypes,
+    List<String>? supportedIPv6WANTypes,
+    List<SupportedWANCombination>? supportedWANCombinations,
   }) {
     return RouterWANStatus(
       macAddress: macAddress ?? this.macAddress,
@@ -36,6 +42,10 @@ class RouterWANStatus extends Equatable {
       wanConnection: wanConnection ?? this.wanConnection,
       wanIPv6Connection: wanIPv6Connection ?? this.wanIPv6Connection,
       supportedWANTypes: supportedWANTypes ?? this.supportedWANTypes,
+      supportedIPv6WANTypes:
+          supportedIPv6WANTypes ?? this.supportedIPv6WANTypes,
+      supportedWANCombinations:
+          supportedWANCombinations ?? this.supportedWANCombinations,
     );
   }
 
@@ -48,6 +58,8 @@ class RouterWANStatus extends Equatable {
       'wanConnection': wanConnection?.toJson(),
       'wanIPv6Connection': wanIPv6Connection?.toJson(),
       'supportedWANTypes': supportedWANTypes,
+      'supportedIPv6WANTypes': supportedIPv6WANTypes,
+      'supportedWANCombinations': supportedWANCombinations,
     }..removeWhere((key, value) => value == null);
   }
 
@@ -64,6 +76,10 @@ class RouterWANStatus extends Equatable {
           ? null
           : WANIPv6ConnectionInfo.fromJson(json['wanIPv6Connection']),
       supportedWANTypes: List.from(json['supportedWANTypes']),
+      supportedIPv6WANTypes: List.from(json['supportedIPv6WANTypes']),
+      supportedWANCombinations: List.from(json['supportedWANCombinations'])
+          .map((e) => SupportedWANCombination.fromJson(e))
+          .toList(),
     );
   }
 
@@ -76,6 +92,8 @@ class RouterWANStatus extends Equatable {
         wanConnection,
         wanIPv6Connection,
         supportedWANTypes,
+        supportedIPv6WANTypes,
+        supportedWANCombinations,
       ];
 }
 
@@ -173,7 +191,7 @@ class WANIPv6ConnectionInfo extends Equatable {
   final IPv6NetworkInfo? networkInfo;
 
   @override
-  List<Object?> get props => throw UnimplementedError();
+  List<Object?> get props => [wanType, networkInfo];
 
   const WANIPv6ConnectionInfo({
     required this.wanType,
@@ -271,6 +289,43 @@ class IPv6NetworkInfo extends Equatable {
       dnsServer1: json['dnsServer1'],
       dnsServer2: json['dnsServer2'],
       dnsServer3: json['dnsServer3'],
+    );
+  }
+}
+
+class SupportedWANCombination extends Equatable {
+  final String wanType;
+  final String wanIPv6Type;
+
+  @override
+  List<Object?> get props => [wanType, wanIPv6Type];
+
+  const SupportedWANCombination({
+    required this.wanType,
+    required this.wanIPv6Type,
+  });
+
+  SupportedWANCombination copyWith({
+    String? wanType,
+    String? wanIPv6Type,
+  }) {
+    return SupportedWANCombination(
+      wanType: wanType ?? this.wanType,
+      wanIPv6Type: wanIPv6Type ?? this.wanIPv6Type,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'wanType': wanType,
+      'wanIPv6Type': wanIPv6Type,
+    };
+  }
+
+  factory SupportedWANCombination.fromJson(Map<String, dynamic> json) {
+    return SupportedWANCombination(
+      wanType: json['wanType'],
+      wanIPv6Type: json['wanIPv6Type'],
     );
   }
 }

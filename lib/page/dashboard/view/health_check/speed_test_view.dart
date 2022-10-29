@@ -20,7 +20,7 @@ class _SpeedTestViewState extends State<SpeedTestView> {
     return BlocBuilder<NetworkCubit, NetworkState>(
       builder: (context, state) => BasePageView(
         child: BasicLayout(
-          alignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           header: const Text(
             'Speed Test',
             style: TextStyle(

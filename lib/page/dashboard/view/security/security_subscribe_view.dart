@@ -15,7 +15,7 @@ class SecuritySubscribeView extends StatelessWidget {
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: const BasicHeader(
           title: 'Linksys Secure',
         ),

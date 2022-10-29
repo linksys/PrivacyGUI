@@ -88,7 +88,7 @@ class _EnterIspSettingsViewState extends State<EnterIspSettingsView> {
           text: getAppLocalizations(context).next,
           onPress: _checkCredentials,
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

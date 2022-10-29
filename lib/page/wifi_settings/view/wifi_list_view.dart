@@ -152,7 +152,7 @@ class _WifiListViewState extends State<WifiListView> {
       context,
       scrollable: true,
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: 'WiFi(${items.length})',
         ),

@@ -87,7 +87,7 @@ class _ParentScanQRCodeViewState extends State<ParentScanQRCodeView>
             ),
           ],
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

@@ -238,7 +238,7 @@ class _ShareWifiViewState extends State<ShareWifiView> {
             _optionSection(),
           ],
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

@@ -135,7 +135,7 @@ class _AddAccountState extends State<AddAccountView> {
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
-          alignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           header: BasicHeader(
             title: getAppLocalizations(context).add_cloud_account_header_title,
           ),

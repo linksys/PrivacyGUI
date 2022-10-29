@@ -41,7 +41,7 @@ class LinksysSupportRegionView extends StatelessWidget {
             );
           },
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

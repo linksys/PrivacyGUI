@@ -86,7 +86,7 @@ class _NodesSuccessViewState extends State<NodesSuccessView> {
             ),
           ],
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

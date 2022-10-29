@@ -96,7 +96,7 @@ class _IpDetailsContentViewState extends State<IpDetailsContentView> {
           ],
         ),
         child: BasicLayout(
-          alignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           content: Column(
             children: [
               box24(),
@@ -166,7 +166,7 @@ class _IpDetailsContentViewState extends State<IpDetailsContentView> {
       ),
       onPressed: _isBehindRouter
           ? () {
-              _cubit.renewIp(isIPv6).then((value) => showSuccessSnackBar(context, getAppLocalizations(context).ipAddressRenewed));
+              _cubit.renewIp(isIPv6).then((value) => showSuccessSnackBar(context, getAppLocalizations(context).ip_address_renewed));
             }
           : null,
     );
@@ -179,7 +179,7 @@ class _IpDetailsContentViewState extends State<IpDetailsContentView> {
         const SizedBox(
             width: 18, height: 18, child: CircularProgressIndicator()),
         box8(),
-        Text(getAppLocalizations(context).ipRenewing),
+        Text(getAppLocalizations(context).ip_renewing),
       ],
     );
   }

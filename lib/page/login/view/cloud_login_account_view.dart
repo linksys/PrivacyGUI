@@ -101,7 +101,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
     return BasePageView(
         scrollable: true,
         child: BasicLayout(
-          alignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           header: BasicHeader(
             title: getAppLocalizations(context).cloud_account_login_title,
           ),
