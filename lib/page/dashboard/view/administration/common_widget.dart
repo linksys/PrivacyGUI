@@ -5,6 +5,7 @@ import 'package:linksys_moab/page/components/base_components/tile/setting_tile.d
 Widget administrationSection({
   required String title,
   required Widget content,
+  bool enabled = false,
   EdgeInsets? contentPadding,
   Color? contentBackground,
 }) {

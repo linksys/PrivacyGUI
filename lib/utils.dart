@@ -21,7 +21,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class Utils {
   static const String NoSpeedCalculationText = "-----";
   static const bool ReleaseMode =
-      bool.fromEnvironment('dart.vm.product', defaultValue: false);
+  bool.fromEnvironment('dart.vm.product', defaultValue: false);
 
   static String formatDuration(Duration d) {
     var seconds = d.inSeconds;
@@ -51,21 +51,22 @@ class Utils {
     final Duration timeAmount = Duration(seconds: timeInSecond);
     final String m = timeAmount.inMinutes.remainder(60).toString();
     final String s =
-        timeAmount.inSeconds.remainder(60).toString().padLeft(2, '0');
+    timeAmount.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$m:$s';
   }
 
   static String formatTimeInterval(int startTimeInSecond, int endTimeInSecond) {
     bool isNextDay = startTimeInSecond > endTimeInSecond;
-    return '${formatTimeAmPm(startTimeInSecond)} - ${formatTimeAmPm(endTimeInSecond)} ${isNextDay ? 'next day' : ''}';
+    return '${formatTimeAmPm(startTimeInSecond)} - ${formatTimeAmPm(
+        endTimeInSecond)} ${isNextDay ? 'next day' : ''}';
   }
 
   static String formatTimeAmPm(int timeInSecond) {
     final Duration timeAmount = Duration(seconds: timeInSecond);
     final String h =
-        timeAmount.inHours.remainder(12).toString().padLeft(2, '0');
+    timeAmount.inHours.remainder(12).toString().padLeft(2, '0');
     final String m =
-        timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
+    timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
     final String ampm = timeAmount.inHours.remainder(24) >= 12 ? 'pm' : 'am';
     return '$h:$m $ampm';
   }
@@ -73,14 +74,14 @@ class Utils {
   static String formatTimeHM(int timeInSecond) {
     final Duration timeAmount = Duration(seconds: timeInSecond);
     final String h =
-        timeAmount.inHours.remainder(24).toString().padLeft(2, '0');
+    timeAmount.inHours.remainder(24).toString().padLeft(2, '0');
     final String m =
-        timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
+    timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
     return '$h hr,$m min';
   }
 
-  static Map<String, bool> weeklyTransform(
-      BuildContext context, List<bool> weeklyBool) {
+  static Map<String, bool> weeklyTransform(BuildContext context,
+      List<bool> weeklyBool) {
     final weeklyStr = [
       getAppLocalizations(context).weekly_sunday,
       getAppLocalizations(context).weekly_monday,
@@ -95,8 +96,8 @@ class Utils {
         .map((key, value) => MapEntry(weeklyStr[key], value));
   }
 
-  static List<String> toWeeklyStringList(
-      BuildContext context, List<bool> weeklyBool) {
+  static List<String> toWeeklyStringList(BuildContext context,
+      List<bool> weeklyBool) {
     final weeklyStr = [
       getAppLocalizations(context).weekly_sunday,
       getAppLocalizations(context).weekly_monday,
@@ -120,25 +121,35 @@ class Utils {
     var i = (log(bytes) / log(1024)).floor();
     var number = (bytes / pow(1024, i));
     return (number).toStringAsFixed(
-            number.truncateToDouble() == number ? 0 : decimals) +
+        number.truncateToDouble() == number ? 0 : decimals) +
         ' ' +
         suffixes[i];
   }
 
   static Size getScreenSize(BuildContext context) {
-    return MediaQuery.of(context).size;
+    return MediaQuery
+        .of(context)
+        .size;
   }
 
   static double getScreenWidth(BuildContext context) {
-    return MediaQuery.of(context).size.width;
+    return MediaQuery
+        .of(context)
+        .size
+        .width;
   }
 
   static double getScreenHeight(BuildContext context) {
-    return MediaQuery.of(context).size.height;
+    return MediaQuery
+        .of(context)
+        .size
+        .height;
   }
 
   static double getScreenRatio(BuildContext context) {
-    return MediaQuery.of(context).devicePixelRatio;
+    return MediaQuery
+        .of(context)
+        .devicePixelRatio;
   }
 
   static Size getPhysicalScreenSize(BuildContext context) {
@@ -154,15 +165,23 @@ class Utils {
   }
 
   static double getTextScaleFactor(BuildContext context) {
-    return MediaQuery.of(context).textScaleFactor;
+    return MediaQuery
+        .of(context)
+        .textScaleFactor;
   }
 
   static double getTopSafeAreaPadding(BuildContext context) {
-    return MediaQuery.of(context).padding.top;
+    return MediaQuery
+        .of(context)
+        .padding
+        .top;
   }
 
   static double getBottomSafeAreaPadding(BuildContext context) {
-    return MediaQuery.of(context).padding.bottom;
+    return MediaQuery
+        .of(context)
+        .padding
+        .bottom;
   }
 
   static double getSafeAreaHeight(BuildContext context) {
@@ -269,7 +288,7 @@ class Utils {
   static Future<bool> canUseBiometrics() async {
     final LocalAuthentication auth = LocalAuthentication();
     final List<BiometricType> availableBiometrics =
-        await auth.getAvailableBiometrics();
+    await auth.getAvailableBiometrics();
     return await auth.canCheckBiometrics && availableBiometrics.isNotEmpty;
   }
 
@@ -288,15 +307,17 @@ class Utils {
 
     final prefs = await SharedPreferences.getInstance();
     bool isKeyExist = prefs.containsKey(moabPrefCloudPublicKey) &
-        (privateKey != null) &
-        (cert != null);
+    (privateKey != null) &
+    (cert != null);
     if (!isKeyExist) {
       return false;
     }
     final certData = CloudDownloadCertData.fromJson(jsonDecode(cert ?? ''));
     final expiredDate = DateTime.parse(certData.expiration);
     if (expiredDate.millisecondsSinceEpoch -
-            DateTime.now().millisecondsSinceEpoch <
+        DateTime
+            .now()
+            .millisecondsSinceEpoch <
         0) {
       return false;
     }
@@ -318,9 +339,12 @@ class Utils {
 
   static int ipToNum(String ipAddress) {
     final octets = ipAddress.split('.');
+    if (octets.length < 4) {
+      return 0;
+    }
     return (((((int.parse(octets[0]) * 256) + int.parse(octets[1])) * 256) +
-                int.parse(octets[2])) *
-            256) +
+        int.parse(octets[2])) *
+        256) +
         int.parse(octets[3]);
   }
 
@@ -363,7 +387,7 @@ class Utils {
       return false;
     }
     final subnetMaskTestBits =
-        List.filled(prefixLength, '1').join().padRight(32, '0');
+    List.filled(prefixLength, '1').join().padRight(32, '0');
     if (subnetMaskBits != subnetMaskTestBits ||
         prefixLength < minNetworkPrefixLength ||
         prefixLength > maxNetworkPrefixLength) {
@@ -375,19 +399,94 @@ class Utils {
 
   static String prefixLengthToSubnetMask(int prefixLength) {
     final subnetMaskTestBits =
-        List.filled(prefixLength, '1').join().padRight(32, '0');
+    List.filled(prefixLength, '1').join().padRight(32, '0');
     return RegExp(r'.{1,8}')
         .allMatches(subnetMaskTestBits)
         .map((e) => int.parse(e.group(0)!, radix: 2))
         .toList().join('.');
   }
+
   static int subnetMaskToPrefixLength(String subnetMask) {
     final prefixLength = ipToNum(subnetMask).toRadixString(2).indexOf('0');
 
-    if (!isValidSubnetMask(subnetMask, minNetworkPrefixLength: 1, maxNetworkPrefixLength: 31)) {
+    if (!isValidSubnetMask(
+        subnetMask, minNetworkPrefixLength: 1, maxNetworkPrefixLength: 31)) {
       throw Exception('Invalid subnet mask passed');
     }
 
     return prefixLength == -1 ? 32 : prefixLength;
+  }
+
+  /*
+     * @description returns a Boolean for whether the Router's IP Address is within the DHCP Range (explicit or calculated)
+     * @params {String} routerIPAddress - A string representing the current IP of the Router
+     * @params {String} firstClientIPAddress - A string representing the starting IP of the DHCP Range
+     * @params {String} lastClientIPAddress [optional] - A string representing the end IP of the DHCP Range
+     * @params {Integer} maxUsers [optional] - An integer containing the current # of users the DHCP Range should allow; used if lastClientIPAddress is not passed in
+     * @return {Boolean}
+  */
+  static bool isRouterIPInDHCPRange(String routerIPAddress, String firstClientIPAddress, [String? lastClientIPAddress, int? maxUsers]) {
+    final ipAddressNum = ipToNum(routerIPAddress);
+    final firstClientIPAddressNum = ipToNum(firstClientIPAddress);
+    final lastClientIPAddressNum = lastClientIPAddress != null ? ipToNum(lastClientIPAddress) : firstClientIPAddressNum + maxUsers! - 1;
+    return ipAddressNum >= firstClientIPAddressNum && ipAddressNum <= lastClientIPAddressNum;
+  }
+
+  /*
+     * @description returns an Integer for the max # of users allowed by the current DHCP Range
+     * @params {String} routerIPAddress - A string representing the current IP of the Router
+     * @params {String} firstClientIPAddress - A string representing the starting IP of the DHCP Range
+     * @params {String} lastClientIPAddress - A string representing the end IP of the DHCP Range
+     * @return {Integer}
+  */
+  static int getMaxUserForDHCPRange(String routerIPAddress, String firstClientIPAddress, String lastClientIPAddress) {
+    final firstClientIPAddressNum = ipToNum(firstClientIPAddress);
+    final lastClientIPAddressNum = ipToNum(lastClientIPAddress);
+    var maxUsers = lastClientIPAddressNum - firstClientIPAddressNum;
+
+    if (!isRouterIPInDHCPRange(routerIPAddress, firstClientIPAddress, lastClientIPAddress)) {
+      maxUsers++;
+    }
+    return maxUsers;
+  }
+
+  /*
+     * @description returns a String representing the last IP of the DHCP Range
+     * @params {String} firstClientIPAddress - A string representing the starting IP of the DHCP Range
+     * @params {Integer} maxUsers - An integer containing the current # of users the DHCP Range should allow
+     * @return {String}
+  */
+  static String getEndDHCPRangeForMaxUsers(String firstClientIPAddress, int maxUsers) {
+    final firstClientIPAddressNum = ipToNum(firstClientIPAddress);
+    final lastClientIPAddressNum = firstClientIPAddressNum + maxUsers - 1;
+
+    return numToIp(lastClientIPAddressNum);
+  }
+
+
+  /*
+     * @description returns an Integer for the max # of users that could be set, based on the 1st DHCP Client IP Address and the SubnetMask of the Router
+     * @params {String} routerIPAddress - A string representing the current IP of the Router
+     * @params {String} firstClientIPAddress - A string representing the starting IP of the DHCP Range
+     * @params {String} subnetMask - A string representing the end IP of the DHCP Range
+     * @params {Integer} maxUsers - An integer containing the current # of users the DHCP Range should allow
+     * @return {Integer}
+  */
+  static int getMaxUserLimit(String routerIPAddress,
+      String firstClientIPAddress, String subnetMask, int maxUsers) {
+    final currentPrefixLength = subnetMaskToPrefixLength(subnetMask);
+    int maxUserLimit = pow(2, 32 - currentPrefixLength).toInt();
+    final subnetMaskNum = ipToNum(subnetMask);
+    final firstClientIPAddressNum = ipToNum(firstClientIPAddress);
+    final firstClientIPAddressBinary = firstClientIPAddressNum.toRadixString(2);
+
+    final startingIPAddress = int.parse(
+        subnetMaskNum.toRadixString(2).substring(0, currentPrefixLength) +
+            firstClientIPAddressBinary.substring(firstClientIPAddressBinary.length - (32 -currentPrefixLength), firstClientIPAddressBinary.length), radix: 2) - subnetMaskNum;
+    if (isRouterIPInDHCPRange(routerIPAddress, firstClientIPAddress, null, maxUsers)) {
+      maxUserLimit--;
+    }
+
+    return maxUserLimit - startingIPAddress - 1;
   }
 }

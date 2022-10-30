@@ -538,7 +538,29 @@
   "static_dns1":"Static DNS 1",
   "static_dns2_optional": "Static DNS 2 (optional)",
   "static_dns3_optional": "Static DNS 3 (optional)",
-  "wins": "WINS"
-
-
+  "wins": "WINS",
+  "dhcp_ip_range": "{first} to {last}",
+  "@dhcp_ip_range": {
+    "placeholders": {
+      "first": {
+        "type": "String",
+        "example": "192.168.1.10"
+      },
+      "last": {
+        "type": "String",
+        "example": "291.168.1.254"
+      }
+    }
+  },
+  "dhcp_users_limit": "1 to {maxUsers}",
+  "@dhcp_users_limit": {
+    "placeholders": {
+      "maxUsers": {
+        "type": "int",
+        "example": "254"
+      }
+    }
+  },
+  "auto": "Auto",
+  "manual": "Manual"
 }

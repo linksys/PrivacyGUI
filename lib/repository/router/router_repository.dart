@@ -191,7 +191,6 @@ class RouterRepository with StateStreamListener {
       await downloadRemoteCert();
       cert = pref.getString(moabPrefRemoteCaCert) ?? '';
     }
-    logger.d('ca root: $cert');
 
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
       await _mqttClient?.disconnect();

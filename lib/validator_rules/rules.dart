@@ -1,4 +1,5 @@
 import 'package:linksys_moab/utils.dart';
+import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
 abstract class ValidationRule {
   String get name => runtimeType.toString();
@@ -122,7 +123,7 @@ class SubnetMaskRule extends ValidationRule {
   @override
   bool validate(String input) {
     return Utils.isValidSubnetMask(input,
-        minNetworkPrefixLength: maxNetworkPrefixLength,
+        minNetworkPrefixLength: minNetworkPrefixLength,
         maxNetworkPrefixLength: maxNetworkPrefixLength);
   }
 }
@@ -146,6 +147,75 @@ class IpAddressNoReservedRule extends ValidationRule {
 class AsciiRule extends RegExValidationRule {
   @override
   RegExp get _rule => RegExp(r'^[\x20-\x7E]+$');
+}
+
+class HostValidForGivenRouterIPAddressAndSubnetMaskRule extends ValidationRule {
+  final String routerIPAddress;
+  final String subnetMask;
+
+  HostValidForGivenRouterIPAddressAndSubnetMaskRule(
+      this.routerIPAddress, this.subnetMask);
+
+  @override
+  bool validate(String input) {
+    final hostIPAddressNum = Utils.ipToNum(input);
+    final routerIPAddressNum = Utils.ipToNum(input);
+    // final routerIPAddressNum = Utils.ipToNum(routerIPAddress);
+    final subnetMaskNum = Utils.ipToNum(subnetMask);
+    final hostSubnet = (hostIPAddressNum & subnetMaskNum) >>> 0;
+    final routerSubnet = (routerIPAddressNum & subnetMaskNum) >>> 0;
+
+    return (hostSubnet == routerSubnet) &&
+        _isIPValidForSubnet(hostIPAddressNum, subnetMaskNum);
+  }
+
+  bool _isIPValidForSubnet(int ipAddressNum, int subnetMaskNum) {
+    final networkIdNum = (ipAddressNum & subnetMaskNum) >>> 0;
+    final broadcastIdNum = (~subnetMaskNum | networkIdNum) >>> 0;
+    return ipAddressNum != networkIdNum && ipAddressNum != broadcastIdNum;
+  }
+}
+
+class IpAddressLocalNotRouterIp extends ValidationRule {
+  final String routerIPAddress;
+
+  bool get notCheck => true;
+
+  IpAddressLocalNotRouterIp(this.routerIPAddress);
+
+  @override
+  bool validate(String input) {
+    final ipAddressOctets = input.split('.');
+    final routerIPAddressOctets = routerIPAddress.split('.');
+    if (ipAddressOctets.length < 4) {
+      return true;
+    }
+    if (routerIPAddressOctets.length < 4) {
+      return true;
+    }
+    for (var i = 0; i < 4; i++) {
+      if (routerIPAddressOctets[i] != ipAddressOctets[i]) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+class IntegerRule extends ValidationRule {
+  final int min;
+  final int max;
+
+  IntegerRule({this.min = -1, this.max = -1});
+
+  @override
+  bool validate(String input) {
+    final num = int.tryParse(input);
+    if (num != null) {
+      return (min == -1 ? true : num >= min) && (max == -1 ? true : num <= max);
+    }
+    return false;
+  }
 }
 
 // class IpAddressOctetValidation extends ValidationRule {

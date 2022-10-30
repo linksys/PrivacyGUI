@@ -161,10 +161,12 @@ class SettingTileTwoLine extends StatelessWidget {
 class SectionTile extends StatelessWidget {
   const SectionTile({
     Key? key,
+    this.enabled = true,
     required this.header,
     required this.child,
   }) : super(key: key);
 
+  final bool enabled;
   final Widget header;
   final Widget child;
 
@@ -176,7 +178,13 @@ class SectionTile extends StatelessWidget {
       children: [
         header,
         box8(),
-        child,
+        Opacity(
+          opacity: enabled ? 1 : 0.4,
+          child: AbsorbPointer(
+            absorbing: !enabled,
+            child: child,
+          ),
+        ),
       ],
     );
   }
