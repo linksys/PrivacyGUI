@@ -76,10 +76,14 @@ class RouterWANStatus extends Equatable {
           ? null
           : WANIPv6ConnectionInfo.fromJson(json['wanIPv6Connection']),
       supportedWANTypes: List.from(json['supportedWANTypes']),
-      supportedIPv6WANTypes: List.from(json['supportedIPv6WANTypes']),
-      supportedWANCombinations: List.from(json['supportedWANCombinations'])
-          .map((e) => SupportedWANCombination.fromJson(e))
-          .toList(),
+      supportedIPv6WANTypes: json['supportedIPv6WANTypes'] == null
+          ? []
+          : List.from(json['supportedIPv6WANTypes']),
+      supportedWANCombinations: json['supportedWANCombinations'] == null
+          ? []
+          : List.from(json['supportedWANCombinations'])
+              .map((e) => SupportedWANCombination.fromJson(e))
+              .toList(),
     );
   }
 

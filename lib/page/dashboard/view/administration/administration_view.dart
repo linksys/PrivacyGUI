@@ -91,21 +91,21 @@ class _AdministrationViewState extends State<AdministrationView> {
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
                     onPress: () =>
-                        NavigationCubit.of(context).push(IpDetailsViewPath()),
+                        NavigationCubit.of(context).push(UnknownPath()),
                   ),
                   administrationTile(
                     title: _title(getAppLocalizations(context).mac_filtering),
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
                     onPress: () =>
-                        NavigationCubit.of(context).push(IpDetailsViewPath()),
+                        NavigationCubit.of(context).push(UnknownPath()),
                   ),
                   administrationTile(
                     title: _title(getAppLocalizations(context).vlan),
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
                     onPress: () =>
-                        NavigationCubit.of(context).push(IpDetailsViewPath()),
+                        NavigationCubit.of(context).push(UnknownPath()),
                   ),
                   administrationTile(
                     title:
@@ -113,14 +113,14 @@ class _AdministrationViewState extends State<AdministrationView> {
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
                     onPress: () =>
-                        NavigationCubit.of(context).push(IpDetailsViewPath()),
+                        NavigationCubit.of(context).push(UnknownPath()),
                   ),
                   administrationTile(
                     title: _title(getAppLocalizations(context).other),
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
                     onPress: () =>
-                        NavigationCubit.of(context).push(IpDetailsViewPath()),
+                        NavigationCubit.of(context).push(UnknownPath()),
                   ),
                 ],
               ),
