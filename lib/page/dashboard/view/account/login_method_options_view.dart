@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/account/_account.dart';
+import 'package:linksys_moab/bloc/change_auth_mode/change_auth_mode_cubit.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 
 import '../../../../bloc/auth/bloc.dart';
 import '../../../../bloc/auth/state.dart';
+import '../../../../constants/pref_key.dart';
 import '../../../../network/http/model/cloud_auth_clallenge_method.dart';
 import '../../../../route/model/account_path.dart';
 import '../../../../route/navigation_cubit.dart';
@@ -34,16 +37,19 @@ class _LoginMethodOptionsViewState extends State<LoginMethodOptionsView> {
             AuthenticationType.passwordless.name
         ? LoginMethod.otp
         : LoginMethod.password;
+    initPassword();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AccountCubit, AccountState>(builder: (context, state) {
-      return _content(state);
-    });
+    return BlocBuilder<AccountCubit, AccountState>(
+      builder: (context, state) {
+        return _content(context, state);
+      },
+    );
   }
 
-  Widget _content(AccountState state) {
+  Widget _content(BuildContext context, AccountState state) {
     return BasePageView.onDashboardSecondary(
       padding: const EdgeInsets.all(0),
       appBar: AppBar(
@@ -54,7 +60,11 @@ class _LoginMethodOptionsViewState extends State<LoginMethodOptionsView> {
         title: const Text('Log in method',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
         leading: BackButton(onPressed: () {
-          NavigationCubit.of(context).pop();
+          if(NavigationCubit.of(context).state.configs.contains(AccountDetailPath())) {
+            NavigationCubit.of(context).popTo(AccountDetailPath());
+          }else {
+            NavigationCubit.of(context).clearAndPush(AccountDetailPath());
+          }
         }),
         actions: [],
       ),
@@ -70,6 +80,9 @@ class _LoginMethodOptionsViewState extends State<LoginMethodOptionsView> {
               onChanged: (LoginMethod? value) {
                 setState(() {
                   _choose = value;
+                  if (state.authMode.toUpperCase() == 'PASSWORD') {
+                    changeAuthModePrepare(context, state);
+                  }
                 });
               },
               activeColor: Colors.black,
@@ -133,7 +146,7 @@ class _LoginMethodOptionsViewState extends State<LoginMethodOptionsView> {
                 setState(() {
                   _choose = value;
                   if (password == null) {
-                    changeAuthModeToPassword(context, state);
+                    changeAuthModePrepare(context, state);
                   }
                 });
               },
@@ -149,14 +162,39 @@ class _LoginMethodOptionsViewState extends State<LoginMethodOptionsView> {
     );
   }
 
-  Future<void> changeAuthModeToPassword(BuildContext context, AccountState state) async {
-    ChangeAuthenticationModeChallenge challenge = await context.read<AuthBloc>().changeAuthModePrepare(state.id, null, AuthenticationType.password.name.toUpperCase());
-    NavigationCubit.of(context).push(
-        OTPViewPath()..next = state.authMode.toUpperCase() == 'PASSWORDLESS'? ChangeAuthModePasswordPath() : LoginMethodOptionsPath()
-          ..args = {
-          'commMethods' : context.read<AccountCubit>().state.communicationMethods,
-          'token': challenge.token
-        }
-    );
+  Future<void> changeAuthModePrepare(
+      BuildContext context, AccountState state) async {
+    String mode = state.authMode.toUpperCase() == 'PASSWORD'
+        ? AuthenticationType.passwordless.name.toUpperCase()
+        : AuthenticationType.password.name.toUpperCase();
+    String? password;
+    if(state.authMode.toUpperCase() == 'PASSWORD') {
+      const storage = FlutterSecureStorage();
+      final pwd = await storage.read(key: moabPrefCloudAccountPasswordKey);
+      if(pwd != null) {
+        password = pwd;
+      }
+    }
+    ChangeAuthenticationModeChallenge challenge = await context
+        .read<AuthBloc>()
+        .changeAuthModePrepare(state.id, password, mode);
+    NavigationCubit.of(context).push(OTPViewPath()
+      ..next = ChangeAuthModePasswordPath()
+      ..args = {
+        'commMethods': context.read<AccountCubit>().state.communicationMethods,
+        'token': challenge.token,
+        'changeModeTo' : mode
+      });
+  }
+
+  Future<void> initPassword() async {
+    const storage = FlutterSecureStorage();
+    final accountPassword =
+        await storage.read(key: moabPrefCloudAccountPasswordKey);
+    if (accountPassword != null) {
+      setState((){
+        password = accountPassword;
+      });
+    }
   }
 }

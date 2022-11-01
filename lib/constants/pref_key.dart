@@ -15,3 +15,4 @@ const moabPrefSelectedNetworkId = 'MoabSelectedNetworkId';
 const moabPrefLocalPassword = 'MoabLocalPassword';
 const moabPrefCloudCertDataKey = 'MoabCloudCertData';
 const moabPrefCloudPrivateKey = 'MoabCloudPrivateKey';
+const moabPrefCloudAccountPasswordKey = 'MoabCloudAccountPassword';

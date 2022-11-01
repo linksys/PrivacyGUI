@@ -158,10 +158,7 @@ class CloudAuthRepository extends AuthRepository with SCLoader {
     return CloudEnvironmentManager()
         .loadCloudApp()
         .then((cloudApp) =>
-            _secureClient.changeAuthenticationMode(accountId, token, password))
-        .then((response) {
-      ChangeAuthenticationModeChallenge.fromJson(json.decode(response.body));
-    });
+            _secureClient.changeAuthenticationMode(accountId, token, password));
   }
 
   @override

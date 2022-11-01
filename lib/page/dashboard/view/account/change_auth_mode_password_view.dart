@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
@@ -14,26 +15,36 @@ import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
 
+import '../../../../constants/pref_key.dart';
+
 class ChangeAuthModePasswordView extends ArgumentsStatefulView {
   const ChangeAuthModePasswordView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  _ChangeAuthModePasswordViewState createState() => _ChangeAuthModePasswordViewState();
+  _ChangeAuthModePasswordViewState createState() =>
+      _ChangeAuthModePasswordViewState();
 }
 
-class _ChangeAuthModePasswordViewState extends State<ChangeAuthModePasswordView> {
+class _ChangeAuthModePasswordViewState
+    extends State<ChangeAuthModePasswordView> {
   final TextEditingController passwordController = TextEditingController();
   String _errorMessage = '';
+  String mode = '';
 
   @override
   void initState() {
     super.initState();
+    if (widget.args['changeModeTo'] == 'PASSWORDLESS') {
+      changeAuthModeToPasswordless(context);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return _contentView();
+    return widget.args['changeModeTo'] == 'PASSWORDLESS'
+        ? Container()
+        : _contentView();
   }
 
   Widget _contentView() {
@@ -75,14 +86,18 @@ class _ChangeAuthModePasswordViewState extends State<ChangeAuthModePasswordView>
     );
   }
 
-  _applyPassword() {
+  _applyPassword() async {
     String token = widget.args['token'] ?? '';
+    const storage = FlutterSecureStorage();
     String accountId = context.read<AccountCubit>().state.id;
+    await storage.write(
+        key: moabPrefCloudAccountPasswordKey, value: passwordController.text);
     context
         .read<AuthBloc>()
         .changeAuthMode(accountId, token, passwordController.text)
-        .then((value) {
-      NavigationCubit.of(context).popTo(LoginMethodOptionsPath());
+        .then((value) async {
+      await context.read<AccountCubit>().fetchAccount();
+      NavigationCubit.of(context).push(LoginMethodOptionsPath());
     }).onError((error, stackTrace) => _handleError(error));
   }
 
@@ -92,6 +107,19 @@ class _ChangeAuthModePasswordViewState extends State<ChangeAuthModePasswordView>
       if (error is ErrorResponse) {
         _errorMessage = generalErrorCodeHandler(context, error.code);
       }
+    });
+  }
+
+  Future<void> changeAuthModeToPasswordless(BuildContext context) async {
+    const storage = FlutterSecureStorage();
+    await storage.delete(key: moabPrefCloudAccountPasswordKey);
+    String accountId = context.read<AccountCubit>().state.id;
+    context
+        .read<AuthBloc>()
+        .changeAuthMode(accountId, widget.args['token'], null)
+        .then((value) async{
+      await context.read<AccountCubit>().fetchAccount();
+      context.read<NavigationCubit>().push(LoginMethodOptionsPath());
     });
   }
 }
