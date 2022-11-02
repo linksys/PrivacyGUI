@@ -1,5 +1,9 @@
 // List all useful JNAP services in the app
 enum JNAPService {
+  autoOnboarding(
+      value: 'http://linksys.com/jnap/nodes/autoonboarding/AutoOnboarding'),
+  bluetooth(value: 'http://linksys.com/jnap/nodes/bluetooth/Bluetooth'),
+  bluetooth2(value: 'http://linksys.com/jnap/nodes/bluetooth/Bluetooth2'),
   core(value: 'http://linksys.com/jnap/core/Core'),
   core2(value: 'http://linksys.com/jnap/core/Core2'),
   core3(value: 'http://linksys.com/jnap/core/Core3'),
@@ -112,6 +116,13 @@ enum JNAPService {
 // Each item indicates a particular action regardless of its value
 enum JNAPAction {
   transaction,
+  // auto onboarding
+  startBlueboothAutoOnboarding,
+  getBlueboothAutoOnboardingStatus,
+  getBluetoothAutoOnboardingSettings,
+  // bluetooth
+  btGetScanUnconfiguredResult,
+  btRequestScanUnconfigured,
   // core
   checkAdminPassword,
   coreSetAdminPassword,
@@ -245,8 +256,7 @@ enum _JNAPActionValue {
   getUnsecuredWiFiWarning(
       value: 'http://linksys.com/jnap/core/GetUnsecuredWiFiWarning'),
   setUnsecuredWiFiWarning(
-      value: 'http://linksys.com/jnap/core/SetUnsecuredWiFiWarning'
-  ),
+      value: 'http://linksys.com/jnap/core/SetUnsecuredWiFiWarning'),
   isAdminPasswordDefault(
       value: 'http://linksys.com/jnap/core/IsAdminPasswordDefault'),
   reboot(value: 'http://linksys.com/jnap/core/Reboot'),
@@ -255,7 +265,8 @@ enum _JNAPActionValue {
   getDevices(value: 'http://linksys.com/jnap/devicelist/GetDevices'),
   getDevices3(value: 'http://linksys.com/jnap/devicelist/GetDevices3'),
   getLocalDevice(value: 'http://linksys.com/jnap/devicelist/GetLocalDevice'),
-  setDeviceProperties(value: 'http://linksys.com/jnap/devicelist/SetDeviceProperties'),
+  setDeviceProperties(
+      value: 'http://linksys.com/jnap/devicelist/SetDeviceProperties'),
   getPortRangeForwardingRules(
       value: 'http://linksys.com/jnap/firewall/GetPortRangeForwardingRules'),
   getPortRangeTriggeringRules(
@@ -368,7 +379,8 @@ enum _JNAPActionValue {
   setWANSettings3(value: 'http://linksys.com/jnap/router/SetWANSettings3'),
   setWANSettings4(value: 'http://linksys.com/jnap/router/SetWANSettings4'),
   renewDHCPWANLease(value: 'http://linksys.com/jnap/router/RenewDHCPWANLease'),
-  renewDHCPIPv6Lease(value: 'http://linksys.com/jnap/router/RenewDHCPIPv6WANLease'),
+  renewDHCPIPv6Lease(
+      value: 'http://linksys.com/jnap/router/RenewDHCPIPv6WANLease'),
   getManagementSettings(
       value: 'http://linksys.com/jnap/routermanagement/GetManagementSettings'),
   getManagementSettings2(
@@ -386,7 +398,8 @@ enum _JNAPActionValue {
   verifyRouterResetCode(
       value: 'http://linksys.com/jnap/nodes/setup/VerifyRouterResetCode'),
   getDeviceMode(value: 'http://linksys.com/jnap/nodes/smartmode/GetDeviceMode'),
-  getSupportedDeviceModes(value:'http://linksys.com/jnap/nodes/smartmode/GetSupportedDeviceModes'),
+  getSupportedDeviceModes(
+      value: 'http://linksys.com/jnap/nodes/smartmode/GetSupportedDeviceModes'),
   setDeviceMode(value: 'http://linksys.com/jnap/nodes/smartmode/SetDeviceMode'),
   getRadioInfo(value: 'http://linksys.com/jnap/wirelessap/GetRadioInfo'),
   getRadioInfo3(value: 'http://linksys.com/jnap/wirelessap/GetRadioInfo3'),
@@ -406,10 +419,24 @@ enum _JNAPActionValue {
   getInternetConnectionStatus(
       value: 'http://linksys.com/jnap/nodes/setup/GetInternetConnectionStatus'),
   setSimpleWiFiSettings(
-    value: 'http://linksys.com/jnap/nodes/setup/SetSimpleWiFiSettings'
-  ),
+      value: 'http://linksys.com/jnap/nodes/setup/SetSimpleWiFiSettings'),
   getCloudIds(value: 'http://linksys.com/jnap/ownednetwork/GetCloudIDs'),
-  setCloudIds(value: 'http://linksys.com/jnap/ownednetwork/SetCloudIDs');
+  setCloudIds(value: 'http://linksys.com/jnap/ownednetwork/SetCloudIDs'),
+  getBluetoothAutoOnboardingSettings(
+      value:
+          'http://linksys.com/jnap/nodes/autoonboarding/GetBluetoothAutoOnboardingSettings'),
+  getBluetoothAutoOnboardingStatus(
+      value:
+          'http://linksys.com/jnap/nodes/autoonboarding/GetBluetoothAutoOnboardingStatus'),
+  startBluetoothAutoOnboarding(
+      value:
+          'http://linksys.com/jnap/nodes/autoonboarding/StartBluetoothAutoOnboarding'),
+  btGetScanUnconfiguredResult2(
+      value:
+          'http://linksys.com/jnap/nodes/bluetooth/BTGetScanUnconfiguredResult2'),
+  btRequestScanUnconfigured2(
+      value:
+          'http://linksys.com/jnap/nodes/bluetooth/BTRequestScanUnconfigured2');
 
   const _JNAPActionValue({required this.value});
 
@@ -422,6 +449,12 @@ var _betterActionMap = <JNAPAction, String>{};
 // Update actions to better actions by the given service
 void _updateBetterActions(JNAPService service) {
   switch (service) {
+    case JNAPService.autoOnboarding:
+      break;
+    case JNAPService.bluetooth:
+      break;
+    case JNAPService.bluetooth2:
+      break;
     case JNAPService.core:
       break;
     case JNAPService.core2:
@@ -537,8 +570,10 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.ownedNetwork2:
       break;
     case JNAPService.ownedNetwork3:
-      _betterActionMap[JNAPAction.getCloudIds] = _JNAPActionValue.getCloudIds.value;
-      _betterActionMap[JNAPAction.setCloudIds] = _JNAPActionValue.setCloudIds.value;
+      _betterActionMap[JNAPAction.getCloudIds] =
+          _JNAPActionValue.getCloudIds.value;
+      _betterActionMap[JNAPAction.setCloudIds] =
+          _JNAPActionValue.setCloudIds.value;
       break;
     case JNAPService.parentalControl:
       break;
@@ -666,8 +701,10 @@ void initBetterActions() {
   _betterActionMap[JNAPAction.getDDNSStatus] =
       _JNAPActionValue.getDDNSStatus.value;
   _betterActionMap[JNAPAction.getDevices] = _JNAPActionValue.getDevices.value;
-  _betterActionMap[JNAPAction.getLocalDevice] = _JNAPActionValue.getLocalDevice.value;
-  _betterActionMap[JNAPAction.setDeviceProperties] = _JNAPActionValue.setDeviceProperties.value;
+  _betterActionMap[JNAPAction.getLocalDevice] =
+      _JNAPActionValue.getLocalDevice.value;
+  _betterActionMap[JNAPAction.setDeviceProperties] =
+      _JNAPActionValue.setDeviceProperties.value;
   _betterActionMap[JNAPAction.getPortRangeForwardingRules] =
       _JNAPActionValue.getPortRangeForwardingRules.value;
   _betterActionMap[JNAPAction.getPortRangeTriggeringRules] =
@@ -700,10 +737,8 @@ void initBetterActions() {
       _JNAPActionValue.getLocalTime.value;
   _betterActionMap[JNAPAction.getTimeSettings] =
       _JNAPActionValue.getTimeSettings.value;
-  _betterActionMap[JNAPAction.getLocale] =
-      _JNAPActionValue.getLocale.value;
-  _betterActionMap[JNAPAction.setLocale] =
-      _JNAPActionValue.setLocale.value;
+  _betterActionMap[JNAPAction.getLocale] = _JNAPActionValue.getLocale.value;
+  _betterActionMap[JNAPAction.setLocale] = _JNAPActionValue.setLocale.value;
   _betterActionMap[JNAPAction.setTimeSettings] =
       _JNAPActionValue.setTimeSettings.value;
   _betterActionMap[JNAPAction.getMACFilterSettings] =
@@ -792,8 +827,20 @@ void initBetterActions() {
       _JNAPActionValue.setSimpleWiFiSettings.value;
   _betterActionMap[JNAPAction.getCloudIds] = _JNAPActionValue.getCloudIds.value;
   _betterActionMap[JNAPAction.setCloudIds] = _JNAPActionValue.setCloudIds.value;
-  _betterActionMap[JNAPAction.renewDHCPWANLease] = _JNAPActionValue.renewDHCPWANLease.value;
-  _betterActionMap[JNAPAction.renewDHCPIPv6WANLease] = _JNAPActionValue.renewDHCPIPv6Lease.value;
+  _betterActionMap[JNAPAction.renewDHCPWANLease] =
+      _JNAPActionValue.renewDHCPWANLease.value;
+  _betterActionMap[JNAPAction.renewDHCPIPv6WANLease] =
+      _JNAPActionValue.renewDHCPIPv6Lease.value;
+  _betterActionMap[JNAPAction.btGetScanUnconfiguredResult] =
+      _JNAPActionValue.btGetScanUnconfiguredResult2.value;
+  _betterActionMap[JNAPAction.btRequestScanUnconfigured] =
+      _JNAPActionValue.btRequestScanUnconfigured2.value;
+  _betterActionMap[JNAPAction.getBluetoothAutoOnboardingSettings] =
+      _JNAPActionValue.getBluetoothAutoOnboardingSettings.value;
+  _betterActionMap[JNAPAction.getBlueboothAutoOnboardingStatus] =
+      _JNAPActionValue.getBluetoothAutoOnboardingStatus.value;
+  _betterActionMap[JNAPAction.startBlueboothAutoOnboarding] =
+      _JNAPActionValue.startBluetoothAutoOnboarding.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

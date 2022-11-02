@@ -1,3 +1,4 @@
+import 'package:linksys_moab/bloc/add_nodes/state.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/network/better_action.dart';
@@ -7,6 +8,27 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/repository/router/smart_mode_extension.dart';
 
 extension TransactionCommands on RouterRepository {
+  Future<JnapSuccess> configureDeviceProperties({
+    required List<NodeProperties> deviceProperties,
+  }) async {
+    final payload = deviceProperties
+        .map((e) => JNAPTransaction.wrapCommandPayload(
+                action: JNAPAction.setDeviceProperties,
+                data: {
+                  'deviceID': e.deviceId,
+                  'propertiesToModify': e.buildPropertiesToModify(),
+                  'propertiesToRemove': [],
+                }))
+        .toList();
+    final transaction = JNAPTransaction(
+      publishTopic: mqttLocalPublishTopic,
+      responseTopic: mqttLocalResponseTopic,
+      payload: payload,
+    );
+    final result = await transaction.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
+
   Future<JnapSuccess> configureRouter({
     required String adminPassword,
     required String passwordHint,
@@ -30,7 +52,8 @@ extension TransactionCommands on RouterRepository {
           data: {'simpleWiFiSettings': settings}),
     ];
     if (deviceMode == 'Master') {
-      payload.removeWhere((element) => element['action'] == JNAPAction.setDeviceMode.actionValue);
+      payload.removeWhere((element) =>
+          element['action'] == JNAPAction.setDeviceMode.actionValue);
     }
     final transaction = JNAPTransaction(
       publishTopic: mqttLocalPublishTopic,

@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
+import 'package:linksys_moab/bloc/add_nodes/state.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
@@ -28,6 +29,7 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
+import 'package:linksys_moab/repository/router/bluetooth_extension.dart';
 import 'package:linksys_moab/repository/router/core_extension.dart';
 import 'package:linksys_moab/repository/router/device_list_extension.dart';
 import 'package:linksys_moab/repository/router/health_check_extension.dart';
@@ -346,10 +348,24 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         SecondaryButton(
           text: 'Connect',
           onPress: () async {
+            NavigationCubit.of(context).push(SetupNthChildPlacePath()
+              ..next = NavigationCubit.of(context).currentPath()
+              ..args = {
+                'isAddonsNode': true,
+                'init': true,
+                'mode': AddNodesMode.addNodeOnly,
+              });
 
-            NavigationCubit.of(context).push(CheckNodeInternetPath());
+            // NavigationCubit.of(context).push(SetupNodeListPath()
+            //   ..next = NavigationCubit.of(context).currentPath()
+            //   ..args = {
+            //     'init': true,
+            //     'mode': AddNodesMode.addNodeOnly,
+            //   });
 
             // await context.read<RouterRepository>().connectToLocalWithPassword();
+            // context.read<RouterRepository>().btRequestScanUnconfigured();
+            // context.read<RouterRepository>().btGetScanUnconfiguredResult();
             // await context.read<AccountCubit>().fetchAccount();
             // final account = context.read<AccountCubit>().state.id;
             // final group = context.read<AccountCubit>().state.groupId;

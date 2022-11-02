@@ -4,12 +4,11 @@ import 'package:linksys_moab/page/components/base_components/base_components.dar
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/setup/view/nodes_list_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 
-class NodesDoesntFindView extends ArgumentsStatelessView {
-  const NodesDoesntFindView({Key? key, super.next, super.args})
+class NodesNotAllAddedView extends ArgumentsStatelessView {
+  const NodesNotAllAddedView({Key? key, super.next, super.args})
       : super(key: key);
 
   @override
@@ -18,19 +17,17 @@ class NodesDoesntFindView extends ArgumentsStatelessView {
       child: BasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
-          title: getAppLocalizations(context).nodes_doesnt_find_view_title,
+          title: getAppLocalizations(context).nodes_not_all_added_title,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 24),
             DescriptionText(
-                text: getAppLocalizations(context)
-                    .nodes_doesnt_find_view_description_1),
+                text: getAppLocalizations(context).nodes_not_all_added_desc_1),
             const SizedBox(height: 16),
             DescriptionText(
-                text: getAppLocalizations(context)
-                    .nodes_doesnt_find_view_description_2),
+                text: getAppLocalizations(context).nodes_not_all_added_desc_2),
           ],
         ),
         footer: Column(

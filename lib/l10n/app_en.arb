@@ -227,7 +227,7 @@
   "nodes_doesnt_find_view_title": "We didn't find any nodes",
   "nodes_doesnt_find_view_description_1": "1. Make sure the node has power and the light is {on}.",
   "nodes_doesnt_find_view_description_2": "2. You may be out of range. Try getting closer to the router or an already configured add-on node(white light).\n\nUnconfigured nodes will be blinking blue.",
-  "scan_again_button": "Scan again",
+  "try_again_button": "Try again",
   "error_invalid_otp": "Incorrect code, please check your code and try again",
   "error_expired_otp": "Code expired after 15 minutes. Send a new code and try again",
   "error_otp_exceeds_threshold": "You've entered an incorrect code too many times. Your account will be locked for 2 hours",
@@ -562,5 +562,18 @@
     }
   },
   "auto": "Auto",
-  "manual": "Manual"
+  "manual": "Manual",
+  "nodes_not_all_added_title": "Hm, some of your nodes could’t be added",
+  "nodes_not_all_added_desc_1": "The communication between the router and node may have been interrupted. Try again.",
+  "nodes_not_all_added_desc_2": "Nodes may be in a place with signal interference or too far away. Try moving them closer to the router.",
+  "try_later_and_proceed": "I'll try later, let's proceed",
+  "node_location_bedroom": "Bedroom",
+  "node_location_living_room": "Living Room",
+  "node_location_dining_room": "Dining Room",
+  "node_location_kitchen": "Kitchen",
+  "node_location_sitting_room": "Sitting Room",
+  "node_location_office": "Office",
+  "node_location_garage": "Garage",
+  "node_location_studio": "Studio",
+  "node_location_custom": "Custom"
 }

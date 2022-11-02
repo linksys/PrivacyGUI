@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
+import 'package:linksys_moab/bloc/add_nodes/cubit.dart';
 import 'package:linksys_moab/bloc/app_lifecycle/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
@@ -140,6 +141,7 @@ Widget _app() {
       BlocProvider(
           create: (BuildContext context) => InternetCheckCubit(
               routerRepository: context.read<RouterRepository>())),
+      BlocProvider(create: (BuildContext context) => AddNodesCubit(routerRepository: context.read<RouterRepository>()))
     ], child: const MoabApp()),
   );
 }

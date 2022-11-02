@@ -26,7 +26,6 @@ class SetLocationView extends StatefulWidget {
 
 class _SetLocationViewState extends State<SetLocationView> {
   int _selected = -1;
-  final List<String> data = locationList;
   final TextEditingController nameController = TextEditingController();
 
   void _nameOnChange(_) {
@@ -47,7 +46,7 @@ class _SetLocationViewState extends State<SetLocationView> {
   @override
   Widget build(BuildContext context) {
     return BasePageView.withCloseButton(context,
-        child: _selected != locationList.indexOf(locationList.last)
+        child: _selected != _locationList.indexOf(_locationList.last)
             ? BasicLayout(
                 header: BasicHeader(
                   title: getAppLocalizations(context).name_node_view_title,
@@ -57,16 +56,14 @@ class _SetLocationViewState extends State<SetLocationView> {
                 content: Padding(
                   padding: const EdgeInsets.fromLTRB(0, 24.0, 0, 0),
                   child: ListView.builder(
-                      itemCount: data.length, itemBuilder: _buildListItem),
+                      itemCount: _locationList.length, itemBuilder: _buildListItem),
                 ),
                 footer: Column(
                   children: [
                     if (_selected >= 0)
                       PrimaryButton(
                         text: getAppLocalizations(context).done,
-                        onPress: _selected >= 0
-                            ? () => _onSelect()
-                            : null,
+                        onPress: _selected >= 0 ? () => _onSelect() : null,
                       ),
                   ],
                 ),
@@ -91,9 +88,7 @@ class _SetLocationViewState extends State<SetLocationView> {
                   children: [
                     PrimaryButton(
                       text: getAppLocalizations(context).save,
-                      onPress: _selected >= 0
-                          ? () => _onSelect()
-                          : null,
+                      onPress: _selected >= 0 ? () => _onSelect() : null,
                     ),
                   ],
                 ),
@@ -118,7 +113,7 @@ class _SetLocationViewState extends State<SetLocationView> {
           Expanded(
               child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 24.0),
-            child: Text(data[index]),
+            child: Text(defLocationList()[index]),
           )),
           index == _selected
               ? const Icon(
@@ -138,20 +133,35 @@ class _SetLocationViewState extends State<SetLocationView> {
   }
 
   _onSelect() {
-    context.read<SetupBloc>().add(SetRouterLocation(
-        location: locationList[_selected]));
-    NavigationCubit.of(context).pop();
+    NavigationCubit.of(context).popWithResult(
+      _selected == _locationList.length - 1
+          ? nameController.text
+          : defLocationList()[_selected],
+    );
   }
-}
 
-const locationList = [
-  'Bedroom',
-  'Living Room',
-  'Dining Room',
-  'Kitchen',
-  'Sitting Room',
-  'Office',
-  'Garage',
-  'Studio',
-  'Custom'
-];
+
+  List<String> defLocationList() => [
+        getAppLocalizations(context).node_location_bedroom,
+        getAppLocalizations(context).node_location_living_room,
+        getAppLocalizations(context).node_location_dining_room,
+        getAppLocalizations(context).node_location_kitchen,
+        getAppLocalizations(context).node_location_sitting_room,
+        getAppLocalizations(context).node_location_office,
+        getAppLocalizations(context).node_location_garage,
+        getAppLocalizations(context).node_location_studio,
+        getAppLocalizations(context).node_location_custom,
+      ];
+
+  final _locationList = [
+    'Bedroom',
+    'Living Room',
+    'Dining Room',
+    'Kitchen',
+    'Sitting Room',
+    'Office',
+    'Garage',
+    'Studio',
+    'Custom'
+  ];
+}

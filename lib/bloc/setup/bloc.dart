@@ -1,14 +1,11 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/constants/_constants.dart';
-import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
-import 'package:linksys_moab/repository/router/core_extension.dart';
 import 'package:linksys_moab/repository/router/device_list_extension.dart';
 import 'package:linksys_moab/repository/router/owend_network_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/repository/router/smart_mode_extension.dart';
 import 'package:linksys_moab/repository/router/transactions_extension.dart';
 import 'package:linksys_moab/repository/router/wireless_ap_extension.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -28,7 +25,7 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
     on<SetAdminPasswordHint>(_onSetAdminPasswordHint);
     on<SaveRouterSettings>(_onSaveRouterSettings);
     on<FetchNetworkId>(_onFetchNetworkId);
-    on<SetRouterLocation>(_onSetRouterLocation);
+    on<SetRouterProperties>(_onSetRouterLocation);
   }
 
   final RouterRepository _routerRepository;
@@ -113,14 +110,9 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
                 ))
             .toList();
     // the devices should at least has 1 device
-    if (devices.isNotEmpty) {
+    if (state.deviceProperties.isNotEmpty) {
       await _routerRepository
-          .setDeviceProperties(deviceId: devices[0].deviceID, propertiesToModify: [
-        {
-          'name': userDefinedDeviceLocation,
-          'value': state.deviceLocation,
-        }
-      ]);
+          .configureDeviceProperties(deviceProperties: state.deviceProperties);
     }
     // TODO #1 Don't wait for now since there won't have response MOABLITE-38 - https://linksys.atlassian.net/browse/MOABLITE-38
     _routerRepository.configureRouter(
@@ -146,8 +138,8 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
   }
 
   void _onSetRouterLocation(
-      SetRouterLocation event, Emitter<SetupState> emit) async {
-    emit(state.copyWith(deviceLocation: event.location));
+      SetRouterProperties event, Emitter<SetupState> emit) async {
+    emit(state.copyWith(deviceProperties: event.properties));
   }
 
   Future<void> associateNetwork(String accountId, String groupId) async {

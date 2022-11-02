@@ -76,8 +76,12 @@ class RouterDevice {
 
   factory RouterDevice.fromJson(Map<String, dynamic> json) {
     return RouterDevice(
-      connections: List.from(json['connections']).map((e) => ConnectionDevice.fromJson(e)).toList(),
-      properties: List.from(json['properties']).map((e) => PropertyDevice.fromJson(e)).toList(),
+      connections: List.from(json['connections'])
+          .map((e) => ConnectionDevice.fromJson(e))
+          .toList(),
+      properties: List.from(json['properties'])
+          .map((e) => PropertyDevice.fromJson(e))
+          .toList(),
       unit: UnitDevice.fromJson(json['unit']),
       deviceID: json['deviceID'],
       maxAllowedProperties: json['maxAllowedProperties'],
@@ -85,10 +89,26 @@ class RouterDevice {
       isAuthority: json['isAuthority'],
       lastChangeRevision: json['lastChangeRevision'],
       friendlyName: json['friendlyName'],
-      knownInterfaces: (json['knownInterfaces'] != null) ? List.from(json['knownInterfaces']).map((e) => KnownInterfaceDevice.fromJson(e)).toList() : null,
-      knownMACAddresses: (json['knownMACAddresses'] != null) ? List.from(json['knownMACAddresses']) : null,
+      knownInterfaces: (json['knownInterfaces'] != null)
+          ? List.from(json['knownInterfaces'])
+              .map((e) => KnownInterfaceDevice.fromJson(e))
+              .toList()
+          : null,
+      knownMACAddresses: (json['knownMACAddresses'] != null)
+          ? List.from(json['knownMACAddresses'])
+          : null,
       nodeType: json['nodeType'],
     );
+  }
+
+  bool hasSameInterface(String macAddress) {
+    return knownInterfaces
+            ?.any((interface) => interface.macAddress == macAddress) ??
+        false;
+  }
+
+  bool hasConnection(String macAddress) {
+    return connections.any((connection) => connection.macAddress == macAddress);
   }
 }
 
