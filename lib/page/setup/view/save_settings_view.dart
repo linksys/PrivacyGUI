@@ -65,7 +65,12 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
       _authBloc.localLogin(_setupBloc.state.adminPassword);
     } else if (_authBloc.state is AuthCloudLoginState ||
         _authBloc.state is AuthLocalLoginState) {
-      NavigationCubit.of(context).clearAndPush(SetupFinishPath());
+      if (widget.args['config'] != null &&
+          widget.args['config'] == 'LOCALAUTHCREATEACCOUNT') {
+        NavigationCubit.of(context).popTo(AccountDetailPath());
+      } else {
+        NavigationCubit.of(context).clearAndPush(SetupFinishPath());
+      }
     }
   }
 
@@ -86,14 +91,16 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
       if (event.connectivityInfo.type != ConnectivityResult.wifi) {
         return;
       }
-      _setupBloc.add(ResumePointChanged(status: SetupResumePoint.wifiConnectionBackSuccess));
+      _setupBloc.add(ResumePointChanged(
+          status: SetupResumePoint.wifiConnectionBackSuccess));
       _tryConnectMQTT().then((value) {
         if (value) {
           logger.d('SaveSettings:: _listenConnectivityChange(): $value');
 
           _setupBloc.add(FetchNetworkId());
         } else {
-          _setupBloc.add(ResumePointChanged(status: SetupResumePoint.wifiConnectionBackFailed));
+          _setupBloc.add(ResumePointChanged(
+              status: SetupResumePoint.wifiConnectionBackFailed));
         }
       });
     });
@@ -117,7 +124,9 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
     int retry = 0;
     bool isConnect = false;
     do {
-      isConnect = await _connectivityCubit.connectToLocalBroker().onError((error, stackTrace) => false);
+      isConnect = await _connectivityCubit
+          .connectToLocalBroker()
+          .onError((error, stackTrace) => false);
       if (isConnect) {
         return isConnect;
       } else {
@@ -134,8 +143,14 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
       listener: (BuildContext context, state) {
         logger.d('SaveSettings:: AuthState changed: ${state.status}');
         if (state is AuthCloudLoginState) {
-          _associateNetwork().then((value) =>
-              NavigationCubit.of(context).clearAndPush(SetupFinishPath()));
+          _associateNetwork().then((value) {
+            if (widget.args['config'] != null &&
+                widget.args['config'] == 'LOCALAUTHCREATEACCOUNT') {
+              NavigationCubit.of(context).popTo(AccountDetailPath());
+            } else {
+              NavigationCubit.of(context).clearAndPush(SetupFinishPath());
+            }
+          });
         } else if (state is AuthLocalLoginState) {
           NavigationCubit.of(context).clearAndPush(SetupFinishPath());
         }

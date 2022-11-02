@@ -106,7 +106,8 @@ class _AddAccountState extends State<AddAccountView> {
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
         listenWhen: (previous, current) {
-          if (previous is AuthOnCreateAccountState && current is AuthOnCreateAccountState) {
+          if (previous is AuthOnCreateAccountState &&
+              current is AuthOnCreateAccountState) {
             return previous.vToken != current.vToken;
           }
           return false;
@@ -115,13 +116,15 @@ class _AddAccountState extends State<AddAccountView> {
           if (state is AuthOnCreateAccountState) {
             if (state.vToken.isNotEmpty) {
               context.read<AuthBloc>().add(SetCloudPassword(password: ''));
-              context.read<AuthBloc>().add(SetLoginType(loginType: AuthenticationType.passwordless));
+              context.read<AuthBloc>().add(
+                  SetLoginType(loginType: AuthenticationType.passwordless));
               NavigationCubit.of(context).push(CreateAccountOtpPath()
                 ..args = {
                   'username': _emailController.text,
                   'function': OtpFunction.setting,
                   'commMethods': state.accountInfo.communicationMethods,
                   'token': state.vToken,
+                  ...widget.args
                 });
             }
           }
@@ -157,13 +160,19 @@ class _AddAccountState extends State<AddAccountView> {
               Offstage(
                 offstage: _errorCode.isEmpty,
                 child: Wrap(
-                  children: [Text(
-                    generalErrorCodeHandler(context, _errorCode),
-                    style: Theme.of(context)
-                        .textTheme
-                        .headline3
-                        ?.copyWith(color: Colors.red),
-                  ), SimpleTextButton.onPaddingWithStyle(text: getAppLocalizations(context).login_to_continue, onPressed: _goLogin, textStyle: const TextStyle(color: Colors.blue))],
+                  children: [
+                    Text(
+                      generalErrorCodeHandler(context, _errorCode),
+                      style: Theme.of(context)
+                          .textTheme
+                          .headline3
+                          ?.copyWith(color: Colors.red),
+                    ),
+                    SimpleTextButton.onPaddingWithStyle(
+                        text: getAppLocalizations(context).login_to_continue,
+                        onPressed: _goLogin,
+                        textStyle: const TextStyle(color: Colors.blue))
+                  ],
                 ),
               ),
               const SizedBox(height: 8),
@@ -208,12 +217,16 @@ class _AddAccountState extends State<AddAccountView> {
                 onPress: _onNextAction,
               ),
               const SizedBox(height: 8),
-              SimpleTextButton(
-                text: getAppLocalizations(context).use_router_password,
-                onPressed: () {
-                  NavigationCubit.of(context).push(NoUseCloudAccountPath());
-                },
-              )
+              widget.args['config'] != null &&
+                      widget.args['config'] == 'LOCALAUTHCREATEACCOUNT'
+                  ? Container()
+                  : SimpleTextButton(
+                      text: getAppLocalizations(context).use_router_password,
+                      onPressed: () {
+                        NavigationCubit.of(context)
+                            .push(NoUseCloudAccountPath());
+                      },
+                    )
             ],
           )),
     );
@@ -229,8 +242,8 @@ class _AddAccountState extends State<AddAccountView> {
       logger.d('Unknown error: $e');
     }
   }
+
   _goLogin() {
-    NavigationCubit.of(context)
-        .push(AuthSetupLoginPath());
+    NavigationCubit.of(context).push(AuthSetupLoginPath());
   }
 }
