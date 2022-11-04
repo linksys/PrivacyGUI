@@ -56,3 +56,5 @@ class SetRouterLocation extends SetupEvent {
 
   final String location;
 }
+
+class LocalAuthorizedCreatAccount extends SetupEvent {}

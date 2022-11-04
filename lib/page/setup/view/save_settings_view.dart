@@ -43,7 +43,12 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
     _connectivityCubit = context.read<ConnectivityCubit>();
     _accountCubit = context.read<AccountCubit>();
     super.initState();
-    _setupBloc.add(SaveRouterSettings());
+    if (widget.args['config'] != null &&
+        widget.args['config'] == 'LOCALAUTHCREATEACCOUNT') {
+      _setupBloc.add(LocalAuthorizedCreatAccount());
+    } else {
+      _setupBloc.add(SaveRouterSettings());
+    }
   }
 
   //TODO: The svg image must be replaced
@@ -146,7 +151,11 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
           _associateNetwork().then((value) {
             if (widget.args['config'] != null &&
                 widget.args['config'] == 'LOCALAUTHCREATEACCOUNT') {
-              NavigationCubit.of(context).popTo(AccountDetailPath());
+              if(context.read<NavigationCubit>().state.configs.contains(AccountDetailPath())) {
+                NavigationCubit.of(context).popTo(AccountDetailPath());
+              } else {
+                NavigationCubit.of(context).push(AccountDetailPath());
+              }
             } else {
               NavigationCubit.of(context).clearAndPush(SetupFinishPath());
             }

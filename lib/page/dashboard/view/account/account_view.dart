@@ -22,6 +22,7 @@ import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:styled_text/styled_text.dart';
 
+import '../../../../bloc/internet_check/cubit.dart';
 import '../../../../route/model/create_account_path.dart';
 
 class AccountView extends StatefulWidget {
@@ -55,9 +56,8 @@ class _AccountViewState extends State<AccountView> {
             actions: [],
           ),
           child:
-          // context.read<AuthBloc>().state.status ==
-          //         AuthStatus.localAuthorized
-          true
+          context.read<AuthBloc>().state.status ==
+                  AuthStatus.localAuthorized
               ? _local(state)
               : _remote(state));
     });
@@ -374,6 +374,7 @@ class _AccountViewState extends State<AccountView> {
           PrimaryButton(
             text: 'Create an account',
             onPress: () {
+              context.read<InternetCheckCubit>().getInternetConnectionStatus();
               context.read<NavigationCubit>().push(CreateCloudAccountPath()..args = {
                 'config': 'LOCALAUTHCREATEACCOUNT'
               });
