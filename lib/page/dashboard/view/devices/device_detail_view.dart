@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:linksys_moab/bloc/device/device.dart';
+import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -10,7 +10,7 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
-
+import 'package:linksys_moab/utils.dart';
 
 class DeviceDetailView extends ArgumentsStatefulView {
   const DeviceDetailView({Key? key, super.args, super.next}) : super(key: key);
@@ -59,11 +59,15 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            getWifiIcon(),
-            // TODO: Set status according to device info
-            const Text(
-              'Online',
-              style: TextStyle(
+            Image.asset(
+              'assets/images/${Utils.getDeviceSignalImageString(state.selectedDeviceInfo!)}.png',
+              width: 22,
+              height: 22,
+              color: const Color.fromRGBO(8, 112, 234, 1.0),
+            ),
+            Text(
+              getAppLocalizations(context).online,
+              style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: Color.fromRGBO(8, 112, 234, 1.0),
@@ -77,7 +81,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
           NavigationCubit.of(context).push(EditDeviceNamePath());
         }),
         _headerCell(getAppLocalizations(context).node_detail_label_connected_to,
-            state.selectedDeviceInfo?.connectedTo, () {}),
+            state.selectedDeviceInfo?.place, () {}),
         if (state.selectedDeviceInfo?.profileId != null)
           _headerCell(
               getAppLocalizations(context).profile,
@@ -85,18 +89,15 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
                   .read<ProfilesCubit>()
                   .state
                   .profiles[state.selectedDeviceInfo?.profileId]
-                  ?.name,
-              () {
-                String? profileId = state.selectedDeviceInfo?.profileId;
-                GroupProfile? profile = context
-                    .read<ProfilesCubit>().state.profiles[profileId ?? ''];
-                if (profile != null) {
-                  context
-                      .read<ProfilesCubit>()
-                      .selectProfile(profile);
-                  NavigationCubit.of(context).push(ProfileOverviewPath());
-                }
-              }),
+                  ?.name, () {
+            String? profileId = state.selectedDeviceInfo?.profileId;
+            GroupProfile? profile =
+                context.read<ProfilesCubit>().state.profiles[profileId ?? ''];
+            if (profile != null) {
+              context.read<ProfilesCubit>().selectProfile(profile);
+              NavigationCubit.of(context).push(ProfileOverviewPath());
+            }
+          }),
         box24(),
       ],
     );
@@ -113,13 +114,16 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
               title,
               style: const TextStyle(fontSize: 14),
             ),
-            const Spacer(),
+            box8(),
             if (data != null)
-              Text(
-                data,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color.fromRGBO(102, 102, 102, 1.0),
+              Expanded(
+                child: Text(
+                  data,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color.fromRGBO(102, 102, 102, 1.0),
+                  ),
+                  textAlign: TextAlign.end,
                 ),
               ),
             box16(),
@@ -187,15 +191,6 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget getWifiIcon() {
-    // TODO: According to device wifi signal return proper wifi icon
-    return Image.asset(
-      'assets/images/icon_wifi_signal_excellent.png',
-      width: 22,
-      height: 22,
     );
   }
 }

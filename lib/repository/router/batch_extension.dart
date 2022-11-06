@@ -50,4 +50,17 @@ extension BatchCommands on RouterRepository {
       ),
     ]);
   }
+
+  Future<Map<String, JnapSuccess>> fetchDeviceList() async {
+    return batchCommands([
+      CommandWrap(
+        action: JNAPAction.getNetworkConnections.actionValue,
+        needAuth: false,
+      ),
+      CommandWrap(
+        action: JNAPAction.getDevices.actionValue,
+        needAuth: false,
+      ),
+    ]);
+  }
 }
