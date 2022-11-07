@@ -1,56 +1,47 @@
 
 function buildInHouse() {
-  version=$1
-  echo "start building in house $version"
-  flutter build ipa --export-options-plist=ios/Scripts/Moab-EE-InHouse.plist --dart-define=cloud_env=qa
-  mv "./build/ios/ipa/Moab.ipa" "./build/ios/ipa/moab_app_ee_distribution.ipa"
-  copyInHouseAssets
-  updateLinks "$version"
+  echo "start building in house #${inHouseBuildNumber}"
+  flutter build ipa --export-options-plist=ios/Scripts/Moab-EE-InHouse.plist --flavor=Enterprise --build-number="${inHouseBuildNumber}" --dart-define=cloud_env=qa
+  mv "./build/ios/ipa/Moab.ipa" "./build/ios/ipa/moab_app_ee_distribution_${inHouseBuildNumber}.ipa"
+}
+
+function buildAppStore() {
+  echo "start building app store #${appStoreBuildNumber}"
+  flutter build ipa --export-options-plist=ios/Scripts/Moab-Distribution-app-store.plist --flavor=Moab --build-number="${appStoreBuildNumber}" --dart-define=cloud_env=qa
+  mv "./build/ios/ipa/Moab.ipa" "./build/ios/ipa/moab_app_distribution_app_store_${appStoreBuildNumber}.ipa"
 }
 
 function buildSimulatorApp() {
-    version=$1
-    echo "start building simulator app $version"
+    echo "start building simulator app"
     flutter build ios --simulator;
     mv "./build/ios/iphonesimulator/Runner.app" "./build/ios/iphonesimulator/moab_app_simulator.app"
     zip -r "./build/ios/iphonesimulator/moab_app_simulator.app.zip" ./*
     mv "./build/ios/iphonesimulator/moab_app_simulator.app.zip" "./build/ios/ipa/moab_app_simulator.app.zip"
 }
 
-function copyInHouseAssets() {
-  iosAssetsPath=./ios/Scripts/InHouse
-  targetOutputPath=./build/ios/ipa/
-  assetFiles=$(ls "$iosAssetsPath"/*)
-  for path in $assetFiles
-  do
-    name=$(basename "$path")
-    cp "$path" "$targetOutputPath"/"$name"
-    echo "Copied... $path"
-  done
-}
-
-function updateLinks() {
-  echo "Update links"
-  version=$1
-  htmlFilePath=./build/ios/ipa/install.html.template
-  sed -i '' "s/{version}/$version/g" "$htmlFilePath"
-  mv "$htmlFilePath" "./build/ios/ipa/install.html"
-  manifestPath=./build/ios/ipa/manifest.plist
-  sed -i '' "s/{version}/$version/g" "$manifestPath"
-  sed -i '' "s/Runner/Moab App $version/g" "$manifestPath"
-}
-
-version=$1
+inHouseBuildNumber=$1
+appStoreBuildNumber=$2
+inHouseBuild=$3
+appStoreBuild=$4
 pod repo update
 flutter --version
 flutter pub deps
 flutter clean
 flutter pub cache repair
-if ! buildInHouse "$version"; then
-  echo InHouse "$version" build failed
+if [ "${inHouseBuild}" == "true" ] ; then
+  if ! buildInHouse "$buildNumber"; then
+    echo InHouse "$buildNumber" build failed
+    exit 1
+  fi
+fi
+if [ "${appStoreBuild}" == "true" ] ; then
+if ! buildAppStore "$buildNumber"; then
+  echo AppStore "$buildNumber" build failed
   exit 1
 fi
-if ! buildSimulatorApp "$version"; then
-    echo Simulator app "$version" build failed
-    exit 1
 fi
+
+#if ! buildSimulatorApp "$version"; then
+#    echo Simulator app "$version" build failed
+#    exit 1
+#fi
