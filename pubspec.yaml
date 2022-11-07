@@ -85,7 +85,8 @@ dependencies:
     path: plugins/sms_receiver_plugin
   ios_push_notification_plugin:
     path: plugins/ios_push_notification_plugin
-
+dependency_overrides:
+  firebase_core_platform_interface: 4.5.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
