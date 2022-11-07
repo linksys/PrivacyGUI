@@ -22,13 +22,14 @@ function buildSimulatorApp() {
 buildNumber=$1
 inHouseBuild=$2
 appStoreBuild=$3
-inHouseBuildNumber=510000+buildNumber
-appStoreBuildNumber=530000+buildNumber
+((inHouseBuildNumber=510000+buildNumber))
+((appStoreBuildNumber=530000+buildNumber))
 pod repo update
 flutter --version
 flutter pub deps
 flutter clean
 flutter pub cache repair
+flutter pub upgrade --major-versions
 if [ "${inHouseBuild}" == "true" ] ; then
   if ! buildInHouse "$buildNumber"; then
     echo InHouse "$buildNumber" build failed
