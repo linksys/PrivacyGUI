@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
+import 'package:linksys_moab/bloc/add_nodes/state.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/setup/bloc.dart';
 import 'package:linksys_moab/bloc/setup/state.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/base_components/button/primary_button.dart';
 import 'package:linksys_moab/page/components/base_components/text/description_text.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 
@@ -67,12 +70,29 @@ class SetupFinishedView extends ArgumentsStatelessView {
             ],
           );
         }),
-        footer: PrimaryButton(
-          text: getAppLocalizations(context).go_to_dashboard,
-          onPress: () {
-            context.read<NetworkCubit>().init(); // Reset all the network during setup
-            NavigationCubit.of(context).push(PrepareDashboardPath());
-          },
+        footer: Column(
+          children: [
+            SecondaryButton(
+              text: getAppLocalizations(context).add_a_node,
+              onPress: () {
+                NavigationCubit.of(context).push(SetupNthChildPlacePath()
+                  ..next = NavigationCubit.of(context).currentPath()
+                  ..args = {
+                    'isAddonsNode': true,
+                    'init': true,
+                    'mode': AddNodesMode.addNodeOnly,
+                  });
+              },
+            ),
+            box12(),
+            PrimaryButton(
+              text: getAppLocalizations(context).go_to_dashboard,
+              onPress: () {
+                context.read<NetworkCubit>().init(); // Reset all the network during setup
+                NavigationCubit.of(context).push(PrepareDashboardPath());
+              },
+            ),
+          ],
         ),
         crossAxisAlignment: CrossAxisAlignment.start,
       ),

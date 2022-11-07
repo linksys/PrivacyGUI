@@ -51,6 +51,16 @@ class NavigationCubit extends Cubit<NavigationStack> {
     emit(state.popTo(config));
   }
 
+  void popToOrPush(BasePath config) {
+    logger.d('NavigationCubit: popToOrPush called with $config and arguments: ${config.args}, next: ${config.next}');
+    emit(state.popToOrPush(config));
+  }
+
+  void popToAndPush(BasePath popTo, BasePath push, {bool include = false}) {
+    logger.d('NavigationCubit: popToAndPush called pop to $popTo include self: $include, and push $push with arguments: ${push.args}, next: ${push.next}');
+    emit(state.popToAndPush(popTo, push, include));
+  }
+
   void popWithResult<T>(T? data) {
     emit(state.completeAndPop(data));
   }
@@ -68,4 +78,6 @@ class NavigationCubit extends Cubit<NavigationStack> {
     logger.d('NavigationCubit: replace called with $config and arguments: ${config.args}, next: ${config.next}');
     emit(state.replace(config));
   }
+
+  BasePath currentPath() => state.last;
 }

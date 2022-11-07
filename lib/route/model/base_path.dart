@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/page/landing/view/_view.dart';
+import 'package:linksys_moab/page/setup/view/_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 
 import 'package:linksys_moab/util/logger.dart';
@@ -64,6 +65,11 @@ abstract class BasePath {
         return HomeView(
           args: args,
         );
+      case LoadingTransitionPath:
+        return LoadingTransitionView(
+          next: next,
+          args: args,
+        );
       case UnknownPath:
         return const Center(
           child: Text("Unknown Path"),
@@ -84,6 +90,17 @@ class HomePath extends BasePath {
 }
 
 class UnknownPath extends BasePath {}
+
+
+class LoadingTransitionPath extends BasePath {
+  @override
+  PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
+
+  @override
+  PageConfig get pageConfig =>
+      super.pageConfig..navType = PageNavigationType.none;
+}
+
 
 abstract class DebugToolsPath extends BasePath {
   @override

@@ -2,8 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-
-
 class NavigationStack {
   final List<BasePath> _stack;
 
@@ -14,8 +12,11 @@ class NavigationStack {
 
   // List<Page> get pages => List.unmodifiable(_stack.map((e) => e.buildPage()));
   List<BasePath> get configs => _stack;
+
   int get length => _stack.length;
+
   BasePath get first => _stack.first;
+
   BasePath get last => _stack.last;
 
   ///the reason behind returning Navigation Stack instead of just being a void
@@ -45,6 +46,25 @@ class NavigationStack {
       _stack.remove(_stack.last);
     }
     return NavigationStack(_stack);
+  }
+
+  NavigationStack popToOrPush(BasePath config) {
+    if (_stack.any((element) => element.runtimeType == config.runtimeType)) {
+      return popTo(config);
+    } else {
+      return push(config);
+    }
+  }
+
+  NavigationStack popToAndPush(
+      BasePath popConfig, BasePath pushConfig, bool include) {
+    if (_stack.any((element) => element.name == popConfig.name)) {
+      return include
+          ? popTo(popConfig).pop().push(pushConfig)
+          : popTo(popConfig).push(pushConfig);
+    } else {
+      return push(pushConfig);
+    }
   }
 
   NavigationStack pushBeneathCurrent(BasePath config) {

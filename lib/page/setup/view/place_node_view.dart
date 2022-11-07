@@ -6,21 +6,16 @@ import 'package:linksys_moab/page/components/base_components/button/simple_text_
 import 'package:linksys_moab/page/components/base_components/text/description_text.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/setup/view/place_node_tips_view.dart';
 import 'package:linksys_moab/route/_route.dart';
-
 
 import '../../components/base_components/button/primary_button.dart';
 import '../../components/layouts/basic_header.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 
-class PlaceNodeView extends StatelessWidget {
-  var isAddOnNodes;
-
-  PlaceNodeView({
-    Key? key,
-    this.isAddOnNodes = false,
-  }) : super(key: key);
+class PlaceNodeView extends ArgumentsStatelessView {
+  PlaceNodeView({Key? key, super.next, super.args}) : super(key: key);
 
   // Replace this to svg if the svg image is fixed
   final Widget image = Image.asset('assets/images/nodes_position.png');
@@ -78,8 +73,10 @@ class PlaceNodeView extends StatelessWidget {
         PrimaryButton(
           text: getAppLocalizations(context).next,
           onPress: () {
-            if (isAddOnNodes) {
-              NavigationCubit.of(context).push(SetupNthChildSearchingPath());
+            if (args['isAddonsNode'] ?? false) {
+              NavigationCubit.of(context).push(SetupNthChildSearchingPath()
+                ..next = next
+                ..args = args);
             } else {
               NavigationCubit.of(context).push(SetupParentPermissionPath());
             }

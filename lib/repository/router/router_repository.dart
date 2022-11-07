@@ -329,13 +329,17 @@ class RouterRepository with StateStreamListener {
     required JNAPAction action,
     int retryDelayInSec = 5,
     int maxRetry = 10,
+    Map<String, dynamic> data = const {},
     bool Function()? condition,
-  }) {
-    final command = createCommand(action.actionValue);
-    return command
-        .publishWithRetry(mqttClient!,
-        retryDelayInSec: retryDelayInSec, maxRetry: maxRetry, condition: condition)
-        .map((event) => handleJnapResult(event.body));
+  }) async* {
+    int retry = 0;
+    while (++retry <= maxRetry && !(condition?.call() ?? false)) {
+      final command = createCommand(action.actionValue, data: data);
+      logger.d('publish command {$action: $retry times');
+      // TODO #ERRORHANDLING handle other errors - timeout error, etc...
+      yield await command.publish(mqttClient!).then((value) => handleJnapResult(value.body));
+      await Future.delayed(Duration(seconds: retryDelayInSec));
+    }
   }
 
   JnapSuccess handleJnapResult(JnapResult result) {

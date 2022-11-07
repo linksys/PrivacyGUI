@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:linksys_moab/bloc/add_nodes/state.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/setup/_setup.dart';
 import 'package:linksys_moab/bloc/setup/state.dart';
@@ -51,8 +52,8 @@ class SaveRouterSettings extends SetupEvent {}
 
 class FetchNetworkId extends SetupEvent {}
 
-class SetRouterLocation extends SetupEvent {
-  const SetRouterLocation({required this.location});
+class SetRouterProperties extends SetupEvent {
+  const SetRouterProperties({required this.properties});
 
-  final String location;
+  final List<NodeProperties> properties;
 }

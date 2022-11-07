@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/page/setup/view/_view.dart';
+import 'package:linksys_moab/page/setup/view/nodes_not_all_added_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 
 
 import 'base_path.dart';
@@ -14,13 +16,16 @@ abstract class SetupPath<P> extends BasePath {
       case SetupCustomizeSSIDPath:
         return const CustomizeWifiView();
       case SetupNodesDonePath:
-        return const NodesSuccessView();
+        return const SetupNodeListView();
       case SetupFinishPath:
         return SetupFinishedView(
           args: args,
         );
-      case SetupNodesDoneUnFoundPath:
-        return const NodesSuccessView();
+      case SetupNodeListPath:
+        return SetupNodeListView(
+          next: next,
+          args: args,
+        );
       case SetupAddingNodesPath:
         return const AddingNodesView();
       default:
@@ -38,7 +43,7 @@ class SetupNodesDonePath extends SetupPath {
   PathConfig get pathConfig => super.pathConfig..removeFromHistory = false;
 }
 
-class SetupNodesDoneUnFoundPath extends SetupPath {}
+class SetupNodeListPath extends SetupPath {}
 
 class SetupFinishPath extends SetupPath {}
 
@@ -99,7 +104,7 @@ class SetupParentQrCodeScanPath extends SetupParentPath {
 
 class SetupParentManualPath extends SetupParentPath {}
 
-class SetupParentLocationPath extends SetupParentPath {
+class SetupParentLocationPath extends SetupParentPath with ReturnablePath {
   @override
   PageConfig get pageConfig =>
       super.pageConfig..isFullScreenDialog = true;
@@ -119,29 +124,37 @@ abstract class SetupChildPath extends SetupPath {
   @override
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
-      case SetupNthChildPath:
-        return AddChildFinishedView();
       case SetupNthChildQrCodePath:
         return const AddChildScanQRCodeView();
       case SetupNthChildPlugPath:
         return AddChildPlugView();
       case SetupNthChildSearchingPath:
-        return const AddChildSearchingView();
+        return AddChildSearchingView(
+          next: next,
+          args: args,
+        );
       case SetupNthChildLocationPath:
         return const SetLocationView();
       case SetupNthChildPlacePath:
         return PlaceNodeView(
-          isAddOnNodes: true,
+          next: next,
+          args: args,
         );
       case NodesDoesntFindPath:
-        return const NodesDoesntFindView();
+        return NodesDoesntFindView(
+          next: next,
+          args: args,
+        );
+      case NodesNotAllAddedPath:
+        return NodesNotAllAddedView(
+          next: next,
+          args: args,
+        );
       default:
         return const Center();
     }
   }
 }
-
-class SetupNthChildPath extends SetupChildPath {}
 
 class SetupNthChildQrCodePath extends SetupChildPath {}
 
@@ -161,3 +174,4 @@ class SetupNthChildLocationPath extends SetupChildPath {}
 class SetupNthChildPlacePath extends SetupChildPath {}
 
 class NodesDoesntFindPath extends SetupChildPath{}
+class NodesNotAllAddedPath extends SetupChildPath{}

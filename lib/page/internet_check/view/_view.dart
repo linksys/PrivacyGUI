@@ -4,7 +4,7 @@ export 'unplug_modem_view.dart';
 export 'enter_static_ip_view.dart'; 
 export 'plug_modem_back_view.dart'; 
 export 'enter_isp_settings_view.dart'; 
-export 'internet_connected_view.dart'; 
+export '../../components/customs/internet_connected_view.dart';
 export 'learn_battery_modem_view.dart'; 
 export 'no_internet_options_view.dart'; 
 export 'select_isp_settings_view.dart'; 
