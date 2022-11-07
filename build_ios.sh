@@ -19,11 +19,10 @@ function buildSimulatorApp() {
     mv "./build/ios/iphonesimulator/moab_app_simulator.app.zip" "./build/ios/ipa/moab_app_simulator.app.zip"
 }
 
-buildNumber=$1
-inHouseBuild=$2
-appStoreBuild=$3
-((inHouseBuildNumber=510000+buildNumber))
-((appStoreBuildNumber=530000+buildNumber))
+inHouseBuildNumber=$1
+appStoreBuildNumber=$2
+inHouseBuild=$3
+appStoreBuild=$4
 pod repo update
 flutter --version
 flutter pub deps

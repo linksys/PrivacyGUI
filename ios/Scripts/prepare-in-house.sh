@@ -21,8 +21,7 @@ function updateLinks() {
   sed -i '' "s/{version}/$version/g" "$manifestPath"
   sed -i '' "s/Runner/Moab App $version/g" "$manifestPath"
 }
-tmp=$1
-((version=510000+tmp))
+version=$1
 
 copyInHouseAssets
 updateLinks "$version"
