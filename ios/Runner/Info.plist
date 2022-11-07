@@ -69,5 +69,7 @@
 	<false/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Need for bluetooth permission</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
