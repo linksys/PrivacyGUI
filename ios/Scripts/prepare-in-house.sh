@@ -25,4 +25,4 @@ version=$1
 
 copyInHouseAssets
 updateLinks "$version"
-print "https://linksys-moab.s3.us-west-1.amazonaws.com/${version}/install.html"
+echo "https://linksys-moab.s3.us-west-1.amazonaws.com/${version}/install.html"
