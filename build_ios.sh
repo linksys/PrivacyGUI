@@ -28,6 +28,7 @@ pod repo update
 flutter --version
 flutter pub deps
 flutter clean
+flutter pub upgrade --major-versions
 if [ "${inHouseBuild}" == "true" ] ; then
   if ! buildInHouse "$buildNumber"; then
     echo InHouse "$buildNumber" build failed
