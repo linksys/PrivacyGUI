@@ -47,13 +47,13 @@ dependencies:
   equatable: ^2.0.0
   connectivity_plus: ^2.3.9
   network_info_plus: ^2.3.2
-  permission_handler: ^9.2.0
+  permission_handler: 10.2.0
   device_info_plus: ^3.2.3
   pin_code_fields: ^7.4.0
-  firebase_analytics: 10.0.4
-  firebase_crashlytics: 3.0.4
-  firebase_core: 2.1.1
-  firebase_messaging: 14.0.3
+  firebase_core: ^1.17.1
+  firebase_messaging: ^11.4.1
+  firebase_analytics: ^9.1.9
+  firebase_crashlytics: ^2.8.1
   flutter_local_notifications: 12.0.3
   logger: ^1.1.0
   path_provider: ^2.0.11
