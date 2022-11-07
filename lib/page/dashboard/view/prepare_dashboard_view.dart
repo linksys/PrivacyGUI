@@ -41,15 +41,18 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
   }
 
   _checkSelfNetworks() async {
+    await context.read<ConnectivityCubit>().forceUpdate();
     if (context.read<AuthBloc>().state is AuthCloudLoginState) {
-      await context.read<ConnectivityCubit>().forceUpdate();
-      await context.read<ProfilesCubit>().fetchProfiles();
-      await context.read<AccountCubit>().fetchAccount();
-      // await context.read<ConnectivityCubit>().connectToBroker();
-      // TODO #REFACTOR select network and apply new region
-      await context.read<NetworkCubit>().getNetworks(accountId: context.read<AccountCubit>().state.id);
-      NavigationCubit.of(context).clearAndPush(SelectNetworkPath());
-      return;
+      if (context.read<NetworkCubit>().state.selected == null) {
+        await context.read<AccountCubit>().fetchAccount();
+        // TODO #REFACTOR select network and apply new region
+        await context.read<NetworkCubit>().getNetworks(accountId: context.read<AccountCubit>().state.id);
+        NavigationCubit.of(context).clearAndPush(SelectNetworkPath());
+      } else {
+        await context.read<ConnectivityCubit>().connectToBroker();
+        await context.read<ProfilesCubit>().fetchProfiles();
+        NavigationCubit.of(context).clearAndPush(DashboardHomePath());
+      }
     } else {
       await context.read<ConnectivityCubit>().connectToLocalBroker();
       await context.read<NetworkCubit>().getDeviceInfo();

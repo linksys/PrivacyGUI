@@ -73,19 +73,22 @@ void main() async {
   FlutterError.onError = (FlutterErrorDetails details) {
     logger.e('Uncaught Flutter Error:\n', details);
     FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-    if (kReleaseMode) {
-      // Only exit app on release mode
-      exit(1);
-    }
+    // if (kReleaseMode) {
+    //   // Only exit app on release mode
+    //   exit(1);
+    // }
+    // exit(1);
+
   };
   PlatformDispatcher.instance.onError = (error, stack) {
     logger.e('Uncaught Error:\n', error, stack);
     logger.e(stack.toString());
     FirebaseCrashlytics.instance.recordError(error, stack);
-    if (kReleaseMode) {
-      // Only exit app on release mode
-      exit(1);
-    }
+    // if (kReleaseMode) {
+    //   // Only exit app on release mode
+    //   exit(1);
+    // }
+    // exit(1);
     return true;
   };
   initBetterActions();
