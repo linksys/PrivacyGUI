@@ -27,7 +27,9 @@ appStoreBuild=$3
 pod repo update
 flutter --version
 flutter pub deps
+echo "Flutter clean..."
 flutter clean
+echo "upgrade major versions..."
 flutter pub upgrade --major-versions
 if [ "${inHouseBuild}" == "true" ] ; then
   if ! buildInHouse "$buildNumber"; then
