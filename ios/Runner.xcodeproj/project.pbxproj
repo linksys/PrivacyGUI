@@ -399,10 +399,11 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = RP6FWVVM7B;
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = RP6FWVVM7B;
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = ADXWYZN8W6;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -412,7 +413,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.linksys.moab.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "Moab Development";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Moab EE (Development)";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Moab (App Store)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -566,6 +567,7 @@
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = RP6FWVVM7B;
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = ADXWYZN8W6;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -575,6 +577,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.linksys.moab.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "Moab In House";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Moab (App Store)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";

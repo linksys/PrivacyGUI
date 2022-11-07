@@ -2,10 +2,18 @@
 function buildInHouse() {
   version=$1
   echo "start building in house $version"
-  flutter build ipa --export-options-plist=ios/Scripts/Moab-EE-InHouse.plist --dart-define=cloud_env=qa
+  flutter build ipa --export-options-plist=ios/Scripts/Moab-EE-InHouse.plist --flavor=Enterprise --dart-define=cloud_env=qa
   mv "./build/ios/ipa/Moab.ipa" "./build/ios/ipa/moab_app_ee_distribution.ipa"
   copyInHouseAssets
   updateLinks "$version"
+}
+
+function buildAppStore() {
+  version=$1
+  echo "start building app store $version"
+  flutter build ipa --export-options-plist=ios/Scripts/Moab-Distribution-app-store.plist --flavor=Moab --dart-define=cloud_env=qa
+  mv "./build/ios/ipa/Moab.ipa" "./build/ios/ipa/moab_app_distribution_app_store.ipa"
+  sh ./ios/Scripts/upload-build.sh "./build/ios/ipa/" "moab_app_distribution_app_store" "austin.chang.chia.hao@gmail.com" "kesx-krfb-ipom-ijys"
 }
 
 function buildSimulatorApp() {
@@ -50,7 +58,11 @@ if ! buildInHouse "$version"; then
   echo InHouse "$version" build failed
   exit 1
 fi
-if ! buildSimulatorApp "$version"; then
-    echo Simulator app "$version" build failed
-    exit 1
+if ! buildAppStore "$version"; then
+  echo AppStore "$version" build failed
+  exit 1
 fi
+#if ! buildSimulatorApp "$version"; then
+#    echo Simulator app "$version" build failed
+#    exit 1
+#fi
