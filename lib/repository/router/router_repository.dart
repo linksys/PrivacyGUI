@@ -54,6 +54,7 @@ class RouterRepository with StateStreamListener {
   MqttClientWrap? get mqttClient => _mqttClient;
 
   MqttConnectType _connectType = MqttConnectType.none;
+  MqttConnectType get connectType => _connectType;
 
   final String clientId = Utils.generateMqttClintId();
 
@@ -69,6 +70,8 @@ class RouterRepository with StateStreamListener {
   RouterType _routerType = RouterType.others;
 
   final List<MqttConnectionCallback> _callbacks = [];
+
+
 
   void addMqttConnectionCallback(MqttConnectionCallback callback) {
     if (_callbacks.contains(callback)) {
