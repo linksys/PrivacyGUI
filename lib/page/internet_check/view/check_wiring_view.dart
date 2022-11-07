@@ -4,13 +4,15 @@ import 'package:linksys_moab/page/components/base_components/base_page_view.dart
 import 'package:linksys_moab/page/components/base_components/button/primary_button.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/navigation_cubit.dart';
 
 class CheckWiringView extends StatelessWidget {
   const CheckWiringView({Key? key}): super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
+    return BasePageView.noNavigationBar(
       child: BasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).check_wiring_title,
@@ -48,10 +50,10 @@ class CheckWiringView extends StatelessWidget {
         footer: PrimaryButton(
           text: 'Check again',
           onPress: () {
-            //TODO: Go to next page
+            NavigationCubit.of(context).push(CheckNodeInternetPath());
           },
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

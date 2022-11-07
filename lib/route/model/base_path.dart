@@ -24,6 +24,7 @@ class PageConfig {
   bool isOpaque = true;
   bool isBackDisable = false;
   bool isHideBottomNavBar = true;
+  bool isBackAvailable = true;
 }
 
 mixin ReturnablePath<T> {

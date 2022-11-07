@@ -60,7 +60,7 @@ class _WaitModemDisconnectViewState extends State<WaitModemDisconnectView> {
             ),
           ],
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

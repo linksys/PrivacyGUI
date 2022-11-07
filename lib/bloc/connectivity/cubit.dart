@@ -75,8 +75,8 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
     return state;
   }
 
-  Future<ConnectivityState> _internetCheckCallback(
-      bool hasConnection, ConnectivityInfo connectivityInfo, AvailabilityInfo? cloudInfo) async {
+  Future<ConnectivityState> _internetCheckCallback(bool hasConnection,
+      ConnectivityInfo connectivityInfo, AvailabilityInfo? cloudInfo) async {
     logger.d('_internetCheckCallback: $hasConnection, $connectivityInfo');
 
     // if (hasConnection) {
@@ -89,8 +89,7 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
     }
     logger.d('_internetCheckCallback: $routerType');
     return state.copyWith(
-        connectivityInfo:
-            connectivityInfo.copyWith(routerType: routerType),
+        connectivityInfo: connectivityInfo.copyWith(routerType: routerType),
         hasInternet: hasConnection,
         cloudAvailabilityInfo: cloudInfo);
   }
@@ -103,12 +102,15 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
   }
 
   Future<RouterType> _testRouterType(String? newIp) async {
-    bool canDownloadCert = await _routerRepository.testLocalCert(gatewayIp: newIp).onError((error, stackTrace) => false);
+    bool canDownloadCert = await _routerRepository
+        .testLocalCert(gatewayIp: newIp)
+        .onError((error, stackTrace) => false);
     if (!canDownloadCert) {
       return RouterType.others;
     }
     logger.d('test connect to local with cloud cert');
-    bool isManaged = await _routerRepository.connectToLocalWithCloudCert(gatewayIp: newIp);
+    bool isManaged =
+        await _routerRepository.connectToLocalWithCloudCert(gatewayIp: newIp);
     return isManaged ? RouterType.managedMoab : RouterType.moab;
   }
 
@@ -132,14 +134,10 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
 
   Future<RouterConfiguredData> isRouterConfigured() async {
     final results = await _routerRepository.fetchIsConfigured();
-    bool isDefaultPassword = results
-        .firstWhere(
-            (element) => element.output.containsKey('isAdminPasswordDefault'))
-        .output['isAdminPasswordDefault'];
-    bool isSetByUser = results
-        .firstWhere(
-            (element) => element.output.containsKey('isAdminPasswordSetByUser'))
-        .output['isAdminPasswordSetByUser'];
+    bool isDefaultPassword =
+        results['isAdminPasswordDefault']?.output['isAdminPasswordDefault'];
+    bool isSetByUser =
+        results['isAdminPasswordSetByUser']?.output['isAdminPasswordSetByUser'];
     return RouterConfiguredData(
         isDefaultPassword: isDefaultPassword, isSetByUser: isSetByUser);
   }

@@ -74,7 +74,7 @@ class SetupFinishedView extends ArgumentsStatelessView {
             NavigationCubit.of(context).push(PrepareDashboardPath());
           },
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

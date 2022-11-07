@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/customs/_customs.dart';
-import 'package:linksys_moab/util/validator.dart';
+import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
 import 'input_field.dart';
 

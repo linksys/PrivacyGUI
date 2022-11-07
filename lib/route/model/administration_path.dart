@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/_administration.dart';
+import 'package:linksys_moab/page/dashboard/view/administration/internet_settings/connection_type_selection_view.dart';
+import 'package:linksys_moab/page/dashboard/view/administration/internet_settings/internet_settings_view.dart';
+import 'package:linksys_moab/page/dashboard/view/administration/lan/lan_view.dart';
+import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/port_forwarding_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 
@@ -14,11 +18,22 @@ class AdministrationPath extends DashboardPath {
       case FirmwareUpdateViewPath:
         return const FirmwareUpdateView();
       case TimeZoneViewPath:
-        return const TimeZoneView();
+        return const TimezoneView();
       case IpDetailsViewPath:
         return const IpDetailsView();
       case WebUiAccessViewPath:
         return const WebUiAccessView();
+      case InternetSettingsPath:
+        return const InternetSettingsView();
+      case ConnectionTypeSelectionPath:
+        return ConnectionTypeSelectionView(
+          next: next,
+          args: args,
+        );
+      case LANSettingsPath:
+        return LANView();
+      case PortForwardingPath:
+        return PortForwardingView();
       // case CloudPasswordValidationPath:
       //   return CloudPasswordValidationView(
       //     args: args,
@@ -47,3 +62,11 @@ class TimeZoneViewPath extends AdministrationPath {}
 class IpDetailsViewPath extends AdministrationPath {}
 
 class WebUiAccessViewPath extends AdministrationPath {}
+
+class InternetSettingsPath extends AdministrationPath {}
+
+class ConnectionTypeSelectionPath extends AdministrationPath with ReturnablePath {}
+
+class LANSettingsPath extends AdministrationPath {}
+
+class PortForwardingPath extends AdministrationPath {}

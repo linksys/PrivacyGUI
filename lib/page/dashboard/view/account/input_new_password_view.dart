@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
-import 'package:linksys_moab/bloc/auth/event.dart';
-import 'package:linksys_moab/bloc/auth/state.dart';
-import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/layouts/basic_header.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/account_path.dart';
@@ -18,7 +12,6 @@ import 'package:linksys_moab/route/_route.dart';
 
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
-import 'package:linksys_moab/util/validator.dart';
 
 class InputNewPasswordView extends ArgumentsStatefulView {
   const InputNewPasswordView({Key? key, super.args, super.next})

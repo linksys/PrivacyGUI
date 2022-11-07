@@ -150,7 +150,7 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
             },
           ),
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

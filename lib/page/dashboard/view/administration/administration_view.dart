@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
@@ -7,6 +9,8 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+
+import 'common_widget.dart';
 
 class AdministrationView extends ArgumentsStatefulView {
   const AdministrationView({Key? key, super.args, super.next})
@@ -20,9 +24,9 @@ class _AdministrationViewState extends State<AdministrationView> {
   @override
   Widget build(BuildContext context) {
     return BasePageView(
+      padding: EdgeInsets.zero,
       scrollable: true,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
@@ -34,69 +38,121 @@ class _AdministrationViewState extends State<AdministrationView> {
         content: Column(
           children: [
             box16(),
-            administrationCell(
-              SettingTile(
-                title: _title(
-                    getAppLocalizations(context).router_password_and_hint),
-                value: const Text(''),
-                icon: Image.asset('assets/images/icon_chevron.png'),
-                onPress: () =>
-                    NavigationCubit.of(context).push(RouterPasswordViewPath()),
+            administrationSection(
+              title: getAppLocalizations(context).general.toUpperCase(),
+              content: Column(
+                children: [
+                  administrationTile(
+                    title: _title(
+                        getAppLocalizations(context).router_password_and_hint),
+                    value: const Text(''),
+                    icon: Image.asset('assets/images/icon_chevron.png'),
+                    onPress: () => NavigationCubit.of(context)
+                        .push(RouterPasswordViewPath()),
+                  ),
+                  administrationTile(
+                    title: _title(getAppLocalizations(context).time_zone),
+                    value: const Text(''),
+                    icon: Image.asset('assets/images/icon_chevron.png'),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(TimeZoneViewPath()),
+                  ),
+                  administrationTile(
+                    title: _title(getAppLocalizations(context).ip_details),
+                    value: const Text(''),
+                    icon: Image.asset('assets/images/icon_chevron.png'),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(IpDetailsViewPath()),
+                  ),
+                ],
               ),
             ),
-            administrationCell(
-              SettingTileTwoLine(
-                title: _title(getAppLocalizations(context).time_zone),
-                // TODO: Get data from cubit
-                value: _subTitle('Pacific Time (USA & Canada)\nGMT -08:00'),
-                icon: Image.asset('assets/images/icon_chevron.png'),
-                onPress: () =>
-                    NavigationCubit.of(context).push(TimeZoneViewPath()),
+            administrationSection(
+              title: getAppLocalizations(context).advanced.toUpperCase(),
+              content: Column(
+                children: [
+                  administrationTile(
+                    title:
+                        _title(getAppLocalizations(context).internet_settings),
+                    value: const Text(''),
+                    icon: Image.asset('assets/images/icon_chevron.png'),
+                    onPress: () => NavigationCubit.of(context)
+                        .push(InternetSettingsPath()),
+                  ),
+                  administrationTile(
+                    title: _title(getAppLocalizations(context).lan),
+                    value: const Text(''),
+                    icon: Image.asset('assets/images/icon_chevron.png'),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(LANSettingsPath()),
+                  ),
+                  administrationTile(
+                    title: _title(getAppLocalizations(context).port_forwarding),
+                    value: const Text(''),
+                    icon: Image.asset('assets/images/icon_chevron.png'),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(UnknownPath()),
+                  ),
+                  administrationTile(
+                    title: _title(getAppLocalizations(context).mac_filtering),
+                    value: const Text(''),
+                    icon: Image.asset('assets/images/icon_chevron.png'),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(UnknownPath()),
+                  ),
+                  administrationTile(
+                    title: _title(getAppLocalizations(context).vlan),
+                    value: const Text(''),
+                    icon: Image.asset('assets/images/icon_chevron.png'),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(UnknownPath()),
+                  ),
+                  administrationTile(
+                    title:
+                        _title(getAppLocalizations(context).advanced_routing),
+                    value: const Text(''),
+                    icon: Image.asset('assets/images/icon_chevron.png'),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(UnknownPath()),
+                  ),
+                  administrationTile(
+                    title: _title(getAppLocalizations(context).other),
+                    value: const Text(''),
+                    icon: Image.asset('assets/images/icon_chevron.png'),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(UnknownPath()),
+                  ),
+                ],
               ),
-              padding: const EdgeInsets.symmetric(vertical: 15),
             ),
-            administrationCell(
-              SettingTile(
-                title: _title(getAppLocalizations(context).ip_details),
-                value: const Text(''),
-                icon: Image.asset('assets/images/icon_chevron.png'),
-                onPress: () =>
-                    NavigationCubit.of(context).push(IpDetailsViewPath()),
+            administrationSection(
+              title: getAppLocalizations(context).firmware.toUpperCase(),
+              content: Column(
+                children: [
+                  administrationTile(
+                    title: _title(getAppLocalizations(context)
+                        .automatic_firmware_update),
+                    value: const Text('On'),
+                    icon: Image.asset('assets/images/icon_chevron.png'),
+                    onPress: () => NavigationCubit.of(context)
+                        .push(RouterPasswordViewPath()),
+                  ),
+                  administrationTileDesc(
+                    title: _title(getAppLocalizations(context)
+                        .node_detail_label_firmware_version),
+                    value: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _subTitle(
+                            getAppLocalizations(context).up_to_date),
+                        Image.asset(
+                            'assets/images/icon_check_green.png')
+                      ],
+                    ),
+                    description: _subTitle(context.read<NetworkCubit>().state.selected!.deviceInfo!.firmwareVersion),
+                  )
+                ],
               ),
-            ),
-            box16(),
-            _divider(),
-            _firmwareVersion(),
-            administrationCell(
-              SettingTile(
-                title: _title(
-                    getAppLocalizations(context).automatic_firmware_update),
-                // TODO: Get data from cubit
-                value: _subTitle('On', fontSize: 14),
-                icon: Image.asset('assets/images/icon_chevron.png'),
-                onPress: () =>
-                    NavigationCubit.of(context).push(FirmwareUpdateViewPath()),
-              ),
-            ),
-            _divider(),
-            administrationCell(
-              SettingTile(
-                title: _title(getAppLocalizations(context).web_ui_access),
-                value: _subTitle('On', fontSize: 14),
-                icon: Image.asset('assets/images/icon_chevron.png'),
-                onPress: () =>
-                    NavigationCubit.of(context).push(WebUiAccessViewPath()),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 23),
-            ),
-            administrationCell(
-              SettingTile(
-                title: _title(getAppLocalizations(context).advanced_settings),
-                value: const Text(''),
-                icon: Image.asset('assets/images/icon_chevron.png'),
-                onPress: () {},
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 23),
             ),
             box36(),
           ],

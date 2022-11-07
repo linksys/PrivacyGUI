@@ -132,6 +132,9 @@ _networkSettingsSection(BuildContext context) => DashboardSettingsSection(
       title: 'NETWORK',
       items: [
         DashboardSettingsItem(title: 'WiFi', path: WifiSettingsOverviewPath()),
+        DashboardSettingsItem(title: getAppLocalizations(context).administration, path: AdministrationViewPath()),
+        DashboardSettingsItem(title: 'Priority', path: UnknownPath()),
+        DashboardSettingsItem(title: 'Smart home', path: UnknownPath()),
         DashboardSettingsItem(
           title: 'Internet schedule',
           path: ProfileListPath()..args = {'category': PService.internetSchedule},
@@ -141,9 +144,6 @@ _networkSettingsSection(BuildContext context) => DashboardSettingsSection(
           path: ProfileListPath()..args = {'category': PService.contentFilter},
         ),
         DashboardSettingsItem(title: 'Profiles', path: ProfileListPath()),
-        DashboardSettingsItem(title: 'Priority', path: UnknownPath()),
-        DashboardSettingsItem(title: getAppLocalizations(context).administration, path: AdministrationViewPath()),
-        DashboardSettingsItem(title: 'Smart home', path: UnknownPath()),
       ],
     );
 //

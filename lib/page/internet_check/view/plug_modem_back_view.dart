@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:linksys_moab/bloc/internet_check/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
@@ -7,7 +8,7 @@ import 'package:linksys_moab/route/model/internet_check_path.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
 
 class PlugModemBackView extends StatelessWidget {
-  const PlugModemBackView({Key? key}): super(key: key);
+  const PlugModemBackView({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -23,10 +24,13 @@ class PlugModemBackView extends StatelessWidget {
         footer: PrimaryButton(
           text: getAppLocalizations(context).next,
           onPress: () {
-            NavigationCubit.of(context).push(CheckNodeInternetPath());
+            NavigationCubit.of(context).push(CheckNodeInternetPath()
+              ..args = {
+                'isPlugModemBack': true,
+              });
           },
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

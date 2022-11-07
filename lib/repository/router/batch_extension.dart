@@ -3,7 +3,7 @@ import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 
 extension BatchCommands on RouterRepository {
-  Future<List<JnapSuccess>> fetchIsConfigured() async {
+  Future<Map<String, JnapSuccess>> fetchIsConfigured() async {
     return batchCommands([
       CommandWrap(
         action: JNAPAction.isAdminPasswordSetByUser.actionValue,
@@ -16,7 +16,37 @@ extension BatchCommands on RouterRepository {
     ]);
   }
 
-  Future<List<JnapSuccess>> pollingData() async {
+  Future<Map<String, JnapSuccess>> fetchIpDetails() async {
+    return batchCommands([
+      CommandWrap(
+        action: JNAPAction.getDevices.actionValue,
+        needAuth: false,
+      ),
+      CommandWrap(
+        action: JNAPAction.getWANStatus.actionValue,
+        needAuth: false,
+      ),
+    ]);
+  }
+
+  Future<Map<String, JnapSuccess>> fetchInternetSettings() async {
+    return batchCommands([
+      CommandWrap(
+        action: JNAPAction.getIPv6Settings.actionValue,
+        needAuth: false,
+      ),
+      CommandWrap(
+        action: JNAPAction.getWANSettings.actionValue,
+        needAuth: false,
+      ),
+      CommandWrap(
+        action: JNAPAction.getWANStatus.actionValue,
+        needAuth: false,
+      ),
+    ]);
+  }
+
+  Future<Map<String, JnapSuccess>> pollingData() async {
     return batchCommands([
       //TODO: We need to check if the certain actions and services are available before adding them into the list
       CommandWrap(
@@ -29,24 +59,24 @@ extension BatchCommands on RouterRepository {
       ),
       CommandWrap(
         action: JNAPAction.getNodesWirelessNetworkConnections.actionValue,
-        needAuth: true,
+        needAuth: false,
       ),
       CommandWrap(
         action: JNAPAction.getRadioInfo.actionValue,
-        needAuth: true,
+        needAuth: false,
       ),
       CommandWrap(
         action: JNAPAction.getDevices.actionValue,
-        needAuth: true,
+        needAuth: false,
       ),
       CommandWrap(
         action: JNAPAction.getHealthCheckResults.actionValue,
-        needAuth: true,
+        needAuth: false,
         data: {'includeModuleResults': true},
       ),
       CommandWrap(
         action: JNAPAction.getSupportedHealthCheckModules.actionValue,
-        needAuth: true,
+        needAuth: false,
       ),
     ]);
   }

@@ -70,7 +70,7 @@ class _SetLocationViewState extends State<SetLocationView> {
                       ),
                   ],
                 ),
-                alignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
               )
             : BasicLayout(
                 header: BasicHeader(
@@ -97,7 +97,7 @@ class _SetLocationViewState extends State<SetLocationView> {
                     ),
                   ],
                 ),
-                alignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
               ));
   }
 

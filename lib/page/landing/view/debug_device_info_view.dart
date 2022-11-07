@@ -32,7 +32,7 @@ class _DebugDeviceInfoViewState extends State<DebugDeviceInfoView> {
           title: 'Device Information',
         ),
         content: _information(context),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

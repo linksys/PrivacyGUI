@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/model/router/network.dart';
+import 'package:linksys_moab/model/router/wan_settings.dart';
 
 enum InternetCheckStatus {
   init,
@@ -13,6 +14,7 @@ enum InternetCheckStatus {
   noInternet,
   connected,
   manually,
+  checkVLAN,
 }
 
 class InternetCheckState extends Equatable {
@@ -23,6 +25,9 @@ class InternetCheckState extends Equatable {
     this.wanConnectionStatus = 'Disconnected',
     this.isDetectingWANType = false,
     this.isInternetConnected = false,
+    this.routerWANSettings,
+    this.isSetup = true,
+    this.afterPlugModemBack = false,
   });
 
   final InternetCheckStatus status;
@@ -31,6 +36,11 @@ class InternetCheckState extends Equatable {
   final String wanConnectionStatus;
   final bool isDetectingWANType;
   final bool isInternetConnected;
+  final bool isSetup;
+  final bool afterPlugModemBack;
+
+  // For PPPoE and Static
+  final RouterWANSettings? routerWANSettings;
 
   @override
   List<Object?> get props => [
@@ -40,6 +50,9 @@ class InternetCheckState extends Equatable {
         wanConnectionStatus,
         isDetectingWANType,
         isInternetConnected,
+        runtimeType,
+        isSetup,
+        afterPlugModemBack,
       ];
 
   InternetCheckState copyWith({
@@ -49,6 +62,9 @@ class InternetCheckState extends Equatable {
     String? wanConnectionStatus,
     bool? isDetectingWANType,
     bool? isInternetConnected,
+    RouterWANSettings? routerWANSettings,
+    bool? isSetup,
+    bool? afterPlugModemBack,
   }) {
     return InternetCheckState(
       status: status ?? this.status,
@@ -57,6 +73,9 @@ class InternetCheckState extends Equatable {
       wanConnectionStatus: wanConnectionStatus ?? this.wanConnectionStatus,
       isDetectingWANType: isDetectingWANType ?? this.isDetectingWANType,
       isInternetConnected: isInternetConnected ?? this.isInternetConnected,
+      routerWANSettings: routerWANSettings ?? this.routerWANSettings,
+      isSetup: isSetup ?? this.isSetup,
+      afterPlugModemBack: afterPlugModemBack ?? this.afterPlugModemBack,
     );
   }
 }

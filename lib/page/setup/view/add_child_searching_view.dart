@@ -71,7 +71,7 @@ class _AddChildSearchingViewState extends State<AddChildSearchingView> {
             mainAxisAlignment: MainAxisAlignment.center,
           ),
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

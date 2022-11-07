@@ -50,7 +50,9 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
         NavigationCubit.of(context).clearAndPush(SelectNetworkPath());
       } else {
         await context.read<ConnectivityCubit>().connectToBroker();
+        await context.read<NetworkCubit>().getDeviceInfo();
         await context.read<ProfilesCubit>().fetchProfiles();
+        await context.read<NetworkCubit>().getDeviceInfo();
         NavigationCubit.of(context).clearAndPush(DashboardHomePath());
       }
     } else {

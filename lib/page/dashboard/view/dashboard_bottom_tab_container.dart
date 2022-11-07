@@ -53,7 +53,7 @@ class _DashboardViewState extends State<DashboardBottomTabContainer> with DebugO
               }
             },
             child: BasicLayout(
-              alignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               content: widget.navigator,
             ),
           ),

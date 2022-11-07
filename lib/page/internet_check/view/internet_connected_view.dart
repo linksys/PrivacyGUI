@@ -39,7 +39,7 @@ class _InternetConnectedViewState extends State<InternetConnectedView> {
         content: Center(
           child: image,
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

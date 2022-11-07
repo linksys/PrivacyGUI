@@ -13,6 +13,7 @@ import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
+import 'package:linksys_moab/network/better_action.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_config.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
@@ -193,7 +194,6 @@ class RouterRepository with StateStreamListener {
       await downloadRemoteCert();
       cert = pref.getString(moabPrefRemoteCaCert) ?? '';
     }
-    logger.d('ca root: $cert');
 
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
       await _mqttClient?.disconnect();
@@ -325,6 +325,19 @@ class RouterRepository with StateStreamListener {
     }
   }
 
+  Stream<JnapResult> scheduledCommand({
+    required JNAPAction action,
+    int retryDelayInSec = 5,
+    int maxRetry = 10,
+    bool Function()? condition,
+  }) {
+    final command = createCommand(action.actionValue);
+    return command
+        .publishWithRetry(mqttClient!,
+        retryDelayInSec: retryDelayInSec, maxRetry: maxRetry, condition: condition)
+        .map((event) => handleJnapResult(event.body));
+  }
+
   JnapSuccess handleJnapResult(JnapResult result) {
     if (result is JnapSuccess) {
       return result;
@@ -333,16 +346,16 @@ class RouterRepository with StateStreamListener {
     }
   }
 
-  Future<List<JnapSuccess>> batchCommands(List<CommandWrap> commands) async {
-    return Future.wait(
-      commands.map(
-        (e) => createCommand(e.action, needAuth: e.needAuth, data: e.data)
-            .publish(mqttClient!)
-            .then(
-              (value) => handleJnapResult(value.body),
-            ),
-      ),
-    );
+  Future<Map<String, JnapSuccess>> batchCommands(List<CommandWrap> commands) async {
+    Map<String, JnapSuccess> _map = {};
+    for (CommandWrap e in commands) {
+      _map[e.action] = await createCommand(e.action, needAuth: e.needAuth, data: e.data)
+          .publish(mqttClient!)
+          .then(
+            (value) => handleJnapResult(value.body),
+      );
+    }
+    return _map;
   }
 
   @override

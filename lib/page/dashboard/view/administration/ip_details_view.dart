@@ -32,7 +32,7 @@ class IpDetailsView extends ArgumentsStatelessView {
         ],
       ),
       body: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         content: Column(
           children: [
             box24(),

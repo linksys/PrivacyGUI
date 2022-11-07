@@ -119,7 +119,7 @@ class _RouterPasswordViewState extends State<RouterPasswordView> {
 
   _createRouterPasswordView() {
     return BasicLayout(
-      alignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       header: Text(
         getAppLocalizations(context).set_a_router_password,
         style: const TextStyle(

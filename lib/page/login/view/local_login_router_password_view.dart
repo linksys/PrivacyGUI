@@ -85,7 +85,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
 
   Widget _enterRouterPasswordView(BuildContext context) {
     return BasicLayout(
-      alignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       header: BasicHeader(
         title: getAppLocalizations(context).local_login_title,
       ),

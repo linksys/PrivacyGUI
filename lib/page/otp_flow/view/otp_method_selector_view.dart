@@ -34,7 +34,7 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
   Widget _contentView(OtpState state) {
     return BasePageView(
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: _createTitle(state),
           description: _createDescription(state),

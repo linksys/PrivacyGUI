@@ -1,5 +1,4 @@
 
-import 'package:linksys_moab/util/validator.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:test/test.dart';
 

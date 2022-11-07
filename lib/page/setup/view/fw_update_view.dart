@@ -26,7 +26,7 @@ class FwUpdateView extends StatelessWidget {
         content: Center(
           child: image,
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

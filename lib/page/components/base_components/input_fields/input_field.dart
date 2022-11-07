@@ -41,7 +41,7 @@ class InputField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
+        titleText.isEmpty ? Center() : Padding(
           child: Text(
             titleText,
             style: Theme.of(context).textTheme.headline4?.copyWith(

@@ -63,7 +63,7 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: getAppLocalizations(context).enter_password,
         ),

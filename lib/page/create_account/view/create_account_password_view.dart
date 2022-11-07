@@ -11,8 +11,8 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
-import 'package:linksys_moab/util/validator.dart';
 
 class CreateAccountPasswordView extends ArgumentsStatefulView {
   const CreateAccountPasswordView({Key? key, super.args}) : super(key: key);
@@ -109,7 +109,7 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
           ],
           crossAxisAlignment: CrossAxisAlignment.start,
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

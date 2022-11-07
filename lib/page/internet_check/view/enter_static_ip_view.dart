@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/internet_check/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/route/model/internet_check_path.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
-import 'package:linksys_moab/util/validator.dart';
+import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
 class EnterStaticIpView extends StatefulWidget {
-  const EnterStaticIpView({Key? key}): super(key: key);
+  const EnterStaticIpView({Key? key}) : super(key: key);
 
   @override
   State<EnterStaticIpView> createState() => _EnterStaticIpViewState();
@@ -20,7 +21,12 @@ class _EnterStaticIpViewState extends State<EnterStaticIpView> {
   final TextEditingController gatewayController = TextEditingController();
   final TextEditingController dns1Controller = TextEditingController();
   final TextEditingController dns2Controller = TextEditingController();
-  final IpAddressRule ipValidator = IpAddressRule();
+  final IpAddressRequiredValidator ipAddressValidator = IpAddressRequiredValidator();
+  final SubnetValidator subnetValidator = SubnetValidator();
+  final IpAddressRequiredValidator gatewayValidator = IpAddressRequiredValidator();
+  final IpAddressRequiredValidator dns1Validator = IpAddressRequiredValidator();
+  final IpAddressValidator dns2Validator = IpAddressValidator();
+
   bool hasOtherErrors = false;
   bool isIpInvalid = false;
   bool isSubnetInvalid = false;
@@ -28,40 +34,61 @@ class _EnterStaticIpViewState extends State<EnterStaticIpView> {
   bool isDns1Invalid = false;
   bool isDns2Invalid = false;
 
-  void _validateInputData() {
-    if (!ipValidator.validate(ipController.text)) {
+  void _validateInputData() async {
+    if (!ipAddressValidator.validate(ipController.text)) {
       setState(() {
         isIpInvalid = true;
       });
     }
 
-    if (!ipValidator.validate(subnetController.text)) {
+    if (!subnetValidator.validate(subnetController.text)) {
       setState(() {
         isSubnetInvalid = true;
       });
     }
 
-    if (!ipValidator.validate(gatewayController.text)) {
+    if (!gatewayValidator.validate(gatewayController.text)) {
       setState(() {
         isGatewayInvalid = true;
       });
     }
 
-    if (!ipValidator.validate(dns1Controller.text)) {
+    if (!dns1Validator.validate(dns1Controller.text)) {
       setState(() {
         isDns1Invalid = true;
       });
     }
 
-    if (!ipValidator.validate(dns2Controller.text)) {
+    // DNS2 is optional
+    if (!dns2Validator.validate(dns2Controller.text)) {
       setState(() {
         isDns2Invalid = true;
       });
     }
 
-    if (!isIpInvalid && !isSubnetInvalid && !isGatewayInvalid && !isDns1Invalid && !isDns2Invalid) {
-      //TODO: Do real configuration check process
-      NavigationCubit.of(context).push(InternetConnectedPath());
+    if (!isIpInvalid &&
+        !isSubnetInvalid &&
+        !isGatewayInvalid &&
+        !isDns1Invalid &&
+        !isDns2Invalid) {
+      bool connectedWAN = await context
+          .read<InternetCheckCubit>()
+          .checkInternetConnectionStatus()
+          .onError((error, stackTrace) {
+        logger.e('connected WAN error', error, stackTrace);
+        return false;
+      });
+      if (connectedWAN) {
+        context.read<InternetCheckCubit>().setStaticSettings(
+              ipAddress: ipController.text,
+              subnetMask: subnetController.text,
+              gateway: gatewayController.text,
+              dns1: dns1Controller.text,
+              dns2: dns2Controller.text,
+            );
+      } else {
+        // Show something wrong
+      }
     }
   }
 
@@ -81,9 +108,10 @@ class _EnterStaticIpViewState extends State<EnterStaticIpView> {
                 children: [
                   Text(
                     getAppLocalizations(context).enter_static_ip_error,
-                    style: Theme.of(context).textTheme.headline4?.copyWith(
-                        color: Colors.red
-                    ),
+                    style: Theme.of(context)
+                        .textTheme
+                        .headline4
+                        ?.copyWith(color: Colors.red),
                   ),
                   const SizedBox(
                     height: 30,
@@ -172,7 +200,7 @@ class _EnterStaticIpViewState extends State<EnterStaticIpView> {
           text: getAppLocalizations(context).next,
           onPress: _validateInputData,
         ),
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

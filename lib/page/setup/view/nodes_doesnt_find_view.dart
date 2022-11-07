@@ -12,7 +12,7 @@ class NodesDoesntFindView extends StatelessWidget {
   Widget build(BuildContext context) {
       return BasePageView(
         child: BasicLayout(
-          alignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           header: BasicHeader(
             title: getAppLocalizations(context).nodes_doesnt_find_view_title,
           ),
