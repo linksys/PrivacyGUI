@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:graphview/GraphView.dart';
+import 'package:linksys_moab/bloc/add_nodes/state.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/design/colors.dart';
@@ -11,6 +12,7 @@ import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/model/dashboard_path.dart';
 import 'package:linksys_moab/route/model/nodes_path.dart';
 import 'package:linksys_moab/route/_route.dart';
@@ -48,7 +50,15 @@ class _TopologyViewState extends State<TopologyView> {
                 children: [
                   SimpleTextButton(
                     text: '+ Add Node',
-                    onPressed: () {},
+                    onPressed: () {
+                      NavigationCubit.of(context).push(SetupNthChildPlacePath()
+                        ..next = NavigationCubit.of(context).currentPath()
+                        ..args = {
+                          'isAddonsNode': true,
+                          'init': true,
+                          'mode': AddNodesMode.addNodeOnly,
+                        });
+                    },
                   )
                 ],
               ) : _noInternetConnectionWidget(),

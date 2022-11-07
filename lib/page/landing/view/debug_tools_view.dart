@@ -356,6 +356,8 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                 'mode': AddNodesMode.addNodeOnly,
               });
 
+            // await context.read<RouterRepository>().connectToLocalWithPassword();
+            //
             // NavigationCubit.of(context).push(SetupNodeListPath()
             //   ..next = NavigationCubit.of(context).currentPath()
             //   ..args = {
@@ -363,7 +365,6 @@ class _DebugToolsViewState extends State<DebugToolsView> {
             //     'mode': AddNodesMode.addNodeOnly,
             //   });
 
-            // await context.read<RouterRepository>().connectToLocalWithPassword();
             // context.read<RouterRepository>().btRequestScanUnconfigured();
             // context.read<RouterRepository>().btGetScanUnconfiguredResult();
             // await context.read<AccountCubit>().fetchAccount();

@@ -96,53 +96,56 @@ class _SetupNodeListViewState extends State<SetupNodeListView> {
                                 padding: const EdgeInsets.all(16.0),
                                 child: ListTile(
                                   leading: Container(
-                                    padding: EdgeInsets.all(10),
+                                    width: 36,
+                                    height: 80,
+                                    padding: EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(100),
-                                      color: Colors.amber,
-                                    ),
-                                    child: const Icon(
-                                      Icons.router,
-                                      size: 32,
-                                      color: Colors.white,
+                                      // borderRadius: BorderRadius.circular(100),
+                                      color: Colors.grey,
                                     ),
                                   ),
                                   title: Text(e.location ?? ''),
-                                  trailing: IconButton(
-                                      onPressed: () async {
-                                        final String? result =
-                                            await NavigationCubit.of(context)
-                                                .pushAndWait(
-                                                    SetupParentLocationPath());
-                                        if (result != null) {
-                                          logger.d('Set location: $result');
-                                          _cubit.updateNodeLocation(
-                                              e.deviceId, result);
-                                        }
-                                      },
-                                      icon: const Icon(
-                                        Icons.edit,
-                                        size: 24,
-                                        color: Colors.white,
-                                      )),
+                                  trailing: Container(
+                                    decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.grey),
+                                    child: IconButton(
+                                        onPressed: () async {
+                                          final String? result =
+                                              await NavigationCubit.of(context)
+                                                  .pushAndWait(
+                                                      SetupParentLocationPath());
+                                          if (result != null) {
+                                            logger.d('Set location: $result');
+                                            _cubit.updateNodeLocation(
+                                                e.deviceId, result);
+                                          }
+                                        },
+                                        icon: const Icon(
+                                          Icons.edit,
+                                          size: 24,
+                                          color: Colors.white,
+                                        )),
+                                  ),
                                 ),
                               ))
                         ],
                       ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 48, 0, 48), // TODO
-                  child: Center(
-                    child: SimpleTextButton(
-                        text: getAppLocalizations(context).add_a_node,
-                        onPressed: () {
-                          NavigationCubit.of(context)
-                              .popToOrPush(SetupNthChildPlacePath()
-                                ..next =
-                                    NavigationCubit.of(context).currentPath()
-                                ..args = {'isAddonsNode': true});
-                        }),
+                if (state.mode == AddNodesMode.addNodeOnly)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 48, 0, 48), // TODO
+                    child: Center(
+                      child: SimpleTextButton(
+                          text: getAppLocalizations(context).add_a_node,
+                          onPressed: () {
+                            NavigationCubit.of(context)
+                                .popToOrPush(SetupNthChildPlacePath()
+                                  ..next =
+                                      NavigationCubit.of(context).currentPath()
+                                  ..args = {'isAddonsNode': true});
+                          }),
+                    ),
                   ),
-                ),
               ],
             ),
           ),

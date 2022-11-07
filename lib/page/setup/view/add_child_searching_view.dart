@@ -52,6 +52,11 @@ class _AddChildSearchingContentViewState
     // _fakeInternetChecking();
   }
 
+  @override
+  void dispose() {
+    _cubit.finish();
+    super.dispose();
+  }
   //TODO: The svg image must be replaced
   final Widget image = SvgPicture.asset(
     'assets/images/linksys_logo_large_white.svg',

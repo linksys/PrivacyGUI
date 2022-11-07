@@ -31,6 +31,12 @@ class AddNodesCubit extends Cubit<AddNodesState> {
     emit(AddNodesState.init());
   }
 
+  finish() {
+    _findingNodesSubscription?.cancel();
+    _addingNodesSubscription?.cancel();
+    _checkDevicesSubscription?.cancel();
+  }
+
   setMode(AddNodesMode mode) {
     emit(state.copyWith(mode: mode));
   }
@@ -41,7 +47,8 @@ class AddNodesCubit extends Cubit<AddNodesState> {
               .map((e) => RouterDevice.fromJson(e))
               .toList(),
         );
-    final master = devices.firstWhere((device) => device.nodeType == 'Master' || device.isAuthority);
+    final master = devices.firstWhere(
+        (device) => device.nodeType == 'Master' || device.isAuthority);
     final slaves = devices.where((device) => device.nodeType == 'Slave');
 
     emit(
@@ -90,12 +97,16 @@ class AddNodesCubit extends Cubit<AddNodesState> {
         (origin?.isModify ?? false) && (origin?.location != null);
     final isNew = state.foundNodes
         .any((element) => device.hasSameInterface(element.macAddress));
+    final macAddress = state.foundNodes.firstWhereOrNull(
+        (element) => device.hasSameInterface(element.macAddress));
+    final newName = device.friendlyName ??
+        '${device.nodeType == 'Master' ? 'Router' : 'Addons'}${macAddress == null ? '' : '-$macAddress'}';
     logger.d(
         'build device properties: origin one: $origin, was modified: $wasModified');
     return NodeProperties(
       deviceId: device.deviceID,
       location: isNew
-          ? device.friendlyName
+          ? newName
           : wasModified
               ? origin?.location
               : device.properties
