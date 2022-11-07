@@ -29,7 +29,6 @@ flutter --version
 flutter pub deps
 flutter clean
 flutter pub cache repair
-flutter pub upgrade --major-versions
 if [ "${inHouseBuild}" == "true" ] ; then
   if ! buildInHouse "$buildNumber"; then
     echo InHouse "$buildNumber" build failed

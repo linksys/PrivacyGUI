@@ -87,6 +87,7 @@ dependencies:
     path: plugins/ios_push_notification_plugin
 dependency_overrides:
   firebase_core_platform_interface: 4.5.1
+  flutter_inappwebview: 5.4.3
 dev_dependencies:
   flutter_test:
     sdk: flutter
