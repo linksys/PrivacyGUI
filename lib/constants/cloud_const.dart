@@ -20,12 +20,14 @@ String get moabCloudResourceHost => 'https://${cloudEnvTarget == CloudEnvironmen
 
 const configFileName = 'environment.json';
 const allConfigFileName = 'all-environments.json';
-const countryCodeFileName = 'country-codes.json';
+const regionCodesFileName = 'country-codes.json';
 const webFilteringFileName = 'web-filters.json';
 const securityCategoryPresetsFileName = 'security-category-presets.json';
 const appSignaturesFileName = 'app-signatures.json';
 const profilePresetsFilename = 'profile-presets.json';
 // const profilePresetsFilename = 'profile-presets-temp.json';
+const appIconsFilename = 'secure/icons.png';
+const appIconKeysFilename = 'secure/icon-keys.json';
 
 // Cloud config url
 String get cloudConfigUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$configFileName';
@@ -33,14 +35,14 @@ String get allCloudConfigUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$all
 String get availabilityUrl => 'https://cloudhealth.lswf.net/cloud-availability/cloud-qa.json';
 
 // Country code url
-String get countryCodeUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$countryCodeFileName';
+// String get countryCodeUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$regionCodesFileName';
 
 // Content filtering urls
-String get webFilteringUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$webFilteringFileName';
-String get appSignaturesUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$appSignaturesFileName';
-String get categoryPresetsUrl =>'$moabCloudConfigHost${cloudEnvTarget.name}/$securityCategoryPresetsFileName';
-String get appIconsUrl => 'https://linksys.devvelopcloud.com/moab-assets/sprite-map.png'; //TBD
-String get profilePresetsUrl =>'$moabCloudConfigHost${cloudEnvTarget.name}/$profilePresetsFilename';
+// String get webFilteringUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$webFilteringFileName';
+// String get appSignaturesUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$appSignaturesFileName';
+// String get categoryPresetsUrl =>'$moabCloudConfigHost${cloudEnvTarget.name}/$securityCategoryPresetsFileName';
+// String get appIconsUrl => 'https://linksys.devvelopcloud.com/moab-assets/sprite-map.png'; //TBD
+// String get profilePresetsUrl =>'$moabCloudConfigHost${cloudEnvTarget.name}/$profilePresetsFilename';
 
 // AWS IoT root CA
 String get awsIoTRootCA => 'https://www.amazontrust.com/repository/AmazonRootCA1.pem';

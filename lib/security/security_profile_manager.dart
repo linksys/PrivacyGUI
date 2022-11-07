@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/material.dart';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/services.dart';
@@ -37,6 +36,7 @@ class SecurityProfileManager {
     // fetch App signature
     final appSignatures = await fetchAppSignature();
     await AppIconManager.instance().getAppIds();
+    await AppIconManager.instance().loadFullImage();
     // fetch web filters
     final webFilters = await fetchWebFilters();
     logger.d('fetchDefaultPresets:: web filters count: ${webFilters.length}');
@@ -148,7 +148,7 @@ class SecurityProfileManager {
 
   Future<List<MoabPreset>> fetchProfilePresets() async {
     final file = File.fromUri(Storage.secureProfilePresetsFileUri);
-    await _checkResourceExpiration(file, CloudResourceType.securityProfiles);
+    await CloudEnvironmentManager().downloadResources(CloudResourceType.securityProfiles);
     final str = file.readAsStringSync();
     final jsonArray = List.from(jsonDecode(str));
     return List<MoabPreset>.from(jsonArray.map((e) => MoabPreset.fromJson(e)));
@@ -156,7 +156,7 @@ class SecurityProfileManager {
 
   Future<List<MoabPreset>> fetchSecurityCategoryPresets() async {
     final file = File.fromUri(Storage.categoryPresetsFileUri);
-    await _checkResourceExpiration(file, CloudResourceType.securityCategories);
+    await CloudEnvironmentManager().downloadResources(CloudResourceType.securityCategories);
     final str = file.readAsStringSync();
     final jsonArray = List.from(jsonDecode(str));
     return List<MoabPreset>.from(jsonArray.map((e) => MoabPreset.fromJson(e)));
@@ -164,7 +164,7 @@ class SecurityProfileManager {
 
   Future<List<WebFilter>> fetchWebFilters() async {
     final file = File.fromUri(Storage.webFiltersFileUri);
-    await _checkResourceExpiration(file, CloudResourceType.webFilters);
+    await CloudEnvironmentManager().downloadResources(CloudResourceType.webFilters);
     final str = file.readAsStringSync();
     final jsonArray = List.from(jsonDecode(str));
 
@@ -185,7 +185,7 @@ class SecurityProfileManager {
 
   Future<List<CloudAppSignature>> fetchAppSignature() async {
     final file = File.fromUri(Storage.appSignaturesFileUri);
-    await _checkResourceExpiration(file, CloudResourceType.appSignature);
+    await CloudEnvironmentManager().downloadResources( CloudResourceType.appSignature);
     final cJsonStr = file.readAsStringSync();
     // TODO get form FW
     final fwJsonStr = await rootBundle
@@ -197,19 +197,6 @@ class SecurityProfileManager {
 
     final result = mappingAppSignature(fwJsonArray, cloudJsonArray);
     return result;
-  }
-
-  Future _checkResourceExpiration(File file, CloudResourceType type) async {
-    if (!file.existsSync()) {
-      await CloudEnvironmentManager().downloadResources(type);
-    }
-    final lastModified = file.lastModifiedSync();
-    final diff = DateTime.now().millisecondsSinceEpoch -
-        lastModified.millisecondsSinceEpoch;
-    if (diff > resourceDownloadTimeThreshold[type]!) {
-      logger.d('Resource expired! $diff, Download again - $type');
-      await CloudEnvironmentManager().downloadResources(type);
-    }
   }
 
 //////

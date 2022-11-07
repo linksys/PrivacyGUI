@@ -31,11 +31,9 @@ class AppIconManager {
     return AppIconManager();
   }
 
-  _loadFullImage() async {
+  loadFullImage() async {
     if (_cached?.target == null) {
-      String iconFilePath =
-          '${Storage.tempDirectory?.path}/sprite-icons-map.png';
-      File iconFile = File(iconFilePath);
+      File iconFile = File.fromUri(Storage.iconsFileUri);
       if (!iconFile.existsSync()) {
         await CloudEnvironmentManager().downloadResources(CloudResourceType.appIcons);
       }
@@ -52,9 +50,11 @@ class AppIconManager {
       logger.d('icon keys is not empty, ${_iconKeys.length}');
       return;
     }
+    logger.d('icon keys is empty, check file cache...');
+    await CloudEnvironmentManager().downloadResources(CloudResourceType.appIconKeys);
+    File keyFile = File.fromUri(Storage.iconKeysFileUri);
     logger.d('icon keys is empty, start loading...');
-    final keyStr =
-        await rootBundle.loadString('assets/resources/icon-keys.json');
+    final keyStr = keyFile.readAsStringSync();
     Map<String, dynamic> appPosJson = jsonDecode(keyStr);
     _iconKeys
       ..clear()
@@ -89,7 +89,7 @@ class AppIconManager {
       pos = _iconKeys[appId]!;
     }
 
-    await _loadFullImage();
+    await loadFullImage();
     if (_cached?.target == null) {
       throw Exception('Icon map image loading failed!');
     }

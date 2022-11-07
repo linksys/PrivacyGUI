@@ -20,19 +20,25 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum CloudResourceType {
+  allEnvironments,
+  countryCodes,
   appIcons,
+  appIconKeys,
   securityProfiles,
   securityCategories,
   webFilters,
-  appSignature
+  appSignature,
 }
 
 final resourceDownloadTimeThreshold = {
   CloudResourceType.appIcons: const Duration(days: 1).inMilliseconds,
   CloudResourceType.securityProfiles: const Duration(minutes: 1).inMilliseconds,
-  CloudResourceType.securityCategories: const Duration(minutes: 1).inMilliseconds,
+  CloudResourceType.securityCategories:
+      const Duration(minutes: 1).inMilliseconds,
   CloudResourceType.webFilters: const Duration(days: 1).inMilliseconds,
   CloudResourceType.appSignature: const Duration(days: 1).inMilliseconds,
+  CloudResourceType.appIconKeys: const Duration(minutes: 1).inMilliseconds,
+  CloudResourceType.countryCodes: const Duration(days: 1).inMilliseconds,
 };
 
 class CloudEnvironmentManager with StateStreamRegister {
@@ -65,13 +71,15 @@ class CloudEnvironmentManager with StateStreamRegister {
   }
 
   bool applyNewConfig(String region) {
-    final newRegion = _allConfigs.firstWhereOrNull((element) => element.region == region);
+    final newRegion =
+        _allConfigs.firstWhereOrNull((element) => element.region == region);
     if (newRegion == null) {
       return false;
     }
     update(newRegion);
     return true;
   }
+
   void update(CloudConfig config) {
     if (_config == config) return;
     _config = config;
@@ -95,7 +103,8 @@ class CloudEnvironmentManager with StateStreamRegister {
     if (_allConfigs.isNotEmpty) {
       return [];
     }
-    final configs = await _repository.fetchAllCloudConfig();
+    final configs = await _repository.fetchAllCloudConfig(
+        '${currentConfig!.cloudConfigBaseUrl}/${cloudEnvTarget.name}');
     _allConfigs
       ..clear()
       ..addAll(configs);
@@ -226,23 +235,73 @@ class CloudEnvironmentManager with StateStreamRegister {
 
   //
   Future<bool> downloadResources(CloudResourceType type) {
+    final config = currentConfig;
+
+    if (config == null) {
+      logger.d('Can not download resource without cloud config');
+      return Future.value(false);
+    }
+
     if (type == CloudResourceType.appSignature) {
-      return _repository.downloadResources(
-          Uri.parse(appSignaturesUrl), Storage.appSignaturesFileUri);
+      final file = File.fromUri(Storage.appSignaturesFileUri);
+      return _checkResourceExpiration(file, type).then((value) =>
+          _repository.downloadResources(
+              Uri.parse('${config.resourceBaseUrl}/$appSignaturesFileName'),
+              Storage.appSignaturesFileUri));
     } else if (type == CloudResourceType.webFilters) {
-      return _repository.downloadResources(
-          Uri.parse(webFilteringUrl), Storage.webFiltersFileUri);
+      final file = File.fromUri(Storage.webFiltersFileUri);
+      return _checkResourceExpiration(file, type).then((value) =>
+          _repository.downloadResources(
+              Uri.parse('${config.resourceBaseUrl}/$webFilteringFileName'),
+              Storage.webFiltersFileUri));
     } else if (type == CloudResourceType.securityCategories) {
-      return _repository.downloadResources(
-          Uri.parse(categoryPresetsUrl), Storage.categoryPresetsFileUri);
+      final file = File.fromUri(Storage.categoryPresetsFileUri);
+      return _checkResourceExpiration(file, type).then((value) =>
+          _repository.downloadResources(
+              Uri.parse(
+                  '${config.resourceBaseUrl}/$securityCategoryPresetsFileName'),
+              Storage.categoryPresetsFileUri));
     } else if (type == CloudResourceType.securityProfiles) {
-      return _repository.downloadResources(
-          Uri.parse(profilePresetsUrl), Storage.secureProfilePresetsFileUri);
+      final file = File.fromUri(Storage.secureProfilePresetsFileUri);
+      return _checkResourceExpiration(file, type).then((value) =>
+          _repository.downloadResources(
+              Uri.parse('${config.resourceBaseUrl}/$profilePresetsFilename'),
+              Storage.secureProfilePresetsFileUri));
     } else if (type == CloudResourceType.appIcons) {
-      return _repository.downloadResources(
-          Uri.parse(appIconsUrl), Storage.iconFileUri);
+      final file = File.fromUri(Storage.iconsFileUri);
+      return _checkResourceExpiration(file, type).then((value) =>
+          _repository.downloadResources(
+              Uri.parse('${config.resourceBaseUrl}/$appIconsFilename'),
+              Storage.iconsFileUri));
+    } else if (type == CloudResourceType.appIconKeys) {
+      final file = File.fromUri(Storage.iconKeysFileUri);
+      return _checkResourceExpiration(file, type).then((value) =>
+          _repository.downloadResources(
+              Uri.parse('${config.resourceBaseUrl}/$appIconKeysFilename'),
+              Storage.iconKeysFileUri));
+    } else if (type == CloudResourceType.countryCodes) {
+      final file = File.fromUri(Storage.countryCodesFileUri);
+      return _checkResourceExpiration(file, type).then((value) =>
+          _repository.downloadResources(
+              Uri.parse('${config.resourceBaseUrl}/$regionCodesFileName'),
+              Storage.countryCodesFileUri));
     } else {
       throw Exception('Unsupported resource type! ${type.name}');
     }
+  }
+
+  Future<bool> _checkResourceExpiration(
+      File file, CloudResourceType type) async {
+    if (!file.existsSync()) {
+      return true;
+    }
+    final lastModified = file.lastModifiedSync();
+    final diff = DateTime.now().millisecondsSinceEpoch -
+        lastModified.millisecondsSinceEpoch;
+    if (diff > (resourceDownloadTimeThreshold[type] ?? 0)) {
+      logger.d('Resource expired! $diff, Download again - $type');
+      return true;
+    }
+    return false;
   }
 }
