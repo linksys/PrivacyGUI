@@ -281,6 +281,9 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
     final bool enabled = result.output['enabled'] ?? false;
     if (enabled) {
       await _routerRepository.setUnsecuredWiFiWarning(!enabled);
+      // TODO #REFACTOR wireless interrupt
+      await Future.delayed(Duration(seconds: 3));
+      await _routerRepository.connectToLocalWithPassword();
     }
   }
 

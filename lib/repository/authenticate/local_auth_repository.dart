@@ -11,7 +11,6 @@ import 'package:linksys_moab/repository/model/dummy_model.dart';
 ///  8. Create password
 ///
 abstract class LocalAuthRepository {
-  Future<bool> downloadCert();
   Future<DummyModel> createPassword(String password, String hint);
   Future<bool> localLogin(String password);
   Future<DummyModel> verifyRecoveryKey(String key);

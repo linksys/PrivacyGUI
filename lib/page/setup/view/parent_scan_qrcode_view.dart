@@ -9,7 +9,6 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/customs/qr_view.dart';
 import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/util/logger.dart';
 
 import 'package:linksys_moab/util/permission.dart';
 import 'package:linksys_moab/util/wifi_credential.dart';
@@ -96,14 +95,12 @@ class _ParentScanQRCodeViewState extends State<ParentScanQRCodeView>
     setState(() {
       _isLoading = true;
     });
-    logger.d('Scanned code: ${code.rawValue ?? ''}');
     if (Platform.isAndroid) {
       NavigationCubit.of(context).push(
           AndroidLocationPermissionPrimerPath());
     } else if (Platform.isIOS) {
       // NavigationCubit.of(context).push(CheckNodeInternetPath());
       final cred = WiFiCredential.parse(code.rawValue ?? '');
-      logger.d('WiFi Credentials: ssid: ${cred.ssid}, ${cred.password}');
       final isConnected = await ConnectingWifiPlugin().connectToWiFi(ssid: cred.ssid, password: cred.password);
       setState(() {
         _isLoading = false;

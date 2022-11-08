@@ -149,7 +149,7 @@ class _AdministrationViewState extends State<AdministrationView> {
                             'assets/images/icon_check_green.png')
                       ],
                     ),
-                    description: _subTitle(context.read<NetworkCubit>().state.selected!.deviceInfo!.firmwareVersion),
+                    description: _subTitle(context.read<NetworkCubit>().state.selected!.deviceInfo.firmwareVersion),
                   )
                 ],
               ),

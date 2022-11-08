@@ -106,20 +106,14 @@ class RouterRepository with StateStreamListener {
     const credentials = 'admin:admin';
     final _client = MoabHttpClient(timeoutMs: 1000, retries: 3);
     var response = await _client.get(
-        Uri.parse('http://${gatewayIp ?? _localBrokerUrl}/cert.cgi'),
-        headers: {
-          'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
-        });
+        Uri.parse('http://${gatewayIp ?? _localBrokerUrl}/cert.cgi'),);
     bool ret = response.statusCode == HttpStatus.ok &&
         response.body.contains('BEGIN CERTIFICATE');
     logger.d('test local cert 1st: $ret');
     // try with 52000 port if false
     if (!ret) {
       response = await _client.get(
-          Uri.parse('http://${gatewayIp ?? _localBrokerUrl}:52000/cert.cgi'),
-          headers: {
-            'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
-          });
+          Uri.parse('http://${gatewayIp ?? _localBrokerUrl}:52000/cert.cgi'),);
       ret = response.statusCode == HttpStatus.ok &&
           response.body.contains('BEGIN CERTIFICATE');
       logger.d('test local cert 2nd: $ret');
@@ -144,10 +138,7 @@ class RouterRepository with StateStreamListener {
     const credentials = 'admin:admin';
     final _client = MoabHttpClient(timeoutMs: 1000);
     final response = await _client.get(
-        Uri.parse('http://${gatewayIp ?? _localBrokerUrl}/cert.cgi'),
-        headers: {
-          'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
-        });
+        Uri.parse('http://${gatewayIp ?? _localBrokerUrl}/cert.cgi'),);
     if (response.statusCode != HttpStatus.ok) {
       return false;
     }
@@ -234,6 +225,9 @@ class RouterRepository with StateStreamListener {
       await testLocalCert();
       cert = pref.getString(moabPrefLocalCert) ?? '';
     }
+    if (_localBrokerUrl?.isEmpty ?? true) {
+      return false;
+    }
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
       await _mqttClient?.disconnect();
     }
@@ -266,6 +260,9 @@ class RouterRepository with StateStreamListener {
       logger.d('connectToLocalWithPassword: cert is empty');
       await testLocalCert();
       cert = pref.getString(moabPrefLocalCert) ?? '';
+    }
+    if (_localBrokerUrl?.isEmpty ?? true) {
+      return false;
     }
     if (_mqttClient?.connectionState == MqttConnectionState.connected) {
       await _mqttClient?.disconnect();

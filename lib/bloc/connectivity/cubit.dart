@@ -122,10 +122,7 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
   }
 
   Future<bool> connectToLocalBroker() async {
-    return await _routerRepository
-        .testLocalCert()
-        .onError((error, stackTrace) => false)
-        .then((value) => _routerRepository.connectToLocalWithPassword());
+    return await _routerRepository.connectToLocalWithPassword();
   }
 
   Future<bool> connectToBroker() async {

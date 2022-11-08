@@ -511,7 +511,7 @@ extension AuthBlocCloud on AuthBloc {
       logger.d('extend certification: original cert data does not exist!');
       return;
     }
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert!));
+    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert));
     final newCertInfo =
         await _repository.extendCertificate(certId: certData.id);
     await delayDownloadCertTime(newCertInfo.downloadTime);
@@ -527,7 +527,7 @@ extension AuthBlocCloud on AuthBloc {
       logger.d('extend certification: original cert data does not exist!');
       return;
     }
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert!));
+    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert));
     final session = await _repository.requestSession(certId: certData.id);
     final pref = await SharedPreferences.getInstance();
     pref.setString(moabPrefSessionDataKey, jsonEncode(session.toJson()));

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -41,7 +40,6 @@ import 'bloc/setup/bloc.dart';
 import 'bloc/subscription/subscription_cubit.dart';
 import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
-import 'repository/authenticate/impl/router_auth_repository.dart';
 import 'repository/authenticate/otp_repository.dart';
 import 'route/model/_model.dart';
 
@@ -104,8 +102,6 @@ Widget _app() {
     providers: [
       RepositoryProvider(
           create: (context) => CloudAuthRepository(MoabHttpClient())),
-      RepositoryProvider(
-          create: (context) => RouterAuthRepository(MoabHttpClient())),
       RepositoryProvider(
           create: (context) => MoabEnvironmentRepository(MoabHttpClient())),
       RepositoryProvider(create: (context) => CloudAccountRepository()),

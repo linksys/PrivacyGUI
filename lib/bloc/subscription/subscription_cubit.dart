@@ -47,7 +47,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   void createOrderToCloud() async {
     final orderResponse = await _repo.createCloudOrders(state.serialNumber!, state.subscriptionProductDetails!.first.id, state.purchaseToken!);
     emit(state.copyWith(subscriptionOrderResponse: orderResponse));
-    getNetworkEntitlement(state.serialNumber!!);
+    getNetworkEntitlement(state.serialNumber!);
   }
 
   void getNetworkEntitlement(String serialNumber) async {

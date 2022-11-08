@@ -125,7 +125,7 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
       return JnapSuccess(result: 'error!');
     });
     // TODO #1 to wait the transaction done since current transaction won't get response back
-    await Future.delayed(Duration(seconds: 30));
+    await Future.delayed(Duration(seconds: 40));
     emit(state.copyWith(resumePoint: SetupResumePoint.wifiInterrupted));
   }
 

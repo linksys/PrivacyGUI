@@ -42,7 +42,7 @@ class _OverlayInfoViewState extends State<OverlayInfoView> {
                   Text('Connectivity: ${state.connectivityInfo.type.name}'),
                   Text('Gateway IP: ${state.connectivityInfo.gatewayIp}'),
                   Text('SSID: ${state.connectivityInfo.ssid}'),
-                  Text('MQTT: ${_isMqttConnected ? 'Connected' : 'Disconnected'}'),
+                  // Text('MQTT: ${_isMqttConnected ? 'Connected' : 'Disconnected'}'),
                 ],
               ),
             ));
