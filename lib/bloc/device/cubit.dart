@@ -221,4 +221,11 @@ class DeviceCubit extends Cubit<DeviceState> {
       fetchDeviceList();
     });
   }
+
+  Future<void> deleteDeviceList(List<DeviceDetailInfo> deviceInfoList) async {
+    List<String> deviceIdList = deviceInfoList.map((e) => e.deviceID).toList();
+    await _routerRepository
+        .deleteDevices(deviceIdList)
+        .then((value) => fetchDeviceList());
+  }
 }

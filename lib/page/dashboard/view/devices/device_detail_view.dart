@@ -4,6 +4,7 @@ import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/customs/_customs.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -50,10 +51,22 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
     return Column(
       children: [
         box24(),
-        Image.asset(
-          state.selectedDeviceInfo?.icon ?? 'assets/images/icon_device.png',
-          width: 100,
-          height: 100,
+        GestureDetector(
+          onTap: () {
+            showPopup(
+              context: context,
+              config: EditDeviceIconPath()..args = {'return': true},
+            );
+          },
+          child: ImageWithBadge(
+            imagePath: state.selectedDeviceInfo?.icon ??
+                'assets/images/icon_device_detail.png',
+            imageSize: 100,
+            badgePath: 'assets/images/icon_edit.png',
+            badgeSize: 24,
+            offset: 0,
+            fit: BoxFit.fill,
+          ),
         ),
         box16(),
         Row(

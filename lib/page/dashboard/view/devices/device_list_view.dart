@@ -109,7 +109,7 @@ class _DeviceListViewState extends State<DeviceListView> {
             onTap: state.offlineDeviceList.isEmpty
                 ? null
                 : () {
-                    print('XXXX');
+              NavigationCubit.of(context).push(OfflineDeviceListPath());
                   },
             child: Container(
               // color: const Color.fromRGBO(217, 217, 217, 1.0),

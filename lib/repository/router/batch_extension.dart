@@ -63,4 +63,16 @@ extension BatchCommands on RouterRepository {
       ),
     ]);
   }
+
+  Future<Map<String, JnapSuccess>> deleteDevices(List<String> deviceIdList) async {
+    List<CommandWrap> commands = [];
+    for (String deviceId in deviceIdList) {
+      commands.add(CommandWrap(
+        action: JNAPAction.deleteDevice.actionValue,
+        needAuth: false,
+        data: {'deviceID': deviceId},
+      ));
+    }
+    return batchCommands(commands);
+  }
 }
