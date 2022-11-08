@@ -59,24 +59,22 @@ extension MoabAuthRequests on MoabHttpClient {
   ///
   Future<Response> authChallengeVerify(
       {required String token, required String code}) async {
-    final url =
-        await combineUrl(endpointPutAuthChallenges, args: {varVerifyToken: token});
+    final url = await combineUrl(endpointPutAuthChallenges,
+        args: {varVerifyToken: token});
     final header = defaultHeader;
     // TODO For the moment, the sequence and the type won't be changed
-    return this.put(Uri.parse(url),
-        headers: header,
-        body: jsonEncode({'otp': code}));
+    return this
+        .put(Uri.parse(url), headers: header, body: jsonEncode({'otp': code}));
   }
 
   Future<Response> authChallengeVerifyAccepted(
       {required String token, required String code}) async {
-    final url =
-    await combineUrl(endpointPutVerificationAccept, args: {varVerifyToken: token});
+    final url = await combineUrl(endpointPutVerificationAccept,
+        args: {varVerifyToken: token});
     final header = defaultHeader;
     // TODO For the moment, the sequence and the type won't be changed
-    return this.put(Uri.parse(url),
-        headers: header,
-        body: jsonEncode({'otp': code}));
+    return this
+        .put(Uri.parse(url), headers: header, body: jsonEncode({'otp': code}));
   }
 
   ///
@@ -133,27 +131,65 @@ extension MoabAuthRequests on MoabHttpClient {
 
   Future<Response> downloadCloudCerts(
       {required String taskId, required String secret}) async {
-    final url = await combineUrl(endPointGetPrimaryTasks, args: {varTaskId: taskId});
+    final url =
+        await combineUrl(endPointGetPrimaryTasks, args: {varTaskId: taskId});
     final header = defaultHeader..addAll({moabTaskSecretKey: secret});
 
     return this.get(Uri.parse(url), headers: header);
   }
 
-  Future<Response> extendCertificates(String certId, String appId, String appSecret) async {
-
-    final url = await combineUrl(endpointPostCertExtensions, args: {varCertificateId: certId});
+  Future<Response> extendCertificates(
+      String certId, String appId, String appSecret) async {
+    final url = await combineUrl(endpointPostCertExtensions,
+        args: {varCertificateId: certId});
     final header = defaultHeader
       ..addAll({moabAppIdKey: appId, moabAppSecretKey: appSecret});
 
-    return this.post(Uri.parse(url), headers: header,);
+    return this.post(
+      Uri.parse(url),
+      headers: header,
+    );
   }
 
-  Future<Response> requestAuthSession(String certId, String appId, String appSecret) async {
-
-    final url = await combineUrl(endpointPostCertSessions, args: {varCertificateId: certId});
+  Future<Response> requestAuthSession(
+      String certId, String appId, String appSecret) async {
+    final url = await combineUrl(endpointPostCertSessions,
+        args: {varCertificateId: certId});
     final header = defaultHeader
       ..addAll({moabAppIdKey: appId, moabAppSecretKey: appSecret});
 
-    return this.post(Uri.parse(url), headers: header,);
+    return this.post(
+      Uri.parse(url),
+      headers: header,
+    );
+  }
+
+  Future<Response> changeAuthenticationModePrepare(
+      String accountId, String? password, String authenticationMode) async {
+    final url = await combineUrl(endpointAuthenticationModePrepare,
+        args: {varAccountId: accountId});
+    final header = defaultHeader..addAll({moabSiteIdKey: moabRetailSiteId});
+    final bodyPayload = password == null
+        ? {
+            'authenticationMode': authenticationMode.toUpperCase(),
+          }
+        : {
+            'authenticationMode': authenticationMode.toUpperCase(),
+            'password': password,
+          };
+    return this
+        .post(Uri.parse(url), headers: header, body: jsonEncode(bodyPayload));
+  }
+
+  Future<Response> changeAuthenticationMode(
+      String accountId, String token, String? password) async {
+    final url = await combineUrl(endpointAuthenticationModeChange,
+        args: {varAccountId: accountId});
+    final header = defaultHeader;
+    final bodyPayload = password == null
+        ? {'token': token}
+        : {'token': token, 'password': password};
+    return this
+        .put(Uri.parse(url), headers: header, body: jsonEncode(bodyPayload));
   }
 }

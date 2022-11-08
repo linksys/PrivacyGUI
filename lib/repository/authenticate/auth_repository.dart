@@ -87,4 +87,13 @@ abstract class AuthRepository {
   ///
   ///
   Future<List<RegionCode>> fetchRegionCodes();
+
+  Future<ChangeAuthenticationModeChallenge> changeAuthenticationModePrepare(
+      String accountId,
+      String? password,
+      String authenticationMode,
+      );
+
+  Future<void> changeAuthenticationMode(
+      String accountId, String token, String? password);
 }

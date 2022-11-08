@@ -97,6 +97,8 @@ const endpointDeleteAuthCommunicationMethod = '$version$accountPath/$varAccountI
 const endpointPostChangePassword = '$version$accountPath/$varAccountId/password/change';
 const endpointPreferences = '$version$accountPath/$varAccountId/preferences';
 const endpointDefaultNetworkGroup = '$version$accountPath/$varAccountId/network-groups/DEFAULT';
+const endpointAuthenticationModePrepare = '$version$accountPath/$varAccountId/authentication-mode/prepare';
+const endpointAuthenticationModeChange = '$version$accountPath/$varAccountId/authentication-mode';
 
 const endpointGetNetworks = '$version$accountPath/$varAccountId/networks';
 const endpointGetNetworkById = '$version$accountPath/$varAccountId/networks/$varNetworkId';
