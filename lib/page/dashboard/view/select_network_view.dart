@@ -11,6 +11,8 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 
+import '../../../bloc/subscription/subscription_cubit.dart';
+
 class SelectNetworkView extends ArgumentsStatefulView {
   const SelectNetworkView({
     Key? key,
@@ -102,9 +104,10 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
                 });
                 await context
                     .read<NetworkCubit>()
-                    .selectNetwork(state.networks[index])
-                    .then((value) => NavigationCubit.of(context)
-                        .clearAndPush(PrepareDashboardPath()));
+                    .selectNetwork(state.networks[index]);
+
+                NavigationCubit.of(context).clearAndPush(DashboardHomePath());
+                context.read<SubscriptionCubit>().loadingProducts();
               },
             ),
           )

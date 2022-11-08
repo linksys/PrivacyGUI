@@ -38,9 +38,8 @@ function copyFiles() {
   fi
 }
 
-flutter --version
-flutter pub deps
+echo cleaning...
 flutter clean
-flutter pub cache repairbuild debug apk
+build debug apk
 build release apk
 build release appbundle

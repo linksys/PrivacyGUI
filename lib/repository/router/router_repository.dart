@@ -88,17 +88,13 @@ class RouterRepository with StateStreamListener {
   }
 
   Future<bool> downloadRemoteCert() async {
-    final _client = MoabHttpClient(timeoutMs: 10000);
-    var cert = '';
-    final ret = await _client.get(Uri.parse(awsIoTRootCA)).then((response) {
-      cert = response.body;
-      return response.statusCode == HttpStatus.ok;
-    }).onError((error, stackTrace) => false);
-    if (!ret) {
+    final _client = MoabHttpClient(timeoutMs: 1000);
+    final response = await _client.get(Uri.parse(awsIoTRootCA));
+    if (response.statusCode != HttpStatus.ok) {
       return false;
     }
     final pref = await SharedPreferences.getInstance();
-    await pref.setString(moabPrefRemoteCaCert, cert);
+    await pref.setString(moabPrefRemoteCaCert, response.body);
     return true;
   }
 
@@ -108,29 +104,24 @@ class RouterRepository with StateStreamListener {
       return false;
     }
     const credentials = 'admin:admin';
-    String cert = '';
-    final _client = MoabHttpClient(timeoutMs: 1000, retries: 1);
-    var ret = await _client.get(
+    final _client = MoabHttpClient(timeoutMs: 1000, retries: 3);
+    var response = await _client.get(
         Uri.parse('http://${gatewayIp ?? _localBrokerUrl}/cert.cgi'),
         headers: {
           'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
-        }).then((response) {
-      cert = response.body;
-      return response.statusCode == HttpStatus.ok &&
-          response.body.contains('BEGIN CERTIFICATE');
-    }).onError((error, stackTrace) => false);
+        });
+    bool ret = response.statusCode == HttpStatus.ok &&
+        response.body.contains('BEGIN CERTIFICATE');
     logger.d('test local cert 1st: $ret');
     // try with 52000 port if false
     if (!ret) {
-      ret = await _client.get(
+      response = await _client.get(
           Uri.parse('http://${gatewayIp ?? _localBrokerUrl}:52000/cert.cgi'),
           headers: {
             'Authorization': 'Basic ${Utils.stringBase64Encode(credentials)}',
-          }).then((response) {
-        cert = response.body;
-        return response.statusCode == HttpStatus.ok &&
-            response.body.contains('BEGIN CERTIFICATE');
-      }).onError((error, stackTrace) => false);
+          });
+      ret = response.statusCode == HttpStatus.ok &&
+          response.body.contains('BEGIN CERTIFICATE');
       logger.d('test local cert 2nd: $ret');
       if (!ret) {
         return false;
@@ -138,7 +129,7 @@ class RouterRepository with StateStreamListener {
     }
 
     final pref = await SharedPreferences.getInstance();
-    await pref.setString(moabPrefLocalCert, cert);
+    await pref.setString(moabPrefLocalCert, response.body);
     return true;
   }
 

@@ -4,7 +4,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
-import 'package:linksys_moab/bloc/setup/_setup.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/constants/_constants.dart';
@@ -112,7 +111,6 @@ class _HomeViewState extends State<HomeView> {
         key: const Key('home_view_button_setup'),
         text: getAppLocalizations(context).setup_new_router,
         onPress: () {
-          context.read<SetupBloc>().add(Init());
           NavigationCubit.of(context).push(SetupWelcomeEulaPath());
         },
       ),

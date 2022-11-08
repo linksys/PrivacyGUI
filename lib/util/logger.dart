@@ -20,7 +20,7 @@ class CustomOutput extends LogOutput {
     for (var line in event.lines) {
       printWrapped(line);
       if (_file.existsSync()) {
-        await _file.writeAsBytes("${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(line.toString()))}\n".codeUnits,
+        await _file.writeAsBytes("${Utils.maskSensitiveJsonValues(line.toString())}\n".codeUnits,
             mode: FileMode.writeOnlyAppend);
       }
     }

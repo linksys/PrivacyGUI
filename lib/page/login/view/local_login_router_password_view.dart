@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
-import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/customs/network_check_view.dart';
@@ -16,7 +13,6 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/util/error_code_handler.dart';
 
 import 'package:linksys_moab/util/logger.dart';
 
@@ -101,7 +97,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
             hintText: getAppLocalizations(context).router_password,
             onChanged: _verifyPassword,
             isError: _errorReason.isNotEmpty,
-            errorText: generalErrorCodeHandler(context, _errorReason),
+            errorText: _errorReason,
           ),
           const SizedBox(
             height: 26,
@@ -149,13 +145,9 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     setState(() {
       _isLoading = true;
     });
-    final isSuccess = await context
+    await context
         .read<AuthBloc>()
-        .localLogin(_passwordController.text).then((value) async {
-          const storage = FlutterSecureStorage();
-          await storage.write(key: moabPrefLocalPassword, value: _passwordController.text);
-          return value;
-    })
+        .localLogin(_passwordController.text)
         .onError((error, stackTrace) => _handleError(error, stackTrace));
     setState(() {
       _isLoading = false;
@@ -172,16 +164,15 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     }
   }
 
-  bool _handleError(Object? e, StackTrace trace) {
-    if (e is JnapError) {
+  _handleError(Object? e, StackTrace trace) {
+    if (e is ErrorResponse) {
       setState(() {
-        _errorReason = e.result;
+        _errorReason = e.code;
       });
     } else {
       // Unknown error or error parsing
       logger.d('Unknown error: $e');
     }
-    return false;
   }
 }
 

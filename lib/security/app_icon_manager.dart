@@ -8,7 +8,7 @@ import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/cloud_const.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/util/storage.dart';
-import 'dart:typed_data';
+
 import '../util/logger.dart';
 
 class AppIconManager {

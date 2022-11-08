@@ -20,8 +20,6 @@ class ResumePointChanged extends SetupEvent {
   List<Object> get props => [status];
 }
 
-class Init extends SetupEvent {}
-
 class SetWIFISSIDAndPassword extends SetupEvent {
   const SetWIFISSIDAndPassword({required this.ssid, required this.password});
 

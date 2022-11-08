@@ -8,7 +8,6 @@ import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/_constants.dart';
-import 'package:linksys_moab/util/extensions.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:http/io_client.dart';
 import 'package:linksys_moab/util/storage.dart';
@@ -31,7 +30,7 @@ void releaseErrorResponseStream() {
 class MoabHttpClient extends http.BaseClient {
   MoabHttpClient({
     IOClient? client,
-    int timeoutMs = 10000,
+    int timeoutMs = 5000,
     int retries = 3,
     FutureOr<bool> Function(http.BaseResponse) when = _defaultWhen,
     FutureOr<bool> Function(Object, StackTrace) whenError = _defaultWhenError,
@@ -50,7 +49,7 @@ class MoabHttpClient extends http.BaseClient {
 
   MoabHttpClient.withCert(
     SecurityContext context, {
-    int timeoutMs = 10000,
+    int timeoutMs = 5000,
     int retries = 3,
     FutureOr<bool> Function(http.BaseResponse) when = _defaultWhen,
     FutureOr<bool> Function(Object, StackTrace) whenError = _defaultWhenError,
@@ -113,12 +112,10 @@ class MoabHttpClient extends http.BaseClient {
       StreamedResponse? response;
       try {
         _logRequest(request, retry: i);
-        final copied = _copyRequest(request, splitter.split());
         response = await _inner
-            .send(copied)
+            .send(_copyRequest(request, splitter.split()))
             .timeout(Duration(milliseconds: _timeoutMs));
       } catch (error, stackTrace) {
-        logger.e('Http Request Error: $error');
         if (i == _retries || !await _whenError(error, stackTrace)) rethrow;
       }
 
@@ -197,11 +194,11 @@ class MoabHttpClient extends http.BaseClient {
   }
 
   @override
-  Future<Response> get(Uri url, {Map<String, String>? headers, bool ignoreResponse = false}) async {
+  Future<Response> get(Uri url, {Map<String, String>? headers}) async {
     final response = await super
         .get(url, headers: headers)
         .then((response) => _handleResponse(response));
-    _logResponse(response, ignoreResponse: ignoreResponse);
+    _logResponse(response);
     return response;
   }
 
@@ -258,7 +255,7 @@ class MoabHttpClient extends http.BaseClient {
   ///
   Response _handleResponse(Response response) {
     // TODO Revisit - needs to considering about 500 internal server error, 502/503 bad requests
-    if (response.statusCode >= 400 && response.body.isJsonFormat()) {
+    if (response.statusCode >= 400) {
       logger.i('Cloud Error: ${response.statusCode}, ${response.body}');
       final error = ErrorResponse.fromJson(response.statusCode, json.decode(response.body));
       _errorResponseStreamController.add(error);
@@ -269,21 +266,16 @@ class MoabHttpClient extends http.BaseClient {
 }
 
 bool _defaultWhen(http.BaseResponse response)  {
-  try {
-    logger.d('response: ${response.reasonPhrase}');
-    if (response.statusCode == 503) {
-      return true;
-    }
-    if (response.statusCode == 404) {
-      return true;
-    }
-    if (response.statusCode == 401) {
-      return true;
-    }
-    return false;
-  } catch (_) {
-    return false;
-  }
+   if (response.statusCode == 503) {
+     return true;
+   }
+   if (response.statusCode == 404) {
+     final error = ErrorResponse.fromJson(response.statusCode, json.decode((response as Response).body));
+     if (error.code == errorResourceNotReady) {
+       return true;
+     }
+   }
+   return false;
 }
 
 bool _defaultWhenError(Object error, StackTrace stackTrace) =>

@@ -6,6 +6,13 @@ import 'package:linksys_moab/page/components/base_components/base_components.dar
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/route/_route.dart';
+
+import '../../../../bloc/network/cubit.dart';
+import '../../../../bloc/subscription/subscription_cubit.dart';
+import '../../../../bloc/subscription/subscription_state.dart';
+import '../../../../route/model/dashboard_path.dart';
+import '../../../../util/logger.dart';
 
 class SecuritySubscribeView extends StatelessWidget {
   const SecuritySubscribeView({Key? key}) : super(key: key);
@@ -36,11 +43,31 @@ class SecuritySubscribeView extends StatelessWidget {
               ),
             ),
             box36(),
-            PrimaryButton(
-              text: 'Subscribe',
-              onPress: () {
-                context.read<SecurityBloc>().add(SetFormalActiveEvent());
+            BlocListener<SubscriptionCubit, SubscriptionState>(
+              listener: (context, state) {
+                if(state.subscriptionOrderResponse !=null && state.networkEntitlementResponse != null) {
+                  context.read<SecurityBloc>().add(SetFormalActiveEvent());
+                  context.read<NavigationCubit>().popTo(DashboardSecurityPath());
+                }
               },
+              child: PrimaryButton(
+                text: 'Subscribe',
+                onPress: () {
+                  final item =
+                      context.read<SubscriptionCubit>().state.products?.first;
+                  logger.d(
+                      'subscription products : ${context.read<SubscriptionCubit>().state.products?.length}');
+                  String serialNumber = context
+                      .read<NetworkCubit>()
+                      .state
+                      .selected!
+                      .deviceInfo
+                      .serialNumber;
+                  if (item != null) {
+                    context.read<SubscriptionCubit>().buy(item, serialNumber);
+                  }
+                },
+              ),
             ),
             const SizedBox(
               height: 88,

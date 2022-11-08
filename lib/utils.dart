@@ -267,22 +267,8 @@ class Utils {
       'privateKey',
       'X-Linksys-Moab-App-Secret',
       'adminPassword',
-      'passphrase',
     ];
     return maskJsonValue(raw, keys);
-  }
-
-  static String replaceHttpScheme(String raw) {
-    const pattern = '(^https?:)//';
-    RegExp regex = RegExp(pattern, multiLine: true);
-    String result = raw;
-    regex.allMatches(raw).forEach((element) {
-      final target = element.group(1);
-      if (element.groupCount > 0 && target != null) {
-        result = raw.replaceFirst(target, target.replaceFirst(':', '-'));
-      }
-    });
-    return result;
   }
 
   static Future<bool> canUseBiometrics() async {

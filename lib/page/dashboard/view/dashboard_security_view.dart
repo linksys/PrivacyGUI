@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
+import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/security/bloc.dart';
 import 'package:linksys_moab/bloc/security/event.dart';
@@ -9,6 +11,10 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/util/logger.dart';
+
+import '../../../bloc/subscription/subscription_cubit.dart';
+import '../../../bloc/subscription/subscription_state.dart';
 
 class DashboardSecurityView extends StatefulWidget {
   const DashboardSecurityView({Key? key}) : super(key: key);
@@ -18,6 +24,14 @@ class DashboardSecurityView extends StatefulWidget {
 }
 
 class _DashboardSecurityViewState extends State<DashboardSecurityView> {
+  String serialNumber = '';
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<SubscriptionCubit>().queryProductsFromCloud();
+    context.read<SecurityBloc>().add(SetTrialActiveEvent());
+  }
 
   Widget _unsubscribedView(SecurityState state) {
     return Column(
@@ -28,18 +42,17 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
         ),
         _subscriptionPrompt(state),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _cyberthreatTile(),
-              _divider(),
-              _contentFilterTile(),
-              _contentFilterInfo(state),
-              _lastUpdate(state),
-            ],
-          )
-        ),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _cyberthreatTile(),
+                _divider(),
+                _contentFilterTile(),
+                _contentFilterInfo(state),
+                _lastUpdate(state),
+              ],
+            )),
       ],
     );
   }
@@ -67,7 +80,6 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             ],
           ),
         ),
-
       ],
     );
   }
@@ -166,7 +178,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
       padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
       child: BlocBuilder<SecurityBloc, SecurityState>(
         builder: (context, state) {
-          switch(state.subscriptionStatus) {
+          switch (state.subscriptionStatus) {
             case SubscriptionStatus.unsubscribed:
               return _unsubscribedView(state);
             case SubscriptionStatus.trialActive:
@@ -217,7 +229,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
 
   Widget _getSubscriptionStatusImage() {
     String imageName;
-    switch(context.read<SecurityBloc>().state.subscriptionStatus) {
+    switch (context.read<SecurityBloc>().state.subscriptionStatus) {
       case SubscriptionStatus.unsubscribed:
         imageName = 'assets/images/icon_checked_circle.png';
         break;
@@ -254,9 +266,10 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
                 _getSubscriptionPromptText(state),
-                style: Theme.of(context).textTheme.headline3?.copyWith(
-                    fontWeight: FontWeight.w500
-                ),
+                style: Theme.of(context)
+                    .textTheme
+                    .headline3
+                    ?.copyWith(fontWeight: FontWeight.w500),
               ),
             ),
           ),
@@ -266,24 +279,23 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
         ),
         box16(),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: PrimaryButton(
-            text: 'Subscribe',
-            onPress: () {
-              context.read<SecurityBloc>().add(SetFormalActiveEvent());
-            },
-          ),
-        ),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: PrimaryButton(
+              text: 'Subscribe',
+              onPress: () {
+                context.read<NavigationCubit>().push(SecurityMarketingPath());
+              },
+            )),
       ],
     );
   }
 
   String _getSubscriptionPromptText(SecurityState state) {
-    switch(state.subscriptionStatus) {
+    switch (state.subscriptionStatus) {
       case SubscriptionStatus.unsubscribed:
         return 'Get enterprise-level security for your home';
       case SubscriptionStatus.active:
-        return '';  // The subscription prompt will not display
+        return ''; // The subscription prompt will not display
       case SubscriptionStatus.trialActive:
         final numOfDays = (state as TrialActiveState).remainingTrialDays;
         return '$numOfDays days left on Linksys Secure trial';
@@ -292,7 +304,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
       case SubscriptionStatus.expired:
         return 'Get enterprise-level security for your home';
       case SubscriptionStatus.turnedOff:
-        return '';  // The subscription prompt will not display
+        return ''; // The subscription prompt will not display
     }
   }
 
@@ -323,7 +335,8 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
   }
 
   Widget _cyberthreatGrid(SecurityState state) {
-    final isGridEnabled = state.subscriptionStatus != SubscriptionStatus.turnedOff;
+    final isGridEnabled =
+        state.subscriptionStatus != SubscriptionStatus.turnedOff;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -333,8 +346,8 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
           replacement: Text(
             'No one has tried any funny business yet, but we are monitoring 24/7',
             style: Theme.of(context).textTheme.headline3?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
+                  fontWeight: FontWeight.w500,
+                ),
           ),
           child: Row(
             children: [
@@ -346,8 +359,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                   height: 96,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
-                      ..args = {'type': CyberthreatType.virus}
-                    );
+                      ..args = {'type': CyberthreatType.virus});
                   },
                 ),
               ),
@@ -360,8 +372,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                   height: 96,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
-                      ..args = {'type': CyberthreatType.botnet}
-                    );
+                      ..args = {'type': CyberthreatType.botnet});
                   },
                 ),
               ),
@@ -374,8 +385,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                   height: 96,
                   onPress: () {
                     NavigationCubit.of(context).push(SecurityCyberThreatPath()
-                      ..args = {'type': CyberthreatType.website}
-                    );
+                      ..args = {'type': CyberthreatType.website});
                   },
                 ),
               ),
@@ -394,9 +404,10 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
           box8(),
           Text(
             '${state.numOfInspection} total inspections performed',
-            style: Theme.of(context).textTheme.headline3?.copyWith(
-                fontWeight: FontWeight.w400
-            ),
+            style: Theme.of(context)
+                .textTheme
+                .headline3
+                ?.copyWith(fontWeight: FontWeight.w400),
           ),
         ],
       ),
@@ -419,9 +430,10 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
       child: TitleWithIcons(
         text: Text(
           'Content filtered',
-          style: Theme.of(context).textTheme.headline3?.copyWith(
-              fontWeight: FontWeight.w700
-          ),
+          style: Theme.of(context)
+              .textTheme
+              .headline3
+              ?.copyWith(fontWeight: FontWeight.w700),
         ),
         leadingIcon: Image.asset(
           'assets/images/icon_block.png',
@@ -446,9 +458,10 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
     if (state is UnsubscribedState) {
       return Text(
         'Create healthy digital lifestyle for your family and feel safe with the content on your network. Filter out categories and apps you don’t want.',
-        style: Theme.of(context).textTheme.headline3?.copyWith(
-            fontWeight: FontWeight.w500
-        ),
+        style: Theme.of(context)
+            .textTheme
+            .headline3
+            ?.copyWith(fontWeight: FontWeight.w500),
       );
     } else {
       return Visibility(
@@ -458,9 +471,10 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
           child: _incidentsOnProfiles(),
           replacement: Text(
             'No incidents yet',
-            style: Theme.of(context).textTheme.headline3?.copyWith(
-                fontWeight: FontWeight.w500
-            ),
+            style: Theme.of(context)
+                .textTheme
+                .headline3
+                ?.copyWith(fontWeight: FontWeight.w500),
           ),
         ),
         replacement: _createFilter(),
@@ -473,9 +487,10 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
       children: [
         Text(
           'Create healthy digital lifestyle for your family and feel safe with the content on your network. Filter out categories and apps you don’t want.',
-          style: Theme.of(context).textTheme.headline3?.copyWith(
-              fontWeight: FontWeight.w500
-          ),
+          style: Theme.of(context)
+              .textTheme
+              .headline3
+              ?.copyWith(fontWeight: FontWeight.w500),
         ),
         box24(),
         PrimaryButton(
@@ -522,7 +537,10 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                 ),
                 title: Text(
                   _mockProfiles[index].name,
-                  style: Theme.of(context).textTheme.bodyText1?.copyWith(fontWeight: FontWeight.w700),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyText1
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 onTap: () {
                   NavigationCubit.of(context).push(CFFilteredContentPath());
@@ -542,15 +560,17 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
         box48(),
         Text(
           'Fortinet threat database',
-          style: Theme.of(context).textTheme.headline4?.copyWith(
-              fontWeight: FontWeight.w700
-          ),
+          style: Theme.of(context)
+              .textTheme
+              .headline4
+              ?.copyWith(fontWeight: FontWeight.w700),
         ),
         Text(
           'Last updated on ${state.latestUpdateDate}',
-          style: Theme.of(context).textTheme.headline4?.copyWith(
-              fontWeight: FontWeight.w500
-          ),
+          style: Theme.of(context)
+              .textTheme
+              .headline4
+              ?.copyWith(fontWeight: FontWeight.w500),
         ),
       ],
     );
@@ -563,15 +583,15 @@ class TitleWithIcons extends StatelessWidget {
     required this.text,
     this.leadingIcon,
     this.trailingIcon,
-  }): super(key: key){
-    if(leadingIcon != null) {
+  }) : super(key: key) {
+    if (leadingIcon != null) {
       _widgets.add(leadingIcon!);
       _widgets.add(box8());
     }
     _widgets.add(Expanded(
       child: text,
     ));
-    if(trailingIcon != null) {
+    if (trailingIcon != null) {
       _widgets.add(trailingIcon!);
     }
   }
@@ -625,20 +645,18 @@ class InfoBlockWidget extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: isVertical
             ? Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: _content(context),
-        )
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: _content(context),
+              )
             : Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: _content(
-            context,
-            space: const SizedBox(
-              width: 16,
-            )
-          ),
-        ),
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: _content(context,
+                    space: const SizedBox(
+                      width: 16,
+                    )),
+              ),
       ),
     );
   }

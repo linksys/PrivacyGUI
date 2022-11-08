@@ -24,8 +24,6 @@ String generalErrorCodeHandler(BuildContext context, String code) {
       return getAppLocalizations(context).error_otp_exceeds_threshold;
     case errorInvalidPhone:
       return getAppLocalizations(context).error_invalid_phone_number;
-    case errorJNAPUnauthorized:
-      return getAppLocalizations(context).error_incorrect_password;
     default:
       logger.e('Unhandled Error: $code');
       return getAppLocalizations(context).unknown_error_code(code);

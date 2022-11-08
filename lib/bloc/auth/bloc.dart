@@ -7,7 +7,6 @@ import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
-import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
@@ -61,10 +60,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
     _errorStreamSubscription = errorResponseStream.listen((error) {
       logger.e(
           'Receive http response error: ${error.status}, ${error.code}, ${error.errorMessage}');
-      if (error.status == 401 &&
-          (error.code == errorBadAuthentication ||
-              error.code == errorNotAuthenticated ||
-              error.code == errorAuthenticationMissing)) {
+      if (error.status == 401) {
         add(Unauthorized());
       }
     });
@@ -81,18 +77,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
 
   _onInitAuth(InitAuth event, Emitter<AuthState> emit) async {
     // TODO add local auth check
-    logger.d('check cloud auth status...');
+    logger.d('check auth status');
     final isValid = await checkCertValidation();
-    logger.d('is cloud auth valid: $isValid');
+    logger.d('is auth valid: $isValid');
     if (isValid) {
-      final _isSessionExpired = await isSessionExpired();
-      logger.d('is cloud session valid: $isValid');
-      if (_isSessionExpired) {
+      if (await isSessionExpired()) {
         emit(AuthState.unAuthorized());
       }
+
       emit(AuthState.cloudAuthorized());
-    } else if (await checkLocalPasswordExist()) {
-      emit(AuthState.localAuthorized());
     } else {
       emit(AuthState.unAuthorized());
     }
@@ -236,20 +229,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
     emit(AuthState.localAuthorized());
   }
 
-  void _onLogout(Logout event, Emitter<AuthState> emit) async {
+  void _onLogout(Logout event, Emitter<AuthState> emit) {
     // Don't remove all keys on shared preferences when logging out if biometric is enabled
-    final prefs = await SharedPreferences.getInstance();
-    const storage = FlutterSecureStorage();
-    final isEnableBiometric = prefs.getBool(moabPrefEnableBiometrics) ?? false;
-    if (isEnableBiometric) {
-      await prefs.remove(moabPrefSessionDataKey);
-    } else {
-      await storage.delete(key: moabPrefCloudPrivateKey);
-      await storage.delete(key: moabPrefCloudCertDataKey);
-      await storage.delete(key: moabPrefLocalPassword);
-      await prefs.remove(moabPrefCloudPublicKey);
-    }
-    emit(AuthState.unAuthorized());
+    SharedPreferences.getInstance().then((prefs) {
+      final isEnableBiometric = prefs.getBool(moabPrefEnableBiometrics) ?? false;
+      if (isEnableBiometric) {
+        prefs.remove(moabPrefSessionDataKey);
+      } else {
+        prefs.remove(moabPrefCloudCertDataKey);
+        prefs.remove(moabPrefCloudPublicKey);
+        prefs.remove(moabPrefCloudPrivateKey);
+      }
+      emit(AuthState.unAuthorized());
+    });
   }
 
   Future<List<RegionCode>> fetchRegionCodes() {
@@ -327,8 +319,7 @@ extension AuthBlocCloud on AuthBloc {
     //   default:
     //     break;
     // }
-    return await _repository.createAccountPreparationUpdateMethod(
-        token, method);
+    return await _repository.createAccountPreparationUpdateMethod(token, method);
   }
 
   Future<void> createVerifiedAccount() async {
@@ -471,16 +462,6 @@ extension AuthBlocCloud on AuthBloc {
         taskId: info.certInfo.taskId, secret: info.certInfo.certSecret);
   }
 
-  Future<bool> checkLocalPasswordExist() async {
-    const storage = FlutterSecureStorage();
-    final password = await storage.read(key: moabPrefLocalPassword);
-    if (password == null) {
-      return false;
-    } else {
-      return _routerRepository.testLocalCert();
-    }
-  }
-
   Future<bool> checkCertValidation() async {
     const storage = FlutterSecureStorage();
     String? privateKey = await storage.read(key: moabPrefCloudPrivateKey);
@@ -493,7 +474,8 @@ extension AuthBlocCloud on AuthBloc {
     if (!isKeyExist) {
       return false;
     }
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert ?? ''));
+    final certData = CloudDownloadCertData.fromJson(
+        jsonDecode(cert ?? ''));
     final expiredDate = DateTime.parse(certData.expiration);
     if (expiredDate.millisecondsSinceEpoch -
             DateTime.now().millisecondsSinceEpoch <
@@ -506,7 +488,6 @@ extension AuthBlocCloud on AuthBloc {
   Future<bool> isSessionExpired() async {
     final prefs = await SharedPreferences.getInstance();
     if (prefs.containsKey(moabPrefSessionDataKey)) {
-      logger.d('check cloud session expiration...');
       final sessionData = CloudSessionData.fromJson(
           jsonDecode(prefs.getString(moabPrefSessionDataKey)!));
       final sessionExpiredDate = DateTime.parse(sessionData.expiration);
@@ -526,7 +507,7 @@ extension AuthBlocCloud on AuthBloc {
       logger.d('extend certification: original cert data does not exist!');
       return;
     }
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert));
+    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert!));
     final newCertInfo =
         await _repository.extendCertificate(certId: certData.id);
     await delayDownloadCertTime(newCertInfo.downloadTime);
@@ -542,7 +523,7 @@ extension AuthBlocCloud on AuthBloc {
       logger.d('extend certification: original cert data does not exist!');
       return;
     }
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert));
+    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert!));
     final session = await _repository.requestSession(certId: certData.id);
     final pref = await SharedPreferences.getInstance();
     pref.setString(moabPrefSessionDataKey, jsonEncode(session.toJson()));
