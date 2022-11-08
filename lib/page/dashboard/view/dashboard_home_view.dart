@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
@@ -308,7 +309,8 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
   }
 
   Widget _profileTile() {
-    return BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
+    final authBloc = context.read<AuthBloc>();
+    return authBloc.isCloudLogin() ? BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
       return Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -342,7 +344,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
           ),
         ],
       );
-    });
+    }) : const Center();
   }
 
   Widget _profileAdd() {

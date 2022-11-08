@@ -23,13 +23,12 @@ import 'package:linksys_moab/page/components/base_components/progress_bars/full_
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
-import 'package:linksys_moab/repository/router/owend_network_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
-import 'package:linksys_moab/utils.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -88,13 +87,6 @@ class _DebugToolsViewState extends State<DebugToolsView> {
       children: [
         ..._buildInfo(),
         Text(
-          'Crashlytics:',
-          style: Theme.of(context)
-              .textTheme
-              .headline2
-              ?.copyWith(color: Theme.of(context).colorScheme.primary),
-        ),
-        Text(
           'Log:',
           style: Theme.of(context)
               .textTheme
@@ -126,14 +118,11 @@ class _DebugToolsViewState extends State<DebugToolsView> {
               sharePositionOrigin:
                   Rect.fromLTWH(0, 0, size.width, size.height / 2),
             );
-            print('Share result: $result');
             if (result.status == ShareResultStatus.success) {
               Storage.deleteFile(Storage.logFileUri);
               Storage.deleteFile(Uri.parse(shareLogPath));
             }
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text("Share result: ${result.status}"),
-            ));
+            showSnackBar(context, Text("Share result: ${result.status}"));
           },
         ),
         box16(),

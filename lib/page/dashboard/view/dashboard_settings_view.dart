@@ -23,6 +23,15 @@ class DashboardSettingsView extends StatefulWidget {
 }
 
 class _DashboardSettingsViewState extends State<DashboardSettingsView> {
+
+  late final AuthBloc _authBloc;
+
+  @override
+  void initState() {
+    _authBloc = context.read<AuthBloc>();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BasePageView.noNavigationBar(
@@ -126,35 +135,35 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
       ],
     );
   }
-}
-
-_networkSettingsSection(BuildContext context) => DashboardSettingsSection(
-      title: 'NETWORK',
-      items: [
-        DashboardSettingsItem(title: 'WiFi', path: WifiSettingsOverviewPath()),
-        DashboardSettingsItem(title: getAppLocalizations(context).administration, path: AdministrationViewPath()),
-        DashboardSettingsItem(title: 'Priority', path: UnknownPath()),
-        DashboardSettingsItem(title: 'Smart home', path: UnknownPath()),
-        DashboardSettingsItem(
-          title: 'Internet schedule',
-          path: ProfileListPath()..args = {'category': PService.internetSchedule},
-        ),
+  _networkSettingsSection(BuildContext context) => DashboardSettingsSection(
+    title: 'NETWORK',
+    items: [
+      DashboardSettingsItem(title: 'WiFi', path: WifiSettingsOverviewPath()),
+      DashboardSettingsItem(title: getAppLocalizations(context).administration, path: AdministrationViewPath()),
+      DashboardSettingsItem(title: 'Priority', path: UnknownPath()),
+      DashboardSettingsItem(title: 'Smart home', path: UnknownPath()),
+      ...(_authBloc.isCloudLogin() ?[DashboardSettingsItem(
+        title: 'Internet schedule',
+        path: ProfileListPath()..args = {'category': PService.internetSchedule},
+      ),
         DashboardSettingsItem(
           title: 'Content filters',
           path: ProfileListPath()..args = {'category': PService.contentFilter},
         ),
-        DashboardSettingsItem(title: 'Profiles', path: ProfileListPath()),
-      ],
-    );
+        DashboardSettingsItem(title: 'Profiles', path: ProfileListPath()),] :[])
+    ],
+  );
 //
-_youSettingsSection() => DashboardSettingsSection(
-      title: 'YOU',
-      items: [
-        DashboardSettingsItem(title: 'Account', path: AccountDetailPath()),
-        DashboardSettingsItem(title: 'Notifications', path: UnknownPath()),
-        DashboardSettingsItem(title: 'Privacy and legal', path: UnknownPath()),
-      ],
-    );
+  _youSettingsSection() => DashboardSettingsSection(
+    title: 'YOU',
+    items: [
+      DashboardSettingsItem(title: 'Account', path: AccountDetailPath()),
+      DashboardSettingsItem(title: 'Notifications', path: UnknownPath()),
+      DashboardSettingsItem(title: 'Privacy and legal', path: UnknownPath()),
+    ],
+  );
+
+}
 
 class DashboardSettingsSection {
   DashboardSettingsSection({required this.title, required this.items});

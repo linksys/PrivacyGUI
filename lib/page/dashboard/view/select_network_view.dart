@@ -25,9 +25,15 @@ class SelectNetworkView extends ArgumentsStatefulView {
 class _SelectNetworkViewState extends State<SelectNetworkView> {
   // TODO: #REFACTOR : Need to refactor this page, only for demo now
   bool isLoading = false;
+  late final NetworkCubit _networkCubit;
+  late final SubscriptionCubit _subscriptionCubit;
+  late final NavigationCubit _navigationCubit;
 
   @override
   void initState() {
+    _networkCubit = context.read<NetworkCubit>();
+    _subscriptionCubit = context.read<SubscriptionCubit>();
+    _navigationCubit = NavigationCubit.of(context);
     super.initState();
   }
 
@@ -102,12 +108,9 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
                 setState(() {
                   isLoading = true;
                 });
-                await context
-                    .read<NetworkCubit>()
-                    .selectNetwork(state.networks[index]);
-
-                NavigationCubit.of(context).clearAndPush(DashboardHomePath());
-                context.read<SubscriptionCubit>().loadingProducts();
+                await _networkCubit.selectNetwork(state.networks[index]);
+                await _subscriptionCubit.loadingProducts();
+                _navigationCubit.clearAndPush(DashboardHomePath());
               },
             ),
           )

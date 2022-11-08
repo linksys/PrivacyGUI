@@ -10,7 +10,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
         super(const SubscriptionState());
   final SubscriptionRepository _repo;
 
-  void loadingProducts() async {
+  Future<void> loadingProducts() async {
     const Set<String> _kIds = <String>{linksysSecurity};
     final ProductDetailsResponse response =
         await InAppPurchase.instance.queryProductDetails(_kIds);

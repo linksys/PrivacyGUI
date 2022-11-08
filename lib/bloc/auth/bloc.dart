@@ -261,6 +261,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
     super.onTransition(transition);
     logger.d("AuthBloc:: onTransition: $transition");
   }
+
+  bool isCloudLogin() {
+    return state is AuthCloudLoginState;
+  }
 }
 
 extension AuthBlocCloud on AuthBloc {

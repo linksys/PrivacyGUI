@@ -11,6 +11,8 @@ abstract class SetupEvent extends Equatable {
   List<Object> get props => [];
 }
 
+class Init extends SetupEvent {}
+
 class ResumePointChanged extends SetupEvent {
   const ResumePointChanged({required this.status});
 

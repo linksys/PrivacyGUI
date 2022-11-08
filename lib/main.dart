@@ -42,7 +42,6 @@ import 'bloc/subscription/subscription_cubit.dart';
 import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
 import 'repository/authenticate/impl/router_auth_repository.dart';
-import 'package:flutter_driver/driver_extension.dart';
 import 'repository/authenticate/otp_repository.dart';
 import 'route/model/_model.dart';
 
