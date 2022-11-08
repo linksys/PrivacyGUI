@@ -1,20 +1,25 @@
-
 import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/page/dashboard/view/devices/_devices.dart';
 import '_model.dart';
 import 'package:linksys_moab/route/_route.dart';
-
 
 class DevicesPath extends DashboardPath {
   @override
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
       case DeviceListPath:
-        return DeviceListView();
+        return const DeviceListView();
       case DeviceDetailPath:
-        return DeviceDetailView();
+        return const DeviceDetailView();
       case EditDeviceNamePath:
-        return EditDeviceNameView();
+        return const EditDeviceNameView();
+      case EditDeviceIconPath:
+        return EditDeviceIconView(
+          args: args,
+          next: next,
+        );
+      case OfflineDeviceListPath:
+        return const OfflineDeviceListView();
       default:
         return const Center();
     }
@@ -32,3 +37,10 @@ class DeviceDetailPath extends DevicesPath {
 }
 
 class EditDeviceNamePath extends DevicesPath {}
+
+class OfflineDeviceListPath extends DevicesPath {}
+
+class EditDeviceIconPath extends DevicesPath with ReturnablePath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
+}

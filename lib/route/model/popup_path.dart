@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:linksys_moab/page/components/customs/no_network_bottom_modal.dart';
+import 'package:linksys_moab/page/components/customs/_customs.dart';
 import 'package:linksys_moab/route/_route.dart';
-
 
 import 'base_path.dart';
 
@@ -10,14 +9,23 @@ abstract class PopUpPath extends BasePath {
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
       case NoInternetConnectionPath:
-        return NoInternetConnectionModal();
+        return const NoInternetConnectionModal();
+      case ClearOfflineDevicesPath:
+        return const ClearDevicesModal();
       default:
-        return Center();
+        return const Center();
     }
   }
 }
 
 class NoInternetConnectionPath extends PopUpPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig
+    ..isFullScreenDialog = true
+    ..isOpaque = false;
+}
+
+class ClearOfflineDevicesPath extends PopUpPath {
   @override
   PageConfig get pageConfig => super.pageConfig
     ..isFullScreenDialog = true

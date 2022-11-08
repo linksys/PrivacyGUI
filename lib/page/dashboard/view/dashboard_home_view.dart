@@ -400,7 +400,9 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
     if (devices != null && devices.isNotEmpty) {
       for (RouterDevice device in devices) {
         if (!device.isAuthority && device.nodeType == null) {
-          deviceCount += 1;
+          if (device.connections.isNotEmpty) {
+            deviceCount += 1;
+          }
         }
       }
     }

@@ -21,3 +21,4 @@ const mqttRemotePublishTopic = 'groups/$varMqttGroupId/nets/$varMqttNetworkId';
 const mqttRemoteResponseTopic = '$mqttRemotePublishTopic/response';
 
 const userDefinedDeviceLocation = 'userDeviceLocation';
+const userDefinedDeviceName = 'userDeviceName';
