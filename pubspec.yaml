@@ -47,7 +47,7 @@ dependencies:
   equatable: ^2.0.0
   connectivity_plus: ^2.3.9
   network_info_plus: ^2.3.2
-  permission_handler: 10.2.0
+  permission_handler: 9.2.0
   device_info_plus: ^3.2.3
   pin_code_fields: ^7.4.0
   firebase_core: ^1.17.1
