@@ -36,7 +36,7 @@ class _EditDeviceIconViewState extends State<EditDeviceIconView> {
   Widget build(BuildContext context) {
     return BasePageView.bottomSheetModal(
       bottomSheet: BasicLayout(
-        alignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         header: BaseAppBar(
           leading: [
             IconButton(

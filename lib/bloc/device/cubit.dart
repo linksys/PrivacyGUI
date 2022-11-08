@@ -42,7 +42,7 @@ class DeviceCubit extends Cubit<DeviceState> {
     if (results.containsKey(JNAPAction.getDevices.actionValue)) {
       final devices = List.from(
               results[JNAPAction.getDevices.actionValue]!.output['devices'])
-          .map((e) => Device.fromJson(e))
+          .map((e) => RouterDevice.fromJson(e))
           .toList();
 
       // To make sure devices can get correct place, sort the device list with
@@ -66,7 +66,7 @@ class DeviceCubit extends Cubit<DeviceState> {
       String masterPlace = '';
       Map<String, String> placeMap = {};
       if (devices.isNotEmpty) {
-        for (Device device in devices) {
+        for (RouterDevice device in devices) {
           // Master
           if (device.isAuthority || device.nodeType == 'Master') {
             masterPlace = Utils.getDevicePlace(device);

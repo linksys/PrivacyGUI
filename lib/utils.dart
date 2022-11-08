@@ -21,6 +21,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'bloc/device/state.dart';
+import 'validator_rules/_validator_rules.dart';
 
 class Utils {
   static const String NoSpeedCalculationText = "-----";
@@ -480,7 +481,7 @@ class Utils {
     return maxUserLimit - startingIPAddress - 1;
   }
 
-  static String getDevicePlace(Device device) {
+  static String getDevicePlace(RouterDevice device) {
     String place = '';
     for (PropertyDevice property in device.properties) {
       if (property.name == 'userDeviceLocation') {
@@ -495,7 +496,7 @@ class Utils {
     return place;
   }
 
-  static String getDeviceName(Device device) {
+  static String getDeviceName(RouterDevice device) {
     for (PropertyDevice property in device.properties) {
       if (property.name == 'userDeviceName') {
         if (property.value.isNotEmpty) {

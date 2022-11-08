@@ -57,7 +57,7 @@ class _OfflineDeviceListViewState extends State<OfflineDeviceListView> {
           ],
         ),
         child: BasicLayout(
-          alignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
