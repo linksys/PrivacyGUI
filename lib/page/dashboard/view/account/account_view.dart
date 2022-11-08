@@ -20,6 +20,10 @@ import 'package:linksys_moab/route/model/otp_path.dart';
 import 'package:linksys_moab/route/_route.dart';
 
 import 'package:linksys_moab/utils.dart';
+import 'package:styled_text/styled_text.dart';
+
+import '../../../../bloc/internet_check/cubit.dart';
+import '../../../../route/model/create_account_path.dart';
 
 class AccountView extends StatefulWidget {
   const AccountView({super.key});
@@ -51,31 +55,53 @@ class _AccountViewState extends State<AccountView> {
             }),
             actions: [],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 33),
-              Center(
-                child: CircleAvatar(
-                  child: Image.asset(
-                    'assets/images/icon_default_avatar.png',
-                    width: 52,
-                    height: 52,
-                  ),
-                  radius: 45,
-                  backgroundColor: MoabColor.avatarBackground,
-                ),
-              ),
-              box16(),
-              _informationSection(state),
-              dividerWithPadding(),
-              _subscriptionSection(state),
-              dividerWithPadding(),
-              _preferencesSection(state),
-              Spacer(),
-            ],
-          ));
+          child:
+          context.read<AuthBloc>().state.status ==
+                  AuthStatus.localAuthorized
+              ? _local(state)
+              : _remote(state));
     });
+  }
+
+  Widget _local(AccountState state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 33),
+        box16(),
+        _localLoginInformationSection(context),
+        dividerWithPadding(),
+        _biometricsTile(state),
+        const Spacer(),
+      ],
+    );
+  }
+
+  Widget _remote(AccountState state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 33),
+        Center(
+          child: CircleAvatar(
+            child: Image.asset(
+              'assets/images/icon_default_avatar.png',
+              width: 52,
+              height: 52,
+            ),
+            radius: 45,
+            backgroundColor: MoabColor.avatarBackground,
+          ),
+        ),
+        box16(),
+        _informationSection(state),
+        dividerWithPadding(),
+        _subscriptionSection(state),
+        dividerWithPadding(),
+        _preferencesSection(state),
+        const Spacer(),
+      ],
+    );
   }
 
   Widget _informationSection(AccountState state) {
@@ -266,6 +292,72 @@ class _AccountViewState extends State<AccountView> {
             }
           }
         },
+      ),
+    );
+  }
+
+  Widget _localLoginInformationSection(BuildContext context) {
+    return SectionTile(
+      header: Text(
+        'No Linksys account',
+        style: Theme.of(context).textTheme.headline4,
+      ),
+      child: Column(
+        children: [
+          StyledText(
+              text:
+                  'Unlock app features with a Linksys account  <link href="https://flutter.dev">Learn more</link>',
+              style: Theme.of(context)
+                  .textTheme
+                  .headline2
+                  ?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
+              tags: {
+                'link': StyledTextActionTag(
+                    (String? text, Map<String?, String?> attrs) {
+                  String? link = attrs['href'];
+                  print('The "$link" link is tapped.');
+                }, style: const TextStyle(color: Colors.blue)),
+              }),
+          box16(),
+          Row(children: [
+            box4(),
+            Text('\u2022'),
+            box4(),
+            Text(
+              'Benefit 1',
+              style: Theme.of(context).textTheme.headline4,
+            ),
+          ]),
+          Row(children: [
+            box4(),
+            Text('\u2022'),
+            box4(),
+            Text(
+              'Benefit 2',
+              style: Theme.of(context).textTheme.headline4,
+            ),
+          ]),
+          Row(children: [
+            box4(),
+            Text('\u2022'),
+            box4(),
+            Text(
+              'Benefit X',
+              style: Theme.of(context).textTheme.headline4,
+            ),
+          ]),
+          const SizedBox(height: 28,),
+          PrimaryButton(
+            text: 'Create an account',
+            onPress: () {
+              context.read<InternetCheckCubit>().getInternetConnectionStatus();
+              context.read<NavigationCubit>().push(CreateCloudAccountPath()..args = {
+                'config': 'LOCALAUTHCREATEACCOUNT'
+              });
+            },
+          ),
+          const SizedBox(height: 46,),
+        ],
       ),
     );
   }

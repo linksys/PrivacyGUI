@@ -26,6 +26,7 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
     on<SaveRouterSettings>(_onSaveRouterSettings);
     on<FetchNetworkId>(_onFetchNetworkId);
     on<SetRouterProperties>(_onSetRouterLocation);
+    on<LocalAuthorizedCreatAccount>(_onLocalAuthorizedCreateAccount);
   }
 
   final RouterRepository _routerRepository;
@@ -125,6 +126,10 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
     });
     // TODO #1 to wait the transaction done since current transaction won't get response back
     await Future.delayed(Duration(seconds: 30));
+    emit(state.copyWith(resumePoint: SetupResumePoint.wifiInterrupted));
+  }
+
+  void _onLocalAuthorizedCreateAccount(LocalAuthorizedCreatAccount event, Emitter<SetupState> emit) {
     emit(state.copyWith(resumePoint: SetupResumePoint.wifiInterrupted));
   }
 

@@ -55,3 +55,5 @@ class SetRouterProperties extends SetupEvent {
 
   final List<NodeProperties> properties;
 }
+
+class LocalAuthorizedCreatAccount extends SetupEvent {}
