@@ -8,6 +8,7 @@ class ImageWithBadge extends StatelessWidget {
     required this.imageSize,
     this.badgeSize,
     this.offset = 8,
+    this.fit,
   }) : super(key: key);
 
   final String imagePath;
@@ -15,6 +16,7 @@ class ImageWithBadge extends StatelessWidget {
   final double imageSize;
   final double? badgeSize;
   final double offset;
+  final BoxFit? fit;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +32,7 @@ class ImageWithBadge extends StatelessWidget {
               imagePath,
               width: imageSize,
               height: imageSize,
+              fit: fit,
             ),
           ),
           if (badgePath != null)

@@ -10,13 +10,17 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/uuid.dart';
+import 'package:linksys_moab/util/validator.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'bloc/device/state.dart';
 
 class Utils {
   static const String NoSpeedCalculationText = "-----";
@@ -474,5 +478,106 @@ class Utils {
     }
 
     return maxUserLimit - startingIPAddress - 1;
+  }
+
+  static String getDevicePlace(Device device) {
+    String place = '';
+    for (PropertyDevice property in device.properties) {
+      if (property.name == 'userDeviceLocation') {
+        place = property.value;
+        break;
+      }
+    }
+
+    if (place.isEmpty) {
+      place = getDeviceName(device);
+    }
+    return place;
+  }
+
+  static String getDeviceName(Device device) {
+    for (PropertyDevice property in device.properties) {
+      if (property.name == 'userDeviceName') {
+        if (property.value.isNotEmpty) {
+          return property.value;
+        }
+      }
+    }
+
+    String? deviceName;
+    final friendlyName = device.friendlyName;
+    final manufacturer = device.model.manufacturer;
+    final modelNumber = device.model.modelNumber;
+    final operatingSystem = device.unit.operatingSystem;
+    String deviceType = device.model.deviceType;
+    bool? isGuest;
+    bool isAndroidName = false;
+
+    for (ConnectionDevice connection in device.connections) {
+      if (connection.isGuest != null) {
+        isGuest = connection.isGuest;
+        break;
+      }
+    }
+
+    if (friendlyName != null) {
+      isAndroidName =
+          InputValidator([AndroidNameRule()]).validate(friendlyName);
+    }
+
+    if (['Mobile', 'Phone', 'Tablet'].contains(deviceType) && isAndroidName) {
+      if (manufacturer != null && modelNumber != null) {
+        deviceName = '$manufacturer $modelNumber';
+      } else if (operatingSystem != null) {
+        deviceName = '$operatingSystem $deviceType';
+        if (manufacturer != null) {
+          deviceName = '$manufacturer $deviceName';
+        }
+      }
+    }
+
+    if (deviceName != null) {
+      return deviceName;
+    } else if (friendlyName != null) {
+      return friendlyName;
+    } else if (modelNumber != null) {
+      return modelNumber;
+    } else if (isGuest != null) {
+      return isGuest ? 'guestNetworkDevice' : 'networkDevice';
+    } else {
+      return 'networkDevice';
+    }
+  }
+
+  static String getDeviceSignalImageString(DeviceDetailInfo deviceInfo) {
+    String icon = 'icon_signal_wired';
+    if (deviceInfo.connection == 'Wired') {
+      icon = 'icon_signal_wired';
+    } else {
+      final signal = deviceInfo.signal;
+      if (signal > 0) {
+        if (signal > 40) {
+          icon = 'icon_signal_excellent';
+        } else if (signal > 30) {
+          icon = 'icon_signal_good';
+        } else if (signal > 20) {
+          icon = 'icon_signal_fair';
+        } else {
+          icon = 'icon_signal_weak';
+        }
+      } else {
+        if (signal > -50) {
+          icon = 'icon_signal_excellent';
+        } else if (signal > -60) {
+          icon = 'icon_signal_good';
+        } else if (signal > -70) {
+          icon = 'icon_signal_fair';
+        } else {
+          icon = 'icon_signal_weak';
+        }
+      }
+    }
+
+    return icon;
   }
 }

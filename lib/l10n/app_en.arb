@@ -575,5 +575,21 @@
   "node_location_office": "Office",
   "node_location_garage": "Garage",
   "node_location_studio": "Studio",
-  "node_location_custom": "Custom"
+  "node_location_custom": "Custom",
+  "create_router_password_description": "A router password allows you to access your router settings locally without your Linksys account",
+  "total_bandwidth_usage": "Total bandwidth usage",
+  "no_device_connection_main": "There are no devices connected to your network.",
+  "no_devices": "No devices",
+  "no_device_connection_guest": "Share WiFi to guests while keeping your main network secure.",
+  "guest_wifi_is_off": "Guest WiFi is off",
+  "no_device_connection_guest_wifi_off": "Share WiFi to guests while keeping your main network secure.\n\nYou can turn on your Guest WiFi in Settings.",
+  "no_device_connection_iot": "Use IoT Wifi to isolate smart devices such as cameras, doorbells, voice assistants, and TVs from your main network for security.  Learn more",
+  "iot_wifi_is_off": "IoT WiFi is off",
+  "no_device_connection_iot_wifi_off": "Use IoT Wifi to isolate smart devices such as cameras, doorbells, voice assistants, and TVs from your main network for security.  Learn more\n\nYou can turn on your IoT WiFi in Settings.",
+  "offline_devices": "Offline devices",
+  "clear_all": "Clear all",
+  "clear_all_offline_devices": "Clear all offline devices?",
+  "clear_all_offline_devices_desc": "These devices will reappear if they reconnect to your Wi-Fi network.",
+  "clear": "Clear",
+  "there_are_no_offline_devices": "There are no offline devices."
 }
