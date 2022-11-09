@@ -130,7 +130,7 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
   }
 
   void _onLocalAuthorizedCreateAccount(LocalAuthorizedCreatAccount event, Emitter<SetupState> emit) {
-    emit(state.copyWith(resumePoint: SetupResumePoint.wifiInterrupted));
+    emit(state.copyWith(resumePoint: SetupResumePoint.finish));
   }
 
   void _onFetchNetworkId(FetchNetworkId event, Emitter<SetupState> emit) async {
