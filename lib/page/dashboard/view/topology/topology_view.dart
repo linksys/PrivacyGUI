@@ -67,7 +67,9 @@ class _TopologyViewState extends State<TopologyView> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SimpleTextButton(
-                      text: 'Restart mesh system', onPressed: () {})
+                      text: 'Restart mesh system', onPressed: () {
+                        NavigationCubit.of(context).push(NodeRestartPath());
+                  })
                 ],
               ),
             ),
@@ -237,8 +239,6 @@ class _TreeViewPageState extends State<TreeViewPage> {
         ));
   }
 
-  Random r = Random();
-
   Widget rectangleWidget(Node node) {
     return InkWell(
         onTap: node.key!.value == '0'
@@ -387,6 +387,7 @@ class _TreeViewPageState extends State<TreeViewPage> {
   }
 }
 
+// TODO: Review if the following types are still necessary
 enum WiFiSignal { none, weak, good, fair, excellent }
 enum DeviceRole { router, addon }
 

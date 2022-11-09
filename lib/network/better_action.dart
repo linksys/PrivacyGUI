@@ -23,6 +23,10 @@ enum JNAPService {
   deviceList7(value: 'http://linksys.com/jnap/devicelist/DeviceList7'),
   firewall(value: 'http://linksys.com/jnap/firewall/Firewall'),
   firewall2(value: 'http://linksys.com/jnap/firewall/Firewall2'),
+  firmwareUpdate(
+      value: 'http://linksys.com/jnap/firmwareupdate/FirmwareUpdate'),
+  firmwareUpdate2(
+      value: 'http://linksys.com/jnap/firmwareupdate/FirmwareUpdate2'),
   guestNetwork(value: 'http://linksys.com/jnap/guestnetwork/GuestNetwork'),
   guestNetwork2(value: 'http://linksys.com/jnap/guestnetwork/GuestNetwork2'),
   guestNetwork3(value: 'http://linksys.com/jnap/guestnetwork/GuestNetwork3'),
@@ -145,6 +149,8 @@ enum JNAPAction {
   getPortRangeForwardingRules,
   getPortRangeTriggeringRules,
   getSinglePortForwardingRules,
+  // firmwareUpdate
+  getFirmwareUpdateStatus,
   // guestNetwork
   getGuestNetworkClients,
   getGuestNetworkSettings,
@@ -275,6 +281,8 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/firewall/GetPortRangeTriggeringRules'),
   getSinglePortForwardingRules(
       value: 'http://linksys.com/jnap/firewall/GetSinglePortForwardingRules'),
+  getFirmwareUpdateStatus(
+      value: 'http://linksys.com/jnap/firmwareupdate/GetFirmwareUpdateStatus'),
   getGuestNetworkClients(
       value: 'http://linksys.com/jnap/guestnetwork/GetGuestNetworkClients'),
   getGuestNetworkSettings(
@@ -507,6 +515,10 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.firewall2:
       break;
+    case JNAPService.firmwareUpdate:
+      break;
+    case JNAPService.firmwareUpdate2:
+      break;
     case JNAPService.guestNetwork:
       break;
     case JNAPService.guestNetwork2:
@@ -714,6 +726,8 @@ void initBetterActions() {
       _JNAPActionValue.getPortRangeTriggeringRules.value;
   _betterActionMap[JNAPAction.getSinglePortForwardingRules] =
       _JNAPActionValue.getSinglePortForwardingRules.value;
+  _betterActionMap[JNAPAction.getFirmwareUpdateStatus] =
+      _JNAPActionValue.getFirmwareUpdateStatus.value;
   _betterActionMap[JNAPAction.getGuestNetworkClients] =
       _JNAPActionValue.getGuestNetworkClients.value;
   _betterActionMap[JNAPAction.getGuestNetworkSettings] =
