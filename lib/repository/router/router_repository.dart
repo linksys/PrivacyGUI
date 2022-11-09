@@ -176,8 +176,11 @@ class RouterRepository with StateStreamListener {
       await downloadRemoteCert();
       cert = pref.getString(moabPrefRemoteCaCert) ?? '';
     }
-
-    if (_mqttClient?.connectionState == MqttConnectionState.connected) {
+    if (_brokerUrl?.isEmpty ?? true) {
+      return false;
+    }
+    if (_mqttClient?.connectionState != MqttConnectionState.disconnected) {
+    // if (_mqttClient?.connectionState == MqttConnectionState.connected) {
       await _mqttClient?.disconnect();
     }
 
@@ -228,7 +231,8 @@ class RouterRepository with StateStreamListener {
     if (_localBrokerUrl?.isEmpty ?? true) {
       return false;
     }
-    if (_mqttClient?.connectionState == MqttConnectionState.connected) {
+    if (_mqttClient?.connectionState != MqttConnectionState.disconnected) {
+    // if (_mqttClient?.connectionState == MqttConnectionState.connected) {
       await _mqttClient?.disconnect();
     }
     _mqttClient =
@@ -264,7 +268,8 @@ class RouterRepository with StateStreamListener {
     if (_localBrokerUrl?.isEmpty ?? true) {
       return false;
     }
-    if (_mqttClient?.connectionState == MqttConnectionState.connected) {
+    if (_mqttClient?.connectionState != MqttConnectionState.disconnected) {
+    // if (_mqttClient?.connectionState == MqttConnectionState.connected) {
       await _mqttClient?.disconnect();
     }
     final clientId = Utils.generateMqttClintId().substring(0, 23);
@@ -296,6 +301,7 @@ class RouterRepository with StateStreamListener {
 
   JnapCommand createCommand(String action,
       {Map<String, dynamic> data = const {}, bool needAuth = false}) {
+    logger.d('create command: ${_connectType.name}');
     if (_connectType == MqttConnectType.local) {
       return JnapCommand.local(
         action: action,
@@ -397,6 +403,7 @@ class RouterRepository with StateStreamListener {
     if (_brokerUrl == config.transport.mqttBroker) {
       return;
     }
+    logger.d('on region changed');
     // reconnect again
     await connectToBroker();
   }
