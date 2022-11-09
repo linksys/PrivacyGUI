@@ -107,7 +107,7 @@ class _AddChildSearchingContentViewState
           header: BasicHeader(
             title: _hasFound
                 ? getAppLocalizations(context).found_it
-                : getAppLocalizations(context).looking_for_your_node,
+                : state.status == AddNodesStatus.addingNodes ? 'Adding nodes...' : getAppLocalizations(context).looking_for_your_node,
           ),
           content: Center(
             child: Column(

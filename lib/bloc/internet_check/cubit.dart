@@ -50,9 +50,11 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
     final wanStatus = RouterWANStatus.fromJson(wanStatusResult.output);
     final configuredResults = await _routerRepository.fetchIsConfigured();
     bool isDefaultPassword = configuredResults['isAdminPasswordDefault']
-        ?.output['isAdminPasswordDefault'] ?? false;
+            ?.output['isAdminPasswordDefault'] ??
+        false;
     bool isSetByUser = configuredResults['isAdminPasswordSetByUser']
-        ?.output['isAdminPasswordSetByUser'] ?? false;
+            ?.output['isAdminPasswordSetByUser'] ??
+        false;
     final configuredData = RouterConfiguredData(
         isDefaultPassword: isDefaultPassword, isSetByUser: isSetByUser);
     bool hasConfigured =
@@ -277,12 +279,17 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
   }
 
   _checkUnsecureWiFiWarning() async {
-    final result = await _routerRepository.getUnsecuredWiFiWarning();
-    final bool enabled = result.output['enabled'] ?? false;
+    final enabled = await _routerRepository
+        .getUnsecuredWiFiWarning()
+        .then((result) => result.output['enabled'] ?? false)
+        .onError((error, stackTrace) => false);
     if (enabled) {
-      await _routerRepository.setUnsecuredWiFiWarning(!enabled);
+      await _routerRepository
+          .setUnsecuredWiFiWarning(!enabled)
+          .then((value) {})
+          .onError((error, stackTrace) {});
       // TODO #REFACTOR wireless interrupt
-      await Future.delayed(Duration(seconds: 3));
+      await Future.delayed(Duration(seconds: 5));
       await _routerRepository.connectToLocalWithPassword();
     }
   }

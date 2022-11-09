@@ -125,7 +125,9 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
     int retry = 0;
     bool isConnect = false;
     do {
-      isConnect = await _connectivityCubit.connectToLocalBroker();
+      isConnect = await _connectivityCubit
+          .connectToLocalBroker()
+          .onError((error, stackTrace) => false);
       if (isConnect) {
         return isConnect;
       } else {

@@ -35,7 +35,9 @@ class AccountView extends StatefulWidget {
 class _AccountViewState extends State<AccountView> {
   @override
   void initState() {
-    context.read<AccountCubit>().fetchAccount();
+    if (context.read<AuthBloc>().isCloudLogin()) {
+      context.read<AccountCubit>().fetchAccount();
+    }
     super.initState();
   }
 
@@ -43,23 +45,22 @@ class _AccountViewState extends State<AccountView> {
   Widget build(BuildContext context) {
     return BlocBuilder<AccountCubit, AccountState>(builder: (context, state) {
       return BasePageView.onDashboardSecondary(
-          scrollable: true,
-          appBar: AppBar(
-            automaticallyImplyLeading: false,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            title: Text(getAppLocalizations(context).account,
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-            leading: BackButton(onPressed: () {
-              NavigationCubit.of(context).pop();
-            }),
-            actions: [],
-          ),
-          child:
-          context.read<AuthBloc>().state.status ==
-                  AuthStatus.localAuthorized
-              ? _local(state)
-              : _remote(state));
+        scrollable: true,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(getAppLocalizations(context).account,
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+          leading: BackButton(onPressed: () {
+            NavigationCubit.of(context).pop();
+          }),
+          actions: [],
+        ),
+        child: context.read<AuthBloc>().isCloudLogin()
+            ? _remote(state)
+            : _local(state),
+      );
     });
   }
 
@@ -262,12 +263,13 @@ class _AccountViewState extends State<AccountView> {
   Widget _passwordLessTile(AccountState state) {
     return SettingTile(
       title: const Text('Log in method'),
-      value: Text(state.authMode.toLowerCase() == AuthenticationType.passwordless.name
-          ? "One-time passcode"
-          : "Password", style: TextStyle(color: Colors.black.withOpacity(0.5))),
+      value: Text(
+          state.authMode.toLowerCase() == AuthenticationType.passwordless.name
+              ? "One-time passcode"
+              : "Password",
+          style: TextStyle(color: Colors.black.withOpacity(0.5))),
       onPress: () {
-        NavigationCubit.of(context)
-            .push(LoginMethodOptionsPath());
+        NavigationCubit.of(context).push(LoginMethodOptionsPath());
       },
     );
   }
@@ -346,17 +348,20 @@ class _AccountViewState extends State<AccountView> {
               style: Theme.of(context).textTheme.headline4,
             ),
           ]),
-          const SizedBox(height: 28,),
+          const SizedBox(
+            height: 28,
+          ),
           PrimaryButton(
             text: 'Create an account',
             onPress: () {
               context.read<InternetCheckCubit>().getInternetConnectionStatus();
-              context.read<NavigationCubit>().push(CreateCloudAccountPath()..args = {
-                'config': 'LOCALAUTHCREATEACCOUNT'
-              });
+              context.read<NavigationCubit>().push(CreateCloudAccountPath()
+                ..args = {'config': 'LOCALAUTHCREATEACCOUNT'});
             },
           ),
-          const SizedBox(height: 46,),
+          const SizedBox(
+            height: 46,
+          ),
         ],
       ),
     );

@@ -66,7 +66,10 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     });
 
     final bloc = context.read<AuthBloc>();
-    bool isConnected = await context.read<ConnectivityCubit>().connectToLocalBroker();
+    bool isConnected = await context
+        .read<ConnectivityCubit>()
+        .connectToLocalBroker()
+        .onError((error, stackTrace) => false);
     if (isConnected) {
       await context.read<NetworkCubit>().getDeviceInfo();
       await bloc
