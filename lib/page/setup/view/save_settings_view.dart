@@ -147,11 +147,7 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
           _associateNetwork().then((value) {
             if (widget.args['config'] != null &&
                 widget.args['config'] == 'LOCALAUTHCREATEACCOUNT') {
-              if(context.read<NavigationCubit>().state.configs.contains(AccountDetailPath())) {
-                NavigationCubit.of(context).popTo(AccountDetailPath());
-              } else {
-                NavigationCubit.of(context).push(AccountDetailPath());
-              }
+              NavigationCubit.of(context).popToOrPush(AccountDetailPath());
             } else {
               NavigationCubit.of(context).clearAndPush(SetupFinishPath());
             }
