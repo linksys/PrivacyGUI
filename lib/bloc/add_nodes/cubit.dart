@@ -98,7 +98,7 @@ class AddNodesCubit extends Cubit<AddNodesState> {
     final isNew = state.foundNodes
         .any((element) => device.hasSameInterface(element.macAddress));
     final macAddress = state.foundNodes.firstWhereOrNull(
-        (element) => device.hasSameInterface(element.macAddress));
+        (element) => device.hasSameInterface(element.macAddress))?.macAddress;
     final newName = device.friendlyName ??
         '${device.nodeType == 'Master' ? 'Router' : 'Addons'}${macAddress == null ? '' : '-$macAddress'}';
     logger.d(
@@ -170,8 +170,12 @@ class AddNodesCubit extends Cubit<AddNodesState> {
         logger.d('_checkFindingNodesFinish:: No discovery data');
         return;
       }
-      final list =
-          List.from(discovery).map((e) => BTDiscoveryData.fromJson(e)).toList();
+
+      // Threshold 85, only accept the rssi below 85
+      final list = List.from(discovery)
+          .map((e) => BTDiscoveryData.fromJson(e))
+          .where((data) => data.rssi < 85)
+          .toList();
       logger.d('_checkFindingNodesFinish:: discovered data: $list');
       if (list.isEmpty) {
         emit(state.copyWith(status: AddNodesStatus.noNodesFound));
