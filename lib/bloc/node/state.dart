@@ -2,7 +2,6 @@ import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/model/router/device.dart';
 
 enum NodeSignalLevel {
-  wired(displayTitle: 'Wired'),
   none(displayTitle: 'No signal'),
   weak(displayTitle: 'Weak'),
   good(displayTitle: 'Good'),
@@ -31,21 +30,6 @@ class NodeState extends Equatable {
   final String lanIpAddress;
   final String wanIpAddress;
   final bool isSystemRestarting;
-  NodeSignalLevel get signalLevel {
-    if (isWiredConnection) {  //TODO: Make it better
-      return NodeSignalLevel.wired;
-    } else if (signalStrength <= -70) {
-      return NodeSignalLevel.weak;
-    } else if (signalStrength > -70 && signalStrength <= -60) {
-      return NodeSignalLevel.fair;
-    } else if (signalStrength > -60 && signalStrength <= -50) {
-      return NodeSignalLevel.good;
-    } else if (signalStrength > -50 && signalStrength <= 0) {
-      return NodeSignalLevel.excellent;
-    } else {
-      return NodeSignalLevel.none;
-    }
-  }
 
   const NodeState({
     this.deviceID = '',

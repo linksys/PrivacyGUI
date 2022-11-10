@@ -8,6 +8,7 @@ import 'package:linksys_moab/repository/router/batch_extension.dart';
 import 'package:linksys_moab/repository/router/core_extension.dart';
 import 'package:linksys_moab/repository/router/device_list_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
+import 'package:linksys_moab/utils.dart';
 
 class NodeCubit extends Cubit<NodeState> {
   NodeCubit(RouterRepository repository)
@@ -44,7 +45,8 @@ class NodeCubit extends Cubit<NodeState> {
         .map((e) => RouterDevice.fromJson(e))
         .toList();
 
-    emit(_getNodeDetailState(state.deviceID, wanIpAddress, isLatestFW, devices));
+    emit(
+        _getNodeDetailState(state.deviceID, wanIpAddress, isLatestFW, devices));
   }
 
   Future updateNodeLocation(String newLocation) async {
@@ -121,17 +123,18 @@ class NodeCubit extends Cubit<NodeState> {
     for (final device in devices) {
       if (device.isAuthority || device.nodeType == 'Master') {
         masterDeviceID = device.deviceID;
-        locationMap[masterDeviceID] = _getDeviceLocation(device);
+        locationMap[masterDeviceID] = Utils.getDeviceLocation(device);
       } else if (device.nodeType == 'Slave') {
-        locationMap[device.deviceID] = _getDeviceLocation(device);
+        locationMap[device.deviceID] = Utils.getDeviceLocation(device);
       } else {
-        // Make sure the connected device is online
+        // Make sure the external device is online
         if (device.connections.isNotEmpty) {
           // There usually be at most one connection item
           final parentDeviceID = device.connections.firstOrNull?.parentDeviceID;
           // If the connected device's PID is null, count it under the Master
           // Otherwise, check if PID is the current node
-          if ((parentDeviceID == null && targetID == masterDeviceID) || (parentDeviceID == targetID)) {
+          if ((parentDeviceID == null && targetID == masterDeviceID) ||
+              (parentDeviceID == targetID)) {
             connectedDevices.add(device);
           }
         }
@@ -145,7 +148,7 @@ class NodeCubit extends Cubit<NodeState> {
         isOnline = device.connections.isNotEmpty;
         upstreamNode =
             isMaster ? 'INTERNET' : _getUpstreamOfSlave(device, masterDeviceID);
-        isWired = _checkIfWiredConnection(device);
+        isWired = Utils.checkIfWiredConnection(device);
         serialNumber = device.unit.serialNumber ?? '';
         modelNumber = device.model.modelNumber ?? '';
         firmwareVersion = device.unit.firmwareVersion ?? '';
@@ -175,77 +178,5 @@ class NodeCubit extends Cubit<NodeState> {
     final masterNodeLocation = locationMap[masterID];
 
     return upstreamNodeLocation ?? (masterNodeLocation ?? '');
-  }
-
-  bool _checkIfWiredConnection(RouterDevice device) {
-    bool isWired = false;
-    final interfaces = device.knownInterfaces;
-    if (interfaces != null) {
-      for (final interface in interfaces) {
-        if (interface.interfaceType == 'Wired') {
-          isWired = true;
-        }
-      }
-    }
-    return isWired;
-  }
-
-  String _getDeviceLocation(RouterDevice device) {
-    for (final property in device.properties) {
-      if (property.name == 'userDeviceLocation' && property.value.isNotEmpty) {
-        return property.value;
-      }
-    }
-    return getDeviceName(device);
-  }
-
-  String getDeviceName(RouterDevice device) {
-    for (final property in device.properties) {
-      if (property.name == 'userDeviceName' && property.value.isNotEmpty) {
-        return property.value;
-      }
-    }
-
-    bool isAndroidDevice = false;
-    if (device.friendlyName != null) {
-      // TODO: Fix this regExp
-      //final regExp = RegExp('^Android$|^android-[a-fA-F0-9]{16}.*|^Android-[0-9]+');
-      final regExp = RegExp('^android-[a-fA-F0-9]{16}.*|^Android-[0-9]+');
-      isAndroidDevice = regExp.hasMatch(device.friendlyName!);
-    }
-
-    String? androidDeviceName;
-    if (isAndroidDevice &&
-        ['Mobile', 'Phone', 'Tablet'].contains(device.model.deviceType)) {
-      final manufacturer = device.model.manufacturer;
-      final modelNumber = device.model.modelNumber;
-      if (manufacturer != null && modelNumber != null) {
-        // e.g. 'Samsung Galaxy S8'
-        androidDeviceName = manufacturer + ' ' + modelNumber;
-      } else if (device.unit.operatingSystem != null) {
-        // e.g. 'Android Oreo Mobile'
-        androidDeviceName =
-            device.unit.operatingSystem! + ' ' + device.model.deviceType;
-        if (manufacturer != null) {
-          // e.g. 'Samsung Android Oreo Mobile'
-          androidDeviceName = manufacturer! + androidDeviceName!;
-        }
-      }
-    }
-
-    if (androidDeviceName != null) {
-      return androidDeviceName;
-    } else if (device.friendlyName != null) {
-      return device.friendlyName!;
-    } else if (device.model.modelNumber != null) {
-      return device.model.modelNumber!;
-    } else {
-      // Check if it's a guest device
-      bool isGuest = false;
-      for (final connectionDevice in device.connections) {
-        isGuest = connectionDevice.isGuest ?? false;
-      }
-      return isGuest ? 'Guest Network Device' : 'Network Device';
-    }
   }
 }

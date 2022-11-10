@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:graphview/GraphView.dart';
 import 'package:linksys_moab/bloc/add_nodes/state.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
-import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -15,6 +14,7 @@ import 'package:linksys_moab/page/dashboard/view/topology/topology_node.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/utils.dart';
 import 'custom_buchheim_walker_algorithm.dart';
 import 'custom_tree_edge_renderer.dart';
 
@@ -50,17 +50,19 @@ class _TopologyContentView extends State<TopologyContentView> {
       return BasePageView(
         padding: EdgeInsets.zero,
         child: BasicLayout(
-          content: Column(
-            children: [
-              state.rootNode.isOnline
-                  ? _addNodeWidget()
-                  : _noInternetConnectionWidget(),
-              Visibility(
-                visible: state.rootNode.deviceID.isNotEmpty,
-                child: TreeViewPage(root: state.rootNode),
-                replacement: const FullScreenSpinner(),
-              ),
-            ],
+          content: Visibility(
+            visible: state.rootNode.deviceID.isNotEmpty,
+            child: Column(
+              children: [
+                state.rootNode.isOnline
+                    ? _addNodeWidget()
+                    : _noInternetConnectionWidget(),
+                Expanded(
+                  child: TreeViewPage(root: state.rootNode),
+                ),
+              ],
+            ),
+            replacement: const FullScreenSpinner(),
           ),
           footer: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -149,13 +151,6 @@ class _TreeViewPageState extends State<TreeViewPage> {
   @override
   void initState() {
     super.initState();
-    print('XXXXXX 44 masterNode.ID=${widget.root.deviceID}');
-    print('XXXXXX 44 masterNode.isOnline=${widget.root.isOnline}');
-    print('XXXXXX 44 masterNode.isMaster=${widget.root.isMaster}');
-    print('XXXXXX 44 masterNode.DevCount=${widget.root.connectedDeviceCount}');
-    print('XXXXXX 44 masterNode.location=${widget.root.location}');
-    print('XXXXXX 44 masterNode.isWired=${widget.root.isWiredConnection}');
-    print('XXXXXX 44 masterNode.children=${widget.root.children}');
     _traverseNodes(null, widget.root);
     builder
       ..siblingSeparation = (100)
@@ -267,10 +262,10 @@ class _TreeViewPageState extends State<TreeViewPage> {
         ),
         Text(
           _node.location,
-          style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
         ),
         node.isOnline
-            ? _getConnectionImage(_node.signalLevel)
+            ? _getConnectionImage(_node)
             : Text(
                 getAppLocalizations(context).offline,
                 style: Theme.of(context).textTheme.headline4,
@@ -279,43 +274,28 @@ class _TreeViewPageState extends State<TreeViewPage> {
     );
   }
 
-  //TODO: Duplicate image check logic from NodeDetailView
-  Widget _getConnectionImage(NodeSignalLevel signalLevel) {
-    String imageName = '';
-    switch (signalLevel) {
-      case NodeSignalLevel.wired:
-        imageName = 'assets/images/icon_signal_wired.png';
-        break;
-      case NodeSignalLevel.excellent:
-        imageName = 'assets/images/icon_signal_excellent.png';
-        break;
-      case NodeSignalLevel.good:
-        imageName = 'assets/images/icon_signal_good.png';
-        break;
-      case NodeSignalLevel.fair:
-        imageName = 'assets/images/icon_signal_fair.png';
-        break;
-      case NodeSignalLevel.weak:
-        imageName = 'assets/images/icon_signal_weak.png';
-        break;
-      case NodeSignalLevel.none:
-        return const Center();
-    }
-
+  Widget _getConnectionImage(TopologyNode node) {
     return Wrap(
       children: [
         Image.asset(
-          imageName,
+          node.isWiredConnection ? 'assets/images/icon_signal_wired.png' : Utils.getWifiSignalImage(node.signalStrength),
           width: 14,
           height: 14,
         ),
-        const SizedBox(
-          width: 4,
+        Offstage(
+          offstage: node.isWiredConnection,
+          child: Wrap(
+            children: [
+              const SizedBox(
+                width: 4,
+              ),
+              Text(
+                Utils.getWifiSignalLevel(node.signalStrength).displayTitle,
+                style: Theme.of(context).textTheme.headline4,
+              ),
+            ],
+          ),
         ),
-        Text(
-          signalLevel.displayTitle,
-          style: Theme.of(context).textTheme.headline4,
-        )
       ],
     );
   }

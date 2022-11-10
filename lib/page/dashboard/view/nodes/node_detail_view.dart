@@ -9,6 +9,7 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/nodes_path.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/utils.dart';
 
 class NodeDetailView extends ArgumentsStatefulView {
   const NodeDetailView({Key? key, super.args, super.next}) : super(key: key);
@@ -84,7 +85,7 @@ class _NodeDetailViewState extends State<NodeDetailView> {
                 alignment: WrapAlignment.center,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  _getConnectionImage(state.signalLevel),
+                  _getConnectionImage(state),
                   box8(),
                   Text(
                     state.isOnline
@@ -100,30 +101,9 @@ class _NodeDetailViewState extends State<NodeDetailView> {
     );
   }
 
-  Widget _getConnectionImage(NodeSignalLevel signalLevel) {
-    String imageName = '';
-    switch (signalLevel) {
-      case NodeSignalLevel.wired:
-        imageName = 'assets/images/icon_signal_wired.png';
-        break;
-      case NodeSignalLevel.excellent:
-        imageName = 'assets/images/icon_signal_excellent.png';
-        break;
-      case NodeSignalLevel.good:
-        imageName = 'assets/images/icon_signal_good.png';
-        break;
-      case NodeSignalLevel.fair:
-        imageName = 'assets/images/icon_signal_fair.png';
-        break;
-      case NodeSignalLevel.weak:
-        imageName = 'assets/images/icon_signal_weak.png';
-        break;
-      case NodeSignalLevel.none:
-        return const Center();
-    }
-
+  Widget _getConnectionImage(NodeState state) {
     return Image.asset(
-      imageName,
+      state.isWiredConnection ? 'assets/images/icon_signal_wired.png' : Utils.getWifiSignalImage(state.signalStrength),
       width: 22,
       height: 22,
     );
@@ -187,11 +167,14 @@ class _NodeDetailViewState extends State<NodeDetailView> {
       ),
       value: Row(
         children: [
-          _getConnectionImage(state.signalLevel),
-          Expanded(
-            child: Text(
-              '${state.signalStrength} dBm ${state.signalLevel.displayTitle}',
-              style: Theme.of(context).textTheme.bodyText1,
+          _getConnectionImage(state),
+          Offstage(
+            offstage: state.isWiredConnection,
+            child: Expanded(
+              child: Text(
+                '${state.signalStrength} dBm ${Utils.getWifiSignalLevel(state.signalStrength).displayTitle}',
+                style: Theme.of(context).textTheme.bodyText1,
+              ),
             ),
           ),
           SimpleTextButton(

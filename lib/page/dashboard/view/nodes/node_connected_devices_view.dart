@@ -5,6 +5,7 @@ import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/utils.dart';
 
 class NodeConnectedDevicesView extends ArgumentsStatefulView {
   const NodeConnectedDevicesView({Key? key, super.args, super.next})
@@ -48,7 +49,7 @@ class _NodeConnectedDevicesViewState extends State<NodeConnectedDevicesView> {
             return ListTile(
               leading: const Icon(Icons.circle, size: 60,),
               title: Text(
-                context.read<NodeCubit>().getDeviceName(device),
+                Utils.getDeviceName_(device),
                 style: Theme.of(context).textTheme.headline4,
               ),
               trailing: const Icon(Icons.arrow_forward_ios),
