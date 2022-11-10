@@ -49,10 +49,10 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
         await context.read<NetworkCubit>().getNetworks(accountId: context.read<AccountCubit>().state.id);
         NavigationCubit.of(context).clearAndPush(SelectNetworkPath());
       } else {
+        logger.d('Go to dashboard');
         await context.read<ConnectivityCubit>().connectToBroker();
         await context.read<NetworkCubit>().getDeviceInfo();
         await context.read<ProfilesCubit>().fetchProfiles();
-        await context.read<NetworkCubit>().getDeviceInfo();
         NavigationCubit.of(context).clearAndPush(DashboardHomePath());
       }
     } else {

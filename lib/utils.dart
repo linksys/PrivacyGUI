@@ -272,7 +272,7 @@ class Utils {
       'privateKey',
       'X-Linksys-Moab-App-Secret',
       'adminPassword',
-      'passphrase'
+      'passphrase',
     ];
     return maskJsonValue(raw, keys);
   }

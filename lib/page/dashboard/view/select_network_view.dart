@@ -110,7 +110,7 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
                 });
                 await _networkCubit.selectNetwork(state.networks[index]);
                 await _subscriptionCubit.loadingProducts();
-                _navigationCubit.clearAndPush(DashboardHomePath());
+                _navigationCubit.clearAndPush(PrepareDashboardPath());
               },
             ),
           )

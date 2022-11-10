@@ -88,12 +88,6 @@ class _IpDetailsContentViewState extends State<IpDetailsContentView> {
               fontWeight: FontWeight.w700,
             ),
           ),
-          actions: [
-            SimpleTextButton(
-              text: getAppLocalizations(context).save,
-              onPressed: () {},
-            ),
-          ],
         ),
         child: BasicLayout(
           crossAxisAlignment: CrossAxisAlignment.start,

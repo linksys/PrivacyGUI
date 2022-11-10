@@ -53,6 +53,7 @@ class IpDetailsCubit extends Cubit<IpDetailsState> {
     }
     // TODO #SIDEEFFECT WANInterruption
     await Future.delayed(Duration(seconds: 20));
+    await _repository.connectToBroker();
     await fetch();
     if (isIPv6) {
       emit(state.copyWith(ipv6Renewing: false));

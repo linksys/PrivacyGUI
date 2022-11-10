@@ -55,6 +55,10 @@ extension TransactionCommands on RouterRepository {
       payload.removeWhere((element) =>
           element['action'] == JNAPAction.setDeviceMode.actionValue);
     }
+    if (adminPassword.isEmpty) {
+      payload.removeWhere((element) =>
+      element['action'] == JNAPAction.coreSetAdminPassword.actionValue);
+    }
     final transaction = JNAPTransaction(
       publishTopic: mqttLocalPublishTopic,
       responseTopic: mqttLocalResponseTopic,

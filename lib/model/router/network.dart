@@ -8,7 +8,7 @@ import 'package:linksys_moab/model/router/health_check_result.dart';
 class MoabNetwork extends Equatable {
   const MoabNetwork({
     required this.id,
-    required this.deviceInfo,
+    this.deviceInfo,
     this.wanStatus,
     this.radioInfo,
     this.devices,
@@ -17,7 +17,7 @@ class MoabNetwork extends Equatable {
   });
 
   final String id;
-  final RouterDeviceInfo deviceInfo;
+  final RouterDeviceInfo? deviceInfo;
   final RouterWANStatus? wanStatus;
   final List<RouterRadioInfo>? radioInfo;
   final List<RouterDevice>? devices;
