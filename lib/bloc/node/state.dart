@@ -32,7 +32,7 @@ class NodeState extends Equatable {
   final String wanIpAddress;
   final bool isSystemRestarting;
   NodeSignalLevel get signalLevel {
-    if (isWiredConnection) {
+    if (isWiredConnection) {  //TODO: Make it better
       return NodeSignalLevel.wired;
     } else if (signalStrength <= -70) {
       return NodeSignalLevel.weak;

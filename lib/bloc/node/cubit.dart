@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/model/router/wan_status.dart';
@@ -16,13 +17,13 @@ class NodeCubit extends Cubit<NodeState> {
   final RouterRepository _repository;
   Map<String, String> locationMap = {};
 
-  void updateCurrentID(String deviceID) {
+  void setDetailNodeID(String deviceID) {
     emit(state.copyWith(
       deviceID: deviceID,
     ));
   }
 
-  Future fetchNodeDetailInfo() async {
+  Future fetchNodeDetailData() async {
     final results = await _repository.fetchNodeDetails();
 
     String wanIpAddress = '';
@@ -43,7 +44,7 @@ class NodeCubit extends Cubit<NodeState> {
         .map((e) => RouterDevice.fromJson(e))
         .toList();
 
-    emit(_getUpdatedNode(state.deviceID, wanIpAddress, isLatestFW, devices));
+    emit(_getNodeDetailState(state.deviceID, wanIpAddress, isLatestFW, devices));
   }
 
   Future updateNodeLocation(String newLocation) async {
@@ -65,7 +66,7 @@ class NodeCubit extends Cubit<NodeState> {
   }
 
   Future updateNodeLightSwitch(bool isOn) async {
-    //TODO: Find real commands
+    //TODO: Implement real commands for switching the light
     emit(state.copyWith(
       isLightTurnedOn: isOn,
     ));
@@ -89,8 +90,10 @@ class NodeCubit extends Cubit<NodeState> {
     }
   }
 
-  NodeState _getUpdatedNode(String targetID, String wanIpAddress,
+  NodeState _getNodeDetailState(String targetID, String wanIpAddress,
       bool isLatestFW, List<RouterDevice> devices) {
+    // The detail data of the current node
+    String location = '';
     bool isMaster = false;
     bool isOnline = false;
     List<RouterDevice> connectedDevices = [];
@@ -125,8 +128,10 @@ class NodeCubit extends Cubit<NodeState> {
         // Make sure the connected device is online
         if (device.connections.isNotEmpty) {
           // There usually be at most one connection item
-          final parentDeviceID = device.connections.first.parentDeviceID;
-          if ((parentDeviceID == null) || (parentDeviceID == targetID)) {
+          final parentDeviceID = device.connections.firstOrNull?.parentDeviceID;
+          // If the connected device's PID is null, count it under the Master
+          // Otherwise, check if PID is the current node
+          if ((parentDeviceID == null && targetID == masterDeviceID) || (parentDeviceID == targetID)) {
             connectedDevices.add(device);
           }
         }
@@ -135,6 +140,7 @@ class NodeCubit extends Cubit<NodeState> {
 
     for (final device in devices) {
       if (device.deviceID == targetID) {
+        location = locationMap[targetID] ?? '';
         isMaster = (targetID == masterDeviceID);
         isOnline = device.connections.isNotEmpty;
         upstreamNode =
@@ -143,12 +149,12 @@ class NodeCubit extends Cubit<NodeState> {
         serialNumber = device.unit.serialNumber ?? '';
         modelNumber = device.model.modelNumber ?? '';
         firmwareVersion = device.unit.firmwareVersion ?? '';
-        lanIpAddress = device.connections.first.ipAddress ?? '';
+        lanIpAddress = device.connections.firstOrNull?.ipAddress ?? '';
       }
     }
 
     return state.copyWith(
-      location: locationMap[targetID],
+      location: location,
       isMaster: isMaster,
       isOnline: isOnline,
       connectedDevices: connectedDevices,
@@ -164,7 +170,7 @@ class NodeCubit extends Cubit<NodeState> {
   }
 
   String _getUpstreamOfSlave(RouterDevice device, String masterID) {
-    final slaveParentID = device.connections.first.parentDeviceID;
+    final slaveParentID = device.connections.firstOrNull?.parentDeviceID;
     final upstreamNodeLocation = locationMap[slaveParentID];
     final masterNodeLocation = locationMap[masterID];
 

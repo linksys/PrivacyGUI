@@ -16,10 +16,7 @@ class NodesPath extends DashboardPath {
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
       case TopologyPath:
-        return TopologyView(
-          args: args,
-          next: next,
-        );
+        return const TopologyView();
       case NodeDetailPath:
         return NodeDetailView(
           args: args,
@@ -79,4 +76,7 @@ class NodeDetailPath extends NodesPath {
 
 class NodeSwitchLightPath extends NodesPath {}
 
-class NodeRestartPath extends NodesPath {}
+class NodeRestartPath extends NodesPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
+}

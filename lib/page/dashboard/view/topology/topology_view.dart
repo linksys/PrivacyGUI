@@ -1,88 +1,106 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:graphview/GraphView.dart';
 import 'package:linksys_moab/bloc/add_nodes/state.dart';
-import 'package:linksys_moab/bloc/network/cubit.dart';
-import 'package:linksys_moab/bloc/network/state.dart';
+import 'package:linksys_moab/bloc/node/cubit.dart';
+import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/page/dashboard/view/topology/bloc/cubit.dart';
+import 'package:linksys_moab/page/dashboard/view/topology/bloc/state.dart';
+import 'package:linksys_moab/page/dashboard/view/topology/topology_node.dart';
+import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/model/dashboard_path.dart';
-import 'package:linksys_moab/route/model/nodes_path.dart';
 import 'package:linksys_moab/route/_route.dart';
-
-
 import 'custom_buchheim_walker_algorithm.dart';
 import 'custom_tree_edge_renderer.dart';
 
-class TopologyView extends ArgumentsStatefulView {
-  const TopologyView({Key? key, super.args, super.next}) : super(key: key);
+class TopologyView extends StatelessWidget {
+  const TopologyView({Key? key}) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _TopologyViewState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => TopologyCubit(context.read<RouterRepository>()),
+      child: const TopologyContentView(),
+    );
+  }
 }
 
-class _TopologyViewState extends State<TopologyView> {
+class TopologyContentView extends StatefulWidget {
+  const TopologyContentView({Key? key}) : super(key: key);
 
-  late DataNode _root;
+  @override
+  State<StatefulWidget> createState() => _TopologyContentView();
+}
 
+class _TopologyContentView extends State<TopologyContentView> {
   @override
   void initState() {
     super.initState();
-    _root = _createFakeDataNodes();
+    context.read<TopologyCubit>().fetchTopologyData();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<NetworkCubit, NetworkState>(
-        builder: (context, state) {
-          return BasePageView(
-            padding: EdgeInsets.zero,
-            child: BasicLayout(
-              header: _checkInternetConnection() ? Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  SimpleTextButton(
-                    text: '+ Add Node',
-                    onPressed: () {
-                      NavigationCubit.of(context).push(SetupNthChildPlacePath()
-                        ..next = NavigationCubit.of(context).currentPath()
-                        ..args = {
-                          'isAddonsNode': true,
-                          'init': true,
-                          'mode': AddNodesMode.addNodeOnly,
-                        });
-                    },
-                  )
-                ],
-              ) : _noInternetConnectionWidget(),
-              content: TreeViewPage(root: _transferData(state.selected),),
-              footer: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SimpleTextButton(
-                      text: 'Restart mesh system', onPressed: () {
-                        NavigationCubit.of(context).push(NodeRestartPath());
-                  })
-                ],
+    return BlocBuilder<TopologyCubit, TopologyState>(builder: (context, state) {
+      return BasePageView(
+        padding: EdgeInsets.zero,
+        child: BasicLayout(
+          content: Column(
+            children: [
+              state.rootNode.isOnline
+                  ? _addNodeWidget()
+                  : _noInternetConnectionWidget(),
+              Visibility(
+                visible: state.rootNode.deviceID.isNotEmpty,
+                child: TreeViewPage(root: state.rootNode),
+                replacement: const FullScreenSpinner(),
               ),
-            ),
-          );
-        }
+            ],
+          ),
+          footer: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SimpleTextButton(
+                  text: 'Restart mesh system',
+                  onPressed: () {
+                    NavigationCubit.of(context).push(NodeRestartPath());
+                  })
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _addNodeWidget() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        SimpleTextButton(
+          text: '+ Add Node',
+          onPressed: () {
+            NavigationCubit.of(context).push(SetupNthChildPlacePath()
+              ..next = NavigationCubit.of(context).currentPath()
+              ..args = {
+                'isAddonsNode': true,
+                'init': true,
+                'mode': AddNodesMode.addNodeOnly,
+              });
+          },
+        )
+      ],
     );
   }
 
-
   Widget _noInternetConnectionWidget() {
     return Container(
-        decoration: BoxDecoration(color: MoabColor.topologyNoInternet),
-        padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        decoration: const BoxDecoration(color: MoabColor.topologyNoInternet),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -93,120 +111,30 @@ class _TopologyViewState extends State<TopologyView> {
                   width: 12,
                   height: 12,
                 ),
-                SizedBox(width: 8,),
+                const SizedBox(
+                  width: 8,
+                ),
                 Text(
                   'No internet connection',
-                  style: Theme
-                      .of(context)
+                  style: Theme.of(context)
                       .textTheme
                       .bodyText2
                       ?.copyWith(color: Colors.red),
                 )
               ],
             ),
-            SimpleTextButton(text: 'See what I can do',
+            SimpleTextButton(
+              text: 'See what I can do',
               onPressed: () {},
-              padding: EdgeInsets.all(4),),
+              padding: const EdgeInsets.all(4),
+            ),
           ],
         ));
-  }
-
-  bool _checkInternetConnection() {
-    return _root.isOnline;
-  }
-
-
-  DataNode _transferData(MoabNetwork? network) {
-    return DataNode.fromNetwork(network!);
-  }
-
-  DataNode _createFakeDataNodes() {
-    //
-    final router = DataNode(
-        role: DeviceRole.router,
-        serialNumber: 'ROUTER0001SN',
-        modelNumber: 'WHW03v1',
-        firmwareVersion: '1.1.19.209880',
-        isLatest: true,
-        friendlyName: 'Router',
-        connectedDevice: 16,
-        signal: WiFiSignal.good,
-        lanIp: '10.189.1.94',
-        wanIp: '192.168.1.100',
-        isOnline: true,
-        children: [
-          DataNode(
-              role: DeviceRole.addon,
-              serialNumber: 'ADDON0001SN',
-              modelNumber: 'WHW03v1',
-              firmwareVersion: '1.1.19.209880',
-              isLatest: true,
-              friendlyName: 'Office',
-              connectedDevice: 6,
-              signal: WiFiSignal.good,
-              wanIp: '192.168.1.101',
-              isOnline: true,
-              parentIp: '192.168.1.100',
-              parentName: 'Router',
-              children: [
-              ]
-          ),
-          DataNode(
-              role: DeviceRole.addon,
-              serialNumber: 'ADDON0002SN',
-              modelNumber: 'WHW03v1',
-              firmwareVersion: '1.1.19.209880',
-              isLatest: true,
-              friendlyName: 'Gameroom',
-              connectedDevice: 6,
-              signal: WiFiSignal.good,
-              wanIp: '192.168.1.102',
-              isOnline: true,
-              parentIp: '192.168.1.100',
-              parentName: 'Router',
-              children: [
-              ]
-          ),
-          DataNode(
-              role: DeviceRole.addon,
-              serialNumber: 'ADDON0003SN',
-              modelNumber: 'WHW03v1',
-              firmwareVersion: '1.1.19.209880',
-              isLatest: true,
-              friendlyName: 'Guest bedroom',
-              connectedDevice: 6,
-              signal: WiFiSignal.good,
-              wanIp: '192.168.1.103',
-              isOnline: true,
-              parentIp: '192.168.1.100',
-              parentName: 'Router',
-              children: [
-              ]
-          ),
-          DataNode(
-              role: DeviceRole.addon,
-              serialNumber: 'ADDON0004SN',
-              modelNumber: 'WHW03v1',
-              firmwareVersion: '1.1.19.209880',
-              isLatest: true,
-              friendlyName: 'Kitchen',
-              connectedDevice: 10,
-              signal: WiFiSignal.good,
-              wanIp: '192.168.1.104',
-              isOnline: true,
-              parentIp: '192.168.1.100',
-              parentName: 'Router',
-              children: [
-              ]
-          ),
-        ]
-    );
-    return router;
   }
 }
 
 class TreeViewPage extends StatefulWidget {
-  final DataNode root;
+  final TopologyNode root;
 
   const TreeViewPage({Key? key, required this.root}) : super(key: key);
 
@@ -215,12 +143,31 @@ class TreeViewPage extends StatefulWidget {
 }
 
 class _TreeViewPageState extends State<TreeViewPage> {
+  final Graph graph = Graph()..isTree = true;
+  BuchheimWalkerConfiguration builder = BuchheimWalkerConfiguration();
+
+  @override
+  void initState() {
+    super.initState();
+    print('XXXXXX 44 masterNode.ID=${widget.root.deviceID}');
+    print('XXXXXX 44 masterNode.isOnline=${widget.root.isOnline}');
+    print('XXXXXX 44 masterNode.isMaster=${widget.root.isMaster}');
+    print('XXXXXX 44 masterNode.DevCount=${widget.root.connectedDeviceCount}');
+    print('XXXXXX 44 masterNode.location=${widget.root.location}');
+    print('XXXXXX 44 masterNode.isWired=${widget.root.isWiredConnection}');
+    print('XXXXXX 44 masterNode.children=${widget.root.children}');
+    _traverseNodes(null, widget.root);
+    builder
+      ..siblingSeparation = (100)
+      ..levelSeparation = (50)
+      ..subtreeSeparation = (100);
+  }
 
   @override
   Widget build(BuildContext context) {
     return InteractiveViewer(
         constrained: false,
-        boundaryMargin: EdgeInsets.all(0),
+        boundaryMargin: const EdgeInsets.all(0),
         // minScale: 1,
         // maxScale: 5.6,
         // scaleFactor: 4,
@@ -239,47 +186,15 @@ class _TreeViewPageState extends State<TreeViewPage> {
         ));
   }
 
-  Widget rectangleWidget(Node node) {
-    return InkWell(
-        onTap: node.key!.value == '0'
-            ? null
-            : () {
-          print('clicked');
-          NavigationCubit.of(context).push(
-              ((node as TopologyNode).isOnline
-                  ? NodeDetailPath()
-                  : NodeOfflineCheckPath())
-                ..args = {'node': node});
-        },
-        child: node.key!.value == '0'
-            ? createInternetWidget()
-            : createNodeWidget(node));
-  }
-
-  final Graph graph = Graph()
-    ..isTree = true;
-  BuchheimWalkerConfiguration builder = BuchheimWalkerConfiguration();
-
-  @override
-  void initState() {
-    super.initState();
-    _traverseNodes(null, widget.root);
-    builder
-      ..siblingSeparation = (100)
-      ..levelSeparation = (50)
-      ..subtreeSeparation = (100);
-  }
-
-  _traverseNodes(DataNode? parent, DataNode node) {
-    if (node.role == DeviceRole.router && node.isOnline) {
-      final internetNode = Node.Id('0');
-      graph.addNode(Node.Id('0'));
-      graph.addEdge(internetNode, TopologyNode.fromNode(node));
+  _traverseNodes(TopologyNode? parentNode, TopologyNode node) {
+    if (node.isMaster && node.isOnline) {
+      final internetSourceNode = Node.Id('0');
+      graph.addNode(internetSourceNode);
+      graph.addEdge(internetSourceNode, node);
     } else {
-      graph.addNode(TopologyNode.fromNode(node));
-      if (parent != null) {
-        final parentNode = TopologyNode.fromNode(parent);
-        graph.addEdge(parentNode, TopologyNode.fromNode(node));
+      graph.addNode(node);
+      if (parentNode != null) {
+        graph.addEdge(parentNode, node);
       }
     }
     for (var child in node.children) {
@@ -287,12 +202,29 @@ class _TreeViewPageState extends State<TreeViewPage> {
     }
   }
 
-  Widget createInternetWidget() {
-    return Image.asset(
-      'assets/images/icon_topology_internet.png',
-      width: 56,
-      height: 56,
-    );
+  Widget rectangleWidget(Node node) {
+    return InkWell(
+        onTap: node.key!.value == '0'
+            ? null
+            : () {
+                final nodeDevice = node as TopologyNode;
+                if (nodeDevice.isOnline) {
+                  // Update the current target Id for node state
+                  context
+                      .read<NodeCubit>()
+                      .setDetailNodeID(nodeDevice.deviceID);
+                  NavigationCubit.of(context).push(NodeDetailPath());
+                } else {
+                  NavigationCubit.of(context).push(NodeOfflineCheckPath());
+                }
+              },
+        child: node.key!.value == '0'
+            ? Image.asset(
+                'assets/images/icon_topology_internet.png',
+                width: 56,
+                height: 56,
+              )
+            : createNodeWidget(node));
   }
 
   Widget createNodeWidget(Node node) {
@@ -303,7 +235,7 @@ class _TreeViewPageState extends State<TreeViewPage> {
           alignment: AlignmentDirectional.bottomEnd,
           children: [
             Image.asset(
-              node.isOnline
+              _node.isOnline
                   ? 'assets/images/img_topology_node.png'
                   : 'assets/images/img_topology_node_offline.png',
               width: 74,
@@ -312,18 +244,18 @@ class _TreeViewPageState extends State<TreeViewPage> {
             Container(
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: node.isOnline ? MoabColor.placeholderGrey : Colors.red,
+                  color:
+                      _node.isOnline ? MoabColor.placeholderGrey : Colors.red,
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(25),
-                color: node.isOnline ? MoabColor.placeholderGrey : Colors.red,
+                color: _node.isOnline ? MoabColor.placeholderGrey : Colors.red,
               ),
               child: Padding(
                 padding: const EdgeInsets.all(2.0),
                 child: Text(
-                  node.isOnline ? '${_node.connectedDevice}' : '0',
-                  style: Theme
-                      .of(context)
+                  _node.isOnline ? '${_node.connectedDeviceCount}' : '0',
+                  style: Theme.of(context)
                       .textTheme
                       .headline4
                       ?.copyWith(color: Colors.white),
@@ -334,155 +266,57 @@ class _TreeViewPageState extends State<TreeViewPage> {
           ],
         ),
         Text(
-          _node.friendlyName,
+          _node.location,
           style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
         ),
         node.isOnline
-            ? _createSignal(_node.signal) ?? const Center()
+            ? _getConnectionImage(_node.signalLevel)
             : Text(
-          getAppLocalizations(context).offline,
-          style: Theme
-              .of(context)
-              .textTheme
-              .headline4,
-        )
+                getAppLocalizations(context).offline,
+                style: Theme.of(context).textTheme.headline4,
+              )
       ],
     );
   }
 
-  Widget? _createSignal(WiFiSignal signal) {
-    var imagePath = 'assets/images/icon_wifi_signal_good.png';
-    var signalStr = getAppLocalizations(context).wifi_signal_good;
-    switch (signal) {
-      case WiFiSignal.good:
+  //TODO: Duplicate image check logic from NodeDetailView
+  Widget _getConnectionImage(NodeSignalLevel signalLevel) {
+    String imageName = '';
+    switch (signalLevel) {
+      case NodeSignalLevel.wired:
+        imageName = 'assets/images/icon_signal_wired.png';
         break;
-      case WiFiSignal.weak:
-        signalStr = getAppLocalizations(context).wifi_signal_weak;
+      case NodeSignalLevel.excellent:
+        imageName = 'assets/images/icon_signal_excellent.png';
         break;
-      case WiFiSignal.excellent:
-        imagePath = 'assets/images/icon_wifi_signal_excellent.png';
-        signalStr = getAppLocalizations(context).wifi_signal_excellent;
+      case NodeSignalLevel.good:
+        imageName = 'assets/images/icon_signal_good.png';
         break;
-      default:
-        return null;
+      case NodeSignalLevel.fair:
+        imageName = 'assets/images/icon_signal_fair.png';
+        break;
+      case NodeSignalLevel.weak:
+        imageName = 'assets/images/icon_signal_weak.png';
+        break;
+      case NodeSignalLevel.none:
+        return const Center();
     }
+
     return Wrap(
       children: [
         Image.asset(
-          imagePath,
+          imageName,
+          width: 14,
           height: 14,
         ),
-        SizedBox(
+        const SizedBox(
           width: 4,
         ),
         Text(
-          signalStr,
-          style: Theme
-              .of(context)
-              .textTheme
-              .headline4,
+          signalLevel.displayTitle,
+          style: Theme.of(context).textTheme.headline4,
         )
       ],
     );
   }
-}
-
-// TODO: Review if the following types are still necessary
-enum WiFiSignal { none, weak, good, fair, excellent }
-enum DeviceRole { router, addon }
-
-class DataNode {
-
-  DataNode({
-    required this.role,
-    required this.serialNumber,
-    required this.modelNumber,
-    required this.firmwareVersion,
-    required this.isLatest,
-    required this.friendlyName,
-    required this.connectedDevice,
-    required this.signal,
-    this.wanIp = '',
-    this.lanIp = '',
-    this.isOnline = true,
-    this.parentIp = '',
-    this.parentName = '',
-    this.children = const [],
-  });
-
-  factory DataNode.fromNetwork(MoabNetwork network) {
-    final device = network.devices!.firstWhere((element) =>
-    element.unit.serialNumber == network.deviceInfo?.serialNumber);
-    return DataNode(
-        role: device.isAuthority ? DeviceRole.router : DeviceRole.addon,
-        serialNumber: device.unit.serialNumber ?? '',
-        modelNumber: device.model.modelNumber ?? '',
-        firmwareVersion: device.unit.firmwareVersion ?? '',
-        isLatest: true,
-        friendlyName: device.friendlyName ?? '',
-        connectedDevice: 0,
-        signal: WiFiSignal.none);
-  }
-
-  final DeviceRole role;
-  final String serialNumber;
-  final String modelNumber;
-  final String firmwareVersion;
-  final bool isLatest;
-  final String friendlyName;
-  final int connectedDevice;
-  final WiFiSignal signal;
-  final bool isOnline;
-  final String wanIp;
-  final String lanIp;
-  final String parentIp;
-  final String parentName;
-  final List<DataNode> children;
-}
-
-class TopologyNode extends Node {
-  TopologyNode({
-    required this.role,
-    required this.serialNumber,
-    required this.modelNumber,
-    required this.firmwareVersion,
-    required this.isLatest,
-    required this.friendlyName,
-    required this.connectedDevice,
-    required this.signal,
-    this.isOnline = true,
-    this.lanIp = '',
-    this.wanIp = '',
-    this.connectTo = '',
-  }) : super.Id(serialNumber);
-
-  factory TopologyNode.fromNode(DataNode node) {
-    return TopologyNode(
-      role: node.role,
-      serialNumber: node.serialNumber,
-      modelNumber: node.modelNumber,
-      firmwareVersion: node.firmwareVersion,
-      isLatest: node.isLatest,
-      friendlyName: node.friendlyName,
-      connectedDevice: node.connectedDevice,
-      signal: node.signal,
-      isOnline: node.isOnline,
-      wanIp: node.wanIp,
-      lanIp: node.lanIp,
-      connectTo: node.parentName,
-    );
-  }
-
-  final DeviceRole role;
-  final String serialNumber;
-  final String modelNumber;
-  final String firmwareVersion;
-  final bool isLatest;
-  final String friendlyName;
-  final int connectedDevice;
-  final WiFiSignal signal;
-  final bool isOnline;
-  final String wanIp;
-  final String lanIp;
-  final String connectTo;
 }

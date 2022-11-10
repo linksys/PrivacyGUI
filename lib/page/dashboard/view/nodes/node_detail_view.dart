@@ -18,13 +18,11 @@ class NodeDetailView extends ArgumentsStatefulView {
 }
 
 class _NodeDetailViewState extends State<NodeDetailView> {
+
   @override
   void initState() {
     super.initState();
-    //TODO: XXXXXXXX
-    context
-        .read<NodeCubit>()
-        .updateCurrentID('7f12e425-8669-4e98-8c0e-80691a1309ae');
+    context.read<NodeCubit>().fetchNodeDetailData();
   }
 
   @override
@@ -45,11 +43,10 @@ class _NodeDetailViewState extends State<NodeDetailView> {
             IconButton(
                 icon: Image.asset('assets/images/icon_refresh.png'),
                 onPressed: () =>
-                    context.read<NodeCubit>().fetchNodeDetailInfo())
+                    context.read<NodeCubit>().fetchNodeDetailData())
           ],
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _headerTile(state),
@@ -68,7 +65,6 @@ class _NodeDetailViewState extends State<NodeDetailView> {
       );
     });
   }
-  //getAppLocalizations(context).node_detail_blink_node_light_btn
 
   Widget _headerTile(NodeState state) {
     return Center(

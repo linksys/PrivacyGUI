@@ -36,7 +36,7 @@ class _NodeConnectedDevicesViewState extends State<NodeConnectedDevicesView> {
             IconButton(
                 icon: Image.asset('assets/images/icon_refresh.png'),
                 onPressed: () =>
-                    context.read<NodeCubit>().fetchNodeDetailInfo()
+                    context.read<NodeCubit>().fetchNodeDetailData()
             ),
           ],
         ),

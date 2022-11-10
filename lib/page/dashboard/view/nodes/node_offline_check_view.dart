@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/node/cubit.dart';
+import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/dashboard/view/topology/topology_view.dart';
 
 class NodeOfflineCheckView extends ArgumentsStatefulView {
   const NodeOfflineCheckView({Key? key, super.args, super.next})
@@ -15,12 +17,9 @@ class NodeOfflineCheckView extends ArgumentsStatefulView {
 }
 
 class _NodeOfflineCheckViewState extends State<NodeOfflineCheckView> {
-  late final TopologyNode _node;
-
   @override
   void initState() {
     super.initState();
-    _node = widget.args['node'] as TopologyNode;
   }
 
   @override
@@ -49,11 +48,14 @@ class _NodeOfflineCheckViewState extends State<NodeOfflineCheckView> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      _node.friendlyName,
-                      style: TextStyle(
-                          fontSize: 15.0, fontWeight: FontWeight.bold),
-                    ),
+                    BlocBuilder<NodeCubit, NodeState>(
+                        builder: (context, state) {
+                      return Text(
+                        state.location,
+                        style: const TextStyle(
+                            fontSize: 15.0, fontWeight: FontWeight.bold),
+                      );
+                    }),
                     Text(
                       getAppLocalizations(context).offline,
                       style: Theme.of(context).textTheme.headline4,
