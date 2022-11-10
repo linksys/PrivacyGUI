@@ -411,7 +411,7 @@ class DataNode {
 
   factory DataNode.fromNetwork(MoabNetwork network) {
     final device = network.devices!.firstWhere((element) =>
-    element.unit.serialNumber == network.deviceInfo.serialNumber);
+    element.unit.serialNumber == network.deviceInfo?.serialNumber);
     return DataNode(
         role: device.isAuthority ? DeviceRole.router : DeviceRole.addon,
         serialNumber: device.unit.serialNumber ?? '',

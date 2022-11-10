@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/side_effects.dart';
 import 'package:linksys_moab/network/mqtt/model/command/mqtt_base_command.dart';
 import 'package:mqtt_client/mqtt_client.dart';
@@ -36,13 +37,16 @@ class MqttClientWrap {
   final StreamController<MqttCommand> _commandStreamController = StreamController(sync: true);
   StreamSubscription? _subscription;
 
-  MqttClientWrap(this._endpoint, this._port, this._clientId);
+  MqttClientWrap(this._endpoint, this._port, this._clientId) {
+    logger.d('MQTT Client Wrap instance ${describeIdentity(this)} created');
+  }
 
   Future<void> connect({String? username, String? password, bool secure = true}) async {
     // Create the client
     _client = MqttServerClient.withPort(_endpoint, _clientId, _port)
       ..keepAlivePeriod = 20 // Set Keep-Alive
-      // ..autoReconnect = true
+      ..autoReconnect = true
+      ..resubscribeOnAutoReconnect = true
       ..setProtocolV311() // Set the protocol to V3.1.1 for AWS IoT Core, if you fail to do this you will receive a connect ack with the response code
       // ..logging(on: true) // logging if you wish
       ..onBadCertificate = _onBadCertificate;
@@ -76,17 +80,22 @@ class MqttClientWrap {
     _client.onDisconnected = disconnectCallback;
     _client.onSubscribed = subscribeCallback;
     _client.onUnsubscribed = unsubscribeCallback;
-
-    // Connect the client
-    try {
+    _client.onAutoReconnected = () {
+      logger.d('auto reconnected back');
+    };
+    await runZonedGuarded(() async {
+      // Connect the client
       logger.i('MQTT client connecting to endpoint: $_endpoint');
-      await _client.connect(username, password);
-    } on Exception catch (e) {
-      logger.i('MQTT client exception - $e');
+      await _client.connect(username, password).onError((error, stackTrace) {
+        logger.i('MQTT client exception <$_endpoint>- $error');
+        _client.disconnect();
+      });
+    }, (error, stack) {
+      logger.i('MQTT client uncaught exception - $error');
       _client.disconnect();
-    }
+    });
 
-    logger.i('MQTT client status: ${_client.connectionStatus!.state}');
+    logger.i('MQTT client status: ${_client.connectionStatus!.state}, endpoint: $_endpoint');
     if (_client.connectionStatus!.state == MqttConnectionState.connected) {
       // Print incoming messages from another client on this topic
       _client.updates!.listen(_handleReceiveMessage);
@@ -144,7 +153,7 @@ class MqttClientWrap {
     MqttPublishPayload.bytesToStringAsString(message.payload.message);
     final id = BaseMqttCommand.extractUUID(pt);
     logger.i(
-        'MQTT:: Published notification:: id is <$id>, topic is ${message.variableHeader!.topicName}, with Qos ${message.header!.qos}');
+        'MQTT:: Received PUBACK:: id is <$id>, topic is ${message.variableHeader!.topicName}, with Qos ${message.header!.qos}');
     if ((id ?? '').isNotEmpty) {
       final command = _commandMap[id];
       if (command?.publishTopic == message.variableHeader!.topicName) {
@@ -195,13 +204,10 @@ class MqttClientWrap {
 
   bool _onBadCertificate(dynamic cert) {
     X509Certificate x509 = cert;
-    logger.i("cert: ${x509.startValidity}, ${x509.endValidity}");
-    logger.i('cert info: ${x509.issuer}');
-    logger.i('cert info: ${x509.subject}');
-    return true;
+    // return true;
     // final localCa = String.fromCharCodes(caCert!).trim();
     // return x509.pem.trim() == localCa &&
-    //     _certExpirationCheck(x509.startValidity, x509.endValidity);
+    return _certExpirationCheck(x509.startValidity, x509.endValidity);
   }
 
   bool _certExpirationCheck(DateTime start, DateTime end) {
