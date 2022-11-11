@@ -1,12 +1,24 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/profiles/mock.dart';
+import 'package:linksys_moab/model/app_signature.dart';
+import 'package:linksys_moab/model/fcn/address_group.dart';
+import 'package:linksys_moab/model/fcn/application.dart';
+import 'package:linksys_moab/model/fcn/application_list.dart';
+import 'package:linksys_moab/model/fcn/objects.dart';
+import 'package:linksys_moab/model/fcn/policy.dart';
+import 'package:linksys_moab/model/fcn/web_filter.dart';
+import 'package:linksys_moab/model/fcn/web_filter_profile.dart';
 import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/model/secure_profile.dart';
+import 'package:linksys_moab/model/web_filter.dart';
+import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:collection/collection.dart';
+import 'package:linksys_moab/util/storage.dart';
 
 import 'state.dart';
 
@@ -48,7 +60,9 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     if (state.createdProfile == null) {
       return;
     }
-    emit(state.addOrUpdateProfile(state.createdProfile!).copyWith(createdProfile: null));
+    emit(state
+        .addOrUpdateProfile(state.createdProfile!)
+        .copyWith(createdProfile: null));
   }
 
   fetchAllServices({PService serviceCategory = PService.all}) async {
@@ -248,9 +262,9 @@ class ProfilesCubit extends Cubit<ProfilesState> {
   }
 
   Future updateContentFilterDetails(
-    String profileId,
-    CFSecureProfile secureProfile,
-  ) async {
+      String profileId,
+      CFSecureProfile secureProfile,
+      Set<CFAppSignature> blockedSearchApplication) async {
     logger.d('updateContentFilterDetails: $profileId');
     var profile = state.selectedProfile;
     if (profile == null || profile.id != profileId) {
@@ -267,7 +281,110 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     }
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.contentFilter] = data;
+    _transformDataToFCN(profile, data, blockedSearchApplication);
     emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
+  }
+
+  _transformDataToFCN(GroupProfile profile, ContentFilterData data,
+      Set<CFAppSignature> changedSearchApplication) async {
+    await _createWebFilterProfile(profile, data);
+    await _createApplicationList(profile, data, changedSearchApplication);
+    _createAddressGroup(profile);
+    _createPolicy(profile);
+  }
+
+  _createWebFilterProfile(GroupProfile profile, ContentFilterData data) async {
+    final blockedWebFilters = data.secureProfile.securityCategories
+        .where((categories) =>
+            categories.webFilters.status != FilterStatus.allowed)
+        .fold<List<WebFilter>>(
+            List<WebFilter>.empty(),
+            (previousValue, categories) =>
+                [...previousValue, ...categories.webFilters.webFilters]);
+    logger.d('Blocked web filters $blockedWebFilters');
+    final fcnBlockedWebFilters =
+        blockedWebFilters.map((e) => FCNWebFilter.fromData(e)).toList();
+    final fcnWebFilterProfile = FCNWebFilterProfile(
+        name: base64Encode(profile.name.codeUnits),
+        comment: "${profile.name}'s web filter profile",
+        filters: fcnBlockedWebFilters);
+    logger.d(
+        'FCN Web Filter Profile: ${jsonEncode(fcnWebFilterProfile.toFullJson())}');
+  }
+
+  _createApplicationList(GroupProfile profile, ContentFilterData data,
+      Set<CFAppSignature> changedSearchApplication) async {
+    final blockedApps = data.secureProfile.securityCategories
+        .fold<List<CloudAppSignature>>(
+            [],
+            (previousValue, categories) => [
+                  ...previousValue,
+                  ..._extractRawApps(categories.apps
+                      .where((cfApp) => cfApp.status != FilterStatus.allowed))
+                ])
+      ..addAll(_extractRawApps(changedSearchApplication
+          .where((element) => element.status != FilterStatus.allowed)));
+    logger.d('Blocked Apps $blockedApps');
+
+    final blockedAppDataList = await SecurityProfileManager.instance()
+        .fetchAppSignature()
+        .then((appSignatureList) => appSignatureList
+            .where((appSignature) => blockedApps
+                .any((blockedApp) => blockedApp.id == appSignature.id))
+            .toList())
+        .onError((error, stackTrace) => []);
+    logger.d('Blocked App Data List: ${jsonEncode(blockedAppDataList.map((e) => e.toJson()).toList())}');
+    final fcnBlockedApp =
+        blockedAppDataList.map((e) => FCNApplication.fromData(e)).toList();
+
+    final fcnApplicationList = FCNApplicationList(
+      name: base64Encode(profile.name.codeUnits),
+      comment: "${profile.name}'s application list",
+      entries: fcnBlockedApp,
+    );
+    logger.d(
+        'FCN Application List: ${jsonEncode(fcnApplicationList.toFullJson())}');
+  }
+
+  List<CloudAppSignature> _extractRawApps(Iterable<CFAppSignature> cfApps) {
+    return cfApps
+        .where((cfApp) => cfApp.status != FilterStatus.allowed)
+        .fold<List<CloudAppSignature>>(
+      [],
+      (previousValue, element) => [
+        ...previousValue,
+        ...element.raw.whereType<CloudAppSignature>(),
+      ],
+    );
+  }
+
+  _createAddressGroup(GroupProfile profile) {
+    // TODO do not have group yet
+    final addressGroup = FCNAddressGroup(
+      name: base64Encode(profile.name.codeUnits),
+      comment: "${profile.name}'s address group",
+      member: [
+        FCNNameObject(name: 'MacBook-Pro-2'),
+        FCNNameObject(name: 'Pixel-6'),
+      ],
+    );
+    // TODO FCN command to set into FCN
+    logger.d('Address group: ${jsonEncode(addressGroup.toJson())}');
+  }
+
+  _createPolicy(GroupProfile profile) {
+    final policy = FCNPolicy(
+      policyid: '199',
+      status: 'enable',
+      name: base64Encode(profile.name.codeUnits),
+      addressGroup: base64Encode(profile.name.codeUnits),
+      webFilterProfile: base64Encode(profile.name.codeUnits),
+      applicationList: base64Encode(profile.name.codeUnits),
+      nid: 'd525eed2-3fea-454c-91c5-f69d9b0dfab5',
+      gid: base64Encode(profile.name.codeUnits),
+      devices: ['MacBook-Pro-2'],
+    );
+    logger.d('Policy: ${jsonEncode(policy.toFullJson())}');
   }
 
   @override

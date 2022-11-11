@@ -42,7 +42,7 @@ class ContentFilterCubit extends Cubit<ContentFilterState> {
                 (category) => category.getRawAppById(appId) != null)
             ?.getAppById(appId)
             ?.status ??
-        FilterStatus.notAllowed;
+        FilterStatus.allowed;
   }
 
   @override

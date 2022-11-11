@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:linksys_moab/model/app_signature.dart';
 
 import 'objects.dart';
 
@@ -65,7 +66,8 @@ class FCNApplication extends Equatable {
   final String quarantineLog;
 
   @override
-  List<Object?> get props => [
+  List<Object?> get props =>
+      [
         id,
         risk,
         category,
@@ -90,8 +92,8 @@ class FCNApplication extends Equatable {
     this.exclusion = const [],
     this.parameters = const [],
     required this.action,
-    this.log = 'enabled',
-    this.logPacket = 'disabled',
+    this.log = 'enable',
+    this.logPacket = 'disable',
     this.rateCount = '0',
     this.rateDuration = '60',
     this.rateMode = 'continuous',
@@ -224,6 +226,20 @@ class FCNApplication extends Equatable {
       quarantine: json['quarantine'],
       quarantineExpiry: json['quarantine-expiry'],
       quarantineLog: json['quarantine-log'],
+    );
+  }
+
+  factory FCNApplication.fromData(AppSignature app) {
+    return FCNApplication(id: app.id,
+        risk: [FCNLevelObject(level: app.risk)],
+        category: [FCNIdObject(id: app.category)],
+        application: [FCNIdObject(id: app.id)],
+        protocols: app.protocol,
+        vendor: (app as CloudAppSignature?)?.vendor ?? '',
+        technology: app.technology,
+        behavior: app.behavior,
+        popularity: app.popularity,
+        action: 'block',
     );
   }
 }

@@ -54,6 +54,7 @@ import 'web_filter.dart';
 ///
 class FCNWebFilterProfile extends Equatable {
   final String name;
+  final String? comment;
   final List<FCNWebFilter> filters;
 
   @override
@@ -61,15 +62,18 @@ class FCNWebFilterProfile extends Equatable {
 
   const FCNWebFilterProfile({
     required this.name,
+    this.comment,
     required this.filters,
   });
 
   FCNWebFilterProfile copyWith({
     String? name,
+    String? comment,
     List<FCNWebFilter>? filters,
   }) {
     return FCNWebFilterProfile(
       name: name ?? this.name,
+      comment: comment ?? this.comment,
       filters: filters ?? this.filters,
     );
   }
@@ -81,10 +85,11 @@ class FCNWebFilterProfile extends Equatable {
     };
   }
 
-  factory FCNWebFilterProfile.fromMap(Map<String, dynamic> map) {
+  factory FCNWebFilterProfile.fromJson(Map<String, dynamic> json) {
     return FCNWebFilterProfile(
-      name: map['name'],
-      filters: List.from(map['filters'])
+      name: json['name'],
+      comment: json['comment'],
+      filters: List.from(json['filters'])
           .map((e) => FCNWebFilter.fromJson(e))
           .toList(),
     );
@@ -93,7 +98,7 @@ class FCNWebFilterProfile extends Equatable {
   Map<String, dynamic> toFullJson() {
     return {
       "name": name,
-      "comment": "Default web filtering.",
+      "comment": comment ?? "Default web filtering.",
       "replacemsg-group": "",
       "options": "",
       "https-replacemsg": "enable",

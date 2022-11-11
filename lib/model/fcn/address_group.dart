@@ -72,10 +72,10 @@ class FCNAddressGroup extends Equatable {
       'name': name,
       'type': type,
       'category': category,
-      'member': member.map((e) => e.toJson()),
+      'member': member.map((e) => e.toJson()).toList(),
       'comment': comment,
       'exclude': exclude,
-      'exclude-member': excludeMember.map((e) => e.toJson()),
+      'exclude-member': excludeMember.map((e) => e.toJson()).toList(),
     };
   }
 

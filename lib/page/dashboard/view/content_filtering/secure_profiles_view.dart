@@ -82,7 +82,10 @@ class _ContentFilteringPresetsViewState
                           context
                               .read<ProfilesCubit>()
                               .updateContentFilterDetails(
-                                  profileId, state.selectedSecureProfile!)
+                                profileId,
+                                state.selectedSecureProfile!,
+                                state.searchAppSignatureSet,
+                              )
                               .then(
                                   (value) => NavigationCubit.of(context).pop());
                         } else {

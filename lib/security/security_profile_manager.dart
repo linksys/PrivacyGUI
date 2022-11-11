@@ -69,16 +69,17 @@ class SecurityProfileManager {
             // handle web filters
             final webFilterList =
                 _extractWebFilters(securityPreset, webFilters);
-            final appSignatureList = _extractAppSignatures(securityPreset, appSignatures, categoryStatus);
+            final appSignatureList = _extractAppSignatures(
+                securityPreset, appSignatures, categoryStatus);
             logger.d(
                 'fetchDefaultPresets:: category: $categoryName, web filter count: ${webFilterList.length}, app signature count: ${appSignatureList.length}');
             final cfPreset = CFSecureCategory(
               name: categoryName,
               id: categoryId,
-              status: CFSecureCategory.mapStatus(categoryStatus),
+              status: CFStatus.mapStatus(categoryStatus),
               description: '',
               webFilters: CFWebFilters(
-                status: CFSecureCategory.mapStatus(categoryStatus),
+                status: CFStatus.mapStatus(categoryStatus),
                 webFilters: webFilterList,
               ),
               apps: appSignatureList,
@@ -112,13 +113,14 @@ class SecurityProfileManager {
     return securityPreset.rules
         .where((element) => element.target == 'application')
         .map((e) {
-          final field =
-              e.expression.field == 'applicationId' ? 'id' : e.expression.field; // use id instead the applicationId
+          final field = e.expression.field == 'applicationId'
+              ? 'id'
+              : e.expression.field; // use id instead the applicationId
           final value = e.expression.value;
           final rawApps = appSignatures
               .map((e) => e.toJson())
               .where((element) => element[field].toString().contains(value))
-              .map((e) => AppSignature.fromJson(e))
+              .map((e) => CloudAppSignature.fromJson(e))
               .toList();
           if (rawApps.isEmpty) {
             return null;
@@ -129,14 +131,16 @@ class SecurityProfileManager {
           logger.d('raw apps: ${rawApps.length}');
           String appIcon;
           appIcon = rawApps
-              .where((value) =>
-          !AppIconManager.instance().isDefaultIcon(value.id))
-              .firstOrNull?.id ?? '0';
+                  .where((value) =>
+                      !AppIconManager.instance().isDefaultIcon(value.id))
+                  .firstOrNull
+                  ?.id ??
+              '0';
           final cfAppSignature = CFAppSignature(
             name: name,
             icon: appIcon,
             category: rawApps.first.category,
-            status: CFSecureCategory.mapStatus(categoryStatus),
+            status: CFStatus.mapStatus(categoryStatus),
             raw: rawApps,
           );
           logger.d(
@@ -149,7 +153,8 @@ class SecurityProfileManager {
 
   Future<List<MoabPreset>> fetchProfilePresets() async {
     final file = File.fromUri(Storage.secureProfilePresetsFileUri);
-    await CloudEnvironmentManager().downloadResources(CloudResourceType.securityProfiles);
+    await CloudEnvironmentManager()
+        .downloadResources(CloudResourceType.securityProfiles);
     final str = file.readAsStringSync();
     final jsonArray = List.from(jsonDecode(str));
     return List<MoabPreset>.from(jsonArray.map((e) => MoabPreset.fromJson(e)));
@@ -157,7 +162,8 @@ class SecurityProfileManager {
 
   Future<List<MoabPreset>> fetchSecurityCategoryPresets() async {
     final file = File.fromUri(Storage.categoryPresetsFileUri);
-    await CloudEnvironmentManager().downloadResources(CloudResourceType.securityCategories);
+    await CloudEnvironmentManager()
+        .downloadResources(CloudResourceType.securityCategories);
     final str = file.readAsStringSync();
     final jsonArray = List.from(jsonDecode(str));
     return List<MoabPreset>.from(jsonArray.map((e) => MoabPreset.fromJson(e)));
@@ -165,7 +171,8 @@ class SecurityProfileManager {
 
   Future<List<WebFilter>> fetchWebFilters() async {
     final file = File.fromUri(Storage.webFiltersFileUri);
-    await CloudEnvironmentManager().downloadResources(CloudResourceType.webFilters);
+    await CloudEnvironmentManager()
+        .downloadResources(CloudResourceType.webFilters);
     final str = file.readAsStringSync();
     final jsonArray = List.from(jsonDecode(str));
 
@@ -186,7 +193,8 @@ class SecurityProfileManager {
 
   Future<List<CloudAppSignature>> fetchAppSignature() async {
     final file = File.fromUri(Storage.appSignaturesFileUri);
-    await CloudEnvironmentManager().downloadResources( CloudResourceType.appSignature);
+    await CloudEnvironmentManager()
+        .downloadResources(CloudResourceType.appSignature);
     final cJsonStr = file.readAsStringSync();
     // TODO get form FW
     final fwJsonStr = await rootBundle

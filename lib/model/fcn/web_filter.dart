@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:linksys_moab/model/web_filter.dart';
 
 ///
 ///         {
@@ -70,7 +71,7 @@ class FCNWebFilter extends Equatable {
       'warn-duration': warnDuration,
       'auth-usr-grp': authUsrGrp,
       'log': log,
-      'override-replace-msg': overrideReplaceMsg,
+      'override-replacemsg': overrideReplaceMsg,
       'warning-prompt': warningPrompt,
       'warning-duration-type': warningDurationType,
     };
@@ -84,9 +85,14 @@ class FCNWebFilter extends Equatable {
       warnDuration: json['warn-duration'],
       authUsrGrp: List.from(json['auth-usr-grp']),
       log: json['log'],
-      overrideReplaceMsg: json['override-replace-msg'],
+      overrideReplaceMsg: json['override-replacemsg'],
       warningPrompt: json['warning-prompt'],
       warningDurationType: json['warning-duration-type'],
     );
+  }
+
+  factory FCNWebFilter.fromData(WebFilter cfWebFilter) {
+    // Action should be always block. we only put block to fcn
+    return FCNWebFilter(id: cfWebFilter.id, category: cfWebFilter.groupId, action: 'block');
   }
 }

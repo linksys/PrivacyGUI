@@ -87,4 +87,5 @@ class WebFilter extends Equatable {
   @override
   List<Object?> get props =>
       [id, name, group, rating, desc, example, groupId, blockedInRatings];
+
 }

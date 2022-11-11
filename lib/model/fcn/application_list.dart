@@ -27,22 +27,26 @@ import 'application.dart';
 ///
 class FCNApplicationList extends Equatable {
   final String name;
+  final String? comment;
   final List<FCNApplication> entries;
 
   @override
-  List<Object?> get props => [name, entries];
+  List<Object?> get props => [name, comment, entries];
 
   const FCNApplicationList({
     required this.name,
+    this.comment,
     required this.entries,
   });
 
   FCNApplicationList copyWith({
     String? name,
+    String? comment,
     List<FCNApplication>? entries,
   }) {
     return FCNApplicationList(
       name: name ?? this.name,
+      comment: comment ?? this.comment,
       entries: entries ?? this.entries,
     );
   }
@@ -50,6 +54,7 @@ class FCNApplicationList extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'name': name,
+      'comment': comment,
       'entries': entries.map((e) => e.toJson()),
     };
   }
@@ -57,6 +62,7 @@ class FCNApplicationList extends Equatable {
   factory FCNApplicationList.fromJson(Map<String, dynamic> json) {
     return FCNApplicationList(
       name: json['name'],
+      comment: json['comment'],
       entries: List.from(json['entries'])
           .map((e) => FCNApplication.fromJson(e))
           .toList(),
@@ -66,7 +72,7 @@ class FCNApplicationList extends Equatable {
   Map<String, dynamic> toFullJson() {
     return {
       "name": name,
-      "comment": "Monitor all applications.",
+      "comment": comment ?? "Monitor all applications.",
       "replacemsg-group": "",
       "extended-log": "disable",
       "other-application-action": "pass",
