@@ -16,7 +16,6 @@ class SetFormalActiveEvent extends SecurityEvent {
 
 }
 
-/*
 class SetTrialExpiredEvent extends SecurityEvent {
 
 }
@@ -24,7 +23,6 @@ class SetTrialExpiredEvent extends SecurityEvent {
 class SetExpiredEvent extends SecurityEvent {
 
 }
- */
 
 class TurnOffSecurityEvent extends SecurityEvent {
 
