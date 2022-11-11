@@ -204,6 +204,7 @@ enum JNAPAction {
   setWANSettings,
   renewDHCPWANLease,
   renewDHCPIPv6WANLease,
+  requestFOSContainer,
   // routerManagement
   getManagementSettings,
   setManagementSettings,
@@ -438,7 +439,9 @@ enum _JNAPActionValue {
           'http://linksys.com/jnap/nodes/bluetooth/BTGetScanUnconfiguredResult2'),
   btRequestScanUnconfigured2(
       value:
-          'http://linksys.com/jnap/nodes/bluetooth/BTRequestScanUnconfigured2');
+          'http://linksys.com/jnap/nodes/bluetooth/BTRequestScanUnconfigured2'),
+  requestFOSContainer(
+      value: 'http://linksys.com/jnap/router/RequestFOSContainer');
 
   const _JNAPActionValue({required this.value});
 
@@ -707,7 +710,8 @@ void initBetterActions() {
       _JNAPActionValue.getLocalDevice.value;
   _betterActionMap[JNAPAction.setDeviceProperties] =
       _JNAPActionValue.setDeviceProperties.value;
-  _betterActionMap[JNAPAction.deleteDevice] = _JNAPActionValue.deleteDevice.value;
+  _betterActionMap[JNAPAction.deleteDevice] =
+      _JNAPActionValue.deleteDevice.value;
   _betterActionMap[JNAPAction.getPortRangeForwardingRules] =
       _JNAPActionValue.getPortRangeForwardingRules.value;
   _betterActionMap[JNAPAction.getPortRangeTriggeringRules] =
@@ -844,6 +848,8 @@ void initBetterActions() {
       _JNAPActionValue.getBluetoothAutoOnboardingStatus.value;
   _betterActionMap[JNAPAction.startBlueboothAutoOnboarding] =
       _JNAPActionValue.startBluetoothAutoOnboarding.value;
+  _betterActionMap[JNAPAction.requestFOSContainer] =
+      _JNAPActionValue.requestFOSContainer.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

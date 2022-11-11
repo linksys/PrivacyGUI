@@ -25,6 +25,7 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
+import 'package:linksys_moab/repository/router/fnc_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -349,7 +350,13 @@ class _DebugToolsViewState extends State<DebugToolsView> {
       PrimaryButton(
         text: 'Load Security Preset',
         onPress: () {
-          SecurityProfileManager.instance().fetchDefaultPresets();
+          // SecurityProfileManager.instance().fetchDefaultPresets();
+          final repo = context.read<RouterRepository>();
+          repo.connectToLocalWithPassword().then((value) =>
+              repo.getRequestFOSContainer('api/v2/cmdb/antivirus/settings').then((value) {
+                final result = value.toFNCResult();
+                logger.d('FNC Result: $result');
+              }));
         },
       ),
       Text(
