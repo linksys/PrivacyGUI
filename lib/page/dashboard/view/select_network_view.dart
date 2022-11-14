@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -42,8 +43,19 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
     return isLoading
         ? FullScreenSpinner(text: getAppLocalizations(context).processing)
         : BlocBuilder<NetworkCubit, NetworkState>(
-            builder: (context, state) => BasePageView.withCloseButton(
-                  context,
+            builder: (context, state) => BasePageView(
+                  appBar: AppBar(
+                    backgroundColor: Colors.transparent,
+                    iconTheme:
+                    IconThemeData(color: Theme.of(context).colorScheme.primary),
+                    elevation: 0,
+                    automaticallyImplyLeading: false,
+                    actions: [
+                      IconButton(
+                          icon: const Icon(Icons.close, color: Colors.black,),
+                          onPressed: () => context.read<AuthBloc>().add(Logout()))
+                    ],
+                  ),,
                   child: BasicLayout(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     content: Column(
