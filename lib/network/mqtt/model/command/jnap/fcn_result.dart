@@ -5,20 +5,20 @@ import 'package:equatable/equatable.dart';
 /// status : 200
 /// response : "{\"path\":\"antivirus\",\"build\":\"529\",\"version\":\"v7.2.0\",\"http_status\":200,\"name\":\"settings\",\"status\":\"success\",\"http_method\":\"GET\",\"serial\":\"\",\"results\":{\"grayware\":\"disable\",\"override-timeout\":\"0\",\"machine-learning-detection\":\"enable\",\"use-extreme-db\":\"disable\"}}"
 
-class FNCResult extends Equatable {
+class FCNResult extends Equatable {
   final int status;
-  final FNCResponse response;
+  final FCNResponse response;
 
-  const FNCResult({
+  const FCNResult({
     required this.status,
     required this.response,
   });
 
-  FNCResult copyWith({
+  FCNResult copyWith({
     int? status,
-    FNCResponse? response,
+    FCNResponse? response,
   }) {
-    return FNCResult(
+    return FCNResult(
       status: status ?? this.status,
       response: response ?? this.response,
     );
@@ -31,10 +31,10 @@ class FNCResult extends Equatable {
     };
   }
 
-  factory FNCResult.fromJson(Map<String, dynamic> json) {
-    return FNCResult(
+  factory FCNResult.fromJson(Map<String, dynamic> json) {
+    return FCNResult(
       status: json['status'],
-      response: FNCResponse.fromJson(jsonDecode(json['response'])),
+      response: FCNResponse.fromJson(jsonDecode(json['response'])),
     );
   }
 
@@ -42,7 +42,7 @@ class FNCResult extends Equatable {
   List<Object> get props => [status, response];
 }
 
-class FNCResponse extends Equatable {
+class FCNResponse extends Equatable {
   final String path;
   final String build;
   final String version;
@@ -66,7 +66,7 @@ class FNCResponse extends Equatable {
         results,
       ];
 
-  const FNCResponse({
+  const FCNResponse({
     required this.path,
     required this.build,
     required this.version,
@@ -78,7 +78,7 @@ class FNCResponse extends Equatable {
     required this.results,
   });
 
-  FNCResponse copyWith({
+  FCNResponse copyWith({
     String? path,
     String? build,
     String? version,
@@ -89,7 +89,7 @@ class FNCResponse extends Equatable {
     String? serial,
     Map<String, dynamic>? results,
   }) {
-    return FNCResponse(
+    return FCNResponse(
       path: path ?? this.path,
       build: build ?? this.build,
       version: version ?? this.version,
@@ -116,8 +116,8 @@ class FNCResponse extends Equatable {
     };
   }
 
-  factory FNCResponse.fromJson(Map<String, dynamic> json) {
-    return FNCResponse(
+  factory FCNResponse.fromJson(Map<String, dynamic> json) {
+    return FCNResponse(
       path: json['path'],
       build: json['build'],
       version: json['version'],

@@ -352,10 +352,10 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         onPress: () {
           // SecurityProfileManager.instance().fetchDefaultPresets();
           final repo = context.read<RouterRepository>();
-          repo.connectToLocalWithPassword().then((value) =>
+          repo.connectToBroker().then((value) =>
               repo.getRequestFOSContainer('api/v2/cmdb/antivirus/settings').then((value) {
-                final result = value.toFNCResult();
-                logger.d('FNC Result: $result');
+                final result = value.toFCNResult();
+                logger.d('FCB Result: $result');
               }));
         },
       ),
