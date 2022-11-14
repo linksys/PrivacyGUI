@@ -51,7 +51,7 @@ class FCNResponse extends Equatable {
   final String status;
   final String httpMethod;
   final String serial;
-  final Map<String, dynamic> results;
+  final dynamic results;
 
   @override
   List<Object?> get props => [
@@ -87,7 +87,7 @@ class FCNResponse extends Equatable {
     String? status,
     String? httpMethod,
     String? serial,
-    Map<String, dynamic>? results,
+    dynamic? results,
   }) {
     return FCNResponse(
       path: path ?? this.path,
@@ -117,6 +117,12 @@ class FCNResponse extends Equatable {
   }
 
   factory FCNResponse.fromJson(Map<String, dynamic> json) {
+    dynamic results = {};
+    if (json['results'] is List) {
+      results = List.from(json['results']).map((e) => jsonDecode(e)).toList();
+    } else {
+      results = jsonDecode(json['results']);
+    }
     return FCNResponse(
       path: json['path'],
       build: json['build'],
@@ -126,7 +132,10 @@ class FCNResponse extends Equatable {
       status: json['status'],
       httpMethod: json['http_method'],
       serial: json['serial'],
-      results: json['results'] as Map<String, dynamic>,
+      results: results,
     );
+  }
+  dynamic _handleResults(dynamic json) {
+
   }
 }
