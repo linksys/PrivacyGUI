@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:bloc/bloc.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:linksys_moab/bloc/subscription/subscription_state.dart';
@@ -11,7 +13,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   final SubscriptionRepository _repo;
 
   Future<void> loadingProducts() async {
-    const Set<String> _kIds = <String>{linksysSecurity};
+    final Set<String> _kIds = Platform.isIOS ? <String>{ios_linksysSecurity} : <String>{linksysSecurity};
     final ProductDetailsResponse response =
         await InAppPurchase.instance.queryProductDetails(_kIds);
     if (response.notFoundIDs.isNotEmpty) {

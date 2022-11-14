@@ -30,7 +30,28 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
   void initState() {
     super.initState();
     context.read<SubscriptionCubit>().queryProductsFromCloud();
-    context.read<SecurityBloc>().add(SetTrialActiveEvent());
+    switch(context.read<SubscriptionCubit>().state.networkEntitlementResponse?.first.order?.status) {
+      case 'NEW':
+        context.read<SecurityBloc>().add(SetFormalActiveEvent());
+        break;
+      case 'VERIFIED':
+        context.read<SecurityBloc>().add(SetFormalActiveEvent());
+        break;
+      case 'GRACE_PERIOD':
+        context.read<SecurityBloc>().add(SetFormalActiveEvent());
+        break;
+      case 'CANCELLED':
+        break;
+      case 'ON_HOLD':
+        break;
+      case 'EXPIRED':
+        context.read<SecurityBloc>().add(SetExpiredEvent());
+        break;
+      default:
+        context.read<SecurityBloc>().add(SetTrialActiveEvent());
+        break;
+    }
+    // context.read<SecurityBloc>().add(SetTrialActiveEvent());
   }
 
   Widget _unsubscribedView(SecurityState state) {

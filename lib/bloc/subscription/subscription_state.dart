@@ -4,6 +4,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import '../../network/http/model/subscription_model.dart';
 
 const linksysSecurity = 'linksys_secure';
+const ios_linksysSecurity = 'test_sub_annually';
 
 class SubscriptionState extends Equatable {
   final List<ProductDetails>? products;
