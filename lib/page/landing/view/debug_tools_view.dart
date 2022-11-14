@@ -353,7 +353,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           // SecurityProfileManager.instance().fetchDefaultPresets();
           final repo = context.read<RouterRepository>();
           repo.connectToBroker().then((value) =>
-              repo.getRequestFOSContainer('api/v2/cmdb/firewall/settings').then((value) {
+              repo.getRequestFOSContainer('api/v2/cmdb/webfilter/profile').then((value) {
                 final result = value.toFCNResult();
                 logger.d('FCB Result: $result');
               }));

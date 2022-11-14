@@ -119,9 +119,9 @@ class FCNResponse extends Equatable {
   factory FCNResponse.fromJson(Map<String, dynamic> json) {
     dynamic results = {};
     if (json['results'] is List) {
-      results = List.from(json['results']).map((e) => jsonDecode(e)).toList();
-    } else {
-      results = jsonDecode(json['results']);
+      results = List.from(json['results']);
+    } else if (json['results'] is Map) {
+      results = json['results'];
     }
     return FCNResponse(
       path: json['path'],
@@ -134,8 +134,5 @@ class FCNResponse extends Equatable {
       serial: json['serial'],
       results: results,
     );
-  }
-  dynamic _handleResults(dynamic json) {
-
   }
 }
