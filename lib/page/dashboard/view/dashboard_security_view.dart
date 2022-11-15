@@ -30,27 +30,29 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
   void initState() {
     super.initState();
     context.read<SubscriptionCubit>().queryProductsFromCloud();
-    switch(context.read<SubscriptionCubit>().state.networkEntitlementResponse?.first.order?.status) {
-      case 'NEW':
-        context.read<SecurityBloc>().add(SetFormalActiveEvent());
-        break;
-      case 'VERIFIED':
-        context.read<SecurityBloc>().add(SetFormalActiveEvent());
-        break;
-      case 'GRACE_PERIOD':
-        context.read<SecurityBloc>().add(SetFormalActiveEvent());
-        break;
-      case 'CANCELLED':
-        break;
-      case 'ON_HOLD':
-        break;
-      case 'EXPIRED':
-        context.read<SecurityBloc>().add(SetExpiredEvent());
-        break;
-      default:
-        context.read<SecurityBloc>().add(SetTrialActiveEvent());
-        break;
-    }
+    context.read<SubscriptionCubit>().getNetworkEntitlement(
+        context.read<NetworkCubit>().state.selected?.deviceInfo?.serialNumber);
+    // switch(context.read<SubscriptionCubit>().state.networkEntitlementResponse?.first.order?.status) {
+    //   case 'NEW':
+    //     context.read<SecurityBloc>().add(SetFormalActiveEvent());
+    //     break;
+    //   case 'VERIFIED':
+    //     context.read<SecurityBloc>().add(SetFormalActiveEvent());
+    //     break;
+    //   case 'GRACE_PERIOD':
+    //     context.read<SecurityBloc>().add(SetFormalActiveEvent());
+    //     break;
+    //   case 'CANCELLED':
+    //     break;
+    //   case 'ON_HOLD':
+    //     break;
+    //   case 'EXPIRED':
+    //     context.read<SecurityBloc>().add(SetExpiredEvent());
+    //     break;
+    //   default:
+    //     context.read<SecurityBloc>().add(SetTrialActiveEvent());
+    //     break;
+    // }
     // context.read<SecurityBloc>().add(SetTrialActiveEvent());
   }
 
@@ -195,27 +197,56 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
   @override
   Widget build(BuildContext context) {
     return BasePageView.noNavigationBar(
-      scrollable: true,
-      padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
-      child: BlocBuilder<SecurityBloc, SecurityState>(
-        builder: (context, state) {
-          switch (state.subscriptionStatus) {
-            case SubscriptionStatus.unsubscribed:
-              return _unsubscribedView(state);
-            case SubscriptionStatus.trialActive:
-              return _trialActiveView(state);
-            case SubscriptionStatus.active:
-              return _formalActiveView(state);
-            case SubscriptionStatus.trialExpired:
-              return _trialExpiredView(state);
-            case SubscriptionStatus.expired:
-              return _expiredView(state);
-            case SubscriptionStatus.turnedOff:
-              return _turnedOffView(state);
-          }
-        },
-      ),
-    );
+        scrollable: true,
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
+        child: BlocListener<SubscriptionCubit, SubscriptionState>(
+          listenWhen: (previous, current) {
+            return previous != current;
+          },
+          listener: (context, state) {
+            print(
+                'dashboard security view status ${state.networkEntitlementResponse?.first.order.status}');
+            switch (state.networkEntitlementResponse?.first.order.status) {
+              case 'NEW':
+                context.read<SecurityBloc>().add(SetUnsubscribedEvent());
+                break;
+              case 'VERIFIED':
+                context.read<SecurityBloc>().add(SetFormalActiveEvent());
+                break;
+              case 'GRACE_PERIOD':
+                context.read<SecurityBloc>().add(SetFormalActiveEvent());
+                break;
+              case 'CANCELLED':
+                break;
+              case 'ON_HOLD':
+                break;
+              case 'EXPIRED':
+                context.read<SecurityBloc>().add(SetExpiredEvent());
+                break;
+              default:
+                context.read<SecurityBloc>().add(SetTrialActiveEvent());
+                break;
+            }
+          },
+          child: BlocBuilder<SecurityBloc, SecurityState>(
+            builder: (context, state) {
+              switch (state.subscriptionStatus) {
+                case SubscriptionStatus.unsubscribed:
+                  return _unsubscribedView(state);
+                case SubscriptionStatus.trialActive:
+                  return _trialActiveView(state);
+                case SubscriptionStatus.active:
+                  return _formalActiveView(state);
+                case SubscriptionStatus.trialExpired:
+                  return _trialExpiredView(state);
+                case SubscriptionStatus.expired:
+                  return _expiredView(state);
+                case SubscriptionStatus.turnedOff:
+                  return _turnedOffView(state);
+              }
+            },
+          ),
+        ));
   }
 
   Widget _subscriptionStatus(SecurityState state) {

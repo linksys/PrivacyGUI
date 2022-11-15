@@ -13,7 +13,9 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   final SubscriptionRepository _repo;
 
   Future<void> loadingProducts() async {
-    final Set<String> _kIds = Platform.isIOS ? <String>{ios_linksysSecurity} : <String>{linksysSecurity};
+    final Set<String> _kIds = Platform.isIOS
+        ? <String>{ios_linksysSecurity}
+        : <String>{linksysSecurity};
     final ProductDetailsResponse response =
         await InAppPurchase.instance.queryProductDetails(_kIds);
     if (response.notFoundIDs.isNotEmpty) {
@@ -21,13 +23,20 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
       return;
     }
     List<ProductDetails> products = response.productDetails;
-    products.map((item) => logger.d('subscription product: ${item.id} + ${item.price} + ${item.description}')).toList();
+    products
+        .map((item) => logger.d(
+            'subscription product: ${item.id} + ${item.price} + ${item.description}'))
+        .toList();
     emit(state.copyWith(products: products));
     print('products: ${state.products?.first.id}');
   }
 
   void restoreProducts() async {
     InAppPurchase.instance.restorePurchases();
+  }
+
+  void completePendingPurchase(PurchaseDetails purchase) async {
+    InAppPurchase.instance.completePurchase(purchase);
   }
 
   void buy(ProductDetails productDetails, String serialNumber) async {
@@ -47,12 +56,20 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   }
 
   void createOrderToCloud() async {
-    final orderResponse = await _repo.createCloudOrders(state.serialNumber!, state.subscriptionProductDetails!.first.id, state.purchaseToken!);
+    String? productListingId = Platform.isIOS ? state.subscriptionProductDetails?.firstWhere((product) => product.channel.family == 'APPLE').id : state.subscriptionProductDetails?.firstWhere((product) => product.channel.family == 'GOOGLE')?.id;
+    if(productListingId == null) {
+      return;
+    }
+    final orderResponse = await _repo.createCloudOrders(state.serialNumber!,
+        productListingId, state.purchaseToken!);
     emit(state.copyWith(subscriptionOrderResponse: orderResponse));
     getNetworkEntitlement(state.serialNumber!);
   }
 
-  void getNetworkEntitlement(String serialNumber) async {
+  void getNetworkEntitlement(String? serialNumber) async {
+    if (serialNumber == null) {
+      return;
+    }
     final entitlements = await _repo.getNetworkEntitlement(serialNumber);
     emit(state.copyWith(networkEntitlementResponse: entitlements));
   }
@@ -70,15 +87,23 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
           logger.e('subscription error : ${purchaseDetails.error!.toString()}');
         } else if (purchaseDetails.status == PurchaseStatus.purchased ||
             purchaseDetails.status == PurchaseStatus.restored) {
-          logger.d('subscription cubit purchaseDetails : ${purchaseDetails.purchaseID}');
+          logger.d(
+              'subscription cubit purchaseDetails : ${purchaseDetails.purchaseID}');
           _deliverProduct(purchaseDetails);
+        }
+        if (purchaseDetails.pendingCompletePurchase) {
+          await InAppPurchase.instance.completePurchase(purchaseDetails);
         }
       }
     });
   }
 
   void _deliverProduct(PurchaseDetails purchaseDetails) {
-    emit(state.copyWith(purchaseToken: purchaseDetails.purchaseID));
+    Platform.isIOS
+        ? emit(state.copyWith(
+            purchaseToken:
+                purchaseDetails.verificationData.localVerificationData))
+        : emit(state.copyWith(purchaseToken: purchaseDetails.purchaseID));
     createOrderToCloud();
   }
 }

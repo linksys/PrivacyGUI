@@ -13,21 +13,25 @@ class SecurityProtectionStatusView extends StatelessWidget {
       child: BasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: const BasicHeader(
-          title: 'You’re protected',
+          title: 'Enterprise-level cyberthreat protection',
+          spacing: 0,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               alignment: Alignment.center,
-              height: 150,
+              height: 90,
               child: Image.asset('assets/images/security_good.png'),
             ),
-            _checkItem(),
             box24(),
-            _checkItem(),
+            _checkItem('viruses', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'),
             box24(),
-            _checkItem(),
+            _checkItem('Malware & Ransomware', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit'),
+            box24(),
+            _checkItem('Phishing Smishing', 'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'),
+            box24(),
+            _checkItem('Lorem Ipsum', 'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'),
             const SizedBox(
               height: 64,
             ),
@@ -52,8 +56,9 @@ class SecurityProtectionStatusView extends StatelessWidget {
     );
   }
 
-  Widget _checkItem() {
+  Widget _checkItem(String title, String description) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Image.asset(
           'assets/images/icon_checked_circle.png',
@@ -65,12 +70,14 @@ class SecurityProtectionStatusView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Lorem ipsum dolor sit',
+              Text(
+                title,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
               box8(),
-              const Text(
-                'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+              Text(
+                description,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w400),
               ),
             ],
           ),

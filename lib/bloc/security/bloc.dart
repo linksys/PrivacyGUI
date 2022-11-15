@@ -47,7 +47,7 @@ class SecurityBloc extends Bloc<SecurityEvent, SecurityState> {
     const hasFilter = false;
     const updateDate = 'Aug 15, 2022';
     const range = SecurityEvaluatedRange.week;
-    const remaining = 22;
+    const remaining = 30;
 
     emit(TrialActiveState(
       numOfInspection: inspectionCount,
