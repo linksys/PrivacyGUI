@@ -72,6 +72,9 @@ extension BluetoothService on RouterRepository {
   Future<JnapSuccess> getWebFilterProfileByName(String name) {
     return getRequestFOSContainer('$fcnBaseUri$fcnWebfilterProfilePath/$name',);
   }
+  Future<JnapSuccess> deleteWebFilterProfileByName(String name) {
+    return deleteRequestFOSContainer('$fcnBaseUri$fcnWebfilterProfilePath/$name',);
+  }
 
   // application/list
   Future<JnapSuccess> setApplicationList(FCNApplicationList applicationList) {
@@ -83,6 +86,9 @@ extension BluetoothService on RouterRepository {
   }
   Future<JnapSuccess> getApplicationListByName(String name) {
     return getRequestFOSContainer('$fcnBaseUri$fcnApplicationListPath/$name',);
+  }
+  Future<JnapSuccess> deleteApplicationListByName(String name) {
+    return deleteRequestFOSContainer('$fcnBaseUri$fcnApplicationListPath/$name',);
   }
 
   // application/name
@@ -101,5 +107,7 @@ extension BluetoothService on RouterRepository {
   Future<JnapSuccess> getFirewallAddrgrpByName(String name) {
     return getRequestFOSContainer('$fcnBaseUri$fcnFirewallAddrgrpPath/$name',);
   }
-
+  Future<JnapSuccess> deleteFirewallAddrgrpByName(String name) {
+    return deleteRequestFOSContainer('$fcnBaseUri$fcnFirewallAddrgrpPath/$name',);
+  }
 }

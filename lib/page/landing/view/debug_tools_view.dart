@@ -359,12 +359,12 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           // SecurityProfileManager.instance().fetchDefaultPresets();
 
           final repo = context.read<RouterRepository>();
-          // repo.connectToBroker().then((value) => repo
-          //         .getWebFilterProfileByName('VGltbXk=')
-          //         .then((value) {
-          //       final result = value.toFCNResult();
-          //       logger.d('FCB Result: $result');
-          //     }));
+          repo.connectToBroker().then((value) => repo
+                  .deleteWebFilterProfileByName('VGltbXk=')
+                  .then((value) {
+                final result = value.toFCNResult();
+                logger.d('FCB Result: $result');
+              }));
           // repo.deleteFirewallPolicyById('39042');
 
         },

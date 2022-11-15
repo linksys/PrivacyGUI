@@ -15,6 +15,7 @@ import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/model/secure_profile.dart';
 import 'package:linksys_moab/model/web_filter.dart';
+import 'package:linksys_moab/network/mqtt/model/command/jnap/fcn_result.dart';
 import 'package:linksys_moab/repository/router/fcn_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
@@ -262,6 +263,8 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     if (data == null) return;
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.contentFilter] = data.copyWith(isEnabled: isEnabled);
+    // TODO Update status on FCNPolicy, get policy from UserProfile
+
     emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
   }
 
@@ -288,11 +291,34 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     }
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.contentFilter] = data;
-    _transformDataToFCN(profile, networkId, data, blockedSearchApplication);
-    emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
+    final result = await _transformDataToFCN(
+        profile, networkId, data, blockedSearchApplication);
+    if (result) {
+      emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
+    } else {
+      // TODO ERRORHANDLING
+    }
   }
 
-  _transformDataToFCN(
+  Future<bool> _updateStatusToFCN(bool isEnabled, String policyId) async {
+    final result = await _routerRepository
+        .getFirewallPolicyById(policyId)
+        .then<FCNResult?>((value) => value.toFCNResult())
+        .onError((error, stackTrace) => null);
+    if (result == null || result.status != 200) {
+      // TODO ERRORHANDLING
+      return false;
+    }
+    final policy = FCNPolicy.fromJson(result.response.results);
+    policy.copyWith(status: isEnabled ? 'enable' : 'disable');
+    return await _routerRepository
+        .setFirewallPolicy(policy)
+        .then((value) =>
+            value.result == 'OK' && value.toFCNResult().status == 200)
+        .onError((error, stackTrace) => false);
+  }
+
+  Future<bool> _transformDataToFCN(
       GroupProfile profile,
       String networkId,
       ContentFilterData data,
@@ -317,10 +343,11 @@ class ProfilesCubit extends Cubit<ProfilesState> {
         networkId,
       );
 
-      _createPolicy(profile, networkId);
+      return await _createPolicy(profile, networkId);
     } else {
       logger.e(
           'something wrong when save content filter data:: w:$webFilterProfileSuccess, a:$applicationListSuccess, g:$addressGroupSuccess');
+      return false;
     }
   }
 
@@ -337,7 +364,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     final fcnBlockedWebFilters =
         blockedWebFilters.map((e) => FCNWebFilter.fromData(e)).toList();
     final fcnWebFilterProfile = FCNWebFilterProfile(
-        name: base64Encode(profile.name.codeUnits),
+        name: getProfileNameEncoded(profile.name),
         comment: "${profile.name}'s web filter profile",
         filters: fcnBlockedWebFilters);
     // logger.d(
@@ -379,7 +406,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
         blockedAppDataList.map((e) => FCNApplication.fromData(e)).toList();
 
     final fcnApplicationList = FCNApplicationList(
-      name: base64Encode(profile.name.codeUnits),
+      name: getProfileNameEncoded(profile.name),
       comment: "${profile.name}'s application list",
       entries: fcnBlockedApp,
     );
@@ -408,7 +435,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
   Future<bool> _createAddressGroup(GroupProfile profile) async {
     // TODO do not have group yet
     final addressGroup = FCNAddressGroup(
-      name: base64Encode(profile.name.codeUnits),
+      name: getProfileNameEncoded(profile.name),
       comment: "${profile.name}'s address group",
       member: profile.devices.map((e) => FCNNameObject(name: e.name)).toList(),
     );
@@ -423,13 +450,14 @@ class ProfilesCubit extends Cubit<ProfilesState> {
   }
 
   Future<bool> _createPolicy(GroupProfile profile, String networkId) async {
+    // TODO if profile already has policy id, then use it for updating purpose.
     final policy = FCNPolicy(
       policyid: await _generateAndCheckPolicyId(),
       status: 'enable',
-      name: base64Encode(profile.name.codeUnits),
-      addressGroup: base64Encode(profile.name.codeUnits),
-      webFilterProfile: base64Encode(profile.name.codeUnits),
-      applicationList: base64Encode(profile.name.codeUnits),
+      name: getProfileNameEncoded(profile.name),
+      addressGroup: getProfileNameEncoded(profile.name),
+      webFilterProfile: getProfileNameEncoded(profile.name),
+      applicationList: getProfileNameEncoded(profile.name),
       devices: profile.devices.map((e) => e.name).toList(),
     );
     logger.d('Policy: ${jsonEncode(policy.toFullJson())}');
@@ -454,6 +482,10 @@ class ProfilesCubit extends Cubit<ProfilesState> {
       Future.delayed(const Duration(milliseconds: 100));
     } while (isExist);
     return '$id';
+  }
+
+  String getProfileNameEncoded(String name) {
+    return const Base64Codec.urlSafe().encode(name.codeUnits);
   }
 
   @override

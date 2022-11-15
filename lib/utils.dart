@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
@@ -594,5 +595,22 @@ class Utils {
     }
 
     return icon;
+  }
+
+  // String converter
+  static String fullStringEncoded(String value) {
+    final utf8Encoded = String.fromCharCodes(Uint8List.fromList(utf8.encode(value)));
+    final b64 = base64Encode(utf8Encoded.codeUnits);
+    final uriFull = Uri.encodeQueryComponent(b64);
+    logger.d('u: $utf8Encoded, b: $b64, i: $uriFull');
+    return uriFull;
+
+  }
+  static String fullStringDecoded(String encoded) {
+    final uriBack = Uri.decodeComponent(encoded);
+    final b64Back = String.fromCharCodes(base64Decode(uriBack));
+    final utf8Back = utf8.decode(b64Back.codeUnits);
+    logger.d('i: $uriBack, b: $b64Back, u: $utf8Back');
+    return utf8Back;
   }
 }
