@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/content_filter/cubit.dart';
 import 'package:linksys_moab/bloc/content_filter/state.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -79,10 +80,12 @@ class _ContentFilteringPresetsViewState
                       onPressed: () {
                         final profileId = _profileId;
                         if (profileId != null) {
+                          final networkId = context.read<NetworkCubit>().state.selected!.id;
                           context
                               .read<ProfilesCubit>()
                               .updateContentFilterDetails(
                                 profileId,
+                                networkId,
                                 state.selectedSecureProfile!,
                                 state.searchAppSignatureSet,
                               )

@@ -17,6 +17,7 @@ import 'package:linksys_moab/network/better_action.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_config.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
+import 'package:linksys_moab/network/mqtt/model/command/jnap/transaction.dart';
 import 'package:linksys_moab/network/mqtt/mqtt_client_wrap.dart';
 import 'package:linksys_moab/repository/security_context_loader_mixin.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -299,15 +300,28 @@ class RouterRepository with StateStreamListener {
     _mqttClient?.disconnect();
   }
 
+  JNAPTransaction createTransaction(List<Map<String, dynamic>> payload) {
+    logger.d('create transaction');
+    if (_connectType == MqttConnectType.local) {
+      return JNAPTransaction.local(
+        payload: payload,
+      );
+    } else if (_connectType == MqttConnectType.remote) {
+      return JNAPTransaction.remote(
+          gid: _groupId!, nid: _networkId!, payload: payload);
+    } else {
+      //
+      throw Exception();
+    }
+  }
+
   JnapCommand createCommand(String action,
       {Map<String, dynamic> data = const {}, bool needAuth = false}) {
     logger.d('create command: ${_connectType.name}');
     if (_connectType == MqttConnectType.local) {
       return JnapCommand.local(
         action: action,
-        auth: needAuth
-            ? 'Basic ${Utils.stringBase64Encode(localPassword!)}'
-            : null,
+        auth: null,
         data: data,
       );
     } else if (_connectType == MqttConnectType.remote) {

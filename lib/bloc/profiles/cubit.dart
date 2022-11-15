@@ -15,15 +15,19 @@ import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/model/secure_profile.dart';
 import 'package:linksys_moab/model/web_filter.dart';
+import 'package:linksys_moab/repository/router/fcn_extension.dart';
+import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
-import 'package:collection/collection.dart';
-import 'package:linksys_moab/util/storage.dart';
 
 import 'state.dart';
 
 class ProfilesCubit extends Cubit<ProfilesState> {
-  ProfilesCubit() : super(const ProfilesState());
+  ProfilesCubit(RouterRepository routerRepository)
+      : _routerRepository = routerRepository,
+        super(const ProfilesState());
+
+  final RouterRepository _routerRepository;
 
   fetchProfiles() async {
     await Future.delayed(Duration(seconds: 3));
@@ -66,7 +70,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
   }
 
   fetchAllServices({PService serviceCategory = PService.all}) async {
-    await Future.delayed(Duration(seconds: 3));
+    await Future.delayed(const Duration(seconds: 3));
     for (var profile in state.profileList) {
       final profileId = profile.id;
       Map<PService, MoabServiceData> dataMap = {};
@@ -263,6 +267,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
 
   Future updateContentFilterDetails(
       String profileId,
+      String networkId,
       CFSecureProfile secureProfile,
       Set<CFAppSignature> blockedSearchApplication) async {
     logger.d('updateContentFilterDetails: $profileId');
@@ -271,6 +276,8 @@ class ProfilesCubit extends Cubit<ProfilesState> {
       profile =
           state.profileList.firstWhere((element) => element.id == profileId);
     }
+    profile = profile.copyWith(
+        devices: [PDevice(name: 'ASTWP-028312'), PDevice(name: 'JNAP')]);
     var data =
         profile.serviceDetails[PService.contentFilter] as ContentFilterData?;
     if (data == null) {
@@ -281,19 +288,44 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     }
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.contentFilter] = data;
-    _transformDataToFCN(profile, data, blockedSearchApplication);
+    _transformDataToFCN(profile, networkId, data, blockedSearchApplication);
     emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
   }
 
-  _transformDataToFCN(GroupProfile profile, ContentFilterData data,
+  _transformDataToFCN(
+      GroupProfile profile,
+      String networkId,
+      ContentFilterData data,
       Set<CFAppSignature> changedSearchApplication) async {
-    await _createWebFilterProfile(profile, data);
-    await _createApplicationList(profile, data, changedSearchApplication);
-    _createAddressGroup(profile);
-    _createPolicy(profile);
+    final webFilterProfileSuccess =
+        await _createWebFilterProfile(profile, data);
+    final applicationListSuccess =
+        await _createApplicationList(profile, data, changedSearchApplication);
+    final addressGroupSuccess = await _createAddressGroup(profile);
+    if (webFilterProfileSuccess &&
+        applicationListSuccess &&
+        addressGroupSuccess) {
+      await _routerRepository.setLogCustomField(
+          'gid',
+          'gid',
+          base64Encode(
+            profile.name.codeUnits,
+          ));
+      await _routerRepository.setLogCustomField(
+        'nid',
+        'nid',
+        networkId,
+      );
+
+      _createPolicy(profile, networkId);
+    } else {
+      logger.e(
+          'something wrong when save content filter data:: w:$webFilterProfileSuccess, a:$applicationListSuccess, g:$addressGroupSuccess');
+    }
   }
 
-  _createWebFilterProfile(GroupProfile profile, ContentFilterData data) async {
+  Future<bool> _createWebFilterProfile(
+      GroupProfile profile, ContentFilterData data) async {
     final blockedWebFilters = data.secureProfile.securityCategories
         .where((categories) =>
             categories.webFilters.status != FilterStatus.allowed)
@@ -301,18 +333,26 @@ class ProfilesCubit extends Cubit<ProfilesState> {
             List<WebFilter>.empty(),
             (previousValue, categories) =>
                 [...previousValue, ...categories.webFilters.webFilters]);
-    logger.d('Blocked web filters $blockedWebFilters');
+    // logger.d('Blocked web filters $blockedWebFilters');
     final fcnBlockedWebFilters =
         blockedWebFilters.map((e) => FCNWebFilter.fromData(e)).toList();
     final fcnWebFilterProfile = FCNWebFilterProfile(
         name: base64Encode(profile.name.codeUnits),
         comment: "${profile.name}'s web filter profile",
         filters: fcnBlockedWebFilters);
-    logger.d(
-        'FCN Web Filter Profile: ${jsonEncode(fcnWebFilterProfile.toFullJson())}');
+    // logger.d(
+    //     'FCN Web Filter Profile: ${jsonEncode(fcnWebFilterProfile.toFullJson())}');
+    final result = await _routerRepository
+        .setWebFilterProfile(fcnWebFilterProfile)
+        .then((value) =>
+            value.result == 'OK' && value.toFCNResult().status == 200)
+        .onError((error, stackTrace) => false);
+    return result;
   }
 
-  _createApplicationList(GroupProfile profile, ContentFilterData data,
+  Future<bool> _createApplicationList(
+      GroupProfile profile,
+      ContentFilterData data,
       Set<CFAppSignature> changedSearchApplication) async {
     final blockedApps = data.secureProfile.securityCategories
         .fold<List<CloudAppSignature>>(
@@ -324,7 +364,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
                 ])
       ..addAll(_extractRawApps(changedSearchApplication
           .where((element) => element.status != FilterStatus.allowed)));
-    logger.d('Blocked Apps $blockedApps');
+    // logger.d('Blocked Apps $blockedApps');
 
     final blockedAppDataList = await SecurityProfileManager.instance()
         .fetchAppSignature()
@@ -333,7 +373,8 @@ class ProfilesCubit extends Cubit<ProfilesState> {
                 .any((blockedApp) => blockedApp.id == appSignature.id))
             .toList())
         .onError((error, stackTrace) => []);
-    logger.d('Blocked App Data List: ${jsonEncode(blockedAppDataList.map((e) => e.toJson()).toList())}');
+    // logger.d(
+    //     'Blocked App Data List: ${jsonEncode(blockedAppDataList.map((e) => e.toJson()).toList())}');
     final fcnBlockedApp =
         blockedAppDataList.map((e) => FCNApplication.fromData(e)).toList();
 
@@ -342,8 +383,14 @@ class ProfilesCubit extends Cubit<ProfilesState> {
       comment: "${profile.name}'s application list",
       entries: fcnBlockedApp,
     );
-    logger.d(
-        'FCN Application List: ${jsonEncode(fcnApplicationList.toFullJson())}');
+    // logger.d(
+    //     'FCN Application List: ${jsonEncode(fcnApplicationList.toFullJson())}');
+    final result = await _routerRepository
+        .setApplicationList(fcnApplicationList)
+        .then((value) =>
+            value.result == 'OK' && value.toFCNResult().status == 200)
+        .onError((error, stackTrace) => false);
+    return result;
   }
 
   List<CloudAppSignature> _extractRawApps(Iterable<CFAppSignature> cfApps) {
@@ -358,33 +405,55 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     );
   }
 
-  _createAddressGroup(GroupProfile profile) {
+  Future<bool> _createAddressGroup(GroupProfile profile) async {
     // TODO do not have group yet
     final addressGroup = FCNAddressGroup(
       name: base64Encode(profile.name.codeUnits),
       comment: "${profile.name}'s address group",
-      member: [
-        FCNNameObject(name: 'MacBook-Pro-2'),
-        FCNNameObject(name: 'Pixel-6'),
-      ],
+      member: profile.devices.map((e) => FCNNameObject(name: e.name)).toList(),
     );
     // TODO FCN command to set into FCN
-    logger.d('Address group: ${jsonEncode(addressGroup.toJson())}');
+    // logger.d('Address group: ${jsonEncode(addressGroup.toJson())}');
+    final result = await _routerRepository
+        .setFirewallAddrgrp(addressGroup)
+        .then((value) =>
+            value.result == 'OK' && value.toFCNResult().status == 200)
+        .onError((error, stackTrace) => false);
+    return result;
   }
 
-  _createPolicy(GroupProfile profile) {
+  Future<bool> _createPolicy(GroupProfile profile, String networkId) async {
     final policy = FCNPolicy(
-      policyid: '199',
+      policyid: await _generateAndCheckPolicyId(),
       status: 'enable',
       name: base64Encode(profile.name.codeUnits),
       addressGroup: base64Encode(profile.name.codeUnits),
       webFilterProfile: base64Encode(profile.name.codeUnits),
       applicationList: base64Encode(profile.name.codeUnits),
-      nid: 'd525eed2-3fea-454c-91c5-f69d9b0dfab5',
-      gid: base64Encode(profile.name.codeUnits),
-      devices: ['MacBook-Pro-2'],
+      devices: profile.devices.map((e) => e.name).toList(),
     );
     logger.d('Policy: ${jsonEncode(policy.toFullJson())}');
+    final result = await _routerRepository
+        .setFirewallPolicy(policy)
+        .then((value) =>
+            value.result == 'OK' && value.toFCNResult().status == 200)
+        .onError((error, stackTrace) => false);
+    return result;
+  }
+
+  Future<String> _generateAndCheckPolicyId() async {
+    final fcnResult = await _routerRepository
+        .getFirewallPolicies()
+        .then((value) => value.toFCNResult());
+    int id;
+    bool isExist;
+    do {
+      id = Random().nextInt(65535);
+      isExist = List.from(fcnResult.response.results)
+          .any((element) => element['id'] == '$id');
+      Future.delayed(const Duration(milliseconds: 100));
+    } while (isExist);
+    return '$id';
   }
 
   @override

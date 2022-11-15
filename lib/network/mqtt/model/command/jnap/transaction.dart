@@ -1,4 +1,5 @@
 
+import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/network/better_action.dart';
 import 'package:linksys_moab/network/mqtt/command_spec/impl/jnap_spec.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
@@ -20,7 +21,31 @@ class JNAPTransaction extends BaseMqttCommand<JnapResponse> {
     responseTimeout = const Duration(seconds: 60);
   }
 
+  factory JNAPTransaction.local({
+    required List<Map<String, dynamic>> payload,
+  }) {
+    return JNAPTransaction(
+      payload: payload,
+      publishTopic: mqttLocalPublishTopic,
+      responseTopic: mqttLocalResponseTopic,
+    );
+  }
 
+  factory JNAPTransaction.remote({
+    required String gid,
+    required String nid,
+    required List<Map<String, dynamic>> payload,
+  }) {
+    return JNAPTransaction(
+      payload: payload,
+      publishTopic: mqttRemotePublishTopic
+          .replaceFirst(varMqttGroupId, gid)
+          .replaceFirst(varMqttNetworkId, nid),
+      responseTopic: mqttRemoteResponseTopic
+          .replaceFirst(varMqttGroupId, gid)
+          .replaceFirst(varMqttNetworkId, nid),
+    );
+  }
 
   final String _publishTopic;
   final String _responseTopic;

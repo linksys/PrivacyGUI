@@ -110,13 +110,13 @@ class FCNFieldIdObject extends Equatable {
 
   Map<String, dynamic> toJson() {
     return {
-      'fieldId': fieldId,
+      'field-id': fieldId,
     };
   }
 
   factory FCNFieldIdObject.fromJson(Map<String, dynamic> json) {
     return FCNFieldIdObject(
-      fieldId: json['fieldId'],
+      fieldId: json['field-id'],
     );
   }
 

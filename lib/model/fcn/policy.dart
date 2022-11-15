@@ -57,8 +57,6 @@ class FCNPolicy extends Equatable {
   final String addressGroup;
   final String webFilterProfile;
   final String applicationList;
-  final String nid;
-  final String gid;
   final List<String> devices;
 
   const FCNPolicy({
@@ -68,8 +66,6 @@ class FCNPolicy extends Equatable {
     required this.addressGroup,
     required this.webFilterProfile,
     required this.applicationList,
-    required this.nid,
-    required this.gid,
     required this.devices,
   });
 
@@ -80,8 +76,6 @@ class FCNPolicy extends Equatable {
     String? addressGroup,
     String? webFilterProfile,
     String? applicationList,
-    String? nid,
-    String? gid,
     List<String>? devices,
   }) {
     return FCNPolicy(
@@ -91,8 +85,6 @@ class FCNPolicy extends Equatable {
       addressGroup: addressGroup ?? this.addressGroup,
       webFilterProfile: webFilterProfile ?? this.webFilterProfile,
       applicationList: applicationList ?? this.applicationList,
-      nid: nid ?? this.nid,
-      gid: gid ?? this.gid,
       devices: devices ?? this.devices,
     );
   }
@@ -105,8 +97,6 @@ class FCNPolicy extends Equatable {
       'addressGroup': addressGroup,
       'webFilterProfile': webFilterProfile,
       'applicationList': applicationList,
-      'nid': nid,
-      'gid': gid,
       'devices': devices,
     };
   }
@@ -119,8 +109,6 @@ class FCNPolicy extends Equatable {
       addressGroup: json['addressGroup'],
       webFilterProfile: json['webFilterProfile'],
       applicationList: json['applicationList'],
-      nid: json['nid'],
-      gid: json['gid'],
       devices: List.from(json['devices']),
     );
   }
@@ -136,7 +124,7 @@ class FCNPolicy extends Equatable {
         {"name": "any"}
       ],
       "dstintf": [
-        {"name": "eth0"}
+        {"name": "eth4"}
       ],
       "srcaddr": [
         {"name": addressGroup}
@@ -162,8 +150,8 @@ class FCNPolicy extends Equatable {
       "action": "accept",
       "nat": "disable",
       "custom-log-fields": [
-        FCNFieldIdObject(fieldId: gid).toJson(),
-        FCNFieldIdObject(fieldId: nid).toJson(),
+        const FCNFieldIdObject(fieldId: 'gid').toJson(),
+        const FCNFieldIdObject(fieldId: 'nid').toJson(),
         ...devices.map(
           (e) => FCNFieldIdObject(fieldId: e).toJson(),
         ),
@@ -180,8 +168,6 @@ class FCNPolicy extends Equatable {
         addressGroup,
         webFilterProfile,
         applicationList,
-        nid,
-        gid,
         devices,
       ];
 }
