@@ -20,6 +20,7 @@ import 'package:linksys_moab/repository/router/fcn_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/utils.dart';
 
 import 'state.dart';
 
@@ -280,7 +281,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
           state.profileList.firstWhere((element) => element.id == profileId);
     }
     profile = profile.copyWith(
-        devices: [PDevice(name: 'ASTWP-028312'), PDevice(name: 'JNAP')]);
+        devices: [PDevice(name: 'ASTWP-028312'), PDevice(name: 'Galaxy-S10')]);
     var data =
         profile.serviceDetails[PService.contentFilter] as ContentFilterData?;
     if (data == null) {
@@ -334,8 +335,8 @@ class ProfilesCubit extends Cubit<ProfilesState> {
       await _routerRepository.setLogCustomField(
           'gid',
           'gid',
-          base64Encode(
-            profile.name.codeUnits,
+          Utils.fullStringEncoded(
+            profile.name,
           ));
       await _routerRepository.setLogCustomField(
         'nid',
@@ -365,7 +366,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
         blockedWebFilters.map((e) => FCNWebFilter.fromData(e)).toList();
     final fcnWebFilterProfile = FCNWebFilterProfile(
         name: getProfileNameEncoded(profile.name),
-        comment: "${profile.name}'s web filter profile",
+        // comment: "${profile.name}'s web filter profile",
         filters: fcnBlockedWebFilters);
     // logger.d(
     //     'FCN Web Filter Profile: ${jsonEncode(fcnWebFilterProfile.toFullJson())}');
@@ -407,7 +408,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
 
     final fcnApplicationList = FCNApplicationList(
       name: getProfileNameEncoded(profile.name),
-      comment: "${profile.name}'s application list",
+      // comment: "${profile.name}'s application list",
       entries: fcnBlockedApp,
     );
     // logger.d(
@@ -436,7 +437,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     // TODO do not have group yet
     final addressGroup = FCNAddressGroup(
       name: getProfileNameEncoded(profile.name),
-      comment: "${profile.name}'s address group",
+      // comment: "${profile.name}'s address group",
       member: profile.devices.map((e) => FCNNameObject(name: e.name)).toList(),
     );
     // TODO FCN command to set into FCN
@@ -485,7 +486,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
   }
 
   String getProfileNameEncoded(String name) {
-    return const Base64Codec.urlSafe().encode(name.codeUnits);
+    return Utils.fullStringEncoded(name);
   }
 
   @override

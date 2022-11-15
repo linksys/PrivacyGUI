@@ -70,7 +70,7 @@ abstract class BaseMqttCommand<R> with CommandCompleter {
       final jsonData = json.decode(payload) as Map<String, dynamic>;
       return jsonData[keyMqttHeader][keyMqttHeaderId] as String?;
     } catch (e) {
-      logger.d('extract uuid failed!');
+      logger.e('extract uuid failed!', e);
       return null;
     }
   }

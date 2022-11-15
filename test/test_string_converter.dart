@@ -9,6 +9,16 @@ import 'package:test/test.dart';
 // TODO test supported languages
 void main() {
   group('test string converter', () {
+    test('test encoded English', () async {
+      const test = 'Timmy';
+      final encoded = Utils.fullStringEncoded(test);
+      expect(Utils.fullStringDecoded(encoded), test);
+    });
+    test('test encoded emoji', () async {
+      const test = '😂😂😂';
+      final encoded = Utils.fullStringEncoded(test);
+      expect(Utils.fullStringDecoded(encoded), test);
+    });
     test('test encoded Chinese', () async {
       const test = '中文';
       final encoded = Utils.fullStringEncoded(test);

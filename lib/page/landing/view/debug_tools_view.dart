@@ -360,7 +360,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
 
           final repo = context.read<RouterRepository>();
           repo.connectToBroker().then((value) => repo
-                  .deleteWebFilterProfileByName('VGltbXk=')
+                  .deleteFirewallPolicyById('36484')
                   .then((value) {
                 final result = value.toFCNResult();
                 logger.d('FCB Result: $result');
