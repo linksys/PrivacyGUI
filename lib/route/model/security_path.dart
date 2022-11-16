@@ -3,6 +3,7 @@ import 'package:linksys_moab/route/_route.dart';
 
 
 import '../../page/dashboard/view/security/_security.dart';
+import '../../page/dashboard/view/security/security_content_filter_introduction_view.dart';
 import '_model.dart';
 
 class SecurityPath extends DashboardPath {
@@ -21,6 +22,8 @@ class SecurityPath extends DashboardPath {
         return const SecurityMarketingView();
       case SecuritySubscribePath:
         return const SecuritySubscribeView();
+      case SecurityContentFilterIntroductionPath:
+        return SecurityContentFilterIntroductionView();
       default:
         return const Center();
     }
@@ -37,4 +40,6 @@ class VulnerabilityIntroductionPath extends SecurityPath {}
 class SecurityMarketingPath extends SecurityPath {}
 
 class SecuritySubscribePath extends SecurityPath {}
+
+class SecurityContentFilterIntroductionPath extends SecurityPath {}
 

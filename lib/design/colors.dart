@@ -26,7 +26,7 @@ class MoabColor {
 
   static const dashboardBackground = Color(0xffe3e3e3);
   static const dashboardTileBackground = Color(0xffd3d3d3);
-  static const dashboardDisabled = Color(0xffcbcbcb);
+  static const dashboardDisabled = Color(0x80cbcbcb);
   static const cardBackground = Color.fromRGBO(138, 138, 138, 1.0);
   static const dashboardBottomBackground = Color(0xffc1c1c1);
   static const topologyNoInternet = Color(0xffd0d0d0);

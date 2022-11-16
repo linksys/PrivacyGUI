@@ -9,6 +9,7 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:styled_text/styled_text.dart';
 
 import '../../../../bloc/network/cubit.dart';
 import '../../../../bloc/subscription/subscription_cubit.dart';
@@ -25,8 +26,12 @@ class SecuritySubscribeView extends StatelessWidget {
         scrollable: true,
         child: BasicLayout(
           crossAxisAlignment: CrossAxisAlignment.start,
-          header: const BasicHeader(
+          header: BasicHeader(
             title: 'Linksys Secure',
+            titleTextStyle: TextStyle(
+                fontSize: 23,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onPrimary),
           ),
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,7 +44,7 @@ class SecuritySubscribeView extends StatelessWidget {
               ),
               box16(),
               Text(
-                '\$ XX.00 billed annually',
+                '${context.read<SubscriptionCubit>().state.products?.first.price} billed annually',
                 style: Theme.of(context).textTheme.headline2?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -75,7 +80,7 @@ class SecuritySubscribeView extends StatelessWidget {
                 ),
               ),
               const SizedBox(
-                height: 88,
+                height: 44,
               ),
               Text(
                 'What’s included in my subscription?',
@@ -112,12 +117,28 @@ class SecuritySubscribeView extends StatelessWidget {
                     ),
               ),
               box24(),
-              Text(
-                'By continuing, you agree to the Linksys SecureTerms of Service and End-User License Agreement. View our Privacy Policy.',
-                style: Theme.of(context).textTheme.headline4?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-              ),
+              StyledText(
+                  text:
+                      'By continuing, you agree to the Linksys Secure <link1 href="https://flutter.dev">Terms of Service</link1> and <link2 href="https://flutter.dev">End-User License Agreement</link2>. View our <link3 href="https://flutter.dev">Privacy Policy</link3>.',
+                  style: Theme.of(context).textTheme.headline3?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary),
+                  tags: {
+                    'link1': StyledTextActionTag(
+                        (String? text, Map<String?, String?> attrs) {
+                      String? link = attrs['href'];
+                      print('The "$link" link is tapped.');
+                    }, style: const TextStyle(color: Colors.blue)),
+                    'link2': StyledTextActionTag(
+                        (String? text, Map<String?, String?> attrs) {
+                      String? link = attrs['href'];
+                      print('The "$link" link is tapped.');
+                    }, style: const TextStyle(color: Colors.blue)),
+                    'link3': StyledTextActionTag(
+                        (String? text, Map<String?, String?> attrs) {
+                      String? link = attrs['href'];
+                      print('The "$link" link is tapped.');
+                    }, style: const TextStyle(color: Colors.blue)),
+                  }),
             ],
           ),
         ));

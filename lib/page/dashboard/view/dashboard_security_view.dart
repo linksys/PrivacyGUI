@@ -12,6 +12,7 @@ import 'package:linksys_moab/page/components/base_components/base_components.dar
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:styled_text/styled_text.dart';
 
 import '../../../bloc/subscription/subscription_cubit.dart';
 import '../../../bloc/subscription/subscription_state.dart';
@@ -32,28 +33,6 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
     context.read<SubscriptionCubit>().queryProductsFromCloud();
     context.read<SubscriptionCubit>().getNetworkEntitlement(
         context.read<NetworkCubit>().state.selected?.deviceInfo?.serialNumber);
-    // switch(context.read<SubscriptionCubit>().state.networkEntitlementResponse?.first.order?.status) {
-    //   case 'NEW':
-    //     context.read<SecurityBloc>().add(SetFormalActiveEvent());
-    //     break;
-    //   case 'VERIFIED':
-    //     context.read<SecurityBloc>().add(SetFormalActiveEvent());
-    //     break;
-    //   case 'GRACE_PERIOD':
-    //     context.read<SecurityBloc>().add(SetFormalActiveEvent());
-    //     break;
-    //   case 'CANCELLED':
-    //     break;
-    //   case 'ON_HOLD':
-    //     break;
-    //   case 'EXPIRED':
-    //     context.read<SecurityBloc>().add(SetExpiredEvent());
-    //     break;
-    //   default:
-    //     context.read<SecurityBloc>().add(SetTrialActiveEvent());
-    //     break;
-    // }
-    // context.read<SecurityBloc>().add(SetTrialActiveEvent());
   }
 
   Widget _unsubscribedView(SecurityState state) {
@@ -70,9 +49,32 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _cyberthreatTile(),
+                StyledText(
+                    text:
+                        'Protect every facet of your digital life. Get network-level protection from newest threats and malware.  Lorem ipsum dolor sit amet, consectetur. <link href="https://flutter.dev">More</link>',
+                    style: Theme.of(context).textTheme.headline3?.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary),
+                    tags: {
+                      'link': StyledTextActionTag(
+                          (String? text, Map<String?, String?> attrs) {
+                        String? link = attrs['href'];
+                        print('The "$link" link is tapped.');
+                      }, style: const TextStyle(color: Colors.blue)),
+                    }),
                 _divider(),
                 _contentFilterTile(),
-                _contentFilterInfo(state),
+                StyledText(
+                    text:
+                    'Create healthy digital habits for everyone in your home. Protect your family from unwanted content to keep them safe. <link href="https://flutter.dev">More</link>',
+                    style: Theme.of(context).textTheme.headline3?.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary),
+                    tags: {
+                      'link': StyledTextActionTag(
+                              (String? text, Map<String?, String?> attrs) {
+                            String? link = attrs['href'];
+                            print('The "$link" link is tapped.');
+                          }, style: const TextStyle(color: Colors.blue)),
+                    }),
                 _lastUpdate(state),
               ],
             )),
@@ -183,6 +185,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _subscriptionStatus(state),
+          Text('Turn on Linksys Secure in settings', style: Theme.of(context).textTheme.headline3?.copyWith(fontWeight: FontWeight.w400),),
           _cyberthreatTile(),
           _cyberthreatGrid(state),
           _divider(),
@@ -227,6 +230,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                 context.read<SecurityBloc>().add(SetTrialActiveEvent());
                 break;
             }
+            // context.read<SecurityBloc>().add(TurnOffSecurityEvent());
           },
           child: BlocBuilder<SecurityBloc, SecurityState>(
             builder: (context, state) {
@@ -264,14 +268,13 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _getSubscriptionStatusImage(),
             box4(),
             Text(
               state.subscriptionStatus.displayTitle,
               style: Theme.of(context)
                   .textTheme
                   .headline3
-                  ?.copyWith(fontWeight: FontWeight.w500),
+                  ?.copyWith(fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -321,7 +324,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                 style: Theme.of(context)
                     .textTheme
                     .headline3
-                    ?.copyWith(fontWeight: FontWeight.w500),
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
             ),
           ),
@@ -499,7 +502,9 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             width: 26,
           ),
           onPressed: () {
-            //TODO: Go to next page
+            context
+                .read<NavigationCubit>()
+                .push(SecurityContentFilterIntroductionPath());
           },
         ),
       ),

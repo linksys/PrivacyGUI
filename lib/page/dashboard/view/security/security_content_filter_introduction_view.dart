@@ -15,6 +15,7 @@ class SecurityContentFilterIntroductionView extends ArgumentsStatelessView {
   @override
   Widget build(BuildContext context) {
     return BasePageView(
+      scrollable: true,
       child: BasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: const BasicHeader(

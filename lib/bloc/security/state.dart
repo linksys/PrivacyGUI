@@ -5,7 +5,7 @@ enum SubscriptionStatus {
   active(displayTitle: 'Active'),
   trialExpired(displayTitle: 'Expired'),
   expired(displayTitle: 'Expired'),
-  turnedOff(displayTitle: 'Active (Turned Off)');
+  turnedOff(displayTitle: 'OFF');
 
   const SubscriptionStatus({required this.displayTitle});
 
