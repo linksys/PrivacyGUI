@@ -144,7 +144,7 @@ Widget _app() {
       BlocProvider(
           create: (BuildContext context) => InternetCheckCubit(
               routerRepository: context.read<RouterRepository>())),
-      BlocProvider(create: (BuildContext context) => AddNodesCubit(routerRepository: context.read<RouterRepository>()))
+      BlocProvider(create: (BuildContext context) => AddNodesCubit(routerRepository: context.read<RouterRepository>())),
     ], child: const MoabApp()),
   );
 }

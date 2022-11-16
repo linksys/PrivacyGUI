@@ -9,31 +9,31 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-class PortForwardingView extends ArgumentsStatelessView {
-  const PortForwardingView({super.key, super.next, super.args});
+
+class SelectOnlineDeviceView extends ArgumentsStatelessView {
+  const SelectOnlineDeviceView({super.key, super.next, super.args});
 
   @override
   Widget build(BuildContext context) {
-    return PortForwardingContentView(
+    return SelectOnlineDeviceContentView(
       next: super.next,
       args: super.args,
     );
   }
 }
 
-class PortForwardingContentView extends ArgumentsStatefulView {
-  const PortForwardingContentView({super.key, super.next, super.args});
+class SelectOnlineDeviceContentView extends ArgumentsStatefulView {
+  const SelectOnlineDeviceContentView({super.key, super.next, super.args});
 
   @override
-  State<PortForwardingContentView> createState() =>
-      _PortForwardingContentViewState();
+  State<SelectOnlineDeviceContentView> createState() =>
+      _SelectOnlineDeviceContentViewState();
 }
 
-class _PortForwardingContentViewState extends State<PortForwardingContentView> {
+class _SelectOnlineDeviceContentViewState
+    extends State<SelectOnlineDeviceContentView> {
 
   bool _isBehindRouter = false;
   StreamSubscription? _subscription;
@@ -67,7 +67,7 @@ class _PortForwardingContentViewState extends State<PortForwardingContentView> {
         // IconThemeData(color: Theme.of(context).colorScheme.primary),
         elevation: 0,
         title: Text(
-          getAppLocalizations(context).port_forwarding,
+          getAppLocalizations(context).single_port_forwarding,
           style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
@@ -82,22 +82,16 @@ class _PortForwardingContentViewState extends State<PortForwardingContentView> {
             administrationTile(
               title:
               title(getAppLocalizations(context).single_port_forwarding),
-              onPress: () {
-                NavigationCubit.of(context).push(SinglePortForwardingListPath());
-              },
+              onPress: () {},
             ),
             administrationTile(
                 title:
                 title(getAppLocalizations(context).port_range_forwarding),
-                onPress: () {
-                  NavigationCubit.of(context).push(PortRangeForwardingListPath());
-                }),
+                onPress: () {}),
             administrationTile(
                 title:
                 title(getAppLocalizations(context).port_range_triggering),
-                onPress: () {
-                  NavigationCubit.of(context).push(PortRangeTriggeringListPath());
-                }),
+                onPress: () {}),
           ],
         ),
       ),

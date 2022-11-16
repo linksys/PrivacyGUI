@@ -8,35 +8,36 @@ import 'package:linksys_moab/page/components/base_components/base_components.dar
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-class PortForwardingView extends ArgumentsStatelessView {
-  const PortForwardingView({super.key, super.next, super.args});
+
+class SelectProtocolView extends ArgumentsStatelessView {
+  const SelectProtocolView({super.key, super.next, super.args});
 
   @override
   Widget build(BuildContext context) {
-    return PortForwardingContentView(
+    return SelectProtocolContentView(
       next: super.next,
       args: super.args,
     );
   }
 }
 
-class PortForwardingContentView extends ArgumentsStatefulView {
-  const PortForwardingContentView({super.key, super.next, super.args});
+class SelectProtocolContentView extends ArgumentsStatefulView {
+  const SelectProtocolContentView({super.key, super.next, super.args});
 
   @override
-  State<PortForwardingContentView> createState() =>
-      _PortForwardingContentViewState();
+  State<SelectProtocolContentView> createState() =>
+      _SelectProtocolContentViewState();
 }
 
-class _PortForwardingContentViewState extends State<PortForwardingContentView> {
-
+class _SelectProtocolContentViewState extends State<SelectProtocolContentView> {
   bool _isBehindRouter = false;
   StreamSubscription? _subscription;
+
+  late String _selected;
+  static const List<String> _keys = ['UDP', 'TCP', 'BOTH'];
 
   @override
   void initState() {
@@ -49,6 +50,7 @@ class _PortForwardingContentViewState extends State<PortForwardingContentView> {
         context.read<ConnectivityCubit>().state.connectivityInfo.routerType ==
             RouterType.managedMoab;
 
+    _selected = widget.args['selected'] ?? 'UDP';
     super.initState();
   }
 
@@ -67,7 +69,7 @@ class _PortForwardingContentViewState extends State<PortForwardingContentView> {
         // IconThemeData(color: Theme.of(context).colorScheme.primary),
         elevation: 0,
         title: Text(
-          getAppLocalizations(context).port_forwarding,
+          getAppLocalizations(context).single_port_forwarding,
           style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
@@ -79,28 +81,36 @@ class _PortForwardingContentViewState extends State<PortForwardingContentView> {
         content: Column(
           children: [
             box24(),
-            administrationTile(
-              title:
-              title(getAppLocalizations(context).single_port_forwarding),
-              onPress: () {
-                NavigationCubit.of(context).push(SinglePortForwardingListPath());
+            ..._keys.map((e) => ListTile(
+              title: Text(getProtocolTitle(e)),
+              trailing: SizedBox(
+                child: e == _selected
+                    ? Image.asset('assets/images/icon_check_black.png')
+                    : null,
+                height: 36,
+                width: 36,
+              ),
+              contentPadding: const EdgeInsets.only(bottom: 24),
+              onTap: () {
+                setState(() {
+                  _selected = e;
+                });
+                NavigationCubit.of(context).popWithResult(_selected);
               },
-            ),
-            administrationTile(
-                title:
-                title(getAppLocalizations(context).port_range_forwarding),
-                onPress: () {
-                  NavigationCubit.of(context).push(PortRangeForwardingListPath());
-                }),
-            administrationTile(
-                title:
-                title(getAppLocalizations(context).port_range_triggering),
-                onPress: () {
-                  NavigationCubit.of(context).push(PortRangeTriggeringListPath());
-                }),
+            ))
           ],
         ),
       ),
     );
+  }
+
+  String getProtocolTitle(String key) {
+    if (key == 'UDP') {
+      return getAppLocalizations(context).udp;
+    } else if (key == 'TCP') {
+      return getAppLocalizations(context).tcp;
+    } else {
+      return getAppLocalizations(context).udp_and_tcp;
+    }
   }
 }

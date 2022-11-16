@@ -8,7 +8,7 @@ class SettingTile extends StatelessWidget {
   const SettingTile({
     Key? key,
     required this.title,
-    required this.value,
+    this.value,
     this.icon,
     this.onPress,
     this.background,
@@ -17,7 +17,7 @@ class SettingTile extends StatelessWidget {
   }) : super(key: key);
 
   final Widget title;
-  final Widget value;
+  final Widget? value;
   final Widget? icon;
   final VoidCallback? onPress;
   final Color? background;
@@ -37,7 +37,7 @@ class SettingTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(child: title),
-              value,
+              value ?? const Center(),
               if (onPress != null) box8(),
               if (onPress != null) icon ?? const Icon(Icons.arrow_forward_ios)
             ],

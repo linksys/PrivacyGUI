@@ -104,7 +104,7 @@ class RouterRepository with StateStreamListener {
       return false;
     }
     const credentials = 'admin:admin';
-    final _client = MoabHttpClient(timeoutMs: 1000, retries: 3);
+    final _client = MoabHttpClient(timeoutMs: 1000, retries: 1);
     var response = await _client.get(
         Uri.parse('http://${gatewayIp ?? _localBrokerUrl}/cert.cgi'),);
     bool ret = response.statusCode == HttpStatus.ok &&

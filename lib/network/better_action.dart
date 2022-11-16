@@ -145,6 +145,9 @@ enum JNAPAction {
   getPortRangeForwardingRules,
   getPortRangeTriggeringRules,
   getSinglePortForwardingRules,
+  setPortRangeForwardingRules,
+  setPortRangeTriggeringRules,
+  setSinglePortForwardingRules,
   // guestNetwork
   getGuestNetworkClients,
   getGuestNetworkSettings,
@@ -275,6 +278,12 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/firewall/GetPortRangeTriggeringRules'),
   getSinglePortForwardingRules(
       value: 'http://linksys.com/jnap/firewall/GetSinglePortForwardingRules'),
+  setPortRangeForwardingRules(
+      value: 'http://linksys.com/jnap/firewall/SetPortRangeForwardingRules'),
+  setPortRangeTriggeringRules(
+      value: 'http://linksys.com/jnap/firewall/SetPortRangeTriggeringRules'),
+  setSinglePortForwardingRules(
+      value: 'http://linksys.com/jnap/firewall/SetSinglePortForwardingRules'),
   getGuestNetworkClients(
       value: 'http://linksys.com/jnap/guestnetwork/GetGuestNetworkClients'),
   getGuestNetworkSettings(
@@ -714,6 +723,12 @@ void initBetterActions() {
       _JNAPActionValue.getPortRangeTriggeringRules.value;
   _betterActionMap[JNAPAction.getSinglePortForwardingRules] =
       _JNAPActionValue.getSinglePortForwardingRules.value;
+  _betterActionMap[JNAPAction.setPortRangeForwardingRules] =
+      _JNAPActionValue.setPortRangeForwardingRules.value;
+  _betterActionMap[JNAPAction.setPortRangeTriggeringRules] =
+      _JNAPActionValue.setPortRangeTriggeringRules.value;
+  _betterActionMap[JNAPAction.setSinglePortForwardingRules] =
+      _JNAPActionValue.setSinglePortForwardingRules.value;
   _betterActionMap[JNAPAction.getGuestNetworkClients] =
       _JNAPActionValue.getGuestNetworkClients.value;
   _betterActionMap[JNAPAction.getGuestNetworkSettings] =

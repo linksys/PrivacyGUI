@@ -31,13 +31,14 @@ Widget administrationSection({
   );
 }
 
-Widget administrationTile(
-    {required Widget title,
-    required Widget value,
-    Widget? icon,
-    Color? background,
-    EdgeInsets? padding,
-    void Function()? onPress}) {
+Widget administrationTile({
+  required Widget title,
+  Widget? value,
+  Widget? icon,
+  Color? background,
+  EdgeInsets? padding,
+  void Function()? onPress,
+}) {
   return SettingTile(
     title: title,
     value: value,
@@ -87,5 +88,29 @@ Widget administrationTileDesc(
     background: background ?? Colors.transparent,
     padding: padding ?? EdgeInsets.zero,
     description: description ?? Center(),
+  );
+}
+
+Widget title(String text, {double fontSize = 15}) {
+  return Text(
+    text,
+    style: TextStyle(fontSize: fontSize),
+  );
+}
+
+Widget subTitle(String text, {double fontSize = 13}) {
+  return Text(
+    text,
+    style: TextStyle(
+      fontSize: fontSize,
+      color: const Color.fromRGBO(102, 102, 102, 1.0),
+    ),
+  );
+}
+
+Widget divider() {
+  return const Divider(
+    height: 1,
+    color: Color.fromRGBO(0, 0, 0, 0.3),
   );
 }
