@@ -2,9 +2,8 @@ import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/model/app_signature.dart';
+import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/model/web_filter.dart';
-
-import 'group_profile.dart';
 
 mixin CFStatus {
   late final FilterStatus status;

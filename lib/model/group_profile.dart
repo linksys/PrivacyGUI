@@ -1,46 +1,71 @@
-import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
 
-class GroupProfile extends Equatable {
-  final String id;
-  final String icon;
+class UserProfile extends Equatable {
   final String name;
+  final String icon;
+  final List<ProfileDevice> devices;
+  final bool enabled;
+  final ContentFilterConfiguration? contentFilterConfig;
 
-  final List<PDevice> devices;
-  final Map<PService, MoabServiceData> serviceDetails;
-
-  const GroupProfile({
-    required this.id,
-    required this.icon,
-    required this.name,
+  UserProfile({
+    this.name = '',
+    this.icon = '',
     this.devices = const [],
-    this.serviceDetails = const {},
+    this.enabled = false,
+    this.contentFilterConfig,
   });
 
-  GroupProfile copyWith({
-    String? id,
+  UserProfile copyWith({
     String? name,
     String? icon,
-    List<PDevice>? devices,
+    List<ProfileDevice>? devices,
+    bool? enabled,
+    ContentFilterConfiguration? contentFilterConfig,
+    // TODO: Remove below! No functionality, just provide an input for setter for now
     Map<PService, MoabServiceData>? serviceDetails,
   }) {
-    return GroupProfile(
-      id: id ?? this.id,
-      icon: icon ?? this.icon,
+    return UserProfile(
       name: name ?? this.name,
+      icon: icon ?? this.icon,
       devices: devices ?? this.devices,
-      serviceDetails: serviceDetails ?? this.serviceDetails,
+      enabled: enabled ?? this.enabled,
+      contentFilterConfig: contentFilterConfig ?? this.contentFilterConfig,
     );
   }
 
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'icon': icon,
+    'devices': devices.map((e) => e.toJson()).toList(),
+    'enabled': enabled,
+    'contentFilterConfig': contentFilterConfig?.toJson(),
+  }..removeWhere((key, value) => value == null);
+
+  factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
+    name: json['name'],
+    icon: json['icon'],
+    devices: List.from(json['devices']).map((e) => ProfileDevice.fromJson(e)).toList(),
+    enabled: json['enabled'],
+    contentFilterConfig: json['contentFilterConfig'] != null ? ContentFilterConfiguration.fromJson(json['contentFilterConfig']) : null,
+  );
+
+  @override
+  List<Object?> get props => [
+    name,
+    icon,
+    devices,
+    enabled,
+    contentFilterConfig,
+  ];
+
+  //TODO: Check how to handle and store the data of ContentFilter and InternetSchedule
+  final Map<PService, MoabServiceData> serviceDetails = {};
   bool hasServiceDetail(PService category) {
     return serviceDetails.containsKey(category);
   }
-
-  // TODO move
   String serviceOverallStatus(BuildContext context, PService category) {
     if (category == PService.internetSchedule) {
       bool hasData = serviceDetails.containsKey(category);
@@ -73,33 +98,63 @@ class GroupProfile extends Equatable {
     }
     return '';
   }
+}
+
+class ProfileDevice extends Equatable {
+  const ProfileDevice({
+    required this.deviceId,
+    required this.name,
+    required this.macAddress,
+  });
+
+  final String deviceId;
+  final String name;
+  final String macAddress;
+
+  Map<String, dynamic> toJson() => {
+    'deviceId': deviceId,
+    'name': name,
+    'macaddress': macAddress,
+  };
+
+  factory ProfileDevice.fromJson(Map<String, dynamic> json) => ProfileDevice(
+    deviceId: json['deviceId'],
+    name: json['name'],
+    macAddress: json['macaddress'],
+  );
 
   @override
   List<Object?> get props => [
-    id,
+    deviceId,
     name,
-    icon,
-    devices,
-    serviceDetails,
+    macAddress,
   ];
 }
 
-// TODO rename
-class PDevice extends Equatable {
-  const PDevice({required this.name});
+class ContentFilterConfiguration extends Equatable {
+  final String policyId;
+  final ContentFilterData data;
 
-  final String name;
+  const ContentFilterConfiguration({
+    required this.policyId,
+    required this.data,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'policyId': policyId,
+    'data': data.toJson(),
+  };
+
+  factory ContentFilterConfiguration.fromJson(Map<String, dynamic> json) {
+    return ContentFilterConfiguration(
+      policyId: json['policyId'],
+      data: ContentFilterData.fromJson(json['data']),
+    );
+  }
 
   @override
-  List<Object?> get props => [name];
-}
-
-
-enum CFSecureProfileType { child, teen, adult }
-
-enum FilterStatus {
-  allowed,
-  someAllowed,
-  notAllowed,
-  force,
+  List<Object?> get props => [
+    policyId,
+    data,
+  ];
 }

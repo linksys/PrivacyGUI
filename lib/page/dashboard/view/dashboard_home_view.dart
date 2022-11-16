@@ -324,6 +324,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                   onTap: () {
                     if (index == state.profileList.length) {
                       logger.d('add profile clicked: $index');
+                      //TODO: Check the next args
                       NavigationCubit.of(context).push(CreateProfileNamePath());
                     } else {
                       logger.d('profile clicked: $index');
@@ -359,7 +360,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
     );
   }
 
-  Widget _profileItem(GroupProfile profile) {
+  Widget _profileItem(UserProfile profile) {
     return Container(
       height: 58,
       decoration: BoxDecoration(

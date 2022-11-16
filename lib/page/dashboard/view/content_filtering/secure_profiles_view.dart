@@ -6,7 +6,7 @@ import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/model/group_profile.dart';
+import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/model/secure_profile.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';

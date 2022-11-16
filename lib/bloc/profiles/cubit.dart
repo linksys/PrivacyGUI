@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:math';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/profiles/mock.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/model/app_signature.dart';
 import 'package:linksys_moab/model/fcn/address_group.dart';
 import 'package:linksys_moab/model/fcn/application.dart';
@@ -21,7 +21,7 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'state.dart';
 
 class ProfilesCubit extends Cubit<ProfilesState> {
@@ -32,49 +32,77 @@ class ProfilesCubit extends Cubit<ProfilesState> {
   final RouterRepository _routerRepository;
 
   fetchProfiles() async {
-    await Future.delayed(Duration(seconds: 3));
+    final sharedPreference = await SharedPreferences.getInstance();
+    final jsonString = sharedPreference.getString(moabPrefUserProfiles);
+    if (jsonString != null) {
+      final jsonObject = jsonDecode(jsonString) as Map<String, dynamic>;
+      final savedProfiles = jsonObject.map((key, value) => MapEntry(key, UserProfile.fromJson(value)));
+      emit(state.copyWith(
+        profiles: savedProfiles,
+      ));
+    }
 
-    emit(state.copyWith(
-        profiles: Map.fromEntries(mockProfiles.map((e) => MapEntry(e.id, e)))));
     fetchAllServices();
   }
 
-  selectProfile(GroupProfile? profile) {
+  selectProfile(UserProfile? profile) {
     emit(state.copyWith(selectedProfile: profile));
   }
 
-  updateCreatedProfile({
-    String? name,
-    String? icon,
-    List<PDevice>? devices,
-  }) {
-    GroupProfile? _profile = state.createdProfile;
-    _profile ??= GroupProfile(
-        id: 'PROFILE_ID_${Random().nextInt(999999)}',
-        name: name ?? '',
-        icon: icon ?? '',
-        devices: devices ?? []);
+  createProfile({String? name, String? icon, List<ProfileDevice>? devices}) {
+    var profile = state.createdProfile ?? UserProfile();
     emit(state.copyWith(
-      createdProfile: _profile.copyWith(
-          name: name ?? _profile.name,
-          icon: icon ?? _profile.icon,
-          devices: devices ?? _profile.devices),
-    ));
+        createdProfile: profile.copyWith(
+      name: name ?? profile.name,
+      icon: icon ?? profile.icon,
+      devices: devices ?? profile.devices,
+      enabled: true,
+    )));
   }
 
-  saveCreatedProfile() {
-    if (state.createdProfile == null) {
-      return;
+  saveCreatedProfile() async {
+    final createdProfile = state.createdProfile;
+    if (createdProfile != null) {
+      _newOrUpdateProfile(createdProfile);
+      emit(state.copyWith(
+        createdProfile: null,
+      ));
+      // Save the new profile list into the persistent storage
+      final jsonString = jsonEncode(state.profiles);
+      final sharedPreference = await SharedPreferences.getInstance();
+      await sharedPreference.setString(moabPrefUserProfiles, jsonString);
     }
-    emit(state
-        .addOrUpdateProfile(state.createdProfile!)
-        .copyWith(createdProfile: null));
+  }
+
+  updateSelectedProfile({String? name, String? icon}) {
+    final selectedProfile = state.selectedProfile;
+    if (selectedProfile != null) {
+      _newOrUpdateProfile(selectedProfile.copyWith(
+        name: name,
+        icon: icon,
+      ));
+    }
+  }
+
+  _newOrUpdateProfile(UserProfile profile) {
+    var updatedProfiles = Map<String, UserProfile>.from(state.profiles);
+    updatedProfiles[profile.name] = profile;
+    if (profile.name == state.selectedProfile?.name) {
+      emit(state.copyWith(
+        profiles: updatedProfiles,
+        selectedProfile: profile,
+      ));
+    } else {
+      emit(state.copyWith(
+        profiles: updatedProfiles,
+      ));
+    }
   }
 
   fetchAllServices({PService serviceCategory = PService.all}) async {
     await Future.delayed(const Duration(seconds: 3));
     for (var profile in state.profileList) {
-      final profileId = profile.id;
+      final profileId = profile.name; //TODO: There's no longer profileId!!
       Map<PService, MoabServiceData> dataMap = {};
       if (serviceCategory == PService.internetSchedule ||
           serviceCategory == PService.all) {
@@ -91,18 +119,25 @@ class ProfilesCubit extends Cubit<ProfilesState> {
         // }
       }
 
-      emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
+      _newOrUpdateProfile(profile.copyWith(
+        serviceDetails: dataMap
+      ));
     }
   }
 
-  // TODO refactor
+  bool isProfileNameValid(String name) {
+    bool isValid = !state.profiles.keys.contains(name);
+    return isValid;
+  }
+
   // Internet schedule - Daily time limit
   updateDailyTimeLimitEnabled(
       String profileId, DateTimeLimitRule rule, bool isEnabled) async {
     var profile = state.selectedProfile;
-    if (profile == null || profile.id != profileId) {
+    //TODO: There's no longer profileId!!
+    if (profile == null || profile.name != profileId) {
       profile =
-          state.profileList.firstWhere((element) => element.id == profileId);
+          state.profileList.firstWhere((element) => element.name == profileId);
     }
     var data = profile.serviceDetails[PService.internetSchedule]
         as InternetScheduleData?;
@@ -117,15 +152,19 @@ class ProfilesCubit extends Cubit<ProfilesState> {
         : copy.add(rule.copyWith(isEnabled: isEnabled));
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.internetSchedule] = data.copyWith(dateTimeLimitRule: copy);
-    emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
+
+    _newOrUpdateProfile(profile.copyWith(
+      serviceDetails: dataMap
+    ));
   }
 
   Future<void> updateDetailTimeLimitDetail(String profileId,
       DateTimeLimitRule rule, List<bool> weeklyBool, int timeInSeconds) async {
     var profile = state.selectedProfile;
-    if (profile == null || profile.id != profileId) {
+    //TODO: There's no longer profileId!!
+    if (profile == null || profile.name != profileId) {
       profile =
-          state.profileList.firstWhere((element) => element.id == profileId);
+          state.profileList.firstWhere((element) => element.name == profileId);
     }
     var data = profile.serviceDetails[PService.internetSchedule]
         as InternetScheduleData?;
@@ -142,15 +181,19 @@ class ProfilesCubit extends Cubit<ProfilesState> {
         : copy.add(newRule);
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.internetSchedule] = data.copyWith(dateTimeLimitRule: copy);
-    emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
+
+    _newOrUpdateProfile(profile.copyWith(
+      serviceDetails: dataMap
+    ));
   }
 
   Future<bool> deleteTimeLimitRule(
       String profileId, DateTimeLimitRule rule) async {
     var profile = state.selectedProfile;
-    if (profile == null || profile.id != profileId) {
+    //TODO: There's no longer profileId!!
+    if (profile == null || profile.name != profileId) {
       profile =
-          state.profileList.firstWhere((element) => element.id == profileId);
+          state.profileList.firstWhere((element) => element.name == profileId);
     }
     var data = profile.serviceDetails[PService.internetSchedule]
         as InternetScheduleData?;
@@ -164,7 +207,10 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     }
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.internetSchedule] = data.copyWith(dateTimeLimitRule: copy);
-    emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
+
+    _newOrUpdateProfile(profile.copyWith(
+      serviceDetails: dataMap
+    ));
     return true;
   }
 
@@ -172,9 +218,10 @@ class ProfilesCubit extends Cubit<ProfilesState> {
   updateSchedulePausesEnabled(
       String profileId, ScheduledPausedRule rule, bool isEnabled) async {
     var profile = state.selectedProfile;
-    if (profile == null || profile.id != profileId) {
+    //TODO: There's no longer profileId!!
+    if (profile == null || profile.name != profileId) {
       profile =
-          state.profileList.firstWhere((element) => element.id == profileId);
+          state.profileList.firstWhere((element) => element.name == profileId);
     }
     var data = profile.serviceDetails[PService.internetSchedule]
         as InternetScheduleData?;
@@ -190,7 +237,10 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.internetSchedule] =
         data.copyWith(scheduledPauseRule: copy);
-    emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
+
+    _newOrUpdateProfile(profile.copyWith(
+      serviceDetails: dataMap
+    ));
   }
 
   Future<void> updateSchedulePausesDetail(
@@ -202,9 +252,10 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     bool isAllDay,
   ) async {
     var profile = state.selectedProfile;
-    if (profile == null || profile.id != profileId) {
+    //TODO: There's no longer profileId!!
+    if (profile == null || profile.name != profileId) {
       profile =
-          state.profileList.firstWhere((element) => element.id == profileId);
+          state.profileList.firstWhere((element) => element.name == profileId);
     }
     var data = profile.serviceDetails[PService.internetSchedule]
         as InternetScheduleData?;
@@ -225,15 +276,19 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.internetSchedule] =
         data.copyWith(scheduledPauseRule: copy);
-    emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
+
+    _newOrUpdateProfile(profile.copyWith(
+        serviceDetails: dataMap
+    ));
   }
 
   Future<bool> deleteSchedulePausesRule(
       String profileId, ScheduledPausedRule rule) async {
     var profile = state.selectedProfile;
-    if (profile == null || profile.id != profileId) {
+    //TODO: There's no longer profileId!!
+    if (profile == null || profile.name != profileId) {
       profile =
-          state.profileList.firstWhere((element) => element.id == profileId);
+          state.profileList.firstWhere((element) => element.name == profileId);
     }
     var data = profile.serviceDetails[PService.internetSchedule]
         as InternetScheduleData?;
@@ -248,16 +303,20 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.internetSchedule] =
         data.copyWith(scheduledPauseRule: copy);
-    emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
+
+    _newOrUpdateProfile(profile.copyWith(
+      serviceDetails: dataMap
+    ));
     return true;
   }
 
   // Content filter
   updateContentFilterEnabled(String profileId, bool isEnabled) {
     var profile = state.selectedProfile;
-    if (profile == null || profile.id != profileId) {
+    //TODO: There's no longer profileId!!
+    if (profile == null || profile.name != profileId) {
       profile =
-          state.profileList.firstWhere((element) => element.id == profileId);
+          state.profileList.firstWhere((element) => element.name == profileId);
     }
     var data =
         profile.serviceDetails[PService.contentFilter] as ContentFilterData?;
@@ -266,7 +325,9 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     dataMap[PService.contentFilter] = data.copyWith(isEnabled: isEnabled);
     // TODO Update status on FCNPolicy, get policy from UserProfile
 
-    emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
+    _newOrUpdateProfile(profile.copyWith(
+      serviceDetails: dataMap
+    ));
   }
 
   Future updateContentFilterDetails(
@@ -276,12 +337,17 @@ class ProfilesCubit extends Cubit<ProfilesState> {
       Set<CFAppSignature> blockedSearchApplication) async {
     logger.d('updateContentFilterDetails: $profileId');
     var profile = state.selectedProfile;
-    if (profile == null || profile.id != profileId) {
+    //TODO: There's no longer profileId!!
+    if (profile == null || profile.name != profileId) {
       profile =
-          state.profileList.firstWhere((element) => element.id == profileId);
+          state.profileList.firstWhere((element) => element.name == profileId);
     }
-    profile = profile.copyWith(
-        devices: [PDevice(name: 'ASTWP-028312'), PDevice(name: 'Galaxy-S10')]);
+
+    profile = profile.copyWith(devices: [
+      const ProfileDevice(deviceId: '', name: 'ASTWP-028312', macAddress: ''),
+      const ProfileDevice(deviceId: '', name: 'Galaxy-S10', macAddress: ''),
+    ]);
+
     var data =
         profile.serviceDetails[PService.contentFilter] as ContentFilterData?;
     if (data == null) {
@@ -295,7 +361,9 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     final result = await _transformDataToFCN(
         profile, networkId, data, blockedSearchApplication);
     if (result) {
-      emit(state.addOrUpdateProfile(profile.copyWith(serviceDetails: dataMap)));
+      _newOrUpdateProfile(profile.copyWith(
+        serviceDetails: dataMap
+      ));
     } else {
       // TODO ERRORHANDLING
     }
@@ -320,7 +388,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
   }
 
   Future<bool> _transformDataToFCN(
-      GroupProfile profile,
+      UserProfile profile,
       String networkId,
       ContentFilterData data,
       Set<CFAppSignature> changedSearchApplication) async {
@@ -353,7 +421,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
   }
 
   Future<bool> _createWebFilterProfile(
-      GroupProfile profile, ContentFilterData data) async {
+      UserProfile profile, ContentFilterData data) async {
     final blockedWebFilters = data.secureProfile.securityCategories
         .where((categories) =>
             categories.webFilters.status != FilterStatus.allowed)
@@ -379,7 +447,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
   }
 
   Future<bool> _createApplicationList(
-      GroupProfile profile,
+      UserProfile profile,
       ContentFilterData data,
       Set<CFAppSignature> changedSearchApplication) async {
     final blockedApps = data.secureProfile.securityCategories
@@ -433,7 +501,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     );
   }
 
-  Future<bool> _createAddressGroup(GroupProfile profile) async {
+  Future<bool> _createAddressGroup(UserProfile profile) async {
     // TODO do not have group yet
     final addressGroup = FCNAddressGroup(
       name: getProfileNameEncoded(profile.name),
@@ -450,7 +518,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     return result;
   }
 
-  Future<bool> _createPolicy(GroupProfile profile, String networkId) async {
+  Future<bool> _createPolicy(UserProfile profile, String networkId) async {
     // TODO if profile already has policy id, then use it for updating purpose.
     final policy = FCNPolicy(
       policyid: await _generateAndCheckPolicyId(),

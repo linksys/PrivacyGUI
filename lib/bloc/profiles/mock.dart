@@ -1,44 +1,4 @@
-import 'dart:math';
-
-import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
-
-final mockProfiles = [
-  GroupProfile(
-    id: 'PROFILE_ID_0001',
-    name: 'Eric',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-    devices: [
-      PDevice(name: 'iphone 20'),
-      PDevice(name: 'Samsung Galaxy S87')
-    ],
-  ),
-  GroupProfile(
-    id: 'PROFILE_ID_0002',
-    name: 'Timmy',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-  GroupProfile(
-    id: 'PROFILE_ID_0003',
-    name: 'Mandy',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-  GroupProfile(
-    id: 'PROFILE_ID_0004',
-    name: 'Dad',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-  GroupProfile(
-    id: 'PROFILE_ID_0005',
-    name: 'Peter',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-  GroupProfile(
-    id: 'PROFILE_ID_0006',
-    name: 'Austin',
-    icon: 'assets/images/img_profile_icon_${1 + Random().nextInt(3)}.png',
-  ),
-];
 
 final mockInternetScheduleData = {
   'PROFILE_ID_0001': InternetScheduleData(dateTimeLimitRule: [

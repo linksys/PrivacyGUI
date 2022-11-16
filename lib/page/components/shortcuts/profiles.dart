@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 
-Widget profileTileShort(BuildContext context, GroupProfile profile) {
+Widget profileTileShort(BuildContext context, UserProfile profile) {
   return Hero(
-    tag: 'profile-${profile.id}',
+    tag: 'profile-${profile.name}',
     child: Center(
       child: Wrap(
         alignment: WrapAlignment.center,

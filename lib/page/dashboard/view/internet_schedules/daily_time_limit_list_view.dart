@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/route/model/internet_schedule_path.dart';
@@ -39,7 +38,8 @@ class DailyTimeLimitListView extends StatelessWidget {
             actions: [
               TextButton(
                   onPressed: () {
-                    NavigationCubit.of(context).push(AddDailyTimeLimitPath()..args = {'profileId': profile.id});
+                    //TODO: There's no longer profileId!!
+                    NavigationCubit.of(context).push(AddDailyTimeLimitPath()..args = {'profileId': profile.name});
                   },
                   child: Text(getAppLocalizations(context).add,
                       style: TextStyle(

@@ -88,8 +88,9 @@ class _CreateProfileAvatarViewState extends State<ProfileSelectAvatarView> {
                   if (isReturnable) {
                     NavigationCubit.of(context).popWithResult(_selectedAvatar.imageUrl);
                   } else {
-                    context.read<ProfilesCubit>().updateCreatedProfile(
-                        icon: _selectedAvatar.imageUrl);
+                    context.read<ProfilesCubit>().createProfile(
+                        icon: _selectedAvatar.imageUrl
+                    );
                     context.read<ProfilesCubit>().saveCreatedProfile();
                     final next = widget.next ?? UnknownPath();
                     NavigationCubit.of(context).popTo(next);

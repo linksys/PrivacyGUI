@@ -1,12 +1,21 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/model/group_profile.dart';
-
 import 'secure_profile.dart';
 
 enum PService {
   contentFilter,
   internetSchedule,
   all,
+}
+
+enum CFSecureProfileType {
+  child, teen, adult
+}
+
+enum FilterStatus {
+  allowed,
+  someAllowed,
+  notAllowed,
+  force,
 }
 
 abstract class MoabServiceData extends Equatable {
@@ -150,6 +159,18 @@ class ContentFilterData extends MoabServiceData {
       profileId: profileId ?? this.profileId,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'isEnabled': isEnabled,
+    'secureProfile': secureProfile.toJson(),
+    'profileId': profileId,
+  };
+
+  factory ContentFilterData.fromJson(Map<String, dynamic> json) => ContentFilterData(
+    isEnabled: json['isEnabled'],
+    secureProfile: CFSecureProfile.fromJson(json['secureProfile']),
+    profileId: json['profileId'],
+  );
 
   @override
   List<Object?> get props => super.props..addAll([isEnabled, secureProfile]);

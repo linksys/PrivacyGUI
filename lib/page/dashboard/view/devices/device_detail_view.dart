@@ -103,8 +103,9 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
                   .state
                   .profiles[state.selectedDeviceInfo?.profileId]
                   ?.name, () {
+            //TODO: There's no longer profileId!!
             String? profileId = state.selectedDeviceInfo?.profileId;
-            GroupProfile? profile =
+            UserProfile? profile =
                 context.read<ProfilesCubit>().state.profiles[profileId ?? ''];
             if (profile != null) {
               context.read<ProfilesCubit>().selectProfile(profile);

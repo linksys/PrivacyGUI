@@ -23,7 +23,6 @@ class ProfileSelectDevicesView extends ArgumentsStatefulView {
 
 class _CreateProfileDevicesSelectedViewState
     extends State<ProfileSelectDevicesView> {
-
   final _devices = [
     DeviceInfo(name: 'Device 1', isSelected: false),
     DeviceInfo(name: 'Device 2', isSelected: false),
@@ -59,17 +58,20 @@ class _CreateProfileDevicesSelectedViewState
             TextButton(
               onPressed: () {
                 bool isReturnable = widget.args['return'] ?? false;
-                final _selected = _devices.where((element) =>
-                element.isSelected);
+                final _selected =
+                    _devices.where((element) => element.isSelected);
                 if (isReturnable) {
                   NavigationCubit.of(context).popWithResult(_selected);
                 } else {
-                  context.read<ProfilesCubit>().updateCreatedProfile(
-                      devices: List.from(
-                          _selected.map((e) => PDevice(name: e.name))));
+                  //TODO: Take care the remaining device data
+                  context.read<ProfilesCubit>().createProfile(
+                      devices: List.from(_selected.map((e) => ProfileDevice(
+                          deviceId: '',
+                          name: e.name,
+                          macAddress: '',))));
                   final next = widget.next ?? UnknownPath();
-                  NavigationCubit.of(context).push(CreateProfileAvatarPath()
-                    ..next = next);
+                  NavigationCubit.of(context)
+                      .push(CreateProfileAvatarPath()..next = next);
                 }
               },
               child: Text(
