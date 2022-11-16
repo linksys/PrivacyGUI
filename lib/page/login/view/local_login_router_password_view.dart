@@ -31,8 +31,6 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
   bool _isPasswordValidate = false;
   String _errorReason = '';
 
-  String _hint = '';
-
   final TextEditingController _passwordController = TextEditingController();
 
   @override
@@ -105,22 +103,6 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
           const SizedBox(
             height: 26,
           ),
-          if (_hint.isNotEmpty)
-            Theme(
-              data:
-                  Theme.of(context).copyWith(dividerColor: Colors.transparent),
-              child: ExpansionTile(
-                title: Text(getAppLocalizations(context).show_hint),
-                collapsedTextColor: Theme.of(context).colorScheme.onTertiary,
-                textColor: Theme.of(context).colorScheme.onTertiary,
-                tilePadding: EdgeInsets.zero,
-                backgroundColor: Colors.transparent,
-                trailing: const SizedBox(),
-                expandedAlignment: Alignment.centerLeft,
-                expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                children: [Text(_hint)],
-              ),
-            ),
           SimpleTextButton(
               text: getAppLocalizations(context).forgot_router_password,
               onPressed: () {
@@ -160,10 +142,6 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
   _handleAdminPasswordInfo(AdminPasswordInfo info) {
     if (!info.hasAdminPassword) {
       NavigationCubit.of(context).replace(CreateAdminPasswordPath()..args = {});
-    } else {
-      setState(() {
-        _hint = info.hint;
-      });
     }
   }
 

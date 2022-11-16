@@ -55,7 +55,7 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
                           icon: const Icon(Icons.close, color: Colors.black,),
                           onPressed: () => context.read<AuthBloc>().add(Logout()))
                     ],
-                  ),,
+                  ),
                   child: BasicLayout(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     content: Column(
