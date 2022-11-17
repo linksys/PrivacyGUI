@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/design/themes.dart';
+import 'package:linksys_moab/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_moab/page/landing/view/_view.dart';
 import 'package:linksys_moab/page/setup/view/_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 
 import 'package:linksys_moab/util/logger.dart';
 
@@ -70,6 +72,11 @@ abstract class BasePath {
           next: next,
           args: args,
         );
+      case SimpleItemPickerPath:
+        return SimpleItemPickerView(
+          next: next,
+          args: args,
+        );
       case UnknownPath:
         return const Center(
           child: Text("Unknown Path"),
@@ -80,17 +87,18 @@ abstract class BasePath {
   }
 
   BasePath? get next => pathConfig.next;
+
   set next(BasePath? next) {
     pathConfig.next = next;
     logger.d('set next: ${this.next} to $runtimeType');
   }
 }
 
-class HomePath extends BasePath {
-}
+class HomePath extends BasePath {}
 
 class UnknownPath extends BasePath {}
 
+class SimpleItemPickerPath extends BasePath with ReturnablePath {}
 
 class LoadingTransitionPath extends BasePath {
   @override
@@ -100,7 +108,6 @@ class LoadingTransitionPath extends BasePath {
   PageConfig get pageConfig =>
       super.pageConfig..navType = PageNavigationType.none;
 }
-
 
 abstract class DebugToolsPath extends BasePath {
   @override

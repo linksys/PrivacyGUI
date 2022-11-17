@@ -615,5 +615,15 @@
   "triggered_range": "Triggered range",
   "forwarded_range": "Forwarded range",
   "start_port": "Start port",
-  "end_port": "End port"
+  "end_port": "End port",
+  "wifi_mac_filters": "WiFi MAC filters",
+  "access": "Access",
+  "enter_mac_address": "Enter MAC address",
+  "no_filtered_devices_yet": "No filtered devices yet",
+  "filtered_devices": "Filtered devices",
+  "allow_access": "Allow access",
+  "allow_access_description": "Only MAC addresses in the list can join the network",
+  "deny_access": "Deny access",
+  "deny_access_description": "Deny access to the MAC addresses on the list"
+
 }

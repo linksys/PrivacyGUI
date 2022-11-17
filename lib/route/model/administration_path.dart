@@ -3,6 +3,8 @@ import 'package:linksys_moab/page/dashboard/view/administration/_administration.
 import 'package:linksys_moab/page/dashboard/view/administration/internet_settings/connection_type_selection_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/internet_settings/internet_settings_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/lan/lan_view.dart';
+import 'package:linksys_moab/page/dashboard/view/administration/mac_filtering/mac_filtering_enter_mac_view.dart';
+import 'package:linksys_moab/page/dashboard/view/administration/mac_filtering/mac_filtering_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/port_range_forwarding/port_range_forwarding_list_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/port_range_forwarding/port_range_forwarding_rule_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/port_range_triggering/port_range_triggering_list_view.dart';
@@ -88,6 +90,16 @@ class AdministrationPath extends DashboardPath {
           next: next,
           args: args,
         );
+      case MacFilteringPath:
+        return MacFilteringView(
+          next: next,
+          args: args,
+        );
+      case MacFilteringInputPath:
+        return MacFilteringEnterDeviceView(
+          next: next,
+          args: args,
+        );
       default:
         return const Center();
     }
@@ -139,3 +151,14 @@ class PortRangeTriggeringRulePath extends AdministrationPath
 class SelectDevicePtah extends AdministrationPath with ReturnablePath {}
 
 class SelectProtocolPath extends AdministrationPath with ReturnablePath {}
+
+class MacFilteringPath extends AdministrationPath {}
+
+class MacFilteringInputPath extends AdministrationPath with ReturnablePath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
+}
+
+class AdvancedRoutingListPath extends AdministrationPath {}
+
+class AdvancedRoutingRulePath extends AdministrationPath with ReturnablePath {}

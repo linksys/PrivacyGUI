@@ -98,7 +98,7 @@ class _AdministrationViewState extends State<AdministrationView> {
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
                     onPress: () =>
-                        NavigationCubit.of(context).push(UnknownPath()),
+                        NavigationCubit.of(context).push(MacFilteringPath()),
                   ),
                   administrationTile(
                     title: title(getAppLocalizations(context).vlan),
