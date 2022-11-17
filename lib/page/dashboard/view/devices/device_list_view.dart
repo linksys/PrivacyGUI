@@ -23,7 +23,7 @@ class DeviceListView extends ArgumentsStatefulView {
 }
 
 class _DeviceListViewState extends State<DeviceListView> {
-  Map<DeviceListInfoInterval, String> _intervalList = {};
+  Map<DeviceListInfoScope, String> _intervalList = {};
 
   @override
   initState() {
@@ -35,8 +35,8 @@ class _DeviceListViewState extends State<DeviceListView> {
   _initIntervalListWithLocalizedString() {
     if (_intervalList.isEmpty) {
       _intervalList = {
-        DeviceListInfoInterval.today: getAppLocalizations(context).today,
-        DeviceListInfoInterval.week: getAppLocalizations(context).this_week,
+        DeviceListInfoScope.today: getAppLocalizations(context).today,
+        DeviceListInfoScope.week: getAppLocalizations(context).this_week,
       };
     }
   }
@@ -109,7 +109,7 @@ class _DeviceListViewState extends State<DeviceListView> {
             onTap: state.offlineDeviceList.isEmpty
                 ? null
                 : () {
-              NavigationCubit.of(context).push(OfflineDeviceListPath());
+                    NavigationCubit.of(context).push(OfflineDeviceListPath());
                   },
             child: Container(
               // color: const Color.fromRGBO(217, 217, 217, 1.0),
@@ -145,10 +145,10 @@ class _DeviceListViewState extends State<DeviceListView> {
               margin: const EdgeInsets.fromLTRB(0, 0, 8, 0),
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               decoration: BoxDecoration(
-                  color: interval == state.selectedInterval
+                  color: interval == state.selectedScope
                       ? const Color.fromRGBO(144, 144, 144, 1.0)
                       : const Color.fromRGBO(203, 203, 203, 1.0),
-                  border: interval == state.selectedInterval
+                  border: interval == state.selectedScope
                       ? Border.all(
                           color: const Color.fromRGBO(255, 255, 255, 0.6),
                           width: 1)
@@ -156,7 +156,7 @@ class _DeviceListViewState extends State<DeviceListView> {
               child: Text(
                 _intervalList[interval] ?? '',
                 style: TextStyle(
-                  color: interval == state.selectedInterval
+                  color: interval == state.selectedScope
                       ? Colors.white
                       : Colors.black,
                   fontSize: 13,
@@ -491,6 +491,6 @@ class _DeviceListViewState extends State<DeviceListView> {
   }
 
   bool _showTodayInfo(DeviceState state) {
-    return state.selectedInterval == DeviceListInfoInterval.today;
+    return state.selectedScope == DeviceListInfoScope.today;
   }
 }

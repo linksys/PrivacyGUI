@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/device/state.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
@@ -8,7 +6,6 @@ import 'package:linksys_moab/network/better_action.dart';
 import 'package:linksys_moab/repository/router/batch_extension.dart';
 import 'package:linksys_moab/repository/router/device_list_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 
 class DeviceCubit extends Cubit<DeviceState> {
@@ -160,12 +157,15 @@ class DeviceCubit extends Cubit<DeviceState> {
   }
 
   void updateDisplayedDeviceList() {
-    switch (state.selectedInterval) {
-      case DeviceListInfoInterval.today:
+    switch (state.selectedScope) {
+      case DeviceListInfoScope.today:
         _updateTodayDisplayedDeviceList();
         break;
-      case DeviceListInfoInterval.week:
+      case DeviceListInfoScope.week:
         _updateWeeklyDisplayedDeviceList();
+        break;
+      case DeviceListInfoScope.profile:
+        _updateProfileDisplayedDeviceList();
         break;
     }
   }
@@ -192,8 +192,15 @@ class DeviceCubit extends Cubit<DeviceState> {
     emit(state.copyWith(displayedDeviceList: deviceList));
   }
 
-  void updateSelectedInterval(DeviceListInfoInterval interval) {
-    emit(state.copyWith(selectedInterval: interval));
+  void _updateProfileDisplayedDeviceList() {
+    List<DeviceDetailInfo> deviceList =
+        state.mainDeviceList + state.guestDeviceList + state.offlineDeviceList;
+    deviceList.sort((e1, e2) => e2.name.compareTo(e1.name));
+    emit(state.copyWith(displayedDeviceList: deviceList));
+  }
+
+  void updateSelectedInterval(DeviceListInfoScope scope) {
+    emit(state.copyWith(selectedScope: scope));
     updateDisplayedDeviceList();
   }
 
@@ -220,6 +227,10 @@ class DeviceCubit extends Cubit<DeviceState> {
           selectedDeviceInfo: state.selectedDeviceInfo!.copyWith(name: name)));
       fetchDeviceList();
     });
+  }
+
+  List<DeviceDetailInfo> getDisplayedDeviceList() {
+    return state.displayedDeviceList;
   }
 
   Future<void> deleteDeviceList(List<DeviceDetailInfo> deviceInfoList) async {

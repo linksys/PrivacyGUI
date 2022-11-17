@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/route/model/profile_group_path.dart';
-
 import '../../../../design/colors.dart';
 import '../../../../localization/localization_hook.dart';
 import '../../../../route/model/base_path.dart';
@@ -23,17 +23,22 @@ class ProfileSelectDevicesView extends ArgumentsStatefulView {
 
 class _CreateProfileDevicesSelectedViewState
     extends State<ProfileSelectDevicesView> {
-  final _devices = [
-    DeviceInfo(name: 'Device 1', isSelected: false),
-    DeviceInfo(name: 'Device 2', isSelected: false),
-    DeviceInfo(name: 'Device 3', isSelected: false),
-    DeviceInfo(name: 'Device 4', isSelected: false),
-    DeviceInfo(name: 'Device 5', isSelected: false),
-    DeviceInfo(name: 'Device 6', isSelected: false),
-    DeviceInfo(name: 'Device 7', isSelected: false),
-    DeviceInfo(name: 'Device 8', isSelected: false),
-    DeviceInfo(name: 'Device 9', isSelected: false),
-  ];
+  List<DevicePickerItem> _devices = [];
+
+  @override
+  void initState() {
+    super.initState();
+    context
+        .read<DeviceCubit>()
+        .updateSelectedInterval(DeviceListInfoScope.profile);
+    context.read<DeviceCubit>().fetchDeviceList().then((_) {
+      _devices = context
+          .read<DeviceCubit>()
+          .getDisplayedDeviceList()
+          .map((e) => DevicePickerItem(device: e, isSelected: false))
+          .toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +48,7 @@ class _CreateProfileDevicesSelectedViewState
         header: BaseAppBar(
           title: Text(
             getAppLocalizations(context).add_profile,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
@@ -57,18 +62,20 @@ class _CreateProfileDevicesSelectedViewState
           action: [
             TextButton(
               onPressed: () {
-                bool isReturnable = widget.args['return'] ?? false;
-                final _selected =
-                    _devices.where((element) => element.isSelected);
-                if (isReturnable) {
-                  NavigationCubit.of(context).popWithResult(_selected);
+                bool willReturnBack = widget.args['return'] ?? false;
+                if (willReturnBack) {
+                  final selectedDevices = _devices
+                      .where((element) => element.isSelected)
+                      .map((e) => e.device)
+                      .toList();
+                  NavigationCubit.of(context).popWithResult(selectedDevices);
                 } else {
-                  //TODO: Take care the remaining device data
                   context.read<ProfilesCubit>().createProfile(
-                      devices: List.from(_selected.map((e) => ProfileDevice(
-                          deviceId: '',
-                          name: e.name,
-                          macAddress: '',))));
+                      devices: List.from(_devices.map((e) => ProfileDevice(
+                            deviceId: e.device.deviceID,
+                            name: e.device.name,
+                            macAddress: e.device.macAddress,
+                          ))));
                   final next = widget.next ?? UnknownPath();
                   NavigationCubit.of(context)
                       .push(CreateProfileAvatarPath()..next = next);
@@ -90,7 +97,7 @@ class _CreateProfileDevicesSelectedViewState
               const SizedBox(height: 38),
               Text(
                 getAppLocalizations(context).select_devices,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
                 ),
@@ -103,21 +110,23 @@ class _CreateProfileDevicesSelectedViewState
                 onPressed: () {},
               ),
               Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _devices.length,
-                  itemBuilder: (context, index) => InkWell(
-                    child: CheckboxSelectableItem(
-                      title: _devices[index].name,
-                      isSelected: _devices[index].isSelected,
-                      height: 65,
+                child: BlocBuilder<DeviceCubit, DeviceState>(
+                  builder: (context, state) => ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _devices.length,
+                    itemBuilder: (context, index) => InkWell(
+                      child: CheckboxSelectableItem(
+                        title: _devices[index].device.name,
+                        isSelected: _devices[index].isSelected,
+                        height: 65,
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _devices[index].isSelected =
+                              !_devices[index].isSelected;
+                        });
+                      },
                     ),
-                    onTap: () {
-                      setState(() {
-                        _devices[index].isSelected =
-                            !_devices[index].isSelected;
-                      });
-                    },
                   ),
                 ),
               ),
@@ -129,9 +138,9 @@ class _CreateProfileDevicesSelectedViewState
   }
 }
 
-class DeviceInfo {
-  String name;
+class DevicePickerItem {
+  DeviceDetailInfo device;
   bool isSelected;
 
-  DeviceInfo({required this.name, required this.isSelected});
+  DevicePickerItem({required this.device, required this.isSelected});
 }

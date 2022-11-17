@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 class DeviceState extends Equatable {
-  final DeviceListInfoInterval selectedInterval;
+  final DeviceListInfoScope selectedScope;
   final DeviceListInfoType selectedSegment;
   final List<DeviceDetailInfo> displayedDeviceList;
   final DeviceDetailInfo? selectedDeviceInfo;
@@ -11,7 +11,7 @@ class DeviceState extends Equatable {
   final List<DeviceDetailInfo> iotDeviceList;
 
   const DeviceState({
-    this.selectedInterval = DeviceListInfoInterval.today,
+    this.selectedScope = DeviceListInfoScope.today,
     this.selectedSegment = DeviceListInfoType.main,
     this.displayedDeviceList = const [],
     this.selectedDeviceInfo,
@@ -22,7 +22,7 @@ class DeviceState extends Equatable {
   });
 
   DeviceState.init()
-      : selectedInterval = DeviceListInfoInterval.today,
+      : selectedScope = DeviceListInfoScope.today,
         selectedSegment = DeviceListInfoType.main,
         displayedDeviceList = [],
         selectedDeviceInfo = null,
@@ -32,7 +32,7 @@ class DeviceState extends Equatable {
         iotDeviceList = [];
 
   DeviceState copyWith({
-    DeviceListInfoInterval? selectedInterval,
+    DeviceListInfoScope? selectedScope,
     DeviceListInfoType? selectedSegment,
     List<DeviceDetailInfo>? displayedDeviceList,
     DeviceDetailInfo? selectedDeviceInfo,
@@ -42,7 +42,7 @@ class DeviceState extends Equatable {
     List<DeviceDetailInfo>? iotDeviceList,
   }) {
     return DeviceState(
-      selectedInterval: selectedInterval ?? this.selectedInterval,
+      selectedScope: selectedScope ?? this.selectedScope,
       selectedSegment: selectedSegment ?? this.selectedSegment,
       displayedDeviceList: displayedDeviceList ?? this.displayedDeviceList,
       selectedDeviceInfo: selectedDeviceInfo ?? this.selectedDeviceInfo,
@@ -55,7 +55,7 @@ class DeviceState extends Equatable {
 
   @override
   List<Object?> get props => [
-        selectedInterval,
+        selectedScope,
         selectedSegment,
         displayedDeviceList,
         selectedDeviceInfo,
@@ -66,9 +66,10 @@ class DeviceState extends Equatable {
       ];
 }
 
-enum DeviceListInfoInterval {
+enum DeviceListInfoScope {
   today,
   week,
+  profile,
 }
 
 enum DeviceListInfoType {
