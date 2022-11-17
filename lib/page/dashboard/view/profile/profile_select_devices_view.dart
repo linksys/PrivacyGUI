@@ -1,3 +1,4 @@
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/device/_device.dart';
@@ -63,22 +64,29 @@ class _CreateProfileDevicesSelectedViewState
             TextButton(
               onPressed: () {
                 bool willReturnBack = widget.args['return'] ?? false;
-                if (willReturnBack) {
-                  final selectedDevices = _devices
-                      .where((element) => element.isSelected)
-                      .map((e) => e.device)
-                      .toList();
-                  NavigationCubit.of(context).popWithResult(selectedDevices);
+                final selectedDevices = _devices
+                    .where((element) => element.isSelected)
+                    .map((e) => e.device)
+                    .toList();
+                if (selectedDevices.isNotEmpty) {
+                  if (willReturnBack) {
+                    NavigationCubit.of(context).popWithResult(selectedDevices);
+                  } else {
+                    context.read<ProfilesCubit>().createProfile(
+                        devices:
+                            List.from(selectedDevices.map((e) => ProfileDevice(
+                                  deviceId: e.deviceID,
+                                  name: e.name,
+                                  macAddress: e.macAddress,
+                                ))));
+                    final next = widget.next ?? UnknownPath();
+                    NavigationCubit.of(context)
+                        .push(CreateProfileAvatarPath()..next = next);
+                  }
                 } else {
-                  context.read<ProfilesCubit>().createProfile(
-                      devices: List.from(_devices.map((e) => ProfileDevice(
-                            deviceId: e.device.deviceID,
-                            name: e.device.name,
-                            macAddress: e.device.macAddress,
-                          ))));
-                  final next = widget.next ?? UnknownPath();
-                  NavigationCubit.of(context)
-                      .push(CreateProfileAvatarPath()..next = next);
+                  showOkAlertDialog(
+                      context: context,
+                      title: 'At least 1 device is required for a profile.');
                 }
               },
               child: Text(
