@@ -126,6 +126,37 @@ class _AdministrationViewState extends State<AdministrationView> {
               ),
             ),
             administrationSection(
+              title: getAppLocalizations(context).administration_access,
+              content: Column(
+                children: [
+                  administrationTile(
+                    title: title(getAppLocalizations(context)
+                        .local_management_access),
+                    value: const Text('On'),
+                    icon: Image.asset('assets/images/icon_chevron.png'),
+                    onPress: () => NavigationCubit.of(context)
+                        .push(UnknownPath()),
+                  ),
+                  administrationTile(
+                    title: title(getAppLocalizations(context)
+                        .remote_access),
+                    value: const Text('On'),
+                    icon: Image.asset('assets/images/icon_chevron.png'),
+                    onPress: () => NavigationCubit.of(context)
+                        .push(UnknownPath()),
+                  ),
+                  administrationTile(
+                    title: title(getAppLocalizations(context)
+                        .web_ui),
+                    value: const Text('On'),
+                    icon: Image.asset('assets/images/icon_chevron.png'),
+                    onPress: () => NavigationCubit.of(context)
+                        .push(UnknownPath()),
+                  ),
+                ],
+              ),
+            ),
+            administrationSection(
               title: getAppLocalizations(context).firmware.toUpperCase(),
               content: Column(
                 children: [

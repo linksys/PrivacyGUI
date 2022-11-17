@@ -624,6 +624,9 @@
   "allow_access": "Allow access",
   "allow_access_description": "Only MAC addresses in the list can join the network",
   "deny_access": "Deny access",
-  "deny_access_description": "Deny access to the MAC addresses on the list"
-
+  "deny_access_description": "Deny access to the MAC addresses on the list",
+  "administration_access": "Access",
+  "local_management_access": "Local management access",
+  "remote_access": "Remote access",
+  "web_ui": "Web UI"
 }
