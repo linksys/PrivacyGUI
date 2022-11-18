@@ -65,15 +65,15 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                 _contentFilterTile(),
                 StyledText(
                     text:
-                    'Create healthy digital habits for everyone in your home. Protect your family from unwanted content to keep them safe. <link href="https://flutter.dev">More</link>',
+                        'Create healthy digital habits for everyone in your home. Protect your family from unwanted content to keep them safe. <link href="https://flutter.dev">More</link>',
                     style: Theme.of(context).textTheme.headline3?.copyWith(
                         color: Theme.of(context).colorScheme.onPrimary),
                     tags: {
                       'link': StyledTextActionTag(
-                              (String? text, Map<String?, String?> attrs) {
-                            String? link = attrs['href'];
-                            print('The "$link" link is tapped.');
-                          }, style: const TextStyle(color: Colors.blue)),
+                          (String? text, Map<String?, String?> attrs) {
+                        String? link = attrs['href'];
+                        print('The "$link" link is tapped.');
+                      }, style: const TextStyle(color: Colors.blue)),
                     }),
                 _lastUpdate(state),
               ],
@@ -185,12 +185,18 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _subscriptionStatus(state),
-          Text('Turn on Linksys Secure in settings', style: Theme.of(context).textTheme.headline3?.copyWith(fontWeight: FontWeight.w400),),
+          Text(
+            'Turn on Linksys Secure in settings',
+            style: Theme.of(context)
+                .textTheme
+                .headline3
+                ?.copyWith(fontWeight: FontWeight.w400),
+          ),
           _cyberthreatTile(),
-          _cyberthreatGrid(state),
+          _cyberthreatGrid(state, true),
           _divider(),
           _contentFilterTile(),
-          _contentFilterInfo(state),
+          _contentFilterInfo(state, true),
           _lastUpdate(state),
         ],
       ),
@@ -207,30 +213,33 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             return previous != current;
           },
           listener: (context, state) {
-            print(
-                'dashboard security view status ${state.networkEntitlementResponse?.first.order.status}');
-            switch (state.networkEntitlementResponse?.first.order.status) {
-              case 'NEW':
-                context.read<SecurityBloc>().add(SetUnsubscribedEvent());
-                break;
-              case 'VERIFIED':
-                context.read<SecurityBloc>().add(SetFormalActiveEvent());
-                break;
-              case 'GRACE_PERIOD':
-                context.read<SecurityBloc>().add(SetFormalActiveEvent());
-                break;
-              case 'CANCELLED':
-                break;
-              case 'ON_HOLD':
-                break;
-              case 'EXPIRED':
-                context.read<SecurityBloc>().add(SetExpiredEvent());
-                break;
-              default:
-                context.read<SecurityBloc>().add(SetTrialActiveEvent());
-                break;
+            if (context.read<SecurityBloc>().state is TurnedOffState) {
+            context.read<SecurityBloc>().add(TurnOffSecurityEvent());
+            } else {
+              print(
+                  'dashboard security view status ${state.networkEntitlementResponse?.first.order.status}');
+              switch (state.networkEntitlementResponse?.first.order.status) {
+                case 'NEW':
+                  context.read<SecurityBloc>().add(SetUnsubscribedEvent());
+                  break;
+                case 'VERIFIED':
+                  context.read<SecurityBloc>().add(SetFormalActiveEvent());
+                  break;
+                case 'GRACE_PERIOD':
+                  context.read<SecurityBloc>().add(SetFormalActiveEvent());
+                  break;
+                case 'CANCELLED':
+                  break;
+                case 'ON_HOLD':
+                  break;
+                case 'EXPIRED':
+                  context.read<SecurityBloc>().add(SetExpiredEvent());
+                  break;
+                default:
+                  context.read<SecurityBloc>().add(SetUnsubscribedEvent());
+                  break;
+              }
             }
-            // context.read<SecurityBloc>().add(TurnOffSecurityEvent());
           },
           child: BlocBuilder<SecurityBloc, SecurityState>(
             builder: (context, state) {
@@ -389,65 +398,80 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
     );
   }
 
-  Widget _cyberthreatGrid(SecurityState state) {
+  Widget _cyberthreatGrid(SecurityState state, [bool disable = false]) {
     final isGridEnabled =
         state.subscriptionStatus != SubscriptionStatus.turnedOff;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        box16(),
-        Visibility(
-          visible: state.hasBlockedThreat,
-          replacement: Text(
-            'No one has tried any funny business yet, but we are monitoring 24/7',
-            style: Theme.of(context).textTheme.headline3?.copyWith(
-                  fontWeight: FontWeight.w500,
+    final double = disable ? 0.5 : 1.0;
+    return Opacity(
+      opacity: double,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          box16(),
+          Visibility(
+            visible: state.hasBlockedThreat,
+            replacement: Text(
+              'No one has tried any funny business yet, but we are monitoring 24/7',
+              style: Theme.of(context).textTheme.headline3?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: InfoBlockWidget(
+                    count: context.read<SecurityBloc>().state.numOfBlockedVirus,
+                    text: CyberthreatType.virus.displayTitle,
+                    isEnabled: isGridEnabled,
+                    height: 96,
+                    onPress: () {
+                      if (!disable) {
+                        NavigationCubit.of(context).push(
+                            SecurityCyberThreatPath()
+                              ..args = {'type': CyberthreatType.virus});
+                      }
+                    },
+                  ),
                 ),
+                box8(),
+                Expanded(
+                  child: InfoBlockWidget(
+                    count:
+                        context.read<SecurityBloc>().state.numOfBlockedBotnet,
+                    text: CyberthreatType.botnet.displayTitle,
+                    isEnabled: isGridEnabled,
+                    height: 96,
+                    onPress: () {
+                      if (!disable) {
+                        NavigationCubit.of(context).push(
+                            SecurityCyberThreatPath()
+                              ..args = {'type': CyberthreatType.botnet});
+                      }
+                    },
+                  ),
+                ),
+                box8(),
+                Expanded(
+                  child: InfoBlockWidget(
+                    count:
+                        context.read<SecurityBloc>().state.numOfBlockedWebsite,
+                    text: CyberthreatType.website.displayTitle,
+                    isEnabled: isGridEnabled,
+                    height: 96,
+                    onPress: () {
+                      if (!disable) {
+                        NavigationCubit.of(context).push(
+                            SecurityCyberThreatPath()
+                              ..args = {'type': CyberthreatType.website});
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: InfoBlockWidget(
-                  count: context.read<SecurityBloc>().state.numOfBlockedVirus,
-                  text: CyberthreatType.virus.displayTitle,
-                  isEnabled: isGridEnabled,
-                  height: 96,
-                  onPress: () {
-                    NavigationCubit.of(context).push(SecurityCyberThreatPath()
-                      ..args = {'type': CyberthreatType.virus});
-                  },
-                ),
-              ),
-              box8(),
-              Expanded(
-                child: InfoBlockWidget(
-                  count: context.read<SecurityBloc>().state.numOfBlockedBotnet,
-                  text: CyberthreatType.botnet.displayTitle,
-                  isEnabled: isGridEnabled,
-                  height: 96,
-                  onPress: () {
-                    NavigationCubit.of(context).push(SecurityCyberThreatPath()
-                      ..args = {'type': CyberthreatType.botnet});
-                  },
-                ),
-              ),
-              box8(),
-              Expanded(
-                child: InfoBlockWidget(
-                  count: context.read<SecurityBloc>().state.numOfBlockedWebsite,
-                  text: CyberthreatType.website.displayTitle,
-                  isEnabled: isGridEnabled,
-                  height: 96,
-                  onPress: () {
-                    NavigationCubit.of(context).push(SecurityCyberThreatPath()
-                      ..args = {'type': CyberthreatType.website});
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -511,7 +535,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
     );
   }
 
-  Widget _contentFilterInfo(SecurityState state) {
+  Widget _contentFilterInfo(SecurityState state, [bool disable = false]) {
     if (state is UnsubscribedState) {
       return Text(
         'Create healthy digital lifestyle for your family and feel safe with the content on your network. Filter out categories and apps you don’t want.',
@@ -521,25 +545,29 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             ?.copyWith(fontWeight: FontWeight.w500),
       );
     } else {
-      return Visibility(
-        visible: state.hasFilterCreated,
+      double _opacity = disable ? 0.5 : 1.0;
+      return Opacity(
+        opacity: _opacity,
         child: Visibility(
-          visible: state.numOfIncidents > 0,
-          child: _incidentsOnProfiles(),
-          replacement: Text(
-            'No incidents yet',
-            style: Theme.of(context)
-                .textTheme
-                .headline3
-                ?.copyWith(fontWeight: FontWeight.w500),
+          visible: state.hasFilterCreated,
+          child: Visibility(
+            visible: state.numOfIncidents > 0,
+            child: _incidentsOnProfiles(disable),
+            replacement: Text(
+              'No incidents yet',
+              style: Theme.of(context)
+                  .textTheme
+                  .headline3
+                  ?.copyWith(fontWeight: FontWeight.w500),
+            ),
           ),
+          replacement: _createFilter(disable),
         ),
-        replacement: _createFilter(),
       );
     }
   }
 
-  Widget _createFilter() {
+  Widget _createFilter([bool disable = false]) {
     return Column(
       children: [
         Text(
@@ -553,15 +581,16 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
         PrimaryButton(
           text: 'Create filter',
           onPress: () {
-            //TODO: Go to next page
-            context.read<SecurityBloc>().add(ContentFilterCreatedEvent());
+            if(!disable) {
+              context.read<SecurityBloc>().add(ContentFilterCreatedEvent());
+            }
           },
         ),
       ],
     );
   }
 
-  Widget _incidentsOnProfiles() {
+  Widget _incidentsOnProfiles([disable = false]) {
     final _mockProfiles = context.read<ProfilesCubit>().state.profileList;
     final status = context.read<SecurityBloc>().state.subscriptionStatus;
     final range = context.read<SecurityBloc>().state.evaluatedRange;
@@ -584,6 +613,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             itemBuilder: (context, index) => Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: ListTile(
+                enabled: !disable,
                 shape: const BeveledRectangleBorder(
                   side: BorderSide(color: Colors.black, width: 1),
                 ),
@@ -600,7 +630,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                       ?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 onTap: () {
-                  NavigationCubit.of(context).push(CFFilteredContentPath());
+                    NavigationCubit.of(context).push(CFFilteredContentPath());
                 },
               ),
             ),

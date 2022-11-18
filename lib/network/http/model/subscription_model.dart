@@ -1,4 +1,5 @@
 import 'dart:core';
+import 'dart:ffi';
 
 import 'package:equatable/equatable.dart';
 
@@ -77,6 +78,51 @@ class SubscriptionProductDetails extends Equatable {
 
   @override
   List<Object> get props => [id, channel, product, plan, provider, publicFlag];
+}
+
+class SoftwarePackage extends Equatable {
+  final String id;
+  final String identifier;
+  final String name;
+  final bool active;
+
+  @override
+  List<Object?> get props => [id, identifier, name, active];
+
+  const SoftwarePackage({
+    required this.id,
+    required this.identifier,
+    required this.name,
+    required this.active,
+  });
+
+  @override
+  String toString() {
+    return 'SoftwarePackage{' +
+        ' id: $id,' +
+        ' identifier: $identifier,' +
+        ' name: $name,' +
+        ' active: $active,' +
+        '}';
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'identifier': identifier,
+      'name': name,
+      'active': active,
+    };
+  }
+
+  factory SoftwarePackage.fromJson(Map<String, dynamic> json) {
+    return SoftwarePackage(
+      id: json['id'],
+      identifier: json['identifier'],
+      name: json['name'],
+      active: json['active'],
+    );
+  }
 }
 
 class SubscriptionChannel extends Equatable {
@@ -251,93 +297,94 @@ class SubscriptionProvider extends Equatable {
 class SubscriptionOrderResponse extends Equatable {
   final String id;
   final String serialNumber;
+  final String accountId;
   final String productId;
+  final SubscriptionProduct product;
   final String channelId;
+  final SubscriptionChannel channel;
   final String status;
-  final bool? purchaseInProgress;
   final String planId;
+  final SubscriptionPlan plan;
   final String providerId;
   final ProviderOrder? providerOrder;
   final String purchasedAt;
   final String? verifiedAt;
-  final String? providerVerifiedAt;
-  final String? cancelledAt;
   final String? startTime;
   final String? renewTime;
   final String? endTime;
   final String? serviceEndTime;
   final String? expireTime;
-  final bool? active;
-  final String? linksysPurchaseId;
+  final String? lastCheckedAt;
 
   const SubscriptionOrderResponse(
       {required this.id,
       required this.serialNumber,
+      required this.accountId,
       required this.productId,
+      required this.product,
       required this.channelId,
+      required this.channel,
       required this.status,
-      required this.purchaseInProgress,
       required this.planId,
+      required this.plan,
       required this.providerId,
       required this.providerOrder,
       required this.purchasedAt,
       required this.verifiedAt,
-      required this.providerVerifiedAt,
-      required this.cancelledAt,
       required this.startTime,
       required this.renewTime,
       required this.endTime,
       required this.serviceEndTime,
       required this.expireTime,
-      required this.active,
-      required this.linksysPurchaseId});
+      required this.lastCheckedAt});
 
   factory SubscriptionOrderResponse.fromJson(Map<String, dynamic> json) {
     return SubscriptionOrderResponse(
-        id: json['id'],
-        serialNumber: json['serialNumber'],
-        productId: json['productId'],
-        channelId: json['channelId'],
-        status: json['status'],
-        purchaseInProgress: json['purchaseInProgress'],
-        planId: json['planId'],
-        providerId: json['providerId'],
-        providerOrder: json['providerOrder'],
-        purchasedAt: json['purchasedAt'],
-        verifiedAt: json['verifiedAt'],
-        providerVerifiedAt: json['providerVerifiedAt'],
-        cancelledAt: json['cancelledAt'],
-        startTime: json['startTime'],
-        renewTime: json['renewTime'],
-        endTime: json['endTime'],
-        serviceEndTime: json['serviceEndTime'],
-        expireTime: json['expireTime'],
-        active: json['active'],
-        linksysPurchaseId: json['linksysPurchaseId']);
+      id: json['id'],
+      serialNumber: json['serialNumber'],
+      accountId: json['accountId'],
+      productId: json['productId'],
+      product: SubscriptionProduct.fromJson(json['product']),
+      channelId: json['channelId'],
+      channel: SubscriptionChannel.fromJson(json['channel']),
+      status: json['status'],
+      planId: json['planId'],
+      plan: SubscriptionPlan.fromJson(json['plan']),
+      providerId: json['providerId'],
+      providerOrder: ProviderOrder.fromJson(json['providerOrder']),
+      purchasedAt: json['purchasedAt'],
+      verifiedAt: json['verifiedAt'],
+      startTime: json['startTime'],
+      renewTime: json['renewTime'],
+      endTime: json['endTime'],
+      serviceEndTime: json['serviceEndTime'],
+      expireTime: json['expireTime'],
+      lastCheckedAt: json['lastCheckedAt'],
+    );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'serialNumber': serialNumber,
+      'accountId': accountId,
       'productId': productId,
+      'product': product,
       'channelId': channelId,
+      'channel': channel,
       'status': status,
-      // 'purchaseInProgress': purchaseInProgress,
       'planId': planId,
+      'plan': plan,
       'providerId': providerId,
       'providerOrder': providerOrder,
       'purchasedAt': purchasedAt,
       'verifiedAt': verifiedAt,
-      'providerVerifiedAt': providerVerifiedAt,
-      'cancelledAt': cancelledAt,
       'startTime': startTime,
       'renewTime': renewTime,
       'endTime': endTime,
       'serviceEndTime': serviceEndTime,
       'expireTime': expireTime,
-      'active': active,
-      'linksysPurchaseId': linksysPurchaseId
+      'lastCheckedAt': lastCheckedAt,
     };
   }
 
@@ -345,24 +392,24 @@ class SubscriptionOrderResponse extends Equatable {
   List<Object?> get props => [
         id,
         serialNumber,
+        accountId,
         productId,
+        product,
         channelId,
+        channel,
         status,
-        // purchaseInProgress,
         planId,
+        plan,
         providerId,
         providerOrder,
         purchasedAt,
         verifiedAt,
-        providerVerifiedAt,
-        cancelledAt,
         startTime,
         renewTime,
         endTime,
         serviceEndTime,
         expireTime,
-        active,
-        linksysPurchaseId
+        lastCheckedAt,
       ];
 }
 
@@ -370,39 +417,46 @@ class ProviderOrder extends Equatable {
   final String id;
   final String orderId;
   final String status;
-  final bool active;
+  final String expireTime;
 
   const ProviderOrder(
       {required this.id,
       required this.orderId,
       required this.status,
-      required this.active});
+      required this.expireTime});
 
   factory ProviderOrder.fromJson(Map<String, dynamic> json) {
     return ProviderOrder(
         id: json['id'],
         orderId: json['orderId'],
         status: json['status'],
-        active: json['active']);
+        expireTime: json['expireTime']);
   }
 
   Map<String, dynamic> toJson() {
-    return {'id': id, 'orderId': orderId, 'status': status, 'active': active};
+    return {
+      'id': id,
+      'orderId': orderId,
+      'status': status,
+      'expireTime': expireTime
+    };
   }
 
   @override
-  List<Object> get props => [id, orderId, status, active];
+  List<Object> get props => [id, orderId, status, expireTime];
 }
 
 class NetworkEntitlementResponse extends Equatable {
+  final String id;
   final String siteId;
   final String serialNumber;
-  final SubscriptionProduct product;
   final SubscriptionChannel channel;
+  final SubscriptionProduct product;
   final SubscriptionPlan plan;
   final SubscriptionProvider provider;
+  final SoftwarePackage softwarePackage;
+  final String? softwarePackageStatus;
   final String status;
-  final bool? active;
   final SubscriptionOrderResponse order;
   final ProviderOrder? providerOrder;
   final String? startTime;
@@ -412,14 +466,16 @@ class NetworkEntitlementResponse extends Equatable {
   final String? expireTime;
 
   const NetworkEntitlementResponse({
+    required this.id,
     required this.siteId,
     required this.serialNumber,
-    required this.product,
     required this.channel,
+    required this.product,
     required this.plan,
     required this.provider,
+    required this.softwarePackage,
+    required this.softwarePackageStatus,
     required this.status,
-    required this.active,
     required this.order,
     required this.providerOrder,
     required this.startTime,
@@ -432,14 +488,16 @@ class NetworkEntitlementResponse extends Equatable {
   @override
   String toString() {
     return 'NetworkEntitlementResponse{' +
+        ' id: $id,' +
         ' siteId: $siteId,' +
         ' serialNumber: $serialNumber,' +
-        ' product: ${product.toString()},' +
         ' channel: ${channel.toString()},' +
+        ' product: ${product.toString()},' +
         ' plan: ${plan.toString()},' +
         ' provider: ${provider.toString()},' +
+        ' softwarePackage: ${softwarePackage.toString()}' +
+        ' softwarePackageStatus: $softwarePackageStatus,' +
         ' status: $status,' +
-        ' active: $active,' +
         ' order: ${order.toString()},' +
         ' providerOrder: ${providerOrder.toString()},' +
         ' startTime: $startTime,' +
@@ -452,14 +510,16 @@ class NetworkEntitlementResponse extends Equatable {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'siteId': siteId,
       'serialNumber': serialNumber,
-      'product': product.toJson(),
       'channel': channel.toJson(),
+      'product': product.toJson(),
       'plan': plan.toJson(),
       'provider': provider.toJson(),
+      'softwarePackage': softwarePackage.toJson(),
+      'softwarePackageStatus': softwarePackageStatus,
       'status': status,
-      'active': active,
       'order': order.toJson(),
       'providerOrder': providerOrder?.toJson(),
       'startTime': startTime,
@@ -472,16 +532,20 @@ class NetworkEntitlementResponse extends Equatable {
 
   factory NetworkEntitlementResponse.fromJson(Map<String, dynamic> json) {
     return NetworkEntitlementResponse(
+      id: json['id'],
       siteId: json['siteId'],
       serialNumber: json['serialNumber'],
-      product: SubscriptionProduct.fromJson(json['product']),
       channel: SubscriptionChannel.fromJson(json['channel']),
+      product: SubscriptionProduct.fromJson(json['product']),
       plan: SubscriptionPlan.fromJson(json['plan']),
       provider: SubscriptionProvider.fromJson(json['provider']),
+      softwarePackage: SoftwarePackage.fromJson(json['softwarePackage']),
+      softwarePackageStatus: json['softwarePackageStatus'],
       status: json['status'],
-      active: json['active'],
       order: SubscriptionOrderResponse.fromJson(json['order']),
-      providerOrder: json['providerOrder'] != null ? ProviderOrder.fromJson(json['providerOrder']) : null,
+      providerOrder: json['providerOrder'] != null
+          ? ProviderOrder.fromJson(json['providerOrder'])
+          : null,
       startTime: json['startTime'],
       renewTime: json['renewTime'],
       endTime: json['endTime'],
@@ -492,20 +556,22 @@ class NetworkEntitlementResponse extends Equatable {
 
   @override
   List<Object?> get props => [
-    siteId,
-    serialNumber,
-    product,
-    channel,
-    plan,
-    provider,
-    status,
-    active ?? false,
-    order,
-    providerOrder,
-    startTime,
-    renewTime,
-    endTime,
-    serviceEndTime,
-    expireTime
-  ];
+        id,
+        siteId,
+        serialNumber,
+        channel,
+        product,
+        plan,
+        provider,
+        softwarePackage,
+        softwarePackageStatus,
+        status,
+        order,
+        providerOrder,
+        startTime,
+        renewTime,
+        endTime,
+        serviceEndTime,
+        expireTime
+      ];
 }
