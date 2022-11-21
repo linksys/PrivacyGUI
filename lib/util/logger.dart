@@ -17,12 +17,16 @@ class CustomOutput extends LogOutput {
 
   @override
   void output(OutputEvent event) async {
+    var output = '';
     for (var line in event.lines) {
       printWrapped(line);
-      if (_file.existsSync()) {
-        await _file.writeAsBytes("${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(line.toString()))}\n".codeUnits,
-            mode: FileMode.writeOnlyAppend);
+      if (event.level == Level.info) {
+        output += line;
       }
+    }
+    if (output.isNotEmpty && _file.existsSync()) {
+      await _file.writeAsBytes("${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(output.toString()))}\n".codeUnits,
+          mode: FileMode.writeOnlyAppend);
     }
   }
 

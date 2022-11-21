@@ -104,7 +104,6 @@ class _DebugToolsViewState extends State<DebugToolsView> {
             final String shareLogPath =
                 '${Storage.tempDirectory?.path}/$shareLogFilename';
             final value = await file.readAsBytes();
-            logger.d('log file: ${String.fromCharCodes(value)}');
 
             String content =
                 '$appInfo\n$screenInfo\n${String.fromCharCodes(value)}';
@@ -121,6 +120,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
             if (result.status == ShareResultStatus.success) {
               Storage.deleteFile(Storage.logFileUri);
               Storage.deleteFile(Uri.parse(shareLogPath));
+              Storage.createLoggerFile();
             }
             showSnackBar(context, Text("Share result: ${result.status}"));
           },

@@ -47,8 +47,15 @@ class Storage {
     }
   }
 
-  static deleteFile(Uri fileUri) async {
-    File.fromUri(fileUri).delete();
+  static createLoggerFile () {
+    final logFile = File.fromUri(logFileUri);
+    if (!logFile.existsSync()) {
+      logFile.createSync();
+    }
+  }
+
+  static deleteFile(Uri fileUri) {
+    File.fromUri(fileUri).deleteSync();
   }
 
   static Future<void> saveFile(Uri fileUri, String contents) async {
