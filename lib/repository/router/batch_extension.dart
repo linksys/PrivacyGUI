@@ -46,6 +46,23 @@ extension BatchCommands on RouterRepository {
     ]);
   }
 
+  Future<Map<String, JnapSuccess>> fetchNodeDetails() async {
+    return batchCommands([
+      CommandWrap(
+        action: JNAPAction.getWANStatus.actionValue,
+        needAuth: false,
+      ),
+      CommandWrap(
+        action: JNAPAction.getDevices.actionValue,
+        needAuth: false,
+      ),
+      CommandWrap(
+        action: JNAPAction.getFirmwareUpdateStatus.actionValue,
+        needAuth: false,
+      ),
+    ]);
+  }
+
   Future<Map<String, JnapSuccess>> pollingData() async {
     return batchCommands([
       //TODO: We need to check if the certain actions and services are available before adding them into the list

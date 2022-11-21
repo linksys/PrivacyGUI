@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/node/cubit.dart';
+import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
-import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/dashboard/view/topology/topology_view.dart';
-import 'package:linksys_moab/route/model/dashboard_path.dart';
 import 'package:linksys_moab/route/model/nodes_path.dart';
 import 'package:linksys_moab/route/_route.dart';
-
+import 'package:linksys_moab/utils.dart';
 
 class NodeDetailView extends ArgumentsStatefulView {
   const NodeDetailView({Key? key, super.args, super.next}) : super(key: key);
@@ -20,56 +19,55 @@ class NodeDetailView extends ArgumentsStatefulView {
 }
 
 class _NodeDetailViewState extends State<NodeDetailView> {
-  late final TopologyNode _node;
 
   @override
   void initState() {
     super.initState();
-    _node = widget.args['node'] as TopologyNode;
+    context.read<NodeCubit>().fetchNodeDetailData();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView.onDashboardSecondary(
-      scrollable: true,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(_node.friendlyName,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-        leading: BackButton(onPressed: () {
-          NavigationCubit.of(context).pop();
-        }),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _headerTile(),
-          _nodeNameTile(),
-          _connectedDeviceTile(),
-          _connectingTile(),
-          _signalStrengthTile(),
-          _serialNumberTile(),
-          _modelNumberTile(),
-          _firmwareTile(),
-          if (_node.role == DeviceRole.router) _lanTile(),
-          _wanTile(),
-          const Spacer(),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 32.0),
-            child: PrimaryButton(
-              text: getAppLocalizations(context).node_detail_blink_node_light_btn,
-              onPress: () {},
-            ),
-          ),
-        ],
-      ),
-    );
+    return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
+      return BasePageView.onDashboardSecondary(
+        scrollable: true,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(state.location,
+              style:
+                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+          leading:
+              BackButton(onPressed: () => NavigationCubit.of(context).pop()),
+          actions: [
+            IconButton(
+                icon: Image.asset('assets/images/icon_refresh.png'),
+                onPressed: () =>
+                    context.read<NodeCubit>().fetchNodeDetailData())
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _headerTile(state),
+            _nodeNameTile(state),
+            _connectedDeviceTile(state),
+            _upstreamNodeTile(state),
+            if (!state.isMaster) _signalStrengthTile(state),
+            _switchLightTile(state),
+            _serialNumberTile(state),
+            _modelNumberTile(state),
+            _firmwareInfoTile(state),
+            _lanTile(state),
+            if (state.isMaster) _wanTile(state),
+          ],
+        ),
+      );
+    });
   }
 
-  Widget _headerTile() {
+  Widget _headerTile(NodeState state) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -83,59 +81,59 @@ class _NodeDetailViewState extends State<NodeDetailView> {
             const SizedBox(
               height: 8,
             ),
-            _signalLabel(),
+            Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  _getConnectionImage(state),
+                  box8(),
+                  Text(
+                    state.isOnline
+                        ? getAppLocalizations(context).online
+                        : getAppLocalizations(context).offline,
+                    style: Theme.of(context).textTheme.headline4?.copyWith(
+                        color: state.isOnline ? Colors.blue : Colors.grey),
+                  )
+                ]),
           ],
         ),
       ),
     );
   }
 
-  Widget _signalLabel() {
-    return Wrap(
-        alignment: WrapAlignment.center,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          Image.asset(
-            'assets/images/icon_wifi_signal_excellent.png',
-            width: 22,
-            height: 22,
-          ),
-          box8(),
-          Text(
-            _node.isOnline ? getAppLocalizations(context).online : getAppLocalizations(context).offline,
-            style: Theme.of(context)
-                .textTheme
-                .headline4
-                ?.copyWith(color: _node.isOnline ? Colors.blue : Colors.grey),
-          )
-        ]);
+  Widget _getConnectionImage(NodeState state) {
+    return Image.asset(
+      state.isWiredConnection ? 'assets/images/icon_signal_wired.png' : Utils.getWifiSignalImage(state.signalStrength),
+      width: 22,
+      height: 22,
+    );
   }
 
-  Widget _nodeNameTile() {
+  Widget _nodeNameTile(NodeState state) {
     return SettingTile(
       title: Text(
         getAppLocalizations(context).node_detail_label_node_name,
         style: Theme.of(context).textTheme.bodyText1,
       ),
       value: Text(
-        _node.friendlyName,
+        state.location,
         style: Theme.of(context).textTheme.bodyText1,
       ),
       onPress: () {
         NavigationCubit.of(context)
-            .push(NodeNameEditPath()..args = widget.args);
+            .push(NodeNameEditPath()..args = {'location': state.location});
       },
     );
   }
 
-  Widget _connectedDeviceTile() {
+  Widget _connectedDeviceTile(NodeState state) {
     return SettingTile(
       title: Text(
         getAppLocalizations(context).node_detail_label_connected_devices,
         style: Theme.of(context).textTheme.bodyText1,
       ),
       value: Text(
-        '${_node.connectedDevice}',
+        '${state.connectedDevices.length}',
         style: Theme.of(context).textTheme.bodyText1,
       ),
       onPress: () {
@@ -145,21 +143,23 @@ class _NodeDetailViewState extends State<NodeDetailView> {
     );
   }
 
-  Widget _connectingTile() {
+  Widget _upstreamNodeTile(NodeState state) {
     return SettingTile(
       title: Text(
         getAppLocalizations(context).node_detail_label_connected_to,
         style: Theme.of(context).textTheme.bodyText1,
       ),
       value: Text(
-        _node.role == DeviceRole.router ? getAppLocalizations(context).internet_source : _node.connectTo,
+        state.upstreamNode == 'INTERNET'
+            ? getAppLocalizations(context).internet_source
+            : state.upstreamNode,
         style: Theme.of(context).textTheme.bodyText1,
       ),
       onPress: null,
     );
   }
 
-  Widget _signalStrengthTile() {
+  Widget _signalStrengthTile(NodeState state) {
     return SettingTileTwoLine(
       title: Text(
         getAppLocalizations(context).node_detail_label_signal_strength,
@@ -167,15 +167,14 @@ class _NodeDetailViewState extends State<NodeDetailView> {
       ),
       value: Row(
         children: [
-          Image.asset(
-            'assets/images/icon_wifi_signal_excellent.png',
-            width: 22,
-            height: 22,
-          ),
-          Expanded(
-            child: Text(
-              '-56dBm Excellent',
-              style: Theme.of(context).textTheme.bodyText1,
+          _getConnectionImage(state),
+          Offstage(
+            offstage: state.isWiredConnection,
+            child: Expanded(
+              child: Text(
+                '${state.signalStrength} dBm ${Utils.getWifiSignalLevel(state.signalStrength).displayTitle}',
+                style: Theme.of(context).textTheme.bodyText1,
+              ),
             ),
           ),
           SimpleTextButton(
@@ -190,35 +189,49 @@ class _NodeDetailViewState extends State<NodeDetailView> {
     );
   }
 
-  Widget _serialNumberTile() {
+  Widget _switchLightTile(NodeState state) {
+    return SettingTile(
+      title: Text(
+        'Light',
+        style: Theme.of(context).textTheme.bodyText1,
+      ),
+      value: Text(
+        state.isLightTurnedOn ? 'On' : 'Off',
+        style: Theme.of(context).textTheme.bodyText1,
+      ),
+      onPress: () {
+        NavigationCubit.of(context).push(NodeSwitchLightPath());
+      },
+    );
+  }
+
+  Widget _serialNumberTile(NodeState state) {
     return SettingTileTwoLine(
       title: Text(
         getAppLocalizations(context).node_detail_label_serial_number,
         style: Theme.of(context).textTheme.bodyText1,
       ),
       value: Text(
-        _node.serialNumber,
+        state.serialNumber,
         style: Theme.of(context).textTheme.bodyText1,
       ),
-      onPress: null,
     );
   }
 
-  Widget _modelNumberTile() {
+  Widget _modelNumberTile(NodeState state) {
     return SettingTileTwoLine(
       title: Text(
         getAppLocalizations(context).node_detail_label_model_number,
         style: Theme.of(context).textTheme.bodyText1,
       ),
       value: Text(
-        _node.modelNumber,
+        state.modelNumber,
         style: Theme.of(context).textTheme.bodyText1,
       ),
-      onPress: null,
     );
   }
 
-  Widget _firmwareTile() {
+  Widget _firmwareInfoTile(NodeState state) {
     return SettingTileTwoLine(
       title: Text(
         getAppLocalizations(context).node_detail_label_firmware_version,
@@ -228,40 +241,42 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         children: [
           Expanded(
             child: Text(
-              _node.firmwareVersion,
+              state.firmwareVersion,
               style: Theme.of(context).textTheme.bodyText1,
             ),
           ),
-          Text(
-          getAppLocalizations(context).up_to_date,
-            style: Theme.of(context).textTheme.bodyText1,
+          Offstage(
+            offstage: !state.isLatestFw,
+            child: Text(
+              getAppLocalizations(context).up_to_date,
+              style: Theme.of(context).textTheme.bodyText1,
+            ),
           ),
         ],
       ),
-      onPress: null,
     );
   }
 
-  Widget _lanTile() {
+  Widget _lanTile(NodeState state) {
     return SectionTile(
       header: Text(
-          getAppLocalizations(context).node_detail_label_lan,
+        getAppLocalizations(context).node_detail_label_lan,
         style: Theme.of(context).textTheme.headline3,
       ),
       child: SettingTileTwoLine(
-          title: Text(
-            getAppLocalizations(context).node_detail_label_ip_address,
-            style: Theme.of(context).textTheme.bodyText1,
-          ),
-          value: Text(
-            _node.lanIp,
-            style: Theme.of(context).textTheme.bodyText1,
-          ),
-          onPress: null),
+        title: Text(
+          getAppLocalizations(context).node_detail_label_ip_address,
+          style: Theme.of(context).textTheme.bodyText1,
+        ),
+        value: Text(
+          state.lanIpAddress,
+          style: Theme.of(context).textTheme.bodyText1,
+        ),
+      ),
     );
   }
 
-  Widget _wanTile() {
+  Widget _wanTile(NodeState state) {
     return SectionTile(
       header: Text(
         getAppLocalizations(context).node_detail_label_wan,
@@ -273,7 +288,7 @@ class _NodeDetailViewState extends State<NodeDetailView> {
             style: Theme.of(context).textTheme.bodyText1,
           ),
           value: Text(
-            _node.wanIp,
+            state.wanIpAddress,
             style: Theme.of(context).textTheme.bodyText1,
           ),
           onPress: null),

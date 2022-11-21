@@ -8,15 +8,13 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
-import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/uuid.dart';
-import 'package:linksys_moab/util/validator.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -594,5 +592,105 @@ class Utils {
     }
 
     return icon;
+  }
+
+  static NodeSignalLevel getWifiSignalLevel(int signalStrength) {
+    if (signalStrength <= -70) {
+      return NodeSignalLevel.weak;
+    } else if (signalStrength > -70 && signalStrength <= -60) {
+      return NodeSignalLevel.fair;
+    } else if (signalStrength > -60 && signalStrength <= -50) {
+      return NodeSignalLevel.good;
+    } else if (signalStrength > -50 && signalStrength <= 0) {
+      return NodeSignalLevel.excellent;
+    } else {
+      return NodeSignalLevel.none;
+    }
+  }
+
+  static String getWifiSignalImage(int signalStrength) {
+    switch (getWifiSignalLevel(signalStrength)) {
+      case NodeSignalLevel.excellent:
+        return 'assets/images/icon_signal_excellent.png';
+      case NodeSignalLevel.good:
+        return 'assets/images/icon_signal_good.png';
+      case NodeSignalLevel.fair:
+        return 'assets/images/icon_signal_fair.png';
+      case NodeSignalLevel.weak:
+        return 'assets/images/icon_signal_weak.png';
+      case NodeSignalLevel.none:
+        return 'assets/images/icon_signal_excellent.png';  // Default
+    }
+  }
+
+  static bool checkIfWiredConnection(RouterDevice device) {
+    bool isWired = false;
+    final interfaces = device.knownInterfaces;
+    if (interfaces != null) {
+      for (final interface in interfaces) {
+        if (interface.interfaceType == 'Wired') {
+          isWired = true;
+        }
+      }
+    }
+    return isWired;
+  }
+
+  //TODO: Check duplicate functions
+  static String getDeviceLocation(RouterDevice device) {
+    for (final property in device.properties) {
+      if (property.name == 'userDeviceLocation' && property.value.isNotEmpty) {
+        return property.value;
+      }
+    }
+    return getDeviceName_(device);
+  }
+
+  static String getDeviceName_(RouterDevice device) {
+    for (final property in device.properties) {
+      if (property.name == 'userDeviceName' && property.value.isNotEmpty) {
+        return property.value;
+      }
+    }
+
+    bool isAndroidDevice = false;
+    if (device.friendlyName != null) {
+      final regExp = RegExp(r'^Android$|^android-[a-fA-F0-9]{16}.*|^Android-[0-9]+');
+      isAndroidDevice = regExp.hasMatch(device.friendlyName!);
+    }
+
+    String? androidDeviceName;
+    if (isAndroidDevice &&
+        ['Mobile', 'Phone', 'Tablet'].contains(device.model.deviceType)) {
+      final manufacturer = device.model.manufacturer;
+      final modelNumber = device.model.modelNumber;
+      if (manufacturer != null && modelNumber != null) {
+        // e.g. 'Samsung Galaxy S8'
+        androidDeviceName = manufacturer + ' ' + modelNumber;
+      } else if (device.unit.operatingSystem != null) {
+        // e.g. 'Android Oreo Mobile'
+        androidDeviceName =
+            device.unit.operatingSystem! + ' ' + device.model.deviceType;
+        if (manufacturer != null) {
+          // e.g. 'Samsung Android Oreo Mobile'
+          androidDeviceName = manufacturer! + androidDeviceName!;
+        }
+      }
+    }
+
+    if (androidDeviceName != null) {
+      return androidDeviceName;
+    } else if (device.friendlyName != null) {
+      return device.friendlyName!;
+    } else if (device.model.modelNumber != null) {
+      return device.model.modelNumber!;
+    } else {
+      // Check if it's a guest device
+      bool isGuest = false;
+      for (final connectionDevice in device.connections) {
+        isGuest = connectionDevice.isGuest ?? false;
+      }
+      return isGuest ? 'Guest Network Device' : 'Network Device';
+    }
   }
 }

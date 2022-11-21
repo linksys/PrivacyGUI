@@ -2,22 +2,21 @@ import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/page/dashboard/view/nodes/node_connected_devices_view.dart';
 import 'package:linksys_moab/page/dashboard/view/nodes/node_detail_view.dart';
 import 'package:linksys_moab/page/dashboard/view/nodes/node_name_edit_view.dart';
-import 'package:linksys_moab/page/dashboard/view/nodes/node_offline_check.dart';
+import 'package:linksys_moab/page/dashboard/view/nodes/node_offline_check_view.dart';
+import 'package:linksys_moab/page/dashboard/view/nodes/node_restart_view.dart';
+import 'package:linksys_moab/page/dashboard/view/nodes/node_switch_light_view.dart';
 import 'package:linksys_moab/page/dashboard/view/nodes/signal_strength_view.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/topology_view.dart';
 import '_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 
 
-class NodesPath extends DashboardPath{
+class NodesPath extends DashboardPath {
   @override
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
       case TopologyPath:
-        return TopologyView(
-          args: args,
-          next: next,
-        );
+        return const TopologyView();
       case NodeDetailPath:
         return NodeDetailView(
           args: args,
@@ -43,8 +42,12 @@ class NodesPath extends DashboardPath{
           args: args,
           next: next,
         );
+      case NodeSwitchLightPath:
+        return const NodeSwitchLightView();
+      case NodeRestartPath:
+        return const NodeRestartView();
       default:
-        return Center();
+        return const Center();
     }
   }
 }
@@ -69,4 +72,11 @@ class NodeOfflineCheckPath extends NodesPath {
 class NodeDetailPath extends NodesPath {
   @override
   PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
+}
+
+class NodeSwitchLightPath extends NodesPath {}
+
+class NodeRestartPath extends NodesPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
