@@ -139,6 +139,7 @@ class ScheduledPausedRule extends InternetScheduleRule {
 }
 
 class ContentFilterData extends MoabServiceData {
+  // profile id is equals to profile name
   const ContentFilterData({
     required this.isEnabled,
     required this.secureProfile,

@@ -36,7 +36,8 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     final jsonString = sharedPreference.getString(moabPrefUserProfiles);
     if (jsonString != null) {
       final jsonObject = jsonDecode(jsonString) as Map<String, dynamic>;
-      final savedProfiles = jsonObject.map((key, value) => MapEntry(key, UserProfile.fromJson(value)));
+      final savedProfiles = jsonObject
+          .map((key, value) => MapEntry(key, UserProfile.fromJson(value)));
       emit(state.copyWith(
         profiles: savedProfiles,
       ));
@@ -119,9 +120,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
         // }
       }
 
-      _newOrUpdateProfile(profile.copyWith(
-        serviceDetails: dataMap
-      ));
+      _newOrUpdateProfile(profile.copyWith(serviceDetails: dataMap));
     }
   }
 
@@ -153,9 +152,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.internetSchedule] = data.copyWith(dateTimeLimitRule: copy);
 
-    _newOrUpdateProfile(profile.copyWith(
-      serviceDetails: dataMap
-    ));
+    _newOrUpdateProfile(profile.copyWith(serviceDetails: dataMap));
   }
 
   Future<void> updateDetailTimeLimitDetail(String profileId,
@@ -182,9 +179,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.internetSchedule] = data.copyWith(dateTimeLimitRule: copy);
 
-    _newOrUpdateProfile(profile.copyWith(
-      serviceDetails: dataMap
-    ));
+    _newOrUpdateProfile(profile.copyWith(serviceDetails: dataMap));
   }
 
   Future<bool> deleteTimeLimitRule(
@@ -208,9 +203,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
     dataMap[PService.internetSchedule] = data.copyWith(dateTimeLimitRule: copy);
 
-    _newOrUpdateProfile(profile.copyWith(
-      serviceDetails: dataMap
-    ));
+    _newOrUpdateProfile(profile.copyWith(serviceDetails: dataMap));
     return true;
   }
 
@@ -238,9 +231,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     dataMap[PService.internetSchedule] =
         data.copyWith(scheduledPauseRule: copy);
 
-    _newOrUpdateProfile(profile.copyWith(
-      serviceDetails: dataMap
-    ));
+    _newOrUpdateProfile(profile.copyWith(serviceDetails: dataMap));
   }
 
   Future<void> updateSchedulePausesDetail(
@@ -277,9 +268,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     dataMap[PService.internetSchedule] =
         data.copyWith(scheduledPauseRule: copy);
 
-    _newOrUpdateProfile(profile.copyWith(
-        serviceDetails: dataMap
-    ));
+    _newOrUpdateProfile(profile.copyWith(serviceDetails: dataMap));
   }
 
   Future<bool> deleteSchedulePausesRule(
@@ -304,33 +293,34 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     dataMap[PService.internetSchedule] =
         data.copyWith(scheduledPauseRule: copy);
 
-    _newOrUpdateProfile(profile.copyWith(
-      serviceDetails: dataMap
-    ));
+    _newOrUpdateProfile(profile.copyWith(serviceDetails: dataMap));
     return true;
   }
 
   // Content filter
-  updateContentFilterEnabled(String profileId, bool isEnabled) {
+  Future<bool> updateContentFilterEnabled(
+      String profileId, bool isEnabled) async {
     var profile = state.selectedProfile;
     //TODO: There's no longer profileId!!
     if (profile == null || profile.name != profileId) {
       profile =
           state.profileList.firstWhere((element) => element.name == profileId);
     }
-    var data =
-        profile.serviceDetails[PService.contentFilter] as ContentFilterData?;
-    if (data == null) return;
-    Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
-    dataMap[PService.contentFilter] = data.copyWith(isEnabled: isEnabled);
-    // TODO Update status on FCNPolicy, get policy from UserProfile
-
-    _newOrUpdateProfile(profile.copyWith(
-      serviceDetails: dataMap
-    ));
+    if (profile.contentFilterConfig == null) return false;
+    var data = profile.contentFilterConfig?.data;
+    final result = await _updateStatusToFCN(
+        isEnabled, profile.contentFilterConfig!.policyId);
+    if (result) {
+      _newOrUpdateProfile(profile.copyWith(
+          contentFilterConfig: profile.contentFilterConfig
+              ?.copyWith(data: data?.copyWith(isEnabled: isEnabled))));
+    } else {
+      logger.d('FCN update enabled failed!');
+    }
+    return result;
   }
 
-  Future updateContentFilterDetails(
+  Future<bool> updateContentFilterDetails(
       String profileId,
       String networkId,
       CFSecureProfile secureProfile,
@@ -343,30 +333,26 @@ class ProfilesCubit extends Cubit<ProfilesState> {
           state.profileList.firstWhere((element) => element.name == profileId);
     }
 
-    profile = profile.copyWith(devices: [
-      const ProfileDevice(deviceId: '', name: 'ASTWP-028312', macAddress: ''),
-      const ProfileDevice(deviceId: '', name: 'Galaxy-S10', macAddress: ''),
-    ]);
-
-    var data =
-        profile.serviceDetails[PService.contentFilter] as ContentFilterData?;
+    var data = profile.contentFilterConfig?.data;
     if (data == null) {
       data = ContentFilterData(
           isEnabled: true, secureProfile: secureProfile, profileId: profileId);
     } else {
       data = data.copyWith(secureProfile: secureProfile);
     }
-    Map<PService, MoabServiceData> dataMap = Map.from(profile.serviceDetails);
-    dataMap[PService.contentFilter] = data;
     final result = await _transformDataToFCN(
         profile, networkId, data, blockedSearchApplication);
-    if (result) {
+    logger.d('FCN:: store FCN data result: $result');
+    if (result > 0) {
       _newOrUpdateProfile(profile.copyWith(
-        serviceDetails: dataMap
-      ));
+          contentFilterConfig: profile.contentFilterConfig
+                  ?.copyWith(policyId: '$result', data: data) ??
+              ContentFilterConfiguration(policyId: '$result', data: data)));
     } else {
       // TODO ERRORHANDLING
+      logger.d('FCN:: Create policy failed!');
     }
+    return result > 0;
   }
 
   Future<bool> _updateStatusToFCN(bool isEnabled, String policyId) async {
@@ -387,7 +373,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
         .onError((error, stackTrace) => false);
   }
 
-  Future<bool> _transformDataToFCN(
+  Future<int> _transformDataToFCN(
       UserProfile profile,
       String networkId,
       ContentFilterData data,
@@ -416,7 +402,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     } else {
       logger.e(
           'something wrong when save content filter data:: w:$webFilterProfileSuccess, a:$applicationListSuccess, g:$addressGroupSuccess');
-      return false;
+      return -1;
     }
   }
 
@@ -518,10 +504,10 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     return result;
   }
 
-  Future<bool> _createPolicy(UserProfile profile, String networkId) async {
-    // TODO if profile already has policy id, then use it for updating purpose.
+  Future<int> _createPolicy(UserProfile profile, String networkId) async {
     final policy = FCNPolicy(
-      policyid: await _generateAndCheckPolicyId(),
+      policyid: profile.contentFilterConfig?.policyId ??
+          await _generateAndCheckPolicyId(),
       status: 'enable',
       name: getProfileNameEncoded(profile.name),
       addressGroup: getProfileNameEncoded(profile.name),
@@ -533,8 +519,10 @@ class ProfilesCubit extends Cubit<ProfilesState> {
     final result = await _routerRepository
         .setFirewallPolicy(policy)
         .then((value) =>
-            value.result == 'OK' && value.toFCNResult().status == 200)
-        .onError((error, stackTrace) => false);
+            value.result == 'OK' && value.toFCNResult().status == 200
+                ? int.parse(policy.policyid)
+                : -1)
+        .onError((error, stackTrace) => -1);
     return result;
   }
 

@@ -36,8 +36,10 @@ class WebFilter extends Equatable {
       rating: json['rating'],
       desc: json['desc'],
       example: json['example'],
-      groupId: json['groupId'],
-      blockedInRatings: List.from(json['blockedInRatings']),
+      groupId: json['groupId'] ?? '',
+      blockedInRatings: json['blockedInRatings'] == null
+          ? []
+          : List.from(json['blockedInRatings']),
     );
   }
 
@@ -87,5 +89,4 @@ class WebFilter extends Equatable {
   @override
   List<Object?> get props =>
       [id, name, group, rating, desc, example, groupId, blockedInRatings];
-
 }
