@@ -18,6 +18,7 @@ import 'package:linksys_moab/bloc/device/cubit.dart';
 import 'package:linksys_moab/bloc/internet_check/cubit.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
+import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/bloc/security/bloc.dart';
 import 'package:linksys_moab/design/themes.dart';
@@ -144,7 +145,8 @@ Widget _app() {
       BlocProvider(
           create: (BuildContext context) => InternetCheckCubit(
               routerRepository: context.read<RouterRepository>())),
-      BlocProvider(create: (BuildContext context) => AddNodesCubit(routerRepository: context.read<RouterRepository>()))
+      BlocProvider(create: (BuildContext context) => AddNodesCubit(routerRepository: context.read<RouterRepository>())),
+      BlocProvider(create: (BuildContext context) => WifiSettingCubit(routerRepository: context.read<RouterRepository>())),
     ], child: const MoabApp()),
   );
 }

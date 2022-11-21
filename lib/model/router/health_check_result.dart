@@ -45,7 +45,7 @@ class HealthCheckResult extends Equatable {
       'timestamp': timestamp,
       'healthCheckModulesRequested': healthCheckModulesRequested,
       'speedTestResult': speedTestResult,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory HealthCheckResult.fromJson(Map<String, dynamic> json) {

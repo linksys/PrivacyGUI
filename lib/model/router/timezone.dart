@@ -41,7 +41,7 @@ class SupportedTimezone extends Equatable {
       'timeZoneID': timeZoneID,
       'description': description,
       'utcOffsetMinutes': utcOffsetMinutes,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory SupportedTimezone.fromJson(Map<String, dynamic> json) {

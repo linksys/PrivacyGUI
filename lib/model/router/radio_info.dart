@@ -1,3 +1,5 @@
+import 'package:equatable/equatable.dart';
+
 class SimpleWiFiSettings {
   const SimpleWiFiSettings({
     required this.ssid,
@@ -40,7 +42,7 @@ class SimpleWiFiSettings {
       'band': band,
       'security': security,
       'passphrase': passphrase,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory SimpleWiFiSettings.fromMap(Map<String, dynamic> json) {
@@ -53,7 +55,7 @@ class SimpleWiFiSettings {
   }
 }
 
-class NewRadioSettings {
+class NewRadioSettings extends Equatable {
   final String radioID;
   final RouterRadioInfoSettings settings;
 
@@ -61,6 +63,12 @@ class NewRadioSettings {
     required this.radioID,
     required this.settings,
   });
+
+  @override
+  List<Object?> get props => [
+    radioID,
+    settings,
+  ];
 
   NewRadioSettings copyWith({
     String? radioID,
@@ -76,7 +84,7 @@ class NewRadioSettings {
     return {
       'radioID': radioID,
       'settings': settings,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory NewRadioSettings.fromJson(Map<String, dynamic> json) {
@@ -87,7 +95,7 @@ class NewRadioSettings {
   }
 }
 
-class RouterRadioInfo {
+class RouterRadioInfo extends Equatable {
   final String band;
   final String bssid;
   final String radioID;
@@ -102,6 +110,15 @@ class RouterRadioInfo {
     required this.settings,
   });
 
+  @override
+  List<Object?> get props => [
+    band,
+    bssid,
+    radioID,
+    physicalRadioID,
+    settings,
+  ];
+
   Map<String, dynamic> toJson() {
     return {
       'band': band,
@@ -109,15 +126,15 @@ class RouterRadioInfo {
       'radioID': radioID,
       'physicalRadioID': physicalRadioID,
       'settings': settings,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory RouterRadioInfo.fromJson(Map<String, dynamic> json) {
     return RouterRadioInfo(
-      band: json['band'] as String,
-      bssid: json['bssid'] as String,
-      radioID: json['radioID'] as String,
-      physicalRadioID: json['physicalRadioID'] as String,
+      band: json['band'],
+      bssid: json['bssid'],
+      radioID: json['radioID'],
+      physicalRadioID: json['physicalRadioID'],
       settings: RouterRadioInfoSettings.fromJson(json['settings']),
     );
   }
@@ -139,7 +156,7 @@ class RouterRadioInfo {
   }
 }
 
-class RouterRadioInfoSettings {
+class RouterRadioInfoSettings extends Equatable {
   final bool broadcastSSID;
   final String ssid;
   final bool isEnabled;
@@ -160,6 +177,18 @@ class RouterRadioInfoSettings {
     required this.mode,
   });
 
+  @override
+  List<Object?> get props => [
+    broadcastSSID,
+    ssid,
+    isEnabled,
+    security,
+    channel,
+    wpaPersonalSettings,
+    channelWidth,
+    mode,
+  ];
+
   Map<String, dynamic> toJson() {
     return {
       'broadcastSSID': broadcastSSID,
@@ -170,7 +199,7 @@ class RouterRadioInfoSettings {
       'wpaPersonalSettings': wpaPersonalSettings,
       'channelWidth': channelWidth,
       'mode': mode,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory RouterRadioInfoSettings.fromJson(Map<String, dynamic> json) {
@@ -210,12 +239,17 @@ class RouterRadioInfoSettings {
   }
 }
 
-class RouterWPAPersonalSettings {
+class RouterWPAPersonalSettings extends Equatable {
   final String passphrase;
 
   const RouterWPAPersonalSettings({
     required this.passphrase,
   });
+
+  @override
+  List<Object?> get props => [
+    passphrase,
+  ];
 
   RouterWPAPersonalSettings copyWith({
     String? password,
@@ -228,7 +262,7 @@ class RouterWPAPersonalSettings {
   Map<String, dynamic> toJson() {
     return {
       'passphrase': passphrase,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory RouterWPAPersonalSettings.fromJson(Map<String, dynamic> json) {

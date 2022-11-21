@@ -7,7 +7,9 @@ import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
+import 'package:linksys_moab/model/router/guest_radio_settings.dart';
 import 'package:linksys_moab/model/router/health_check_result.dart';
+import 'package:linksys_moab/model/router/iot_network_settings.dart';
 import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/model/router/wan_status.dart';
@@ -105,7 +107,8 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   }
 
   Future<SpeedTestResult> getHealthCheckStatus() async {
-    SpeedTestResult speedTestResult = const SpeedTestResult(resultID: 0, exitCode: '');
+    SpeedTestResult speedTestResult =
+        const SpeedTestResult(resultID: 0, exitCode: '');
     final result = await _routerRepository.getHealthCheckStatus();
     if (result.output['healthCheckModuleCurrentlyRunning'] == 'SpeedTest') {
       speedTestResult =
@@ -167,6 +170,18 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
         selected: state.selected!.copyWith(radioInfo: radioInfo)));
   }
 
+  _handleGuestRadioSettingsResult(GuestRadioSetting guestRadioSetting) {
+    emit(state.copyWith(
+        selected:
+            state.selected!.copyWith(guestRadioSetting: guestRadioSetting)));
+  }
+
+  _handleIoTNetworkSettingResult(IoTNetworkSetting ioTNetworkSetting) {
+    emit(state.copyWith(
+        selected:
+            state.selected!.copyWith(iotNetworkSetting: ioTNetworkSetting)));
+  }
+
   _handleDevicesResult(List<RouterDevice> devices) {
     emit(state.copyWith(selected: state.selected!.copyWith(devices: devices)));
   }
@@ -201,6 +216,16 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
           .toList();
       _handleRadioInfoResult(radioInfo);
     }
+    if (result.containsKey(JNAPAction.getGuestRadioSettings.actionValue)) {
+      final guestRadioInfoSetting = GuestRadioSetting.fromJson(
+          result[JNAPAction.getGuestRadioSettings.actionValue]!.output);
+      _handleGuestRadioSettingsResult(guestRadioInfoSetting);
+    }
+    if (result.containsKey(JNAPAction.getIoTNetworkSettings.actionValue)) {
+      final iotNetworkSetting = IoTNetworkSetting.fromJson(
+          result[JNAPAction.getIoTNetworkSettings.actionValue]!.output);
+      _handleIoTNetworkSettingResult(iotNetworkSetting);
+    }
     if (result.containsKey(JNAPAction.getDevices.actionValue)) {
       final devices = List.from(
               result[JNAPAction.getDevices.actionValue]!.output['devices'])
@@ -231,7 +256,8 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
     emit(state.copyWith(selected: MoabNetwork(id: network.networkId)));
   }
 
-  HealthCheckResult getLatestHealthCheckResult(List<HealthCheckResult> healthCheckResults) {
+  HealthCheckResult getLatestHealthCheckResult(
+      List<HealthCheckResult> healthCheckResults) {
     healthCheckResults.sort((e1, e2) => e2.timestamp.compareTo(e1.timestamp));
     return healthCheckResults.first;
   }

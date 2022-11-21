@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/wifi_settings/view/wifi_settings_view.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
 
 class EditWifiModeView extends ArgumentsStatefulView {
@@ -18,15 +19,14 @@ class EditWifiModeView extends ArgumentsStatefulView {
 }
 
 class _EditWifiModeViewState extends State<EditWifiModeView> {
-  final List<WifiMode> _modeList = WifiMode.allModes;
+  final List<WifiMode> _modeList = [WifiMode.mixed];
   late WifiListItem _wifiItem;
 
   @override
   initState() {
     super.initState();
-    if (widget.args.containsKey('info')) {
-      _wifiItem = widget.args['info'];
-    }
+
+    _wifiItem = context.read<WifiSettingCubit>().state.selectedWifiItem;
   }
 
   void _save() {
@@ -42,7 +42,7 @@ class _EditWifiModeViewState extends State<EditWifiModeView> {
           itemBuilder: (context, index) {
             return GestureDetector(
               onTap: () {
-                setState(() => _wifiItem.mode = _modeList[index]);
+                // setState(() => _wifiItem.mode = _modeList[index]);
               },
               child: Row(
                 children: [
@@ -51,7 +51,7 @@ class _EditWifiModeViewState extends State<EditWifiModeView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _modeList[index].displayTitle,
+                          _modeList[index].value,
                           style: Theme.of(context).textTheme.headline3?.copyWith(
                               color: Theme.of(context).colorScheme.primary
                           ),
@@ -85,10 +85,10 @@ class _EditWifiModeViewState extends State<EditWifiModeView> {
             );
           },
         ),
-        footer: PrimaryButton(
-          text: getAppLocalizations(context).save,
-          onPress: _save,
-        ),
+        // footer: PrimaryButton(
+        //   text: getAppLocalizations(context).save,
+        //   onPress: _save,
+        // ),
       ),
     );
   }

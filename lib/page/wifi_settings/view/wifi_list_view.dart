@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
+import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/model/router/device.dart';
+import 'package:linksys_moab/model/router/guest_radio_settings.dart';
+import 'package:linksys_moab/model/router/iot_network_settings.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/customs/hidden_password_widget.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
-import 'package:linksys_moab/page/wifi_settings/view/wifi_settings_view.dart';
 import 'package:linksys_moab/route/model/wifi_settings_path.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -34,22 +36,51 @@ class _WifiListViewState extends State<WifiListView> {
     List<WifiListItem> _items = [];
     final state = context.read<NetworkCubit>().state;
     List<RouterRadioInfo>? radioInfo = state.selected?.radioInfo;
+    Map<WifiType, int> deviceCountMap = getConnectionDeviceCount(state.selected?.devices);
     if (radioInfo != null) {
       Map<String, RouterRadioInfo> infoMap =
           Map.fromEntries(radioInfo.map((e) => MapEntry(e.settings.ssid, e)));
       _items = List.from(infoMap.values).map((e) {
         RouterRadioInfo info = e as RouterRadioInfo;
         return WifiListItem(
-          WifiType.main,
-          info.settings.ssid,
-          info.settings.wpaPersonalSettings.passphrase,
-          WifiListItem.convertToWifiSecurityType(info.settings.security),
-          WifiListItem.convertToWifiMode(info.settings.mode),
-          info.settings.isEnabled,
-          getConnectionDeviceCount(state.selected?.devices),
-          100,
-        );
+            wifiType: WifiType.main,
+            ssid: info.settings.ssid,
+            password: info.settings.wpaPersonalSettings.passphrase,
+            securityType:
+                WifiListItem.convertToWifiSecurityType(info.settings.security),
+            mode: WifiListItem.convertToWifiMode(info.settings.mode),
+            isWifiEnabled: info.settings.isEnabled,
+            numOfDevices: deviceCountMap[WifiType.main] ?? 0,
+            signal: 0);
       }).toList();
+    }
+    GuestRadioSetting? guestRadioSetting = state.selected?.guestRadioSetting;
+    if (guestRadioSetting != null) {
+      _items.add(WifiListItem(
+          wifiType: WifiType.guest,
+          ssid: guestRadioSetting.radios.first.guestSSID,
+          password: guestRadioSetting.radios.first.guestWPAPassphrase ?? '',
+          securityType: _items.isNotEmpty
+              ? _items.first.securityType
+              : WifiSecurityType.wpa2Wpa3Mixed,
+          mode: _items.isNotEmpty ? _items.first.mode : WifiMode.mixed,
+          isWifiEnabled: guestRadioSetting.isGuestNetworkEnabled,
+          numOfDevices: deviceCountMap[WifiType.guest] ?? 0,
+          signal: 0));
+    }
+    IoTNetworkSetting? iotNetworkSetting = state.selected?.iotNetworkSetting;
+    if (iotNetworkSetting != null) {
+      _items.add(WifiListItem(
+          wifiType: WifiType.iot,
+          ssid: '',
+          password: '',
+          securityType: _items.isNotEmpty
+              ? _items.first.securityType
+              : WifiSecurityType.wpa2Wpa3Mixed,
+          mode: _items.isNotEmpty ? _items.first.mode : WifiMode.mixed,
+          isWifiEnabled: iotNetworkSetting.isIoTNetworkEnabled,
+          numOfDevices: deviceCountMap[WifiType.iot] ?? 0,
+          signal: 0));
     }
     return _items;
   }
@@ -161,15 +192,27 @@ class _WifiListViewState extends State<WifiListView> {
     );
   }
 
-  int getConnectionDeviceCount(List<RouterDevice>? devices) {
-    int deviceCount = 0;
+  Map<WifiType, int> getConnectionDeviceCount(List<RouterDevice>? devices) {
+    Map<WifiType, int> map = {
+      WifiType.main: 0,
+      WifiType.guest: 0,
+      WifiType.iot: 0,
+    };
+    int mainCount = 0;
+    int guestCount = 0;
+    int iotCount = 0;
     if (devices != null && devices.isNotEmpty) {
       for (RouterDevice device in devices) {
-        if (!device.isAuthority && device.nodeType == null) {
-          deviceCount += 1;
+        if (device.connections.isNotEmpty && (device.connections.first.isGuest ?? false)) {
+          guestCount += 1;
+        } else if (!device.isAuthority && device.nodeType == null) {
+          mainCount += 1;
         }
       }
+      map[WifiType.main] = mainCount;
+      map[WifiType.guest] = guestCount;
+      map[WifiType.iot] = iotCount;
     }
-    return deviceCount;
+    return map;
   }
 }

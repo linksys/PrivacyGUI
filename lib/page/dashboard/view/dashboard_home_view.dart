@@ -9,6 +9,7 @@ import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/router/device.dart';
+import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/shortcuts/profiles.dart';
@@ -132,7 +133,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(getWifiCount(state.selected?.radioInfo),
+                    Text(getWifiCount(state.selected),
                         style: Theme.of(context).textTheme.headline1?.copyWith(
                             fontSize: 32, fontWeight: FontWeight.w400)),
                     Text('active', style: Theme.of(context).textTheme.headline3)
@@ -310,41 +311,45 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
 
   Widget _profileTile() {
     final authBloc = context.read<AuthBloc>();
-    return authBloc.isCloudLogin() ? BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('PROFILES'),
-          box8(),
-          SizedBox(
-            height: 60,
-            child: ListView.separated(
-              itemBuilder: (context, index) => InkWell(
-                  onTap: () {
-                    if (index == state.profileList.length) {
-                      logger.d('add profile clicked: $index');
-                      NavigationCubit.of(context).push(CreateProfileNamePath());
-                    } else {
-                      logger.d('profile clicked: $index');
-                      context
-                          .read<ProfilesCubit>()
-                          .selectProfile(state.profileList[index]);
-                      NavigationCubit.of(context).push(ProfileOverviewPath());
-                    }
-                  },
-                  child: index == state.profileList.length
-                      ? _profileAdd()
-                      : _profileItem(state.profileList[index])),
-              separatorBuilder: (_, __) => box16(),
-              itemCount: state.profileList.length + 1,
-              scrollDirection: Axis.horizontal,
-              shrinkWrap: true,
-            ),
-          ),
-        ],
-      );
-    }) : const Center();
+    return authBloc.isCloudLogin()
+        ? BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('PROFILES'),
+                box8(),
+                SizedBox(
+                  height: 60,
+                  child: ListView.separated(
+                    itemBuilder: (context, index) => InkWell(
+                        onTap: () {
+                          if (index == state.profileList.length) {
+                            logger.d('add profile clicked: $index');
+                            NavigationCubit.of(context)
+                                .push(CreateProfileNamePath());
+                          } else {
+                            logger.d('profile clicked: $index');
+                            context
+                                .read<ProfilesCubit>()
+                                .selectProfile(state.profileList[index]);
+                            NavigationCubit.of(context)
+                                .push(ProfileOverviewPath());
+                          }
+                        },
+                        child: index == state.profileList.length
+                            ? _profileAdd()
+                            : _profileItem(state.profileList[index])),
+                    separatorBuilder: (_, __) => box16(),
+                    itemCount: state.profileList.length + 1,
+                    scrollDirection: Axis.horizontal,
+                    shrinkWrap: true,
+                  ),
+                ),
+              ],
+            );
+          })
+        : const Center();
   }
 
   Widget _profileAdd() {
@@ -372,15 +377,27 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
     );
   }
 
-  String getWifiCount(List<RouterRadioInfo>? radioInfo) {
+  String getWifiCount(MoabNetwork? network) {
+    if (network == null) return '0';
+
+    int count = 0;
+    final radioInfo = network.radioInfo;
     if (radioInfo != null && radioInfo.isNotEmpty) {
-      Map<String, bool> count = {};
+      Map<String, bool> wifiMap = {};
       for (RouterRadioInfo info in radioInfo) {
-        count[info.settings.ssid] = true;
+        wifiMap[info.settings.ssid] = true;
       }
-      return count.length.toString();
+      count = wifiMap.length;
     }
-    return '0';
+    if (network.guestRadioSetting != null &&
+        network.guestRadioSetting!.isGuestNetworkEnabled) {
+      count += 1;
+    }
+    if (network.iotNetworkSetting != null &&
+        network.iotNetworkSetting!.isIoTNetworkEnabled) {
+      count += 1;
+    }
+    return count.toString();
   }
 
   String getRouterCount(List<RouterDevice>? devices) {

@@ -36,7 +36,7 @@ class IPv6AutomaticSettings extends Equatable {
       'isIPv6AutomaticEnabled': isIPv6AutomaticEnabled,
       'ipv6rdTunnelMode': ipv6rdTunnelMode,
       'iPv6rdTunnelSettings': iPv6rdTunnelSettings,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory IPv6AutomaticSettings.fromJson(Map<String, dynamic> json) {
