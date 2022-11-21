@@ -183,6 +183,9 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
 
   Future pollingData() async {
     logger.d('start polling data');
+    // Must do it before all commands
+    final routerDeviceInfo = await getDeviceInfo();
+    _handleDeviceInfoResult(routerDeviceInfo);
     final result = await _routerRepository.pollingData();
     if (result.containsKey(JNAPAction.getDeviceInfo.actionValue)) {
       final routerDeviceInfo = RouterDeviceInfo.fromJson(

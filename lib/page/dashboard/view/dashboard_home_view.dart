@@ -11,6 +11,7 @@ import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/customs/enabled_with_opacity_widget.dart';
 import 'package:linksys_moab/page/components/shortcuts/profiles.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/chart/LineChartSample.dart';
@@ -39,38 +40,41 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
     return BlocBuilder<NetworkCubit, NetworkState>(
         builder: (context, state) => BasePageView.noNavigationBar(
               scrollable: true,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _homeTitle(state),
-                  box(32),
-                  _basicTiles(state),
-                  box(32),
-                  _speedTestTile(state),
-                  box(32),
-                  GestureDetector(
-                    onTap: () {
-                      NavigationCubit.of(context).push(DeviceListPath());
-                    },
-                    child: _usageTile(
-                        getConnectionDeviceCount(state.selected?.devices)),
-                  ),
-                  box(32),
-                  _profileTile(),
-                  box(64),
-                  Text(
-                    "Send feedback",
-                    style: Theme.of(context)
-                        .textTheme
-                        .headline2
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  Text(
-                    "We love hearing from you",
-                    style: Theme.of(context).textTheme.headline3,
-                  ),
-                ],
+              child: EnabledOpacityWidget(
+                enabled: state.selected?.deviceInfo != null,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _homeTitle(state),
+                    box(32),
+                    _basicTiles(state),
+                    box(32),
+                    _speedTestTile(state),
+                    box(32),
+                    GestureDetector(
+                      onTap: () {
+                        NavigationCubit.of(context).push(DeviceListPath());
+                      },
+                      child: _usageTile(
+                          getConnectionDeviceCount(state.selected?.devices)),
+                    ),
+                    box(32),
+                    _profileTile(),
+                    box(64),
+                    Text(
+                      "Send feedback",
+                      style: Theme.of(context)
+                          .textTheme
+                          .headline2
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    Text(
+                      "We love hearing from you",
+                      style: Theme.of(context).textTheme.headline3,
+                    ),
+                  ],
+                ),
               ),
             ));
   }
@@ -310,41 +314,45 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
 
   Widget _profileTile() {
     final authBloc = context.read<AuthBloc>();
-    return authBloc.isCloudLogin() ? BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('PROFILES'),
-          box8(),
-          SizedBox(
-            height: 60,
-            child: ListView.separated(
-              itemBuilder: (context, index) => InkWell(
-                  onTap: () {
-                    if (index == state.profileList.length) {
-                      logger.d('add profile clicked: $index');
-                      NavigationCubit.of(context).push(CreateProfileNamePath());
-                    } else {
-                      logger.d('profile clicked: $index');
-                      context
-                          .read<ProfilesCubit>()
-                          .selectProfile(state.profileList[index]);
-                      NavigationCubit.of(context).push(ProfileOverviewPath());
-                    }
-                  },
-                  child: index == state.profileList.length
-                      ? _profileAdd()
-                      : _profileItem(state.profileList[index])),
-              separatorBuilder: (_, __) => box16(),
-              itemCount: state.profileList.length + 1,
-              scrollDirection: Axis.horizontal,
-              shrinkWrap: true,
-            ),
-          ),
-        ],
-      );
-    }) : const Center();
+    return authBloc.isCloudLogin()
+        ? BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('PROFILES'),
+                box8(),
+                SizedBox(
+                  height: 60,
+                  child: ListView.separated(
+                    itemBuilder: (context, index) => InkWell(
+                        onTap: () {
+                          if (index == state.profileList.length) {
+                            logger.d('add profile clicked: $index');
+                            NavigationCubit.of(context)
+                                .push(CreateProfileNamePath());
+                          } else {
+                            logger.d('profile clicked: $index');
+                            context
+                                .read<ProfilesCubit>()
+                                .selectProfile(state.profileList[index]);
+                            NavigationCubit.of(context)
+                                .push(ProfileOverviewPath());
+                          }
+                        },
+                        child: index == state.profileList.length
+                            ? _profileAdd()
+                            : _profileItem(state.profileList[index])),
+                    separatorBuilder: (_, __) => box16(),
+                    itemCount: state.profileList.length + 1,
+                    scrollDirection: Axis.horizontal,
+                    shrinkWrap: true,
+                  ),
+                ),
+              ],
+            );
+          })
+        : const Center();
   }
 
   Widget _profileAdd() {

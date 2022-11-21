@@ -7,6 +7,8 @@ import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/model/router/device_info.dart';
+import 'package:linksys_moab/page/dashboard/view/profile/_profile.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 
 import '../../../localization/localization_hook.dart';
@@ -46,18 +48,24 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
       if (context.read<NetworkCubit>().state.selected == null) {
         await context.read<AccountCubit>().fetchAccount();
         // TODO #REFACTOR select network and apply new region
-        await context.read<NetworkCubit>().getNetworks(accountId: context.read<AccountCubit>().state.id);
+        await context
+            .read<NetworkCubit>()
+            .getNetworks(accountId: context.read<AccountCubit>().state.id);
         NavigationCubit.of(context).clearAndPush(SelectNetworkPath());
       } else {
         logger.d('Go to dashboard');
         await context.read<ConnectivityCubit>().connectToBroker();
-        await context.read<NetworkCubit>().getDeviceInfo();
+        // await context
+        //     .read<NetworkCubit>()
+        //     .getDeviceInfo()
+        //     .then<RouterDeviceInfo?>((value) => value)
+        //     .onError((error, stackTrace) => null);
         await context.read<ProfilesCubit>().fetchProfiles();
         NavigationCubit.of(context).clearAndPush(DashboardHomePath());
       }
     } else {
       await context.read<ConnectivityCubit>().connectToLocalBroker();
-      await context.read<NetworkCubit>().getDeviceInfo();
+      // await context.read<NetworkCubit>().getDeviceInfo();
       NavigationCubit.of(context).clearAndPush(DashboardHomePath());
     }
   }
