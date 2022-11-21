@@ -242,8 +242,7 @@ class MoabHttpClient extends http.BaseClient {
     if (request != null) {
       logger.i('\nRESPONSE---------------------------------------------------\n'
           'URL: ${request.url}, METHOD: ${request.method}\n'
-          'HEADERS: ${request.headers}\n'
-          '${request is http.Request ? 'BODY: ${request.body}' : ''}\n'
+          'HEADERS: ${response.headers}\n'
           'RESPONSE: ${response.statusCode}, ${ignoreResponse ? '' : response.body}\n'
           '---------------------------------------------------RESPONSE END\n');
     }

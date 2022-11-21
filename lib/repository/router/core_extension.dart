@@ -7,7 +7,7 @@ extension CoreService on RouterRepository {
     final command = createCommand(
       JNAPAction.checkAdminPassword.actionValue,
       data: {
-        'adminPassword': password,
+        'adminPassword': 'admin', // TODO currently don't modify the password
       },
     );
     final result = await command.publish(mqttClient!);
