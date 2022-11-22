@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
@@ -105,7 +106,8 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   }
 
   Future<SpeedTestResult> getHealthCheckStatus() async {
-    SpeedTestResult speedTestResult = const SpeedTestResult(resultID: 0, exitCode: '');
+    SpeedTestResult speedTestResult =
+        const SpeedTestResult(resultID: 0, exitCode: '');
     final result = await _routerRepository.getHealthCheckStatus();
     if (result.output['healthCheckModuleCurrentlyRunning'] == 'SpeedTest') {
       speedTestResult =
@@ -234,7 +236,8 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
     emit(state.copyWith(selected: MoabNetwork(id: network.networkId)));
   }
 
-  HealthCheckResult getLatestHealthCheckResult(List<HealthCheckResult> healthCheckResults) {
+  HealthCheckResult getLatestHealthCheckResult(
+      List<HealthCheckResult> healthCheckResults) {
     healthCheckResults.sort((e1, e2) => e2.timestamp.compareTo(e1.timestamp));
     return healthCheckResults.first;
   }
@@ -243,5 +246,15 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   void onChange(Change<NetworkState> change) {
     super.onChange(change);
     logger.d('on network state change: $change');
+  }
+}
+
+extension NetworkCubitExts on NetworkCubit {
+  String? getSerialNumber() {
+    return state.selected?.deviceInfo?.serialNumber ??
+        state.networks
+            .firstWhereOrNull(
+                (element) => element.networkId == state.selected?.id)
+            ?.serialNumber;
   }
 }

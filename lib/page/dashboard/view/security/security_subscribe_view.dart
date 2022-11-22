@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/security/bloc.dart';
@@ -67,13 +68,9 @@ class SecuritySubscribeView extends StatelessWidget {
                         context.read<SubscriptionCubit>().state.products?.first;
                     logger.d(
                         'subscription products : ${context.read<SubscriptionCubit>().state.products?.first.title}');
-                    String serialNumber = context
-                        .read<NetworkCubit>()
-                        .state
-                        .selected!
-                        .deviceInfo!
-                        .serialNumber;
-                    if (item != null) {
+                    final cubit = context.read<NetworkCubit>();
+                    String? serialNumber = cubit.getSerialNumber();
+                    if (item != null && serialNumber != null) {
                       context.read<SubscriptionCubit>().buy(item, serialNumber);
                     }
                   },
