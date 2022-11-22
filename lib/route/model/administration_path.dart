@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/_administration.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/internet_settings/connection_type_selection_view.dart';
+import 'package:linksys_moab/page/dashboard/view/administration/internet_settings/internet_settings_mac_clone_view.dart';
+import 'package:linksys_moab/page/dashboard/view/administration/internet_settings/internet_settings_mtu_picker.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/internet_settings/internet_settings_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/lan/lan_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/mac_filtering/mac_filtering_enter_mac_view.dart';
@@ -100,6 +102,16 @@ class AdministrationPath extends DashboardPath {
           next: next,
           args: args,
         );
+      case MTUPickerPath:
+        return MTUPickerView(
+          next: next,
+          args: args,
+        );
+      case MACClonePath:
+        return MACCloneView(
+          next: next,
+          args: args,
+        );
       default:
         return const Center();
     }
@@ -162,3 +174,7 @@ class MacFilteringInputPath extends AdministrationPath with ReturnablePath {
 class AdvancedRoutingListPath extends AdministrationPath {}
 
 class AdvancedRoutingRulePath extends AdministrationPath with ReturnablePath {}
+
+class MTUPickerPath extends AdministrationPath with ReturnablePath {}
+
+class MACClonePath extends AdministrationPath with ReturnablePath {}

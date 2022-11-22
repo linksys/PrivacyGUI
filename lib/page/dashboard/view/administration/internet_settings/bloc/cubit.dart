@@ -30,6 +30,8 @@ class InternetSettingsCubit extends Cubit<InternetSettingsState> {
         ? null
         : IPv6AutomaticSettings.fromJson(
             ipv6Settings!['ipv6AutomaticSettings']);
+    final macAddressCloneSettings =
+        results[JNAPAction.getMACAddressCloneSettings]?.output;
     emit(state.copyWith(
       ipv4ConnectionType: wanSettings?['wanType'] ?? '',
       ipv6ConnectionType: ipv6Settings?['wanType'] ?? '',
@@ -40,6 +42,8 @@ class InternetSettingsCubit extends Cubit<InternetSettingsState> {
       duid: ipv6Settings?['duid'] ?? '',
       isIPv6AutomaticEnabled:
           ipv6AutomaticSettings?.isIPv6AutomaticEnabled ?? false,
+      macClone: macAddressCloneSettings?['isMACAddressCloneEnabled'] ?? false,
+      macCloneAddress: macAddressCloneSettings?['macAddress'] ?? '',
     ));
   }
 
@@ -49,6 +53,14 @@ class InternetSettingsCubit extends Cubit<InternetSettingsState> {
 
   setIPv6ConnectionType(String connectionType) {
     emit(state.copyWith(ipv6ConnectionType: connectionType));
+  }
+
+  setMtu(int mtu) {
+    emit(state.copyWith(mtu: mtu));
+  }
+
+  setMacClone(bool isEnabled, String mac) {
+    emit(state.copyWith(macClone: isEnabled, macCloneAddress: mac));
   }
 
   @override

@@ -2,10 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
-import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
@@ -14,6 +12,7 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/model/administration_path.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/string_mapping.dart';
@@ -135,8 +134,10 @@ class _InternetSettingsContentViewState
                   height: 100,
                   decoration: BoxDecoration(color: Colors.black26),
                   alignment: Alignment.center,
-                  child:
-                  Text('To change these settings. connect to {SSID}', style: Theme.of(context).textTheme.headline2,),
+                  child: Text(
+                    'To change these settings. connect to {SSID}',
+                    style: Theme.of(context).textTheme.headline2,
+                  ),
                 ),
               Stack(
                 children: [
@@ -147,7 +148,8 @@ class _InternetSettingsContentViewState
                         width: double.infinity,
                         child: CupertinoSlidingSegmentedControl<
                             InternetSettingsViewType>(
-                          backgroundColor: const Color.fromRGBO(211, 211, 211, 1.0),
+                          backgroundColor:
+                              const Color.fromRGBO(211, 211, 211, 1.0),
                           thumbColor: const Color.fromRGBO(248, 248, 248, 1.0),
                           groupValue: _selected,
                           onValueChanged: (InternetSettingsViewType? value) {
@@ -166,11 +168,13 @@ class _InternetSettingsContentViewState
                           children: {
                             InternetSettingsViewType.ipv4: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 10),
-                              child: Text(getAppLocalizations(context).label_ipv4),
+                              child:
+                                  Text(getAppLocalizations(context).label_ipv4),
                             ),
                             InternetSettingsViewType.ipv6: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 10),
-                              child: Text(getAppLocalizations(context).label_ipv6),
+                              child:
+                                  Text(getAppLocalizations(context).label_ipv6),
                             ),
                           },
                         ),
@@ -180,7 +184,10 @@ class _InternetSettingsContentViewState
                       _buildAdditionalSettings(state),
                     ],
                   ),
-                  if (!_isBehindRouter) Container(decoration: BoxDecoration(color: Color(0x88aaaaaa)),)
+                  if (!_isBehindRouter)
+                    Container(
+                      decoration: BoxDecoration(color: Color(0x88aaaaaa)),
+                    )
                 ],
               ),
             ],
@@ -203,15 +210,38 @@ class _InternetSettingsContentViewState
         children: [
           administrationTwoLineTile(
             title: Text(getAppLocalizations(context).mtu),
-            value: Text('Auto'),
+            value: Text(state.mtu == 0
+                ? getAppLocalizations(context).auto
+                : getAppLocalizations(context).manual),
             icon: Image.asset('assets/images/icon_chevron.png'),
-            onPress: () {},
+            onPress: () async {
+              int? value =
+                  await NavigationCubit.of(context).pushAndWait(MTUPickerPath()
+                    ..args = {
+                      'selected': state.mtu,
+                    });
+              if (value != null) {
+                _cubit.setMtu(value);
+              }
+            },
           ),
           administrationTile(
             title: Text(getAppLocalizations(context).mac_address_clone),
-            value: Text('Off'),
+            value: Text(
+              state.macClone
+                  ? getAppLocalizations(context).on
+                  : getAppLocalizations(context).off,
+            ),
             icon: Image.asset('assets/images/icon_chevron.png'),
-            onPress: () {},
+            onPress: () async {
+              String? mac = await NavigationCubit.of(context).pushAndWait(
+                  MACClonePath()
+                    ..args = {'enabled': state.macClone, 'macAddress': state.macCloneAddress});
+              if (mac != null) {
+                final enabled = mac.isEmpty;
+                final macAddress = mac;
+              }
+            },
           ),
         ],
       ),

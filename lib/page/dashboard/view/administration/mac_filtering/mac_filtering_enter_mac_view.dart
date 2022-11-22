@@ -9,6 +9,7 @@ import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/input_fields/custom_title_input_field.dart';
+import 'package:linksys_moab/page/components/base_components/input_fields/mac_form_field.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
@@ -56,35 +57,13 @@ class _MacFilteringEnterDeviceViewState
         administrationTwoLineTile(
           tileHeight: null,
           title: title(getAppLocalizations(context).enter_mac_address),
-          value: TextFormField(
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9a-f]')),
-              // allow only  digits
-              MacAddressFormatter(),
-              // custom class to format entered data from textField
-              LengthLimitingTextInputFormatter(17)
-              // restrict user to enter max 16 characters
-            ],
+          value: MACFormField(
             onChanged: (value) {
               setState(() {
                 _isValid = _macValidator.validate(value);
                 // TODO is exist
               });
             },
-            textCapitalization: TextCapitalization.characters,
-            textInputAction: TextInputAction.done,
-            keyboardType: TextInputType.text,
-            decoration: InputDecoration(
-                border: InputBorder.none,
-                focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0)),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                hintText: "00:00:00:00:00:00",
-                filled: true,
-                fillColor: Colors.grey[350]),
           ),
         ),
         box48(),

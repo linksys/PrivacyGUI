@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/model/router/lan_settings.dart';
@@ -135,6 +134,10 @@ class LANCubit extends Cubit<LANState> {
       emit(state.copyWith(dns3: newDns3));
     }
     setError('dns3', valid ? null : 'invalid_input');
+  }
+
+  setAutoDNS(bool isAuto) {
+    emit(state.copyWith(isAutoDNS: isAuto));
   }
 
   setError(String key, String? value) {

@@ -628,5 +628,6 @@
   "administration_access": "Access",
   "local_management_access": "Local management access",
   "remote_access": "Remote access",
-  "web_ui": "Web UI"
+  "web_ui": "Web UI",
+  "mtu_size": "Size"
 }
