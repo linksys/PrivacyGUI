@@ -351,7 +351,7 @@ class SubscriptionOrderResponse extends Equatable {
       planId: json['planId'],
       plan: SubscriptionPlan.fromJson(json['plan']),
       providerId: json['providerId'],
-      providerOrder: ProviderOrder.fromJson(json['providerOrder']),
+      providerOrder: json['providerOrder'] != null ? ProviderOrder.fromJson(json['providerOrder']) : null,
       purchasedAt: json['purchasedAt'],
       verifiedAt: json['verifiedAt'],
       startTime: json['startTime'],
@@ -385,7 +385,7 @@ class SubscriptionOrderResponse extends Equatable {
       'serviceEndTime': serviceEndTime,
       'expireTime': expireTime,
       'lastCheckedAt': lastCheckedAt,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   @override
@@ -499,7 +499,7 @@ class NetworkEntitlementResponse extends Equatable {
         ' softwarePackageStatus: $softwarePackageStatus,' +
         ' status: $status,' +
         ' order: ${order.toString()},' +
-        ' providerOrder: ${providerOrder.toString()},' +
+        ' providerOrder: ${providerOrder?.toString()},' +
         ' startTime: $startTime,' +
         ' renewTime: $renewTime,' +
         ' endTime: $endTime,' +

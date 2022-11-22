@@ -32,7 +32,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
     super.initState();
     context.read<SubscriptionCubit>().queryProductsFromCloud();
     context.read<SubscriptionCubit>().getNetworkEntitlement(
-        context.read<NetworkCubit>().state.selected?.deviceInfo?.serialNumber);
+        context.read<NetworkCubit>().getSerialNumber());
   }
 
   Widget _unsubscribedView(SecurityState state) {

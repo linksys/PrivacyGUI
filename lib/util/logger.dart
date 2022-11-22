@@ -20,7 +20,7 @@ class CustomOutput extends LogOutput {
     var output = '';
     for (var line in event.lines) {
       printWrapped(line);
-      if (event.level == Level.info) {
+      if (event.level == Level.info || event.level == Level.error) {
         output += line;
       }
     }
