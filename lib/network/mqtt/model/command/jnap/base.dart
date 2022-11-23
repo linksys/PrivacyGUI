@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/network/mqtt/command_spec/impl/jnap_spec.dart';
+import 'package:linksys_moab/network/mqtt/model/command/jnap/fcn_result.dart';
 import 'package:linksys_moab/network/mqtt/model/command/mqtt_base_command.dart';
 
 class JnapCommand extends BaseMqttCommand<JnapResponse> {
@@ -161,6 +162,14 @@ class JnapSuccess extends JnapResult {
       ..addAll({
         keyJnapOutput: output,
       });
+  }
+
+  FCNResult toFCNResult() {
+    if (!output.containsKey('status') || !output.containsKey('response')) {
+      // TODO #ERRORHANDLING
+      // Not a FCN result
+    }
+    return FCNResult.fromJson(output);
   }
 
   @override

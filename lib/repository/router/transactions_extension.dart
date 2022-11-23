@@ -1,5 +1,9 @@
 import 'package:linksys_moab/bloc/add_nodes/state.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
+import 'package:linksys_moab/model/fcn/address_group.dart';
+import 'package:linksys_moab/model/fcn/application_list.dart';
+import 'package:linksys_moab/model/fcn/policy.dart';
+import 'package:linksys_moab/model/fcn/web_filter_profile.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/network/better_action.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
@@ -8,6 +12,52 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/repository/router/smart_mode_extension.dart';
 
 extension TransactionCommands on RouterRepository {
+  Future<JnapSuccess> saveFCNContentFiltering ({
+    // required FCNAddressGroup addressGroup,
+    required FCNApplicationList applicationList,
+    required FCNWebFilterProfile webFilterProfile,
+    // required FCNPolicy policy,
+  }) async {
+    final payload = [
+      // JNAPTransaction.wrapCommandPayload(
+      //   action: JNAPAction.requestFOSContainer,
+      //   data: {
+      //     'uri': 'api/v2/cmdb/firewall/addrgrp',
+      //     'method': 'POST',
+      //     'data': addressGroup.toJson(),
+      //   },
+      // ),
+      JNAPTransaction.wrapCommandPayload(
+        action: JNAPAction.requestFOSContainer,
+        data: {
+          'uri': 'api/v2/cmdb/application/list',
+          'method': 'POST',
+          'data': applicationList.toFullJson(),
+        },
+      ),
+      JNAPTransaction.wrapCommandPayload(
+        action: JNAPAction.requestFOSContainer,
+        data: {
+          'uri': 'api/v2/cmdb/webfilter/profile',
+          'method': 'POST',
+          'data': webFilterProfile.toFullJson(),
+        },
+      ),
+      // JNAPTransaction.wrapCommandPayload(
+      //   action: JNAPAction.requestFOSContainer,
+      //   data: {
+      //     'uri': 'api/v2/cmdb/firewall/policy',
+      //     'method': 'POST',
+      //     'data': policy.toFullJson(),
+      //   },
+      // ),
+    ];
+
+    final transaction = createTransaction(payload);
+    final result = await transaction.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
+
   Future<JnapSuccess> configureDeviceProperties({
     required List<NodeProperties> deviceProperties,
   }) async {
@@ -57,7 +107,7 @@ extension TransactionCommands on RouterRepository {
     }
     if (adminPassword.isEmpty) {
       payload.removeWhere((element) =>
-      element['action'] == JNAPAction.coreSetAdminPassword.actionValue);
+          element['action'] == JNAPAction.coreSetAdminPassword.actionValue);
     }
     final transaction = JNAPTransaction(
       publishTopic: mqttLocalPublishTopic,

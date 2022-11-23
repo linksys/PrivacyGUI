@@ -36,8 +36,10 @@ class WebFilter extends Equatable {
       rating: json['rating'],
       desc: json['desc'],
       example: json['example'],
-      groupId: json['group_id'],
-      blockedInRatings: List.from(json['blocked_in_ratings']),
+      groupId: json['groupId'] ?? '',
+      blockedInRatings: json['blockedInRatings'] == null
+          ? []
+          : List.from(json['blockedInRatings']),
     );
   }
 

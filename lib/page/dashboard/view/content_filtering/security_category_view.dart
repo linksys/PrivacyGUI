@@ -114,8 +114,7 @@ class _ContentFilteringCategoryViewState
                   createStatusButton(context, _category.status, onPressed: () {
                     setState(() {
                       _category = _category.copyWith(
-                          status:
-                          CFSecureCategory.switchStatus(_category.status));
+                          status: _category.switchStatus());
                     });
                   })
                 ],
@@ -166,7 +165,7 @@ class _ContentFilteringCategoryViewState
             trailing: createStatusButton(context, e.status, onPressed: () {
               setState(() {
                 final newOne =
-                    e.copyWith(status: CFSecureCategory.switchStatus(e.status));
+                    e.copyWith(status: e.switchStatus());
                 _category.apps.replaceRange(_category.apps.indexOf(e),
                     _category.apps.indexOf(e) + 1, [newOne]);
               });

@@ -215,6 +215,7 @@ enum JNAPAction {
   setWANSettings,
   renewDHCPWANLease,
   renewDHCPIPv6WANLease,
+  requestFOSContainer,
   // routerManagement
   getManagementSettings,
   setManagementSettings,
@@ -467,6 +468,9 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/iotnetwork/GetIoTNetworkSettings'),
   setIoTNetworkSettings(
       value: 'http://linksys.com/jnap/iotnetwork/SetIoTNetworkSettings');
+          'http://linksys.com/jnap/nodes/bluetooth/BTRequestScanUnconfigured2'),
+  requestFOSContainer(
+      value: 'http://linksys.com/jnap/router/RequestFOSContainer');
 
   const _JNAPActionValue({required this.value});
 
@@ -891,6 +895,8 @@ void initBetterActions() {
       _JNAPActionValue.getIoTNetworkSettings.value;
   _betterActionMap[JNAPAction.setIoTNetworkSettings] =
       _JNAPActionValue.setIoTNetworkSettings.value;
+  _betterActionMap[JNAPAction.requestFOSContainer] =
+      _JNAPActionValue.requestFOSContainer.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

@@ -37,7 +37,7 @@ class _ContentFilterOverviewViewState
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
-      _data = context.read<ProfilesCubit>().state.selectedProfile?.serviceDetails[PService.contentFilter] as ContentFilterData?;
+      _data = context.read<ProfilesCubit>().state.selectedProfile?.contentFilterConfig?.data;
       return BasePageView.onDashboardSecondary(
         appBar: AppBar(
           automaticallyImplyLeading: false,

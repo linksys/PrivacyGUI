@@ -118,7 +118,7 @@ class _ProfileOverviewViewState extends State<ProfileOverviewView> {
 
 class ProfileHeader extends StatelessWidget {
   const ProfileHeader({Key? key, required this.profile}) : super(key: key);
-  final GroupProfile profile;
+  final UserProfile profile;
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +145,7 @@ class ProfileHeader extends StatelessWidget {
         Row(
           children: [
             Hero(
-              tag: 'profile-${profile.id}',
+              tag: 'profile-${profile.name}',
               child: SizedBox(
                 width: 92,
                 height: 92,

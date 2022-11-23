@@ -11,6 +11,7 @@ const moabPrefRemoteCaCert = 'MoabRemoteCaCert';
 const moabPrefCloudAccountId = 'MoabCloudAccountId';
 const moabPrefCloudDefaultGroupId = 'MoabCloudDefaultGroupId';
 const moabPrefSelectedNetworkId = 'MoabSelectedNetworkId';
+const moabPrefUserProfiles = 'MoabUserProfiles';
 // secured
 const moabPrefLocalPassword = 'MoabLocalPassword';
 const moabPrefCloudCertDataKey = 'MoabCloudCertData';

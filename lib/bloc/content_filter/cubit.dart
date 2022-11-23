@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:linksys_moab/model/group_profile.dart';
+import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/model/secure_profile.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:collection/collection.dart';
@@ -42,7 +42,7 @@ class ContentFilterCubit extends Cubit<ContentFilterState> {
                 (category) => category.getRawAppById(appId) != null)
             ?.getAppById(appId)
             ?.status ??
-        FilterStatus.notAllowed;
+        FilterStatus.allowed;
   }
 
   @override

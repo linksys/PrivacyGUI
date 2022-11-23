@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
-import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/shortcuts/dialogs.dart';
 import 'package:linksys_moab/route/model/profile_group_path.dart';
 
 import '../../../../design/colors.dart';
 import '../../../../localization/localization_hook.dart';
 import '../../../../route/model/base_path.dart';
-import '../../../../route/model/dashboard_path.dart';
 import '../../../../route/navigation_cubit.dart';
 import '../../../components/views/arguments_view.dart';
 
@@ -32,7 +31,7 @@ class _CreateProfileNameViewState extends State<CreateProfileNameView> {
         header: BaseAppBar(
           title: Text(
             getAppLocalizations(context).add_profile,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
@@ -46,10 +45,26 @@ class _CreateProfileNameViewState extends State<CreateProfileNameView> {
           action: [
             TextButton(
               onPressed: () {
-                context.read<ProfilesCubit>().updateCreatedProfile(name: _textController.text,);
-                final next = widget.next ?? UnknownPath();
-                NavigationCubit.of(context).push(CreateProfileDevicesSelectedPath()
-                  ..next = next);
+                if (context
+                    .read<ProfilesCubit>()
+                    .isProfileNameValid(_textController.text)) {
+                  context
+                      .read<ProfilesCubit>()
+                      .createProfile(name: _textController.text);
+                  final next = widget.next ?? UnknownPath();
+                  NavigationCubit.of(context)
+                      .push(CreateProfileDevicesSelectedPath()..next = next);
+                } else {
+                  showAdaptiveDialog(
+                    context: context,
+                    title: const Text(
+                      'Invalid name',
+                    ),
+                    content: const Text(
+                      'The profile name has existed',
+                    ),
+                  );
+                }
               },
               child: Text(
                 getAppLocalizations(context).next,

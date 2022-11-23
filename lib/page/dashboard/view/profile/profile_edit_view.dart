@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/content_filter/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
-import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
@@ -96,7 +95,8 @@ class _ProfileEditViewViewState extends State<ProfileEditView> {
                       .push(ContentFilteringOverviewPath());
                 } else {
                   context.read<ContentFilterCubit>().selectSecureProfile(null);
-                  NavigationCubit.of(context).push(CFPresetsPath()..args = {'profileId': state.selectedProfile?.id});
+                  //TODO: There's no longer profileId!!
+                  NavigationCubit.of(context).push(CFPresetsPath()..args = {'profileId': state.selectedProfile?.name});
                 }
               },
             ),

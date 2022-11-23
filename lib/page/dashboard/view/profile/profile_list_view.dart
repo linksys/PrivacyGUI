@@ -96,14 +96,14 @@ class _ProfileListViewState extends State<ProfileListView> {
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500));
   }
 
-  Widget profileList(BuildContext context, List<GroupProfile> list) {
+  Widget profileList(BuildContext context, List<UserProfile> list) {
     return Column(
       children: [
         ...list.map((item) {
           return Column(children: [
             GestureDetector(
               child: Hero(
-                tag: 'profile-${item.id}',
+                tag: 'profile-${item.name}',
                 child: profileCard(
                   Image.asset(
                     item.icon,
@@ -129,7 +129,7 @@ class _ProfileListViewState extends State<ProfileListView> {
     );
   }
 
-  _onProfileClick(GroupProfile profile) {
+  _onProfileClick(UserProfile profile) {
     BasePath path = ProfileOverviewPath();
     if (_category == PService.internetSchedule) {
       path = InternetScheduleOverviewPath();
@@ -139,14 +139,15 @@ class _ProfileListViewState extends State<ProfileListView> {
         path = ContentFilteringOverviewPath();
       } else {
         context.read<ContentFilterCubit>().selectSecureProfile(null);
-        path = CFPresetsPath()..args = {'profileId': profile.id};
+        //TODO: There's no longer profileId!!
+        path = CFPresetsPath()..args = {'profileId': profile.name};
       }
     }
     context.read<ProfilesCubit>().selectProfile(profile);
     NavigationCubit.of(context).push(path);
   }
 
-  Widget _profileValue(GroupProfile profile) {
+  Widget _profileValue(UserProfile profile) {
     return Text(profile.serviceOverallStatus(context, _category),
         style: TextStyle(
             fontSize: 13,

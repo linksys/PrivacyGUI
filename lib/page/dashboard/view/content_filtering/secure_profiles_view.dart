@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/content_filter/cubit.dart';
 import 'package:linksys_moab/bloc/content_filter/state.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/model/group_profile.dart';
+import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/model/secure_profile.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
@@ -79,10 +80,15 @@ class _ContentFilteringPresetsViewState
                       onPressed: () {
                         final profileId = _profileId;
                         if (profileId != null) {
+                          final networkId = context.read<NetworkCubit>().state.selected!.id;
                           context
                               .read<ProfilesCubit>()
                               .updateContentFilterDetails(
-                                  profileId, state.selectedSecureProfile!)
+                                profileId,
+                                networkId,
+                                state.selectedSecureProfile!,
+                                state.searchAppSignatureSet,
+                              )
                               .then(
                                   (value) => NavigationCubit.of(context).pop());
                         } else {

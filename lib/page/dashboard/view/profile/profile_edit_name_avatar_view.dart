@@ -63,7 +63,7 @@ class _ProfileEditNameAvatarViewState extends State<ProfileEditNameAvatarView> {
           children: [
             box36(),
             Hero(
-              tag: 'profile-${state.selectedProfile?.id}',
+              tag: 'profile-${state.selectedProfile?.name}',
               child: SizedBox(
                 width: 92,
                 height: 92,

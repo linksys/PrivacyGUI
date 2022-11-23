@@ -135,10 +135,10 @@ class _AppSignatureSearchViewState extends State<AppSignatureSearchView> {
                       subtitle: Text(e.category),
                       trailing:
                           createStatusButton(context, e.status, onPressed: () {
-                        context.read<ContentFilterCubit>().updateSearchAppSignature(
-                            e.copyWith(
-                                status:
-                                    CFSecureCategory.switchStatus(e.status)));
+                        context
+                            .read<ContentFilterCubit>()
+                            .updateSearchAppSignature(
+                                e.copyWith(status: e.switchStatus()));
                         setState(() {});
                       })))
             ],

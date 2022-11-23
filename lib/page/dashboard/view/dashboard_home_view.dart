@@ -315,45 +315,42 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
 
   Widget _profileTile() {
     final authBloc = context.read<AuthBloc>();
-    return authBloc.isCloudLogin()
-        ? BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('PROFILES'),
-                box8(),
-                SizedBox(
-                  height: 60,
-                  child: ListView.separated(
-                    itemBuilder: (context, index) => InkWell(
-                        onTap: () {
-                          if (index == state.profileList.length) {
-                            logger.d('add profile clicked: $index');
-                            NavigationCubit.of(context)
-                                .push(CreateProfileNamePath());
-                          } else {
-                            logger.d('profile clicked: $index');
-                            context
-                                .read<ProfilesCubit>()
-                                .selectProfile(state.profileList[index]);
-                            NavigationCubit.of(context)
-                                .push(ProfileOverviewPath());
-                          }
-                        },
-                        child: index == state.profileList.length
-                            ? _profileAdd()
-                            : _profileItem(state.profileList[index])),
-                    separatorBuilder: (_, __) => box16(),
-                    itemCount: state.profileList.length + 1,
-                    scrollDirection: Axis.horizontal,
-                    shrinkWrap: true,
-                  ),
-                ),
-              ],
-            );
-          })
-        : const Center();
+    return authBloc.isCloudLogin() ? BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('PROFILES'),
+          box8(),
+          SizedBox(
+            height: 60,
+            child: ListView.separated(
+              itemBuilder: (context, index) => InkWell(
+                  onTap: () {
+                    if (index == state.profileList.length) {
+                      logger.d('add profile clicked: $index');
+                      //TODO: Check the next args
+                      NavigationCubit.of(context).push(CreateProfileNamePath());
+                    } else {
+                      logger.d('profile clicked: $index');
+                      context
+                          .read<ProfilesCubit>()
+                          .selectProfile(state.profileList[index]);
+                      NavigationCubit.of(context).push(ProfileOverviewPath());
+                    }
+                  },
+                  child: index == state.profileList.length
+                      ? _profileAdd()
+                      : _profileItem(state.profileList[index])),
+              separatorBuilder: (_, __) => box16(),
+              itemCount: state.profileList.length + 1,
+              scrollDirection: Axis.horizontal,
+              shrinkWrap: true,
+            ),
+          ),
+        ],
+      );
+    }) : const Center();
   }
 
   Widget _profileAdd() {
@@ -368,7 +365,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
     );
   }
 
-  Widget _profileItem(GroupProfile profile) {
+  Widget _profileItem(UserProfile profile) {
     return Container(
       height: 58,
       decoration: BoxDecoration(
