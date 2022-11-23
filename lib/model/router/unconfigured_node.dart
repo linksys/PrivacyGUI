@@ -36,7 +36,7 @@ class BTDiscoveryData extends Equatable {
       'macAddress': macAddress,
       'rssi': rssi,
       'modeLimit': modeLimit,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory BTDiscoveryData.fromJson(Map<String, dynamic> json) {

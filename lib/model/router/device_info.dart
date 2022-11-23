@@ -44,7 +44,7 @@ class RouterDeviceInfo extends Equatable {
       'serialNumber': serialNumber,
       'hardwareVersion': hardwareVersion,
       'services': services,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   RouterDeviceInfo copyWith({

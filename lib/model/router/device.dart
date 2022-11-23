@@ -1,4 +1,6 @@
-class RouterDevice {
+import 'package:equatable/equatable.dart';
+
+class RouterDevice extends Equatable {
   final List<ConnectionDevice> connections;
   final List<PropertyDevice> properties;
   final UnitDevice unit;
@@ -26,6 +28,22 @@ class RouterDevice {
     this.knownMACAddresses,
     this.nodeType,
   });
+
+  @override
+  List<Object?> get props => [
+    connections,
+    properties,
+    unit,
+    deviceID,
+    maxAllowedProperties,
+    model,
+    isAuthority,
+    lastChangeRevision,
+    friendlyName,
+    knownInterfaces,
+    knownMACAddresses,
+    nodeType,
+  ];
 
   RouterDevice copyWith({
     List<ConnectionDevice>? connections,
@@ -71,7 +89,7 @@ class RouterDevice {
       'knownInterfaces': knownInterfaces,
       'knownMACAddresses': knownMACAddresses,
       'nodeType': nodeType,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory RouterDevice.fromJson(Map<String, dynamic> json) {

@@ -107,7 +107,8 @@ enum JNAPService {
   wirelessScheduler(
       value: 'http://linksys.com/jnap/wirelessscheduler/WirelessScheduler'),
   wirelessScheduler2(
-      value: 'http://linksys.com/jnap/wirelessscheduler/WirelessScheduler2');
+      value: 'http://linksys.com/jnap/wirelessscheduler/WirelessScheduler2'),
+  iotNetwork(value: 'http://linksys.com/jnap/iotnetwork/IoTNetwork');
 
   const JNAPService({required this.value});
 
@@ -233,7 +234,10 @@ enum JNAPAction {
   getWPSServerSessionStatus,
   setRadioSettings,
   // wirelessScheduler
-  getWirelessSchedulerSettings;
+  getWirelessSchedulerSettings,
+  // iotNetwork
+  getIoTNetworkSettings,
+  setIoTNetworkSettings;
 
   String get actionValue {
     return _betterActionMap[this]!;
@@ -446,7 +450,11 @@ enum _JNAPActionValue {
           'http://linksys.com/jnap/nodes/bluetooth/BTGetScanUnconfiguredResult2'),
   btRequestScanUnconfigured2(
       value:
-          'http://linksys.com/jnap/nodes/bluetooth/BTRequestScanUnconfigured2');
+          'http://linksys.com/jnap/nodes/bluetooth/BTRequestScanUnconfigured2'),
+  getIoTNetworkSettings(
+      value: 'http://linksys.com/jnap/iotnetwork/GetIoTNetworkSettings'),
+  setIoTNetworkSettings(
+      value: 'http://linksys.com/jnap/iotnetwork/SetIoTNetworkSettings');
 
   const _JNAPActionValue({required this.value});
 
@@ -719,7 +727,8 @@ void initBetterActions() {
       _JNAPActionValue.getLocalDevice.value;
   _betterActionMap[JNAPAction.setDeviceProperties] =
       _JNAPActionValue.setDeviceProperties.value;
-  _betterActionMap[JNAPAction.deleteDevice] = _JNAPActionValue.deleteDevice.value;
+  _betterActionMap[JNAPAction.deleteDevice] =
+      _JNAPActionValue.deleteDevice.value;
   _betterActionMap[JNAPAction.getPortRangeForwardingRules] =
       _JNAPActionValue.getPortRangeForwardingRules.value;
   _betterActionMap[JNAPAction.getPortRangeTriggeringRules] =
@@ -858,6 +867,10 @@ void initBetterActions() {
       _JNAPActionValue.getBluetoothAutoOnboardingStatus.value;
   _betterActionMap[JNAPAction.startBlueboothAutoOnboarding] =
       _JNAPActionValue.startBluetoothAutoOnboarding.value;
+  _betterActionMap[JNAPAction.getIoTNetworkSettings] =
+      _JNAPActionValue.getIoTNetworkSettings.value;
+  _betterActionMap[JNAPAction.setIoTNetworkSettings] =
+      _JNAPActionValue.setIoTNetworkSettings.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

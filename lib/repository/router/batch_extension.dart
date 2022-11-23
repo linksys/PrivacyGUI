@@ -83,6 +83,14 @@ extension BatchCommands on RouterRepository {
         needAuth: false,
       ),
       CommandWrap(
+        action: JNAPAction.getGuestRadioSettings.actionValue,
+        needAuth: false,
+      ),
+      CommandWrap(
+        action: JNAPAction.getIoTNetworkSettings.actionValue,
+        needAuth: false,
+      ),
+      CommandWrap(
         action: JNAPAction.getDevices.actionValue,
         needAuth: false,
       ),
@@ -121,5 +129,22 @@ extension BatchCommands on RouterRepository {
       ));
     }
     return batchCommands(commands);
+  }
+
+  Future<Map<String, JnapSuccess>> fetchAllRadioInfo() async {
+    return batchCommands([
+      CommandWrap(
+        action: JNAPAction.getRadioInfo.actionValue,
+        needAuth: false,
+      ),
+      CommandWrap(
+        action: JNAPAction.getGuestRadioSettings.actionValue,
+        needAuth: false,
+      ),
+      CommandWrap(
+        action: JNAPAction.getIoTNetworkSettings.actionValue,
+        needAuth: false,
+      ),
+    ]);
   }
 }
