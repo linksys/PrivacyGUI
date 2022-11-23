@@ -20,6 +20,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'bloc/device/state.dart';
+import 'util/logger.dart';
 import 'validator_rules/_validator_rules.dart';
 
 class Utils {

@@ -467,8 +467,7 @@ enum _JNAPActionValue {
   getIoTNetworkSettings(
       value: 'http://linksys.com/jnap/iotnetwork/GetIoTNetworkSettings'),
   setIoTNetworkSettings(
-      value: 'http://linksys.com/jnap/iotnetwork/SetIoTNetworkSettings');
-          'http://linksys.com/jnap/nodes/bluetooth/BTRequestScanUnconfigured2'),
+      value: 'http://linksys.com/jnap/iotnetwork/SetIoTNetworkSettings'),
   requestFOSContainer(
       value: 'http://linksys.com/jnap/router/RequestFOSContainer');
 
