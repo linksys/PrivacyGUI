@@ -86,6 +86,7 @@ dependencies:
     path: plugins/sms_receiver_plugin
   ios_push_notification_plugin:
     path: plugins/ios_push_notification_plugin
+  flutter_slidable: ^2.0.0
 dependency_overrides:
   firebase_core_platform_interface: 4.5.1
   flutter_inappwebview: 5.4.3

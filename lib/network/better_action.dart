@@ -150,6 +150,9 @@ enum JNAPAction {
   getPortRangeForwardingRules,
   getPortRangeTriggeringRules,
   getSinglePortForwardingRules,
+  setPortRangeForwardingRules,
+  setPortRangeTriggeringRules,
+  setSinglePortForwardingRules,
   // firmwareUpdate
   getFirmwareUpdateStatus,
   // guestNetwork
@@ -208,6 +211,7 @@ enum JNAPAction {
   getWANSettings,
   getWANStatus,
   setIPv6Settings,
+  setMACAddressCloneSettings,
   setWANSettings,
   renewDHCPWANLease,
   renewDHCPIPv6WANLease,
@@ -285,6 +289,12 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/firewall/GetPortRangeTriggeringRules'),
   getSinglePortForwardingRules(
       value: 'http://linksys.com/jnap/firewall/GetSinglePortForwardingRules'),
+  setPortRangeForwardingRules(
+      value: 'http://linksys.com/jnap/firewall/SetPortRangeForwardingRules'),
+  setPortRangeTriggeringRules(
+      value: 'http://linksys.com/jnap/firewall/SetPortRangeTriggeringRules'),
+  setSinglePortForwardingRules(
+      value: 'http://linksys.com/jnap/firewall/SetSinglePortForwardingRules'),
   getFirmwareUpdateStatus(
       value: 'http://linksys.com/jnap/firmwareupdate/GetFirmwareUpdateStatus'),
   getGuestNetworkClients(
@@ -389,6 +399,8 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/nodes/setup/GetWANDetectionStatus'),
   setIPv6Settings(value: 'http://linksys.com/jnap/router/SetIPv6Settings'),
   setIPv6Settings2(value: 'http://linksys.com/jnap/router/SetIPv6Settings2'),
+  setMACAddressCloneSettings(
+      value: 'http://linksys.com/jnap/router/SetMACAddressCloneSettings'),
   setWANSettings(value: 'http://linksys.com/jnap/router/SetWANSettings'),
   setWANSettings3(value: 'http://linksys.com/jnap/router/SetWANSettings3'),
   setWANSettings4(value: 'http://linksys.com/jnap/router/SetWANSettings4'),
@@ -735,6 +747,12 @@ void initBetterActions() {
       _JNAPActionValue.getPortRangeTriggeringRules.value;
   _betterActionMap[JNAPAction.getSinglePortForwardingRules] =
       _JNAPActionValue.getSinglePortForwardingRules.value;
+  _betterActionMap[JNAPAction.setPortRangeForwardingRules] =
+      _JNAPActionValue.setPortRangeForwardingRules.value;
+  _betterActionMap[JNAPAction.setPortRangeTriggeringRules] =
+      _JNAPActionValue.setPortRangeTriggeringRules.value;
+  _betterActionMap[JNAPAction.setSinglePortForwardingRules] =
+      _JNAPActionValue.setSinglePortForwardingRules.value;
   _betterActionMap[JNAPAction.getFirmwareUpdateStatus] =
       _JNAPActionValue.getFirmwareUpdateStatus.value;
   _betterActionMap[JNAPAction.getGuestNetworkClients] =
@@ -815,6 +833,8 @@ void initBetterActions() {
       _JNAPActionValue.getWANStatus.value;
   _betterActionMap[JNAPAction.setIPv6Settings] =
       _JNAPActionValue.setIPv6Settings.value;
+  _betterActionMap[JNAPAction.setMACAddressCloneSettings] =
+      _JNAPActionValue.setMACAddressCloneSettings.value;
   _betterActionMap[JNAPAction.setWANSettings] =
       _JNAPActionValue.setWANSettings.value;
   _betterActionMap[JNAPAction.getManagementSettings] =

@@ -6,10 +6,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/base_components/input_fields/ip_form_field.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/page/dashboard/view/administration/lan/dhcp_reservations/dhcp_reservations_view.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
+import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
@@ -118,10 +123,11 @@ class _LANContentViewState extends State<LANContentView> {
                 contentPadding: EdgeInsets.all(24),
                 content: Column(
                   children: [
-                    InputField(
-                      titleText: getAppLocalizations(context).ip_address,
+                    IPFormField(
+                      header: Text(
+                        getAppLocalizations(context).ip_address,
+                      ),
                       controller: _ipAddressController,
-                      customPrimaryColor: Colors.black,
                       onFocusChanged: (focused) {
                         if (!focused) {
                           _cubit.setIPAddress(_ipAddressController.text);
@@ -130,10 +136,11 @@ class _LANContentViewState extends State<LANContentView> {
                       isError: state.errors['ipAddress'] != null,
                     ),
                     box24(),
-                    InputField(
-                      titleText: getAppLocalizations(context).subnet_mask,
+                    IPFormField(
+                      header: Text(
+                        getAppLocalizations(context).subnet_mask,
+                      ),
                       controller: _subnetMaskController,
-                      customPrimaryColor: Colors.black,
                       onFocusChanged: (focused) {
                         if (!focused) {
                           _cubit.setSubnetMask(_subnetMaskController.text);
@@ -144,7 +151,6 @@ class _LANContentViewState extends State<LANContentView> {
                   ],
                 ),
               ),
-              box36(),
               administrationSection(
                 title: getAppLocalizations(context).dhcp_server,
                 content: Column(
@@ -155,15 +161,17 @@ class _LANContentViewState extends State<LANContentView> {
                         title: Text(getAppLocalizations(context).dhcp_server),
                         value: Switch.adaptive(
                             value: state.isDHCPEnabled, onChanged: (value) {})),
-                    InputField(
-                      titleText: getAppLocalizations(context).start_ip_address,
+                    IPFormField(
+                      header: Text(
+                        getAppLocalizations(context).start_ip_address,
+                      ),
                       controller: _firstIPController,
-                      customPrimaryColor: Colors.black,
                       onFocusChanged: (focused) {
                         if (!focused) {
                           _cubit.setFirstIPAddress(_firstIPController.text);
                         }
                       },
+                      isError: state.errors['firstIPAddress'] != null,
                     ),
                     box24(),
                     administrationTwoLineTile(
@@ -181,7 +189,8 @@ class _LANContentViewState extends State<LANContentView> {
                               customPrimaryColor: Colors.black,
                               onFocusChanged: (focused) {
                                 if (!focused) {
-                                  _cubit.setMaxUsers(_maxNumUserController.text);
+                                  _cubit
+                                      .setMaxUsers(_maxNumUserController.text);
                                 }
                               },
                             ),
@@ -213,7 +222,8 @@ class _LANContentViewState extends State<LANContentView> {
                               customPrimaryColor: Colors.black,
                               onFocusChanged: (focused) {
                                 if (!focused) {
-                                  _cubit.setLeaseTime(_clientLeaseController.text);
+                                  _cubit.setLeaseTime(
+                                      _clientLeaseController.text);
                                 }
                               },
                             ),
@@ -237,14 +247,29 @@ class _LANContentViewState extends State<LANContentView> {
                       value: Text(state.isAutoDNS
                           ? getAppLocalizations(context).auto
                           : getAppLocalizations(context).manual),
-                      onPress: () {},
+                      onPress: () async {
+                        String? result = await NavigationCubit.of(context)
+                            .pushAndWait(SimpleItemPickerPath()
+                              ..args = {
+                                'items': [
+                                  const Item(title: 'Auto', id: 'Auto'),
+                                  const Item(title: 'Manual', id: 'Manual'),
+                                ],
+                                'selected': state.isAutoDNS ? 'Auto' : 'Manual',
+                              });
+                        if (result != null) {
+                          _cubit.setAutoDNS(result == 'Auto');
+                        }
+                      },
                     ),
-                    ..._buildDNSInputFields(state.isAutoDNS),
+                    ..._buildDNSInputFields(state),
                     administrationTile(
                       title:
                           Text(getAppLocalizations(context).dhcp_reservations),
                       value: Center(),
-                      onPress: () {},
+                      onPress: () {
+                        NavigationCubit.of(context).push(DHCPReservationsPath());
+                      },
                     ),
                   ],
                 ),
@@ -257,42 +282,37 @@ class _LANContentViewState extends State<LANContentView> {
     });
   }
 
-  List<Widget> _buildDNSInputFields(bool isAuto) {
-    if (isAuto) {
+  List<Widget> _buildDNSInputFields(
+    LANState state,
+  ) {
+    if (state.isAutoDNS) {
       return [];
     } else {
       return [
-        InputField(
-          titleText: getAppLocalizations(context).static_dns1,
+        IPFormField(
+          header: Text(
+            getAppLocalizations(context).static_dns1,
+          ),
           controller: _dns1Controller,
-          customPrimaryColor: Colors.black,
           onFocusChanged: (focused) {
             if (!focused) {
               _cubit.setStaticDns1(_dns1Controller.text);
             }
           },
+          isError: state.errors['dns1'] != null,
         ),
         box24(),
-        InputField(
-          titleText: getAppLocalizations(context).static_dns2_optional,
+        IPFormField(
+          header: Text(
+            getAppLocalizations(context).static_dns2_optional,
+          ),
           controller: _dns2Controller,
-          customPrimaryColor: Colors.black,
           onFocusChanged: (focused) {
             if (!focused) {
               _cubit.setStaticDns2(_dns2Controller.text);
             }
           },
-        ),
-        box24(),
-        InputField(
-          titleText: getAppLocalizations(context).static_dns3_optional,
-          controller: _dns3Controller,
-          customPrimaryColor: Colors.black,
-          onFocusChanged: (focused) {
-            if (!focused) {
-              _cubit.setStaticDns3(_dns3Controller.text);
-            }
-          },
+          isError: state.errors['dns2'] != null,
         ),
         box24(),
       ];

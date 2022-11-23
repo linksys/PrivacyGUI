@@ -226,6 +226,10 @@ class IntegerRule extends ValidationRule {
     return false;
   }
 }
+class MACAddressRule extends RegExValidationRule {
+    @override
+  RegExp get _rule => RegExp(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$");
+}
 
 // class IpAddressOctetValidation extends ValidationRule {
 //   final int octet;
@@ -239,3 +243,4 @@ class IntegerRule extends ValidationRule {
 //     final all = input.split('.');
 //   }
 // }
+

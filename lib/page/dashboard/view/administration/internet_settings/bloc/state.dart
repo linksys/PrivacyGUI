@@ -12,6 +12,7 @@ class InternetSettingsState extends Equatable {
   final bool isIPv6AutomaticEnabled;
   final int mtu;
   final bool macClone;
+  final String macCloneAddress;
   final String? error;
 
   @override
@@ -26,6 +27,7 @@ class InternetSettingsState extends Equatable {
         isIPv6AutomaticEnabled,
         mtu,
         macClone,
+        macCloneAddress,
         error,
       ];
 
@@ -40,6 +42,7 @@ class InternetSettingsState extends Equatable {
     required this.isIPv6AutomaticEnabled,
     required this.mtu,
     required this.macClone,
+    required this.macCloneAddress,
     this.error,
   });
 
@@ -55,6 +58,7 @@ class InternetSettingsState extends Equatable {
       isIPv6AutomaticEnabled: false,
       mtu: 0,
       macClone: false,
+      macCloneAddress: '',
       error: null,
     );
   }
@@ -70,6 +74,7 @@ class InternetSettingsState extends Equatable {
     bool? isIPv6AutomaticEnabled,
     int? mtu,
     bool? macClone,
+    String? macCloneAddress,
     String? error,
   }) {
     return InternetSettingsState(
@@ -87,6 +92,7 @@ class InternetSettingsState extends Equatable {
           isIPv6AutomaticEnabled ?? this.isIPv6AutomaticEnabled,
       mtu: mtu ?? this.mtu,
       macClone: macClone ?? this.macClone,
+      macCloneAddress: macCloneAddress ?? this.macCloneAddress,
       error: error ?? this.error,
     );
   }

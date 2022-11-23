@@ -74,4 +74,12 @@ extension RouterService on RouterRepository {
     final result = await command.publish(mqttClient!);
     return handleJnapResult(result.body);
   }
+
+  Future<JnapSuccess> setMACAddressCloneSettings() async {
+    final command =
+    createCommand(JNAPAction.setMACAddressCloneSettings.actionValue);
+
+    final result = await command.publish(mqttClient!);
+    return handleJnapResult(result.body);
+  }
 }

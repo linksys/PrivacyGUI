@@ -43,6 +43,10 @@ extension BatchCommands on RouterRepository {
         action: JNAPAction.getWANStatus.actionValue,
         needAuth: false,
       ),
+      CommandWrap(
+        action: JNAPAction.getMACAddressCloneSettings.actionValue,
+        needAuth: false,
+      ),
     ]);
   }
 
@@ -119,7 +123,8 @@ extension BatchCommands on RouterRepository {
     ]);
   }
 
-  Future<Map<String, JnapSuccess>> deleteDevices(List<String> deviceIdList) async {
+  Future<Map<String, JnapSuccess>> deleteDevices(
+      List<String> deviceIdList) async {
     List<CommandWrap> commands = [];
     for (String deviceId in deviceIdList) {
       commands.add(CommandWrap(
