@@ -4,6 +4,7 @@ import 'package:linksys_moab/page/dashboard/view/administration/internet_setting
 import 'package:linksys_moab/page/dashboard/view/administration/internet_settings/internet_settings_mac_clone_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/internet_settings/internet_settings_mtu_picker.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/internet_settings/internet_settings_view.dart';
+import 'package:linksys_moab/page/dashboard/view/administration/lan/dhcp_reservations/dhcp_reservations_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/lan/lan_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/mac_filtering/mac_filtering_enter_mac_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/mac_filtering/mac_filtering_view.dart';
@@ -112,6 +113,11 @@ class AdministrationPath extends DashboardPath {
           next: next,
           args: args,
         );
+      case DHCPReservationsPath:
+        return DHCPReservationsView(
+          next: next,
+          args: args,
+        );
       default:
         return const Center();
     }
@@ -178,3 +184,5 @@ class AdvancedRoutingRulePath extends AdministrationPath with ReturnablePath {}
 class MTUPickerPath extends AdministrationPath with ReturnablePath {}
 
 class MACClonePath extends AdministrationPath with ReturnablePath {}
+
+class DHCPReservationsPath extends AdministrationPath {}

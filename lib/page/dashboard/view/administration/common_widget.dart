@@ -5,6 +5,7 @@ import 'package:linksys_moab/page/components/base_components/tile/setting_tile.d
 Widget administrationSection({
   required String title,
   required Widget content,
+  Widget? headerAction,
   bool enabled = false,
   EdgeInsets? contentPadding,
   Color? contentBackground,
@@ -14,12 +15,13 @@ Widget administrationSection({
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
         height: 48,
-        child: Text(title.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Color.fromRGBO(0, 0, 0, 0.5),
-            )),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(child: sectionTitle(title)),
+            headerAction ?? const Center(),
+          ],
+        ),
         alignment: Alignment.bottomLeft,
       ),
     ),
@@ -88,6 +90,17 @@ Widget administrationTileDesc(
     background: background ?? Colors.transparent,
     padding: padding ?? EdgeInsets.zero,
     description: description ?? Center(),
+  );
+}
+
+Widget sectionTitle(String text) {
+  return Text(
+    text.toUpperCase(),
+    style: const TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      color: Color.fromRGBO(0, 0, 0, 0.5),
+    ),
   );
 }
 

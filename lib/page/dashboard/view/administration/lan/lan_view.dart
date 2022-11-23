@@ -11,6 +11,7 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/page/dashboard/view/administration/lan/dhcp_reservations/dhcp_reservations_view.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
@@ -266,7 +267,9 @@ class _LANContentViewState extends State<LANContentView> {
                       title:
                           Text(getAppLocalizations(context).dhcp_reservations),
                       value: Center(),
-                      onPress: () {},
+                      onPress: () {
+                        NavigationCubit.of(context).push(DHCPReservationsPath());
+                      },
                     ),
                   ],
                 ),

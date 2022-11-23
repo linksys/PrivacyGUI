@@ -629,5 +629,11 @@
   "local_management_access": "Local management access",
   "remote_access": "Remote access",
   "web_ui": "Web UI",
-  "mtu_size": "Size"
+  "mtu_size": "Size",
+  "reserved_addresses": "Reserved addresses",
+  "add_device_reservations": "+Add device reservations",
+  "dhcp_list": "DHCP list",
+  "assign_ip_address": "Assign IP address",
+  "to_mac_address": "To MAC address",
+  "reservations_added": "Reservations added"
 }
