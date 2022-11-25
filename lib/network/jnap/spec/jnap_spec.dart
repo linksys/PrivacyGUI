@@ -1,7 +1,8 @@
 import 'dart:convert';
 
-import 'package:linksys_moab/network/mqtt/command_spec/command_spec.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
+import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
+
+import 'command_spec.dart';
 
 abstract class JNAPCommandSpec<R> extends CommandSpec<R> {
   JNAPCommandSpec({

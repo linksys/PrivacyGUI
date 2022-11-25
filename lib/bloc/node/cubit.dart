@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/model/router/wan_status.dart';
 import 'package:linksys_moab/model/router/device.dart';
-import 'package:linksys_moab/network/better_action.dart';
+import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/utils.dart';

@@ -2,7 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/model/router/guest_radio_settings.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
-import 'package:linksys_moab/network/better_action.dart';
+import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 

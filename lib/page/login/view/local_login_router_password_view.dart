@@ -6,7 +6,7 @@ import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
+import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/customs/network_check_view.dart';

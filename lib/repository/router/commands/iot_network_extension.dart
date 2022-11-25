@@ -1,6 +1,6 @@
 import 'package:linksys_moab/model/router/guest_radio_settings.dart';
-import 'package:linksys_moab/network/better_action.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
+import 'package:linksys_moab/network/jnap/better_action.dart';
+import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 
 

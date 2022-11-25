@@ -4,8 +4,8 @@
 // import 'package:linksys_moab/model/fcn/web_filter_profile.dart';
 // import 'package:linksys_moab/model/router/radio_info.dart';
 // import 'package:linksys_moab/network/better_action.dart';
-// import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
-// import 'package:linksys_moab/network/mqtt/model/command/jnap/transaction.dart';
+// import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
+// import 'package:linksys_moab/network/jnap/command/transaction.dart';
 // import 'package:linksys_moab/repository/router/commands/smart_mode_extension.dart';
 // import 'package:linksys_moab/repository/router/router_repository.dart';
 //

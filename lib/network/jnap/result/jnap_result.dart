@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/fcn_result.dart';
+import 'package:linksys_moab/network/jnap/result/fcn_result.dart';
 
 
 abstract class JNAPResult extends Equatable {

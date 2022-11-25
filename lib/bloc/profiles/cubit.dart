@@ -15,7 +15,7 @@ import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/model/secure_profile.dart';
 import 'package:linksys_moab/model/web_filter.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/fcn_result.dart';
+import 'package:linksys_moab/network/jnap/result/fcn_result.dart';
 import 'package:linksys_moab/repository/router/commands/fcn_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';

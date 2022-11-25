@@ -10,11 +10,11 @@ import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
-import 'package:linksys_moab/network/base_client.dart';
-import 'package:linksys_moab/network/better_action.dart';
+import 'package:linksys_moab/network/jnap/jnap_command_executor_mixin.dart';
+import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
-import 'package:linksys_moab/network/mqtt/model/command/http_base_command.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
+import 'package:linksys_moab/network/jnap/command/http_base_command.dart';
+import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 

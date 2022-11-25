@@ -14,7 +14,7 @@ import 'package:linksys_moab/model/router/iot_network_settings.dart';
 import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/model/router/wan_status.dart';
-import 'package:linksys_moab/network/better_action.dart';
+import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/http/model/cloud_network.dart';
 import 'package:linksys_moab/repository/networks/cloud_networks_repository.dart';
 import 'package:linksys_moab/repository/router/commands/_commands.dart';

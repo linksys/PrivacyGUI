@@ -1,5 +1,5 @@
-import 'package:linksys_moab/network/base_client.dart';
-import 'package:linksys_moab/network/mqtt/command_spec/impl/jnap_spec.dart';
+import 'package:linksys_moab/network/jnap/jnap_command_executor_mixin.dart';
+import 'package:linksys_moab/network/jnap/spec/jnap_spec.dart';
 
 abstract class BaseCommand<R> {
   BaseCommand({required this.spec});

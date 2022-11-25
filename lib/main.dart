@@ -25,7 +25,7 @@ import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/bloc/security/bloc.dart';
 import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/network/better_action.dart';
+import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/notification/notification_helper.dart';
 import 'package:linksys_moab/repository/account/cloud_account_repository.dart';

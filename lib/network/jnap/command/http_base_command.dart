@@ -1,10 +1,9 @@
 import 'dart:io';
 
 import 'package:linksys_moab/constants/jnap_const.dart';
-import 'package:linksys_moab/network/base_client.dart';
-import 'package:linksys_moab/network/mqtt/command_spec/impl/jnap_spec.dart';
-import 'package:linksys_moab/network/mqtt/model/command/base_command.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
+import 'package:linksys_moab/network/jnap/jnap_command_executor_mixin.dart';
+import 'package:linksys_moab/network/jnap/spec/jnap_spec.dart';
+import 'package:linksys_moab/network/jnap/command/base_command.dart';
 
 abstract class BaseHttpCommand<R> extends BaseCommand<R> {
   BaseHttpCommand({required this.url, required super.spec});

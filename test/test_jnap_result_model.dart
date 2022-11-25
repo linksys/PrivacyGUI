@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
+import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:test/test.dart';
 
 void main() {
