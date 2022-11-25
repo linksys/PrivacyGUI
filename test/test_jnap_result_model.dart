@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
+import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -13,10 +13,10 @@ void main() {
       }
       ''';
 
-      final actual = JnapResult.fromJson(jsonDecode(sample));
-      expect(actual.runtimeType, JnapSuccess);
+      final actual = JNAPResult.fromJson(jsonDecode(sample));
+      expect(actual.runtimeType, JNAPSuccess);
       expect(actual.result, 'OK');
-      expect((actual as JnapSuccess).output, {});
+      expect((actual as JNAPSuccess).output, {});
     });
 
     test('test success result 2', () async {
@@ -65,10 +65,10 @@ void main() {
       }
       ''';
 
-      final actual = JnapResult.fromJson(jsonDecode(sample));
-      expect(actual.runtimeType, JnapSuccess);
+      final actual = JNAPResult.fromJson(jsonDecode(sample));
+      expect(actual.runtimeType, JNAPSuccess);
       expect(actual.result, 'OK');
-      expect((actual as JnapSuccess).output['isWirelessSchedulerEnabled'], false);
+      expect((actual as JNAPSuccess).output['isWirelessSchedulerEnabled'], false);
     });
 
     test('test error result', () async {
@@ -79,11 +79,11 @@ void main() {
         }
       ''';
 
-      final actual = JnapResult.fromJson(jsonDecode(sample));
+      final actual = JNAPResult.fromJson(jsonDecode(sample));
 
-      expect(actual.runtimeType, JnapError);
+      expect(actual.runtimeType, JNAPError);
       expect(actual.result, '_ErrorInvalidInput');
-      expect((actual as JnapError).error, 'Validation of element "SetSimpleWiFiSettings" failed due to unexpected count (0) of child element "simpleWiFiSettings"');
+      expect((actual as JNAPError).error, 'Validation of element "SetSimpleWiFiSettings" failed due to unexpected count (0) of child element "simpleWiFiSettings"');
     });
   });
 }

@@ -1,9 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/model/router/advanced_routing_rule.dart';
-import 'package:linksys_moab/model/router/single_port_forwarding_rule.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
-import 'package:linksys_moab/repository/router/firewall_extension.dart';
+import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 
 part 'advanced_routing_list_state.dart';

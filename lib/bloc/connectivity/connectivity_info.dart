@@ -3,8 +3,8 @@ import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 
 enum RouterType {
-  moab,
-  managedMoab,
+  behind,
+  behindManaged,
   others,
 }
 

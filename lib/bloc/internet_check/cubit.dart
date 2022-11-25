@@ -8,12 +8,9 @@ import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/model/router/wan_settings.dart';
 import 'package:linksys_moab/model/router/wan_status.dart';
 import 'package:linksys_moab/network/better_action.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
-import 'package:linksys_moab/repository/router/batch_extension.dart';
-import 'package:linksys_moab/repository/router/core_extension.dart';
-import 'package:linksys_moab/repository/router/router_extension.dart';
+import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
+import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/repository/router/setup_extension.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 
@@ -104,7 +101,7 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
                     state.wanConnectionStatus == "Connecting" ||
                     state.wanConnectionStatus == "DHCP")
         .listen((event) {
-      if (event is JnapSuccess) {
+      if (event is JNAPSuccess) {
         final output = event.output;
         final String wanStatus = output['wanStatus'];
         final bool isDetectingWANType = output['isDetectingWANType'];
@@ -129,7 +126,7 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
             action: JNAPAction.getInternetConnectionStatus,
             condition: () => state.isInternetConnected)
         .listen((event) {
-      if (event is JnapSuccess) {
+      if (event is JNAPSuccess) {
         final output = event.output;
         final connectionStatus = output['connectionStatus'];
         emit(state.copyWith(
@@ -290,7 +287,7 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
           .onError((error, stackTrace) {});
       // TODO #REFACTOR wireless interrupt
       await Future.delayed(Duration(seconds: 5));
-      await _routerRepository.connectToLocalWithPassword();
+      // await _routerRepository.connectToLocalWithPassword();
     }
   }
 

@@ -1,19 +1,22 @@
 // Moab Share Preferences keys, please check is there any data need to be removed when log out
 // unsecured
-const moabPrefAppKey = 'MoabApp';
-const moabPrefConfigKey = 'MoabConfigKey';
-const moabPrefCloudPublicKey = 'MoabCloudPublicKey';
-const moabPrefEnableBiometrics = "MoabEnableBiometrics";
-const moabPrefDeviceToken = 'MoabDeviceToken';
-const moabPrefSessionDataKey = 'MoabSessionData';
-const moabPrefLocalCert = 'MoabLocalCert';
-const moabPrefRemoteCaCert = 'MoabRemoteCaCert';
-const moabPrefCloudAccountId = 'MoabCloudAccountId';
-const moabPrefCloudDefaultGroupId = 'MoabCloudDefaultGroupId';
-const moabPrefSelectedNetworkId = 'MoabSelectedNetworkId';
-const moabPrefUserProfiles = 'MoabUserProfiles';
+const linkstyPrefCurrentSN = 'LinksysCurrentSN';
+const linksysPrefCloudToken = 'LinksysCloudToken';
+//
+const linksysPrefAppKey = 'LinksysApp';
+const linksysPrefConfigKey = 'LinksysConfigKey';
+const linksysPrefCloudPublicKey = 'LinksysCloudPublicKey';
+const linksysPrefEnableBiometrics = "LinksysEnableBiometrics";
+const linksysPrefDeviceToken = 'LinksysDeviceToken';
+const linksysPrefSessionDataKey = 'LinksysSessionData';
+const linksysPrefLocalCert = 'LinksysLocalCert';
+const linksysPrefRemoteCaCert = 'LinksysRemoteCaCert';
+const linksysPrefCloudAccountId = 'LinksysCloudAccountId';
+const linksysPrefCloudDefaultGroupId = 'LinksysCloudDefaultGroupId';
+const linksysPrefSelectedNetworkId = 'LinksysSelectedNetworkId';
+const linksysPrefUserProfiles = 'LinksysUserProfiles';
 // secured
-const moabPrefLocalPassword = 'MoabLocalPassword';
-const moabPrefCloudCertDataKey = 'MoabCloudCertData';
-const moabPrefCloudPrivateKey = 'MoabCloudPrivateKey';
-const moabPrefCloudAccountPasswordKey = 'MoabCloudAccountPassword';
+const linksysPrefLocalPassword = 'LinksysLocalPassword';
+const linksysPrefCloudCertDataKey = 'LinksysCloudCertData';
+const linksysPrefCloudPrivateKey = 'LinksysCloudPrivateKey';
+const linksysPrefCloudAccountPasswordKey = 'LinksysCloudAccountPassword';

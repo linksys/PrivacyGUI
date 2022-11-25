@@ -109,11 +109,11 @@ class CloudAuthRepository extends AuthRepository with SCLoader {
 
       const storage = FlutterSecureStorage();
       await storage.write(
-          key: moabPrefCloudCertDataKey, value: jsonEncode(task.data.toJson()));
-      await storage.write(key: moabPrefCloudPrivateKey, value: privateKey);
+          key: linksysPrefCloudCertDataKey, value: jsonEncode(task.data.toJson()));
+      await storage.write(key: linksysPrefCloudPrivateKey, value: privateKey);
 
       SharedPreferences.getInstance().then((pref) {
-        pref.setString(moabPrefCloudPublicKey, publicKey);
+        pref.setString(linksysPrefCloudPublicKey, publicKey);
       });
     });
   }

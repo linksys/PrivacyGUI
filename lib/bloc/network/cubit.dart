@@ -15,17 +15,10 @@ import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/model/router/wan_status.dart';
 import 'package:linksys_moab/network/better_action.dart';
-import 'package:linksys_moab/network/http/extension_requests/network_requests.dart';
-import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_network.dart';
 import 'package:linksys_moab/repository/networks/cloud_networks_repository.dart';
-import 'package:linksys_moab/repository/router/batch_extension.dart';
-import 'package:linksys_moab/repository/router/core_extension.dart';
-import 'package:linksys_moab/repository/router/device_list_extension.dart';
-import 'package:linksys_moab/repository/router/health_check_extension.dart';
-import 'package:linksys_moab/repository/router/router_extension.dart';
+import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/repository/router/wireless_ap_extension.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -199,9 +192,6 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
 
   Future pollingData() async {
     logger.d('start polling data');
-    // Must do it before all commands
-    final routerDeviceInfo = await getDeviceInfo();
-    _handleDeviceInfoResult(routerDeviceInfo);
     final result = await _routerRepository.pollingData();
     if (result.containsKey(JNAPAction.getDeviceInfo.actionValue)) {
       final routerDeviceInfo = RouterDeviceInfo.fromJson(
@@ -225,11 +215,11 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
           result[JNAPAction.getGuestRadioSettings.actionValue]!.output);
       _handleGuestRadioSettingsResult(guestRadioInfoSetting);
     }
-    if (result.containsKey(JNAPAction.getIoTNetworkSettings.actionValue)) {
-      final iotNetworkSetting = IoTNetworkSetting.fromJson(
-          result[JNAPAction.getIoTNetworkSettings.actionValue]!.output);
-      _handleIoTNetworkSettingResult(iotNetworkSetting);
-    }
+    // if (result.containsKey(JNAPAction.getIoTNetworkSettings.actionValue)) {
+    //   final iotNetworkSetting = IoTNetworkSetting.fromJson(
+    //       result[JNAPAction.getIoTNetworkSettings.actionValue]!.output);
+    //   _handleIoTNetworkSettingResult(iotNetworkSetting);
+    // }
     if (result.containsKey(JNAPAction.getDevices.actionValue)) {
       final devices = List.from(
               result[JNAPAction.getDevices.actionValue]!.output['devices'])
@@ -255,7 +245,7 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
 
   Future selectNetwork(CloudNetwork network) async {
     final pref = await SharedPreferences.getInstance();
-    await pref.setString(moabPrefSelectedNetworkId, network.networkId);
+    await pref.setString(linksysPrefSelectedNetworkId, network.networkId);
     CloudEnvironmentManager().applyNewConfig(network.region);
     emit(state.copyWith(selected: MoabNetwork(id: network.networkId)));
   }

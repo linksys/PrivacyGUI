@@ -13,14 +13,8 @@ class OverlayInfoView extends StatefulWidget {
 }
 
 class _OverlayInfoViewState extends State<OverlayInfoView> {
-  bool _isMqttConnected = false;
   @override
   void initState() {
-    context.read<RouterRepository>().addMqttConnectionCallback((isConnected) {
-      setState(() {
-        _isMqttConnected = isConnected;
-      });
-    });
     super.initState();
   }
 

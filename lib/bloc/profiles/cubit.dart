@@ -16,7 +16,7 @@ import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/model/secure_profile.dart';
 import 'package:linksys_moab/model/web_filter.dart';
 import 'package:linksys_moab/network/mqtt/model/command/jnap/fcn_result.dart';
-import 'package:linksys_moab/repository/router/fcn_extension.dart';
+import 'package:linksys_moab/repository/router/commands/fcn_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -33,7 +33,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
 
   fetchProfiles() async {
     final sharedPreference = await SharedPreferences.getInstance();
-    final jsonString = sharedPreference.getString(moabPrefUserProfiles);
+    final jsonString = sharedPreference.getString(linksysPrefUserProfiles);
     if (jsonString != null) {
       final jsonObject = jsonDecode(jsonString) as Map<String, dynamic>;
       final savedProfiles = jsonObject
@@ -71,7 +71,7 @@ class ProfilesCubit extends Cubit<ProfilesState> {
       // Save the new profile list into the persistent storage
       final jsonString = jsonEncode(state.profiles);
       final sharedPreference = await SharedPreferences.getInstance();
-      await sharedPreference.setString(moabPrefUserProfiles, jsonString);
+      await sharedPreference.setString(linksysPrefUserProfiles, jsonString);
     }
   }
 

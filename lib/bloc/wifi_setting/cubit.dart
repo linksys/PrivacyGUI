@@ -3,11 +3,8 @@ import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/model/router/guest_radio_settings.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/network/better_action.dart';
-import 'package:linksys_moab/repository/router/batch_extension.dart';
-import 'package:linksys_moab/repository/router/guest_network_extension.dart';
-import 'package:linksys_moab/repository/router/iot_network_extension.dart';
+import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/repository/router/wireless_ap_extension.dart';
 
 class WifiSettingCubit extends Cubit<WifiSettingState> {
   WifiSettingCubit({required RouterRepository routerRepository})

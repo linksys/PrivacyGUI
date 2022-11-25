@@ -12,10 +12,10 @@ mixin SCLoader {
       throw InvalidCertException();
     }
     final pref = await SharedPreferences.getInstance();
-    final publicKey = pref.getString(moabPrefCloudPublicKey)?.codeUnits;
+    final publicKey = pref.getString(linksysPrefCloudPublicKey)?.codeUnits;
 
     const storage = FlutterSecureStorage();
-    String? privateKeyString = await storage.read(key: moabPrefCloudPrivateKey);
+    String? privateKeyString = await storage.read(key: linksysPrefCloudPrivateKey);
     final privateKey = privateKeyString?.codeUnits;
 
     SecurityContext securityContext = SecurityContext(withTrustedRoots: true);

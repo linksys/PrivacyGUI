@@ -46,8 +46,9 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
     _setupBloc
         .add(const ResumePointChanged(status: SetupResumePoint.internetCheck));
 
-    bool isConnected = await _tryConnectMQTT();
-
+    // TODO #LINKSYS
+    // bool isConnected = await _tryConnectMQTT();
+    bool isConnected = true;
     _internetCheckCubit.setConnectToRouter(isConnected);
   }
 
@@ -56,10 +57,11 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
     int retry = 0;
     bool isConnect = false;
     do {
-      isConnect = await _connectivityCubit
-          .connectToLocalBroker()
-          .onError((error, stackTrace) => false);
-      logger.d('check internet:: _tryConnectMQTT: retry: $retry, $isConnect');
+      // TODO #LINKSYS
+      // isConnect = await _connectivityCubit
+      //     .connectToLocalBroker()
+      //     .onError((error, stackTrace) => false);
+      // logger.d('check internet:: _tryConnectMQTT: retry: $retry, $isConnect');
       if (isConnect) {
         return isConnect;
       } else {

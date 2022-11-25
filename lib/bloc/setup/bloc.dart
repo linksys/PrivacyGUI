@@ -2,12 +2,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
-import 'package:linksys_moab/repository/router/device_list_extension.dart';
-import 'package:linksys_moab/repository/router/owend_network_extension.dart';
+import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
+import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/repository/router/transactions_extension.dart';
-import 'package:linksys_moab/repository/router/wireless_ap_extension.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -110,20 +107,21 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
                   passphrase: state.wifiPassword,
                 ))
             .toList();
-    // the devices should at least has 1 device
-    if (state.deviceProperties.isNotEmpty) {
-      await _routerRepository
-          .configureDeviceProperties(deviceProperties: state.deviceProperties);
-    }
-    // TODO #1 Don't wait for now since there won't have response MOABLITE-38 - https://linksys.atlassian.net/browse/MOABLITE-38
-    _routerRepository.configureRouter(
-      adminPassword: state.adminPassword,
-      passwordHint: state.passwordHint,
-      settings: simpleWiFiSettingsList,
-    ).onError((error, stackTrace) {
-      logger.e('configure router: $error');
-      return JnapSuccess(result: 'error!');
-    });
+    // TODO #LINKSYS
+    // // the devices should at least has 1 device
+    // if (state.deviceProperties.isNotEmpty) {
+    //   await _routerRepository
+    //       .configureDeviceProperties(deviceProperties: state.deviceProperties);
+    // }
+    // // TODO #1 Don't wait for now since there won't have response MOABLITE-38 - https://linksys.atlassian.net/browse/MOABLITE-38
+    // _routerRepository.configureRouter(
+    //   adminPassword: state.adminPassword,
+    //   passwordHint: state.passwordHint,
+    //   settings: simpleWiFiSettingsList,
+    // ).onError((error, stackTrace) {
+    //   logger.e('configure router: $error');
+    //   return JNAPSuccess(result: 'error!');
+    // });
     // TODO #1 to wait the transaction done since current transaction won't get response back
     await Future.delayed(Duration(seconds: 40));
     emit(state.copyWith(resumePoint: SetupResumePoint.wifiInterrupted));
@@ -137,7 +135,7 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
     final result = await _routerRepository.getOwnedNetworkID();
     final networkId = result.output['ownedNetworkID'] ?? '';
     await SharedPreferences.getInstance().then((pref) async =>
-        await pref.setString(moabPrefSelectedNetworkId, networkId));
+        await pref.setString(linksysPrefSelectedNetworkId, networkId));
     return emit(state.copyWith(
         resumePoint: SetupResumePoint.finish, networkId: networkId));
   }

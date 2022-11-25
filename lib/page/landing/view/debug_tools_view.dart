@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
@@ -17,7 +16,6 @@ import 'package:linksys_moab/bloc/security/event.dart';
 import 'package:linksys_moab/bloc/security/state.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
-import 'package:linksys_moab/constants/fcn_const.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -27,16 +25,10 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
-import 'package:linksys_moab/repository/router/core_extension.dart';
-import 'package:linksys_moab/repository/router/fcn_extension.dart';
-import 'package:linksys_moab/repository/router/router_extension.dart';
+import 'package:linksys_moab/repository/router/commands/core_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
-import 'package:mqtt_client/mqtt_client.dart';
 import 'package:share_plus/share_plus.dart';
 
 class DebugToolsView extends StatefulWidget {
@@ -144,7 +136,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
     return [
       ..._buildBasicInfo(),
       ..._buildConnectionInfo(),
-      ..._buildCloudApp(),
+      // ..._buildCloudApp(),
       ..._buildPushNotificationInfo(),
     ];
   }
@@ -202,8 +194,6 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           Text(
               'Gateway Ip: ${_connectivityCubit.state.connectivityInfo.gatewayIp}'),
           Text('SSID: ${_connectivityCubit.state.connectivityInfo.ssid}'),
-          Text(
-              'MQTT: ${_routerRepository.mqttClient?.connectionState == MqttConnectionState.connected ? ('${_routerRepository.mqttClient?.connectionState?.name} to ${_routerRepository.connectType.name}') : '${_routerRepository.mqttClient?.connectionState?.name}'}'),
           box16(),
         ],
       ),
@@ -356,16 +346,8 @@ class _DebugToolsViewState extends State<DebugToolsView> {
       PrimaryButton(
         text: 'Load Security Preset',
         onPress: () {
-          // SecurityProfileManager.instance().fetchDefaultPresets();
-
           final repo = context.read<RouterRepository>();
-          repo.connectToBroker().then((value) => repo
-                  .deleteFirewallPolicyById('36484')
-                  .then((value) {
-                final result = value.toFCNResult();
-                logger.d('FCB Result: $result');
-              }));
-          // repo.deleteFirewallPolicyById('39042');
+          repo.isAdminPasswordDefault();
 
         },
       ),

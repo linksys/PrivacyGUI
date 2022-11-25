@@ -6,10 +6,9 @@ import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
-import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
-import 'package:linksys_moab/page/dashboard/view/profile/_profile.dart';
-import 'package:linksys_moab/security/security_profile_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../localization/localization_hook.dart';
 import '../../../route/model/dashboard_path.dart';
@@ -46,27 +45,27 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
     await context.read<ConnectivityCubit>().forceUpdate();
     if (context.read<AuthBloc>().state is AuthCloudLoginState) {
       if (context.read<NetworkCubit>().state.selected == null) {
-        await context.read<AccountCubit>().fetchAccount();
-        // TODO #REFACTOR select network and apply new region
+        // TODO #LINKSYS
+        // await context.read<AccountCubit>().fetchAccount();
         await context
             .read<NetworkCubit>()
             .getNetworks(accountId: context.read<AccountCubit>().state.id);
         NavigationCubit.of(context).clearAndPush(SelectNetworkPath());
-      } else {
-        logger.d('Go to dashboard');
-        await context.read<ConnectivityCubit>().connectToBroker();
-        // await context
-        //     .read<NetworkCubit>()
-        //     .getDeviceInfo()
-        //     .then<RouterDeviceInfo?>((value) => value)
-        //     .onError((error, stackTrace) => null);
-        await context.read<ProfilesCubit>().fetchProfiles();
-        NavigationCubit.of(context).clearAndPush(DashboardHomePath());
+        return;
       }
-    } else {
-      await context.read<ConnectivityCubit>().connectToLocalBroker();
-      // await context.read<NetworkCubit>().getDeviceInfo();
+    }
+    logger.d('Go to dashboard');
+    final routerDeviceInfo = await context
+        .read<NetworkCubit>()
+        .getDeviceInfo()
+        .then<RouterDeviceInfo?>((value) => value)
+        .onError((error, stackTrace) => null);
+    if (routerDeviceInfo != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(linkstyPrefCurrentSN, routerDeviceInfo.serialNumber);
       NavigationCubit.of(context).clearAndPush(DashboardHomePath());
+    } else {
+      // TODO #LINKSYS Error handling for unable to get deviceinfo
     }
   }
 }

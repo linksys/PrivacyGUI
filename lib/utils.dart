@@ -307,11 +307,11 @@ class Utils {
 
   static Future<bool> checkCertValidation() async {
     const storage = FlutterSecureStorage();
-    String? privateKey = await storage.read(key: moabPrefCloudPrivateKey);
-    String? cert = await storage.read(key: moabPrefCloudCertDataKey);
+    String? privateKey = await storage.read(key: linksysPrefCloudPrivateKey);
+    String? cert = await storage.read(key: linksysPrefCloudCertDataKey);
 
     final prefs = await SharedPreferences.getInstance();
-    bool isKeyExist = prefs.containsKey(moabPrefCloudPublicKey) &
+    bool isKeyExist = prefs.containsKey(linksysPrefCloudPublicKey) &
     (privateKey != null) &
     (cert != null);
     if (!isKeyExist) {

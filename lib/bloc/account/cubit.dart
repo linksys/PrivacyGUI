@@ -19,11 +19,11 @@ class AccountCubit extends Cubit<AccountState> {
     final defaultGroupId = await _repo.getDefaultGroupId(account.id);
     logger.d('accountId: ${account.id}, defaultGroupId:$defaultGroupId');
     await SharedPreferences.getInstance().then((pref) async {
-      await pref.setString(moabPrefCloudAccountId, account.id);
-      await pref.setString(moabPrefCloudDefaultGroupId, defaultGroupId);
+      await pref.setString(linksysPrefCloudAccountId, account.id);
+      await pref.setString(linksysPrefCloudDefaultGroupId, defaultGroupId);
     });
     final isBiometricEnabled = (await SharedPreferences.getInstance())
-            .getBool(moabPrefEnableBiometrics) ??
+            .getBool(linksysPrefEnableBiometrics) ??
         false;
     emit(state
         .copyWithAccountInfo(
@@ -51,9 +51,9 @@ class AccountCubit extends Cubit<AccountState> {
   Future<void> toggleBiometrics(bool value) async {
     final pref = await SharedPreferences.getInstance();
     if (value) {
-      pref.setBool(moabPrefEnableBiometrics, value);
+      pref.setBool(linksysPrefEnableBiometrics, value);
     } else {
-      pref.remove(moabPrefEnableBiometrics);
+      pref.remove(linksysPrefEnableBiometrics);
     }
     emit(state.copyWith(isBiometricEnabled: value));
   }

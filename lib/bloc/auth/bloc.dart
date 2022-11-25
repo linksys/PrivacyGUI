@@ -18,8 +18,8 @@ import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
 import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
 import 'package:linksys_moab/repository/model/dummy_model.dart';
-import 'package:linksys_moab/repository/router/batch_extension.dart';
-import 'package:linksys_moab/repository/router/core_extension.dart';
+import 'package:linksys_moab/repository/router/commands/batch_extension.dart';
+import 'package:linksys_moab/repository/router/commands/core_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -158,7 +158,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
       SetEnableBiometrics event, Emitter<AuthState> emit) async {
     // Save to preference
     final pref = await SharedPreferences.getInstance();
-    pref.setBool(moabPrefEnableBiometrics, event.enableBiometrics);
+    pref.setBool(linksysPrefEnableBiometrics, event.enableBiometrics);
     // Set to state
     final _state = state;
     if (_state is AuthOnCloudLoginState) {
@@ -205,7 +205,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
         if (!canUseBiometrics || !didAuthenticate) {
           // Disable or cancel authentication, set enableBiometrics to false
           final pref = await SharedPreferences.getInstance();
-          pref.remove(moabPrefEnableBiometrics);
+          pref.remove(linksysPrefEnableBiometrics);
           accountInfo = accountInfo.copyWith(enableBiometrics: false);
         } else {
           // Todo Cloud blocked exchange 2y certs if enrolled biometrics
@@ -231,8 +231,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
 
   void _localLogin(LocalLogin event, Emitter<AuthState> emit) async {
     // Authorized
-    final pref = await SharedPreferences.getInstance();
-    pref.setString(moabPrefLocalPassword, event.password);
+
+    await const FlutterSecureStorage()
+        .write(key: linksysPrefLocalPassword, value: event.password);
     emit(AuthState.localAuthorized());
   }
 
@@ -240,14 +241,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
     // Don't remove all keys on shared preferences when logging out if biometric is enabled
     final prefs = await SharedPreferences.getInstance();
     const storage = FlutterSecureStorage();
-    final isEnableBiometric = prefs.getBool(moabPrefEnableBiometrics) ?? false;
+    final isEnableBiometric =
+        prefs.getBool(linksysPrefEnableBiometrics) ?? false;
     if (isEnableBiometric) {
-      await prefs.remove(moabPrefSessionDataKey);
+      await prefs.remove(linksysPrefSessionDataKey);
     } else {
-      await storage.delete(key: moabPrefCloudPrivateKey);
-      await storage.delete(key: moabPrefCloudCertDataKey);
-      await storage.delete(key: moabPrefLocalPassword);
-      await prefs.remove(moabPrefCloudPublicKey);
+      await storage.delete(key: linksysPrefCloudPrivateKey);
+      await storage.delete(key: linksysPrefCloudCertDataKey);
+      await storage.delete(key: linksysPrefLocalPassword);
+      await prefs.remove(linksysPrefCloudPublicKey);
     }
     emit(AuthState.unAuthorized());
   }
@@ -256,11 +258,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
     return _repository.fetchRegionCodes();
   }
 
-  Future<ChangeAuthenticationModeChallenge> changeAuthModePrepare(String accountId, String? password , String authenticationMode) async {
-    return await _repository.changeAuthenticationModePrepare(accountId, password, authenticationMode);
+  Future<ChangeAuthenticationModeChallenge> changeAuthModePrepare(
+      String accountId, String? password, String authenticationMode) async {
+    return await _repository.changeAuthenticationModePrepare(
+        accountId, password, authenticationMode);
   }
 
-  Future<void> changeAuthMode(String accountId, String token, String? password) {
+  Future<void> changeAuthMode(
+      String accountId, String token, String? password) {
     return _repository.changeAuthenticationMode(accountId, token, password);
   }
 
@@ -331,7 +336,8 @@ extension AuthBlocCloud on AuthBloc {
     //   default:
     //     break;
     // }
-    return await _repository.createAccountPreparationUpdateMethod(token, method);
+    return await _repository.createAccountPreparationUpdateMethod(
+        token, method);
   }
 
   Future<void> createVerifiedAccount() async {
@@ -476,28 +482,27 @@ extension AuthBlocCloud on AuthBloc {
 
   Future<bool> checkLocalPasswordExist() async {
     const storage = FlutterSecureStorage();
-    final password = await storage.read(key: moabPrefLocalPassword);
+    final password = await storage.read(key: linksysPrefLocalPassword);
     if (password == null) {
       return false;
     } else {
-      return _routerRepository.testLocalCert();
+      return false;
     }
   }
 
   Future<bool> checkCertValidation() async {
     const storage = FlutterSecureStorage();
-    String? privateKey = await storage.read(key: moabPrefCloudPrivateKey);
-    String? cert = await storage.read(key: moabPrefCloudCertDataKey);
+    String? privateKey = await storage.read(key: linksysPrefCloudPrivateKey);
+    String? cert = await storage.read(key: linksysPrefCloudCertDataKey);
 
     final prefs = await SharedPreferences.getInstance();
-    bool isKeyExist = prefs.containsKey(moabPrefCloudPublicKey) &
+    bool isKeyExist = prefs.containsKey(linksysPrefCloudPublicKey) &
         (privateKey != null) &
         (cert != null);
     if (!isKeyExist) {
       return false;
     }
-    final certData = CloudDownloadCertData.fromJson(
-        jsonDecode(cert ?? ''));
+    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert ?? ''));
     final expiredDate = DateTime.parse(certData.expiration);
     if (expiredDate.millisecondsSinceEpoch -
             DateTime.now().millisecondsSinceEpoch <
@@ -509,10 +514,10 @@ extension AuthBlocCloud on AuthBloc {
 
   Future<bool> isSessionExpired() async {
     final prefs = await SharedPreferences.getInstance();
-    if (prefs.containsKey(moabPrefSessionDataKey)) {
+    if (prefs.containsKey(linksysPrefSessionDataKey)) {
       logger.d('check cloud session expiration...');
       final sessionData = CloudSessionData.fromJson(
-          jsonDecode(prefs.getString(moabPrefSessionDataKey)!));
+          jsonDecode(prefs.getString(linksysPrefSessionDataKey)!));
       final sessionExpiredDate = DateTime.parse(sessionData.expiration);
       if (sessionExpiredDate.millisecondsSinceEpoch -
               DateTime.now().millisecondsSinceEpoch <
@@ -525,7 +530,7 @@ extension AuthBlocCloud on AuthBloc {
 
   Future<void> extendCertification() async {
     const storage = FlutterSecureStorage();
-    String? cert = await storage.read(key: moabPrefCloudCertDataKey);
+    String? cert = await storage.read(key: linksysPrefCloudCertDataKey);
     if (cert == null) {
       logger.d('extend certification: original cert data does not exist!');
       return;
@@ -541,7 +546,7 @@ extension AuthBlocCloud on AuthBloc {
 
   Future<void> requestSession() async {
     const storage = FlutterSecureStorage();
-    String? cert = await storage.read(key: moabPrefCloudCertDataKey);
+    String? cert = await storage.read(key: linksysPrefCloudCertDataKey);
     if (cert == null) {
       logger.d('extend certification: original cert data does not exist!');
       return;
@@ -549,7 +554,7 @@ extension AuthBlocCloud on AuthBloc {
     final certData = CloudDownloadCertData.fromJson(jsonDecode(cert));
     final session = await _repository.requestSession(certId: certData.id);
     final pref = await SharedPreferences.getInstance();
-    pref.setString(moabPrefSessionDataKey, jsonEncode(session.toJson()));
+    pref.setString(linksysPrefSessionDataKey, jsonEncode(session.toJson()));
   }
 
   Future<void> delayDownloadCertTime(int delay) async {

@@ -1,6 +1,59 @@
+import 'dart:io';
+
 import 'package:linksys_moab/network/http/model/cloud_config.dart';
 
 import 'build_config.dart';
+
+const kCloudBase = 'CLOUD_BASE_URL';
+const kCloudJNAP = 'CLOUD_JNAP_BASE_URL';
+const kCloudStatus = 'CLOUD_STATUS_URL';
+const kCloudAware = 'CLOUD_AWARE_URL';
+const kCloudAwarePort = 'CLOUD_AWARE_PORT';
+const kCloudAwareKey = 'CLOUD_AWARE_KEY';
+const kCloudAwareScheme = 'CLOUD_AWARE_SCHEME';
+
+const linksysCloudBaseUrl = 'cloud1.linksyssmartwifi.com';
+const linksysCloudStatusBaseUrl = 'cloudhealth.lswf.net/cloud-availability/';
+
+// Linksys PROD
+const kCloudEnvironmentConfigProd = {
+  kCloudBase: linksysCloudBaseUrl,
+  kCloudJNAP: 'https://$linksysCloudBaseUrl/cloud/JNAP/',
+  kCloudStatus: 'https://$linksysCloudStatusBaseUrl/cloud.json',
+  kCloudAware: 'aware.lswf.net',
+  kCloudAwarePort: 3000,
+  kCloudAwareKey: '339ec1249258dfd7e689',
+  kCloudAwareScheme: 'https',
+};
+// Linksys QA
+const kCloudEnvironmentConfigQa = {
+  kCloudBase: 'qa.$linksysCloudBaseUrl',
+  kCloudJNAP: 'https://qa.$linksysCloudBaseUrl/cloud/JNAP/',
+  kCloudStatus: 'https://$linksysCloudStatusBaseUrl/cloud-qa.json',
+  kCloudAware: 'staging.ds.veriksystems.com',
+  kCloudAwarePort: 80,
+  kCloudAwareKey: '372851d642c0f179905e',
+  kCloudAwareScheme: 'http',
+};
+// Linksys DEV
+const kCloudEnvironmentConfigDev = {
+  kCloudBase: 'dev.$linksysCloudBaseUrl',
+  kCloudJNAP: 'https://dev.$linksysCloudBaseUrl/cloud/JNAP/',
+  kCloudStatus: 'https://$linksysCloudStatusBaseUrl/cloud-dev.json',
+  kCloudAware: 'staging.ds.veriksystems.com',
+  kCloudAwarePort: 80,
+  kCloudAwareKey: 'efeb0fd364285aaa1201',
+  kCloudAwareScheme: 'http',
+};
+const Map<CloudEnvironment, dynamic> kCloudEnvironmentMap = {
+  CloudEnvironment.prod: kCloudEnvironmentConfigProd,
+  CloudEnvironment.qa: kCloudEnvironmentConfigQa,
+  CloudEnvironment.dev: kCloudEnvironmentConfigDev,
+};
+
+///
+final kClientTypeId = Platform.isIOS ? 'E918E731-F2CD-4A85-8CFA-1CD8C495939B' : '';
+final kClientSecret = Platform.isIOS ? "I6BVSkCrAvQCR6FjOxfxVDdhGcqTsJr2" : '';
 
 // Moab header keys
 const moabSiteIdKey = 'X-Linksys-Moab-Site-Id';
@@ -16,7 +69,8 @@ const moabAppClientId = '991490F1-AD1D-47E0-81AD-190B11757252'; // TODO fake
 
 const moabCloudConfigHost = 'https://config.linksys.cloud/';
 // TODO #1 update resource url
-String get moabCloudResourceHost => 'https://${cloudEnvTarget == CloudEnvironment.prod ? '' : (cloudEnvTarget.name + '-')}resource.linksys.cloud';
+String get moabCloudResourceHost =>
+    'https://${cloudEnvTarget == CloudEnvironment.prod ? '' : (cloudEnvTarget.name + '-')}resource.linksys.cloud';
 
 const configFileName = 'environment.json';
 const allConfigFileName = 'all-environments.json';
@@ -30,9 +84,14 @@ const appIconsFilename = 'secure/icons.png';
 const appIconKeysFilename = 'secure/icon-keys.json';
 
 // Cloud config url
-String get cloudConfigUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$configFileName';
-String get allCloudConfigUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$allConfigFileName';
-String get availabilityUrl => 'https://cloudhealth.lswf.net/cloud-availability/cloud-qa.json';
+String get cloudConfigUrl =>
+    '$moabCloudConfigHost${cloudEnvTarget.name}/$configFileName';
+
+String get allCloudConfigUrl =>
+    '$moabCloudConfigHost${cloudEnvTarget.name}/$allConfigFileName';
+
+String get availabilityUrl =>
+    'https://cloudhealth.lswf.net/cloud-availability/cloud-qa.json';
 
 // Country code url
 // String get countryCodeUrl => '$moabCloudConfigHost${cloudEnvTarget.name}/$regionCodesFileName';
@@ -45,7 +104,8 @@ String get availabilityUrl => 'https://cloudhealth.lswf.net/cloud-availability/c
 // String get profilePresetsUrl =>'$moabCloudConfigHost${cloudEnvTarget.name}/$profilePresetsFilename';
 
 // AWS IoT root CA
-String get awsIoTRootCA => 'https://www.amazontrust.com/repository/AmazonRootCA1.pem';
+String get awsIoTRootCA =>
+    'https://www.amazontrust.com/repository/AmazonRootCA1.pem';
 
 // Cloud path constants
 const version = '/v1';
@@ -74,41 +134,58 @@ const varSerialNumber = '{serialNumber}';
 const endpointCreateApps = '$version/apps';
 const endpointGetApps = '$version/apps/$varAppId';
 const endpointPutSmartDevices = '$version/apps/$varAppId/smart-devices';
-const endpointPutAcceptSmartDevices = '$version/apps/$varAppId/smart-devices/ACCEPTED';
+const endpointPutAcceptSmartDevices =
+    '$version/apps/$varAppId/smart-devices/ACCEPTED';
 const endpointPostAcceptEULA = '$version/apps/$varAppId/eula/$varNetworkId';
-const endpointPostCertExtensions = '$version$authPath/certificates/$varCertificateId/extensions';
-const endpointPostCertSessions = '$version$authPath/certificates/$varCertificateId/sessions';
+const endpointPostCertExtensions =
+    '$version$authPath/certificates/$varCertificateId/extensions';
+const endpointPostCertSessions =
+    '$version$authPath/certificates/$varCertificateId/sessions';
 
-const endpointPostAccountPreparations = '$version$accountPath/verified-first/preparations';
-const endpointPutAccountPreparations = '$version$accountPath/verified-first/preparations/$varVerifyToken';
+const endpointPostAccountPreparations =
+    '$version$accountPath/verified-first/preparations';
+const endpointPutAccountPreparations =
+    '$version$accountPath/verified-first/preparations/$varVerifyToken';
 const endpointPostCreateAccount = '$version$accountPath/verified-first/';
 
 const endpointPostAuthChallenges = '$version$authPath/challenges';
-const endpointPutAuthChallenges = '$version$authPath/challenges/verifications/$varVerifyToken';
-const endpointPutVerificationAccept = '$version$verificationsPath/$varVerifyToken/ACCEPTED';
+const endpointPutAuthChallenges =
+    '$version$authPath/challenges/verifications/$varVerifyToken';
+const endpointPutVerificationAccept =
+    '$version$verificationsPath/$varVerifyToken/ACCEPTED';
 
 const endpointPostLoginPrepare = '$version$authPath/login/prepare';
-const endpointGetMaskedCommunicationMethods = '$version$accountPath/masked-communication-methods?username=$varUsername';
+const endpointGetMaskedCommunicationMethods =
+    '$version$accountPath/masked-communication-methods?username=$varUsername';
 const endpointPostLoginPassword = '$version$authPath/login/password';
 const endpointPostLogin = '$version$authPath/login';
 const endpointGetTasks = '$version$tasksPath/$varTaskId?token=$varToken';
 const endPointGetPrimaryTasks = '$version$primaryTasksPath/$varTaskId';
 const endpointGetAccountSelf = '$version$accountPath/self';
-const endpointPostCommunicationMethods = '$version$accountPath/$varAccountId/communication-methods?flow=$varFlow';
-const endpointDeleteAuthCommunicationMethod = '$version$accountPath/$varAccountId/communication-methods?method=$varMethod&targetValue=$varTargetValue';
-const endpointPostChangePassword = '$version$accountPath/$varAccountId/password/change';
+const endpointPostCommunicationMethods =
+    '$version$accountPath/$varAccountId/communication-methods?flow=$varFlow';
+const endpointDeleteAuthCommunicationMethod =
+    '$version$accountPath/$varAccountId/communication-methods?method=$varMethod&targetValue=$varTargetValue';
+const endpointPostChangePassword =
+    '$version$accountPath/$varAccountId/password/change';
 const endpointPreferences = '$version$accountPath/$varAccountId/preferences';
-const endpointDefaultNetworkGroup = '$version$accountPath/$varAccountId/network-groups/DEFAULT';
-const endpointAuthenticationModePrepare = '$version$accountPath/$varAccountId/authentication-mode/prepare';
-const endpointAuthenticationModeChange = '$version$accountPath/$varAccountId/authentication-mode';
+const endpointDefaultNetworkGroup =
+    '$version$accountPath/$varAccountId/network-groups/DEFAULT';
+const endpointAuthenticationModePrepare =
+    '$version$accountPath/$varAccountId/authentication-mode/prepare';
+const endpointAuthenticationModeChange =
+    '$version$accountPath/$varAccountId/authentication-mode';
 
 const endpointGetNetworks = '$version$accountPath/$varAccountId/networks';
-const endpointGetNetworkById = '$version$accountPath/$varAccountId/networks/$varNetworkId';
+const endpointGetNetworkById =
+    '$version$accountPath/$varAccountId/networks/$varNetworkId';
 
-
-const endpointSubscriptionQueryProductListings = '$version$subscriptionPath/product-listings';
-const endpointSubscriptionCreateCloudOrders = '$version$subscriptionPath/orders';
-const endpointSubscriptionGetNetworkEntitlement = '$version$subscriptionPath/network-serial-numbers/$varSerialNumber/entitlements';
+const endpointSubscriptionQueryProductListings =
+    '$version$subscriptionPath/product-listings';
+const endpointSubscriptionCreateCloudOrders =
+    '$version$subscriptionPath/orders';
+const endpointSubscriptionGetNetworkEntitlement =
+    '$version$subscriptionPath/network-serial-numbers/$varSerialNumber/entitlements';
 //
 const keyRequire2sv = 'REQUIRE_2SV';
-const keyPasswordRequired ='PASSWORD_REQUIRED';
+const keyPasswordRequired = 'PASSWORD_REQUIRED';

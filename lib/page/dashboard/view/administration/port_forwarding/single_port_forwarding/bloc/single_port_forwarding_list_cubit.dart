@@ -1,8 +1,8 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/model/router/single_port_forwarding_rule.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
-import 'package:linksys_moab/repository/router/firewall_extension.dart';
+import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
+import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 
 part 'single_port_forwarding_list_state.dart';
@@ -18,7 +18,7 @@ class SinglePortForwardingListCubit
   fetch() async {
     _repository
         .getSinglePortForwardingRules()
-        .then<JnapSuccess?>((value) {
+        .then<JNAPSuccess?>((value) {
           final rules = List.from(value.output['rules']).map((e) => SinglePortForwardingRule.fromJson(e)).toList();
           final int maxRules = value.output['maxRules'] ?? 50;
           final int maxDesc = value.output['maxDescriptionLength'] ?? 32;
@@ -26,7 +26,7 @@ class SinglePortForwardingListCubit
     })
         .onError(
       (error, stackTrace) {
-        addError(error as JnapError, stackTrace);
+        addError(error as JNAPError, stackTrace);
       },
     );
   }

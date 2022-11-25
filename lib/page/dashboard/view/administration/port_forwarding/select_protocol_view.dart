@@ -44,11 +44,11 @@ class _SelectProtocolContentViewState extends State<SelectProtocolContentView> {
     _subscription = context.read<ConnectivityCubit>().stream.listen((state) {
       logger.d('IP detail royterType: ${state.connectivityInfo.routerType}');
       _isBehindRouter =
-          state.connectivityInfo.routerType == RouterType.managedMoab;
+          state.connectivityInfo.routerType == RouterType.behindManaged;
     });
     _isBehindRouter =
         context.read<ConnectivityCubit>().state.connectivityInfo.routerType ==
-            RouterType.managedMoab;
+            RouterType.behindManaged;
 
     _selected = widget.args['selected'] ?? 'UDP';
     super.initState();

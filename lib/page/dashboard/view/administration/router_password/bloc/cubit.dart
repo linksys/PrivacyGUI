@@ -3,10 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/network/better_action.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
+import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/router_password/bloc/state.dart';
-import 'package:linksys_moab/repository/router/batch_extension.dart';
-import 'package:linksys_moab/repository/router/core_extension.dart';
+import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 
@@ -33,7 +32,7 @@ class RouterPasswordCubit extends Cubit<RouterPasswordState> {
           .onError((error, stackTrace) => '');
     }
     const storage = FlutterSecureStorage();
-    final password = await storage.read(key: moabPrefLocalPassword);
+    final password = await storage.read(key: linksysPrefLocalPassword);
 
     emit(state.copyWith(
         isDefault: isAdminDefault,
@@ -47,7 +46,7 @@ class RouterPasswordCubit extends Cubit<RouterPasswordState> {
         .createAdminPassword(password, hint)
         .then<void>((value) async {
       const storage = FlutterSecureStorage();
-      await storage.write(key: moabPrefLocalPassword, value: password);
+      await storage.write(key: linksysPrefLocalPassword, value: password);
       await fetch();
     }).onError((error, stackTrace) => onError(error ?? Object(), stackTrace));
   }
@@ -63,7 +62,7 @@ class RouterPasswordCubit extends Cubit<RouterPasswordState> {
   @override
   void onError(Object error, StackTrace stackTrace) {
     super.onError(error, stackTrace);
-    if (error is JnapError) {
+    if (error is JNAPError) {
       // handle error
       emit(state.copyWith(error: error.error));
     }

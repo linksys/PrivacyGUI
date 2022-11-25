@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/model/router/lan_settings.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
-import 'package:linksys_moab/repository/router/router_extension.dart';
+import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
+import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
@@ -192,7 +192,7 @@ class LANCubit extends Cubit<LANState> {
   @override
   void onError(Object error, StackTrace stackTrace) {
     super.onError(error, stackTrace);
-    if (error is JnapError) {
+    if (error is JNAPError) {
       // TODO handle error
       // emit(state.copyWith(errors: error.error));
     }

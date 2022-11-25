@@ -55,11 +55,11 @@ class _IpDetailsContentViewState extends State<IpDetailsContentView> {
     _subscription = context.read<ConnectivityCubit>().stream.listen((state) {
       logger.d('IP detail royterType: ${state.connectivityInfo.routerType}');
       _isBehindRouter =
-          state.connectivityInfo.routerType == RouterType.managedMoab;
+          state.connectivityInfo.routerType == RouterType.behindManaged;
     });
     _isBehindRouter =
         context.read<ConnectivityCubit>().state.connectivityInfo.routerType ==
-            RouterType.managedMoab;
+            RouterType.behindManaged;
 
     super.initState();
   }

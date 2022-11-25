@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/model/router/ipv6_automatic_settings.dart';
 import 'package:linksys_moab/model/router/wan_status.dart';
 import 'package:linksys_moab/network/better_action.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
-import 'package:linksys_moab/repository/router/batch_extension.dart';
+import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
+import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 
@@ -66,7 +66,7 @@ class InternetSettingsCubit extends Cubit<InternetSettingsState> {
   @override
   void onError(Object error, StackTrace stackTrace) {
     super.onError(error, stackTrace);
-    if (error is JnapError) {
+    if (error is JNAPError) {
       // handle error
       emit(state.copyWith(error: error.error));
     }

@@ -60,7 +60,6 @@ dependencies:
   share_plus: ^4.0.10
   package_info_plus: ^1.4.2
   phone_number: 1.0.0
-  mqtt_client: ^9.7.2
   uuid: ^3.0.6
   flutter_inappwebview: 5.7.0
   shared_preferences: ^2.0.15
@@ -117,8 +116,6 @@ flutter:
     - assets/icons/
     - assets/images/
     - assets/resources/
-    - assets/keys/
-    - assets/keys/local/
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
 

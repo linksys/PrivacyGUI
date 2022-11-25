@@ -83,12 +83,12 @@ class _InternetSettingsContentViewState
       logger.d('IP detail royterType: ${state.connectivityInfo.routerType}');
       setState(() {
         _isBehindRouter =
-            state.connectivityInfo.routerType == RouterType.managedMoab;
+            state.connectivityInfo.routerType == RouterType.behindManaged;
       });
     });
     _isBehindRouter =
         context.read<ConnectivityCubit>().state.connectivityInfo.routerType ==
-            RouterType.managedMoab;
+            RouterType.behindManaged;
 
     super.initState();
   }

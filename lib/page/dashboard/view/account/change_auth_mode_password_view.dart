@@ -91,7 +91,7 @@ class _ChangeAuthModePasswordViewState
     const storage = FlutterSecureStorage();
     String accountId = context.read<AccountCubit>().state.id;
     await storage.write(
-        key: moabPrefCloudAccountPasswordKey, value: passwordController.text);
+        key: linksysPrefCloudAccountPasswordKey, value: passwordController.text);
     context
         .read<AuthBloc>()
         .changeAuthMode(accountId, token, passwordController.text)
@@ -112,7 +112,7 @@ class _ChangeAuthModePasswordViewState
 
   Future<void> changeAuthModeToPasswordless(BuildContext context) async {
     const storage = FlutterSecureStorage();
-    await storage.delete(key: moabPrefCloudAccountPasswordKey);
+    await storage.delete(key: linksysPrefCloudAccountPasswordKey);
     String accountId = context.read<AccountCubit>().state.id;
     context
         .read<AuthBloc>()

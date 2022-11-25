@@ -8,6 +8,9 @@ import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/_constants.dart';
+import 'package:linksys_moab/network/base_client.dart';
+import 'package:linksys_moab/network/mqtt/model/command/base_command.dart';
+import 'package:linksys_moab/network/mqtt/model/command/http_base_command.dart';
 import 'package:linksys_moab/util/extensions.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:http/io_client.dart';
@@ -28,7 +31,7 @@ void releaseErrorResponseStream() {
 ///
 /// timeout - will throw Timeout exception on ${timeout} seconds
 ///
-class MoabHttpClient extends http.BaseClient {
+class MoabHttpClient extends http.BaseClient with JNAPCommandExecutor<Response> {
   MoabHttpClient({
     IOClient? client,
     int timeoutMs = 10000,
@@ -242,13 +245,12 @@ class MoabHttpClient extends http.BaseClient {
     if (request != null) {
       logger.i('\nRESPONSE---------------------------------------------------\n'
           'URL: ${request.url}, METHOD: ${request.method}\n'
-          'HEADERS: ${response.headers}\n'
+          'REQUEST HEADERS: ${request.headers}\n'
+          'RESPONSE HEADERS: ${response.headers}\n'
           'RESPONSE: ${response.statusCode}, ${ignoreResponse ? '' : response.body}\n'
           '---------------------------------------------------RESPONSE END\n');
     }
   }
-
-  setSecurityContext(SecurityContext context) {}
 
   ///
   /// Handling Cloud Error Response
@@ -264,6 +266,19 @@ class MoabHttpClient extends http.BaseClient {
       throw error;
     }
     return response;
+  }
+
+  @override
+  void dropCommand(String id) {
+    // DO nothing
+  }
+
+  @override
+  Future<Response> execute(BaseCommand command) async {
+    if (command is JNAPHttpCommand) {
+      return post(Uri.parse(command.url), headers: command.header, body: command.data);
+    }
+    throw Exception();
   }
 }
 

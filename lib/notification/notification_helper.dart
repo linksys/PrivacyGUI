@@ -47,7 +47,7 @@ void initCloudMessage() async {
     IosPushNotificationPlugin().requestAuthorization().then((grant) {
       logger.i('APNS: User authorization result: $grant');
     });
-    logger.i('APNS token back: ${(await SharedPreferences.getInstance()).getString(moabPrefDeviceToken)}');
+    logger.i('APNS token back: ${(await SharedPreferences.getInstance()).getString(linksysPrefDeviceToken)}');
     return;
   }
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);

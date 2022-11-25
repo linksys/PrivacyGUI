@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -59,6 +60,7 @@ void main() async {
   //   // }
   //   exit(1);
   // });
+  HttpOverrides.global = MyHTTPOverrides();
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await Storage.init();
@@ -82,7 +84,6 @@ void main() async {
     //   exit(1);
     // }
     // exit(1);
-
   };
   PlatformDispatcher.instance.onError = (error, stack) {
     logger.e('Uncaught Error:\n', error, stack);
@@ -109,7 +110,8 @@ Widget _app() {
       RepositoryProvider(create: (context) => CloudAccountRepository()),
       RepositoryProvider(create: (context) => RouterRepository()),
       RepositoryProvider(create: (context) => CloudNetworksRepository()),
-      RepositoryProvider(create: (context) => OtpRepository(httpClient: MoabHttpClient())),
+      RepositoryProvider(
+          create: (context) => OtpRepository(httpClient: MoabHttpClient())),
       RepositoryProvider(create: (context) => SubscriptionRepository())
     ],
     child: MultiBlocProvider(providers: [
@@ -127,11 +129,21 @@ Widget _app() {
                 routerRepository: context.read<RouterRepository>(),
               )),
       BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
-      BlocProvider(create: (BuildContext context) => OtpCubit(otpRepository: context.read<OtpRepository>())),
-      BlocProvider(create: (BuildContext context) => SetupBloc(routerRepository: context.read<RouterRepository>())),
-      BlocProvider(create: (BuildContext context) => ProfilesCubit(context.read<RouterRepository>())),
-      BlocProvider(create: (BuildContext context) => DeviceCubit(routerRepository: context.read<RouterRepository>())),
-      BlocProvider(create: (BuildContext context) => NodeCubit(context.read<RouterRepository>())),
+      BlocProvider(
+          create: (BuildContext context) =>
+              OtpCubit(otpRepository: context.read<OtpRepository>())),
+      BlocProvider(
+          create: (BuildContext context) =>
+              SetupBloc(routerRepository: context.read<RouterRepository>())),
+      BlocProvider(
+          create: (BuildContext context) =>
+              ProfilesCubit(context.read<RouterRepository>())),
+      BlocProvider(
+          create: (BuildContext context) =>
+              DeviceCubit(routerRepository: context.read<RouterRepository>())),
+      BlocProvider(
+          create: (BuildContext context) =>
+              NodeCubit(context.read<RouterRepository>())),
       BlocProvider(
           create: (BuildContext context) =>
               AccountCubit(repository: context.read<CloudAccountRepository>())),
@@ -141,14 +153,19 @@ Widget _app() {
           create: (BuildContext context) => SubscriptionCubit(
               repository: context.read<SubscriptionRepository>())),
       BlocProvider(
-          create: (BuildContext context) => NetworkCubit(networksRepository: context.read<CloudNetworksRepository>(),
+          create: (BuildContext context) => NetworkCubit(
+                networksRepository: context.read<CloudNetworksRepository>(),
                 routerRepository: context.read<RouterRepository>(),
               )),
       BlocProvider(
           create: (BuildContext context) => InternetCheckCubit(
               routerRepository: context.read<RouterRepository>())),
-      BlocProvider(create: (BuildContext context) => AddNodesCubit(routerRepository: context.read<RouterRepository>())),
-      BlocProvider(create: (BuildContext context) => WifiSettingCubit(routerRepository: context.read<RouterRepository>())),
+      BlocProvider(
+          create: (BuildContext context) => AddNodesCubit(
+              routerRepository: context.read<RouterRepository>())),
+      BlocProvider(
+          create: (BuildContext context) => WifiSettingCubit(
+              routerRepository: context.read<RouterRepository>())),
     ], child: const MoabApp()),
   );
 }
@@ -176,7 +193,6 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
     _cubit.forceUpdate().then((value) => _initAuth());
     super.initState();
     FlutterNativeSplash.remove();
-
   }
 
   @override
@@ -221,5 +237,17 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
     }, onDone: () {
       _subscription.cancel();
     }, onError: (Object error) {});
+  }
+}
+
+class MyHTTPOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) {
+      // logger.d('cert:: issuer:${cert.issuer}, subject:${cert.subject}');
+      return true;
+          };
   }
 }

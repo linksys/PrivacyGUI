@@ -141,7 +141,7 @@ class CloudEnvironmentManager with StateStreamRegister {
 
   Future<void> registerSmartDevice() async {
     SharedPreferences pref = await SharedPreferences.getInstance();
-    final deviceToken = pref.getString(moabPrefDeviceToken) ?? '';
+    final deviceToken = pref.getString(linksysPrefDeviceToken) ?? '';
     final pushPlatform = Platform.isIOS ? 'APNS' : 'GCM';
     CloudSmartDevice smartDevice =
         CloudSmartDevice(platform: pushPlatform, deviceToken: deviceToken);
@@ -166,7 +166,7 @@ class CloudEnvironmentManager with StateStreamRegister {
 
   Future<void> checkSmartDevice() async {
     final pref = await SharedPreferences.getInstance();
-    if (pref.getString(moabPrefDeviceToken) == null) {
+    if (pref.getString(linksysPrefDeviceToken) == null) {
       return;
     }
     await fetchCloudApp();
@@ -200,9 +200,9 @@ class CloudEnvironmentManager with StateStreamRegister {
   }
 
   void updateDeviceToken(String deviceToken) => SharedPreferences.getInstance()
-      .then((pref) => pref.setString(moabPrefDeviceToken, deviceToken));
+      .then((pref) => pref.setString(linksysPrefDeviceToken, deviceToken));
 
-  String _getAppKey() => '${moabPrefAppKey}_${cloudEnvTarget.name}';
+  String _getAppKey() => '${linksysPrefAppKey}_${cloudEnvTarget.name}';
 
   Future<bool> _isCloudAppExist() async {
     if (_app?.appSecret != null) {

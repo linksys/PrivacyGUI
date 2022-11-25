@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/bloc/state.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/topology_node.dart';
-import 'package:linksys_moab/repository/router/device_list_extension.dart';
+import 'package:linksys_moab/repository/router/commands/device_list_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/utils.dart';
 

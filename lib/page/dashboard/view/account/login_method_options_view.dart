@@ -170,7 +170,7 @@ class _LoginMethodOptionsViewState extends State<LoginMethodOptionsView> {
     String? password;
     if(state.authMode.toUpperCase() == 'PASSWORD') {
       const storage = FlutterSecureStorage();
-      final pwd = await storage.read(key: moabPrefCloudAccountPasswordKey);
+      final pwd = await storage.read(key: linksysPrefCloudAccountPasswordKey);
       if(pwd != null) {
         password = pwd;
       }
@@ -190,7 +190,7 @@ class _LoginMethodOptionsViewState extends State<LoginMethodOptionsView> {
   Future<void> initPassword() async {
     const storage = FlutterSecureStorage();
     final accountPassword =
-        await storage.read(key: moabPrefCloudAccountPasswordKey);
+        await storage.read(key: linksysPrefCloudAccountPasswordKey);
     if (accountPassword != null) {
       setState((){
         password = accountPassword;

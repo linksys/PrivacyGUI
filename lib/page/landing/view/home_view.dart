@@ -83,7 +83,7 @@ class _HomeViewState extends State<HomeView> {
         onPress: () async {
           // TODO local auth check
           final pref = await SharedPreferences.getInstance();
-          if (pref.containsKey(moabPrefEnableBiometrics)) {
+          if (pref.containsKey(linksysPrefEnableBiometrics)) {
             if (await Utils.checkCertValidation()) {
               // TODO
               // bool canUseBiometrics = await Utils.canUseBiometrics();

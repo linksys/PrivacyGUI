@@ -7,12 +7,9 @@ import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/unconfigured_node.dart';
 import 'package:linksys_moab/network/better_action.dart';
-import 'package:linksys_moab/network/mqtt/model/command/jnap/base.dart';
-import 'package:linksys_moab/repository/router/auto_onboarding_extension.dart';
-import 'package:linksys_moab/repository/router/bluetooth_extension.dart';
-import 'package:linksys_moab/repository/router/device_list_extension.dart';
+import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
+import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/repository/router/transactions_extension.dart';
 import 'package:linksys_moab/util/logger.dart';
 
 import 'state.dart';
@@ -84,10 +81,11 @@ class AddNodesCubit extends Cubit<AddNodesState> {
   }
 
   save() async {
-    return _repository
-        .configureDeviceProperties(deviceProperties: state.properties)
-        .then<void>((_) {})
-        .onError((error, stackTrace) => onError(error!, stackTrace));
+    // TODO #LINKSYS
+    // return _repository
+    //     .configureDeviceProperties(deviceProperties: state.properties)
+    //     .then<void>((_) {})
+    //     .onError((error, stackTrace) => onError(error!, stackTrace));
   }
 
   NodeProperties _deviceToProperties(RouterDevice device) {
@@ -157,9 +155,9 @@ class AddNodesCubit extends Cubit<AddNodesState> {
     );
   }
 
-  _checkFindingNodesFinish(JnapResult result) async {
+  _checkFindingNodesFinish(JNAPResult result) async {
     logger.d('_checkFindingNodesFinish - $result');
-    if (result is JnapSuccess) {
+    if (result is JNAPSuccess) {
       final isRunning = result.output['isRunning'] as bool? ?? true;
       final discovery = result.output['discovery'];
       if (isRunning) {
@@ -187,8 +185,8 @@ class AddNodesCubit extends Cubit<AddNodesState> {
     }
   }
 
-  Future<bool> _checkAddingNodesFinish(JnapResult result) async {
-    if (result is JnapSuccess) {
+  Future<bool> _checkAddingNodesFinish(JNAPResult result) async {
+    if (result is JNAPSuccess) {
       final status = result.output['autoOnboardingStatus'];
       if (status == 'Running') {
         return false;
@@ -209,7 +207,7 @@ class AddNodesCubit extends Cubit<AddNodesState> {
             action: JNAPAction.getDevices,
             condition: () => allDone)
         .listen((event) {
-      if (event is JnapSuccess) {
+      if (event is JNAPSuccess) {
         final routerDevices = List.from(event.output['devices'])
             .map((e) => RouterDevice.fromJson(e))
             .toList();
@@ -237,7 +235,7 @@ class AddNodesCubit extends Cubit<AddNodesState> {
   @override
   void onError(Object error, StackTrace stackTrace) {
     super.onError(error, stackTrace);
-    if (error is JnapError) {
+    if (error is JNAPError) {
       // handle error
       emit(state.copyWith(error: error.error));
     }

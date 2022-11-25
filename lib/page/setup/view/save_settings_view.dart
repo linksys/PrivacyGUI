@@ -94,23 +94,24 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
       }
       _setupBloc.add(ResumePointChanged(
           status: SetupResumePoint.wifiConnectionBackSuccess));
-      _tryConnectMQTT().then((value) {
-        if (value) {
-          logger.d('SaveSettings:: _listenConnectivityChange(): $value');
-
-          _setupBloc.add(FetchNetworkId());
-        } else {
-          _setupBloc.add(ResumePointChanged(
-              status: SetupResumePoint.wifiConnectionBackFailed));
-        }
-      });
+      // TODO #LINKSYS
+      // _tryConnectMQTT().then((value) {
+      //   if (value) {
+      //     logger.d('SaveSettings:: _listenConnectivityChange(): $value');
+      //
+      //     _setupBloc.add(FetchNetworkId());
+      //   } else {
+      //     _setupBloc.add(ResumePointChanged(
+      //         status: SetupResumePoint.wifiConnectionBackFailed));
+      //   }
+      // });
     });
   }
 
   Future _associateNetwork() async {
     await _accountCubit.fetchAccount();
     // connect to local broker again
-    await _connectivityCubit.connectToLocalBroker();
+    // await _connectivityCubit.connectToLocalBroker();
     // get group ID, account ID from cloud
     final accountId = _accountCubit.state.id;
     final groupId = _accountCubit.state.groupId;
@@ -119,24 +120,24 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
     //
   }
 
-  Future<bool> _tryConnectMQTT() async {
-    logger.d('SaveSettings:: _tryConnectMQTT()');
-    const maxRetry = 20;
-    int retry = 0;
-    bool isConnect = false;
-    do {
-      isConnect = await _connectivityCubit
-          .connectToLocalBroker()
-          .onError((error, stackTrace) => false);
-      if (isConnect) {
-        return isConnect;
-      } else {
-        retry++;
-        await Future.delayed(const Duration(seconds: 6));
-      }
-    } while (retry < maxRetry);
-    return isConnect;
-  }
+  // Future<bool> _tryConnectMQTT() async {
+  //   logger.d('SaveSettings:: _tryConnectMQTT()');
+  //   const maxRetry = 20;
+  //   int retry = 0;
+  //   bool isConnect = false;
+  //   do {
+  //     isConnect = await _connectivityCubit
+  //         .connectToLocalBroker()
+  //         .onError((error, stackTrace) => false);
+  //     if (isConnect) {
+  //       return isConnect;
+  //     } else {
+  //       retry++;
+  //       await Future.delayed(const Duration(seconds: 6));
+  //     }
+  //   } while (retry < maxRetry);
+  //   return isConnect;
+  // }
 
   @override
   Widget build(BuildContext context) {

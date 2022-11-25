@@ -10,11 +10,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/connectivity/availability_info.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/model/router/device_info.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
-import 'package:linksys_moab/repository/router/batch_extension.dart';
+import 'package:linksys_moab/network/http/model/cloud_app.dart';
+import 'package:linksys_moab/repository/router/commands/batch_extension.dart';
+import 'package:linksys_moab/repository/router/commands/core_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:network_info_plus/network_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants/_constants.dart';
 import 'connectivity_info.dart';
@@ -79,10 +83,6 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
       ConnectivityInfo connectivityInfo, AvailabilityInfo? cloudInfo) async {
     logger.d('_internetCheckCallback: $hasConnection, $connectivityInfo');
 
-    // if (hasConnection) {
-    //   await CloudEnvironmentManager().fetchCloudConfig();
-    //   // await CloudEnvironmentManager().fetchAllCloudConfigs();
-    // }
     var routerType = RouterType.others;
     if (hasConnection) {
       routerType = await _testRouterType(connectivityInfo.gatewayIp);
@@ -102,16 +102,25 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
   }
 
   Future<RouterType> _testRouterType(String? newIp) async {
-    bool canDownloadCert = await _routerRepository
-        .testLocalCert(gatewayIp: newIp)
+    final testJNAP = await _routerRepository
+        .isAdminPasswordDefault()
+        .then((value) => true)
         .onError((error, stackTrace) => false);
-    if (!canDownloadCert) {
+    if (!testJNAP) {
       return RouterType.others;
     }
-    logger.d('test connect to local with cloud cert');
-    bool isManaged =
-        await _routerRepository.connectToLocalWithCloudCert(gatewayIp: newIp);
-    return isManaged ? RouterType.managedMoab : RouterType.moab;
+
+    final routerSN = await _routerRepository
+        .getDeviceInfo()
+        .then<String>(
+            (value) => RouterDeviceInfo.fromJson(value.output).serialNumber)
+        .onError((error, stackTrace) => '');
+    final prefs = await SharedPreferences.getInstance();
+    final currentSN = prefs.get(linkstyPrefCurrentSN);
+    if (routerSN.isNotEmpty && routerSN == currentSN) {
+      return RouterType.behindManaged;
+    }
+    return RouterType.behind;
   }
 
   @override
@@ -119,14 +128,6 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
     super.onChange(change);
     logger.i(
         'Connectivity Cubit change: ${change.currentState} -> ${change.nextState}');
-  }
-
-  Future<bool> connectToLocalBroker() async {
-    return await _routerRepository.connectToLocalWithPassword();
-  }
-
-  Future<bool> connectToBroker() async {
-    return _routerRepository.connectToBroker();
   }
 
   Future<RouterConfiguredData> isRouterConfigured() async {
@@ -175,8 +176,7 @@ mixin AvailabilityChecker {
     if (!hasConnection) {
       return _callback?.call(hasConnection, info, null);
     }
-    // final cloudAvailability = await testCloudAvailability();
-    final cloudAvailability = AvailabilityInfo(isCloudOk: true);
+    final cloudAvailability = await testCloudAvailability();
 
     return _callback?.call(hasConnection, info, cloudAvailability);
   }

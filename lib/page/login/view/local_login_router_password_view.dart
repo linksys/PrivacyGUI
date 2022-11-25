@@ -6,6 +6,7 @@ import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
+import 'package:linksys_moab/network/mqtt/model/command/jnap/jnap_result.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/customs/network_check_view.dart';
@@ -13,6 +14,7 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/util/error_code_handler.dart';
 
 import 'package:linksys_moab/util/logger.dart';
 
@@ -30,6 +32,8 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
   bool _isLoading = false;
   bool _isPasswordValidate = false;
   String _errorReason = '';
+
+  String _hint = '';
 
   final TextEditingController _passwordController = TextEditingController();
 
@@ -64,10 +68,10 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     });
 
     final bloc = context.read<AuthBloc>();
-    bool isConnected = await context
-        .read<ConnectivityCubit>()
-        .connectToLocalBroker()
-        .onError((error, stackTrace) => false);
+    bool isConnected =
+        context.read<ConnectivityCubit>().state.connectivityInfo.routerType !=
+            RouterType.others;
+
     if (isConnected) {
       await context.read<NetworkCubit>().getDeviceInfo();
       await bloc
@@ -98,11 +102,27 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
             hintText: getAppLocalizations(context).router_password,
             onChanged: _verifyPassword,
             isError: _errorReason.isNotEmpty,
-            errorText: _errorReason,
+            errorText: generalErrorCodeHandler(context, _errorReason),
           ),
           const SizedBox(
             height: 26,
           ),
+          if (_hint.isNotEmpty)
+            Theme(
+              data:
+                  Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                title: Text(getAppLocalizations(context).show_hint),
+                collapsedTextColor: Theme.of(context).colorScheme.onTertiary,
+                textColor: Theme.of(context).colorScheme.onTertiary,
+                tilePadding: EdgeInsets.zero,
+                backgroundColor: Colors.transparent,
+                trailing: const SizedBox(),
+                expandedAlignment: Alignment.centerLeft,
+                expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                children: [Text(_hint)],
+              ),
+            ),
           SimpleTextButton(
               text: getAppLocalizations(context).forgot_router_password,
               onPressed: () {
@@ -142,13 +162,17 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
   _handleAdminPasswordInfo(AdminPasswordInfo info) {
     if (!info.hasAdminPassword) {
       NavigationCubit.of(context).replace(CreateAdminPasswordPath()..args = {});
+    } else {
+      setState(() {
+        _hint = info.hint;
+      });
     }
   }
 
   _handleError(Object? e, StackTrace trace) {
-    if (e is ErrorResponse) {
+    if (e is JNAPError) {
       setState(() {
-        _errorReason = e.code;
+        _errorReason = e.result;
       });
     } else {
       // Unknown error or error parsing
@@ -156,43 +180,3 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     }
   }
 }
-
-// class ShowHintSection extends StatefulWidget {
-//   const ShowHintSection({Key? key, required this.hint}) : super(key: key);
-//
-//   final String hint;
-//
-//   @override
-//   _ShowHintSectionState createState() => _ShowHintSectionState();
-// }
-//
-// class _ShowHintSectionState extends State<ShowHintSection> {
-//   bool isShowingHint = false;
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         SimpleTextButton(
-//             text: isShowingHint ? 'Hide hint' : 'Show hint',
-//             onPressed: () {
-//               setState(() {
-//                 isShowingHint = !isShowingHint;
-//               });
-//             }),
-//         Visibility(
-//           visible: isShowingHint,
-//           child: Text(widget.hint,
-//               style: Theme.of(context)
-//                   .textTheme
-//                   .headline3
-//                   ?.copyWith(color: Theme.of(context).colorScheme.primary)),
-//         ),
-//         SizedBox(
-//           height: isShowingHint ? 54 : 18,
-//         ),
-//       ],
-//     );
-//   }
-// }
