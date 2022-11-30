@@ -16,6 +16,7 @@ import 'package:linksys_moab/bloc/security/event.dart';
 import 'package:linksys_moab/bloc/security/state.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
+import 'package:linksys_moab/network/bluetooth.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -25,6 +26,7 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
+import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/commands/core_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -144,7 +146,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
   List<Widget> _buildDebug() {
     if (kReleaseMode) return [];
     return [
-      ..._buildSubscriptionTesting(),
+      ..._buildBluetoothTestSection(),
       SecondaryButton(
         text: 'Raise an Exception!',
         onPress: () {
@@ -333,99 +335,20 @@ class _DebugToolsViewState extends State<DebugToolsView> {
     ];
   }
 
-  List<Widget> _buildSubscriptionTesting() {
+  List<Widget> _buildBluetoothTestSection() {
     return [
-      box16(),
-      Text(
-        'Default Preset:',
-        style: Theme.of(context)
-            .textTheme
-            .headline2
-            ?.copyWith(color: Theme.of(context).colorScheme.primary),
-      ),
-      PrimaryButton(
-        text: 'Load Security Preset',
-        onPress: () {
-          final repo = context.read<RouterRepository>();
-          repo.isAdminPasswordDefault();
-
-        },
-      ),
-      Text(
-        'Subscription:',
-        style: Theme.of(context)
-            .textTheme
-            .headline2
-            ?.copyWith(color: Theme.of(context).colorScheme.primary),
-      ),
-      SecondaryButton(
-        text: 'Activate Trial Subscription',
-        onPress: () {
-          // context.read<SecurityBloc>().add(SetTrialActiveEvent());
-          final repo = context.read<RouterRepository>();
-          repo.getDeviceInfo();
-        },
-      ),
-      box8(),
-      SecondaryButton(
-        text: 'Activate Formal Subscription',
-        onPress: () {
-          context.read<SecurityBloc>().add(SetFormalActiveEvent());
-        },
-      ),
-      box8(),
-      SecondaryButton(
-        text: 'Turn Off Security',
-        onPress: () {
-          context.read<SecurityBloc>().add(TurnOffSecurityEvent());
-        },
-      ),
-      box8(),
-      SecondaryButton(
-        text: 'Unsubscribe',
-        onPress: () {
-          context.read<SecurityBloc>().add(SetUnsubscribedEvent());
-        },
-      ),
-      box8(),
-      Row(
+      ExpansionTile(
+        expandedAlignment: Alignment.centerLeft,
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+        initiallyExpanded: true,
+        title: Text('Bluetooth testing'),
         children: [
-          Expanded(
-            child: SecondaryButton(
-              text: 'Virus+1',
-              onPress: () {
-                context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
-                      type: CyberthreatType.virus,
-                      number: 1,
-                    ));
-              },
-            ),
-          ),
-          box8(),
-          Expanded(
-            child: SecondaryButton(
-              text: 'Botnet+1',
-              onPress: () {
-                context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
-                      type: CyberthreatType.botnet,
-                      number: 1,
-                    ));
-              },
-            ),
-          ),
+          PrimaryButton(text: 'Scan', onPress: (){
+            BluetoothManager().scan();
+          },),
+          box16(),
         ],
       ),
-      box8(),
-      SecondaryButton(
-        text: 'Website+1',
-        onPress: () {
-          context.read<SecurityBloc>().add(CyberthreatDetectedEvent(
-                type: CyberthreatType.website,
-                number: 1,
-              ));
-        },
-      ),
-      box16(),
     ];
   }
 
