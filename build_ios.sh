@@ -8,7 +8,7 @@ function buildInHouse() {
 function buildAppStore() {
   echo "start building app store #${appStoreBuildNumber}"
   flutter build ipa --export-options-plist=ios/Scripts/Moab-Distribution-app-store.plist --flavor=Moab --build-number="${appStoreBuildNumber}" --dart-define=cloud_env=qa
-  cp -r "./build/ios/ipa/Moab.ipa" "./build/ios/ipa/moab_app_distribution_app_store_${appStoreBuildNumber}.ipa"
+  mv -r "./build/ios/ipa/Moab.ipa" "./build/ios/ipa/moab_app_distribution_app_store_${appStoreBuildNumber}.ipa"
 }
 
 function buildSimulatorApp() {

@@ -3,8 +3,7 @@ function buildStorybook() {
   echo "start building storybook #${buildNumber}"
   flutter build web  --target=lib/storybook.dart --build-number="${buildNumber}"
   mkdir -p "./build/ios/ipa"
-  cp "./build/web" "./build/ios/ipa/web"
-#  mv "./build/ios/ipa/Moab.ipa" "./build/ios/ipa/moab_app_ee_distribution_${inHouseBuildNumber}.ipa"
+  cp -r "./build/web" "./build/ios/ipa/web"
 }
 
 buildNumber=$1
