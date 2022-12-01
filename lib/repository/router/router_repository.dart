@@ -50,6 +50,10 @@ class RouterRepository with StateStreamListener {
   LoginFrom _loginType = LoginFrom.none;
   RouterType _routerType = RouterType.others;
 
+  bool _btSetupMode = false;
+  set enableBTSetup(bool isEnable) => _btSetupMode = isEnable;
+  bool get isEnableBTSetup => _btSetupMode;
+
   // JNAPTransaction createTransaction(List<Map<String, dynamic>> payload) {
   //   logger.d('create transaction');
   //   throw Exception();
