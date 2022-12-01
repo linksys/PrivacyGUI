@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/design/themes.dart';
+import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
 import 'package:linksys_moab/page/dashboard/view/_view.dart';
+import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/page/landing/view/_view.dart';
 import 'package:storybook_flutter/storybook_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -164,6 +166,42 @@ class MyApp extends StatelessWidget {
                         offset: Offset(-1.5, 1.5),
                         color: Colors.white),
                   ]),
+            ),
+          ),
+          Story(
+            name: 'Setting tiles',
+            builder: (context) => SafeArea(
+              child: Column(
+                children: [
+                  administrationSection(
+                    title: 'Section tile header',
+                    content: Column(
+                      children: [
+                        SettingTile(
+                          title: Text('title'),
+                          value: Switch.adaptive(value: false, onChanged: (value) {}),
+                        ),
+                        SettingTileTwoLine(
+                          title: Text('title'),
+                          value: Switch.adaptive(value: false, onChanged: (value) {}),
+                        ),
+                        SettingTileWithDescription(
+                            title: Text('title'),
+                            value: Switch.adaptive(value: false, onChanged: (value) {}),
+                            description: Text('description')),
+                      ],
+                    ),
+                  ),
+                  SettingTileTwoLine(
+                    title: Text('title'),
+                    value: Switch.adaptive(value: false, onChanged: (value) {}),
+                  ),
+                  SettingTileWithDescription(
+                      title: Text('title'),
+                      value: Switch.adaptive(value: false, onChanged: (value) {}),
+                      description: Text('description')),
+                ],
+              ),
             ),
           ),
         ],

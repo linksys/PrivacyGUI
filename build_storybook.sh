@@ -1,18 +1,18 @@
 
 function buildStorybook() {
   echo "start building storybook #${buildNumber}"
-  flutter build web  --target=lib/storybook.dart --build-number="${buildNumber}"
+  flutter build web --target=lib/storybook.dart --base-href=/storybook/ --build-number="${buildNumber}"
   mkdir -p "./build/ios/ipa"
   cp -r "./build/web" "./build/ios/ipa/web"
 }
 
 buildNumber=$1
 
-pod repo update
-flutter --version
-flutter pub deps
-flutter clean
-flutter pub cache repair
+#pod repo update
+#flutter --version
+#flutter pub deps
+#flutter clean
+#flutter pub cache repair
 if ! buildStorybook "$buildNumber"; then
     echo Storybook "$buildNumber" build failed
     exit 1
