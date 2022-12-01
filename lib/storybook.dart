@@ -139,7 +139,7 @@ class MyApp extends StatelessWidget {
             builder: (context) => const HomeView(),
           ),
           Story(
-            name: 'Dashboard',
+            name: 'Outline Text',
             builder: (context) => Text(
               "1234567890",
               style: TextStyle(
