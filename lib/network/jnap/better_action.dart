@@ -230,6 +230,8 @@ enum JNAPAction {
   getWANDetectionStatus,
   getInternetConnectionStatus,
   setSimpleWiFiSettings,
+  getMACAddress,
+  getVersionInfo,
   // smartMode
   getDeviceMode,
   getSupportedDeviceMode,
@@ -424,6 +426,7 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/nodes/setup/SetAdminPassword2'),
   verifyRouterResetCode(
       value: 'http://linksys.com/jnap/nodes/setup/VerifyRouterResetCode'),
+  getVersionInfo(value: 'http://linksys.com/jnap/nodes/setup/GetVersionInfo'),
   getDeviceMode(value: 'http://linksys.com/jnap/nodes/smartmode/GetDeviceMode'),
   getSupportedDeviceModes(
       value: 'http://linksys.com/jnap/nodes/smartmode/GetSupportedDeviceModes'),
@@ -447,6 +450,7 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/nodes/setup/GetInternetConnectionStatus'),
   setSimpleWiFiSettings(
       value: 'http://linksys.com/jnap/nodes/setup/SetSimpleWiFiSettings'),
+  getMACAddress(value: 'http://linksys.com/jnap/nodes/setup/GetMACAddress'),
   getCloudIds(value: 'http://linksys.com/jnap/ownednetwork/GetCloudIDs'),
   setCloudIds(value: 'http://linksys.com/jnap/ownednetwork/SetCloudIDs'),
   getBluetoothAutoOnboardingSettings(
@@ -850,6 +854,8 @@ void initBetterActions() {
       _JNAPActionValue.setupSetAdminPassword.value;
   _betterActionMap[JNAPAction.verifyRouterResetCode] =
       _JNAPActionValue.verifyRouterResetCode.value;
+  _betterActionMap[JNAPAction.getVersionInfo] =
+      _JNAPActionValue.getVersionInfo.value;
   _betterActionMap[JNAPAction.getDeviceMode] =
       _JNAPActionValue.getDeviceMode.value;
   _betterActionMap[JNAPAction.getSupportedDeviceMode] =
@@ -874,6 +880,8 @@ void initBetterActions() {
       _JNAPActionValue.getInternetConnectionStatus.value;
   _betterActionMap[JNAPAction.setSimpleWiFiSettings] =
       _JNAPActionValue.setSimpleWiFiSettings.value;
+  _betterActionMap[JNAPAction.getMACAddress] =
+      _JNAPActionValue.getMACAddress.value;
   _betterActionMap[JNAPAction.getCloudIds] = _JNAPActionValue.getCloudIds.value;
   _betterActionMap[JNAPAction.setCloudIds] = _JNAPActionValue.setCloudIds.value;
   _betterActionMap[JNAPAction.renewDHCPWANLease] =

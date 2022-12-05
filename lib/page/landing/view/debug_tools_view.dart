@@ -16,7 +16,7 @@ import 'package:linksys_moab/bloc/security/event.dart';
 import 'package:linksys_moab/bloc/security/state.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
-import 'package:linksys_moab/network/bluetooth.dart';
+import 'package:linksys_moab/network/bluetooth/bluetooth.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -343,8 +343,25 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         initiallyExpanded: true,
         title: Text('Bluetooth testing'),
         children: [
-          PrimaryButton(text: 'Scan', onPress: (){
-            BluetoothManager().scan();
+          PrimaryButton(text: 'Scan & connect', onPress: () async {
+            await BluetoothManager().scan();
+            final results = BluetoothManager().results;
+            if (results.isNotEmpty) {
+              logger.d('BT Scan result: ${results.length}');
+              BluetoothManager().connect(results[0].device);
+            } else {
+              logger.d('BT No scan result');
+            }
+          },),
+          PrimaryButton(text: 'Test get Mac address', onPress: () async {
+            final repository = context.read<RouterRepository>()..enableBTSetup = true;
+            await repository.getVersionInfo();
+            await repository.getMACAddress();
+            repository.enableBTSetup = false;
+
+          },),
+          PrimaryButton(text: 'Disconnect', onPress: (){
+            BluetoothManager().disconnect();
           },),
           box16(),
         ],

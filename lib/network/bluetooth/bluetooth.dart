@@ -1,12 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:linksys_moab/network/bluetooth/exceptions.dart';
 import 'package:linksys_moab/network/jnap/command/base_command.dart';
+import 'package:linksys_moab/network/jnap/command/bt_base_command.dart';
 import 'package:linksys_moab/network/jnap/jnap_command_executor_mixin.dart';
+import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/util/logger.dart';
+
+part 'bluetooth_command_wrap.dart';
 
 const _jnapService = '00002080-8eab-46c2-b788-0e9440016fd1';
 const _controlPoint = '00002081-8eab-46c2-b788-0e9440016fd1';
@@ -24,12 +30,7 @@ const _mfcSpecs = [
   _mfcSpecUnConfigSlaveOnly
 ];
 
-const _host = "Host:www.linksyssmartwifi.com";
-var _baseAction = "X-JNAP-Action:http://linksys.com/jnap";
-var _contentType = "Content-Type:application/json; charset=utf-8";
-var _auth = "X-JNAP-Authorization:Basic YWRtaW46YWRtaW4=";
-
-class BluetoothManager with JNAPCommandExecutor {
+class BluetoothManager with JNAPCommandExecutor<JNAPResult> {
   factory BluetoothManager() {
     _singleton ??= BluetoothManager._();
     return _singleton!;
@@ -42,6 +43,9 @@ class BluetoothManager with JNAPCommandExecutor {
   StreamSubscription? _subscription;
   final List<ScanResult> _results = [];
 
+  List<ScanResult> get results => _results;
+  BluetoothDevice? _connectedDevice;
+
   scan({int durationInSec = 10}) async {
     FlutterBluePlus instance = FlutterBluePlus.instance;
     _subscription?.cancel();
@@ -52,8 +56,14 @@ class BluetoothManager with JNAPCommandExecutor {
       for (ScanResult result in filtered) {
         logger.d(
             'BT scan result: ${result.device.name} found! <${result.device}>, rssi: ${result.rssi}, advertisementData: ${result.advertisementData}');
-
-        _results.add(result);
+        final isExist =
+            _results.any((element) => element.device.id == result.device.id);
+        if (isExist) {
+          final index = _results.indexWhere((element) => element.device.id == result.device.id);
+          _results.replaceRange(index, index+1, [result]);
+        } else {
+          _results.add(result);
+        }
       }
     });
 
@@ -62,25 +72,23 @@ class BluetoothManager with JNAPCommandExecutor {
         timeout: Duration(seconds: durationInSec),
         withServices: [Guid(_jnapService)]);
     logger.d('BT scan done');
-    if (_results.isNotEmpty) {
-      connect(_results[0].device);
-    }
   }
 
+  // Throw timeout exception when timeout occurs
   connect(BluetoothDevice device) async {
-    await device.connect();
+    logger.d('BT start to connect to $device');
+    await device.connect(timeout: const Duration(seconds: 120));
+    logger.d('BT ${device.id} connected');
     final services = await device.discoverServices();
     logger.d('Services on ${device.id}');
     for (var service in services) {
       logger.d('Service: $service');
     }
-    final characteristics = services[0].characteristics.firstWhereOrNull((element) => element.uuid.toString() == _jnapData);
-    if (characteristics != null) {
-      final response = await characteristics.write(_buildPayload('/nodes/setup/GetMACAddress').codeUnits);
-      logger.d('RESPONSE: $response');
-      final result = String.fromCharCodes(await characteristics.read());
-      logger.d('RESULT: $result');
-    }
+    _connectedDevice = device;
+  }
+
+  disconnect() async {
+    await _connectedDevice?.disconnect();
   }
 
   bool _checkAdvertisementData(AdvertisementData data) {
@@ -95,16 +103,24 @@ class BluetoothManager with JNAPCommandExecutor {
     return isBackhaulStatusUp == 0 && _mfcSpecs.contains(modeLimitationType);
   }
 
-  String _buildPayload(String action, {Map<String, dynamic> data = const {}}) {
-    return '$_host\n$_baseAction$action\n$_auth\n$_contentType\n${jsonEncode(data)}\n';
-  }
-
   @override
   void dropCommand(String id) {}
 
   @override
-  Future execute(BaseCommand command) {
-    // TODO: implement execute
-    throw UnimplementedError();
+  Future<JNAPResult> execute(BaseCommand command) async {
+    final btCommand = command as JNAPBTCommand?;
+    logger.d('BT execute JNAP command: ${command.spec.action}');
+    if (btCommand == null) {
+      // invalid JNAP command
+      logger.e('BT JNAP command is invalid');
+      throw BTError(code: 'invalid_command', message: 'invalid jnap command');
+    }
+    if (_connectedDevice == null) {
+      throw BTError(
+          code: 'no_connected_device', message: 'No device connected');
+    }
+    final commandWrap = BluetoothCommandWrap(command: btCommand);
+    await commandWrap.execute(_connectedDevice!);
+    return btCommand.createResponse(commandWrap.result ?? '');
   }
 }

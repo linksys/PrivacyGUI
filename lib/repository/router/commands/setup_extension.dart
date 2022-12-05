@@ -4,7 +4,6 @@ import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 
 extension SetupService on RouterRepository {
-
   Future<JNAPSuccess> isAdminPasswordSetByUser() async {
     final command =
         createCommand(JNAPAction.isAdminPasswordSetByUser.actionValue);
@@ -45,15 +44,30 @@ extension SetupService on RouterRepository {
   ///
   Future<JNAPSuccess> getInternetConnectionStatus() async {
     final command =
-    createCommand(JNAPAction.getInternetConnectionStatus.actionValue);
+        createCommand(JNAPAction.getInternetConnectionStatus.actionValue);
 
     final result = await command.publish(executor!);
     return handleJNAPResult(result);
   }
 
-  Future<JNAPSuccess> setSimpleWiFiSettings({required SimpleWiFiSettings settings}) async {
-    final command =
-    createCommand(JNAPAction.setSimpleWiFiSettings.actionValue, data: settings.toJson());
+  Future<JNAPSuccess> setSimpleWiFiSettings(
+      {required SimpleWiFiSettings settings}) async {
+    final command = createCommand(JNAPAction.setSimpleWiFiSettings.actionValue,
+        data: settings.toJson());
+
+    final result = await command.publish(executor!);
+    return handleJNAPResult(result);
+  }
+
+  Future<JNAPSuccess> getMACAddress() async {
+    final command = createCommand(JNAPAction.getMACAddress.actionValue);
+
+    final result = await command.publish(executor!);
+    return handleJNAPResult(result);
+  }
+
+  Future<JNAPSuccess> getVersionInfo() async {
+    final command = createCommand(JNAPAction.getVersionInfo.actionValue);
 
     final result = await command.publish(executor!);
     return handleJNAPResult(result);

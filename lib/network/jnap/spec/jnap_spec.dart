@@ -33,7 +33,7 @@ class HttpJNAPSpec extends JNAPCommandSpec<JNAPResult> {
 
 class BTJNAPSpec extends JNAPCommandSpec<JNAPResult> {
   static const _host = "Host:www.linksyssmartwifi.com";
-  static const _baseAction = "X-JNAP-Action:http://linksys.com/jnap";
+  static const _baseAction = "X-JNAP-Action:";
   static const _contentType = "Content-Type:application/json; charset=utf-8";
   static const _auth = "X-JNAP-Authorization:Basic YWRtaW46YWRtaW4=";
   BTJNAPSpec({required super.action, super.data}): super(extraHeader: const {});

@@ -6,45 +6,30 @@ import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/network/jnap/spec/jnap_spec.dart';
 import 'package:linksys_moab/network/jnap/command/base_command.dart';
 
-abstract class BaseHttpCommand<R> extends BaseCommand<R> {
-  BaseHttpCommand({required this.url, required super.spec});
-
-  final String url;
+abstract class BaseBTCommand<R> extends BaseCommand<R> {
+  BaseBTCommand({required super.spec});
 
   String _data = '';
 
   String get data => _data;
 
-  Map<String, String> _header = {};
-
-  Map<String, String> get header => _header;
-
   R createResponse(String payload) => spec.response(payload);
 }
 
-class JNAPHttpCommand extends BaseHttpCommand<JNAPResult> {
-  JNAPHttpCommand({
-    required super.url,
+class JNAPBTCommand extends BaseBTCommand<JNAPResult> {
+  JNAPBTCommand({
     required String action,
     Map<String, dynamic> data = const {},
-    Map<String, String> extraHeader = const {},
   }) : super(
-            spec: HttpJNAPSpec(
+            spec: BTJNAPSpec(
           action: action,
           data: data,
-          extraHeader: extraHeader,
         ));
 
   @override
   Future<JNAPResult> publish(JNAPCommandExecutor executor) async {
     _data = spec.payload();
-    _header = {
-      keyMqttHeaderAction: spec.action,
-      HttpHeaders.contentTypeHeader: ContentType.json.value,
-      HttpHeaders.acceptEncodingHeader: '*/*',
-      ...spec.extraHeader
-    }..removeWhere((key, value) => value.isEmpty);
     final result = await executor.execute(this);
-    return createResponse(result.body);
+    return result;
   }
 }

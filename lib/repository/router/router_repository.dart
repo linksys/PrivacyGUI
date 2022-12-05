@@ -10,6 +10,9 @@ import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
+import 'package:linksys_moab/network/bluetooth/bluetooth.dart';
+import 'package:linksys_moab/network/jnap/command/base_command.dart';
+import 'package:linksys_moab/network/jnap/command/bt_base_command.dart';
 import 'package:linksys_moab/network/jnap/jnap_command_executor_mixin.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
@@ -38,7 +41,13 @@ class RouterRepository with StateStreamListener {
   final MoabHttpClient _client = MoabHttpClient();
 
   // To expose interface
-  JNAPCommandExecutor? get executor => _client;
+  JNAPCommandExecutor? get executor {
+    if (_btSetupMode) {
+      return BluetoothManager();
+    } else {
+      return _client;
+    }
+  }
 
   String _localPassword = '';
   String _cloudToken = '';
@@ -51,7 +60,9 @@ class RouterRepository with StateStreamListener {
   RouterType _routerType = RouterType.others;
 
   bool _btSetupMode = false;
+
   set enableBTSetup(bool isEnable) => _btSetupMode = isEnable;
+
   bool get isEnableBTSetup => _btSetupMode;
 
   // JNAPTransaction createTransaction(List<Map<String, dynamic>> payload) {
@@ -59,7 +70,21 @@ class RouterRepository with StateStreamListener {
   //   throw Exception();
   // }
 
-  JNAPHttpCommand<JNAPResult> createCommand(String action,
+  BaseCommand<JNAPResult> createCommand(String action,
+      {Map<String, dynamic> data = const {}, bool needAuth = false}) {
+    if (isEnableBTSetup) {
+      return _createBTCommand(action, data: data, needAuth: needAuth);
+    } else {
+      return _createHttpCommand(action, data: data, needAuth: needAuth);
+    }
+  }
+
+  BaseCommand<JNAPResult> _createBTCommand(String action,
+      {Map<String, dynamic> data = const {}, bool needAuth = false}) {
+    return JNAPBTCommand(action: action, data: data);
+  }
+
+  BaseCommand<JNAPResult> _createHttpCommand(String action,
       {Map<String, dynamic> data = const {}, bool needAuth = false}) {
     String url;
     Map<String, String> header = {};
@@ -73,7 +98,8 @@ class RouterRepository with StateStreamListener {
             ? cloudEnvironmentConfig[kCloudJNAP]
             : 'https://$_localIp/JNAP/';
         header = {
-          HttpHeaders.authorizationHeader: 'LinksysUserAuth session_token = $_cloudToken',
+          HttpHeaders.authorizationHeader:
+              'LinksysUserAuth session_token = $_cloudToken',
           kJNAPNetworkId: _networkId ?? '',
         };
         break;
