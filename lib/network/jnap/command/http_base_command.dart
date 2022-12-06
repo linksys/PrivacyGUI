@@ -6,7 +6,7 @@ import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/network/jnap/spec/jnap_spec.dart';
 import 'package:linksys_moab/network/jnap/command/base_command.dart';
 
-abstract class BaseHttpCommand<R> extends BaseCommand<R> {
+abstract class BaseHttpCommand<R, S extends JNAPCommandSpec> extends BaseCommand<R, S> {
   BaseHttpCommand({required this.url, required super.spec});
 
   final String url;
@@ -22,7 +22,7 @@ abstract class BaseHttpCommand<R> extends BaseCommand<R> {
   R createResponse(String payload) => spec.response(payload);
 }
 
-class JNAPHttpCommand extends BaseHttpCommand<JNAPResult> {
+class JNAPHttpCommand extends BaseHttpCommand<JNAPResult, HttpJNAPSpec> {
   JNAPHttpCommand({
     required super.url,
     required String action,

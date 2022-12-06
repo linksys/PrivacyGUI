@@ -47,4 +47,6 @@ class BTJNAPSpec extends JNAPCommandSpec<JNAPResult> {
   JNAPResult response(String raw) {
     return JNAPResult.fromJson(json.decode(raw));
   }
+
+  int get encodedLength => payload().codeUnits.length;
 }

@@ -355,8 +355,10 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           },),
           PrimaryButton(text: 'Test get Mac address', onPress: () async {
             final repository = context.read<RouterRepository>()..enableBTSetup = true;
-            await repository.getVersionInfo();
-            await repository.getMACAddress();
+            final result1 = await repository.getMACAddress();
+            logger.d('result1: $result1}');
+            final result2 = await repository.getVersionInfo();
+            logger.d('result2: $result2}');
             repository.enableBTSetup = false;
 
           },),

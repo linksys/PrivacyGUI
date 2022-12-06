@@ -112,12 +112,10 @@ class BluetoothManager with JNAPCommandExecutor<JNAPResult> {
     logger.d('BT execute JNAP command: ${command.spec.action}');
     if (btCommand == null) {
       // invalid JNAP command
-      logger.e('BT JNAP command is invalid');
-      throw BTError(code: 'invalid_command', message: 'invalid jnap command');
+      throw BTInvalidJNAPCommandError();
     }
     if (_connectedDevice == null) {
-      throw BTError(
-          code: 'no_connected_device', message: 'No device connected');
+      throw BTNoConnectedDeviceError();
     }
     final commandWrap = BluetoothCommandWrap(command: btCommand);
     await commandWrap.execute(_connectedDevice!);

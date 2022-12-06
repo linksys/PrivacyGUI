@@ -6,7 +6,7 @@ import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/network/jnap/spec/jnap_spec.dart';
 import 'package:linksys_moab/network/jnap/command/base_command.dart';
 
-abstract class BaseBTCommand<R> extends BaseCommand<R> {
+abstract class BaseBTCommand<R, S extends JNAPCommandSpec> extends BaseCommand<R, S> {
   BaseBTCommand({required super.spec});
 
   String _data = '';
@@ -16,7 +16,7 @@ abstract class BaseBTCommand<R> extends BaseCommand<R> {
   R createResponse(String payload) => spec.response(payload);
 }
 
-class JNAPBTCommand extends BaseBTCommand<JNAPResult> {
+class JNAPBTCommand extends BaseBTCommand<JNAPResult, BTJNAPSpec> {
   JNAPBTCommand({
     required String action,
     Map<String, dynamic> data = const {},

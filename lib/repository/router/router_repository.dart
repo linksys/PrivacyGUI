@@ -18,6 +18,7 @@ import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/jnap/command/http_base_command.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
+import 'package:linksys_moab/network/jnap/spec/jnap_spec.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 
@@ -70,7 +71,7 @@ class RouterRepository with StateStreamListener {
   //   throw Exception();
   // }
 
-  BaseCommand<JNAPResult> createCommand(String action,
+  BaseCommand<JNAPResult, JNAPCommandSpec> createCommand(String action,
       {Map<String, dynamic> data = const {}, bool needAuth = false}) {
     if (isEnableBTSetup) {
       return _createBTCommand(action, data: data, needAuth: needAuth);
@@ -79,12 +80,12 @@ class RouterRepository with StateStreamListener {
     }
   }
 
-  BaseCommand<JNAPResult> _createBTCommand(String action,
+  BaseCommand<JNAPResult, BTJNAPSpec> _createBTCommand(String action,
       {Map<String, dynamic> data = const {}, bool needAuth = false}) {
     return JNAPBTCommand(action: action, data: data);
   }
 
-  BaseCommand<JNAPResult> _createHttpCommand(String action,
+  BaseCommand<JNAPResult, HttpJNAPSpec> _createHttpCommand(String action,
       {Map<String, dynamic> data = const {}, bool needAuth = false}) {
     String url;
     Map<String, String> header = {};
