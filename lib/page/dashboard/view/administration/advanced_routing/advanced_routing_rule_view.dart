@@ -1,20 +1,17 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/router/advanced_routing_rule.dart';
-import 'package:linksys_moab/model/router/single_port_forwarding_rule.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/input_fields/custom_title_input_field.dart';
+import 'package:linksys_moab/page/components/base_components/input_fields/input_field_with_action.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/advanced_routing/bloc/advanced_routing_rule_cubit.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
-import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/single_port_forwarding/bloc/single_port_forwarding_rule_cubit.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/administration_path.dart';
@@ -202,26 +199,17 @@ class _AddRuleContentViewState
           inputType: TextInputType.number,
           controller: _internalPortController),
       box8(),
-      CustomTitleInputField(
-        title: Row(
-          children: [
-            Expanded(
-                child: Text(getAppLocalizations(context).device_ip_address)),
-            SimpleTextButton(
-              text: getAppLocalizations(context).select_device,
-              padding: EdgeInsets.zero,
-              onPressed: () async {
-                String? deviceIp = await NavigationCubit.of(context)
-                    .pushAndWait(SelectDevicePtah());
-              },
-            ),
-          ],
-        ),
-        inputType: TextInputType.text,
+      InputFieldWithAction(
+        controller: _deviceIpAddressController,
+        titleText: getAppLocalizations(context).device_ip_address,
+        rightTitleText: getAppLocalizations(context).select_device,
         hintText: getAppLocalizations(context).device_ip_address,
         customPrimaryColor: Colors.black,
-        controller: _deviceIpAddressController,
         isError: !_isDeviceIpValid,
+        rightAction: () async {
+          String? deviceIp = await NavigationCubit.of(context)
+              .pushAndWait(SelectDevicePtah());
+        },
         onChanged: (value) {
           _isDeviceIpValid = true;
         },
