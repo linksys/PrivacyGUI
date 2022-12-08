@@ -19,6 +19,7 @@ import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/bluetooth/bluetooth.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/network/mdns/mdns_helper.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
@@ -31,6 +32,7 @@ import 'package:linksys_moab/repository/router/commands/core_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
+import 'package:multicast_dns/multicast_dns.dart';
 import 'package:share_plus/share_plus.dart';
 
 class DebugToolsView extends StatefulWidget {
@@ -147,6 +149,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
     if (kReleaseMode) return [];
     return [
       ..._buildBluetoothTestSection(),
+      ..._buildMdnsTestSection(),
       SecondaryButton(
         text: 'Raise an Exception!',
         onPress: () {
@@ -343,28 +346,66 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         initiallyExpanded: true,
         title: Text('Bluetooth testing'),
         children: [
-          PrimaryButton(text: 'Scan & connect', onPress: () async {
-            await BluetoothManager().scan();
-            final results = BluetoothManager().results;
-            if (results.isNotEmpty) {
-              logger.d('BT Scan result: ${results.length}');
-              BluetoothManager().connect(results[0].device);
-            } else {
-              logger.d('BT No scan result');
-            }
-          },),
-          PrimaryButton(text: 'Test get Mac address', onPress: () async {
-            final repository = context.read<RouterRepository>()..enableBTSetup = true;
-            final result1 = await repository.getMACAddress();
-            logger.d('result1: $result1}');
-            final result2 = await repository.getVersionInfo();
-            logger.d('result2: $result2}');
-            repository.enableBTSetup = false;
+          PrimaryButton(
+            text: 'Scan & connect',
+            onPress: () async {
+              await BluetoothManager().scan();
+              final results = BluetoothManager().results;
+              if (results.isNotEmpty) {
+                logger.d('BT Scan result: ${results.length}');
+                BluetoothManager().connect(results[0].device);
+              } else {
+                logger.d('BT No scan result');
+              }
+            },
+          ),
+          PrimaryButton(
+            text: 'Test get Mac address',
+            onPress: () async {
+              final repository = context.read<RouterRepository>()
+                ..enableBTSetup = true;
+              final result1 = await repository.getMACAddress();
+              logger.d('result1: $result1}');
+              final result2 = await repository.getVersionInfo();
+              logger.d('result2: $result2}');
+              repository.enableBTSetup = false;
+            },
+          ),
+          PrimaryButton(
+            text: 'Disconnect',
+            onPress: () {
+              BluetoothManager().disconnect();
+            },
+          ),
+          box16(),
+        ],
+      ),
+    ];
+  }
 
-          },),
-          PrimaryButton(text: 'Disconnect', onPress: (){
-            BluetoothManager().disconnect();
-          },),
+  List<Widget> _buildMdnsTestSection() {
+    return [
+      ExpansionTile(
+        expandedAlignment: Alignment.centerLeft,
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+        initiallyExpanded: true,
+        title: Text('MDNS testing'),
+        children: [
+          PrimaryButton(
+            text: 'discover',
+            onPress: () async {
+              const String name = '_dartobservatory._tcp.local';
+              String httpType = "_http._tcp";
+              String omsgType = "_omsg._tcp";
+
+              final result = await Future.wait([MDnsHelper.discover(httpType), MDnsHelper.discover(omsgType)]);
+              logger.d('Result: $result');
+
+
+
+
+            },
+          ),
           box16(),
         ],
       ),
