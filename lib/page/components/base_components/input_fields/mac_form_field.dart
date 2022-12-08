@@ -6,10 +6,12 @@ class MACFormField extends StatefulWidget {
     super.key,
     this.onChanged,
     this.controller,
+    this.hasBorder = false,
   });
 
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
+  final bool hasBorder;
 
   @override
   State<MACFormField> createState() => _MACFormFieldState();
@@ -20,6 +22,22 @@ class _MACFormFieldState extends State<MACFormField> {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: widget.controller,
+      decoration: widget.hasBorder ? InputDecoration(
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 1,
+          ),
+          borderRadius: BorderRadius.zero,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 1,
+          ),
+          borderRadius: BorderRadius.zero,
+        ),
+      ) : null,
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'[0-9a-f]')),
         // allow only  digits

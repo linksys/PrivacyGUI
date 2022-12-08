@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/input_fields/mac_form_field.dart';
+import 'package:linksys_moab/page/components/base_components/input_fields/mac_input_field.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
-import '../common_widget.dart';
 
 class MacFilteringEnterDeviceView extends ArgumentsStatefulView {
   const MacFilteringEnterDeviceView({super.key, super.next, super.args});
@@ -18,7 +17,6 @@ class MacFilteringEnterDeviceView extends ArgumentsStatefulView {
 
 class _MacFilteringEnterDeviceViewState
     extends State<MacFilteringEnterDeviceView> {
-
   final InputValidator _macValidator = InputValidator([MACAddressRule()]);
   bool _isValid = false;
 
@@ -39,25 +37,25 @@ class _MacFilteringEnterDeviceViewState
       child: BasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: Column(
-            children: [
+          children: [
             box24(),
-        administrationTwoLineTile(
-          tileHeight: null,
-          title: title(getAppLocalizations(context).enter_mac_address),
-          value: MACFormField(
-            onChanged: (value) {
-              setState(() {
-                _isValid = _macValidator.validate(value);
-                // TODO is exist
-              });
-            },
-          ),
+            MACInputField(
+              titleText: getAppLocalizations(context).enter_mac_address,
+              onChanged: (value) {
+                setState(() {
+                  _isValid = _macValidator.validate(value);
+                  // TODO is exist
+                });
+              },
+            ),
+            box48(),
+            PrimaryButton(
+              text: getAppLocalizations(context).save,
+              onPress: _isValid ? () {} : null,
+            ),
+          ],
         ),
-        box48(),
-        PrimaryButton(text: getAppLocalizations(context).save,
-          onPress: _isValid ? () {} : null,),
-        ],
       ),
-    ),);
+    );
   }
 }
