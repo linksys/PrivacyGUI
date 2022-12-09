@@ -3,6 +3,7 @@ const btErrorJNAPServiceNotFound = 'jnap_service_not_found';
 const btErrorInvalidJNAPCommand = 'invalid_jnap_command';
 const btErrorNoConnectedDevice = 'no_connected_device';
 const btErrorNoCharacteristicFound = 'no_characteristic_found';
+const btErrorNoResponse = 'no_response';
 
 class BTError implements Exception{
 
@@ -39,4 +40,8 @@ class BTNoConnectedDeviceError extends BTError {
 class BTNoCharacteristicFoundError extends BTError {
   BTNoCharacteristicFoundError(): super(code: btErrorNoCharacteristicFound,
       message: 'BT No characteristic found');
+}
+
+class BTNoResponseError extends BTError {
+  BTNoResponseError(): super(code: btErrorNoResponse, message: 'BT No response');
 }

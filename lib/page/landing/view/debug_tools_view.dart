@@ -366,8 +366,8 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                 ..enableBTSetup = true;
               final result1 = await repository.getMACAddress();
               logger.d('result1: $result1}');
-              final result2 = await repository.getVersionInfo();
-              logger.d('result2: $result2}');
+              // final result2 = await repository.getVersionInfo();
+              // logger.d('result2: $result2}');
               repository.enableBTSetup = false;
             },
           ),

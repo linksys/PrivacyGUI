@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:collection/collection.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -31,6 +31,17 @@ const _mfcSpecs = [
 ];
 
 class BluetoothManager with JNAPCommandExecutor<JNAPResult> {
+  int _maxRetry = 3;
+  int _retryTimeInSec = 5;
+  Future Function(int retry, Object? error)? _onRetry;
+
+  set maxRetry(int maxRetry) => _maxRetry;
+
+  set retryTimeInSec(int timeInSec) => _retryTimeInSec;
+
+  set onRetryCallback(Future Function(int retry, Object? error) onRetry) =>
+      _onRetry;
+
   factory BluetoothManager() {
     _singleton ??= BluetoothManager._();
     return _singleton!;
@@ -59,8 +70,9 @@ class BluetoothManager with JNAPCommandExecutor<JNAPResult> {
         final isExist =
             _results.any((element) => element.device.id == result.device.id);
         if (isExist) {
-          final index = _results.indexWhere((element) => element.device.id == result.device.id);
-          _results.replaceRange(index, index+1, [result]);
+          final index = _results
+              .indexWhere((element) => element.device.id == result.device.id);
+          _results.replaceRange(index, index + 1, [result]);
         } else {
           _results.add(result);
         }
@@ -117,8 +129,47 @@ class BluetoothManager with JNAPCommandExecutor<JNAPResult> {
     if (_connectedDevice == null) {
       throw BTNoConnectedDeviceError();
     }
-    final commandWrap = BluetoothCommandWrap(command: btCommand);
-    await commandWrap.execute(_connectedDevice!);
-    return btCommand.createResponse(commandWrap.result ?? '');
+
+    final result = await send(btCommand);
+
+    if (result == null) {
+      throw BTNoResponseError();
+    } else {
+      return result;
+    }
   }
+
+  Future<JNAPResult?> send(JNAPBTCommand command) async {
+    int retry = 0;
+    for (;;) {
+      final commandWrap = BluetoothCommandWrap(command: command);
+
+      try {
+        await commandWrap.execute(_connectedDevice!);
+      } catch (e) {
+        if (retry == _maxRetry) {
+          rethrow;
+        }
+      }
+
+      final result = commandWrap.result;
+      JNAPResult? response;
+      if (result != null) {
+        response = command.createResponse(result);
+        if (response is JNAPSuccess) {
+          return response;
+        }
+      }
+      if (retry == _maxRetry) {
+        return response;
+      }
+
+      await Future<void>.delayed(_defaultDelay(retry));
+      await _onRetry?.call(retry, response);
+      retry++;
+    }
+  }
+
+  Duration _defaultDelay(int retryCount) =>
+      Duration(seconds: _retryTimeInSec) * math.pow(1.5, retryCount);
 }
