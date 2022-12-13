@@ -20,18 +20,8 @@ TextStyle roman17 = const TextStyle(
   fontWeight: FontWeight.w400,
 );
 
-TextStyle roman19 = const TextStyle(
-  fontSize: 19,
-  fontWeight: FontWeight.w400,
-);
-
 TextStyle roman21 = const TextStyle(
   fontSize: 21,
-  fontWeight: FontWeight.w400,
-);
-
-TextStyle roman23 = const TextStyle(
-  fontSize: 23,
   fontWeight: FontWeight.w400,
 );
 
@@ -67,11 +57,6 @@ TextStyle bold17 = const TextStyle(
 
 TextStyle bold19 = const TextStyle(
   fontSize: 19,
-  fontWeight: FontWeight.w700,
-);
-
-TextStyle bold21 = const TextStyle(
-  fontSize: 21,
   fontWeight: FontWeight.w700,
 );
 

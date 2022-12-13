@@ -5,6 +5,7 @@ import 'package:linksys_moab/page/components/base_components/tile/setting_tile.d
 import 'package:linksys_moab/page/dashboard/view/_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/page/landing/view/_view.dart';
+import 'package:linksys_moab/storybook/_storybook.dart';
 import 'package:storybook_flutter/storybook_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -38,6 +39,7 @@ class MyApp extends StatelessWidget {
         initialStory: 'Screens/Scaffold',
         plugins: _plugins,
         stories: [
+          ...themeStories(),
           Story(
             name: 'Screens/Scaffold',
             description: 'Story with scaffold and different knobs.',
