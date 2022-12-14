@@ -191,28 +191,28 @@ class MyApp extends StatelessWidget {
                           value: Switch.adaptive(
                               value: false, onChanged: (value) {}),
                         ),
-                        SettingTileTwoLine(
-                          title: Text('title'),
-                          value: Switch.adaptive(
-                              value: false, onChanged: (value) {}),
-                        ),
-                        SettingTileWithDescription(
-                            title: Text('title'),
-                            value: Switch.adaptive(
-                                value: false, onChanged: (value) {}),
-                            description: Text('description')),
+                        // SettingTileTwoLine(
+                        //   title: Text('title'),
+                        //   value: Switch.adaptive(
+                        //       value: false, onChanged: (value) {}),
+                        // ),
+                        // SettingTileWithDescription(
+                        //     title: Text('title'),
+                        //     value: Switch.adaptive(
+                        //         value: false, onChanged: (value) {}),
+                        //     description: Text('description')),
                       ],
                     ),
                   ),
-                  SettingTileTwoLine(
-                    title: Text('title'),
-                    value: Switch.adaptive(value: false, onChanged: (value) {}),
-                  ),
-                  SettingTileWithDescription(
-                      title: Text('title'),
-                      value:
-                          Switch.adaptive(value: false, onChanged: (value) {}),
-                      description: Text('description')),
+                  // SettingTileTwoLine(
+                  //   title: Text('title'),
+                  //   value: Switch.adaptive(value: false, onChanged: (value) {}),
+                  // ),
+                  // SettingTileWithDescription(
+                  //     title: Text('title'),
+                  //     value:
+                  //         Switch.adaptive(value: false, onChanged: (value) {}),
+                  //     description: Text('description')),
                 ],
               ),
             ),

@@ -160,7 +160,8 @@ class _NodeDetailViewState extends State<NodeDetailView> {
   }
 
   Widget _signalStrengthTile(NodeState state) {
-    return SettingTileTwoLine(
+    return SettingTile(
+      axis: SettingTileAxis.vertical,
       title: Text(
         getAppLocalizations(context).node_detail_label_signal_strength,
         style: Theme.of(context).textTheme.bodyText1,
@@ -206,7 +207,8 @@ class _NodeDetailViewState extends State<NodeDetailView> {
   }
 
   Widget _serialNumberTile(NodeState state) {
-    return SettingTileTwoLine(
+    return SettingTile(
+      axis: SettingTileAxis.vertical,
       title: Text(
         getAppLocalizations(context).node_detail_label_serial_number,
         style: Theme.of(context).textTheme.bodyText1,
@@ -219,7 +221,8 @@ class _NodeDetailViewState extends State<NodeDetailView> {
   }
 
   Widget _modelNumberTile(NodeState state) {
-    return SettingTileTwoLine(
+    return SettingTile(
+      axis: SettingTileAxis.vertical,
       title: Text(
         getAppLocalizations(context).node_detail_label_model_number,
         style: Theme.of(context).textTheme.bodyText1,
@@ -232,7 +235,8 @@ class _NodeDetailViewState extends State<NodeDetailView> {
   }
 
   Widget _firmwareInfoTile(NodeState state) {
-    return SettingTileTwoLine(
+    return SettingTile(
+      axis: SettingTileAxis.vertical,
       title: Text(
         getAppLocalizations(context).node_detail_label_firmware_version,
         style: Theme.of(context).textTheme.bodyText1,
@@ -263,7 +267,8 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         getAppLocalizations(context).node_detail_label_lan,
         style: Theme.of(context).textTheme.headline3,
       ),
-      child: SettingTileTwoLine(
+      child: SettingTile(
+        axis: SettingTileAxis.vertical,
         title: Text(
           getAppLocalizations(context).node_detail_label_ip_address,
           style: Theme.of(context).textTheme.bodyText1,
@@ -282,7 +287,8 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         getAppLocalizations(context).node_detail_label_wan,
         style: Theme.of(context).textTheme.headline3,
       ),
-      child: SettingTileTwoLine(
+      child: SettingTile(
+          axis: SettingTileAxis.vertical,
           title: Text(
             getAppLocalizations(context).node_detail_label_ip_address,
             style: Theme.of(context).textTheme.bodyText1,

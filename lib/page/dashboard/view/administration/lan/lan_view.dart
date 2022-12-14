@@ -200,11 +200,8 @@ class _LANContentViewState extends State<LANContentView> {
                               .dhcp_users_limit(state.maxNumUsers)),
                         ],
                       ),
-                      description: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                        child: Text(getAppLocalizations(context).dhcp_ip_range(
-                            state.firstIPAddress, state.lastIPAddress)),
-                      ),
+                      description: getAppLocalizations(context).dhcp_ip_range(
+                          state.firstIPAddress, state.lastIPAddress),
                     ),
                     box24(),
                     administrationTwoLineTile(

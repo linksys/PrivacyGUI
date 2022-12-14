@@ -55,14 +55,15 @@ Widget administrationTile({
 Widget administrationTwoLineTile({
   required Widget title,
   required Widget value,
-  Widget? description,
+  String? description,
   Widget? icon,
   Color? background,
   double? tileHeight = 64,
   EdgeInsets? padding,
   void Function()? onPress,
 }) {
-  return SettingTileTwoLine(
+  return SettingTile(
+    axis: SettingTileAxis.vertical,
     title: title,
     value: value,
     description: description,
@@ -77,19 +78,19 @@ Widget administrationTwoLineTile({
 Widget administrationTileDesc(
     {required Widget title,
     required Widget value,
-    Widget? description,
+    String? description,
     Color? background,
     double? tileHeight = 88,
     EdgeInsets? padding,
     void Function()? onPress}) {
-  return SettingTileWithDescription(
+  return SettingTile(
     title: title,
     value: value,
     onPress: onPress,
     tileHeight: tileHeight,
     background: background ?? Colors.transparent,
     padding: padding ?? EdgeInsets.zero,
-    description: description ?? Center(),
+    description: description,
   );
 }
 
