@@ -138,6 +138,7 @@ enum JNAPAction {
   getUnsecuredWiFiWarning,
   setUnsecuredWiFiWarning,
   isAdminPasswordDefault,
+  isServiceSupported,
   reboot,
   // ddns
   getDDNSStatus,
@@ -277,6 +278,7 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/core/SetUnsecuredWiFiWarning'),
   isAdminPasswordDefault(
       value: 'http://linksys.com/jnap/core/IsAdminPasswordDefault'),
+  isServiceSupported(value: 'http://linksys.com/jnap/core/IsServiceSupported'),
   reboot(value: 'http://linksys.com/jnap/core/Reboot'),
   getDDNSStatus(value: 'http://linksys.com/jnap/ddns/GetDDNSStatus'),
   getDDNSStatus2(value: 'http://linksys.com/jnap/ddns/GetDDNSStatus2'),
@@ -738,6 +740,8 @@ void initBetterActions() {
       _JNAPActionValue.setUnsecuredWiFiWarning.value;
   _betterActionMap[JNAPAction.isAdminPasswordDefault] =
       _JNAPActionValue.isAdminPasswordDefault.value;
+  _betterActionMap[JNAPAction.isServiceSupported] =
+      _JNAPActionValue.isServiceSupported.value;
   _betterActionMap[JNAPAction.reboot] = _JNAPActionValue.reboot.value;
   _betterActionMap[JNAPAction.getDDNSStatus] =
       _JNAPActionValue.getDDNSStatus.value;

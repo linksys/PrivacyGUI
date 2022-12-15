@@ -1,5 +1,6 @@
 
-const jnapActionPrefix = 'http://linksys.com/jnap';
+const kJNAPActionBase = 'http://linksys.com';
+const kJNAPActionPrefix = '$kJNAPActionBase/jnap';
 const kJNAPSession = 'X-JNAP-Session';
 const kJNAPAction = 'X-JNAP-Action';
 const kJNAPAuthorization = 'X-JNAP-Authorization';

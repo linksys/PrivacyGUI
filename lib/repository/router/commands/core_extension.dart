@@ -1,3 +1,4 @@
+import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
@@ -17,7 +18,7 @@ extension CoreService on RouterRepository {
 
   Future<JNAPSuccess> createAdminPassword(String password, String hint) async {
     final command =
-    createCommand(JNAPAction.coreSetAdminPassword.actionValue, data: {
+        createCommand(JNAPAction.coreSetAdminPassword.actionValue, data: {
       'adminPassword': 'admin',
       'passwordHint': hint,
     });
@@ -27,7 +28,7 @@ extension CoreService on RouterRepository {
 
   Future<JNAPSuccess> getAdminPasswordAuthStatus() async {
     final command =
-    createCommand(JNAPAction.getAdminPasswordAuthStatus.actionValue);
+        createCommand(JNAPAction.getAdminPasswordAuthStatus.actionValue);
 
     final result = await command.publish(executor!);
     return handleJNAPResult(result);
@@ -41,15 +42,17 @@ extension CoreService on RouterRepository {
   }
 
   Future<JNAPSuccess> getDataUploadUserConsent() async {
-    final command =
-        createCommand(JNAPAction.getDataUploadUserConsent.actionValue, needAuth: true);
+    final command = createCommand(
+        JNAPAction.getDataUploadUserConsent.actionValue,
+        needAuth: true);
 
     final result = await command.publish(executor!);
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> getDeviceInfo() async {
-    final command = createCommand(JNAPAction.getDeviceInfo.actionValue, needAuth: true);
+    final command =
+        createCommand(JNAPAction.getDeviceInfo.actionValue, needAuth: true);
 
     final result = await command.publish(executor!);
     return handleJNAPResult(result);
@@ -57,32 +60,41 @@ extension CoreService on RouterRepository {
 
   Future<JNAPSuccess> isAdminPasswordDefault() async {
     final command =
-    createCommand(JNAPAction.isAdminPasswordDefault.actionValue);
+        createCommand(JNAPAction.isAdminPasswordDefault.actionValue);
 
-    try {
-      final result = await command.publish(executor!);
-      return handleJNAPResult(result);
-    } catch (e) {
-      logger.e('JNAP call error', e);
-      rethrow;
-    }
+    final result = await command.publish(executor!);
+    return handleJNAPResult(result);
+  }
+
+  Future<JNAPSuccess> isServiceSupported(JNAPService service) async {
+    final command = createCommand(JNAPAction.isServiceSupported.actionValue,
+        data: {'serviceName': service.value.replaceAll(kJNAPActionBase, '')});
+
+    final result = await command.publish(executor!);
+    return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> reboot() async {
-    final command = createCommand(JNAPAction.reboot.actionValue, needAuth: true);
+    final command =
+        createCommand(JNAPAction.reboot.actionValue, needAuth: true);
 
     final result = await command.publish(executor!);
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> getUnsecuredWiFiWarning() async {
-    final command = createCommand(JNAPAction.getUnsecuredWiFiWarning.actionValue,);
+    final command = createCommand(
+      JNAPAction.getUnsecuredWiFiWarning.actionValue,
+    );
 
     final result = await command.publish(executor!);
     return handleJNAPResult(result);
   }
+
   Future<JNAPSuccess> setUnsecuredWiFiWarning(bool enabled) async {
-    final command = createCommand(JNAPAction.setUnsecuredWiFiWarning.actionValue, data: {'enabled': enabled});
+    final command = createCommand(
+        JNAPAction.setUnsecuredWiFiWarning.actionValue,
+        data: {'enabled': enabled});
 
     final result = await command.publish(executor!);
     return handleJNAPResult(result);

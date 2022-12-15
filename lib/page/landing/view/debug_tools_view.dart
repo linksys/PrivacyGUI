@@ -19,6 +19,7 @@ import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/bluetooth/bluetooth.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/network/mdns/mdns_helper.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
@@ -364,10 +365,12 @@ class _DebugToolsViewState extends State<DebugToolsView> {
             onPress: () async {
               final repository = context.read<RouterRepository>()
                 ..enableBTSetup = true;
-              final result1 = await repository.getMACAddress();
+              final result1 = await repository.getMACAddress().then<JNAPSuccess?>((value) => value).onError((error, stackTrace) {
+                logger.e('Error', error, stackTrace);
+              });
               logger.d('result1: $result1}');
-              // final result2 = await repository.getVersionInfo();
-              // logger.d('result2: $result2}');
+              final result2 = await repository.getVersionInfo();
+              logger.d('result2: $result2}');
               repository.enableBTSetup = false;
             },
           ),
