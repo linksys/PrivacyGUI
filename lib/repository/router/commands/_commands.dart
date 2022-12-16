@@ -1,6 +1,5 @@
 //GENERATED BARREL FILE 
-export 'fcn_extension.dart'; 
-export 'qos_extension.dart'; 
+export 'qos_extension.dart';
 export 'core_extension.dart'; 
 export 'batch_extension.dart'; 
 export 'setup_extension.dart'; 
@@ -11,8 +10,7 @@ export 'bluetooth_extension.dart';
 export 'mac_filter_extension.dart'; 
 export 'smart_mode_extension.dart'; 
 export 'device_list_extension.dart'; 
-export 'iot_network_extension.dart'; 
-export 'wireless_ap_extension.dart'; 
+export 'wireless_ap_extension.dart';
 export 'health_check_extension.dart'; 
 export 'transactions_extension.dart'; 
 export 'guest_network_extension.dart'; 

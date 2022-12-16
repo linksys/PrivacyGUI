@@ -1,486 +1,8 @@
-// List all useful JNAP services in the app
-enum JNAPService {
-  autoOnboarding(
-      value: 'http://linksys.com/jnap/nodes/autoonboarding/AutoOnboarding'),
-  bluetooth(value: 'http://linksys.com/jnap/nodes/bluetooth/Bluetooth'),
-  bluetooth2(value: 'http://linksys.com/jnap/nodes/bluetooth/Bluetooth2'),
-  core(value: 'http://linksys.com/jnap/core/Core'),
-  core2(value: 'http://linksys.com/jnap/core/Core2'),
-  core3(value: 'http://linksys.com/jnap/core/Core3'),
-  core4(value: 'http://linksys.com/jnap/core/Core4'),
-  core5(value: 'http://linksys.com/jnap/core/Core5'),
-  core6(value: 'http://linksys.com/jnap/core/Core6'),
-  core7(value: 'http://linksys.com/jnap/core/Core7'),
-  ddns(value: 'http://linksys.com/jnap/ddns/DDNS'),
-  ddns2(value: 'http://linksys.com/jnap/ddns/DDNS2'),
-  ddns3(value: 'http://linksys.com/jnap/ddns/DDNS3'),
-  ddns4(value: 'http://linksys.com/jnap/ddns/DDNS4'),
-  deviceList(value: 'http://linksys.com/jnap/devicelist/DeviceList'),
-  deviceList2(value: 'http://linksys.com/jnap/devicelist/DeviceList2'),
-  deviceList4(value: 'http://linksys.com/jnap/devicelist/DeviceList4'),
-  deviceList5(value: 'http://linksys.com/jnap/devicelist/DeviceList5'),
-  deviceList6(value: 'http://linksys.com/jnap/devicelist/DeviceList6'),
-  deviceList7(value: 'http://linksys.com/jnap/devicelist/DeviceList7'),
-  firewall(value: 'http://linksys.com/jnap/firewall/Firewall'),
-  firewall2(value: 'http://linksys.com/jnap/firewall/Firewall2'),
-  firmwareUpdate(
-      value: 'http://linksys.com/jnap/firmwareupdate/FirmwareUpdate'),
-  firmwareUpdate2(
-      value: 'http://linksys.com/jnap/firmwareupdate/FirmwareUpdate2'),
-  guestNetwork(value: 'http://linksys.com/jnap/guestnetwork/GuestNetwork'),
-  guestNetwork2(value: 'http://linksys.com/jnap/guestnetwork/GuestNetwork2'),
-  guestNetwork3(value: 'http://linksys.com/jnap/guestnetwork/GuestNetwork3'),
-  guestNetwork4(value: 'http://linksys.com/jnap/guestnetwork/GuestNetwork4'),
-  guestNetwork5(value: 'http://linksys.com/jnap/guestnetwork/GuestNetwork5'),
-  healthCheckManager(
-      value: 'http://linksys.com/jnap/healthcheck/HealthCheckManager'),
-  locale(value: 'http://linksys.com/jnap/locale/Locale'),
-  locale2(value: 'http://linksys.com/jnap/locale/Locale2'),
-  locale3(value: 'http://linksys.com/jnap/locale/Locale3'),
-  macFilter(value: 'http://linksys.com/jnap/macfilter/MACFilter'),
-  motionSensing(value: 'http://linksys.com/jnap/motionsensing/MotionSensing'),
-  motionSensing2(value: 'http://linksys.com/jnap/motionsensing/MotionSensing2'),
-  networkConnections(
-      value: 'http://linksys.com/jnap/networkconnections/NetworkConnections'),
-  networkConnections2(
-      value: 'http://linksys.com/jnap/networkconnections/NetworkConnections2'),
-  networkConnections3(
-      value: 'http://linksys.com/jnap/networkconnections/NetworkConnections3'),
-  networkSecurity(
-      value: 'http://linksys.com/jnap/networksecurity/NetworkSecurity'),
-  networkSecurity2(
-      value: 'http://linksys.com/jnap/networksecurity/NetworkSecurity2'),
-  networkSecurity3(
-      value: 'http://linksys.com/jnap/networksecurity/NetworkSecurity3'),
-  nodesDiagnostics(
-      value: 'http://linksys.com/jnap/nodes/diagnostics/Diagnostics'),
-  nodesDiagnostics2(
-      value: 'http://linksys.com/jnap/nodes/diagnostics/Diagnostics2'),
-  nodesDiagnostics3(
-      value: 'http://linksys.com/jnap/nodes/diagnostics/Diagnostics3'),
-  nodesDiagnostics5(
-      value: 'http://linksys.com/jnap/nodes/diagnostics/Diagnostics5'),
-  nodesNetworkConnections(
-      value:
-          'http://linksys.com/jnap/nodes/networkconnections/NodesNetworkConnections'),
-  ownedNetwork(value: 'http://linksys.com/jnap/ownednetwork/OwnedNetwork'),
-  ownedNetwork2(value: 'http://linksys.com/jnap/ownednetwork/OwnedNetwork2'),
-  ownedNetwork3(value: 'http://linksys.com/jnap/ownednetwork/OwnedNetwork3'),
-  parentalControl(
-      value: 'http://linksys.com/jnap/parentalcontrol/ParentalControl'),
-  parentalControl2(
-      value: 'http://linksys.com/jnap/parentalcontrol/ParentalControl2'),
-  powerTable(value: 'http://linksys.com/jnap/powertable/PowerTable'),
-  qos(value: 'http://linksys.com/jnap/qos/QoS'),
-  qos2(value: 'http://linksys.com/jnap/qos/QoS2'),
-  qos3(value: 'http://linksys.com/jnap/qos/QoS3'),
-  router(value: 'http://linksys.com/jnap/router/Router'),
-  router3(value: 'http://linksys.com/jnap/router/Router3'),
-  router4(value: 'http://linksys.com/jnap/router/Router4'),
-  router5(value: 'http://linksys.com/jnap/router/Router5'),
-  router6(value: 'http://linksys.com/jnap/router/Router6'),
-  router7(value: 'http://linksys.com/jnap/router/Router7'),
-  router8(value: 'http://linksys.com/jnap/router/Router8'),
-  router9(value: 'http://linksys.com/jnap/router/Router9'),
-  router10(value: 'http://linksys.com/jnap/router/Router10'),
-  router11(value: 'http://linksys.com/jnap/router/Router11'),
-  routerManagement(
-      value: 'http://linksys.com/jnap/routermanagement/RouterManagement'),
-  routerManagement2(
-      value: 'http://linksys.com/jnap/routermanagement/RouterManagement2'),
-  routerManagement3(
-      value: 'http://linksys.com/jnap/routermanagement/RouterManagement3'),
-  setup(value: 'http://linksys.com/jnap/nodes/setup/Setup'),
-  setup2(value: 'http://linksys.com/jnap/nodes/setup/Setup2'),
-  setup3(value: 'http://linksys.com/jnap/nodes/setup/Setup3'),
-  setup4(value: 'http://linksys.com/jnap/nodes/setup/Setup4'),
-  setup5(value: 'http://linksys.com/jnap/nodes/setup/Setup5'),
-  setup6(value: 'http://linksys.com/jnap/nodes/setup/Setup6'),
-  setup7(value: 'http://linksys.com/jnap/nodes/setup/Setup7'),
-  setup8(value: 'http://linksys.com/jnap/nodes/setup/Setup8'),
-  smartMode(value: 'http://linksys.com/jnap/nodes/smartmode/SmartMode'),
-  smartMode2(value: 'http://linksys.com/jnap/nodes/smartmode/SmartMode2'),
-  selectableWAN(value: 'http://linksys.com/jnap/nodes/setup/SelectableWAN'),
-  wirelessAP(value: 'http://linksys.com/jnap/wirelessap/WirelessAP'),
-  wirelessAP2(value: 'http://linksys.com/jnap/wirelessap/WirelessAP2'),
-  wirelessAP4(value: 'http://linksys.com/jnap/wirelessap/WirelessAP4'),
-  wirelessScheduler(
-      value: 'http://linksys.com/jnap/wirelessscheduler/WirelessScheduler'),
-  wirelessScheduler2(
-      value: 'http://linksys.com/jnap/wirelessscheduler/WirelessScheduler2'),
-  iotNetwork(value: 'http://linksys.com/jnap/iotnetwork/IoTNetwork');
+part 'jnap_action.dart';
 
-  const JNAPService({required this.value});
+part 'jnap_action_value.dart';
 
-  final String value;
-
-  static List<JNAPService> get appSupportedServices => JNAPService.values;
-}
-
-// List all useful JNAP actions in the app
-// Each item indicates a particular action regardless of its value
-enum JNAPAction {
-  transaction,
-  // auto onboarding
-  startBlueboothAutoOnboarding,
-  getBlueboothAutoOnboardingStatus,
-  getBluetoothAutoOnboardingSettings,
-  // bluetooth
-  btGetScanUnconfiguredResult,
-  btRequestScanUnconfigured,
-  // core
-  checkAdminPassword,
-  coreSetAdminPassword,
-  getAdminPasswordAuthStatus,
-  getAdminPasswordHint,
-  getDataUploadUserConsent,
-  getDeviceInfo,
-  getUnsecuredWiFiWarning,
-  setUnsecuredWiFiWarning,
-  isAdminPasswordDefault,
-  isServiceSupported,
-  reboot,
-  // ddns
-  getDDNSStatus,
-  // deviceList
-  getDevices,
-  getLocalDevice,
-  setDeviceProperties,
-  deleteDevice,
-  // firewall
-  getPortRangeForwardingRules,
-  getPortRangeTriggeringRules,
-  getSinglePortForwardingRules,
-  setPortRangeForwardingRules,
-  setPortRangeTriggeringRules,
-  setSinglePortForwardingRules,
-  // firmwareUpdate
-  getFirmwareUpdateStatus,
-  // guestNetwork
-  getGuestNetworkClients,
-  getGuestNetworkSettings,
-  getGuestRadioSettings,
-  setGuestNetworkSettings,
-  setGuestRadioSettings,
-  // healthCheckManager
-  clearHealthCheckHistory,
-  getHealthCheckResults,
-  getHealthCheckStatus,
-  getSupportedHealthCheckModules,
-  runHealthCheck,
-  stopHealthCheck,
-  // locale
-  getLocalTime,
-  getTimeSettings,
-  getLocale,
-  setLocale,
-  setTimeSettings,
-  // macFilter
-  getMACFilterSettings,
-  // motionSensing
-  getActiveMotionSensingBots,
-  getMotionSensingSettings,
-  // networkConnections
-  getNetworkConnections,
-  // networkSecurity
-  getNetworkSecuritySettings,
-  setNetworkSecuritySettings,
-  // nodes diagnostics
-  getBackhaulInfo,
-  getNodeNeighborInfo,
-  getSlaveBackhaulStatus,
-  refreshSlaveBackhaulData,
-  // nodes networkConnections
-  getNodesWirelessNetworkConnections,
-  // ownedNetwork
-  getOwnedNetworkID,
-  isOwnedNetwork,
-  setNetworkOwner,
-  getCloudIds,
-  setCloudIds,
-  // parentalControl
-  getParentalControlSettings,
-  // powerTable
-  getPowerTableSettings,
-  // qos
-  getQoSSettings,
-  // router
-  getDHCPClientLeases,
-  getIPv6Settings,
-  getLANSettings,
-  getMACAddressCloneSettings,
-  getWANSettings,
-  getWANStatus,
-  setIPv6Settings,
-  setMACAddressCloneSettings,
-  setWANSettings,
-  renewDHCPWANLease,
-  renewDHCPIPv6WANLease,
-  requestFOSContainer,
-  // routerManagement
-  getManagementSettings,
-  setManagementSettings,
-  // selectableWAN
-  getPortConnectionStatus,
-  getWANPort,
-  setWANPort,
-  // setup
-  isAdminPasswordSetByUser,
-  setupSetAdminPassword,
-  verifyRouterResetCode,
-  getWANDetectionStatus,
-  getInternetConnectionStatus,
-  setSimpleWiFiSettings,
-  getMACAddress,
-  getVersionInfo,
-  // smartMode
-  getDeviceMode,
-  getSupportedDeviceMode,
-  setDeviceMode,
-  // wirelessAP
-  getRadioInfo,
-  getWPSServerSessionStatus,
-  setRadioSettings,
-  // wirelessScheduler
-  getWirelessSchedulerSettings,
-  // iotNetwork
-  getIoTNetworkSettings,
-  setIoTNetworkSettings;
-
-  String get actionValue {
-    return _betterActionMap[this]!;
-  }
-}
-
-// List all possible values of each single JNAP action
-enum _JNAPActionValue {
-  transaction(value: 'http://linksys.com/jnap/core/Transaction'),
-  checkAdminPassword(value: 'http://linksys.com/jnap/core/CheckAdminPassword'),
-  checkAdminPassword2(
-      value: 'http://linksys.com/jnap/core/CheckAdminPassword2'),
-  checkAdminPassword3(
-      value: 'http://linksys.com/jnap/core/CheckAdminPassword3'),
-  coreSetAdminPassword(value: 'http://linksys.com/jnap/core/SetAdminPassword'),
-  coreSetAdminPassword2(
-      value: 'http://linksys.com/jnap/core/SetAdminPassword2'),
-  coreSetAdminPassword3(
-      value: 'http://linksys.com/jnap/core/SetAdminPassword3'),
-  getAdminPasswordAuthStatus(
-      value: 'http://linksys.com/jnap/core/GetAdminPasswordAuthStatus'),
-  getAdminPasswordHint(
-      value: 'http://linksys.com/jnap/core/GetAdminPasswordHint'),
-  getDataUploadUserConsent(
-      value: 'http://linksys.com/jnap/core/GetDataUploadUserConsent'),
-  getDeviceInfo(value: 'http://linksys.com/jnap/core/GetDeviceInfo'),
-  getUnsecuredWiFiWarning(
-      value: 'http://linksys.com/jnap/core/GetUnsecuredWiFiWarning'),
-  setUnsecuredWiFiWarning(
-      value: 'http://linksys.com/jnap/core/SetUnsecuredWiFiWarning'),
-  isAdminPasswordDefault(
-      value: 'http://linksys.com/jnap/core/IsAdminPasswordDefault'),
-  isServiceSupported(value: 'http://linksys.com/jnap/core/IsServiceSupported'),
-  reboot(value: 'http://linksys.com/jnap/core/Reboot'),
-  getDDNSStatus(value: 'http://linksys.com/jnap/ddns/GetDDNSStatus'),
-  getDDNSStatus2(value: 'http://linksys.com/jnap/ddns/GetDDNSStatus2'),
-  getDevices(value: 'http://linksys.com/jnap/devicelist/GetDevices'),
-  getDevices3(value: 'http://linksys.com/jnap/devicelist/GetDevices3'),
-  getLocalDevice(value: 'http://linksys.com/jnap/devicelist/GetLocalDevice'),
-  setDeviceProperties(
-      value: 'http://linksys.com/jnap/devicelist/SetDeviceProperties'),
-  deleteDevice(value: 'http://linksys.com/jnap/devicelist/DeleteDevice'),
-  getPortRangeForwardingRules(
-      value: 'http://linksys.com/jnap/firewall/GetPortRangeForwardingRules'),
-  getPortRangeTriggeringRules(
-      value: 'http://linksys.com/jnap/firewall/GetPortRangeTriggeringRules'),
-  getSinglePortForwardingRules(
-      value: 'http://linksys.com/jnap/firewall/GetSinglePortForwardingRules'),
-  setPortRangeForwardingRules(
-      value: 'http://linksys.com/jnap/firewall/SetPortRangeForwardingRules'),
-  setPortRangeTriggeringRules(
-      value: 'http://linksys.com/jnap/firewall/SetPortRangeTriggeringRules'),
-  setSinglePortForwardingRules(
-      value: 'http://linksys.com/jnap/firewall/SetSinglePortForwardingRules'),
-  getFirmwareUpdateStatus(
-      value: 'http://linksys.com/jnap/firmwareupdate/GetFirmwareUpdateStatus'),
-  getGuestNetworkClients(
-      value: 'http://linksys.com/jnap/guestnetwork/GetGuestNetworkClients'),
-  getGuestNetworkSettings(
-      value: 'http://linksys.com/jnap/guestnetwork/GetGuestNetworkSettings'),
-  getGuestNetworkSettings2(
-      value: 'http://linksys.com/jnap/guestnetwork/GetGuestNetworkSettings2'),
-  getGuestRadioSettings(
-      value: 'http://linksys.com/jnap/guestnetwork/GetGuestRadioSettings'),
-  getGuestRadioSettings2(
-      value: 'http://linksys.com/jnap/guestnetwork/GetGuestRadioSettings2'),
-  setGuestNetworkSettings(
-      value: 'http://linksys.com/jnap/guestnetwork/SetGuestNetworkSettings'),
-  // setGuestNetworkSettings2(value: 'http://linksys.com/jnap/guestnetwork/SetGuestNetworkSettings2'),
-  setGuestNetworkSettings3(
-      value: 'http://linksys.com/jnap/guestnetwork/SetGuestNetworkSettings3'),
-  setGuestRadioSettings(
-      value: 'http://linksys.com/jnap/guestnetwork/SetGuestRadioSettings'),
-  setGuestRadioSettings2(
-      value: 'http://linksys.com/jnap/guestnetwork/SetGuestRadioSettings2'),
-  clearHealthCheckHistory(
-      value: 'http://linksys.com/jnap/healthcheck/ClearHealthCheckHistory'),
-  getHealthCheckResults(
-      value: 'http://linksys.com/jnap/healthcheck/GetHealthCheckResults'),
-  getHealthCheckStatus(
-      value: 'http://linksys.com/jnap/healthcheck/GetHealthCheckStatus'),
-  getSupportedHealthCheckModules(
-      value:
-          'http://linksys.com/jnap/healthcheck/GetSupportedHealthCheckModules'),
-  runHealthCheck(value: 'http://linksys.com/jnap/healthcheck/RunHealthCheck'),
-  stopHealthCheck(value: 'http://linksys.com/jnap/healthcheck/StopHealthCheck'),
-  getLocalTime(value: 'http://linksys.com/jnap/locale/GetLocalTime'),
-  getTimeSettings(value: 'http://linksys.com/jnap/locale/GetTimeSettings'),
-  getLocale(value: 'http://linksys.com/jnap/locale/GetLocale'),
-  setLocale(value: 'http://linksys.com/jnap/locale/SetLocale'),
-  setTimeSettings(value: 'http://linksys.com/jnap/locale/SetTimeSettings'),
-  getMACFilterSettings(
-      value: 'http://linksys.com/jnap/macfilter/GetMACFilterSettings'),
-  getActiveMotionSensingBots(
-      value:
-          'http://linksys.com/jnap/motionsensing/GetActiveMotionSensingBots'),
-  getMotionSensingSettings(
-      value: 'http://linksys.com/jnap/motionsensing/GetMotionSensingSettings'),
-  getNetworkConnections(
-      value:
-          'http://linksys.com/jnap/networkconnections/GetNetworkConnections'),
-  getNetworkConnections2(
-      value:
-          'http://linksys.com/jnap/networkconnections/GetNetworkConnections2'),
-  getNetworkSecuritySettings(
-      value:
-          'http://linksys.com/jnap/networksecurity/GetNetworkSecuritySettings'),
-  getNetworkSecuritySettings2(
-      value:
-          'http://linksys.com/jnap/networksecurity/GetNetworkSecuritySettings2'),
-  setNetworkSecuritySettings(
-      value:
-          'http://linksys.com/jnap/networksecurity/SetNetworkSecuritySettings'),
-  setNetworkSecuritySettings2(
-      value:
-          'http://linksys.com/jnap/networksecurity/SetNetworkSecuritySettings2'),
-  getBackhaulInfo(
-      value: 'http://linksys.com/jnap/nodes/diagnostics/GetBackhaulInfo'),
-  getNodeNeighborInfo(
-      value: 'http://linksys.com/jnap/nodes/diagnostics/GetNodeNeighborInfo'),
-  getSlaveBackhaulStatus(
-      value:
-          'http://linksys.com/jnap/nodes/diagnostics/GetSlaveBackhaulStatus'),
-  refreshSlaveBackhaulData(
-      value:
-          'http://linksys.com/jnap/nodes/diagnostics/RefreshSlaveBackhaulData'),
-  getNodesWirelessNetworkConnections(
-      value:
-          'http://linksys.com/jnap/nodes/networkconnections/GetNodesWirelessNetworkConnections'),
-  getOwnedNetworkID(
-      value: 'http://linksys.com/jnap/ownednetwork/GetOwnedNetworkID'),
-  isOwnedNetwork(value: 'http://linksys.com/jnap/ownednetwork/IsOwnedNetwork'),
-  setNetworkOwner(
-      value: 'http://linksys.com/jnap/ownednetwork/SetNetworkOwner'),
-  getParentalControlSettings(
-      value:
-          'http://linksys.com/jnap/parentalcontrol/GetParentalControlSettings'),
-  getPowerTableSettings(
-      value: 'http://linksys.com/jnap/powertable/GetPowerTableSettings'),
-  getQoSSettings(value: 'http://linksys.com/jnap/qos/GetQoSSettings'),
-  getQoSSettings2(value: 'http://linksys.com/jnap/qos/GetQoSSettings2'),
-  getDHCPClientLeases(
-      value: 'http://linksys.com/jnap/router/GetDHCPClientLeases'),
-  getIPv6Settings(value: 'http://linksys.com/jnap/router/GetIPv6Settings'),
-  getIPv6Settings2(value: 'http://linksys.com/jnap/router/GetIPv6Settings2'),
-  getLANSettings(value: 'http://linksys.com/jnap/router/GetLANSettings'),
-  getMACAddressCloneSettings(
-      value: 'http://linksys.com/jnap/router/GetMACAddressCloneSettings'),
-  getWANSettings(value: 'http://linksys.com/jnap/router/GetWANSettings'),
-  getWANSettings3(value: 'http://linksys.com/jnap/router/GetWANSettings3'),
-  getWANSettings4(value: 'http://linksys.com/jnap/router/GetWANSettings4'),
-  getWANSettings5(value: 'http://linksys.com/jnap/router/GetWANSettings5'),
-  getWANStatus(value: 'http://linksys.com/jnap/router/GetWANStatus'),
-  getWANStatus3(value: 'http://linksys.com/jnap/router/GetWANStatus3'),
-  getWANDetectionStatus(
-      value: 'http://linksys.com/jnap/nodes/setup/GetWANDetectionStatus'),
-  setIPv6Settings(value: 'http://linksys.com/jnap/router/SetIPv6Settings'),
-  setIPv6Settings2(value: 'http://linksys.com/jnap/router/SetIPv6Settings2'),
-  setMACAddressCloneSettings(
-      value: 'http://linksys.com/jnap/router/SetMACAddressCloneSettings'),
-  setWANSettings(value: 'http://linksys.com/jnap/router/SetWANSettings'),
-  setWANSettings3(value: 'http://linksys.com/jnap/router/SetWANSettings3'),
-  setWANSettings4(value: 'http://linksys.com/jnap/router/SetWANSettings4'),
-  renewDHCPWANLease(value: 'http://linksys.com/jnap/router/RenewDHCPWANLease'),
-  renewDHCPIPv6Lease(
-      value: 'http://linksys.com/jnap/router/RenewDHCPIPv6WANLease'),
-  getManagementSettings(
-      value: 'http://linksys.com/jnap/routermanagement/GetManagementSettings'),
-  getManagementSettings2(
-      value: 'http://linksys.com/jnap/routermanagement/GetManagementSettings2'),
-  setManagementSettings(
-      value: 'http://linksys.com/jnap/routermanagement/SetManagementSettings'),
-  setManagementSettings2(
-      value: 'http://linksys.com/jnap/routermanagement/SetManagementSettings2'),
-  isAdminPasswordSetByUser(
-      value: 'http://linksys.com/jnap/nodes/setup/IsAdminPasswordSetByUser'),
-  setupSetAdminPassword(
-      value: 'http://linksys.com/jnap/nodes/setup/SetAdminPassword'),
-  setupSetAdminPassword2(
-      value: 'http://linksys.com/jnap/nodes/setup/SetAdminPassword2'),
-  verifyRouterResetCode(
-      value: 'http://linksys.com/jnap/nodes/setup/VerifyRouterResetCode'),
-  getVersionInfo(value: 'http://linksys.com/jnap/nodes/setup/GetVersionInfo'),
-  getDeviceMode(value: 'http://linksys.com/jnap/nodes/smartmode/GetDeviceMode'),
-  getSupportedDeviceModes(
-      value: 'http://linksys.com/jnap/nodes/smartmode/GetSupportedDeviceModes'),
-  setDeviceMode(value: 'http://linksys.com/jnap/nodes/smartmode/SetDeviceMode'),
-  getRadioInfo(value: 'http://linksys.com/jnap/wirelessap/GetRadioInfo'),
-  getRadioInfo3(value: 'http://linksys.com/jnap/wirelessap/GetRadioInfo3'),
-  getWPSServerSessionStatus(
-      value: 'http://linksys.com/jnap/wirelessap/GetWPSServerSessionStatus'),
-  setRadioSettings(
-      value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings'),
-  setRadioSettings3(
-      value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings3'),
-  getWirelessSchedulerSettings(
-      value:
-          'http://linksys.com/jnap/wirelessscheduler/GetWirelessSchedulerSettings'),
-  getPortConnectionStatus(
-      value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings3'),
-  getWANPort(value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings3'),
-  setWANPort(value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings3'),
-  getInternetConnectionStatus(
-      value: 'http://linksys.com/jnap/nodes/setup/GetInternetConnectionStatus'),
-  setSimpleWiFiSettings(
-      value: 'http://linksys.com/jnap/nodes/setup/SetSimpleWiFiSettings'),
-  getMACAddress(value: 'http://linksys.com/jnap/nodes/setup/GetMACAddress'),
-  getCloudIds(value: 'http://linksys.com/jnap/ownednetwork/GetCloudIDs'),
-  setCloudIds(value: 'http://linksys.com/jnap/ownednetwork/SetCloudIDs'),
-  getBluetoothAutoOnboardingSettings(
-      value:
-          'http://linksys.com/jnap/nodes/autoonboarding/GetBluetoothAutoOnboardingSettings'),
-  getBluetoothAutoOnboardingStatus(
-      value:
-          'http://linksys.com/jnap/nodes/autoonboarding/GetBluetoothAutoOnboardingStatus'),
-  startBluetoothAutoOnboarding(
-      value:
-          'http://linksys.com/jnap/nodes/autoonboarding/StartBluetoothAutoOnboarding'),
-  btGetScanUnconfiguredResult2(
-      value:
-          'http://linksys.com/jnap/nodes/bluetooth/BTGetScanUnconfiguredResult2'),
-  btRequestScanUnconfigured2(
-      value:
-          'http://linksys.com/jnap/nodes/bluetooth/BTRequestScanUnconfigured2'),
-  getIoTNetworkSettings(
-      value: 'http://linksys.com/jnap/iotnetwork/GetIoTNetworkSettings'),
-  setIoTNetworkSettings(
-      value: 'http://linksys.com/jnap/iotnetwork/SetIoTNetworkSettings'),
-  requestFOSContainer(
-      value: 'http://linksys.com/jnap/router/RequestFOSContainer');
-
-  const _JNAPActionValue({required this.value});
-
-  final String value;
-}
+part 'jnap_service.dart';
 
 // The better action map
 var _betterActionMap = <JNAPAction, String>{};
@@ -548,6 +70,12 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.firmwareUpdate2:
       break;
+    case JNAPService.gamingPrioritization:
+      _betterActionMap[JNAPAction.getGamingPrioritizationSettings] =
+          _JNAPActionValue.getGamingPrioritizationSettings.value;
+      _betterActionMap[JNAPAction.setGamingPrioritizationSettings] =
+          _JNAPActionValue.setGamingPrioritizationSettings.value;
+      break;
     case JNAPService.guestNetwork:
       break;
     case JNAPService.guestNetwork2:
@@ -557,8 +85,16 @@ void _updateBetterActions(JNAPService service) {
           _JNAPActionValue.setGuestNetworkSettings3.value;
       break;
     case JNAPService.guestNetwork3:
+      _betterActionMap[JNAPAction.getGuestNetworkSettings] =
+          _JNAPActionValue.getGuestRadioSettings.value;
+      _betterActionMap[JNAPAction.setGuestNetworkSettings] =
+          _JNAPActionValue.setGuestRadioSettings.value;
       break;
     case JNAPService.guestNetwork4:
+      _betterActionMap[JNAPAction.getGuestNetworkSettings] =
+          _JNAPActionValue.getGuestRadioSettings2.value;
+      _betterActionMap[JNAPAction.setGuestNetworkSettings] =
+          _JNAPActionValue.setGuestRadioSettings2.value;
       _betterActionMap[JNAPAction.getGuestRadioSettings] =
           _JNAPActionValue.getGuestRadioSettings2.value;
       _betterActionMap[JNAPAction.setGuestRadioSettings] =
@@ -567,6 +103,16 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.guestNetwork5:
       break;
     case JNAPService.healthCheckManager:
+      _betterActionMap[JNAPAction.getNodesHealthCheckStatus] =
+          _JNAPActionValue.getHealthCheckStatus.value;
+      _betterActionMap[JNAPAction.getNodesHealthCheckResults] =
+          _JNAPActionValue.getHealthCheckResults.value;
+      _betterActionMap[JNAPAction.runNodesHealthCheck] =
+          _JNAPActionValue.runHealthCheck.value;
+      _betterActionMap[JNAPAction.stopNodesHealCheck] =
+          _JNAPActionValue.stopHealthCheck.value;
+      _betterActionMap[JNAPAction.getNodesSupportedHealthCheckModules] =
+          _JNAPActionValue.getSupportedHealthCheckModules.value;
       break;
     case JNAPService.locale:
       break;
@@ -613,10 +159,6 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.ownedNetwork2:
       break;
     case JNAPService.ownedNetwork3:
-      _betterActionMap[JNAPAction.getCloudIds] =
-          _JNAPActionValue.getCloudIds.value;
-      _betterActionMap[JNAPAction.setCloudIds] =
-          _JNAPActionValue.setCloudIds.value;
       break;
     case JNAPService.parentalControl:
       break;
@@ -635,6 +177,12 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.router:
       break;
     case JNAPService.router3:
+      _betterActionMap[JNAPAction.getWANSettings] =
+          _JNAPActionValue.getWANSettings2.value;
+      _betterActionMap[JNAPAction.setWANSettings] =
+          _JNAPActionValue.setWANSettings2.value;
+      _betterActionMap[JNAPAction.getWANStatus] =
+          _JNAPActionValue.getWANStatus2.value;
       break;
     case JNAPService.router4:
       break;
@@ -702,9 +250,29 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.selectableWAN:
       break;
+    case JNAPService.storage:
+      break;
+    case JNAPService.storage2:
+      _betterActionMap[JNAPAction.getMountedPartitions] =
+          _JNAPActionValue.getPartitions.value;
+      break;
+    case JNAPService.vlanTagging:
+      break;
+    case JNAPService.vlanTagging2:
+      _betterActionMap[JNAPAction.getVLANTaggingSettings] =
+          _JNAPActionValue.getVLANTaggingSettings2.value;
+      _betterActionMap[JNAPAction.setVLANTaggingSettings] =
+          _JNAPActionValue.setVLANTaggingSettings2.value;
+      break;
     case JNAPService.wirelessAP:
       break;
     case JNAPService.wirelessAP2:
+      break;
+    case JNAPService.wirelessAP3:
+      _betterActionMap[JNAPAction.getRadioInfo] =
+          _JNAPActionValue.getRadioInfo2.value;
+      _betterActionMap[JNAPAction.setRadioSettings] =
+          _JNAPActionValue.setRadioSettings2.value;
       break;
     case JNAPService.wirelessAP4:
       _betterActionMap[JNAPAction.getRadioInfo] =
@@ -715,6 +283,9 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.wirelessScheduler:
       break;
     case JNAPService.wirelessScheduler2:
+      break;
+    case JNAPService.nodeHealthCheck:
+      // TODO: Handle this case.
       break;
   }
 }
@@ -886,8 +457,6 @@ void initBetterActions() {
       _JNAPActionValue.setSimpleWiFiSettings.value;
   _betterActionMap[JNAPAction.getMACAddress] =
       _JNAPActionValue.getMACAddress.value;
-  _betterActionMap[JNAPAction.getCloudIds] = _JNAPActionValue.getCloudIds.value;
-  _betterActionMap[JNAPAction.setCloudIds] = _JNAPActionValue.setCloudIds.value;
   _betterActionMap[JNAPAction.renewDHCPWANLease] =
       _JNAPActionValue.renewDHCPWANLease.value;
   _betterActionMap[JNAPAction.renewDHCPIPv6WANLease] =
@@ -902,12 +471,11 @@ void initBetterActions() {
       _JNAPActionValue.getBluetoothAutoOnboardingStatus.value;
   _betterActionMap[JNAPAction.startBlueboothAutoOnboarding] =
       _JNAPActionValue.startBluetoothAutoOnboarding.value;
-  _betterActionMap[JNAPAction.getIoTNetworkSettings] =
-      _JNAPActionValue.getIoTNetworkSettings.value;
-  _betterActionMap[JNAPAction.setIoTNetworkSettings] =
-      _JNAPActionValue.setIoTNetworkSettings.value;
-  _betterActionMap[JNAPAction.requestFOSContainer] =
-      _JNAPActionValue.requestFOSContainer.value;
+  _betterActionMap[JNAPAction.getVLANTaggingSettings] =
+      _JNAPActionValue.getVLANTaggingSettings.value;
+  _betterActionMap[JNAPAction.setVLANTaggingSettings] =
+      _JNAPActionValue.setVLANTaggingSettings.value;
+
 }
 
 void buildBetterActions(List<String> routerServices) {

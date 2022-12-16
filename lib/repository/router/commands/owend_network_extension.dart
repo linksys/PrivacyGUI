@@ -25,24 +25,4 @@ extension OwnedNetworkService on RouterRepository {
     final result = await command.publish(executor!);
     return handleJNAPResult(result);
   }
-
-  @Deprecated('Moab')
-  Future<JNAPSuccess> getCloudIds() async {
-    final command = createCommand(JNAPAction.getCloudIds.actionValue, needAuth: true);
-    final result = await command.publish(executor!);
-    return handleJNAPResult(result);
-  }
-
-  @Deprecated('Moab')
-  Future<JNAPSuccess> setCloudIds(String accountId, String groupId) async {
-    final command = createCommand(
-      JNAPAction.setCloudIds.actionValue, needAuth: true,
-      data: {
-        'accountID': accountId,
-        'groupID': groupId,
-      },
-    );
-    final result = await command.publish(executor!);
-    return handleJNAPResult(result);
-  }
 }

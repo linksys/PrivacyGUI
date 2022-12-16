@@ -146,6 +146,6 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
   }
 
   Future<void> associateNetwork(String accountId, String groupId) async {
-    await _routerRepository.setCloudIds(accountId, groupId);
+    // await _routerRepository.setCloudIds(accountId, groupId);
   }
 }

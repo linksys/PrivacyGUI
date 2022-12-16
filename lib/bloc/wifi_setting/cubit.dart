@@ -63,22 +63,22 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
           signal: 0));
       _guestRadioInfoSetting = guestRadioInfoSetting;
     }
-    if (results.containsKey(JNAPAction.getIoTNetworkSettings.actionValue)) {
-      final isIoTNetworkEnabled =
-          results[JNAPAction.getIoTNetworkSettings.actionValue]!
-              .output['isIoTNetworkEnabled'];
-      _wifiList.add(WifiListItem(
-          wifiType: WifiType.iot,
-          ssid: '',
-          password: '',
-          securityType: _wifiList.isNotEmpty
-              ? _wifiList.first.securityType
-              : WifiSecurityType.wpa2Wpa3Mixed,
-          mode: _wifiList.isNotEmpty ? _wifiList.first.mode : WifiMode.mixed,
-          isWifiEnabled: isIoTNetworkEnabled,
-          numOfDevices: 0,
-          signal: 0));
-    }
+    // if (results.containsKey(JNAPAction.getIoTNetworkSettings.actionValue)) {
+    //   final isIoTNetworkEnabled =
+    //       results[JNAPAction.getIoTNetworkSettings.actionValue]!
+    //           .output['isIoTNetworkEnabled'];
+    //   _wifiList.add(WifiListItem(
+    //       wifiType: WifiType.iot,
+    //       ssid: '',
+    //       password: '',
+    //       securityType: _wifiList.isNotEmpty
+    //           ? _wifiList.first.securityType
+    //           : WifiSecurityType.wpa2Wpa3Mixed,
+    //       mode: _wifiList.isNotEmpty ? _wifiList.first.mode : WifiMode.mixed,
+    //       isWifiEnabled: isIoTNetworkEnabled,
+    //       numOfDevices: 0,
+    //       signal: 0));
+    // }
 
     emit(state.copyWith(
       wifiList: _wifiList,
@@ -124,12 +124,12 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
         });
         break;
       case WifiType.iot:
-        await _routerRepository.setIoTNetworkSettings(enable).then((value) {
-          fetchAllRadioInfo();
-          emit(state.copyWith(
-              selectedWifiItem:
-                  state.selectedWifiItem.copyWith(isWifiEnabled: enable)));
-        });
+        // await _routerRepository.setIoTNetworkSettings(enable).then((value) {
+        //   fetchAllRadioInfo();
+        //   emit(state.copyWith(
+        //       selectedWifiItem:
+        //           state.selectedWifiItem.copyWith(isWifiEnabled: enable)));
+        // });
         break;
     }
   }
