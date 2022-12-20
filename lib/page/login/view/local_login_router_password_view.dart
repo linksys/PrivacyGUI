@@ -152,7 +152,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     });
     await context
         .read<AuthBloc>()
-        .localLogin(_passwordController.text)
+        .localLogin(_passwordController.text).then<void>((_) {})
         .onError((error, stackTrace) => _handleError(error, stackTrace));
     setState(() {
       _isLoading = false;

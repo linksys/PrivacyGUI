@@ -1,5 +1,6 @@
 import 'package:linksys_moab/model/router/guest_radio_settings.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
+import 'package:linksys_moab/network/jnap/jnap_command_queue.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 
@@ -8,7 +9,7 @@ extension GuestNetworkService on RouterRepository {
     final command =
         createCommand(JNAPAction.getGuestNetworkClients.actionValue, needAuth: true);
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -16,7 +17,7 @@ extension GuestNetworkService on RouterRepository {
     final command =
         createCommand(JNAPAction.getGuestNetworkSettings.actionValue, needAuth: true);
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -24,7 +25,7 @@ extension GuestNetworkService on RouterRepository {
     final command =
     createCommand(JNAPAction.getGuestRadioSettings.actionValue, needAuth: true);
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -35,7 +36,7 @@ extension GuestNetworkService on RouterRepository {
       'radios': radios.map((e) => e.toJson()).toList(),
     });
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 }

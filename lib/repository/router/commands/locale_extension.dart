@@ -1,4 +1,5 @@
 import 'package:linksys_moab/network/jnap/better_action.dart';
+import 'package:linksys_moab/network/jnap/jnap_command_queue.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 
@@ -6,21 +7,21 @@ extension LocaleService on RouterRepository {
   Future<JNAPSuccess> getLocalTime() async {
     final command = createCommand(JNAPAction.getLocalTime.actionValue, needAuth: true);
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> getTimeSettings() async {
     final command = createCommand(JNAPAction.getTimeSettings.actionValue, needAuth: true);
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> getLocale() async {
     final command = createCommand(JNAPAction.getLocale.actionValue, needAuth: true);
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -29,7 +30,7 @@ extension LocaleService on RouterRepository {
       'locale': locale,
     });
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -41,7 +42,7 @@ extension LocaleService on RouterRepository {
       'autoAdjustForDST': autoAdjustForDST,
     });
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 }

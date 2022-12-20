@@ -7,7 +7,7 @@ import 'package:linksys_moab/network/jnap/spec/jnap_spec.dart';
 import 'package:linksys_moab/network/jnap/command/base_command.dart';
 
 abstract class BaseBTCommand<R, S extends JNAPCommandSpec> extends BaseCommand<R, S> {
-  BaseBTCommand({required super.spec});
+  BaseBTCommand({required super.spec, required super.executor});
 
   String _data = '';
 
@@ -18,6 +18,7 @@ abstract class BaseBTCommand<R, S extends JNAPCommandSpec> extends BaseCommand<R
 
 class JNAPBTCommand extends BaseBTCommand<JNAPResult, BTJNAPSpec> {
   JNAPBTCommand({
+    required super.executor,
     required String action,
     Map<String, dynamic> data = const {},
   }) : super(
@@ -27,7 +28,7 @@ class JNAPBTCommand extends BaseBTCommand<JNAPResult, BTJNAPSpec> {
         ));
 
   @override
-  Future<JNAPResult> publish(JNAPCommandExecutor executor) async {
+  Future<JNAPResult> publish() async {
     _data = spec.payload();
     final result = await executor.execute(this);
     return result;

@@ -277,6 +277,8 @@ class MoabHttpClient extends http.BaseClient with JNAPCommandExecutor<Response> 
   Future<Response> execute(BaseCommand command) async {
     if (command is JNAPHttpCommand) {
       return post(Uri.parse(command.url), headers: command.header, body: command.data);
+    } else if (command is TransactionHttpCommand) {
+      return post(Uri.parse(command.url), headers: command.header, body: command.data);
     }
     throw Exception();
   }

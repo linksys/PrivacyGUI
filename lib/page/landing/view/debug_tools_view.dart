@@ -19,6 +19,8 @@ import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/bluetooth/bluetooth.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/network/jnap/better_action.dart';
+import 'package:linksys_moab/network/jnap/jnap_transaction.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/network/mdns/mdns_helper.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -153,10 +155,21 @@ class _DebugToolsViewState extends State<DebugToolsView> {
       ..._buildMdnsTestSection(),
       SecondaryButton(
         text: 'Raise an Exception!',
-        onPress: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Throw a test exception!!')));
-          throw Exception('Throw a test exception!!');
+        onPress: () async {
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //     const SnackBar(content: Text('Throw a test exception!!')));
+          // throw Exception('Throw a test exception!!');
+          final repo = context.read<RouterRepository>();
+          // final result = await repo.isAdminPasswordDefault();
+          // logger.d('Result: $result');
+          // final result1 = await repo.getMACAddress();
+          // logger.d('Result1: $result1');
+
+          final builder = JNAPTransactionBuilder()
+              .add(JNAPAction.isAdminPasswordDefault)
+              .add(JNAPAction.isAdminPasswordSetByUser);
+          final result = await repo.transaction(builder);
+          logger.d('Result: $result');
         },
       ),
       const SizedBox(
@@ -365,7 +378,10 @@ class _DebugToolsViewState extends State<DebugToolsView> {
             onPress: () async {
               final repository = context.read<RouterRepository>()
                 ..enableBTSetup = true;
-              final result1 = await repository.getMACAddress().then<JNAPSuccess?>((value) => value).onError((error, stackTrace) {
+              final result1 = await repository
+                  .getMACAddress()
+                  .then<JNAPSuccess?>((value) => value)
+                  .onError((error, stackTrace) {
                 logger.e('Error', error, stackTrace);
               });
               logger.d('result1: $result1}');
@@ -401,12 +417,11 @@ class _DebugToolsViewState extends State<DebugToolsView> {
               String httpType = "_http._tcp";
               String omsgType = "_omsg._tcp";
 
-              final result = await Future.wait([MDnsHelper.discover(httpType), MDnsHelper.discover(omsgType)]);
+              final result = await Future.wait([
+                MDnsHelper.discover(httpType),
+                MDnsHelper.discover(omsgType)
+              ]);
               logger.d('Result: $result');
-
-
-
-
             },
           ),
           box16(),

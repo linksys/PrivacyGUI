@@ -1,4 +1,5 @@
 import 'package:linksys_moab/network/jnap/better_action.dart';
+import 'package:linksys_moab/network/jnap/jnap_command_queue.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 
@@ -6,7 +7,7 @@ extension DeviceListService on RouterRepository {
   Future<JNAPSuccess> getDevices() async {
     final command = createCommand(JNAPAction.getDevices.actionValue, needAuth: true);
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -14,7 +15,7 @@ extension DeviceListService on RouterRepository {
   Future<JNAPSuccess> getLocalDevice() async {
     final command = createCommand(JNAPAction.getLocalDevice.actionValue, needAuth: true);
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -29,7 +30,7 @@ extension DeviceListService on RouterRepository {
       'propertiesToRemove': propertiesToRemove,
     });
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 }

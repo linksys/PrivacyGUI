@@ -17,6 +17,7 @@ import 'package:linksys_moab/network/jnap/jnap_command_executor_mixin.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/jnap/command/http_base_command.dart';
+import 'package:linksys_moab/network/jnap/jnap_command_queue.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/network/jnap/spec/jnap_spec.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -42,7 +43,7 @@ class RouterRepository with StateStreamListener {
   final MoabHttpClient _client = MoabHttpClient();
 
   // To expose interface
-  JNAPCommandExecutor? get executor {
+  JNAPCommandExecutor get executor {
     if (_btSetupMode) {
       return BluetoothManager();
     } else {
@@ -66,28 +67,28 @@ class RouterRepository with StateStreamListener {
 
   bool get isEnableBTSetup => _btSetupMode;
 
-  // JNAPTransaction createTransaction(List<Map<String, dynamic>> payload) {
-  //   logger.d('create transaction');
-  //   throw Exception();
-  // }
-
-  BaseCommand<JNAPResult, JNAPCommandSpec> createCommand(String action,
-      {Map<String, dynamic> data = const {}, bool needAuth = false}) {
-    if (isEnableBTSetup) {
-      return _createBTCommand(action, data: data, needAuth: needAuth);
-    } else {
-      return _createHttpCommand(action, data: data, needAuth: needAuth);
-    }
-  }
-
-  BaseCommand<JNAPResult, BTJNAPSpec> _createBTCommand(String action,
-      {Map<String, dynamic> data = const {}, bool needAuth = false}) {
-    return JNAPBTCommand(action: action, data: data);
-  }
-
-  BaseCommand<JNAPResult, HttpJNAPSpec> _createHttpCommand(String action,
-      {Map<String, dynamic> data = const {}, bool needAuth = false}) {
+  String _buildUrl() {
     String url;
+    switch (_routerType) {
+      case RouterType.others:
+        url = _loginType == LoginFrom.remote
+            ? cloudEnvironmentConfig[kCloudJNAP]
+            : 'https://$_localIp/JNAP/';
+        break;
+      case RouterType.behind:
+        url = _loginType == LoginFrom.remote
+            ? 'https://$_localIp/cloud/JNAP/'
+            : 'https://$_localIp/JNAP/';
+        break;
+      case RouterType.behindManaged:
+        url = 'https://$_localIp/JNAP/';
+
+        break;
+    }
+    return url;
+  }
+
+  Map<String, String> _buildHeader(bool needAuth) {
     Map<String, String> header = {};
     switch (_routerType) {
       case RouterType.others:
@@ -95,9 +96,6 @@ class RouterRepository with StateStreamListener {
         /// MUST Remote
         /// Authorization: TOKEN
         /// NetworkId: {NetworkId}
-        url = _loginType == LoginFrom.remote
-            ? cloudEnvironmentConfig[kCloudJNAP]
-            : 'https://$_localIp/JNAP/';
         header = {
           HttpHeaders.authorizationHeader:
               'LinksysUserAuth session_token = $_cloudToken',
@@ -110,9 +108,6 @@ class RouterRepository with StateStreamListener {
         /// Authorization: TOKEN
         /// NetworkId: {NetworkId}
         ///
-        url = _loginType == LoginFrom.remote
-            ? 'https://$_localIp/cloud/JNAP/'
-            : 'https://$_localIp/JNAP/';
         header = {
           HttpHeaders.authorizationHeader: _cloudToken,
           kJNAPNetworkId: _networkId ?? '',
@@ -131,7 +126,6 @@ class RouterRepository with StateStreamListener {
         final authValue = _loginType == LoginFrom.remote
             ? _cloudToken
             : 'Basic ${Utils.stringBase64Encode('admin:${_loginType == LoginFrom.none ? 'admin' : _localPassword}')}';
-        url = 'https://$_localIp/JNAP/';
         header = {
           authKey:
               (needAuth | (_loginType == LoginFrom.remote)) ? authValue : '',
@@ -139,9 +133,45 @@ class RouterRepository with StateStreamListener {
         break;
     }
     header.removeWhere((key, value) => value.isEmpty);
+    return header;
+  }
+
+  TransactionHttpCommand createTransaction(List<Map<String, dynamic>> payload,
+      {bool needAuth = false}) {
+    logger.d('create transaction');
+    String url = _buildUrl();
+    Map<String, String> header = _buildHeader(needAuth);
+
+    if (url.isNotEmpty) {
+      return TransactionHttpCommand(url: url, executor: executor, payload: payload, extraHeader: header);
+    } else {
+      throw Exception();
+    }
+  }
+
+  BaseCommand<JNAPResult, JNAPCommandSpec> createCommand(String action,
+      {Map<String, dynamic> data = const {}, bool needAuth = false}) {
+    if (isEnableBTSetup) {
+      return _createBTCommand(action, data: data, needAuth: needAuth);
+    } else {
+      return _createHttpCommand(action, data: data, needAuth: needAuth);
+    }
+  }
+
+  BaseCommand<JNAPResult, BTJNAPSpec> _createBTCommand(String action,
+      {Map<String, dynamic> data = const {}, bool needAuth = false}) {
+    return JNAPBTCommand(executor: executor, action: action, data: data);
+  }
+
+  BaseCommand<JNAPResult, HttpJNAPSpec> _createHttpCommand(String action,
+      {Map<String, dynamic> data = const {}, bool needAuth = false}) {
+    String url = _buildUrl();
+    Map<String, String> header = _buildHeader(needAuth);
+
     if (url.isNotEmpty) {
       return JNAPHttpCommand(
         url: url,
+        executor: executor,
         action: action,
         data: data,
         extraHeader: header,
@@ -159,13 +189,16 @@ class RouterRepository with StateStreamListener {
     bool Function()? condition,
   }) async* {
     int retry = 0;
-    while (++retry <= maxRetry && !(condition?.call() ?? false)) {
+    while (++retry <= maxRetry) {
       final command = createCommand(action.actionValue, data: data);
       logger.d('publish command {$action: $retry times');
       // TODO #ERRORHANDLING handle other errors - timeout error, etc...
-      yield await command
-          .publish(executor!)
+      yield await CommandQueue()
+          .enqueue(command)
           .then((value) => handleJNAPResult(value));
+      if (condition?.call() ?? false) {
+        break;
+      }
       await Future.delayed(Duration(seconds: retryDelayInSec));
     }
   }
@@ -178,13 +211,14 @@ class RouterRepository with StateStreamListener {
     }
   }
 
+  @Deprecated('No more use w/ HTTP')
   Future<Map<String, JNAPSuccess>> batchCommands(
       List<CommandWrap> commands) async {
     Map<String, JNAPSuccess> _map = {};
     for (CommandWrap e in commands) {
       _map[e.action] =
           await createCommand(e.action, needAuth: e.needAuth, data: e.data)
-              .publish(executor!)
+              .publish()
               .then(
                 (value) => handleJNAPResult(value),
               );

@@ -1,5 +1,6 @@
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
+import 'package:linksys_moab/network/jnap/jnap_command_queue.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 
@@ -8,7 +9,7 @@ extension SetupService on RouterRepository {
     final command =
         createCommand(JNAPAction.isAdminPasswordSetByUser.actionValue);
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -21,7 +22,7 @@ extension SetupService on RouterRepository {
       'passwordHint': hint,
     });
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -31,7 +32,7 @@ extension SetupService on RouterRepository {
       'resetCode': resetCode,
     });
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -46,7 +47,7 @@ extension SetupService on RouterRepository {
     final command =
         createCommand(JNAPAction.getInternetConnectionStatus.actionValue);
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -55,21 +56,23 @@ extension SetupService on RouterRepository {
     final command = createCommand(JNAPAction.setSimpleWiFiSettings.actionValue,
         data: settings.toJson());
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> getMACAddress() async {
     final command = createCommand(JNAPAction.getMACAddress.actionValue);
 
-    final result = await command.publish(executor!);
+    // final result = await command.publish();
+    final result = await CommandQueue().enqueue(command);
+
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> getVersionInfo() async {
     final command = createCommand(JNAPAction.getVersionInfo.actionValue);
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 }

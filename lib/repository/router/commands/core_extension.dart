@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
+import 'package:linksys_moab/network/jnap/command/http_base_command.dart';
+import 'package:linksys_moab/network/jnap/jnap_command_queue.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/util/logger.dart';
 
 extension CoreService on RouterRepository {
   Future<JNAPSuccess> checkAdminPassword(String password) async {
@@ -12,17 +15,20 @@ extension CoreService on RouterRepository {
         'adminPassword': password,
       },
     );
-    final result = await command.publish(executor!);
+    if (command is JNAPHttpCommand) {
+      command.spec.extraHeader['X-JNAP-Authorization'] = 'Basic ${base64Encode('admin:$password'.codeUnits)}';
+    }
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> createAdminPassword(String password, String hint) async {
     final command =
         createCommand(JNAPAction.coreSetAdminPassword.actionValue, data: {
-      'adminPassword': 'admin',
+      'adminPassword': password,
       'passwordHint': hint,
     });
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -30,14 +36,14 @@ extension CoreService on RouterRepository {
     final command =
         createCommand(JNAPAction.getAdminPasswordAuthStatus.actionValue);
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> getAdminPasswordHint() async {
     final command = createCommand(JNAPAction.getAdminPasswordHint.actionValue);
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -46,7 +52,7 @@ extension CoreService on RouterRepository {
         JNAPAction.getDataUploadUserConsent.actionValue,
         needAuth: true);
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -54,7 +60,8 @@ extension CoreService on RouterRepository {
     final command =
         createCommand(JNAPAction.getDeviceInfo.actionValue, needAuth: true);
 
-    final result = await command.publish(executor!);
+    // final result = await command.publish();
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -62,7 +69,8 @@ extension CoreService on RouterRepository {
     final command =
         createCommand(JNAPAction.isAdminPasswordDefault.actionValue);
 
-    final result = await command.publish(executor!);
+    // final result = await command.publish();
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -70,7 +78,7 @@ extension CoreService on RouterRepository {
     final command = createCommand(JNAPAction.isServiceSupported.actionValue,
         data: {'serviceName': service.value.replaceAll(kJNAPActionBase, '')});
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -78,7 +86,7 @@ extension CoreService on RouterRepository {
     final command =
         createCommand(JNAPAction.reboot.actionValue, needAuth: true);
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -87,7 +95,7 @@ extension CoreService on RouterRepository {
       JNAPAction.getUnsecuredWiFiWarning.actionValue,
     );
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
@@ -96,7 +104,7 @@ extension CoreService on RouterRepository {
         JNAPAction.setUnsecuredWiFiWarning.actionValue,
         data: {'enabled': enabled});
 
-    final result = await command.publish(executor!);
+    final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 }
