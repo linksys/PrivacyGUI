@@ -1,1 +1,1 @@
-export 'indeterminate_progressbar.dart';
+export 'indeterminate_progress_bar.dart';

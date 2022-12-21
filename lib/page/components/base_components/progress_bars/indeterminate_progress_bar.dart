@@ -4,7 +4,7 @@ class IndeterminateProgressBar extends StatefulWidget {
   const IndeterminateProgressBar({Key? key}) : super(key: key);
 
   @override
-  _IndeterminateProgressBarState createState() =>
+  State<IndeterminateProgressBar> createState() =>
       _IndeterminateProgressBarState();
 }
 
