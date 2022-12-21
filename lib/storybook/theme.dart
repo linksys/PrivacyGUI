@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:linksys_core/widgets/_widgets.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/design/text_style.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -74,8 +75,8 @@ Iterable<Story> themeStories() {
             child: Row(
               children: [
                 Container(
-                  height: 30,
-                  width: 30,
+                  height: 60,
+                  width: 60,
                   decoration: BoxDecoration(
                     border: Border.all(),
                     color: colors.values.elementAt(index),
@@ -89,6 +90,7 @@ Iterable<Story> themeStories() {
                       text: colors.keys.elementAt(index),
                       style: roman17,
                     ),
+                    const AppBox.small(),
                     BaseText(
                       text: colors.values.elementAt(index).toString(),
                       style: roman13,

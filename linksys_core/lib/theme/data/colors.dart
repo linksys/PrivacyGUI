@@ -3,6 +3,18 @@ import 'package:flutter/rendering.dart';
 import 'package:linksys_core/utils/named.dart';
 
 class AppColorsData extends Equatable {
+  final Color accent;
+  final Color accentHighlight;
+  final Color accentHighlight2;
+  final Color foreground;
+  final Color accentOpposite;
+  final Color background;
+  final Color actionBarForeground;
+  final Color actionBarBackground;
+
+  final Color primaryBlue;
+  final Color disabled;
+
   const AppColorsData({
     required this.accent,
     required this.accentHighlight,
@@ -12,6 +24,8 @@ class AppColorsData extends Equatable {
     required this.actionBarBackground,
     required this.actionBarForeground,
     required this.accentOpposite,
+    required this.primaryBlue,
+    required this.disabled,
   });
 
   factory AppColorsData.light() => const AppColorsData(
@@ -23,6 +37,8 @@ class AppColorsData extends Equatable {
         background: Color(0xFFFFFFFF),
         actionBarBackground: Color(0xFF000000),
         actionBarForeground: Color(0xFFFFFFFF),
+        primaryBlue: Color(0xff0870EA),
+        disabled: Color(0x80cbcbcb),
       );
 
   factory AppColorsData.dark() => const AppColorsData(
@@ -34,6 +50,8 @@ class AppColorsData extends Equatable {
         background: Color(0xFF111111),
         actionBarBackground: Color(0xFF000000),
         actionBarForeground: Color(0xFFFFFFFF),
+        primaryBlue: Color(0xff0870EA),
+        disabled: Color(0x80cbcbcb),
       );
 
   // factory AppColorsData.highContrast() => const AppColorsData(
@@ -47,15 +65,6 @@ class AppColorsData extends Equatable {
   //       actionBarForeground: Color(0xFF222222),
   //     );
 
-  final Color accent;
-  final Color accentHighlight;
-  final Color accentHighlight2;
-  final Color foreground;
-  final Color accentOpposite;
-  final Color background;
-  final Color actionBarForeground;
-  final Color actionBarBackground;
-
   @override
   List<Object?> get props => [
         accent.named('accent'),
@@ -66,5 +75,6 @@ class AppColorsData extends Equatable {
         background.named('background'),
         actionBarForeground.named('actionBarForeground'),
         actionBarBackground.named('actionBarBackground'),
+        primaryBlue.named('primaryBlue'),
       ];
 }

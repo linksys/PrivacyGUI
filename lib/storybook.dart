@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:linksys_core/theme/_theme.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
@@ -25,7 +26,12 @@ Widget linksysMaterialWrapper(BuildContext _, Widget? child) => MaterialApp(
       darkTheme: MoabTheme.mainDarkModeData,
       debugShowCheckedModeBanner: false,
       useInheritedMediaQuery: true,
-      home: Scaffold(body: Center(child: child)),
+      home: AppResponsiveTheme(
+        colorMode: AppThemeColorMode.light,
+        child: Scaffold(
+          body: Center(child: child),
+        ),
+      ),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
     );
@@ -36,10 +42,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Storybook(
         wrapperBuilder: linksysMaterialWrapper,
-        initialStory: 'Screens/Scaffold',
+        initialStory: 'Theme/Colors',
         plugins: _plugins,
         stories: [
           ...themeStories(),
+          ...buttonStories(),
           Story(
             name: 'Screens/Scaffold',
             description: 'Story with scaffold and different knobs.',
@@ -181,15 +188,18 @@ class MyApp extends StatelessWidget {
                       children: [
                         SettingTile(
                           title: Text('title'),
-                          value: Switch.adaptive(value: false, onChanged: (value) {}),
+                          value: Switch.adaptive(
+                              value: false, onChanged: (value) {}),
                         ),
                         SettingTileTwoLine(
                           title: Text('title'),
-                          value: Switch.adaptive(value: false, onChanged: (value) {}),
+                          value: Switch.adaptive(
+                              value: false, onChanged: (value) {}),
                         ),
                         SettingTileWithDescription(
                             title: Text('title'),
-                            value: Switch.adaptive(value: false, onChanged: (value) {}),
+                            value: Switch.adaptive(
+                                value: false, onChanged: (value) {}),
                             description: Text('description')),
                       ],
                     ),
@@ -200,7 +210,8 @@ class MyApp extends StatelessWidget {
                   ),
                   SettingTileWithDescription(
                       title: Text('title'),
-                      value: Switch.adaptive(value: false, onChanged: (value) {}),
+                      value:
+                          Switch.adaptive(value: false, onChanged: (value) {}),
                       description: Text('description')),
                 ],
               ),

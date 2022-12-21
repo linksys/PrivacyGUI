@@ -1,8 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:linksys_core/theme/_theme.dart';
 
-import '../_theme.dart';
 
 
 class AppThemeData extends Equatable {
@@ -10,8 +10,8 @@ class AppThemeData extends Equatable {
     // required this.icons,
     required this.colors,
     required this.typography,
-    // required this.radius,
-    // required this.spacing,
+    required this.radius,
+    required this.spacing,
     // required this.shadow,
     // required this.durations,
     // required this.images,
@@ -27,8 +27,8 @@ class AppThemeData extends Equatable {
         // icons: AppIconsData.regular(),
         typography: AppTypographyData.regular(),
         colors: AppColorsData.light(),
-        // radius: const AppRadiusData.regular(),
-        // spacing: AppSpacingData.regular(),
+        radius: const AppRadiusData.regular(),
+        spacing: AppSpacingData.regular(),
         // shadow: AppShadowsData.regular(),
         // durations: AppDurationsData.regular(),
         // images: AppImagesData.regular(
@@ -39,8 +39,8 @@ class AppThemeData extends Equatable {
   // final AppIconsData icons;
   final AppColorsData colors;
   final AppTypographyData typography;
-  // final AppRadiusData radius;
-  // final AppSpacingData spacing;
+  final AppRadiusData radius;
+  final AppSpacingData spacing;
   // final AppShadowsData shadow;
   // final AppDurationsData durations;
   // final AppImagesData images;
@@ -53,9 +53,9 @@ class AppThemeData extends Equatable {
         // icons,
         colors,
         typography,
-        // radius,
+        radius,
         // shadow,
-        // spacing,
+        spacing,
         // durations,
         // images,
         // formFactor,
@@ -70,9 +70,9 @@ class AppThemeData extends Equatable {
       // durations: durations,
       // icons: icons,
       // images: images,
-      // radius: radius,
+      radius: radius,
       // shadow: shadow,
-      // spacing: spacing,
+      spacing: spacing,
       typography: typography,
     );
   }
