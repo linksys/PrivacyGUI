@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_core/theme/_theme.dart';
 import 'package:linksys_moab/storybook/_storybook.dart';
 import 'package:storybook_flutter/storybook_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:provider/provider.dart';
 
 void main() => runApp(const MyApp());
 
@@ -36,6 +36,7 @@ class MyApp extends StatelessWidget {
         plugins: _plugins,
         stories: [
           ...themeStories(),
+          ...textStories(),
           ...buttonStories(),
         ],
       );

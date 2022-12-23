@@ -60,13 +60,7 @@ Iterable<Story> themeStories() {
       name: 'Theme/Colors',
       description: '',
       builder: (context) => Padding(
-        padding: EdgeInsets.symmetric(
-            vertical: context.knobs
-                .sliderInt(label: 'Padding vertical', initial: 10, max: 500)
-                .toDouble(),
-            horizontal: context.knobs
-                .sliderInt(label: 'Padding horizontal', initial: 24, max: 500)
-                .toDouble()),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: ListView.builder(
           shrinkWrap: true,
           itemCount: colors.length,
@@ -104,16 +98,10 @@ Iterable<Story> themeStories() {
       ),
     ),
     Story(
-      name: 'Theme/FontSize',
-      description: '',
+      name: 'Theme/TextStyles',
+      description: 'Combinations of Font Family, Size, and Weight',
       builder: (context) => Padding(
-        padding: EdgeInsets.symmetric(
-            vertical: context.knobs
-                .sliderInt(label: 'Padding vertical', initial: 10, max: 500)
-                .toDouble(),
-            horizontal: context.knobs
-                .sliderInt(label: 'Padding horizontal', initial: 24, max: 500)
-                .toDouble()),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: ListView.builder(
           shrinkWrap: true,
           itemCount: textStyle.length,

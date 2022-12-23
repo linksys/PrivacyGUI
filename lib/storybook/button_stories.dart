@@ -39,6 +39,18 @@ Iterable<Story> buttonStories() {
       ),
     ),
     Story(
+      name: 'Button/SecondaryButton with Icon',
+      description: 'Second kind of button used in app',
+      builder: (context) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: SecondaryButton(
+          text: context.knobs.text(label: 'Title', initial: 'title'),
+          icon: const Icon(Icons.add_a_photo),
+          onPress: () {},
+        ),
+      ),
+    ),
+    Story(
       name: 'Button/SimpleTextButton',
       description: 'Button with only blue text',
       builder: (context) => SimpleTextButton(

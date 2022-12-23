@@ -19,6 +19,7 @@ class SecondaryButton extends StatelessWidget {
     );
     final buttonStyle = ElevatedButton.styleFrom(
       backgroundColor: AppTheme.of(context).colors.secondButtonBackground,
+      foregroundColor: AppTheme.of(context).colors.secondButtonText,
       shape: RoundedRectangleBorder(
         borderRadius: AppTheme.of(context).radius.asBorderRadius().none,
       ),
