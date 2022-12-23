@@ -37,21 +37,21 @@ class AppTypographyData extends Equatable {
 
   @override
   List<Object?> get props => [
-    roman11.named('roman11'),
-    roman13.named('roman13'),
-    roman15.named('roman15'),
-    roman17.named('roman17'),
-    roman21.named('roman21'),
-    roman25.named('roman25'),
-    roman31.named('roman31'),
-    bold11.named('bold11'),
-    bold13.named('bold13'),
-    bold15.named('bold15'),
-    bold17.named('bold17'),
-    bold19.named('bold19'),
-    bold23.named('bold23'),
-    bold27.named('bold27'),
-  ];
+        roman11.named('roman11'),
+        roman13.named('roman13'),
+        roman15.named('roman15'),
+        roman17.named('roman17'),
+        roman21.named('roman21'),
+        roman25.named('roman25'),
+        roman31.named('roman31'),
+        bold11.named('bold11'),
+        bold13.named('bold13'),
+        bold15.named('bold15'),
+        bold17.named('bold17'),
+        bold19.named('bold19'),
+        bold23.named('bold23'),
+        bold27.named('bold27'),
+      ];
 
   factory AppTypographyData.regular() => const AppTypographyData(
         roman11: TextStyle(

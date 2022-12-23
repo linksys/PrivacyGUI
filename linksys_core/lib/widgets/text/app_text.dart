@@ -19,151 +19,135 @@ enum AppTextLevel {
 }
 
 class AppText extends StatelessWidget {
+  final String text;
+  final Color? color;
+  final int? maxLines;
+  final AppTextLevel textLevel;
+
   const AppText(
-    this.data, {
+    this.text, {
     Key? key,
     this.color,
-    this.fontSize,
     this.maxLines,
     this.textLevel = AppTextLevel.roman13,
   }) : super(key: key);
 
   const AppText.roman11(
-    this.data, {
+    this.text, {
     Key? key,
     this.color,
-    this.fontSize,
     this.maxLines,
   })  : textLevel = AppTextLevel.roman11,
         super(key: key);
 
   const AppText.roman13(
-      this.data, {
+      this.text, {
         Key? key,
         this.color,
-        this.fontSize,
         this.maxLines,
       })  : textLevel = AppTextLevel.roman13,
         super(key: key);
 
   const AppText.roman15(
-      this.data, {
+      this.text, {
         Key? key,
         this.color,
-        this.fontSize,
         this.maxLines,
       })  : textLevel = AppTextLevel.roman15,
         super(key: key);
 
   const AppText.roman17(
-      this.data, {
+      this.text, {
         Key? key,
         this.color,
-        this.fontSize,
         this.maxLines,
       })  : textLevel = AppTextLevel.roman17,
         super(key: key);
 
   const AppText.roman21(
-      this.data, {
+      this.text, {
         Key? key,
         this.color,
-        this.fontSize,
         this.maxLines,
       })  : textLevel = AppTextLevel.roman21,
         super(key: key);
 
   const AppText.roman25(
-      this.data, {
+      this.text, {
         Key? key,
         this.color,
-        this.fontSize,
         this.maxLines,
       })  : textLevel = AppTextLevel.roman25,
         super(key: key);
 
   const AppText.roman31(
-      this.data, {
+      this.text, {
         Key? key,
         this.color,
-        this.fontSize,
         this.maxLines,
       })  : textLevel = AppTextLevel.roman31,
         super(key: key);
 
   const AppText.bold11(
-      this.data, {
+      this.text, {
         Key? key,
         this.color,
-        this.fontSize,
         this.maxLines,
       })  : textLevel = AppTextLevel.bold11,
         super(key: key);
 
   const AppText.bold13(
-      this.data, {
+      this.text, {
         Key? key,
         this.color,
-        this.fontSize,
         this.maxLines,
       })  : textLevel = AppTextLevel.bold13,
         super(key: key);
 
   const AppText.bold15(
-      this.data, {
+      this.text, {
         Key? key,
         this.color,
-        this.fontSize,
         this.maxLines,
       })  : textLevel = AppTextLevel.bold15,
         super(key: key);
 
   const AppText.bold17(
-      this.data, {
+      this.text, {
         Key? key,
         this.color,
-        this.fontSize,
         this.maxLines,
       })  : textLevel = AppTextLevel.bold17,
         super(key: key);
 
   const AppText.bold19(
-      this.data, {
+      this.text, {
         Key? key,
         this.color,
-        this.fontSize,
         this.maxLines,
       })  : textLevel = AppTextLevel.bold19,
         super(key: key);
 
   const AppText.bold23(
-      this.data, {
+      this.text, {
         Key? key,
         this.color,
-        this.fontSize,
         this.maxLines,
       })  : textLevel = AppTextLevel.bold23,
         super(key: key);
 
   const AppText.bold27(
-      this.data, {
+      this.text, {
         Key? key,
         this.color,
-        this.fontSize,
         this.maxLines,
       })  : textLevel = AppTextLevel.bold27,
         super(key: key);
 
-  final String data;
-  final AppTextLevel textLevel;
-  final Color? color;
-  final double? fontSize;
-  final int? maxLines;
-
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
-    final color = this.color ?? theme.colors.foreground;
+    final color = this.color ?? theme.colors.mainText;
     final style = () {
       switch (textLevel) {
         case AppTextLevel.roman11:
@@ -196,11 +180,11 @@ class AppText extends StatelessWidget {
           return theme.typography.bold27;
       }
     }();
+
     return Text(
-      data,
+      text,
       style: style.copyWith(
         color: color,
-        fontSize: fontSize,
       ),
       maxLines: maxLines,
     );

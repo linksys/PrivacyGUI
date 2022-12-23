@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 import 'package:flutter/rendering.dart';
 import 'package:linksys_core/utils/named.dart';
@@ -15,6 +14,7 @@ class AppRadiusData extends Equatable {
         regular = const Radius.circular(12),
         big = const Radius.circular(16);
 
+  final Radius none = Radius.zero;
   final Radius small;
   final Radius regular;
   final Radius big;
@@ -23,6 +23,7 @@ class AppRadiusData extends Equatable {
 
   @override
   List<Object?> get props => [
+        none.named('none'),
         small.named('small'),
         regular.named('regular'),
         big.named('big'),
@@ -32,6 +33,7 @@ class AppRadiusData extends Equatable {
 class AppBorderRadiusData extends Equatable {
   const AppBorderRadiusData(this._radius);
 
+  BorderRadius get none => BorderRadius.all(_radius.none);
   BorderRadius get small => BorderRadius.all(_radius.small);
   BorderRadius get regular => BorderRadius.all(_radius.regular);
   BorderRadius get big => BorderRadius.all(_radius.big);

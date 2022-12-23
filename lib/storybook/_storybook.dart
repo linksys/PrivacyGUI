@@ -1,4 +1,4 @@
 //GENERATED BARREL FILE 
-export 'button.dart';
+export 'button_stories.dart';
 export 'theme.dart';
 
