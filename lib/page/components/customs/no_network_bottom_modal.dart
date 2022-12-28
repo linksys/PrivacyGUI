@@ -13,9 +13,12 @@ class NoInternetConnectionModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-
-      onWillPop: () async { return false; },
-      child: BasePageView.bottomSheetModal(bottomSheet: Container(
+      onWillPop: () async {
+        return false;
+      },
+      child: BasePageView.bottomSheetModalBlur(
+        padding: EdgeInsets.zero,
+        bottomSheet: Container(
           color: Colors.white,
           height: 240,
           padding: const EdgeInsets.all(24),
@@ -28,14 +31,16 @@ class NoInternetConnectionModal extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      getAppLocalizations(context).prompt_no_internet_connection,
+                      getAppLocalizations(context)
+                          .prompt_no_internet_connection,
                       style: Theme.of(context).textTheme.headline1,
                     ),
                     const SizedBox(
                       height: 36,
                     ),
                     Text(
-                      getAppLocalizations(context).prompt_no_internet_connection_description,
+                      getAppLocalizations(context)
+                          .prompt_no_internet_connection_description,
                       style: Theme.of(context).textTheme.bodyText1,
                     )
                   ],

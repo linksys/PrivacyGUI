@@ -67,6 +67,23 @@ class BasePageView extends StatelessWidget {
         bottomNavigationBar = null,
         super(key: key);
 
+  BasePageView.bottomSheetModalBlur({
+    Key? key,
+    required this.bottomSheet,
+    this.padding = _containerPadding,
+    this.scrollable = false,
+  })  : appBar = AppBar(
+    automaticallyImplyLeading: false,
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+  ),
+        child = BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(),
+        ),
+        bottomNavigationBar = null,
+        super(key: key);
+
   const BasePageView.onDashboardSecondary({
     Key? key,
     this.appBar,
