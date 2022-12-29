@@ -1,60 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:linksys_core/theme/_theme.dart';
 import 'package:linksys_core/widgets/_widgets.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/design/text_style.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:storybook_flutter/storybook_flutter.dart';
+import 'package:linksys_core/utils/named.dart';
 
 Iterable<Story> themeStories() {
-  Map<String, Color> colors = {
-    'white': MoabColor.white,
-    'whiteAlpha10': MoabColor.whiteAlpha10,
-    'whiteAlpha70': MoabColor.whiteAlpha70,
-    'black': MoabColor.black,
-    'blackAlpha70': MoabColor.blackAlpha70,
-    'primaryBlue': MoabColor.primaryBlue,
-    'primaryBlueAlpha10': MoabColor.primaryBlueAlpha10,
-    'progressBarBlue': MoabColor.progressBarBlue,
-    'textButtonBlue': MoabColor.textButtonBlue,
-    'placeholderGrey': MoabColor.placeholderGrey,
-    'progressBarGreen': MoabColor.progressBarGreen,
-    'dividerGrey': MoabColor.dividerGrey,
-    'primaryDarkGrey': MoabColor.primaryDarkGrey,
-    'primaryDarkGreen': MoabColor.primaryDarkGreen,
-    'scannerBoarder': MoabColor.scannerBoarder,
-    'listItemCheck': MoabColor.listItemCheck,
-    'authBackground': MoabColor.authBackground,
-    'setupFinishCardBackground': MoabColor.setupFinishCardBackground,
-    'dashboardBackground': MoabColor.dashboardBackground,
-    'dashboardTileBackground': MoabColor.dashboardTileBackground,
-    'dashboardDisabled': MoabColor.dashboardDisabled,
-    'cardBackground': MoabColor.cardBackground,
-    'dashboardBottomBackground': MoabColor.dashboardBottomBackground,
-    'topologyNoInternet': MoabColor.topologyNoInternet,
-    'avatarBackground': MoabColor.avatarBackground,
-    'contentFilterChildPreset': MoabColor.contentFilterChildPreset,
-    'contentFilterTeenPreset': MoabColor.contentFilterTeenPreset,
-    'contentFilterAdultPreset': MoabColor.contentFilterAdultPreset,
-  };
-
-  Map<String, TextStyle> textStyle = {
-    'roman11': roman11,
-    'roman13': roman13,
-    'roman15': roman15,
-    'roman17': roman17,
-    'roman21': roman21,
-    'roman25': roman25,
-    'roman31': roman31,
-    'bold11': bold11,
-    'bold13': bold13,
-    'bold15': bold15,
-    'bold17': bold17,
-    'bold19': bold19,
-    'bold23': bold23,
-    'bold27': bold27,
-  };
-
   return [
     Story(
       name: 'Theme/Colors',
@@ -63,7 +17,7 @@ Iterable<Story> themeStories() {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: ListView.builder(
           shrinkWrap: true,
-          itemCount: colors.length,
+          itemCount: AppTheme.of(context).colors.props.length,
           itemBuilder: (context, index) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
@@ -73,7 +27,12 @@ Iterable<Story> themeStories() {
                   width: 60,
                   decoration: BoxDecoration(
                     border: Border.all(),
-                    color: colors.values.elementAt(index),
+                    color: AppTheme.of(context)
+                            .colors
+                            .props
+                            .elementAt(index)
+                            ?.value ??
+                        ConstantColors.primaryLinksysBlue,
                   ),
                 ),
                 box12(),
@@ -81,13 +40,57 @@ Iterable<Story> themeStories() {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     BaseText(
-                      text: colors.keys.elementAt(index),
-                      style: roman17,
+                      text: AppTheme.of(context)
+                              .colors
+                              .props
+                              .elementAt(index)
+                              ?.name ??
+                          'color name',
+                      style: AppTheme.of(context).typography.descriptionMain,
                     ),
-                    const AppBox.small(),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+    Story(
+      name: 'Theme/Constant Colors',
+      description: '',
+      builder: (context) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: AppTheme.of(context).colors.props.length,
+          itemBuilder: (context, index) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Container(
+                  height: 60,
+                  width: 60,
+                  decoration: BoxDecoration(
+                    border: Border.all(),
+                    color: ConstantColors()
+                        .props
+                        .elementAt(index)
+                        ?.value ??
+                        ConstantColors.primaryLinksysBlue,
+                  ),
+                ),
+                box12(),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     BaseText(
-                      text: colors.values.elementAt(index).toString(),
-                      style: roman13,
+                      text: ConstantColors()
+                          .props
+                          .elementAt(index)
+                          ?.name ??
+                          'color name',
+                      style: AppTheme.of(context).typography.descriptionMain,
                     ),
                   ],
                 ),
@@ -104,12 +107,22 @@ Iterable<Story> themeStories() {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: ListView.builder(
           shrinkWrap: true,
-          itemCount: textStyle.length,
+          itemCount: AppTheme.of(context).typography.props.length,
           itemBuilder: (context, index) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: BaseText(
-              text: textStyle.keys.elementAt(index),
-              style: textStyle.values.elementAt(index),
+              text: AppTheme.of(context)
+                      .typography
+                      .props
+                      .elementAt(index)
+                      ?.name ??
+                  'null',
+              style: AppTheme.of(context)
+                      .typography
+                      .props
+                      .elementAt(index)
+                      ?.value ??
+                  AppTheme.of(context).typography.descriptionMain,
             ),
           ),
         ),

@@ -2,20 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:linksys_core/theme/_theme.dart';
 
 enum AppTextLevel {
-  roman11,
-  roman13,
-  roman15,
-  roman17,
-  roman21,
-  roman25,
-  roman31,
-  bold11,
-  bold13,
-  bold15,
-  bold17,
-  bold19,
-  bold23,
-  bold27,
+  mainTitle,
+  screenName,
+  subhead,
+  inputFieldText,
+  flavorText,
+  label,
+  tags,
+  navLabel,
+  textLinkLarge,
+  textLinkSmall,
+  textLinkSecondaryLarge,
+  textLinkTertiarySmall,
+  descriptionMain,
+  descriptionSub,
 }
 
 class AppText extends StatelessWidget {
@@ -29,119 +29,119 @@ class AppText extends StatelessWidget {
     Key? key,
     this.color,
     this.maxLines,
-    this.textLevel = AppTextLevel.roman13,
+    this.textLevel = AppTextLevel.screenName,
   }) : super(key: key);
 
-  const AppText.roman11(
+  const AppText.mainTitle(
     this.text, {
     Key? key,
     this.color,
     this.maxLines,
-  })  : textLevel = AppTextLevel.roman11,
+  })  : textLevel = AppTextLevel.mainTitle,
         super(key: key);
 
-  const AppText.roman13(
+  const AppText.screenName(
       this.text, {
         Key? key,
         this.color,
         this.maxLines,
-      })  : textLevel = AppTextLevel.roman13,
+      })  : textLevel = AppTextLevel.screenName,
         super(key: key);
 
-  const AppText.roman15(
+  const AppText.subhead(
       this.text, {
         Key? key,
         this.color,
         this.maxLines,
-      })  : textLevel = AppTextLevel.roman15,
+      })  : textLevel = AppTextLevel.subhead,
         super(key: key);
 
-  const AppText.roman17(
+  const AppText.inputFieldText(
       this.text, {
         Key? key,
         this.color,
         this.maxLines,
-      })  : textLevel = AppTextLevel.roman17,
+      })  : textLevel = AppTextLevel.inputFieldText,
         super(key: key);
 
-  const AppText.roman21(
+  const AppText.flavorText(
       this.text, {
         Key? key,
         this.color,
         this.maxLines,
-      })  : textLevel = AppTextLevel.roman21,
+      })  : textLevel = AppTextLevel.flavorText,
         super(key: key);
 
-  const AppText.roman25(
+  const AppText.label(
       this.text, {
         Key? key,
         this.color,
         this.maxLines,
-      })  : textLevel = AppTextLevel.roman25,
+      })  : textLevel = AppTextLevel.label,
         super(key: key);
 
-  const AppText.roman31(
+  const AppText.tags(
       this.text, {
         Key? key,
         this.color,
         this.maxLines,
-      })  : textLevel = AppTextLevel.roman31,
+      })  : textLevel = AppTextLevel.tags,
         super(key: key);
 
-  const AppText.bold11(
+  const AppText.navLabel(
       this.text, {
         Key? key,
         this.color,
         this.maxLines,
-      })  : textLevel = AppTextLevel.bold11,
+      })  : textLevel = AppTextLevel.navLabel,
         super(key: key);
 
-  const AppText.bold13(
+  const AppText.textLinkLarge(
       this.text, {
         Key? key,
         this.color,
         this.maxLines,
-      })  : textLevel = AppTextLevel.bold13,
+      })  : textLevel = AppTextLevel.textLinkLarge,
         super(key: key);
 
-  const AppText.bold15(
+  const AppText.textLinkSmall(
       this.text, {
         Key? key,
         this.color,
         this.maxLines,
-      })  : textLevel = AppTextLevel.bold15,
+      })  : textLevel = AppTextLevel.textLinkSmall,
         super(key: key);
 
-  const AppText.bold17(
+  const AppText.textLinkSecondaryLarge(
       this.text, {
         Key? key,
         this.color,
         this.maxLines,
-      })  : textLevel = AppTextLevel.bold17,
+      })  : textLevel = AppTextLevel.textLinkSecondaryLarge,
         super(key: key);
 
-  const AppText.bold19(
+  const AppText.textLinkTertiarySmall(
       this.text, {
         Key? key,
         this.color,
         this.maxLines,
-      })  : textLevel = AppTextLevel.bold19,
+      })  : textLevel = AppTextLevel.textLinkTertiarySmall,
         super(key: key);
 
-  const AppText.bold23(
+  const AppText.descriptionMain(
       this.text, {
         Key? key,
         this.color,
         this.maxLines,
-      })  : textLevel = AppTextLevel.bold23,
+      })  : textLevel = AppTextLevel.descriptionMain,
         super(key: key);
 
-  const AppText.bold27(
+  const AppText.descriptionSub(
       this.text, {
         Key? key,
         this.color,
         this.maxLines,
-      })  : textLevel = AppTextLevel.bold27,
+      })  : textLevel = AppTextLevel.descriptionSub,
         super(key: key);
 
   @override
@@ -150,34 +150,34 @@ class AppText extends StatelessWidget {
     final color = this.color ?? theme.colors.textBoxText;
     final style = () {
       switch (textLevel) {
-        case AppTextLevel.roman11:
-          return theme.typography.roman11;
-        case AppTextLevel.roman13:
-          return theme.typography.roman13;
-        case AppTextLevel.roman15:
-          return theme.typography.roman15;
-        case AppTextLevel.roman17:
-          return theme.typography.roman17;
-        case AppTextLevel.roman21:
-          return theme.typography.roman21;
-        case AppTextLevel.roman25:
-          return theme.typography.roman25;
-        case AppTextLevel.roman31:
-          return theme.typography.roman31;
-        case AppTextLevel.bold11:
-          return theme.typography.bold11;
-        case AppTextLevel.bold13:
-          return theme.typography.bold13;
-        case AppTextLevel.bold15:
-          return theme.typography.bold15;
-        case AppTextLevel.bold17:
-          return theme.typography.bold17;
-        case AppTextLevel.bold19:
-          return theme.typography.bold19;
-        case AppTextLevel.bold23:
-          return theme.typography.bold23;
-        case AppTextLevel.bold27:
-          return theme.typography.bold27;
+        case AppTextLevel.mainTitle:
+          return theme.typography.mainTitle;
+        case AppTextLevel.screenName:
+          return theme.typography.screenName;
+        case AppTextLevel.subhead:
+          return theme.typography.subhead;
+        case AppTextLevel.inputFieldText:
+          return theme.typography.inputFieldText;
+        case AppTextLevel.flavorText:
+          return theme.typography.flavorText;
+        case AppTextLevel.label:
+          return theme.typography.label;
+        case AppTextLevel.tags:
+          return theme.typography.tags;
+        case AppTextLevel.navLabel:
+          return theme.typography.navLabel;
+        case AppTextLevel.textLinkLarge:
+          return theme.typography.textLinkLarge;
+        case AppTextLevel.textLinkSmall:
+          return theme.typography.textLinkSmall;
+        case AppTextLevel.textLinkSecondaryLarge:
+          return theme.typography.textLinkSecondaryLarge;
+        case AppTextLevel.textLinkTertiarySmall:
+          return theme.typography.textLinkTertiarySmall;
+        case AppTextLevel.descriptionMain:
+          return theme.typography.descriptionMain;
+        case AppTextLevel.descriptionSub:
+          return theme.typography.descriptionSub;
       }
     }();
 

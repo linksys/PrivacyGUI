@@ -51,11 +51,7 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> with WidgetsBindingObserver {
-  bool isDark = false;
-  AppThemeColorMode colorMode = AppThemeColorMode.light;
-  final window = WidgetsBinding.instance.window;
-
+class _HomeState extends State<Home> {
   AppThemeColorMode getColorMode() {
     final themeMode = context.watch<ThemeModeNotifier>().value;
     final brightness = themeMode == ThemeMode.system
