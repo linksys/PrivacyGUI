@@ -10,12 +10,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+    equatable: ^2.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
-  equatable: ^2.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -56,7 +56,7 @@ flutter:
 fonts:
   - family: NeueHaasGrotTextRound
     fonts:
-      - asset: lib/fonts/NeueHaasGrotTextRound-55Roman.otf
+      - asset: package/lib/fonts/NeueHaasGrotTextRound-55Roman.otf
         weight: 400
-      - asset: lib/fonts/NeueHaasGrotTextRound-75Bold.otf
+      - asset: package/lib/fonts/NeueHaasGrotTextRound-75Bold.otf
         weight: 700

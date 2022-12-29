@@ -11,11 +11,11 @@ Iterable<Story> textStories() {
         context.knobs.text(label: 'Title', initial: 'title'),
         color: context.knobs.options(
           label: 'Text color',
-          initial: AppTheme.of(context).colors.mainText,
+          initial: AppTheme.of(context).colors.textBoxText,
           options: [
-            Option(label: 'main text', value: AppTheme.of(context).colors.mainText),
-            Option(label: 'description text', value: AppTheme.of(context).colors.descriptionText),
-            Option(label: 'error text', value: AppTheme.of(context).colors.errorText),
+            Option(label: 'main text', value: AppTheme.of(context).colors.textBoxText),
+            Option(label: 'description text', value: AppTheme.of(context).colors.textBoxTextGray),
+            Option(label: 'error text', value: AppTheme.of(context).colors.textBoxTextAlert),
           ],
         ),
         textLevel: context.knobs.options(

@@ -147,7 +147,7 @@ class AppText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
-    final color = this.color ?? theme.colors.mainText;
+    final color = this.color ?? theme.colors.textBoxText;
     final style = () {
       switch (textLevel) {
         case AppTextLevel.roman11:
