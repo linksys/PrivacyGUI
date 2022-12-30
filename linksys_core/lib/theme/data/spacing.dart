@@ -15,7 +15,7 @@ class AppSpacingData extends Equatable {
         small: 4,
         semiSmall: 8,
         regular: 12,
-        semiBig: 22,
+        semiBig: 24,
         big: 32,
       );
 
