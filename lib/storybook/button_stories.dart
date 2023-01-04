@@ -4,6 +4,8 @@ import 'package:linksys_core/widgets/base/gap.dart';
 import 'package:linksys_core/widgets/base/icon.dart';
 import 'package:linksys_core/widgets/buttons/button.dart';
 import 'package:linksys_core/widgets/buttons/nav_button.dart';
+import 'package:linksys_core/widgets/progress_bar/progress_bar.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:storybook_flutter/storybook_flutter.dart';
 
 Iterable<Story> buttonStories() {
@@ -79,18 +81,47 @@ Iterable<Story> buttonStories() {
         name: 'Buttons/Bottom Sheet Buttons',
         description: 'A custom buttons used in app',
         builder: (context) => Scaffold(
-              bottomNavigationBar: BottomNavigationBar(items: [
-                BottomNavigationBarItem(
-                  icon: AppIcon.regular(
-                      AppTheme.of(context).icons.characters.profileDefault),
-                  label: 'tab 1'
-                ),
-                BottomNavigationBarItem(
-                  icon: AppIcon.regular(
-                      AppTheme.of(context).icons.characters.profileDefault),
-                  label: 'tab 2'
-                )
-              ]),
+              bottomNavigationBar: BottomNavigationBar(
+                elevation: 0,
+                  unselectedItemColor: ConstantColors.tertiaryTextGray,
+                  unselectedIconTheme: IconThemeData(
+                      color: ConstantColors.tertiaryTextGray,
+                      size: AppTheme.of(context).icons.sizes.regular),
+                  selectedItemColor: AppTheme.of(context).colors.textBoxText,
+                  selectedIconTheme: IconThemeData(
+                      color: AppTheme.of(context).colors.textBoxText,
+                      size: AppTheme.of(context).icons.sizes.regular),
+                  selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold),
+                  showUnselectedLabels: true,
+                  currentIndex: context.knobs.sliderInt(label: 'Selected tab', initial: 0, min: 0, max: 3, divisions: 3),
+                  onTap: (index) {},
+                  items: [
+                    BottomNavigationBarItem(
+                        icon: AppIcon.regular(AppTheme.of(context)
+                            .icons
+                            .characters
+                            .homeDefault),
+                        label: 'Home'),
+                    BottomNavigationBarItem(
+                        icon: AppIcon.regular(AppTheme.of(context)
+                            .icons
+                            .characters
+                            .securityDefault),
+                        label: 'Security'),
+                    BottomNavigationBarItem(
+                        icon: AppIcon.regular(AppTheme.of(context)
+                            .icons
+                            .characters
+                            .healthDefault),
+                        label: 'Health'),
+                    BottomNavigationBarItem(
+                        icon: AppIcon.regular(AppTheme.of(context)
+                            .icons
+                            .characters
+                            .settingsDefault),
+                        label: 'Settings'),
+
+                  ]),
             )),
   ];
 }

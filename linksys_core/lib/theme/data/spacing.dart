@@ -14,7 +14,7 @@ class AppSpacingData extends Equatable {
   factory AppSpacingData.regular() => const AppSpacingData(
         small: 4,
         semiSmall: 8,
-        regular: 12,
+        regular: 16,
         semiBig: 24,
         big: 32,
       );

@@ -59,7 +59,7 @@ class AppIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
-    final color = this.color ?? theme.colors.textBoxText;
+    final color = this.color;
     return Icon(
       data,
       color: color,
