@@ -41,145 +41,167 @@ class AppText extends StatelessWidget {
         super(key: key);
 
   const AppText.screenName(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.screenName,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.screenName,
         super(key: key);
 
   const AppText.subhead(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.subhead,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.subhead,
         super(key: key);
 
   const AppText.inputFieldText(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.inputFieldText,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.inputFieldText,
         super(key: key);
 
   const AppText.flavorText(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.flavorText,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.flavorText,
         super(key: key);
 
   const AppText.label(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.label,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.label,
         super(key: key);
 
   const AppText.tags(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.tags,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.tags,
         super(key: key);
 
   const AppText.navLabel(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.navLabel,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.navLabel,
         super(key: key);
 
   const AppText.textLinkLarge(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.textLinkLarge,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.textLinkLarge,
         super(key: key);
 
   const AppText.textLinkSmall(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.textLinkSmall,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.textLinkSmall,
         super(key: key);
 
   const AppText.textLinkSecondaryLarge(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.textLinkSecondaryLarge,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.textLinkSecondaryLarge,
         super(key: key);
 
   const AppText.textLinkTertiarySmall(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.textLinkTertiarySmall,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.textLinkTertiarySmall,
         super(key: key);
 
   const AppText.descriptionMain(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.descriptionMain,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.descriptionMain,
         super(key: key);
 
   const AppText.descriptionSub(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.descriptionSub,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.descriptionSub,
         super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
-    final color = this.color ?? theme.colors.textBoxText;
-    final style = () {
-      switch (textLevel) {
-        case AppTextLevel.mainTitle:
-          return theme.typography.mainTitle;
-        case AppTextLevel.screenName:
-          return theme.typography.screenName;
-        case AppTextLevel.subhead:
-          return theme.typography.subhead;
-        case AppTextLevel.inputFieldText:
-          return theme.typography.inputFieldText;
-        case AppTextLevel.flavorText:
-          return theme.typography.flavorText;
-        case AppTextLevel.label:
-          return theme.typography.label;
-        case AppTextLevel.tags:
-          return theme.typography.tags;
-        case AppTextLevel.navLabel:
-          return theme.typography.navLabel;
-        case AppTextLevel.textLinkLarge:
-          return theme.typography.textLinkLarge;
-        case AppTextLevel.textLinkSmall:
-          return theme.typography.textLinkSmall;
-        case AppTextLevel.textLinkSecondaryLarge:
-          return theme.typography.textLinkSecondaryLarge;
-        case AppTextLevel.textLinkTertiarySmall:
-          return theme.typography.textLinkTertiarySmall;
-        case AppTextLevel.descriptionMain:
-          return theme.typography.descriptionMain;
-        case AppTextLevel.descriptionSub:
-          return theme.typography.descriptionSub;
-      }
-    }();
+    String text = this.text;
+    Color color = this.color ?? theme.colors.textBoxText;
+    TextStyle style = theme.typography.descriptionSub;
+
+    switch (textLevel) {
+      case AppTextLevel.mainTitle:
+        style = theme.typography.mainTitle;
+        break;
+      case AppTextLevel.screenName:
+        style = theme.typography.screenName;
+        break;
+      case AppTextLevel.subhead:
+        style = theme.typography.subhead;
+        break;
+      case AppTextLevel.inputFieldText:
+        style = theme.typography.inputFieldText;
+        break;
+      case AppTextLevel.flavorText:
+        style = theme.typography.flavorText;
+        color = theme.colors.textBoxTextAlert;
+        break;
+      case AppTextLevel.label:
+        style = theme.typography.label;
+        break;
+      case AppTextLevel.tags:
+        style = theme.typography.tags;
+        color = ConstantColors.secondaryCyberPurple;
+        text = text.toUpperCase();
+        break;
+      case AppTextLevel.navLabel:
+        style = theme.typography.navLabel;
+        break;
+      case AppTextLevel.textLinkLarge:
+        style = theme.typography.textLinkLarge;
+        color = theme.colors.ctaSecondary;
+        break;
+      case AppTextLevel.textLinkSmall:
+        style = theme.typography.textLinkSmall;
+        color = theme.colors.ctaSecondary;
+        break;
+      case AppTextLevel.textLinkSecondaryLarge:
+        style = theme.typography.textLinkSecondaryLarge;
+        color = theme.colors.ctaSecondary;
+        break;
+      case AppTextLevel.textLinkTertiarySmall:
+        style = theme.typography.textLinkTertiarySmall;
+        color = theme.colors.ctaSecondary;
+        break;
+      case AppTextLevel.descriptionMain:
+        style = theme.typography.descriptionMain;
+        break;
+      case AppTextLevel.descriptionSub:
+        style = theme.typography.descriptionSub;
+        break;
+    }
 
     return Text(
       text,
