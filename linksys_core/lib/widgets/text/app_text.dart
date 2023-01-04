@@ -83,9 +83,9 @@ class AppText extends StatelessWidget {
   const AppText.tags(
     this.text, {
     Key? key,
+    this.color,
     this.maxLines,
   })  : textLevel = AppTextLevel.tags,
-        color = ConstantColors.secondaryCyberPurple,
         super(key: key);
 
   const AppText.navLabel(
@@ -147,39 +147,61 @@ class AppText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
-    final color = this.color ?? theme.colors.textBoxText;
-    final style = () {
-      switch (textLevel) {
-        case AppTextLevel.mainTitle:
-          return theme.typography.mainTitle;
-        case AppTextLevel.screenName:
-          return theme.typography.screenName;
-        case AppTextLevel.subhead:
-          return theme.typography.subhead;
-        case AppTextLevel.inputFieldText:
-          return theme.typography.inputFieldText;
-        case AppTextLevel.flavorText:
-          return theme.typography.flavorText;
-        case AppTextLevel.label:
-          return theme.typography.label;
-        case AppTextLevel.tags:
-          return theme.typography.tags;
-        case AppTextLevel.navLabel:
-          return theme.typography.navLabel;
-        case AppTextLevel.textLinkLarge:
-          return theme.typography.textLinkLarge;
-        case AppTextLevel.textLinkSmall:
-          return theme.typography.textLinkSmall;
-        case AppTextLevel.textLinkSecondaryLarge:
-          return theme.typography.textLinkSecondaryLarge;
-        case AppTextLevel.textLinkTertiarySmall:
-          return theme.typography.textLinkTertiarySmall;
-        case AppTextLevel.descriptionMain:
-          return theme.typography.descriptionMain;
-        case AppTextLevel.descriptionSub:
-          return theme.typography.descriptionSub;
-      }
-    }();
+    String text = this.text;
+    Color color = this.color ?? theme.colors.textBoxText;
+    TextStyle style = theme.typography.descriptionSub;
+
+    switch (textLevel) {
+      case AppTextLevel.mainTitle:
+        style = theme.typography.mainTitle;
+        break;
+      case AppTextLevel.screenName:
+        style = theme.typography.screenName;
+        break;
+      case AppTextLevel.subhead:
+        style = theme.typography.subhead;
+        break;
+      case AppTextLevel.inputFieldText:
+        style = theme.typography.inputFieldText;
+        break;
+      case AppTextLevel.flavorText:
+        style = theme.typography.flavorText;
+        color = theme.colors.textBoxTextAlert;
+        break;
+      case AppTextLevel.label:
+        style = theme.typography.label;
+        break;
+      case AppTextLevel.tags:
+        style = theme.typography.tags;
+        color = ConstantColors.secondaryCyberPurple;
+        text = text.toUpperCase();
+        break;
+      case AppTextLevel.navLabel:
+        style = theme.typography.navLabel;
+        break;
+      case AppTextLevel.textLinkLarge:
+        style = theme.typography.textLinkLarge;
+        color = theme.colors.ctaSecondary;
+        break;
+      case AppTextLevel.textLinkSmall:
+        style = theme.typography.textLinkSmall;
+        color = theme.colors.ctaSecondary;
+        break;
+      case AppTextLevel.textLinkSecondaryLarge:
+        style = theme.typography.textLinkSecondaryLarge;
+        color = theme.colors.ctaSecondary;
+        break;
+      case AppTextLevel.textLinkTertiarySmall:
+        style = theme.typography.textLinkTertiarySmall;
+        color = theme.colors.ctaSecondary;
+        break;
+      case AppTextLevel.descriptionMain:
+        style = theme.typography.descriptionMain;
+        break;
+      case AppTextLevel.descriptionSub:
+        style = theme.typography.descriptionSub;
+        break;
+    }
 
     return Text(
       text,
