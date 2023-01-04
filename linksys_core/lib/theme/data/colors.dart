@@ -36,7 +36,7 @@ class AppColorsData extends Equatable {
   });
 
   factory AppColorsData.light() => const AppColorsData(
-        ctaPrimary: Color(0xFFFAFAFA),
+        ctaPrimary: Color(0xFF2C2C2C),
         ctaPrimaryDisable: Color(0xFF898989),
         ctaSecondary: Color(0xFF5EA8FF),
         ctaSecondaryDisable: Color(0xFF314F72),

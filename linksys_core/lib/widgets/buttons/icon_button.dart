@@ -12,7 +12,7 @@ class AppIconButton extends StatelessWidget {
   ),
         super(key: key);
 
-  final String? icon;
+  final IconData? icon;
   final MainAxisSize mainAxisSize;
   final VoidCallback? onTap;
 

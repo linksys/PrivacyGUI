@@ -19,7 +19,7 @@ class AppNavButton extends StatelessWidget {
   ),
         super(key: key);
 
-  final String? icon;
+  final IconData? icon;
   final String? title;
   final MainAxisSize mainAxisSize;
   final VoidCallback? onTap;
@@ -144,7 +144,7 @@ class AppButtonLayout extends StatelessWidget {
         ),
         super(key: key);
 
-  final String? icon;
+  final IconData? icon;
   final String? title;
   final MainAxisSize mainAxisSize;
   final AppButtonState _state;

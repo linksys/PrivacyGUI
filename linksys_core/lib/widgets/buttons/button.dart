@@ -24,7 +24,7 @@ class AppButton extends StatelessWidget {
   ),
         super(key: key);
 
-  final String? icon;
+  final IconData? icon;
   final String? title;
   final MainAxisSize mainAxisSize;
   final VoidCallback? onTap;
@@ -149,7 +149,7 @@ class AppButtonLayout extends StatelessWidget {
         ),
         super(key: key);
 
-  final String? icon;
+  final IconData? icon;
   final String? title;
   final MainAxisSize mainAxisSize;
   final AppButtonState _state;
@@ -199,7 +199,7 @@ class AppButtonLayout extends StatelessWidget {
         color: backgroundColor,
       ),
       padding: EdgeInsets.symmetric(
-        vertical: theme.spacing.semiBig,
+        vertical: title != null ? theme.spacing.semiBig : theme.spacing.semiSmall,
         horizontal:
         title != null ? theme.spacing.semiBig : theme.spacing.semiSmall,
       ),

@@ -11,7 +11,7 @@ import 'package:linksys_core/utils/named.dart';
 Iterable<Story> themeStories() {
   return [
     Story(
-      name: 'Theme/Colors',
+      name: 'Theme/Theme Colors',
       description: '',
       builder: (context) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -57,7 +57,7 @@ Iterable<Story> themeStories() {
       ),
     ),
     Story(
-      name: 'Theme/Constant Colors',
+      name: 'Color set',
       description: '',
       builder: (context) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -101,7 +101,7 @@ Iterable<Story> themeStories() {
       ),
     ),
     Story(
-      name: 'Theme/TextStyles',
+      name: 'Theme/Typography',
       description: 'Combinations of Font Family, Size, and Weight',
       builder: (context) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),

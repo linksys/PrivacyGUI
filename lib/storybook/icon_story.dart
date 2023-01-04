@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:linksys_core/icons/linksys_icons.dart';
+import 'package:linksys_core/widgets/_widgets.dart';
+import 'package:linksys_core/widgets/base/gap.dart';
 import 'package:linksys_core/widgets/base/icon.dart';
 import 'package:storybook_flutter/storybook_flutter.dart';
 import 'package:linksys_core/theme/_theme.dart';
@@ -6,22 +9,40 @@ import 'package:linksys_core/theme/_theme.dart';
 Iterable<Story> iconStories() {
   return [
     Story(
-        name: 'Icons/icon',
-        description: 'A custom Icon widget used in app',
-        builder: (context) => Scaffold(
-              body: Container(
-                decoration: BoxDecoration(
-                    color: AppTheme.of(context).colors.textBoxBox),
-                width: double.infinity,
-                child: Column(
+      name: 'Icons/Linksys Icon Set',
+      description: 'A custom Icon set used in app',
+      builder: (context) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: GridView.builder(
+            shrinkWrap: true,
+            padding: const EdgeInsets.all(20),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 1.5,
+            ),
+            itemCount: AppTheme.of(context).icons.characters.props.length,
+            itemBuilder: (BuildContext context, int index) {
+              return Card(
+                color: Colors.amber,
+                child: Center(child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    AppIcon.small(AppTheme.of(context).icons.characters.people),
-                    AppIcon.regular(
-                        AppTheme.of(context).icons.characters.people),
-                    AppIcon.big(AppTheme.of(context).icons.characters.people),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        AppIcon.small(AppTheme.of(context).icons.characters.props.elementAt(index)?.value),
+                        AppIcon.regular(AppTheme.of(context).icons.characters.props.elementAt(index)?.value),
+                        AppIcon.big(AppTheme.of(context).icons.characters.props.elementAt(index)?.value),
+                      ],
+                    ),
+                    Text('${AppTheme.of(context).icons.characters.props.elementAt(index)?.name}'),
                   ],
-                ),
-              ),
-            )),
+                )),
+              );
+            }),
+      ),
+    ),
   ];
 }

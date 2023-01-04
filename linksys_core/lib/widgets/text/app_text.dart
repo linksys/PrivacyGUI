@@ -41,107 +41,107 @@ class AppText extends StatelessWidget {
         super(key: key);
 
   const AppText.screenName(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.screenName,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.screenName,
         super(key: key);
 
   const AppText.subhead(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.subhead,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.subhead,
         super(key: key);
 
   const AppText.inputFieldText(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.inputFieldText,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.inputFieldText,
         super(key: key);
 
   const AppText.flavorText(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.flavorText,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.flavorText,
         super(key: key);
 
   const AppText.label(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.label,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.label,
         super(key: key);
 
   const AppText.tags(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.tags,
+    this.text, {
+    Key? key,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.tags,
+        color = ConstantColors.secondaryCyberPurple,
         super(key: key);
 
   const AppText.navLabel(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.navLabel,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.navLabel,
         super(key: key);
 
   const AppText.textLinkLarge(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.textLinkLarge,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.textLinkLarge,
         super(key: key);
 
   const AppText.textLinkSmall(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.textLinkSmall,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.textLinkSmall,
         super(key: key);
 
   const AppText.textLinkSecondaryLarge(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.textLinkSecondaryLarge,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.textLinkSecondaryLarge,
         super(key: key);
 
   const AppText.textLinkTertiarySmall(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.textLinkTertiarySmall,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.textLinkTertiarySmall,
         super(key: key);
 
   const AppText.descriptionMain(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.descriptionMain,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.descriptionMain,
         super(key: key);
 
   const AppText.descriptionSub(
-      this.text, {
-        Key? key,
-        this.color,
-        this.maxLines,
-      })  : textLevel = AppTextLevel.descriptionSub,
+    this.text, {
+    Key? key,
+    this.color,
+    this.maxLines,
+  })  : textLevel = AppTextLevel.descriptionSub,
         super(key: key);
 
   @override
