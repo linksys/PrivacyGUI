@@ -1,12 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_core/theme/_theme.dart';
-import 'package:linksys_moab/design/themes.dart';
-import 'package:linksys_moab/storybook/_storybook.dart';
-import 'package:linksys_moab/storybook/toast_stories.dart';
+import 'package:linksys_core/widgets/base/gap.dart';
+import 'package:linksys_core/widgets/base/icon.dart';
+import 'package:linksys_core/widgets/buttons/nav_button.dart';
+import 'package:linksys_core/widgets/check_box/check_box.dart';
+import 'package:linksys_core/widgets/progress_bar/progress_bar.dart';
+import 'package:linksys_core/widgets/switch/switch.dart';
+import 'package:linksys_core/widgets/toast/app_toast.dart';
+import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:storybook_flutter/storybook_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:linksys_core/widgets/_widgets.dart';
 
+part 'button_stories.dart';
+part 'checkbox_stories.dart';
+part 'icon_stories.dart';
+part 'switch_stories.dart';
+part 'text_stories.dart';
+part 'theme_stories.dart';
+part 'progress_bar_stories.dart';
+part 'toast_stories.dart';
 
 void main() => runApp(const MyApp());
 

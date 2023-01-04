@@ -1,10 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:linksys_core/theme/_theme.dart';
-import 'package:linksys_core/widgets/base/gap.dart';
-import 'package:linksys_core/widgets/buttons/button.dart';
-import 'package:linksys_core/widgets/progress_bar/progress_bar.dart';
-import 'package:linksys_core/widgets/toast/app_toast.dart';
-import 'package:storybook_flutter/storybook_flutter.dart';
+part of 'storybook.dart';
 
 Iterable<Story> toastStories() {
   return [
