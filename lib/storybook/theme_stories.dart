@@ -1,12 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:linksys_core/theme/_theme.dart';
-import 'package:linksys_core/widgets/_widgets.dart';
-import 'package:linksys_moab/design/colors.dart';
-import 'package:linksys_moab/design/text_style.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
-import 'package:storybook_flutter/storybook_flutter.dart';
-import 'package:linksys_core/utils/named.dart';
+part of 'storybook.dart';
 
 Iterable<Story> themeStories() {
   return [
@@ -39,8 +31,8 @@ Iterable<Story> themeStories() {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    BaseText(
-                      text: AppTheme.of(context)
+                    Text(
+                      AppTheme.of(context)
                               .colors
                               .props
                               .elementAt(index)
@@ -84,8 +76,8 @@ Iterable<Story> themeStories() {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    BaseText(
-                      text: ConstantColors()
+                    Text(
+                      ConstantColors()
                           .props
                           .elementAt(index)
                           ?.name ??
@@ -110,8 +102,8 @@ Iterable<Story> themeStories() {
           itemCount: AppTheme.of(context).typography.props.length,
           itemBuilder: (context, index) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
-            child: BaseText(
-              text: AppTheme.of(context)
+            child: Text(
+              AppTheme.of(context)
                       .typography
                       .props
                       .elementAt(index)

@@ -1,8 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:linksys_core/theme/_theme.dart';
-import 'package:linksys_core/widgets/buttons/button.dart';
-import 'package:linksys_core/widgets/buttons/nav_button.dart';
-import 'package:storybook_flutter/storybook_flutter.dart';
+part of 'storybook.dart';
 
 Iterable<Story> buttonStories() {
   return [

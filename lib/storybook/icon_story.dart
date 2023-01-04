@@ -1,7 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:linksys_core/widgets/base/icon.dart';
-import 'package:storybook_flutter/storybook_flutter.dart';
-import 'package:linksys_core/theme/_theme.dart';
+part of 'storybook.dart';
 
 Iterable<Story> iconStories() {
   return [

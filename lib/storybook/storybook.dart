@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_core/theme/_theme.dart';
-import 'package:linksys_moab/design/themes.dart';
-import 'package:linksys_moab/storybook/_storybook.dart';
-import 'package:linksys_moab/storybook/checkbox_story.dart';
-import 'package:linksys_moab/storybook/switch_story.dart';
+import 'package:linksys_core/widgets/base/icon.dart';
+import 'package:linksys_core/widgets/buttons/nav_button.dart';
+import 'package:linksys_core/widgets/check_box/check_box.dart';
+import 'package:linksys_core/widgets/switch/switch.dart';
+import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:storybook_flutter/storybook_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:linksys_core/widgets/_widgets.dart';
 
-import 'icon_story.dart';
+part 'button_stories.dart';
+part 'checkbox_story.dart';
+part 'icon_story.dart';
+part 'switch_story.dart';
+part 'text_stories.dart';
+part 'theme_stories.dart';
 
 void main() => runApp(const MyApp());
 

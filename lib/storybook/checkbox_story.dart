@@ -1,7 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:linksys_core/widgets/check_box/check_box.dart';
-import 'package:linksys_core/widgets/switch/switch.dart';
-import 'package:storybook_flutter/storybook_flutter.dart';
+part of 'storybook.dart';
 
 Iterable<Story> checkboxStories() {
   return [

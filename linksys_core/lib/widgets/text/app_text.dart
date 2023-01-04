@@ -206,7 +206,7 @@ class AppText extends StatelessWidget {
     return Text(
       text,
       style: style.copyWith(
-        color: color,
+        color: this.color ?? color,
       ),
       maxLines: maxLines,
     );
