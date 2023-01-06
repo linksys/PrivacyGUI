@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:linksys_core/theme/_theme.dart';
 import 'package:linksys_core/widgets/_widgets.dart';
 import 'package:linksys_core/widgets/base/gap.dart';
@@ -60,4 +61,22 @@ class AppToast extends StatelessWidget {
       ),
     );
   }
+}
+
+class AppToastHelp {
+  static SnackBar positiveToast(BuildContext context, {required String text}) => SnackBar(
+    padding: EdgeInsets.zero,
+    backgroundColor: AppTheme.of(context).colors.textBoxBox,
+    behavior: SnackBarBehavior.floating,
+    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+    content: AppToast.positive(text: text,),
+  );
+
+  static SnackBar negativeToast(context, {required String text}) => SnackBar(
+    padding: EdgeInsets.zero,
+    backgroundColor: AppTheme.of(context).colors.textBoxBox,
+    behavior: SnackBarBehavior.floating,
+    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+    content: AppToast.negative(text: text,),
+  );
 }

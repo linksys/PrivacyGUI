@@ -4,6 +4,7 @@ import 'package:linksys_core/theme/_theme.dart';
 import 'package:linksys_core/widgets/_widgets.dart';
 import 'package:linksys_core/widgets/base/gap.dart';
 import 'package:linksys_core/widgets/base/icon.dart';
+import 'package:linksys_core/widgets/base/padding.dart';
 import 'package:tap_builder/tap_builder.dart';
 
 part 'icon_button.dart';
@@ -93,6 +94,7 @@ class AppButtonLayout extends StatelessWidget {
     Key? key,
     this.icon,
     this.title,
+    this.padding,
     this.mainAxisSize = MainAxisSize.min,
     this.backgroundColorSet = const AppButtonColorSet(),
     this.foregroundColorSet = const AppButtonColorSet(),
@@ -108,6 +110,7 @@ class AppButtonLayout extends StatelessWidget {
     Key? key,
     this.icon,
     this.title,
+    this.padding,
     this.mainAxisSize = MainAxisSize.min,
     this.backgroundColorSet = const AppButtonColorSet(),
     this.foregroundColorSet = const AppButtonColorSet(),
@@ -123,6 +126,7 @@ class AppButtonLayout extends StatelessWidget {
     Key? key,
     this.icon,
     this.title,
+    this.padding,
     this.mainAxisSize = MainAxisSize.min,
     this.backgroundColorSet = const AppButtonColorSet(),
     this.foregroundColorSet = const AppButtonColorSet(),
@@ -138,6 +142,7 @@ class AppButtonLayout extends StatelessWidget {
     Key? key,
     this.icon,
     this.title,
+    this.padding,
     this.mainAxisSize = MainAxisSize.min,
     this.backgroundColorSet = const AppButtonColorSet(),
     this.foregroundColorSet = const AppButtonColorSet(),
@@ -152,6 +157,7 @@ class AppButtonLayout extends StatelessWidget {
   final IconData? icon;
   final String? title;
   final MainAxisSize mainAxisSize;
+  final AppEdgeInsets? padding;
   final AppButtonState _state;
   final AppButtonColorSet backgroundColorSet;
   final AppButtonColorSet foregroundColorSet;
@@ -194,27 +200,25 @@ class AppButtonLayout extends StatelessWidget {
     return AnimatedContainer(
       duration: theme.durations.quick,
       decoration: BoxDecoration(
-        border: Border.all(
+        border: borderBackgroundColor == null ? null : Border.all(
             width: 1, color: borderBackgroundColor ?? ConstantColors.transparent),
         color: backgroundColor,
       ),
-      padding: EdgeInsets.symmetric(
-        vertical: title != null ? theme.spacing.semiBig : theme.spacing.semiSmall,
-        horizontal:
-        title != null ? theme.spacing.semiBig : theme.spacing.semiSmall,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: mainAxisSize,
-        children: [
-          if (title != null)
-            AppText.textLinkLarge(
-              title,
-              color: foregroundColor,
-            ),
-          if (hasBoth) const AppGap.semiSmall(),
-          if (icon != null) AppIcon.regular(icon, color: foregroundColor),
-        ],
+      child: AppPadding(
+        padding: padding ?? AppEdgeInsets.all(title != null ? AppGapSize.semiBig : AppGapSize.semiSmall),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: mainAxisSize,
+          children: [
+            if (title != null)
+              AppText.textLinkLarge(
+                title,
+                color: foregroundColor,
+              ),
+            if (hasBoth) const AppGap.semiSmall(),
+            if (icon != null) AppIcon.regular(icon, color: foregroundColor),
+          ],
+        ),
       ),
     );
   }

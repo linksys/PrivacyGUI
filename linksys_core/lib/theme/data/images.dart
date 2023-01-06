@@ -1,8 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:equatable/equatable.dart';
-import 'package:flutter/widgets.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:linksys_core/utils/named.dart';
 import 'package:linksys_core/utils/svg.dart';
 
@@ -22,52 +21,57 @@ class AppImagesData extends Equatable {
     required this.defaultAvatar10,
     required this.defaultAvatar11,
     required this.defaultAvatar12,
+    required this.tempIllustration,
   });
 
   factory AppImagesData.regular() =>
-      AppImagesData(
-        defaultAvatar1: exactAssetPicture('assets/avatars/avatar_default_green_1.svg'),
-        defaultAvatar2: exactAssetPicture('assets/avatars/avatar_default_green_2.svg'),
-        defaultAvatar3: exactAssetPicture('assets/avatars/avatar_default_green_3.svg'),
-        defaultAvatar4: exactAssetPicture('assets/avatars/avatar_default_purple_1.svg'),
-        defaultAvatar5: exactAssetPicture('assets/avatars/avatar_default_purple_2.svg'),
-        defaultAvatar6: exactAssetPicture('assets/avatars/avatar_default_purple_3.svg'),
-        defaultAvatar7: exactAssetPicture('assets/avatars/avatar_default_blue_1.svg'),
-        defaultAvatar8: exactAssetPicture('assets/avatars/avatar_default_blue_2.svg'),
-        defaultAvatar9: exactAssetPicture('assets/avatars/avatar_default_blue_3.svg'),
-        defaultAvatar10: exactAssetPicture('assets/avatars/avatar_default_yellow_1.svg'),
-        defaultAvatar11: exactAssetPicture('assets/avatars/avatar_default_yellow_2.svg'),
-        defaultAvatar12: exactAssetPicture('assets/avatars/avatar_default_yellow_3.svg'),);
+      const AppImagesData(
+        defaultAvatar1: AssetImage('assets/avatars/green_a_80px.png', package: 'linksys_core'),
+        defaultAvatar2: AssetImage('assets/avatars/green_b_80px.png', package: 'linksys_core'),
+        defaultAvatar3: AssetImage('assets/avatars/green_c_80px.png', package: 'linksys_core'),
+        defaultAvatar4: AssetImage('assets/avatars/violet_a_80px.png', package: 'linksys_core'),
+        defaultAvatar5: AssetImage('assets/avatars/violet_b_80px.png', package: 'linksys_core'),
+        defaultAvatar6: AssetImage('assets/avatars/violet_c_80px.png', package: 'linksys_core'),
+        defaultAvatar7: AssetImage('assets/avatars/blue_a_80px.png', package: 'linksys_core'),
+        defaultAvatar8: AssetImage('assets/avatars/blue_b_80px.png', package: 'linksys_core'),
+        defaultAvatar9: AssetImage('assets/avatars/blue_c_80px.png', package: 'linksys_core'),
+        defaultAvatar10: AssetImage('assets/avatars/yellow_a_80px.png', package: 'linksys_core'),
+        defaultAvatar11: AssetImage('assets/avatars/yellow_b_80px.png', package: 'linksys_core'),
+        defaultAvatar12: AssetImage('assets/avatars/yellow_c_80px.png', package: 'linksys_core'),
+        tempIllustration: AssetImage('assets/images/temp_illustration.png', package: 'linksys_core'),
+      );
 
 
-  final PictureProvider defaultAvatar1;
-  final PictureProvider defaultAvatar2;
-  final PictureProvider defaultAvatar3;
-  final PictureProvider defaultAvatar4;
-  final PictureProvider defaultAvatar5;
-  final PictureProvider defaultAvatar6;
-  final PictureProvider defaultAvatar7;
-  final PictureProvider defaultAvatar8;
-  final PictureProvider defaultAvatar9;
-  final PictureProvider defaultAvatar10;
-  final PictureProvider defaultAvatar11;
-  final PictureProvider defaultAvatar12;
+  final ImageProvider defaultAvatar1;
+  final ImageProvider defaultAvatar2;
+  final ImageProvider defaultAvatar3;
+  final ImageProvider defaultAvatar4;
+  final ImageProvider defaultAvatar5;
+  final ImageProvider defaultAvatar6;
+  final ImageProvider defaultAvatar7;
+  final ImageProvider defaultAvatar8;
+  final ImageProvider defaultAvatar9;
+  final ImageProvider defaultAvatar10;
+  final ImageProvider defaultAvatar11;
+  final ImageProvider defaultAvatar12;
+  final ImageProvider tempIllustration;
 
   @override
-  List<Object> get props =>
+  List<Named<dynamic>> get props =>
       [
-        defaultAvatar1,
-        defaultAvatar2,
-        defaultAvatar3,
-        defaultAvatar4,
-        defaultAvatar5,
-        defaultAvatar6,
-        defaultAvatar7,
-        defaultAvatar8,
-        defaultAvatar9,
-        defaultAvatar10,
-        defaultAvatar11,
-        defaultAvatar12,
+        defaultAvatar1.named('defaultAvatar1'),
+        defaultAvatar2.named('defaultAvatar2'),
+        defaultAvatar3.named('defaultAvatar3'),
+        defaultAvatar4.named('defaultAvatar4'),
+        defaultAvatar5.named('defaultAvatar5'),
+        defaultAvatar6.named('defaultAvatar6'),
+        defaultAvatar7.named('defaultAvatar7'),
+        defaultAvatar8.named('defaultAvatar8'),
+        defaultAvatar9.named('defaultAvatar9'),
+        defaultAvatar10.named('defaultAvatar10'),
+        defaultAvatar11.named('defaultAvatar11'),
+        defaultAvatar12.named('defaultAvatar12'),
+        tempIllustration.named('tempIllustration'),
       ];
 
 }

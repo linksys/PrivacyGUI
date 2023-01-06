@@ -14,6 +14,7 @@
     tap_builder: ^0.4.0
     gap: ^2.0.1
     styled_text: ^6.0.0
+    pin_code_fields: ^7.4.0
 
   dev_dependencies:
     flutter_test:
@@ -34,6 +35,7 @@
     assets:
       - assets/icons/
       - assets/avatars/
+      - assets/images/
     # For details regarding assets in packages, see
     # https://flutter.dev/assets-and-images/#from-packages
     #

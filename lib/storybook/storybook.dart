@@ -1,13 +1,22 @@
+import 'dart:io';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:linksys_core/theme/_theme.dart';
+import 'package:linksys_core/widgets/avatars/avatar.dart';
 import 'package:linksys_core/widgets/base/gap.dart';
 import 'package:linksys_core/widgets/base/icon.dart';
 import 'package:linksys_core/widgets/buttons/nav_button.dart';
 import 'package:linksys_core/widgets/check_box/check_box.dart';
+import 'package:linksys_core/widgets/modal/modal.dart';
+import 'package:linksys_core/widgets/pin_code_input.dart';
 import 'package:linksys_core/widgets/progress_bar/progress_bar.dart';
 import 'package:linksys_core/widgets/switch/switch.dart';
+import 'package:linksys_core/widgets/text/app_styled_text.dart';
 import 'package:linksys_core/widgets/toast/app_toast.dart';
+import 'package:linksys_moab/page/components/base_components/button/primary_button.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:storybook_flutter/storybook_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_core/widgets/_widgets.dart';
@@ -20,6 +29,9 @@ part 'text_stories.dart';
 part 'theme_stories.dart';
 part 'progress_bar_stories.dart';
 part 'toast_stories.dart';
+part 'avatar_stories.dart';
+part 'modal_stories.dart';
+part 'input_stories.dart';
 
 void main() => runApp(const MyApp());
 
@@ -53,11 +65,14 @@ class MyApp extends StatelessWidget {
         stories: [
           ...themeStories(),
           ...iconStories(),
+          ...avatarStories(),
           ...textStories(),
           ...buttonStories(),
           ...switchStories(),
           ...checkboxStories(),
           ...toastStories(),
+          ...modalStories(),
+          ...inputStories(),
         ],
       );
 }

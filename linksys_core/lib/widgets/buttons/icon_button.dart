@@ -5,6 +5,7 @@ class AppIconButton extends StatelessWidget {
     Key? key,
     this.icon,
     this.onTap,
+    this.padding,
     this.mainAxisSize = MainAxisSize.min,
   })
       : assert(
@@ -14,6 +15,7 @@ class AppIconButton extends StatelessWidget {
 
   final IconData? icon;
   final MainAxisSize mainAxisSize;
+  final AppEdgeInsets? padding;
   final VoidCallback? onTap;
 
   @override
@@ -37,6 +39,7 @@ class AppIconButton extends StatelessWidget {
               child: AppButtonLayout.hovered(
                 icon: icon,
                 mainAxisSize: mainAxisSize,
+                padding: padding,
                 backgroundColorSet: backgroundColorSet,
                 foregroundColorSet: foregroundColorSet,
                 borderColorSet: borderColorSet,
@@ -49,6 +52,7 @@ class AppIconButton extends StatelessWidget {
               child: AppButtonLayout.pressed(
                 icon: icon,
                 mainAxisSize: mainAxisSize,
+                padding: padding,
                 backgroundColorSet: backgroundColorSet,
                 foregroundColorSet: foregroundColorSet,
                 borderColorSet: borderColorSet,
@@ -61,6 +65,7 @@ class AppIconButton extends StatelessWidget {
               child: AppButtonLayout.inactive(
                 icon: icon,
                 mainAxisSize: mainAxisSize,
+                padding: padding,
                 backgroundColorSet: backgroundColorSet,
                 foregroundColorSet: foregroundColorSet,
                 borderColorSet: borderColorSet,
@@ -73,6 +78,7 @@ class AppIconButton extends StatelessWidget {
               child: AppButtonLayout.disabled(
                 icon: icon,
                 mainAxisSize: mainAxisSize,
+                padding: padding,
                 backgroundColorSet: backgroundColorSet,
                 foregroundColorSet: foregroundColorSet,
                 borderColorSet: borderColorSet,

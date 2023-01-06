@@ -59,13 +59,6 @@ Iterable<Story> buttonStories() {
           AppTertiaryButton(
             'Tertiary Disabled',
           ),
-          const AppGap.small(),
-          AppNavButton(
-            title: 'Home',
-            icon: AppTheme.of(context).icons.characters.profileDefault,
-            onTap: () {},
-          ),
-          const AppGap.small(),
         ],
       ),
     ),

@@ -7,9 +7,13 @@ Iterable<Story> toastStories() {
       description: 'A custom toast widget used in app',
       builder: (context) => Column(
         children: const [
-          AppToast.positive(text: 'Biometric sign on enabled',),
+          AppToast.positive(
+            text: 'Biometric sign on enabled',
+          ),
           AppGap.regular(),
-          AppToast.negative(text: 'Biometric sign on enabled',),
+          AppToast.negative(
+            text: 'Biometric sign on enabled',
+          ),
         ],
       ),
     ),
@@ -18,25 +22,25 @@ Iterable<Story> toastStories() {
       description: 'A custom toast widget used in app',
       builder: (context) => Column(
         children: [
-          AppPrimaryButton('Show Positive', onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              padding: EdgeInsets.zero,
-              backgroundColor: AppTheme.of(context).colors.textBoxBox,
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-              content: AppToast.positive(text: 'Biometric sign on enabled',),
-            ),);
-          },),
-          AppGap.regular(),
-          AppPrimaryButton('Show Negative', onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              padding: EdgeInsets.zero,
-              backgroundColor: AppTheme.of(context).colors.textBoxBox,
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-              content: AppToast.negative(text: 'Biometric sign on enabled',),
-            ),);
-          },),
+          AppPrimaryButton(
+            'Show Positive',
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                AppToastHelp.positiveToast(context,
+                    text: 'Biometric sign on enabled'),
+              );
+            },
+          ),
+          const AppGap.regular(),
+          AppPrimaryButton(
+            'Show Negative',
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                AppToastHelp.negativeToast(context,
+                    text: 'Biometric sign on enabled'),
+              );
+            },
+          ),
         ],
       ),
     ),

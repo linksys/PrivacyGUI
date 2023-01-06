@@ -24,7 +24,7 @@ class AppPrimaryButton extends StatelessWidget {
             hovered: theme.colors.ctaSecondary.withOpacity(0.6),
             disabled: ConstantColors.baseTextBoxBlueDisabled);
         final foregroundColorSet = AppButtonColorSet(
-            inactive: theme.colors.ctaPrimary,
+            inactive: ConstantColors.primaryLinksysWhite,
             pressed: theme.colors.ctaSecondary,
             hovered: theme.colors.ctaSecondary.withOpacity(0.6),
             disabled: theme.colors.ctaPrimaryDisable);
