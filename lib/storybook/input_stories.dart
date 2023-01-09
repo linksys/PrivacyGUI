@@ -14,12 +14,26 @@ Iterable<Story> inputStories() {
               onChanged: (value) {},
               onCompleted: (value) {},
             ),
-            const AppGap.big(),
+          ],
+        ),
+      ),
+    ),
+    Story(
+      name: 'Input/Search bar',
+      description: 'A custom search bar widget used in app',
+      builder: (context) => SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             AppPinCodeInput(
               length: 4,
               enabled: false,
               onChanged: (value) {},
               onCompleted: (value) {},
+            ),
+            const AppGap.big(),
+            AppSearchBar(
+              hint: 'Search',
             ),
           ],
         ),

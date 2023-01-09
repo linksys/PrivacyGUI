@@ -24,13 +24,13 @@ class AppIconButton extends StatelessWidget {
       onTap: onTap,
       builder: (context, state, hasFocus) {
         final theme = AppTheme.of(context);
-        final backgroundColorSet = AppButtonColorSet.transparent();
-        final foregroundColorSet = AppButtonColorSet(
+        final backgroundColorSet = AppWidgetStateColorSet.transparent();
+        final foregroundColorSet = AppWidgetStateColorSet(
             inactive: theme.colors.ctaPrimary,
             pressed: theme.colors.ctaSecondary,
             hovered: theme.colors.ctaSecondary.withOpacity(0.6),
             disabled: theme.colors.ctaPrimaryDisable);
-        final borderColorSet = AppButtonColorSet.transparent();
+        final borderColorSet = AppWidgetStateColorSet.transparent();
         switch (state) {
           case TapState.hover:
             return Semantics(

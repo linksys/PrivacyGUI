@@ -7,6 +7,8 @@ import 'package:linksys_core/widgets/base/icon.dart';
 import 'package:linksys_core/widgets/base/padding.dart';
 import 'package:tap_builder/tap_builder.dart';
 
+import '../state.dart';
+
 part 'icon_button.dart';
 part 'primary_button.dart';
 part 'secondary_button.dart';
@@ -82,13 +84,6 @@ class AppButton extends StatelessWidget {
   }
 }
 
-enum AppButtonState {
-  inactive,
-  hovered,
-  pressed,
-  disabled,
-}
-
 class AppButtonLayout extends StatelessWidget {
   const AppButtonLayout.inactive({
     Key? key,
@@ -96,11 +91,11 @@ class AppButtonLayout extends StatelessWidget {
     this.title,
     this.padding,
     this.mainAxisSize = MainAxisSize.min,
-    this.backgroundColorSet = const AppButtonColorSet(),
-    this.foregroundColorSet = const AppButtonColorSet(),
-    this.borderColorSet = const AppButtonColorSet(),
+    this.backgroundColorSet = const AppWidgetStateColorSet(),
+    this.foregroundColorSet = const AppWidgetStateColorSet(),
+    this.borderColorSet = const AppWidgetStateColorSet(),
   })
-      : _state = AppButtonState.inactive,
+      : _state = AppWidgetState.inactive,
         assert(
         icon != null || title != null,
         ),
@@ -112,11 +107,11 @@ class AppButtonLayout extends StatelessWidget {
     this.title,
     this.padding,
     this.mainAxisSize = MainAxisSize.min,
-    this.backgroundColorSet = const AppButtonColorSet(),
-    this.foregroundColorSet = const AppButtonColorSet(),
-    this.borderColorSet = const AppButtonColorSet(),
+    this.backgroundColorSet = const AppWidgetStateColorSet(),
+    this.foregroundColorSet = const AppWidgetStateColorSet(),
+    this.borderColorSet = const AppWidgetStateColorSet(),
   })
-      : _state = AppButtonState.hovered,
+      : _state = AppWidgetState.hovered,
         assert(
         icon != null || title != null,
         ),
@@ -128,11 +123,11 @@ class AppButtonLayout extends StatelessWidget {
     this.title,
     this.padding,
     this.mainAxisSize = MainAxisSize.min,
-    this.backgroundColorSet = const AppButtonColorSet(),
-    this.foregroundColorSet = const AppButtonColorSet(),
-    this.borderColorSet = const AppButtonColorSet(),
+    this.backgroundColorSet = const AppWidgetStateColorSet(),
+    this.foregroundColorSet = const AppWidgetStateColorSet(),
+    this.borderColorSet = const AppWidgetStateColorSet(),
   })
-      : _state = AppButtonState.pressed,
+      : _state = AppWidgetState.pressed,
         assert(
         icon != null || title != null,
         ),
@@ -144,11 +139,11 @@ class AppButtonLayout extends StatelessWidget {
     this.title,
     this.padding,
     this.mainAxisSize = MainAxisSize.min,
-    this.backgroundColorSet = const AppButtonColorSet(),
-    this.foregroundColorSet = const AppButtonColorSet(),
-    this.borderColorSet = const AppButtonColorSet(),
+    this.backgroundColorSet = const AppWidgetStateColorSet(),
+    this.foregroundColorSet = const AppWidgetStateColorSet(),
+    this.borderColorSet = const AppWidgetStateColorSet(),
   })
-      : _state = AppButtonState.disabled,
+      : _state = AppWidgetState.disabled,
         assert(
         icon != null || title != null,
         ),
@@ -158,10 +153,10 @@ class AppButtonLayout extends StatelessWidget {
   final String? title;
   final MainAxisSize mainAxisSize;
   final AppEdgeInsets? padding;
-  final AppButtonState _state;
-  final AppButtonColorSet backgroundColorSet;
-  final AppButtonColorSet foregroundColorSet;
-  final AppButtonColorSet borderColorSet;
+  final AppWidgetState _state;
+  final AppWidgetStateColorSet backgroundColorSet;
+  final AppWidgetStateColorSet foregroundColorSet;
+  final AppWidgetStateColorSet borderColorSet;
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +165,7 @@ class AppButtonLayout extends StatelessWidget {
     final icon = this.icon;
     final hasBoth = (title != null && icon != null);
     final foregroundColor = () {
-      final defaultSet = AppButtonColorSet(
+      final defaultSet = AppWidgetStateColorSet(
         inactive: theme.colors.ctaPrimary,
         hovered: theme.colors.ctaPrimary.withOpacity(0.6),
         pressed: theme.colors.ctaSecondary,
@@ -180,7 +175,7 @@ class AppButtonLayout extends StatelessWidget {
     }();
 
     final backgroundColor = () {
-      final defaultSet = AppButtonColorSet(
+      final defaultSet = AppWidgetStateColorSet(
         inactive: ConstantColors.primaryLinksysBlue,
         hovered: theme.colors.ctaSecondary.withOpacity(0.6),
         pressed: theme.colors.ctaSecondary.withOpacity(0),
@@ -189,7 +184,7 @@ class AppButtonLayout extends StatelessWidget {
       return backgroundColorSet.resolve(_state) ?? defaultSet.resolve(_state);
     }();
     final borderBackgroundColor = () {
-      final defaultSet = AppButtonColorSet(
+      final defaultSet = AppWidgetStateColorSet(
         inactive: ConstantColors.primaryLinksysBlue,
         hovered: theme.colors.ctaSecondary,
         pressed: theme.colors.ctaSecondary,
@@ -222,46 +217,4 @@ class AppButtonLayout extends StatelessWidget {
       ),
     );
   }
-}
-
-class AppButtonColorSet extends Equatable {
-  final Color? inactive;
-  final Color? hovered;
-  final Color? pressed;
-  final Color? disabled;
-
-  const AppButtonColorSet({
-    this.inactive,
-    this.hovered,
-    this.pressed,
-    this.disabled,
-  });
-
-  factory AppButtonColorSet.transparent() =>
-      const AppButtonColorSet(inactive: ConstantColors.transparent,
-        hovered: ConstantColors.transparent,
-        pressed: ConstantColors.transparent,
-        disabled: ConstantColors.transparent,);
-
-  Color? resolve(AppButtonState state) {
-    switch (state) {
-      case AppButtonState.inactive:
-        return inactive;
-      case AppButtonState.hovered:
-        return hovered;
-      case AppButtonState.pressed:
-        return pressed;
-      case AppButtonState.disabled:
-        return disabled;
-    }
-  }
-
-  @override
-  List<Object?> get props =>
-      [
-        inactive,
-        hovered,
-        pressed,
-        disabled,
-      ];
 }

@@ -11,6 +11,7 @@ import 'package:linksys_core/widgets/check_box/check_box.dart';
 import 'package:linksys_core/widgets/modal/modal.dart';
 import 'package:linksys_core/widgets/pin_code_input.dart';
 import 'package:linksys_core/widgets/progress_bar/progress_bar.dart';
+import 'package:linksys_core/widgets/search_bar.dart';
 import 'package:linksys_core/widgets/switch/switch.dart';
 import 'package:linksys_core/widgets/text/app_styled_text.dart';
 import 'package:linksys_core/widgets/toast/app_toast.dart';
