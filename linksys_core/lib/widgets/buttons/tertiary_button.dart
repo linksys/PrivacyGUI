@@ -2,15 +2,25 @@ part of 'button.dart';
 
 class AppTertiaryButton extends StatelessWidget {
   const AppTertiaryButton(
-      this.title, {
-        super.key,
-        this.icon,
-        this.onTap,
-      });
+    this.title, {
+    super.key,
+    this.icon,
+    this.onTap,
+    this.padding,
+  });
+
+  const AppTertiaryButton.noPadding(
+    this.title, {
+    Key? key,
+    this.icon,
+    this.onTap,
+  })  : padding = const AppEdgeInsets.only(),
+        super(key: key);
 
   final String title;
   final IconData? icon;
   final VoidCallback? onTap;
+  final AppEdgeInsets? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +47,7 @@ class AppTertiaryButton extends StatelessWidget {
                 backgroundColorSet: backgroundColorSet,
                 foregroundColorSet: foregroundColorSet,
                 borderColorSet: borderColorSet,
+                padding: padding,
               ),
             );
           case TapState.pressed:
@@ -50,6 +61,7 @@ class AppTertiaryButton extends StatelessWidget {
                 backgroundColorSet: backgroundColorSet,
                 foregroundColorSet: foregroundColorSet,
                 borderColorSet: borderColorSet,
+                padding: padding,
               ),
             );
           case TapState.inactive:
@@ -63,6 +75,7 @@ class AppTertiaryButton extends StatelessWidget {
                 backgroundColorSet: backgroundColorSet,
                 foregroundColorSet: foregroundColorSet,
                 borderColorSet: borderColorSet,
+                padding: padding,
               ),
             );
           case TapState.disabled:
@@ -76,6 +89,7 @@ class AppTertiaryButton extends StatelessWidget {
                 backgroundColorSet: backgroundColorSet,
                 foregroundColorSet: foregroundColorSet,
                 borderColorSet: borderColorSet,
+                padding: padding,
               ),
             );
         }

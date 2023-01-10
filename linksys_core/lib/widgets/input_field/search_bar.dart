@@ -4,7 +4,7 @@ import 'package:linksys_core/widgets/base/gap.dart';
 import 'package:linksys_core/widgets/base/icon.dart';
 import 'package:linksys_core/widgets/base/padding.dart';
 
-import 'state.dart';
+import '../state.dart';
 
 class AppSearchBar extends StatefulWidget {
   const AppSearchBar({
@@ -74,7 +74,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
           child: Row(
             children: [
               AppIcon.regular(
-                theme.icons.characters.searchDefault,
+                icon: theme.icons.characters.searchDefault,
                 color: ConstantColors.primaryLinksysWhite,
               ),
               const AppGap.regular(),
@@ -102,7 +102,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
               const AppGap.regular(),
               if (_controller.text.isNotEmpty)
                 AppIcon.regular(
-                  theme.icons.characters.crossDefault,
+                  icon: theme.icons.characters.crossDefault,
                   color: ConstantColors.primaryLinksysWhite,
                 ),
             ],

@@ -26,10 +26,10 @@ Iterable<Story> iconStories() {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        AppIcon.small(AppTheme.of(context).icons.characters.props.elementAt(index)?.value),
-                        AppIcon.regular(AppTheme.of(context).icons.characters.props.elementAt(index)?.value),
-                        AppIcon.big(AppTheme.of(context).icons.characters.props.elementAt(index)?.value),
-                        AppIcon.small(AppTheme.of(context).icons.characters.chevronDown)
+                        AppIcon.small(icon: AppTheme.of(context).icons.characters.props.elementAt(index)?.value),
+                        AppIcon.regular(icon: AppTheme.of(context).icons.characters.props.elementAt(index)?.value),
+                        AppIcon.big(icon: AppTheme.of(context).icons.characters.props.elementAt(index)?.value),
+                        AppIcon.small(icon: AppTheme.of(context).icons.characters.chevronDown)
                       ],
                     ),
                     Text('${AppTheme.of(context).icons.characters.props.elementAt(index)?.name}'),

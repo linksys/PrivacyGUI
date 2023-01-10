@@ -53,7 +53,7 @@ class AppToast extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.max,
           children: [
-            if (icon != null) AppIcon.regular(icon),
+            if (icon != null) AppIcon.regular(icon: icon),
             if (icon != null) const AppGap.regular(),
             AppText.subhead(text),
           ],

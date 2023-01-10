@@ -24,35 +24,35 @@ extension AppIconSizeExtension on AppIconSizesData {
 }
 
 class AppIcon extends StatelessWidget {
-  const AppIcon(
-    this.data, {
+  const AppIcon({
     Key? key,
+    this.icon,
     this.color,
     this.size = AppIconSize.regular,
   }) : super(key: key);
 
-  const AppIcon.small(
-    this.data, {
+  const AppIcon.small({
     Key? key,
+    this.icon,
     this.color,
   })  : size = AppIconSize.small,
         super(key: key);
 
-  const AppIcon.regular(
-    this.data, {
+  const AppIcon.regular({
     Key? key,
+    this.icon,
     this.color,
   })  : size = AppIconSize.regular,
         super(key: key);
 
-  const AppIcon.big(
-    this.data, {
+  const AppIcon.big({
     Key? key,
+    this.icon,
     this.color,
   })  : size = AppIconSize.big,
         super(key: key);
 
-  final IconData? data;
+  final IconData? icon;
   final Color? color;
   final AppIconSize size;
 
@@ -61,7 +61,7 @@ class AppIcon extends StatelessWidget {
     final theme = AppTheme.of(context);
     final color = this.color;
     return Icon(
-      data,
+      icon,
       color: color,
       size: theme.icons.sizes.resolve(size),
     );

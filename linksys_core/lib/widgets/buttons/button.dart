@@ -211,7 +211,7 @@ class AppButtonLayout extends StatelessWidget {
                 color: foregroundColor,
               ),
             if (hasBoth) const AppGap.semiSmall(),
-            if (icon != null) AppIcon.regular(icon, color: foregroundColor),
+            if (icon != null) AppIcon.regular(icon: icon, color: foregroundColor),
           ],
         ),
       ),

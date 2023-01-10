@@ -7,10 +7,20 @@ class AppIconButton extends StatelessWidget {
     this.onTap,
     this.padding,
     this.mainAxisSize = MainAxisSize.min,
-  })
-      : assert(
-  icon != null,
-  ),
+  })  : assert(
+          icon != null,
+        ),
+        super(key: key);
+
+  const AppIconButton.noPadding({
+    Key? key,
+    this.icon,
+    this.onTap,
+    this.mainAxisSize = MainAxisSize.min,
+  })  : assert(
+          icon != null,
+        ),
+        padding = const AppEdgeInsets.only(),
         super(key: key);
 
   final IconData? icon;

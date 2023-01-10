@@ -67,7 +67,7 @@ Iterable<Story> buttonStories() {
         description: 'A custom buttons used in app',
         builder: (context) => Scaffold(
               bottomNavigationBar: BottomNavigationBar(
-                elevation: 0,
+                  elevation: 0,
                   unselectedItemColor: ConstantColors.tertiaryTextGray,
                   unselectedIconTheme: IconThemeData(
                       color: ConstantColors.tertiaryTextGray,
@@ -78,34 +78,42 @@ Iterable<Story> buttonStories() {
                       size: AppTheme.of(context).icons.sizes.regular),
                   selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold),
                   showUnselectedLabels: true,
-                  currentIndex: context.knobs.sliderInt(label: 'Selected tab', initial: 0, min: 0, max: 3, divisions: 3),
+                  currentIndex: context.knobs.sliderInt(
+                      label: 'Selected tab',
+                      initial: 0,
+                      min: 0,
+                      max: 3,
+                      divisions: 3),
                   onTap: (index) {},
                   items: [
                     BottomNavigationBarItem(
-                        icon: AppIcon.regular(AppTheme.of(context)
-                            .icons
-                            .characters
-                            .homeDefault),
+                        icon: AppIcon.regular(
+                            icon: AppTheme.of(context)
+                                .icons
+                                .characters
+                                .homeDefault),
                         label: 'Home'),
                     BottomNavigationBarItem(
-                        icon: AppIcon.regular(AppTheme.of(context)
-                            .icons
-                            .characters
-                            .securityDefault),
+                        icon: AppIcon.regular(
+                            icon: AppTheme.of(context)
+                                .icons
+                                .characters
+                                .securityDefault),
                         label: 'Security'),
                     BottomNavigationBarItem(
-                        icon: AppIcon.regular(AppTheme.of(context)
-                            .icons
-                            .characters
-                            .healthDefault),
+                        icon: AppIcon.regular(
+                            icon: AppTheme.of(context)
+                                .icons
+                                .characters
+                                .healthDefault),
                         label: 'Health'),
                     BottomNavigationBarItem(
-                        icon: AppIcon.regular(AppTheme.of(context)
-                            .icons
-                            .characters
-                            .settingsDefault),
+                        icon: AppIcon.regular(
+                            icon: AppTheme.of(context)
+                                .icons
+                                .characters
+                                .settingsDefault),
                         label: 'Settings'),
-
                   ]),
             )),
   ];

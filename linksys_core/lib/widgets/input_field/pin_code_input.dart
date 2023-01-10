@@ -2,7 +2,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
-import '../theme/data/colors.dart';
+import '../../theme/data/colors.dart';
 
 class AppPinCodeInput extends StatelessWidget {
 

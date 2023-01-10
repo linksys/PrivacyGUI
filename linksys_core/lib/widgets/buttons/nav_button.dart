@@ -185,7 +185,7 @@ class AppButtonLayout extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (icon != null) AppIcon.regular(icon, color: foregroundColor),
+          if (icon != null) AppIcon.regular(icon: icon, color: foregroundColor),
           if (hasBoth) const AppGap.small(),
           if (title != null)
             AppText.textLinkTertiarySmall(
