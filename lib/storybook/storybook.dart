@@ -6,6 +6,7 @@ import 'package:linksys_core/widgets/avatars/avatar.dart';
 import 'package:linksys_core/widgets/base/gap.dart';
 import 'package:linksys_core/widgets/base/icon.dart';
 import 'package:linksys_core/widgets/check_box/check_box.dart';
+import 'package:linksys_core/widgets/container/slide_actions_container.dart';
 import 'package:linksys_core/widgets/modal/modal.dart';
 import 'package:linksys_core/widgets/progress_bar/progress_bar.dart';
 import 'package:linksys_core/widgets/switch/switch.dart';
@@ -27,6 +28,7 @@ part 'toast_stories.dart';
 part 'avatar_stories.dart';
 part 'modal_stories.dart';
 part 'input_stories.dart';
+part 'container_stories.dart';
 
 void main() => runApp(const MyApp());
 
@@ -68,6 +70,7 @@ class MyApp extends StatelessWidget {
           ...toastStories(),
           ...modalStories(),
           ...inputStories(),
+          ...containerStories(),
         ],
       );
 }
