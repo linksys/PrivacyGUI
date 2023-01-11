@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:linksys_core/theme/_theme.dart';
 import 'package:linksys_core/widgets/avatars/avatar.dart';
@@ -18,6 +16,7 @@ import 'package:storybook_flutter/storybook_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_core/widgets/_widgets.dart';
 
+part 'appbar_stories.dart';
 part 'button_stories.dart';
 part 'checkbox_stories.dart';
 part 'icon_stories.dart';
@@ -72,6 +71,7 @@ class MyApp extends StatelessWidget {
           ...modalStories(),
           ...inputStories(),
           ...containerStories(),
+          ...appBarStories(),
         ],
       );
 }
