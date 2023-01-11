@@ -66,6 +66,7 @@ class AppSlideActionContainerState extends State<AppSlideActionContainer>
 
   @override
   Widget build(BuildContext context) {
+    print('right item: ${widget.rightMenuItems.any((element) => element.label != null)}');
     final leftOffsetRatio =
         widget.leftMenuItems.any((element) => element.label != null)
             ? 0.25
@@ -76,12 +77,12 @@ class AppSlideActionContainerState extends State<AppSlideActionContainer>
             : 0.125;
     final rightAnimation = Tween(
             begin: const Offset(0.0, 0.0),
-            end: Offset(-leftOffsetRatio * widget.rightMenuItems.length, 0.0))
+            end: Offset(-rightOffsetRatio * widget.rightMenuItems.length, 0.0))
         .animate(CurveTween(curve: Curves.decelerate).animate(_controller));
 
     final leftAnimation = Tween(
             begin: const Offset(0.0, 0.0),
-            end: Offset(rightOffsetRatio * widget.leftMenuItems.length, 0.0))
+            end: Offset(leftOffsetRatio * widget.leftMenuItems.length, 0.0))
         .animate(CurveTween(curve: Curves.decelerate).animate(_controller));
 
     return GestureDetector(
