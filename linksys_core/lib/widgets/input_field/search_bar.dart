@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_core/theme/_theme.dart';
+import 'package:linksys_core/widgets/_widgets.dart';
 import 'package:linksys_core/widgets/base/gap.dart';
 import 'package:linksys_core/widgets/base/icon.dart';
 import 'package:linksys_core/widgets/base/padding.dart';
@@ -101,9 +102,13 @@ class _AppSearchBarState extends State<AppSearchBar> {
               ),
               const AppGap.regular(),
               if (_controller.text.isNotEmpty)
-                AppIcon.regular(
+                AppIconButton(
                   icon: theme.icons.characters.crossDefault,
-                  color: ConstantColors.primaryLinksysWhite,
+                  onTap: () {
+                    setState(() {
+                      _controller.text = '';
+                    });
+                  },
                 ),
             ],
           ),
