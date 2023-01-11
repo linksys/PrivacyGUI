@@ -1,6 +1,4 @@
-
 import 'dart:ui';
-
 import 'package:equatable/equatable.dart';
 import 'package:linksys_core/theme/_theme.dart';
 
@@ -45,6 +43,8 @@ class AppWidgetStateColorSet extends Equatable {
         return pressed;
       case AppWidgetState.disabled:
         return disabled;
+      case AppWidgetState.focus:
+        return focus;
     }
   }
 
