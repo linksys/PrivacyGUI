@@ -22,6 +22,26 @@ Iterable<Story> buttonStories() {
               icon: AppTheme.of(context).icons.characters.profileDefault,
             ),
           ),
+          AppIconToggleButton(
+              icon1: AppTheme.of(context).icons.characters.arrowUp,
+              icon2: AppTheme.of(context).icons.characters.crossDefault,
+            animation: AppTweenAnimationData.leftRotate90,
+          ),
+          AppIconToggleButton(
+            icon1: AppTheme.of(context).icons.characters.arrowUp,
+            icon2: AppTheme.of(context).icons.characters.homeDefault,
+            animation: AppTweenAnimationData.leftRotate180,
+          ),
+          AppIconToggleButton(
+            icon1: AppTheme.of(context).icons.characters.arrowUp,
+            icon2: AppTheme.of(context).icons.characters.searchDefault,
+            animation: AppTweenAnimationData.leftRotate270,
+          ),
+          AppIconToggleButton(
+            icon1: AppTheme.of(context).icons.characters.searchDefault,
+            icon2: AppTheme.of(context).icons.characters.crossDefault,
+            animation: AppTweenAnimationData.leftRotate360,
+          ),
         ],
       ),
     ),
