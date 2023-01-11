@@ -7,20 +7,113 @@ Iterable<Story> containerStories() {
       description: 'A custom slide action widget used in app',
       builder: (context) => Column(
         children: [
-          SlideActionContainer(
+          AppSlideActionContainer(
+            child: Container(
+              decoration:
+              BoxDecoration(color: ConstantColors.secondaryBoostedGold),
+              height: 60,
+              child: Row(
+                children: [Expanded(child: Center(child: Text('Slide left')))],
+              ),
+            ),
+            leftMenuItems: [
+              AppMenuItem(
+                  icon: AppTheme.of(context).icons.characters.profileDefault,
+                  background: ConstantColors.tertiaryGreen,
+                  onTap: () {}),
+            ],
+          ),
+          AppGap.big(),
+          AppSlideActionContainer(
+            child: Container(
+              decoration:
+              BoxDecoration(color: ConstantColors.secondaryBoostedGold),
+              height: 60,
+              child: Row(
+                children: [Expanded(child: Center(child: Text('Slide right')))],
+              ),
+            ),
+            rightMenuItems: [
+              AppMenuItem(
+                  icon: AppTheme.of(context).icons.characters.crossDefault,
+                  background: ConstantColors.tertiaryRed,
+                  onTap: () {}),
+            ],
+          ),
+          AppGap.big(),
+          AppSlideActionContainer(
             child: Container(
               decoration:
                   BoxDecoration(color: ConstantColors.secondaryBoostedGold),
               height: 60,
               child: Row(
-                children: [Expanded(child: Center(child: Text('Try me')))],
+                children: [Expanded(child: Center(child: Text('Slide left/right')))],
               ),
             ),
-            menuItems: [
-              Icon(AppTheme.of(context).icons.characters.addDefault),
-              Icon(AppTheme.of(context).icons.characters.crossDefault),
-              Icon(AppTheme.of(context).icons.characters.searchDefault),
-              Icon(AppTheme.of(context).icons.characters.mailB),
+            leftMenuItems: [
+              AppMenuItem(
+                  icon: AppTheme.of(context).icons.characters.profileDefault,
+                  background: ConstantColors.tertiaryGreen,
+                  onTap: () {}),
+            ],
+            rightMenuItems: [
+              AppMenuItem(
+                  icon: AppTheme.of(context).icons.characters.searchDefault,
+                  background: ConstantColors.primaryLinksysBlue,
+                  onTap: () {}),
+              AppMenuItem(
+                  icon: AppTheme.of(context).icons.characters.addDefault,
+                  background: ConstantColors.secondaryCyberPurple,
+                  onTap: () {}),
+              AppMenuItem(
+                  icon: AppTheme.of(context).icons.characters.crossDefault,
+                  background: ConstantColors.tertiaryRed,
+                  onTap: () {}),
+            ],
+          ),
+          AppGap.big(),
+          AppSlideActionContainer(
+            child: Container(
+              decoration:
+              BoxDecoration(color: ConstantColors.secondaryBoostedGold),
+              height: 60,
+              child: Row(
+                children: [Expanded(child: Center(child: Text('Slide left')))],
+              ),
+            ),
+            leftMenuItems: [
+              AppMenuItem(label: 'Add', onTap: () {}),
+            ],
+          ),
+          AppGap.big(),
+          AppSlideActionContainer(
+            child: Container(
+              decoration:
+              BoxDecoration(color: ConstantColors.secondaryBoostedGold),
+              height: 60,
+              child: Row(
+                children: [Expanded(child: Center(child: Text('Slide right')))],
+              ),
+            ),
+            rightMenuItems: [
+              AppMenuItem(label: 'Remove', background: ConstantColors.tertiaryRed, onTap: () {}),
+            ],
+          ),
+          AppGap.big(),
+          AppSlideActionContainer(
+            child: Container(
+              decoration:
+                  BoxDecoration(color: ConstantColors.secondaryBoostedGold),
+              height: 60,
+              child: Row(
+                children: [Expanded(child: Center(child: Text('Slide left/right')))],
+              ),
+            ),
+            leftMenuItems: [
+              AppMenuItem(label: 'Add', onTap: () {}),
+            ],
+            rightMenuItems: [
+              AppMenuItem(label: 'Remove', background: ConstantColors.tertiaryRed, onTap: () {}),
             ],
           ),
         ],

@@ -22,6 +22,13 @@ Iterable<Story> inputStories() {
               onChanged: (value) {},
               onCompleted: (value) {},
             ),
+            AppPinCodeInput(
+              length: 4,
+              enabled: false,
+              onChanged: (value) {},
+              onCompleted: (value) {},
+            ),
+            const AppGap.big(),
           ],
         ),
       ),
@@ -33,13 +40,6 @@ Iterable<Story> inputStories() {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppPinCodeInput(
-              length: 4,
-              enabled: false,
-              onChanged: (value) {},
-              onCompleted: (value) {},
-            ),
-            const AppGap.big(),
             AppSearchBar(
               hint: 'Search',
             ),
