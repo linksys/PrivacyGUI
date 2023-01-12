@@ -22,9 +22,12 @@ class AppImagesData extends Equatable {
     required this.defaultAvatar11,
     required this.defaultAvatar12,
     required this.tempIllustration,
+    required this.dashboardBg1,
+    required this.dashboardBg2,
+    required this.dashboardBg3,
   });
 
-  factory AppImagesData.regular() =>
+  factory AppImagesData.dark() =>
       const AppImagesData(
         defaultAvatar1: AssetImage('assets/avatars/green_a_80px.png', package: 'linksys_core'),
         defaultAvatar2: AssetImage('assets/avatars/green_b_80px.png', package: 'linksys_core'),
@@ -39,8 +42,30 @@ class AppImagesData extends Equatable {
         defaultAvatar11: AssetImage('assets/avatars/yellow_b_80px.png', package: 'linksys_core'),
         defaultAvatar12: AssetImage('assets/avatars/yellow_c_80px.png', package: 'linksys_core'),
         tempIllustration: AssetImage('assets/images/temp_illustration.png', package: 'linksys_core'),
+        dashboardBg1: AssetImage('assets/images/bg_dashboard_dark_01.png', package: 'linksys_core'),
+        dashboardBg2: AssetImage('assets/images/bg_dashboard_dark_02.png', package: 'linksys_core'),
+        dashboardBg3: AssetImage('assets/images/bg_dashboard_dark_03.png', package: 'linksys_core'),
       );
 
+  factory AppImagesData.light() =>
+      const AppImagesData(
+        defaultAvatar1: AssetImage('assets/avatars/green_a_80px.png', package: 'linksys_core'),
+        defaultAvatar2: AssetImage('assets/avatars/green_b_80px.png', package: 'linksys_core'),
+        defaultAvatar3: AssetImage('assets/avatars/green_c_80px.png', package: 'linksys_core'),
+        defaultAvatar4: AssetImage('assets/avatars/violet_a_80px.png', package: 'linksys_core'),
+        defaultAvatar5: AssetImage('assets/avatars/violet_b_80px.png', package: 'linksys_core'),
+        defaultAvatar6: AssetImage('assets/avatars/violet_c_80px.png', package: 'linksys_core'),
+        defaultAvatar7: AssetImage('assets/avatars/blue_a_80px.png', package: 'linksys_core'),
+        defaultAvatar8: AssetImage('assets/avatars/blue_b_80px.png', package: 'linksys_core'),
+        defaultAvatar9: AssetImage('assets/avatars/blue_c_80px.png', package: 'linksys_core'),
+        defaultAvatar10: AssetImage('assets/avatars/yellow_a_80px.png', package: 'linksys_core'),
+        defaultAvatar11: AssetImage('assets/avatars/yellow_b_80px.png', package: 'linksys_core'),
+        defaultAvatar12: AssetImage('assets/avatars/yellow_c_80px.png', package: 'linksys_core'),
+        tempIllustration: AssetImage('assets/images/temp_illustration.png', package: 'linksys_core'),
+        dashboardBg1: AssetImage('assets/images/bg_dashboard_light_01.png', package: 'linksys_core'),
+        dashboardBg2: AssetImage('assets/images/bg_dashboard_light_02.png', package: 'linksys_core'),
+        dashboardBg3: AssetImage('assets/images/bg_dashboard_light_03.png', package: 'linksys_core'),
+      );
 
   final ImageProvider defaultAvatar1;
   final ImageProvider defaultAvatar2;
@@ -55,6 +80,9 @@ class AppImagesData extends Equatable {
   final ImageProvider defaultAvatar11;
   final ImageProvider defaultAvatar12;
   final ImageProvider tempIllustration;
+  final ImageProvider dashboardBg1;
+  final ImageProvider dashboardBg2;
+  final ImageProvider dashboardBg3;
 
   @override
   List<Named<dynamic>> get props =>
@@ -72,6 +100,9 @@ class AppImagesData extends Equatable {
         defaultAvatar11.named('defaultAvatar11'),
         defaultAvatar12.named('defaultAvatar12'),
         tempIllustration.named('tempIllustration'),
+        dashboardBg1.named('dashboardBg1'),
+        dashboardBg2.named('dashboardBg2'),
+        dashboardBg3.named('dashboardBg3'),
       ];
 
 }

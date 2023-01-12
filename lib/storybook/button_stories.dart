@@ -86,6 +86,9 @@ Iterable<Story> buttonStories() {
         name: 'Buttons/Bottom Sheet Buttons',
         description: 'A custom buttons used in app',
         builder: (context) => Scaffold(
+          body: Container(
+            decoration: BoxDecoration(image: DecorationImage(image: AppTheme.of(context).images.dashboardBg2, fit: BoxFit.cover)),
+          ),
               bottomNavigationBar: BottomNavigationBar(
                   elevation: 0,
                   unselectedItemColor: ConstantColors.tertiaryTextGray,

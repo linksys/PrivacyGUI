@@ -34,7 +34,7 @@ class AppThemeData extends Equatable {
         spacing: AppSpacingData.regular(),
         // shadow: AppShadowsData.regular(),
         durations: AppDurationsData.regular(),
-        images: AppImagesData.regular(),
+        images: AppImagesData.light(),
         avatar: AppAvatarSizesData.regular(),
       );
 
@@ -85,20 +85,19 @@ class AppThemeData extends Equatable {
     );
   }
 
-// AppThemeData withImages(AppImagesData images) {
-//   return AppThemeData(
-//     platform: platform,
-//     formFactor: formFactor,
-//     colors: colors,
-//     durations: durations,
-//     icons: icons,
-//     images: images,
-//     radius: radius,
-//     shadow: shadow,
-//     spacing: spacing,
-//     typography: typography,
-//   );
-// }
+  AppThemeData withImages(AppImagesData images) {
+    return AppThemeData(
+      platform: platform,
+      colors: colors,
+      durations: durations,
+      icons: icons,
+      images: images,
+      radius: radius,
+      spacing: spacing,
+      typography: typography,
+      avatar: avatar,
+    );
+  }
 
 // AppThemeData withFormFactor(AppFormFactor formFactor) {
 //   return AppThemeData(

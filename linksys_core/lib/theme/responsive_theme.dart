@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 import 'package:linksys_core/theme/_theme.dart';
 
+import 'data/images.dart';
+
 enum AppThemeColorMode {
   light,
   dark,
@@ -59,7 +61,7 @@ class AppResponsiveTheme extends StatelessWidget {
     final colorMode = this.colorMode ?? colorModeOf(context);
     switch (colorMode) {
       case AppThemeColorMode.dark:
-        theme = theme.withColors(AppColorsData.dark());
+        theme = theme.withColors(AppColorsData.dark()).withImages(AppImagesData.dark());
 
         // final darkAppLogo = this.darkAppLogo;
         // if (darkAppLogo != null) {
