@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:equatable/equatable.dart';
 import 'package:linksys_core/theme/_theme.dart';
+import 'package:tap_builder/tap_builder.dart';
 
 enum AppWidgetState {
   inactive,
@@ -45,6 +46,19 @@ class AppWidgetStateColorSet extends Equatable {
         return disabled;
       case AppWidgetState.focus:
         return focus;
+    }
+  }
+
+  Color? resolveByTapState(TapState state) {
+    switch (state) {
+      case TapState.inactive:
+        return inactive;
+      case TapState.hover:
+        return hovered;
+      case TapState.pressed:
+        return pressed;
+      case TapState.disabled:
+        return disabled;
     }
   }
 

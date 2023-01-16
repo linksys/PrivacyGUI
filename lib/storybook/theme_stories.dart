@@ -27,7 +27,7 @@ Iterable<Story> themeStories() {
                         ConstantColors.primaryLinksysBlue,
                   ),
                 ),
-                box12(),
+                const AppGap.regular(),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -72,7 +72,7 @@ Iterable<Story> themeStories() {
                         ConstantColors.primaryLinksysBlue,
                   ),
                 ),
-                box12(),
+                const AppGap.regular(),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

@@ -1,12 +1,9 @@
 import 'dart:typed_data';
-
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:linksys_core/utils/named.dart';
-import 'package:linksys_core/utils/svg.dart';
 
 class AppImagesData extends Equatable {
-
 
   const AppImagesData({
     required this.defaultAvatar1,
@@ -25,6 +22,7 @@ class AppImagesData extends Equatable {
     required this.dashboardBg1,
     required this.dashboardBg2,
     required this.dashboardBg3,
+    required this.brandTinder,
   });
 
   factory AppImagesData.dark() =>
@@ -45,6 +43,7 @@ class AppImagesData extends Equatable {
         dashboardBg1: AssetImage('assets/images/bg_dashboard_dark_01.png', package: 'linksys_core'),
         dashboardBg2: AssetImage('assets/images/bg_dashboard_dark_02.png', package: 'linksys_core'),
         dashboardBg3: AssetImage('assets/images/bg_dashboard_dark_03.png', package: 'linksys_core'),
+        brandTinder: AssetImage('assets/images/brand_tinder.png', package: 'linksys_core'),
       );
 
   factory AppImagesData.light() =>
@@ -65,6 +64,7 @@ class AppImagesData extends Equatable {
         dashboardBg1: AssetImage('assets/images/bg_dashboard_light_01.png', package: 'linksys_core'),
         dashboardBg2: AssetImage('assets/images/bg_dashboard_light_02.png', package: 'linksys_core'),
         dashboardBg3: AssetImage('assets/images/bg_dashboard_light_03.png', package: 'linksys_core'),
+        brandTinder: AssetImage('assets/images/brand_tinder.png', package: 'linksys_core'),
       );
 
   final ImageProvider defaultAvatar1;
@@ -83,6 +83,7 @@ class AppImagesData extends Equatable {
   final ImageProvider dashboardBg1;
   final ImageProvider dashboardBg2;
   final ImageProvider dashboardBg3;
+  final ImageProvider brandTinder;
 
   @override
   List<Named<dynamic>> get props =>
@@ -103,6 +104,7 @@ class AppImagesData extends Equatable {
         dashboardBg1.named('dashboardBg1'),
         dashboardBg2.named('dashboardBg2'),
         dashboardBg3.named('dashboardBg3'),
+        brandTinder.named('brandTinder'),
       ];
 
 }
