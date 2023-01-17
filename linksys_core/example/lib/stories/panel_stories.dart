@@ -8,41 +8,6 @@ Iterable<Story> panelStories() {
       description: 'A general panel with title-value widely used in app',
       builder: (context) => Column(
         children: [
-          //TODO: Remove this template
-          AppPanel(
-            head: AppText.descriptionSub(
-              'Label Title',
-              color: AppTheme.of(context).colors.ctaPrimary,
-            ),
-            iconOne: Container(
-              color: Colors.red,
-              child: SizedBox(
-                height: 24,
-                width: 24,
-              ),
-            ),
-            iconTwo: Container(
-              color: Colors.green,
-              child: SizedBox(
-                height: 24,
-                width: 24,
-              ),
-            ),
-            description: 'This is a long long long long long long sentence',
-            backgroundColorSet: const AppWidgetStateColorSet(
-              inactive: Colors.blue,
-              hovered: Colors.greenAccent,
-              pressed: Colors.brown,
-              disabled: Colors.purple,
-            ),
-            borderColorSet: const AppWidgetStateColorSet(
-              inactive: Colors.green,
-              hovered: Colors.yellow,
-              pressed: Colors.pinkAccent,
-              disabled: Colors.white,
-            ),
-            onTap: () {},
-          ),
           const AppPanelWithSimpleTitle(
             title: 'NETWORK',
             titleColorSet: AppWidgetStateColorSet(
@@ -197,6 +162,63 @@ Iterable<Story> panelStories() {
             time: '11:20 pm',
             profileName: 'Timmy',
           ),
+        ],
+      ),
+    ),
+    Story(
+      name: 'AppPanel/AppDevicePanel.normal',
+      description: 'A general panel with title-value widely used in app',
+      builder: (context) => Column(
+        children: [
+          AppDevicePanel.normal(
+            title: 'Google Pixel',
+            place: 'Living Room node',
+            frequency: '2.4 GHz',
+            deviceImage: AppTheme.of(context).images.deviceSmartPhone,
+            signalImage: AppTheme.of(context).images.signalExcellent,
+          )
+        ],
+      ),
+    ),
+    Story(
+      name: 'AppPanel/AppDevicePanel.speed',
+      description: 'A general panel with title-value widely used in app',
+      builder: (context) => Column(
+        children: [
+          AppDevicePanel.speed(
+            title: 'Macbook',
+            place: 'Living Room node',
+            frequency: '5 GHz',
+            deviceImage: AppTheme.of(context).images.deviceLaptop,
+            signalImage: AppTheme.of(context).images.signalGood,
+            upload: 12,
+            download: 0.4,
+          )
+        ],
+      ),
+    ),
+    Story(
+      name: 'AppPanel/AppDevicePanel.bandwidth',
+      description: 'A general panel with title-value widely used in app',
+      builder: (context) => Column(
+        children: [
+          AppDevicePanel.bandwidth(
+            title: 'Google Pixel',
+            deviceImage: AppTheme.of(context).images.deviceSmartPhone,
+            bandwidth: 345,
+          )
+        ],
+      ),
+    ),
+    Story(
+      name: 'AppPanel/AppDevicePanel.offline',
+      description: 'A general panel with title-value widely used in app',
+      builder: (context) => Column(
+        children: [
+          AppDevicePanel.offline(
+            title: 'Google Pixel',
+            deviceImage: AppTheme.of(context).images.deviceSmartPhone,
+          )
         ],
       ),
     ),
