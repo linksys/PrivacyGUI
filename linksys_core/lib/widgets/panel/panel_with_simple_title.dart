@@ -16,17 +16,19 @@ class AppPanelWithSimpleTitle extends StatelessWidget {
     this.forcedHidingAccessory = false,
   }) : super(key: key);
 
-  Widget getTitleWidgetByState(TapState state) {
+  Widget _getTitleWidgetByState(TapState state) {
     final titleColor = titleColorSet?.resolveByTapState(state);
     return (description != null)
-        ? AppText.descriptionSub(
-            title,
-            color: titleColor,
-          )
-        : AppText.descriptionMain(
-            title,
-            color: titleColor,
-          );
+        ? AppText.descriptionSub(title, color: titleColor)
+        : AppText.descriptionMain(title, color: titleColor);
+  }
+
+  Widget? _getDescriptionWidget(BuildContext context) {
+    final description = this.description;
+    return description != null
+        ? AppText.descriptionMain(description,
+            color: AppTheme.of(context).colors.ctaPrimaryDisable)
+        : null;
   }
 
   @override
@@ -40,8 +42,8 @@ class AppPanelWithSimpleTitle extends StatelessWidget {
               enabled: true,
               selected: true,
               child: AppPanelLayout.inactive(
-                head: getTitleWidgetByState(state),
-                description: description,
+                head: _getTitleWidgetByState(state),
+                description: _getDescriptionWidget(context),
                 isHidingAccessory: (forcedHidingAccessory || onTap == null),
               ),
             );
@@ -50,8 +52,8 @@ class AppPanelWithSimpleTitle extends StatelessWidget {
               enabled: true,
               selected: true,
               child: AppPanelLayout.hovered(
-                head: getTitleWidgetByState(state),
-                description: description,
+                head: _getTitleWidgetByState(state),
+                description: _getDescriptionWidget(context),
                 isHidingAccessory: (forcedHidingAccessory || onTap == null),
               ),
             );
@@ -60,8 +62,8 @@ class AppPanelWithSimpleTitle extends StatelessWidget {
               enabled: true,
               selected: true,
               child: AppPanelLayout.pressed(
-                head: getTitleWidgetByState(state),
-                description: description,
+                head: _getTitleWidgetByState(state),
+                description: _getDescriptionWidget(context),
                 isHidingAccessory: (forcedHidingAccessory || onTap == null),
               ),
             );
@@ -70,8 +72,8 @@ class AppPanelWithSimpleTitle extends StatelessWidget {
               enabled: true,
               selected: true,
               child: AppPanelLayout.disabled(
-                head: getTitleWidgetByState(state),
-                description: description,
+                head: _getTitleWidgetByState(state),
+                description: _getDescriptionWidget(context),
                 isHidingAccessory: (forcedHidingAccessory || onTap == null),
               ),
             );

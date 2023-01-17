@@ -18,16 +18,20 @@ class AppPanelWithInfo extends StatelessWidget {
     this.forcedHidingAccessory = false,
   }) : super(key: key);
 
-  Widget get titleWidget => description != null ? AppText.descriptionSub(
-    title,
-  ) : AppText.descriptionMain(
-    title,
-  );
+  Widget get _titleWidget => description != null
+      ? AppText.descriptionSub(title)
+      : AppText.descriptionMain(title);
 
-  Widget get infoWidget => AppText.descriptionMain(
-    infoText,
-    color: infoTextColor,
-  );
+  Widget? _getDescriptionWidget(BuildContext context) {
+    final description = this.description;
+    return description != null
+        ? AppText.descriptionMain(description,
+            color: AppTheme.of(context).colors.ctaPrimaryDisable)
+        : null;
+  }
+
+  Widget get _infoWidget =>
+      AppText.descriptionMain(infoText, color: infoTextColor);
 
   @override
   Widget build(BuildContext context) {
@@ -40,9 +44,9 @@ class AppPanelWithInfo extends StatelessWidget {
               enabled: true,
               selected: true,
               child: AppPanelLayout.inactive(
-                head: titleWidget,
-                tail: infoWidget,
-                description: description,
+                head: _titleWidget,
+                tail: _infoWidget,
+                description: _getDescriptionWidget(context),
                 isHidingAccessory: (forcedHidingAccessory || onTap == null),
               ),
             );
@@ -51,9 +55,9 @@ class AppPanelWithInfo extends StatelessWidget {
               enabled: true,
               selected: true,
               child: AppPanelLayout.hovered(
-                head: titleWidget,
-                tail: infoWidget,
-                description: description,
+                head: _titleWidget,
+                tail: _infoWidget,
+                description: _getDescriptionWidget(context),
                 isHidingAccessory: (forcedHidingAccessory || onTap == null),
               ),
             );
@@ -62,9 +66,9 @@ class AppPanelWithInfo extends StatelessWidget {
               enabled: true,
               selected: true,
               child: AppPanelLayout.pressed(
-                head: titleWidget,
-                tail: infoWidget,
-                description: description,
+                head: _titleWidget,
+                tail: _infoWidget,
+                description: _getDescriptionWidget(context),
                 isHidingAccessory: (forcedHidingAccessory || onTap == null),
               ),
             );
@@ -73,9 +77,9 @@ class AppPanelWithInfo extends StatelessWidget {
               enabled: true,
               selected: true,
               child: AppPanelLayout.disabled(
-                head: titleWidget,
-                tail: infoWidget,
-                description: description,
+                head: _titleWidget,
+                tail: _infoWidget,
+                description: _getDescriptionWidget(context),
                 isHidingAccessory: (forcedHidingAccessory || onTap == null),
               ),
             );

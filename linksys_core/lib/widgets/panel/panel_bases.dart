@@ -11,10 +11,11 @@ part 'panel_with_switch.dart';
 part 'panel_with_timeline.dart';
 part 'device_panel.dart';
 
+/*
 class AppPanel extends StatelessWidget {
   final Widget head;
   final Widget? tail;
-  final String? description;
+  final Widget? description;
   final AppWidgetStateColorSet? backgroundColorSet;
   final AppWidgetStateColorSet? borderColorSet;
   final Widget? iconOne;
@@ -118,12 +119,13 @@ class AppPanel extends StatelessWidget {
     );
   }
 }
+ */
 
 class AppPanelLayout extends StatelessWidget {
   final AppWidgetState _state;
   final Widget head;
   final Widget? tail;
-  final String? description;
+  final Widget? description;
   final AppWidgetStateColorSet? backgroundColorSet;
   final AppWidgetStateColorSet? borderColorSet;
   final Widget? iconOne;
@@ -234,11 +236,7 @@ class AppPanelLayout extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   head,
-                  if (description != null)
-                    AppText.descriptionMain(
-                      description,
-                      color: theme.colors.ctaPrimaryDisable,
-                    ),
+                  if (description != null) description
                 ],
               ),
             ),
