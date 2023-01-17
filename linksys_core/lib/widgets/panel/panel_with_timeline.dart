@@ -20,6 +20,14 @@ class AppPanelWithTimeline extends StatelessWidget {
 
   Widget get _titleWidget => AppText.descriptionMain(title);
 
+  Widget? _getDescriptionWidget(BuildContext context) {
+    final description = this.description;
+    return description != null
+        ? AppText.descriptionMain(description,
+        color: AppTheme.of(context).colors.ctaPrimaryDisable)
+        : null;
+  }
+
   Widget _getTimelineWidget(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -77,7 +85,7 @@ class AppPanelWithTimeline extends StatelessWidget {
               child: AppPanelLayout.inactive(
                 head: _titleWidget,
                 tail: _getTimelineWidget(context),
-                description: description,
+                description: _getDescriptionWidget(context),
                 iconOne: _getBrandImage(context),
                 isHidingAccessory: true,
               ),
@@ -89,7 +97,7 @@ class AppPanelWithTimeline extends StatelessWidget {
               child: AppPanelLayout.hovered(
                 head: _titleWidget,
                 tail: _getTimelineWidget(context),
-                description: description,
+                description: _getDescriptionWidget(context),
                 iconOne: _getBrandImage(context),
                 isHidingAccessory: true,
               ),
@@ -101,7 +109,7 @@ class AppPanelWithTimeline extends StatelessWidget {
               child: AppPanelLayout.pressed(
                 head: _titleWidget,
                 tail: _getTimelineWidget(context),
-                description: description,
+                description: _getDescriptionWidget(context),
                 iconOne: _getBrandImage(context),
                 isHidingAccessory: true,
               ),
@@ -113,7 +121,7 @@ class AppPanelWithTimeline extends StatelessWidget {
               child: AppPanelLayout.disabled(
                 head: _titleWidget,
                 tail: _getTimelineWidget(context),
-                description: description,
+                description: _getDescriptionWidget(context),
                 iconOne: _getBrandImage(context),
                 isHidingAccessory: true,
               ),

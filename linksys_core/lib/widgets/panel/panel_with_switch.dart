@@ -26,6 +26,14 @@ class _AppPanelWithSwitchState extends State<AppPanelWithSwitch> {
   bool _value = false;
   Widget get _titleWidget => AppText.descriptionMain(widget.title);
 
+  Widget? _getDescriptionWidget(BuildContext context) {
+    final description = widget.description;
+    return description != null
+        ? AppText.descriptionMain(description,
+        color: AppTheme.of(context).colors.ctaPrimaryDisable)
+        : null;
+  }
+
   Widget _getSwitchWidget(BuildContext context) {
     final onChangedEvent = widget.onChangedEvent;
     final onInfoEvent = widget.onInfoEvent;
@@ -82,7 +90,7 @@ class _AppPanelWithSwitchState extends State<AppPanelWithSwitch> {
               child: AppPanelLayout.inactive(
                 head: _titleWidget,
                 tail: _getSwitchWidget(context),
-                description: widget.description,
+                description: _getDescriptionWidget(context),
                 iconOne: _getImage(context),
                 isHidingAccessory: true,
               ),
@@ -94,7 +102,7 @@ class _AppPanelWithSwitchState extends State<AppPanelWithSwitch> {
               child: AppPanelLayout.hovered(
                 head: _titleWidget,
                 tail: _getSwitchWidget(context),
-                description: widget.description,
+                description: _getDescriptionWidget(context),
                 iconOne: _getImage(context),
                 isHidingAccessory: true,
               ),
@@ -106,7 +114,7 @@ class _AppPanelWithSwitchState extends State<AppPanelWithSwitch> {
               child: AppPanelLayout.pressed(
                 head: _titleWidget,
                 tail: _getSwitchWidget(context),
-                description: widget.description,
+                description: _getDescriptionWidget(context),
                 iconOne: _getImage(context),
                 isHidingAccessory: true,
               ),
@@ -118,7 +126,7 @@ class _AppPanelWithSwitchState extends State<AppPanelWithSwitch> {
               child: AppPanelLayout.disabled(
                 head: _titleWidget,
                 tail: _getSwitchWidget(context),
-                description: widget.description,
+                description: _getDescriptionWidget(context),
                 iconOne: _getImage(context),
                 isHidingAccessory: true,
               ),

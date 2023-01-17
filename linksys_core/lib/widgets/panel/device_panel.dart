@@ -10,7 +10,8 @@ enum AppDevicePanelStyle {
 class AppDevicePanel extends StatelessWidget {
   final AppDevicePanelStyle style;
   final String title;
-  final String? description;
+  final String? place;
+  final String? frequency;
   final ImageProvider? deviceImage;
   final ImageProvider? signalImage;
   final double? upload;
@@ -21,7 +22,8 @@ class AppDevicePanel extends StatelessWidget {
     Key? key,
     required this.style,
     required this.title,
-    this.description,
+    this.place,
+    this.frequency,
     this.deviceImage,
     this.signalImage,
     this.upload,
@@ -31,14 +33,16 @@ class AppDevicePanel extends StatelessWidget {
 
   factory AppDevicePanel.normal({
     required String title,
-    required String description,
+    required String place,
+    required String frequency,
     required ImageProvider deviceImage,
     required ImageProvider signalImage,
   }) {
     return AppDevicePanel(
       style: AppDevicePanelStyle.normal,
       title: title,
-      description: description,
+      place: place,
+      frequency: frequency,
       deviceImage: deviceImage,
       signalImage: signalImage,
     );
@@ -46,7 +50,8 @@ class AppDevicePanel extends StatelessWidget {
 
   factory AppDevicePanel.speed({
     required String title,
-    required String description,
+    required String place,
+    required String frequency,
     required ImageProvider deviceImage,
     required ImageProvider signalImage,
     required double upload,
@@ -55,7 +60,8 @@ class AppDevicePanel extends StatelessWidget {
     return AppDevicePanel(
       style: AppDevicePanelStyle.speed,
       title: title,
-      description: description,
+      place: place,
+      frequency: frequency,
       deviceImage: deviceImage,
       signalImage: signalImage,
       upload: upload,
@@ -90,20 +96,41 @@ class AppDevicePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget titleWidget;
-    Widget descriptionWidget;
+    Widget? descriptionWidget;
     Widget? deviceImageWidget;
     Widget? signalImageWidget;
     Widget? tailWidget;
+
+    Widget? getDescriptionWidget() {
+      final place = this.place;
+      final frequency = this.frequency;
+
+      List<Widget> children = [];
+      if (place != null) {
+        children.add(AppText.descriptionSub(
+          place,
+          color: AppTheme.of(context).colors.ctaPrimaryDisable,
+        ));
+      }
+      if (frequency != null) {
+        children.add(AppText.descriptionSub(
+          frequency,
+          color: AppTheme.of(context).colors.ctaPrimaryDisable,
+        ));
+      }
+
+      return children.isNotEmpty ? Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ) : null;
+    }
 
     switch (style) {
       case AppDevicePanelStyle.normal:
         titleWidget = AppText.descriptionMain(
           title,
         );
-        descriptionWidget = AppText.descriptionSub(
-          description!,
-          color: AppTheme.of(context).colors.ctaPrimaryDisable,
-        );
+        descriptionWidget = getDescriptionWidget();
         deviceImageWidget = Image(
           image: deviceImage!,
           width: 50,
@@ -119,10 +146,7 @@ class AppDevicePanel extends StatelessWidget {
         titleWidget = AppText.descriptionMain(
           title,
         );
-        descriptionWidget = AppText.descriptionSub(
-          description!,
-          color: AppTheme.of(context).colors.ctaPrimaryDisable,
-        );
+        descriptionWidget = getDescriptionWidget();
         deviceImageWidget = Image(
           image: deviceImage!,
           width: 50,
@@ -201,7 +225,7 @@ class AppDevicePanel extends StatelessWidget {
               child: AppPanelLayout.inactive(
                 head: titleWidget,
                 tail: tailWidget,
-                description: description,
+                description: descriptionWidget,
                 iconOne: deviceImageWidget,
                 iconTwo: signalImageWidget,
                 isHidingAccessory: true,
@@ -214,7 +238,7 @@ class AppDevicePanel extends StatelessWidget {
               child: AppPanelLayout.hovered(
                 head: titleWidget,
                 tail: tailWidget,
-                description: description,
+                description: descriptionWidget,
                 iconOne: deviceImageWidget,
                 iconTwo: signalImageWidget,
                 isHidingAccessory: true,
@@ -227,7 +251,7 @@ class AppDevicePanel extends StatelessWidget {
               child: AppPanelLayout.pressed(
                 head: titleWidget,
                 tail: tailWidget,
-                description: description,
+                description: descriptionWidget,
                 iconOne: deviceImageWidget,
                 iconTwo: signalImageWidget,
                 isHidingAccessory: true,
@@ -240,7 +264,7 @@ class AppDevicePanel extends StatelessWidget {
               child: AppPanelLayout.disabled(
                 head: titleWidget,
                 tail: tailWidget,
-                description: description,
+                description: descriptionWidget,
                 iconOne: deviceImageWidget,
                 iconTwo: signalImageWidget,
                 isHidingAccessory: true,
