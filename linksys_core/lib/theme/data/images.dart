@@ -23,6 +23,10 @@ class AppImagesData extends Equatable {
     required this.dashboardBg2,
     required this.dashboardBg3,
     required this.brandTinder,
+    required this.deviceSmartPhone,
+    required this.deviceLaptop,
+    required this.signalExcellent,
+    required this.signalGood,
   });
 
   factory AppImagesData.dark() =>
@@ -44,6 +48,10 @@ class AppImagesData extends Equatable {
         dashboardBg2: AssetImage('assets/images/bg_dashboard_dark_02.png', package: 'linksys_core'),
         dashboardBg3: AssetImage('assets/images/bg_dashboard_dark_03.png', package: 'linksys_core'),
         brandTinder: AssetImage('assets/images/brand_tinder.png', package: 'linksys_core'),
+        deviceSmartPhone: AssetImage('assets/images/device_smart_phone.png', package: 'linksys_core'),
+        deviceLaptop: AssetImage('assets/images/device_laptop.png', package: 'linksys_core'),
+        signalExcellent: AssetImage('assets/images/signal_excellent.png', package: 'linksys_core'),
+        signalGood: AssetImage('assets/images/signal_good.png', package: 'linksys_core'),
       );
 
   factory AppImagesData.light() =>
@@ -65,6 +73,10 @@ class AppImagesData extends Equatable {
         dashboardBg2: AssetImage('assets/images/bg_dashboard_light_02.png', package: 'linksys_core'),
         dashboardBg3: AssetImage('assets/images/bg_dashboard_light_03.png', package: 'linksys_core'),
         brandTinder: AssetImage('assets/images/brand_tinder.png', package: 'linksys_core'),
+        deviceSmartPhone: AssetImage('assets/images/device_smart_phone.png', package: 'linksys_core'),
+        deviceLaptop: AssetImage('assets/images/device_laptop.png', package: 'linksys_core'),
+        signalExcellent: AssetImage('assets/images/signal_excellent.png', package: 'linksys_core'),
+        signalGood: AssetImage('assets/images/signal_good.png', package: 'linksys_core'),
       );
 
   final ImageProvider defaultAvatar1;
@@ -84,6 +96,10 @@ class AppImagesData extends Equatable {
   final ImageProvider dashboardBg2;
   final ImageProvider dashboardBg3;
   final ImageProvider brandTinder;
+  final ImageProvider deviceSmartPhone;
+  final ImageProvider deviceLaptop;
+  final ImageProvider signalExcellent;
+  final ImageProvider signalGood;
 
   @override
   List<Named<dynamic>> get props =>
@@ -105,6 +121,10 @@ class AppImagesData extends Equatable {
         dashboardBg2.named('dashboardBg2'),
         dashboardBg3.named('dashboardBg3'),
         brandTinder.named('brandTinder'),
+        deviceSmartPhone.named('deviceSmartPhone'),
+        deviceLaptop.named('deviceLaptop'),
+        signalExcellent.named('signalExcellent'),
+        signalGood.named('signalGood'),
       ];
 
 }

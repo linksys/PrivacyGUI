@@ -200,5 +200,60 @@ Iterable<Story> panelStories() {
         ],
       ),
     ),
+    Story(
+      name: 'AppPanel/AppDevicePanel.normal',
+      description: 'A general panel with title-value widely used in app',
+      builder: (context) => Column(
+        children: [
+          AppDevicePanel.normal(
+            title: 'Google Pixel',
+            description: 'Living Room node',
+            deviceImage: AppTheme.of(context).images.deviceSmartPhone,
+            signalImage: AppTheme.of(context).images.signalExcellent,
+          )
+        ],
+      ),
+    ),
+    Story(
+      name: 'AppPanel/AppDevicePanel.speed',
+      description: 'A general panel with title-value widely used in app',
+      builder: (context) => Column(
+        children: [
+          AppDevicePanel.speed(
+            title: 'Macbook',
+            description: 'Living Room node',
+            deviceImage: AppTheme.of(context).images.deviceLaptop,
+            signalImage: AppTheme.of(context).images.signalGood,
+            upload: 12,
+            download: 0.4,
+          )
+        ],
+      ),
+    ),
+    Story(
+      name: 'AppPanel/AppDevicePanel.bandwidth',
+      description: 'A general panel with title-value widely used in app',
+      builder: (context) => Column(
+        children: [
+          AppDevicePanel.bandwidth(
+            title: 'Google Pixel',
+            deviceImage: AppTheme.of(context).images.deviceSmartPhone,
+            bandwidth: 345,
+          )
+        ],
+      ),
+    ),
+    Story(
+      name: 'AppPanel/AppDevicePanel.offline',
+      description: 'A general panel with title-value widely used in app',
+      builder: (context) => Column(
+        children: [
+          AppDevicePanel.offline(
+            title: 'Google Pixel',
+            deviceImage: AppTheme.of(context).images.deviceSmartPhone,
+          )
+        ],
+      ),
+    ),
   ];
 }
