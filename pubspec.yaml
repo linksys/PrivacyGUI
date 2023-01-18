@@ -85,8 +85,8 @@ dependencies:
     path: plugins/sms_receiver_plugin
   ios_push_notification_plugin:
     path: plugins/ios_push_notification_plugin
-  linksys_core:
-    path: linksys_core
+  linksys_widgets:
+    path: packages/linksys_widgets
   flutter_slidable: ^2.0.0
   storybook_flutter: ^0.11.3
 dev_dependencies:
