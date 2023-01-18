@@ -121,12 +121,12 @@ class _IpDetailsContentViewState extends State<IpDetailsContentView> {
           administrationTileDesc(
             title: Text(getAppLocalizations(context).ip_address),
             value: _checkIpIsRenewIng(state),
-            description: Text(state.ipv4WANAddress),
+            description: state.ipv4WANAddress,
           ),
           administrationTileDesc(
             title: Text(getAppLocalizations(context).ipv6_address),
             value: _checkIpv6IsRenewIng(state),
-            description: Text(state.ipv6WANAddress),
+            description: state.ipv6WANAddress,
           ),
           _checkRenewAvailable(),
         ],

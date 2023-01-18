@@ -1,5 +1,4 @@
 import 'dart:core';
-import 'dart:ffi';
 
 import 'package:equatable/equatable.dart';
 

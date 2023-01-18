@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
@@ -15,10 +14,8 @@ import 'package:linksys_moab/page/components/base_components/tile/setting_tile.d
 import 'package:linksys_moab/page/components/shortcuts/dialogs.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/route/model/account_path.dart';
-import 'package:linksys_moab/route/model/dashboard_path.dart';
 import 'package:linksys_moab/route/model/otp_path.dart';
 import 'package:linksys_moab/route/_route.dart';
-
 import 'package:linksys_moab/utils.dart';
 import 'package:styled_text/styled_text.dart';
 
@@ -126,7 +123,7 @@ class _AccountViewState extends State<AccountView> {
         'SUBSCRIPTION',
         style: Theme.of(context).textTheme.headline4,
       ),
-      child: SettingTileWithDescription(
+      child: SettingTile(
           title: Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
@@ -138,7 +135,7 @@ class _AccountViewState extends State<AccountView> {
               )
             ],
           ),
-          description: Text('Next charge is on April, 23, 2024'),
+          description: 'Next charge is on April, 23, 2024',
           value: Switch.adaptive(value: true, onChanged: (value) {})),
     );
   }
@@ -155,12 +152,13 @@ class _AccountViewState extends State<AccountView> {
           box16(),
           _biometricsTile(state),
           box16(),
-          SettingTileWithDescription(
-              title: Text('Receive newsletter'),
-              description: Text(
-                  'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.'),
-              value: Switch.adaptive(
-                  value: state.pref.marketingOptIn, onChanged: (value) {})),
+          SettingTile(
+            title: Text('Receive newsletter'),
+            value: Switch.adaptive(
+                value: state.pref.marketingOptIn, onChanged: (value) {}),
+            description:
+                'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.',
+          ),
         ],
       ),
     );
@@ -213,7 +211,8 @@ class _AccountViewState extends State<AccountView> {
       );
     }
     if (!methods.any((element) => element.method == 'SMS')) {
-      list.add(SettingTileTwoLine(
+      list.add(SettingTile(
+        axis: SettingTileAxis.vertical,
         title: Text('Phone number'),
         value: Text(
           '+Add',
@@ -241,7 +240,8 @@ class _AccountViewState extends State<AccountView> {
     return Row(
       children: [
         Expanded(
-          child: SettingTileTwoLine(
+          child: SettingTile(
+            axis: SettingTileAxis.vertical,
             title: Text(method.method == 'EMAIL' ? 'Email' : 'Phone number'),
             value: Text(
               method.targetValue,
@@ -275,10 +275,9 @@ class _AccountViewState extends State<AccountView> {
   }
 
   Widget _biometricsTile(AccountState state) {
-    return SettingTileWithDescription(
+    return SettingTile(
       title: Text('Biometric login'),
-      description: Text(
-          'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.'),
+      description: 'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.',
       value: Switch.adaptive(
         value: state.isBiometricEnabled,
         onChanged: (value) async {

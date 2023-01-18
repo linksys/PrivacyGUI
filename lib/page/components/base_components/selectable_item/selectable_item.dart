@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 class SelectableItem extends StatelessWidget {
   final String text;
-  final String? description;
   final bool isSelected;
   final double? height;
 
@@ -10,8 +9,7 @@ class SelectableItem extends StatelessWidget {
       {Key? key,
       required this.text,
       this.isSelected = false,
-      this.height,
-      this.description})
+      this.height})
       : super(key: key);
 
   @override
@@ -47,16 +45,6 @@ class SelectableItem extends StatelessWidget {
               ? Theme.of(context).colorScheme.primary
               : Theme.of(context).colorScheme.surface),
     ));
-
-    if (description != null) {
-      children.add(const SizedBox(height: 4,));
-      children.add(Text(
-        description!,
-        // TODO: check text size
-        style: Theme.of(context).textTheme.headline4?.copyWith(
-            color: Theme.of(context).colorScheme.surface),
-      ));
-    }
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,

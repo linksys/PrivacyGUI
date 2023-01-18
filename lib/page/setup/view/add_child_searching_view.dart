@@ -5,7 +5,7 @@ import 'package:linksys_moab/bloc/add_nodes/cubit.dart';
 import 'package:linksys_moab/bloc/add_nodes/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
-import 'package:linksys_moab/page/components/base_components/progress_bars/indeterminate_progressbar.dart';
+import 'package:linksys_moab/page/components/base_components/progress_bars/indeterminate_progress_bar.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';

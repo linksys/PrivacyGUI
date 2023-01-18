@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/design/colors.dart';
+import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 
 class OptionCard extends StatelessWidget {
   const OptionCard({
@@ -18,34 +18,42 @@ class OptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      onTap: onPress,
       child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(context).primaryColor,
+          ),
+        ),
+        constraints: BoxConstraints(
+          minHeight: minHeight,
+        ),
         child: Row(
           children: [
             Expanded(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
                     style: Theme.of(context).textTheme.headline3?.copyWith(
+                        fontWeight: FontWeight.w700,
                         color: Theme.of(context).primaryColor
                     ),
                   ),
-                  const SizedBox(
-                    height: 16,
-                  ),
+                  box16(),
                   Text(
                     description,
                     style: Theme.of(context).textTheme.headline4?.copyWith(
-                        color: Theme.of(context).colorScheme.tertiary
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).primaryColor,
                     ),
                   ),
                 ],
-                crossAxisAlignment: CrossAxisAlignment.start,
               ),
             ),
-            const SizedBox(
-              width: 20,
-            ),
+            box36(),
             Image.asset(
               'assets/images/arrow_point_to_right.png',
               width: 10,
@@ -54,13 +62,7 @@ class OptionCard extends StatelessWidget {
             ),
           ],
         ),
-        color: MoabColor.cardBackground,
-        padding: const EdgeInsets.all(20),
-        constraints: BoxConstraints(
-          minHeight: minHeight,
-        ),
       ),
-      onTap: onPress,
     );
   }
 }

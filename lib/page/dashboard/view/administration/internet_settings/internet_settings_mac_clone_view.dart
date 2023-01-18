@@ -1,15 +1,11 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/input_fields/mac_form_field.dart';
+import 'package:linksys_moab/page/components/base_components/input_fields/mac_input_field.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/dashboard/view/administration/mac_filtering/mac_filtering_enter_mac_view.dart';
 import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/util/string_mapping.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
 import '../common_widget.dart';
@@ -87,17 +83,14 @@ class _MACCloneViewState extends State<MACCloneView> {
 
   Widget _buildMACInput() {
     if (_isEnabled) {
-      return administrationTwoLineTile(
-        tileHeight: null,
-        title: title(getAppLocalizations(context).enter_mac_address),
-        value: MACFormField(
-          controller: _valueController,
-          onChanged: (value) {
-            setState(() {
-              _isValid = _macValidator.validate(value);
-            });
-          },
-        ),
+      return MACInputField(
+        titleText: getAppLocalizations(context).enter_mac_address,
+        controller: _valueController,
+        onChanged: (value) {
+          setState(() {
+            _isValid = _macValidator.validate(value);
+          });
+        },
       );
     } else {
       return const Center();

@@ -1,36 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/page/components/base_components/input_fields/primary_text_field.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/page/components/base_components/base_components.dart';
 
-class CustomTitleInputField extends StatelessWidget {
-  const CustomTitleInputField({
+class InputFieldWithAction extends StatelessWidget {
+  const InputFieldWithAction({
     Key? key,
-    required this.title,
     required this.controller,
+    required this.titleText,
+    required this.rightTitleText,
+    required this.rightAction,
     this.hintText = '',
     this.inputType = TextInputType.text,
     this.onChanged,
     this.onFocusChanged,
     this.customPrimaryColor,
     this.isError = false,
-    this.errorText = '',
     this.errorColor = Colors.red,
+    this.errorText = '',
     this.secured = false,
     this.prefixIcon,
     this.suffixIcon,
     this.readOnly = false,
   }) : super(key: key);
 
-  final Widget? title;
   final TextEditingController controller;
+  final String titleText;
+  final String rightTitleText;
+  final void Function()? rightAction;
   final String hintText;
   final TextInputType inputType;
   final void Function(String text)? onChanged;
   final void Function(bool hasFocus)? onFocusChanged;
   final Color? customPrimaryColor;
   final bool isError;
-  final String errorText;
   final Color errorColor;
+  final String errorText;
   final bool secured;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
@@ -38,12 +41,29 @@ class CustomTitleInputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = customPrimaryColor ?? Theme.of(context).colorScheme.primary;
+    final primaryColor =
+        customPrimaryColor ?? Theme.of(context).colorScheme.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        title ?? const Center(),
-        box8(),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                titleText,
+                style: Theme.of(context)
+                    .textTheme
+                    .headline4
+                    ?.copyWith(color: isError ? errorColor : primaryColor),
+              ),
+            ),
+            SimpleTextButton(
+              text: rightTitleText,
+              onPressed: rightAction,
+              padding: EdgeInsets.zero,
+            )
+          ],
+        ),
         PrimaryTextField(
           controller: controller,
           hintText: hintText,
@@ -52,9 +72,10 @@ class CustomTitleInputField extends StatelessWidget {
           onFocusChanged: onFocusChanged,
           customPrimaryColor: primaryColor,
           isError: isError,
+          errorColor: errorColor,
+          secured: secured,
           prefixIcon: prefixIcon,
           suffixIcon: suffixIcon,
-          secured: secured,
           readOnly: readOnly,
         ),
         Visibility(
