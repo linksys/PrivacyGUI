@@ -1,0 +1,73 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "moab - Android",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "moab - Android (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile",
+            "args": ["--flavor", "Moab"]
+        },
+        {
+            "name": "moab - Android (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release",
+        },
+        {
+            "name": "moab - iOS ",
+            "request": "launch",
+            "type": "dart",
+            "args": ["--flavor", "Moab"]
+        },
+        {
+            "name": "moab - iOS (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile",
+            "args": ["--flavor", "Moab"]
+        },
+        {
+            "name": "moab - iOS (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release",
+            "args": ["--flavor", "Moab"]
+        },
+        {
+            "name": "moab - iOS - Enterprise ",
+            "request": "launch",
+            "type": "dart",
+            "args": ["--flavor", "Enterprise"]
+        },
+        {
+            "name": "moab - iOS - Enterprise (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile",
+            "args": ["--flavor", "Enterprise"]
+        },
+        {
+            "name": "moab - iOS - Enterprise (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release",
+            "args": ["--flavor", "Enterprise"]
+        },
+        {
+            "name": "Linksys widget storybook",
+            "cwd": "packages/linksys_widgets/example",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/storybook.dart"
+        },
+    ]
+}
