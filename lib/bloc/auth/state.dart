@@ -3,6 +3,8 @@ import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_phone.dart';
 
+import '../../repository/model/cloud_session_model.dart';
+
 enum AuthStatus {
   unknownAuth,
   unAuthorized,
@@ -16,6 +18,7 @@ enum AuthStatus {
 
 // TODO #RENAME
 enum LoginFrom { none, local, remote }
+
 // TODO #RENAME
 enum AuthenticationType { none, passwordless, password }
 
@@ -37,7 +40,9 @@ class AccountInfo {
 
   factory AccountInfo.empty() {
     return const AccountInfo(
-        username: '', authenticationType: AuthenticationType.none, communicationMethods: []);
+        username: '',
+        authenticationType: AuthenticationType.none,
+        communicationMethods: []);
   }
 
   AccountInfo copyWith({
@@ -136,8 +141,8 @@ class AuthState extends Equatable {
     return const AuthUnAuthorizedState();
   }
 
-  factory AuthState.cloudAuthorized() {
-    return const AuthCloudLoginState();
+  factory AuthState.cloudAuthorized({required SessionToken sessionToken}) {
+    return AuthCloudLoginState(sessionToken: sessionToken);
   }
 
   factory AuthState.localAuthorized() {
@@ -165,24 +170,21 @@ class AuthState extends Equatable {
 }
 
 class AuthUnknownState extends AuthState {
-  const AuthUnknownState()
-      : super(status: AuthStatus.unknownAuth);
+  const AuthUnknownState() : super(status: AuthStatus.unknownAuth);
 }
 
 class AuthUnAuthorizedState extends AuthState {
-  const AuthUnAuthorizedState()
-      : super(status: AuthStatus.unAuthorized);
+  const AuthUnAuthorizedState() : super(status: AuthStatus.unAuthorized);
 }
 
 class AuthCloudLoginState extends AuthState {
-  const AuthCloudLoginState()
+  const AuthCloudLoginState({required this.sessionToken})
       : super(status: AuthStatus.cloudAuthorized);
+  final SessionToken sessionToken;
 }
 
 class AuthLocalLoginState extends AuthState {
-  const AuthLocalLoginState()
-      : super(status: AuthStatus.localAuthorized);
-
+  const AuthLocalLoginState() : super(status: AuthStatus.localAuthorized);
 }
 
 class AuthOnCloudLoginState extends AuthState {

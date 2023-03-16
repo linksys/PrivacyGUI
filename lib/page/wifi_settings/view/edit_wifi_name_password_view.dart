@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/input_field/password_input_field.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class EditWifiNamePasswordView extends ArgumentsStatefulView {
   const EditWifiNamePasswordView({
@@ -16,7 +20,7 @@ class EditWifiNamePasswordView extends ArgumentsStatefulView {
   }) : super(key: key);
 
   @override
-  _EditWifiNamePasswordViewState createState() =>
+  State<EditWifiNamePasswordView> createState() =>
       _EditWifiNamePasswordViewState();
 }
 
@@ -25,18 +29,35 @@ class _EditWifiNamePasswordViewState extends State<EditWifiNamePasswordView> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool isPasswordInvalid = false;
+  late String _title;
+
+  late bool isChanged = false;
+  late String _oriSSID;
+  late String _oriPassword;
 
   @override
   initState() {
     super.initState();
 
     final wifiItem = context.read<WifiSettingCubit>().state.selectedWifiItem;
+    _title = wifiItem.ssid;
+    _oriSSID = wifiItem.ssid;
+    _oriPassword = wifiItem.password;
     nameController.text = wifiItem.ssid;
     passwordController.text = wifiItem.password;
   }
 
+  void _onSSIDChanged(String text) {
+    setState(() {
+      isChanged = checkChanged();
+    });
+  }
+
   void _onPasswordChanged(String text) {
-    setState(() => isPasswordInvalid = false);
+    setState(() {
+      isPasswordInvalid = false;
+      isChanged = checkChanged();
+    });
   }
 
   void _checkInputData() {
@@ -81,44 +102,49 @@ class _EditWifiNamePasswordViewState extends State<EditWifiNamePasswordView> {
   @override
   Widget build(BuildContext context) {
     return isLoading
-        ? FullScreenSpinner(text: getAppLocalizations(context).processing)
-        : BasePageView(
-            appBar: AppBar(
-              backgroundColor: Colors.transparent,
-              iconTheme:
-                  IconThemeData(color: Theme.of(context).colorScheme.primary),
-              elevation: 0,
-              actions: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 24),
-                  child: SimpleTextButton(
-                    text: getAppLocalizations(context).save,
-                    onPressed: _checkInputData,
-                  ),
+        ? LinksysFullScreenSpinner(
+            text: getAppLocalizations(context).processing)
+        : StyledLinksysPageView(
+            title: _title,
+            actions: [
+              AppPadding(
+                padding:
+                    const LinksysEdgeInsets.only(right: AppGapSize.regular),
+                child: LinksysTertiaryButton.noPadding(
+                  getAppLocalizations(context).save,
+                  onTap: isChanged ? _checkInputData : null,
                 ),
-              ],
-            ),
-            child: BasicLayout(
+              ),
+            ],
+            child: LinksysBasicLayout(
               content: Column(
                 children: [
-                  InputField(
-                    titleText: getAppLocalizations(context).wifi_name,
+                  LinksysInputField(
+                    headerText: getAppLocalizations(context).wifi_name,
                     controller: nameController,
+                    onChanged: _onSSIDChanged,
                   ),
                   const SizedBox(
                     height: 26,
                   ),
-                  PasswordInputField(
-                    titleText: getAppLocalizations(context).wifi_password,
+                  LinksysPasswordInputField(
+                    headerText: getAppLocalizations(context).wifi_password,
                     controller: passwordController,
-                    isError: isPasswordInvalid,
-                    errorText:
-                        'WiFi password must be between 2 - 32 characters, and not contain ?, ", \$, [, \\, ], or +.',
+                    // isError: isPasswordInvalid,
+                    // errorText:
+                    //     'WiFi password must be between 2 - 32 characters, and not contain ?, ", \$, [, \\, ], or +.',
                     onChanged: _onPasswordChanged,
                   ),
                 ],
               ),
             ),
           );
+  }
+
+  bool checkChanged() {
+    logger.d(
+        'XXXXX: chechChanged: ${_oriSSID != nameController.text || _oriPassword != passwordController.text}');
+    return _oriSSID != nameController.text ||
+        _oriPassword != passwordController.text;
   }
 }

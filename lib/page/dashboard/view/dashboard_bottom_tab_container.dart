@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/customs/debug_overlay_view.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
+import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
@@ -12,21 +13,24 @@ import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/util/debug_mixin.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 enum DashboardBottomItemType { home, security, health, settings }
 
 class DashboardBottomTabContainer extends ArgumentsStatefulView {
-  const DashboardBottomTabContainer({Key? key, required this.navigator, required this.cubit})
+  const DashboardBottomTabContainer(
+      {Key? key, required this.navigator, required this.cubit})
       : super(key: key);
 
   final NavigationCubit cubit;
   final Navigator navigator;
 
   @override
-  _DashboardViewState createState() => _DashboardViewState();
+  State<DashboardBottomTabContainer> createState() => _DashboardViewState();
 }
 
-class _DashboardViewState extends State<DashboardBottomTabContainer> with DebugObserver {
+class _DashboardViewState extends State<DashboardBottomTabContainer>
+    with DebugObserver {
   int _selectedIndex = 0;
   final List<DashboardBottomItem> _bottomTabItems = [];
 
@@ -52,21 +56,25 @@ class _DashboardViewState extends State<DashboardBottomTabContainer> with DebugO
                 NavigationCubit.of(context).push(DebugToolsMainPath());
               }
             },
-            child: BasicLayout(
+            child: LinksysBasicLayout(
               crossAxisAlignment: CrossAxisAlignment.start,
               content: widget.navigator,
             ),
           ),
-          kReleaseMode ? Center() : Positioned(
-            left: Utils.getScreenWidth(context) - Utils.getScreenWidth(context) / 2,
-            child: IgnorePointer(
-              ignoring: true,
-              child: Padding(
-                padding: EdgeInsets.only(top: Utils.getTopSafeAreaPadding(context)),
-                child: OverlayInfoView(),
-              ),
-            ),
-          ),
+          kReleaseMode
+              ? const Center()
+              : Positioned(
+                  left: Utils.getScreenWidth(context) -
+                      Utils.getScreenWidth(context) / 2,
+                  child: IgnorePointer(
+                    ignoring: true,
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                          top: Utils.getTopSafeAreaPadding(context)),
+                      child: OverlayInfoView(),
+                    ),
+                  ),
+                ),
         ],
       ),
       bottomNavigationBar: Offstage(
@@ -87,13 +95,17 @@ class _DashboardViewState extends State<DashboardBottomTabContainer> with DebugO
             currentIndex: _selectedIndex,
             //New
             onTap: _onItemTapped,
-            items: List.from(
-                _bottomTabItems.map((e) => _bottomSheetIconView(e)))),
+            items:
+                List.from(_bottomTabItems.map((e) => _bottomSheetIconView(e)))),
       ),
     );
   }
 
   void _onItemTapped(int index) {
+    if (index == 1 || index == 2) {
+      showSimpleSnackBar(context, null, "Not Implemented!");
+      return;
+    }
     widget.cubit.clearAndPush(_bottomTabItems[index].rootPath);
     setState(() {
       _selectedIndex = index;

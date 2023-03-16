@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
+import 'package:linksys_moab/bloc/network/cloud_network_model.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
@@ -22,11 +24,16 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../repository/linksys_cloud_repository.dart';
+import '../../repository/model/cloud_network_model.dart';
+
 class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
-  NetworkCubit(
-      {required CloudNetworksRepository networksRepository,
-      required RouterRepository routerRepository})
-      : _networksRepository = networksRepository,
+  NetworkCubit({
+    required CloudNetworksRepository networksRepository,
+    required LinksysCloudRepository cloudRepository,
+    required RouterRepository routerRepository,
+  })  : _networksRepository = networksRepository,
+        _cloudRepository = cloudRepository,
         _routerRepository = routerRepository,
         super(const NetworkState()) {
     shareStream = stream;
@@ -34,6 +41,7 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   }
 
   final CloudNetworksRepository _networksRepository;
+  final LinksysCloudRepository _cloudRepository;
   final RouterRepository _routerRepository;
 
   @override
@@ -46,13 +54,31 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   /// Cloud API
   ///
 
-  Future<List<CloudNetwork>> getNetworks({required String accountId}) async {
-    final networks =
-        await _networksRepository.getNetworks(accountId: accountId);
+  Future<List<CloudNetworkModel>> getNetworks(
+      {required String accountId}) async {
+    final networks = await Future.wait(
+        (await _cloudRepository.getNetworks()).map((network) async {
+      bool isOnline = await _routerRepository
+          .send(
+            JNAPAction.isAdminPasswordDefault,
+            extraHeaders: {
+              kJNAPNetworkId: network.network.networkId,
+            },
+          )
+          .then((value) => value.result == 'OK')
+          .onError((error, stackTrace) => false);
+      return CloudNetworkModel(network: network.network, isOnline: isOnline);
+    }).toList());
     if (networks.length == 1) {
       // await getDeviceInfo();
     } else {}
-    emit(state.copyWith(networks: networks, selected: state.selected));
+    emit(state.copyWith(
+      networks: [
+        ...networks.where((element) => element.isOnline),
+        ...networks.where((element) => !element.isOnline),
+      ],
+      selected: state.selected,
+    ));
     return networks;
   }
 
@@ -243,11 +269,12 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
     emit(const NetworkState());
   }
 
-  Future selectNetwork(CloudNetwork network) async {
+  Future selectNetwork(CloudNetworkModel network) async {
     final pref = await SharedPreferences.getInstance();
-    await pref.setString(linksysPrefSelectedNetworkId, network.networkId);
-    CloudEnvironmentManager().applyNewConfig(network.region);
-    emit(state.copyWith(selected: MoabNetwork(id: network.networkId)));
+    await pref.setString(
+        linksysPrefSelectedNetworkId, network.network.networkId);
+    // CloudEnvironmentManager().applyNewConfig(network.region);
+    emit(state.copyWith(selected: MoabNetwork(id: network.network.networkId)));
   }
 
   HealthCheckResult getLatestHealthCheckResult(
@@ -268,7 +295,8 @@ extension NetworkCubitExts on NetworkCubit {
     return state.selected?.deviceInfo?.serialNumber ??
         state.networks
             .firstWhereOrNull(
-                (element) => element.networkId == state.selected?.id)
-            ?.serialNumber;
+                (element) => element.network.networkId == state.selected?.id)
+            ?.network
+            .routerSerialNumber;
   }
 }

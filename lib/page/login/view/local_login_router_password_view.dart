@@ -5,18 +5,24 @@ import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/network/http/model/base_response.dart';
+import 'package:linksys_moab/model/router/device_info.dart';
+import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/customs/network_check_view.dart';
-import 'package:linksys_moab/page/components/layouts/basic_header.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/data/colors.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/input_field/password_input_field.dart';
+import 'package:linksys_widgets/widgets/page/base_page_view.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class EnterRouterPasswordView extends StatefulWidget {
   const EnterRouterPasswordView({
@@ -24,7 +30,7 @@ class EnterRouterPasswordView extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _EnterRouterPasswordState createState() => _EnterRouterPasswordState();
+  State<EnterRouterPasswordView> createState() => _EnterRouterPasswordState();
 }
 
 class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
@@ -34,29 +40,31 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
   String _errorReason = '';
 
   String _hint = '';
+  RouterDeviceInfo? _deviceInfo;
 
   final TextEditingController _passwordController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // TODO check is behind router
   }
 
   @override
   Widget build(BuildContext context) {
     return _isLoading
-        ? const FullScreenSpinner()
-        : BasePageView(
+        ? const LinksysFullScreenSpinner()
+        : StyledLinksysPageView(
             scrollable: true,
             child: _isConnectedToRouter
                 ? _enterRouterPasswordView(context)
                 : NetworkCheckView(
                     description: getAppLocalizations(context)
                         .local_login_connect_to_your_router,
-                    button: PrimaryButton(
-                      text: getAppLocalizations(context).text_continue,
-                      onPress: checkWifi,
+                    button: LinksysPrimaryButton(
+                      getAppLocalizations(context).text_continue,
+                      onTap: () {
+                        checkWifi();
+                      },
                     )),
           );
   }
@@ -73,10 +81,13 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
             RouterType.others;
 
     if (isConnected) {
-      await context.read<NetworkCubit>().getDeviceInfo();
+      _deviceInfo = await context.read<NetworkCubit>().getDeviceInfo();
       await bloc
           .getAdminPasswordInfo()
-          .then((value) => _handleAdminPasswordInfo(value));
+          .then((value) => _handleAdminPasswordInfo(value))
+          .onError((error, stackTrace) {
+        logger.d('Get Admin Password Hint Error $error');
+      });
     }
     setState(() {
       _isConnectedToRouter = isConnected;
@@ -85,34 +96,32 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
   }
 
   Widget _enterRouterPasswordView(BuildContext context) {
-    return BasicLayout(
+    return LinksysBasicLayout(
       crossAxisAlignment: CrossAxisAlignment.start,
-      header: BasicHeader(
-        title: getAppLocalizations(context).local_login_title,
+      header: LinksysText.screenName(
+        getAppLocalizations(context).local_login_title,
       ),
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(
-            height: 44,
-          ),
-          PasswordInputField(
-            titleText: getAppLocalizations(context).router_password,
+          const LinksysGap.regular(),
+          LinksysPasswordInputField(
+            headerText: getAppLocalizations(context).router_password,
             controller: _passwordController,
             hintText: getAppLocalizations(context).router_password,
             onChanged: _verifyPassword,
-            isError: _errorReason.isNotEmpty,
+            // isError: _errorReason.isNotEmpty,
             errorText: generalErrorCodeHandler(context, _errorReason),
-          ),
-          const SizedBox(
-            height: 26,
           ),
           if (_hint.isNotEmpty)
             Theme(
               data:
                   Theme.of(context).copyWith(dividerColor: Colors.transparent),
               child: ExpansionTile(
-                title: Text(getAppLocalizations(context).show_hint),
+                title: LinksysText.label(
+                  getAppLocalizations(context).show_hint,
+                  color: ConstantColors.primaryLinksysBlue,
+                ),
                 collapsedTextColor: Theme.of(context).colorScheme.onTertiary,
                 textColor: Theme.of(context).colorScheme.onTertiary,
                 tilePadding: EdgeInsets.zero,
@@ -128,9 +137,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
               onPressed: () {
                 NavigationCubit.of(context).push(AuthLocalRecoveryKeyPath());
               }),
-          const SizedBox(
-            height: 37,
-          ),
+          const Spacer(),
           PrimaryButton(
             text: getAppLocalizations(context).text_continue,
             onPress: _isPasswordValidate ? _localLogin : null,
@@ -152,7 +159,8 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
     });
     await context
         .read<AuthBloc>()
-        .localLogin(_passwordController.text).then<void>((_) {})
+        .localLogin(_passwordController.text)
+        .then<void>((_) {})
         .onError((error, stackTrace) => _handleError(error, stackTrace));
     setState(() {
       _isLoading = false;

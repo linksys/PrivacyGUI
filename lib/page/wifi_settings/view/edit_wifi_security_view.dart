@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class EditWifiSecurityView extends ArgumentsStatefulView {
   const EditWifiSecurityView({
@@ -16,10 +19,10 @@ class EditWifiSecurityView extends ArgumentsStatefulView {
   }) : super(key: key);
 
   @override
-  _EditWifiModeViewState createState() => _EditWifiModeViewState();
+  State<EditWifiSecurityView> createState() => _EditWifiSecurityViewState();
 }
 
-class _EditWifiModeViewState extends State<EditWifiSecurityView> {
+class _EditWifiSecurityViewState extends State<EditWifiSecurityView> {
   bool isLoading = false;
   late WifiSettingOption _wifiSettingOption;
   late List<WifiSecurityType> _typeList;
@@ -57,41 +60,34 @@ class _EditWifiModeViewState extends State<EditWifiSecurityView> {
   @override
   Widget build(BuildContext context) {
     return isLoading
-        ? FullScreenSpinner(text: getAppLocalizations(context).processing)
+        ? LinksysFullScreenSpinner(
+            text: getAppLocalizations(context).processing)
         : BlocBuilder<WifiSettingCubit, WifiSettingState>(
-            builder: (context, state) => BasePageView(
-              child: BasicLayout(
+            builder: (context, state) => StyledLinksysPageView(
+              child: LinksysBasicLayout(
                 content: ListView.builder(
                   itemCount: _typeList.length,
                   itemBuilder: (context, index) {
                     return GestureDetector(
                       onTap: () => _onTypeTapped(index),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 22),
+                      child: AppPadding(
+                        padding: const LinksysEdgeInsets.symmetric(
+                            vertical: AppGapSize.regular),
                         child: Row(
                           children: [
                             Expanded(
-                              child: Text(
+                              child: LinksysText.label(
                                 _typeList[index].displayTitle,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headline3
-                                    ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary),
                               ),
                             ),
-                            const SizedBox(
-                              width: 26,
-                            ),
+                            const LinksysGap.regular(),
                             Visibility(
                               maintainAnimation: true,
                               maintainState: true,
                               maintainSize: true,
                               visible: _typeList[index] == _selectedType,
-                              child: Image.asset(
-                                'assets/images/icon_check_black.png',
+                              child: AppIcon(
+                                icon: getCharactersIcons(context).checkDefault,
                               ),
                             ),
                           ],
@@ -100,9 +96,9 @@ class _EditWifiModeViewState extends State<EditWifiSecurityView> {
                     );
                   },
                 ),
-                footer: PrimaryButton(
-                  text: getAppLocalizations(context).save,
-                  onPress: _selectedType != _currentType ? _save : null,
+                footer: LinksysPrimaryButton(
+                  getAppLocalizations(context).save,
+                  onTap: _selectedType != _currentType ? _save : null,
                 ),
               ),
             ),

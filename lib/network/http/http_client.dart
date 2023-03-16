@@ -96,8 +96,7 @@ class MoabHttpClient extends http.BaseClient with JNAPCommandExecutor<Response> 
 
   String getHost() => CloudEnvironmentManager().currentConfig?.apiBase ?? '';
 
-  Future<String> combineUrl(String endpoint, {Map<String, String>? args}) async {
-    await CloudEnvironmentManager().fetchCloudConfig();
+  String combineUrl(String endpoint, {Map<String, String>? args}) {
     String url = '${getHost()}$endpoint';
     if (args != null) {
       args.forEach((key, value) {
@@ -109,6 +108,14 @@ class MoabHttpClient extends http.BaseClient with JNAPCommandExecutor<Response> 
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
+
+    // @Austin workaround - http plugin will add charset automatically to content-type, to remove it.
+    final contentTypeValue = request.headers[HttpHeaders.contentTypeHeader];
+    if (contentTypeValue != null) {
+      final noCharsetValue = contentTypeValue.split(';')[0];
+      request.headers[HttpHeaders.contentTypeHeader] = noCharsetValue;
+    }
+
     final splitter = StreamSplitter(request.finalize());
 
     var i = 0;
@@ -117,6 +124,7 @@ class MoabHttpClient extends http.BaseClient with JNAPCommandExecutor<Response> 
       try {
         _logRequest(request, retry: i);
         final copied = _copyRequest(request, splitter.split());
+
         response = await _inner
             .send(copied)
             .timeout(Duration(milliseconds: _timeoutMs));

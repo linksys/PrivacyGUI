@@ -11,8 +11,8 @@ import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/customs/enabled_with_opacity_widget.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_moab/page/components/shortcuts/profiles.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/chart/LineChartSample.dart';
@@ -20,6 +20,8 @@ import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 
 class DashboardHomeView extends StatefulWidget {
   const DashboardHomeView({Key? key}) : super(key: key);
@@ -39,7 +41,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<NetworkCubit, NetworkState>(
-        builder: (context, state) => BasePageView.noNavigationBar(
+        builder: (context, state) => LinksysPageView.noNavigationBar(
               scrollable: true,
               child: EnabledOpacityWidget(
                 enabled: state.selected?.deviceInfo != null,
@@ -48,11 +50,11 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _homeTitle(state),
-                    box(32),
+                    const LinksysGap.semiBig(),
                     _basicTiles(state),
-                    box(32),
+                    const LinksysGap.semiBig(),
                     _speedTestTile(state),
-                    box(32),
+                    const LinksysGap.semiBig(),
                     GestureDetector(
                       onTap: () {
                         NavigationCubit.of(context).push(DeviceListPath());
@@ -60,19 +62,12 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                       child: _usageTile(
                           getConnectionDeviceCount(state.selected?.devices)),
                     ),
-                    box(32),
-                    _profileTile(),
-                    box(64),
-                    Text(
+                    const LinksysGap.big(),
+                    const LinksysText.textLinkSmall(
                       "Send feedback",
-                      style: Theme.of(context)
-                          .textTheme
-                          .headline2
-                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
-                    Text(
+                    const LinksysText.descriptionMain(
                       "We love hearing from you",
-                      style: Theme.of(context).textTheme.headline3,
                     ),
                   ],
                 ),
@@ -89,31 +84,24 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Image.asset('assets/images/dashboard_home.png'),
-            box8(),
+            AppIcon(
+              icon: getCharactersIcons(context).homeDefault,
+              size: AppIconSize.big,
+            ),
+            const LinksysGap.semiSmall(),
             Expanded(
-              child: Text(
+              child: LinksysText.screenName(
                 state.selected?.radioInfo?.first.settings.ssid ?? 'Home',
-                style: Theme.of(context)
-                    .textTheme
-                    .headline1
-                    ?.copyWith(fontSize: 32, fontWeight: FontWeight.w700),
-                textAlign: TextAlign.start,
               ),
             ),
-            Image.asset(
-              'assets/images/icon_noti_ring.png',
-              width: 24,
-              height: 24,
-            )
+            AppIcon(
+              icon: getCharactersIcons(context).bellDefault,
+              size: AppIconSize.big,
+            ),
           ],
         ),
-        Text(
+        const LinksysText.descriptionMain(
           'Internet looks good!',
-          style: Theme.of(context)
-              .textTheme
-              .headline2
-              ?.copyWith(fontWeight: FontWeight.w700),
         )
       ],
     );
@@ -137,10 +125,12 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(getWifiCount(state.selected),
-                        style: Theme.of(context).textTheme.headline1?.copyWith(
-                            fontSize: 32, fontWeight: FontWeight.w400)),
-                    Text('active', style: Theme.of(context).textTheme.headline3)
+                    LinksysText.subhead(
+                      getWifiCount(state.selected),
+                    ),
+                    const LinksysText.subhead(
+                      'active',
+                    )
                   ],
                 ),
               ),
@@ -155,10 +145,12 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(getRouterCount(state.selected?.devices),
-                        style: Theme.of(context).textTheme.headline1?.copyWith(
-                            fontSize: 32, fontWeight: FontWeight.w400)),
-                    Text('online', style: Theme.of(context).textTheme.headline3)
+                    LinksysText.subhead(
+                      getRouterCount(state.selected?.devices),
+                    ),
+                    const LinksysText.subhead(
+                      'online',
+                    )
                   ],
                 ),
               ),
@@ -179,13 +171,12 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('SPEED TEST'),
-          box8(),
-          Container(
+          const LinksysText.label('SPEED TEST'),
+          const LinksysGap.semiSmall(),
+          SizedBox(
             width: double.infinity,
             height: 100,
             child: Card(
-              color: MoabColor.dashboardTileBackground,
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: _speedResult(state),
@@ -214,37 +205,36 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                 Expanded(
                     child: _speedItem(
                         result.speedTestResult?.downloadBandwidth ?? 0,
-                        Icon(Icons.arrow_downward))),
+                        AppIcon(icon: getCharactersIcons(context).arrowDown))),
                 Expanded(
                     child: _speedItem(
                         result.speedTestResult?.uploadBandwidth ?? 0,
-                        Icon(Icons.arrow_upward)))
+                        AppIcon(icon: getCharactersIcons(context).arrowUp))),
               ],
             ),
           ),
-          Text(
-              DateFormat("yyyy-MM-dd hh:mm:ss").format(
-                DateFormat("yyyy-MM-ddThh:mm:ssZ")
-                    .parseUTC(result.timestamp)
-                    .toLocal(),
-              ),
-              style: Theme.of(context).textTheme.headline2),
+          LinksysText.label(
+            DateFormat("yyyy-MM-dd hh:mm:ss").format(
+              DateFormat("yyyy-MM-ddThh:mm:ssZ")
+                  .parseUTC(result.timestamp)
+                  .toLocal(),
+            ),
+          ),
         ],
       );
     } else {
       return const Center(
-        child: Text('Run Speed Test'),
+        child: LinksysText.textLinkLarge('Run Speed Test'),
       );
     }
   }
 
-  Widget _speedItem(int speed, Icon icon) {
+  Widget _speedItem(int speed, AppIcon icon) {
     return Row(
       children: [
         icon,
-        Text(
+        LinksysText.label(
           Utils.formatBytes(speed),
-          style: Theme.of(context).textTheme.headline2,
         )
       ],
     );
@@ -256,14 +246,11 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title),
+          LinksysText.label(title),
+          const LinksysGap.semiSmall(),
           SizedBox(
-            height: 8,
-          ),
-          Container(
             width: double.infinity,
             child: Card(
-              color: MoabColor.dashboardTileBackground,
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: content,
@@ -280,11 +267,9 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('USAGE & DEVICES'),
+        const LinksysText.label('USAGE & DEVICES'),
+        const LinksysGap.semiSmall(),
         SizedBox(
-          height: 8,
-        ),
-        Container(
           width: double.infinity,
           height: 200,
           child: Stack(
@@ -297,12 +282,12 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('$deviceCount',
-                        style: Theme.of(context).textTheme.headline1?.copyWith(
-                            fontSize: 32, fontWeight: FontWeight.w500)),
-                    Text('Devices online',
-                        style: Theme.of(context).textTheme.headline3?.copyWith(
-                            fontSize: 14, fontWeight: FontWeight.w700))
+                    LinksysText.mainTitle(
+                      '$deviceCount',
+                    ),
+                    LinksysText.subhead(
+                      'Devices online',
+                    )
                   ],
                 ),
               )
@@ -315,42 +300,46 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
 
   Widget _profileTile() {
     final authBloc = context.read<AuthBloc>();
-    return authBloc.isCloudLogin() ? BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('PROFILES'),
-          box8(),
-          SizedBox(
-            height: 60,
-            child: ListView.separated(
-              itemBuilder: (context, index) => InkWell(
-                  onTap: () {
-                    if (index == state.profileList.length) {
-                      logger.d('add profile clicked: $index');
-                      //TODO: Check the next args
-                      NavigationCubit.of(context).push(CreateProfileNamePath());
-                    } else {
-                      logger.d('profile clicked: $index');
-                      context
-                          .read<ProfilesCubit>()
-                          .selectProfile(state.profileList[index]);
-                      NavigationCubit.of(context).push(ProfileOverviewPath());
-                    }
-                  },
-                  child: index == state.profileList.length
-                      ? _profileAdd()
-                      : _profileItem(state.profileList[index])),
-              separatorBuilder: (_, __) => box16(),
-              itemCount: state.profileList.length + 1,
-              scrollDirection: Axis.horizontal,
-              shrinkWrap: true,
-            ),
-          ),
-        ],
-      );
-    }) : const Center();
+    return authBloc.isCloudLogin()
+        ? BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('PROFILES'),
+                box8(),
+                SizedBox(
+                  height: 60,
+                  child: ListView.separated(
+                    itemBuilder: (context, index) => InkWell(
+                        onTap: () {
+                          if (index == state.profileList.length) {
+                            logger.d('add profile clicked: $index');
+                            //TODO: Check the next args
+                            NavigationCubit.of(context)
+                                .push(CreateProfileNamePath());
+                          } else {
+                            logger.d('profile clicked: $index');
+                            context
+                                .read<ProfilesCubit>()
+                                .selectProfile(state.profileList[index]);
+                            NavigationCubit.of(context)
+                                .push(ProfileOverviewPath());
+                          }
+                        },
+                        child: index == state.profileList.length
+                            ? _profileAdd()
+                            : _profileItem(state.profileList[index])),
+                    separatorBuilder: (_, __) => box16(),
+                    itemCount: state.profileList.length + 1,
+                    scrollDirection: Axis.horizontal,
+                    shrinkWrap: true,
+                  ),
+                ),
+              ],
+            );
+          })
+        : const Center();
   }
 
   Widget _profileAdd() {

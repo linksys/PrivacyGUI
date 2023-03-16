@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -11,6 +12,7 @@ import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/network/bluetooth/bluetooth.dart';
+import 'package:linksys_moab/network/http/linksys_http_client.dart';
 import 'package:linksys_moab/network/jnap/command/base_command.dart';
 import 'package:linksys_moab/network/jnap/command/bt_base_command.dart';
 import 'package:linksys_moab/network/jnap/jnap_command_executor_mixin.dart';
@@ -23,6 +25,8 @@ import 'package:linksys_moab/network/jnap/spec/jnap_spec.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 
+import '../model/cloud_session_model.dart';
+
 class CommandWrap {
   CommandWrap({
     required this.action,
@@ -31,8 +35,8 @@ class CommandWrap {
   });
 
   final String action;
-  final bool needAuth;
   Map<String, dynamic> data;
+  final bool needAuth;
 }
 
 class RouterRepository with StateStreamListener {
@@ -40,7 +44,26 @@ class RouterRepository with StateStreamListener {
     CloudEnvironmentManager().register(this);
   }
 
-  final MoabHttpClient _client = MoabHttpClient();
+  bool _btSetupMode = false;
+  final LinksysHttpClient _client = LinksysHttpClient();
+  String _cloudToken = '';
+  String? _groupId;
+  String _localIp = '';
+  String _localPassword = '';
+  LoginFrom _loginType = LoginFrom.none;
+  String? _networkId;
+  RouterType _routerType = RouterType.others;
+
+  @override
+  consume(event) {
+    if (event is ConnectivityState) {
+      _handleConnectivityChanged(event);
+    } else if (event is AuthState) {
+      _handleAuthChanged(event);
+    } else if (event is NetworkState) {
+      _handleNetworkChanged(event);
+    }
+  }
 
   // To expose interface
   JNAPCommandExecutor get executor {
@@ -51,133 +74,69 @@ class RouterRepository with StateStreamListener {
     }
   }
 
-  String _localPassword = '';
-  String _cloudToken = '';
-
-  String _localIp = '';
-  String? _groupId;
-  String? _networkId;
-
-  LoginFrom _loginType = LoginFrom.none;
-  RouterType _routerType = RouterType.others;
-
-  bool _btSetupMode = false;
-
   set enableBTSetup(bool isEnable) => _btSetupMode = isEnable;
 
   bool get isEnableBTSetup => _btSetupMode;
 
-  String _buildUrl() {
-    String url;
-    switch (_routerType) {
-      case RouterType.others:
-        url = _loginType == LoginFrom.remote
-            ? cloudEnvironmentConfig[kCloudJNAP]
-            : 'https://$_localIp/JNAP/';
-        break;
-      case RouterType.behind:
-        url = _loginType == LoginFrom.remote
-            ? 'https://$_localIp/cloud/JNAP/'
-            : 'https://$_localIp/JNAP/';
-        break;
-      case RouterType.behindManaged:
-        url = 'https://$_localIp/JNAP/';
-
-        break;
-    }
-    return url;
-  }
-
-  Map<String, String> _buildHeader(bool needAuth) {
-    Map<String, String> header = {};
-    switch (_routerType) {
-      case RouterType.others:
-
-        /// MUST Remote
-        /// Authorization: TOKEN
-        /// NetworkId: {NetworkId}
-        header = {
-          HttpHeaders.authorizationHeader:
-              'LinksysUserAuth session_token = $_cloudToken',
-          kJNAPNetworkId: _networkId ?? '',
-        };
-        break;
-      case RouterType.behind:
-
-        /// MUST Remote
-        /// Authorization: TOKEN
-        /// NetworkId: {NetworkId}
-        ///
-        header = {
-          HttpHeaders.authorizationHeader: _cloudToken,
-          kJNAPNetworkId: _networkId ?? '',
-        };
-        break;
-      case RouterType.behindManaged:
-
-        /// Local:
-        /// X-JNAP-AUTHxxx : Basic base64
-        ///
-        /// Remote:
-        /// X-JNAP-Session : Token
-        ///
-        final authKey =
-            _loginType == LoginFrom.remote ? kJNAPSession : kJNAPAuthorization;
-        final authValue = _loginType == LoginFrom.remote
-            ? _cloudToken
-            : 'Basic ${Utils.stringBase64Encode('admin:${_loginType == LoginFrom.none ? 'admin' : _localPassword}')}';
-        header = {
-          authKey:
-              (needAuth | (_loginType == LoginFrom.remote)) ? authValue : '',
-        };
-        break;
-    }
-    header.removeWhere((key, value) => value.isEmpty);
-    return header;
+  Future<JNAPSuccess> send(
+    JNAPAction action, {
+    Map<String, dynamic> data = const {},
+    Map<String, String> extraHeaders = const {},
+    bool auth = false,
+    bool forceLocal = false,
+  }) async {
+    final command = createCommand(
+      action.actionValue,
+      data: data,
+      extraHeaders: extraHeaders,
+      needAuth: auth,
+    );
+    final result = await CommandQueue().enqueue(command);
+    return handleJNAPResult(result);
   }
 
   TransactionHttpCommand createTransaction(List<Map<String, dynamic>> payload,
       {bool needAuth = false}) {
     logger.d('create transaction');
-    String url = _buildUrl();
-    Map<String, String> header = _buildHeader(needAuth);
+    String url = _buildCommandUrl(
+      routerType: _routerType,
+      from: _loginType,
+    );
+    Map<String, String> header = _buildCommandHeader(
+      needAuth: needAuth,
+      routerType: _routerType,
+      from: _loginType,
+    );
 
     if (url.isNotEmpty) {
-      return TransactionHttpCommand(url: url, executor: executor, payload: payload, extraHeader: header);
+      return TransactionHttpCommand(
+          url: url, executor: executor, payload: payload, extraHeader: header);
     } else {
       throw Exception();
     }
   }
 
-  BaseCommand<JNAPResult, JNAPCommandSpec> createCommand(String action,
-      {Map<String, dynamic> data = const {}, bool needAuth = false}) {
+  BaseCommand<JNAPResult, JNAPCommandSpec> createCommand(
+    String action, {
+    Map<String, dynamic> data = const {},
+    Map<String, String> extraHeaders = const {},
+    bool needAuth = false,
+    bool falseLocal = false,
+  }) {
     if (isEnableBTSetup) {
-      return _createBTCommand(action, data: data, needAuth: needAuth);
-    } else {
-      return _createHttpCommand(action, data: data, needAuth: needAuth);
-    }
-  }
-
-  BaseCommand<JNAPResult, BTJNAPSpec> _createBTCommand(String action,
-      {Map<String, dynamic> data = const {}, bool needAuth = false}) {
-    return JNAPBTCommand(executor: executor, action: action, data: data);
-  }
-
-  BaseCommand<JNAPResult, HttpJNAPSpec> _createHttpCommand(String action,
-      {Map<String, dynamic> data = const {}, bool needAuth = false}) {
-    String url = _buildUrl();
-    Map<String, String> header = _buildHeader(needAuth);
-
-    if (url.isNotEmpty) {
-      return JNAPHttpCommand(
-        url: url,
-        executor: executor,
-        action: action,
+      return _createBTCommand(
+        action,
         data: data,
-        extraHeader: header,
+        needAuth: needAuth,
       );
     } else {
-      throw Exception();
+      return _createHttpCommand(
+        action,
+        data: data,
+        extraHeaders: extraHeaders,
+        needAuth: needAuth,
+        forceLocal: falseLocal,
+      );
     }
   }
 
@@ -226,14 +185,117 @@ class RouterRepository with StateStreamListener {
     return _map;
   }
 
-  @override
-  consume(event) {
-    if (event is ConnectivityState) {
-      _handleConnectivityChanged(event);
-    } else if (event is AuthState) {
-      _handleAuthChanged(event);
-    } else if (event is NetworkState) {
-      _handleNetworkChanged(event);
+  String _buildCommandUrl({
+    required RouterType routerType,
+    required LoginFrom from,
+  }) {
+    String url;
+    switch (routerType) {
+      case RouterType.others:
+        url = from == LoginFrom.remote
+            ? cloudEnvironmentConfig[kCloudJNAP]
+            : 'https://$_localIp/JNAP/';
+        break;
+      case RouterType.behind:
+        url = from == LoginFrom.remote
+            ? 'https://$_localIp/cloud/JNAP/'
+            : 'https://$_localIp/JNAP/';
+        break;
+      case RouterType.behindManaged:
+        url = 'https://$_localIp/JNAP/';
+        break;
+    }
+    return url;
+  }
+
+  Map<String, String> _buildCommandHeader({
+    bool needAuth = false,
+    required RouterType routerType,
+    required LoginFrom from,
+  }) {
+    Map<String, String> header = {};
+    switch (_routerType) {
+      case RouterType.others:
+
+        /// MUST Remote
+        /// Authorization: TOKEN
+        /// NetworkId: {NetworkId}
+        header = {
+          HttpHeaders.authorizationHeader:
+              'LinksysUserAuth session_token=$_cloudToken',
+          kJNAPNetworkId: _networkId ?? '',
+          kHeaderClientTypeId: kClientTypeId,
+        };
+        break;
+      case RouterType.behind:
+
+        /// MUST Remote
+        /// Authorization: TOKEN
+        /// NetworkId: {NetworkId}
+        ///
+        header = {
+          HttpHeaders.authorizationHeader:
+              'LinksysUserAuth session_token=$_cloudToken',
+          kJNAPNetworkId: _networkId ?? '',
+          kHeaderClientTypeId: kClientTypeId,
+        };
+        break;
+      case RouterType.behindManaged:
+
+        /// Local:
+        /// X-JNAP-AUTHxxx : Basic base64
+        ///
+        /// Remote:
+        /// X-JNAP-Session : Token
+        ///
+        final authKey =
+            _loginType == LoginFrom.remote ? kJNAPSession : kJNAPAuthorization;
+        final authValue = _loginType == LoginFrom.remote
+            ? _cloudToken
+            : 'Basic ${Utils.stringBase64Encode('admin:${_loginType == LoginFrom.none ? 'admin' : _localPassword}')}';
+        header = {
+          authKey:
+              (needAuth | (_loginType == LoginFrom.remote)) ? authValue : '',
+        };
+        break;
+    }
+    header.removeWhere((key, value) => value.isEmpty);
+    return header;
+  }
+
+  BaseCommand<JNAPResult, BTJNAPSpec> _createBTCommand(String action,
+      {Map<String, dynamic> data = const {}, bool needAuth = false}) {
+    return JNAPBTCommand(executor: executor, action: action, data: data);
+  }
+
+  BaseCommand<JNAPResult, HttpJNAPSpec> _createHttpCommand(
+    String action, {
+    Map<String, dynamic> data = const {},
+    Map<String, String> extraHeaders = const {},
+    bool needAuth = false,
+    bool forceLocal = false,
+  }) {
+    String url = _buildCommandUrl(
+      routerType: _routerType,
+      from: forceLocal ? LoginFrom.local : _loginType,
+    );
+    Map<String, String> header = _buildCommandHeader(
+      needAuth: needAuth,
+      routerType: _routerType,
+      from: forceLocal ? LoginFrom.local : _loginType,
+    );
+    header.addEntries(extraHeaders.entries);
+
+    if (url.isNotEmpty) {
+      return JNAPHttpCommand(
+        url: url,
+        executor: executor,
+        action: action,
+        data: data,
+        extraHeader: header,
+      );
+    } else {
+      throw Exception();
     }
   }
 
@@ -256,9 +318,13 @@ class RouterRepository with StateStreamListener {
           '';
       _loginType = LoginFrom.local;
     } else if (state is AuthCloudLoginState) {
-      _cloudToken =
-          await const FlutterSecureStorage().read(key: linksysPrefCloudToken) ??
-              '';
+      _cloudToken = (await const FlutterSecureStorage()
+                  .read(key: pSessionToken)
+                  .then((value) => value != null
+                      ? SessionToken.fromJson(jsonDecode(value))
+                      : null))
+              ?.accessToken ??
+          '';
       _loginType = LoginFrom.remote;
     } else {
       _loginType = LoginFrom.none;

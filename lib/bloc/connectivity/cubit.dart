@@ -13,6 +13,7 @@ import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
+import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/repository/router/commands/batch_extension.dart';
 import 'package:linksys_moab/repository/router/commands/core_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
@@ -58,12 +59,11 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
 
   @override
   Future onConnectivityChanged(ConnectivityInfo info) async {
+    emit(state.copyWith(connectivityInfo: info));
     if (info.type != ConnectivityResult.none) {
       // await scheduleCheck(immediate: true);
       final newState = await check(info);
       emit(newState);
-    } else {
-      emit(state.copyWith(connectivityInfo: info));
     }
   }
 
@@ -111,7 +111,7 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
     }
 
     final routerSN = await _routerRepository
-        .getDeviceInfo()
+        .send(JNAPAction.getDeviceInfo, forceLocal: true)
         .then<String>(
             (value) => RouterDeviceInfo.fromJson(value.output).serialNumber)
         .onError((error, stackTrace) => '');

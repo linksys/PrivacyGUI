@@ -635,5 +635,8 @@
   "dhcp_list": "DHCP list",
   "assign_ip_address": "Assign IP address",
   "to_mac_address": "To MAC address",
-  "reservations_added": "Reservations added"
+  "reservations_added": "Reservations added",
+  "forgot_question": "Forgot?",
+  "error_local_access_locked": "Access locked. Too many failed attempts to log in.",
+  "local_how_to_regain_access": "How to regain access"
 }

@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/wifi_settings_path.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class WifiSettingsReviewView extends ArgumentsStatefulView {
   const WifiSettingsReviewView({
@@ -16,7 +20,7 @@ class WifiSettingsReviewView extends ArgumentsStatefulView {
   }) : super(key: key);
 
   @override
-  _WifiSettingsReviewViewState createState() => _WifiSettingsReviewViewState();
+  State<WifiSettingsReviewView> createState() => _WifiSettingsReviewViewState();
 }
 
 class _WifiSettingsReviewViewState extends State<WifiSettingsReviewView> {
@@ -30,25 +34,21 @@ class _WifiSettingsReviewViewState extends State<WifiSettingsReviewView> {
   @override
   Widget build(BuildContext context) {
     return isLoading
-        ? FullScreenSpinner(text: getAppLocalizations(context).processing)
+        ? LinksysFullScreenSpinner(text: getAppLocalizations(context).processing)
         : BlocBuilder<WifiSettingCubit, WifiSettingState>(
-            builder: (context, state) => BasePageView(
-              child: BasicLayout(
+            builder: (context, state) => StyledLinksysPageView(
+              title: state.selectedWifiItem.ssid,
+              child: LinksysBasicLayout(
                 content: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Text(
+                        LinksysText.descriptionMain(
                           state.selectedWifiItem.wifiType.displayTitle,
-                          style: Theme.of(context)
-                              .textTheme
-                              .headline3
-                              ?.copyWith(
-                                  color: Theme.of(context).colorScheme.surface),
                         ),
                         const Spacer(),
-                        Switch.adaptive(
+                        AppSwitch(
                             value: state.selectedWifiItem.isWifiEnabled,
                             onChanged: (enabled) {
                               setState(() {
@@ -70,18 +70,15 @@ class _WifiSettingsReviewViewState extends State<WifiSettingsReviewView> {
                             })
                       ],
                     ),
-                    Text(
+                    const LinksysText.descriptionSub(
                       'Where most of your devices connect.',
-                      style: Theme.of(context).textTheme.headline4?.copyWith(
-                          color: Theme.of(context).colorScheme.primary),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4, bottom: 24),
-                      child: Text(
+                    AppPadding(
+                      padding: const LinksysEdgeInsets.only(
+                          top: AppGapSize.small, bottom: AppGapSize.regular),
+                      child: LinksysText.descriptionSub(
                         '6 GHz, 5 GHz, 2.4 GHz',
                         //TODO: Remove the dummy recent bands
-                        style: Theme.of(context).textTheme.headline4?.copyWith(
-                            color: Theme.of(context).colorScheme.surface),
                       ),
                     ),
                     Expanded(
@@ -128,30 +125,24 @@ class _WifiSettingsReviewViewState extends State<WifiSettingsReviewView> {
       onTap: () => _onSettingTap(index, wifiItem),
       child: Row(
         children: [
-          Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
+          AppPadding(
+              padding: const LinksysEdgeInsets.symmetric(
+                  vertical: AppGapSize.regular),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LinksysText.descriptionSub(
                     currentOption.displayTitle,
-                    style: Theme.of(context).textTheme.headline3?.copyWith(
-                        color: Theme.of(context).colorScheme.primary),
                   ),
-                  const SizedBox(
-                    height: 4,
-                  ),
-                  Text(
+                  const LinksysGap.small(),
+                  LinksysText.descriptionSub(
                     content,
-                    style: Theme.of(context).textTheme.headline4?.copyWith(
-                        color: Theme.of(context).colorScheme.surface),
                   ),
                 ],
               )),
           const Spacer(),
-          Image.asset(
-            'assets/images/arrow_point_to_right.png',
-            height: 12,
+          AppIcon(
+            icon: getCharactersIcons(context).chevronRight,
           ),
         ],
       ),

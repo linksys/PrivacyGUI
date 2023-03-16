@@ -36,10 +36,11 @@ class SettingTile extends StatelessWidget {
         Expanded(
           child: title,
         ),
-        if (value != null) Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: value,
-        ),
+        if (value != null)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: value,
+          ),
         if (onPress != null) icon ?? const Icon(Icons.arrow_forward_ios),
       ],
     );
@@ -54,17 +55,19 @@ class SettingTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               title,
-              if (value != null) Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: value,
-              )
+              if (value != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: value,
+                )
             ],
           ),
         ),
-        if (onPress != null) Padding(
-          padding: const EdgeInsets.only(left: 8),
-          child: icon ?? const Icon(Icons.arrow_forward_ios),
-        )
+        if (onPress != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: icon ?? const Icon(Icons.arrow_forward_ios),
+          )
       ],
     );
   }
@@ -75,21 +78,25 @@ class SettingTile extends StatelessWidget {
       onTap: onPress,
       child: Container(
         height: tileHeight,
-        decoration: BoxDecoration(color: background ?? Colors.transparent),
+        decoration:
+            BoxDecoration(color: Colors.lightBlueAccent ?? Colors.transparent),
         padding: padding ?? EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            (axis == SettingTileAxis.horizontal) ? _arrangeInHorizontal() : _arrangeInVertical(),
-            if (description != null) Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                description!,
-                style: Theme.of(context).textTheme.bodyText1?.copyWith(
-                  color: const Color.fromRGBO(102, 102, 102, 1.0),
+            (axis == SettingTileAxis.horizontal)
+                ? _arrangeInHorizontal()
+                : _arrangeInVertical(),
+            if (description != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  description!,
+                  style: Theme.of(context).textTheme.bodyText1?.copyWith(
+                        color: const Color.fromRGBO(102, 102, 102, 1.0),
+                      ),
                 ),
-              ),
-            )
+              )
           ],
         ),
       ),
@@ -116,7 +123,6 @@ class SectionTile extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         header,
-        box8(),
         Opacity(
           opacity: enabled ? 1 : 0.4,
           child: AbsorbPointer(

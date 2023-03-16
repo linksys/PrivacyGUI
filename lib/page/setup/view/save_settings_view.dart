@@ -59,24 +59,24 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
 
   _processLogin() async {
     logger.d('SaveSettings:: _processLogin()');
-    if (_authBloc.state is AuthOnCloudLoginState) {
-      _authBloc.add(CloudLogin());
-    } else if (_authBloc.state is AuthOnCreateAccountState) {
-      _authBloc
-          .createVerifiedAccount()
-          .then((value) => _authBloc.add(CloudLogin()));
-    } else if (_setupBloc.state.adminPassword.isNotEmpty) {
-      logger.d('SaveSettings:: _processLogin(): local login');
-      _authBloc.localLogin(_setupBloc.state.adminPassword);
-    } else if (_authBloc.state is AuthCloudLoginState ||
-        _authBloc.state is AuthLocalLoginState) {
-      if (widget.args['config'] != null &&
-          widget.args['config'] == 'LOCALAUTHCREATEACCOUNT') {
-        NavigationCubit.of(context).popTo(AccountDetailPath());
-      } else {
-        NavigationCubit.of(context).clearAndPush(SetupFinishPath());
-      }
-    }
+    // if (_authBloc.state is AuthOnCloudLoginState) {
+    //   _authBloc.add(CloudLogin());
+    // } else if (_authBloc.state is AuthOnCreateAccountState) {
+    //   _authBloc
+    //       .createVerifiedAccount()
+    //       .then((value) => _authBloc.add(CloudLogin()));
+    // } else if (_setupBloc.state.adminPassword.isNotEmpty) {
+    //   logger.d('SaveSettings:: _processLogin(): local login');
+    //   _authBloc.localLogin(_setupBloc.state.adminPassword);
+    // } else if (_authBloc.state is AuthCloudLoginState ||
+    //     _authBloc.state is AuthLocalLoginState) {
+    //   if (widget.args['config'] != null &&
+    //       widget.args['config'] == 'LOCALAUTHCREATEACCOUNT') {
+    //     NavigationCubit.of(context).popTo(AccountDetailPath());
+    //   } else {
+    //     NavigationCubit.of(context).clearAndPush(SetupFinishPath());
+    //   }
+    // }
   }
 
   _listenConnectivityChange(String newSSID) {

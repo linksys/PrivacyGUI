@@ -7,12 +7,13 @@ import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/guest_radio_settings.dart';
 import 'package:linksys_moab/model/router/iot_network_settings.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
-import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/customs/hidden_password_widget.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/model/wifi_settings_path.dart';
 import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class WifiListView extends StatefulWidget {
   const WifiListView({Key? key}) : super(key: key);
@@ -36,7 +37,8 @@ class _WifiListViewState extends State<WifiListView> {
     List<WifiListItem> _items = [];
     final state = context.read<NetworkCubit>().state;
     List<RouterRadioInfo>? radioInfo = state.selected?.radioInfo;
-    Map<WifiType, int> deviceCountMap = getConnectionDeviceCount(state.selected?.devices);
+    Map<WifiType, int> deviceCountMap =
+        getConnectionDeviceCount(state.selected?.devices);
     if (radioInfo != null) {
       Map<String, RouterRadioInfo> infoMap =
           Map.fromEntries(radioInfo.map((e) => MapEntry(e.settings.ssid, e)));
@@ -91,11 +93,13 @@ class _WifiListViewState extends State<WifiListView> {
       return Column(
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset('assets/images/wifi_signal_3.png'),
-              const SizedBox(
-                width: 4,
+              AppIcon.regular(
+                icon: getCharactersIcons(context).wifiDefault,
               ),
+              const LinksysGap.semiSmall(),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: _information(index),
@@ -106,7 +110,9 @@ class _WifiListViewState extends State<WifiListView> {
                   NavigationCubit.of(context)
                       .push(ShareWifiPath()..args = {'info': items[index]});
                 },
-                child: const Icon(Icons.ios_share),
+                child: AppIcon.regular(
+                  icon: getCharactersIcons(context).shareiOS,
+                ),
               ),
             ],
           ),
@@ -122,70 +128,45 @@ class _WifiListViewState extends State<WifiListView> {
 
   Widget _information(int index) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Text(
+            LinksysText.tags(
               items[index].wifiType.displayTitle,
-              style: Theme.of(context)
-                  .textTheme
-                  .headline4
-                  ?.copyWith(color: Theme.of(context).colorScheme.surface),
             ),
-            const SizedBox(
-              width: 10,
-            ),
+            const LinksysGap.small(),
             Container(
-              child: Text(
-                items[index].isWifiEnabled ? 'ON' : 'OFF',
-                style: Theme.of(context)
-                    .textTheme
-                    .headline4
-                    ?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
-              ),
               color: const Color(0xffc5c5c5),
               padding: const EdgeInsets.all(5),
+              child: LinksysText.label(
+                items[index].isWifiEnabled ? 'ON' : 'OFF',
+              ),
             )
           ],
         ),
-        const SizedBox(
-          height: 18,
-        ),
-        Text(
+        const LinksysGap.semiSmall(),
+        LinksysText.descriptionMain(
           items[index].ssid,
-          style: Theme.of(context)
-              .textTheme
-              .headline2
-              ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
-        const SizedBox(
-          height: 8,
-        ),
+        const LinksysGap.small(),
         HiddenPasswordWidget(password: items[index].password),
-        const SizedBox(
-          height: 8,
-        ),
-        Text(
+        LinksysText.descriptionSub(
           '${items[index].numOfDevices} devices',
-          style: Theme.of(context)
-              .textTheme
-              .headline4
-              ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
       ],
-      crossAxisAlignment: CrossAxisAlignment.start,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView.withCloseButton(
-      context,
+    return StyledLinksysPageView(
+      
       scrollable: true,
       child: BasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: BasicHeader(
-          title: 'WiFi(${items.length})',
+        header: LinksysText.screenName(
+          'WiFi',
         ),
         content: _wifiList(),
       ),
@@ -203,7 +184,8 @@ class _WifiListViewState extends State<WifiListView> {
     int iotCount = 0;
     if (devices != null && devices.isNotEmpty) {
       for (RouterDevice device in devices) {
-        if (device.connections.isNotEmpty && (device.connections.first.isGuest ?? false)) {
+        if (device.connections.isNotEmpty &&
+            (device.connections.first.isGuest ?? false)) {
           guestCount += 1;
         } else if (!device.isAuthority && device.nodeType == null) {
           mainCount += 1;

@@ -1,5 +1,6 @@
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
+import 'package:linksys_moab/repository/model/cloud_session_model.dart';
 
 abstract class AuthEvent {}
 
@@ -54,7 +55,10 @@ class SetEnableBiometrics extends AuthEvent {
 
 class OnRequestSession extends AuthEvent {}
 
-class CloudLogin extends AuthEvent {}
+class CloudLogin extends AuthEvent {
+  CloudLogin({required this.sessionToken});
+  final SessionToken sessionToken;
+}
 
 class LocalLogin extends AuthEvent {
   LocalLogin(this.password);

@@ -1,0 +1,67 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:http/http.dart';
+import 'package:linksys_moab/network/http/linksys_http_client.dart';
+import 'package:linksys_moab/network/http/linksys_requests/data/cloud_account.dart';
+import 'package:linksys_moab/network/http/linksys_requests/data/create_account_input.dart';
+
+import '../../../constants/_constants.dart';
+
+extension UserService on LinksysHttpClient {
+  Future<Response> createAccount({required CreateAccountInput input}) {
+    final endpoint = combineUrl(kUserAccountEndpoint);
+
+    final header = defaultHeader;
+
+    return this.post(Uri.parse(endpoint),
+        headers: header, body: jsonEncode({'account': input}));
+  }
+
+  Future<Response> getPreferences({
+    required String token,
+  }) {
+    final endpoint = combineUrl(kUserAccountPreferencesEndpoint);
+    final header = defaultHeader
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+
+    return this.get(Uri.parse(endpoint), headers: header);
+  }
+
+  Future<Response> setPreferences(
+      {required String token, required CAPreferences preferences}) {
+    final endpoint = combineUrl(kUserAccountPreferencesEndpoint);
+    final header = defaultHeader
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+
+    return this.put(Uri.parse(endpoint),
+        headers: header, body: jsonEncode({'preferences': preferences}));
+  }
+
+  Future<Response> getPhoneCallingCodes({required String token}) {
+    final endpoint = combineUrl(kUserPhoneCallingCodesEndpoint);
+    final header = defaultHeader
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+
+    return this.get(Uri.parse(endpoint), headers: header);
+  }
+
+  Future<Response> checkPhoneNumber({
+    required String token,
+    required String countryCode,
+    required String phoneNumber,
+  }) {
+    final endpoint = combineUrl(kUserPhoneNumberCheckEndpoint);
+    final header = defaultHeader
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+
+    final body = {
+      'mobile': {
+        'countryCode': countryCode,
+        'phoneNumber': phoneNumber,
+      }
+    };
+    return this
+        .post(Uri.parse(endpoint), headers: header, body: jsonEncode(body));
+  }
+}

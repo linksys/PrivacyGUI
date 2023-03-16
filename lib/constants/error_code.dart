@@ -13,3 +13,4 @@ const errorAuthenticationMissing = 'AUTHENTICATION_MISSING';
 const errorNotAuthenticated = 'NOT_AUTHENTICATED';
 // JNAP Error
 const errorJNAPUnauthorized = '_ErrorUnauthorized';
+const errorAdminAccountLocked = 'ErrorAdminAccountLocked';

@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/route/_route.dart';
-
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 
 class NoInternetConnectionModal extends StatelessWidget {
   const NoInternetConnectionModal({Key? key}) : super(key: key);
@@ -16,8 +17,8 @@ class NoInternetConnectionModal extends StatelessWidget {
       onWillPop: () async {
         return false;
       },
-      child: BasePageView.bottomSheetModalBlur(
-        padding: EdgeInsets.zero,
+      child: LinksysPageView.bottomSheetModalBlur(
+        padding: const LinksysEdgeInsets.only(),
         bottomSheet: Container(
           color: Colors.white,
           height: 240,
@@ -30,18 +31,14 @@ class NoInternetConnectionModal extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LinksysText.descriptionMain(
                       getAppLocalizations(context)
                           .prompt_no_internet_connection,
-                      style: Theme.of(context).textTheme.headline1,
                     ),
-                    const SizedBox(
-                      height: 36,
-                    ),
-                    Text(
+                    const LinksysGap.big(),
+                    LinksysText.descriptionSub(
                       getAppLocalizations(context)
                           .prompt_no_internet_connection_description,
-                      style: Theme.of(context).textTheme.bodyText1,
                     )
                   ],
                 ),

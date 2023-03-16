@@ -9,7 +9,6 @@ import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
-import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
@@ -17,30 +16,33 @@ import 'package:linksys_moab/network/http/model/cloud_session_data.dart';
 import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
 import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
+import 'package:linksys_moab/repository/model/cloud_session_model.dart';
 import 'package:linksys_moab/repository/model/dummy_model.dart';
-import 'package:linksys_moab/repository/router/commands/batch_extension.dart';
 import 'package:linksys_moab/repository/router/commands/core_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../constants/cloud_const.dart';
 import '../../network/http/model/cloud_account_info.dart';
 import '../../network/http/model/cloud_auth_clallenge_method.dart';
 import '../../network/http/model/cloud_create_account_verified.dart';
 import '../../network/http/model/cloud_login_state.dart';
 import '../../network/http/model/cloud_preferences.dart';
+import '../../repository/linksys_cloud_repository.dart';
 import '../../utils.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
   final AuthRepository _repository;
+  final LinksysCloudRepository _cloudRepository;
   final RouterRepository _routerRepository;
   StreamSubscription? _errorStreamSubscription;
 
   AuthBloc({
     required AuthRepository repo,
+    required LinksysCloudRepository cloudRepo,
     required RouterRepository routerRepo,
   })  : _repository = repo,
+        _cloudRepository = cloudRepo,
         _routerRepository = routerRepo,
         super(AuthState.unknownAuth()) {
     on<InitAuth>(_onInitAuth);
@@ -52,7 +54,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
     on<SetLoginType>(_onSetLoginType);
     on<SetCloudPassword>(_onSetCloudPassword);
     on<SetEnableBiometrics>(_onSetEnableBiometrics);
-    on<CloudLogin>(_cloudLogin);
+    on<CloudLogin>(_cloudLoggedin);
     on<LocalLogin>(_localLogin);
     on<Logout>(_onLogout);
     on<OnRequestSession>(_onRequestSession);
@@ -73,6 +75,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
     register(routerRepo);
   }
 
+  SessionToken fakeSessionToken() => const SessionToken(
+        accessToken: 'accessToken',
+        tokenType: 'tokenType',
+        expiresIn: 123,
+        refreshToken: 'refreshToken',
+      );
+
   @override
   Future<void> close() {
     _errorStreamSubscription?.cancel();
@@ -90,7 +99,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
       if (_isSessionExpired) {
         emit(AuthState.unAuthorized());
       }
-      emit(AuthState.cloudAuthorized());
+      emit(AuthState.cloudAuthorized(sessionToken: fakeSessionToken()));
     } else if (await checkLocalPasswordExist()) {
       emit(AuthState.localAuthorized());
     } else {
@@ -119,22 +128,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
   _authorized(Authorized event, Emitter<AuthState> emit) {
     if (event.isDuringSetup) {
     } else if (event.isCloud) {
-      emit(AuthState.cloudAuthorized());
+      emit(AuthState.cloudAuthorized(sessionToken: fakeSessionToken()));
     } else {
       emit(AuthState.localAuthorized());
     }
   }
 
   void _onSetLoginType(SetLoginType event, Emitter<AuthState> emit) {
-    final _state = state;
-    if (_state is AuthOnCloudLoginState) {
-      AccountInfo accountInfo =
-          _state.accountInfo.copyWith(authenticationType: event.loginType);
-      emit(_state.copyWith(accountInfo: accountInfo));
-    } else if (_state is AuthOnCreateAccountState) {
-      AccountInfo accountInfo =
-          _state.accountInfo.copyWith(authenticationType: event.loginType);
-      emit(_state.copyWith(accountInfo: accountInfo));
+    final currentState = state;
+    if (currentState is AuthOnCloudLoginState) {
+      AccountInfo accountInfo = currentState.accountInfo
+          .copyWith(authenticationType: event.loginType);
+      emit(currentState.copyWith(accountInfo: accountInfo));
+    } else if (currentState is AuthOnCreateAccountState) {
+      AccountInfo accountInfo = currentState.accountInfo
+          .copyWith(authenticationType: event.loginType);
+      emit(currentState.copyWith(accountInfo: accountInfo));
     } else {
       logger.d('ERROR: _onSetOtpInfo: Unexpected state type');
     }
@@ -178,6 +187,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
     }
   }
 
+  void _cloudLoggedin(CloudLogin event, Emitter<AuthState> emit) async {
+    emit(AuthState.cloudAuthorized(sessionToken: event.sessionToken));
+  }
+
   void _cloudLogin(CloudLogin event, Emitter<AuthState> emit) async {
     final pref = await SharedPreferences.getInstance();
 
@@ -215,7 +228,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
       }
 
       await CloudEnvironmentManager().checkSmartDevice();
-      emit(AuthState.cloudAuthorized());
+      emit(AuthState.cloudAuthorized(sessionToken: fakeSessionToken()));
     } else {
       // TODO
       add(Unauthorized());
@@ -284,9 +297,10 @@ extension AuthBlocCloud on AuthBloc {
   Future<void> loginPrepare(String username) async {
     // Reset state
     add(OnCloudLogin(accountInfo: AccountInfo.empty(), vToken: ''));
-    return await _repository
-        .loginPrepare(username)
-        .then((value) => _handleLoginPrepare(username, value));
+    // @Austin No
+    return Future.delayed(const Duration(milliseconds: 100)).then((value) =>
+        _handleLoginPrepare(
+            username, const CloudLoginState(state: keyPasswordRequired)));
   }
 
   Future<AccountInfo> getMaskedCommunicationMethods(String username) async {
@@ -295,12 +309,18 @@ extension AuthBlocCloud on AuthBloc {
         .then((value) => _handleGetMaskedCommunicationMethods(value));
   }
 
-  Future<void> loginPassword(String password) async {
-    // Reset state
-    add(SetLoginType(loginType: AuthenticationType.password));
-    return await _repository
-        .loginPassword((state as AuthOnCloudLoginState).vToken, password)
-        .then((value) => _handleLoginPassword(value));
+  Future<void> loginPassword({required String password}) async {
+    final currentState = state;
+    if (currentState is AuthOnCloudLoginState) {
+      final username = currentState.accountInfo.username;
+      // Reset state
+      add(SetLoginType(loginType: AuthenticationType.password));
+      return await _cloudRepository
+          .login(username: username, password: password)
+          .then((value) => _handleLoginPassword(value));
+    } else {
+      throw Exception('Not on cloud login state');
+    }
   }
 
   Future<bool> cloudLogin() async {
@@ -434,13 +454,13 @@ extension AuthBlocCloud on AuthBloc {
     return accountInfo;
   }
 
-  Future<void> _handleLoginPassword(CloudLoginState cloudLoginState) async {
-    logger.d("handle login password: $cloudLoginState");
-    final AuthenticationType loginType = cloudLoginState.state == keyRequire2sv
-        ? AuthenticationType.passwordless
-        : AuthenticationType.password;
-
-    add(SetLoginType(loginType: loginType));
+  Future<void> _handleLoginPassword(SessionToken sessionToken) async {
+    const storage = FlutterSecureStorage();
+    storage.write(key: pSessionToken, value: jsonEncode(sessionToken.toJson()));
+    storage.write(
+        key: pSessionTokenTs,
+        value: '${DateTime.now().millisecondsSinceEpoch}');
+    add(CloudLogin(sessionToken: sessionToken));
   }
 
   Future<bool> _handleLogin(CloudLoginAcceptState acceptState) async {
@@ -492,39 +512,37 @@ extension AuthBlocCloud on AuthBloc {
 
   Future<bool> checkCertValidation() async {
     const storage = FlutterSecureStorage();
-    String? privateKey = await storage.read(key: linksysPrefCloudPrivateKey);
-    String? cert = await storage.read(key: linksysPrefCloudCertDataKey);
-
-    final prefs = await SharedPreferences.getInstance();
-    bool isKeyExist = prefs.containsKey(linksysPrefCloudPublicKey) &
-        (privateKey != null) &
-        (cert != null);
-    if (!isKeyExist) {
+    String? sessionStr = await storage.read(key: pSessionToken);
+    if (sessionStr == null) {
       return false;
     }
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert ?? ''));
-    final expiredDate = DateTime.parse(certData.expiration);
-    if (expiredDate.millisecondsSinceEpoch -
-            DateTime.now().millisecondsSinceEpoch <
-        0) {
+    try {
+      final session = SessionToken.fromJson(jsonDecode(sessionStr));
+      return true;
+    } catch (e) {
       return false;
     }
-    return true;
   }
 
   Future<bool> isSessionExpired() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (prefs.containsKey(linksysPrefSessionDataKey)) {
-      logger.d('check cloud session expiration...');
-      final sessionData = CloudSessionData.fromJson(
-          jsonDecode(prefs.getString(linksysPrefSessionDataKey)!));
-      final sessionExpiredDate = DateTime.parse(sessionData.expiration);
-      if (sessionExpiredDate.millisecondsSinceEpoch -
-              DateTime.now().millisecondsSinceEpoch <
-          0) {
-        return true;
-      }
+    final storage = FlutterSecureStorage();
+    final ts = await storage.read(key: pSessionTokenTs);
+    if (ts == null) {
+      return true;
     }
+    logger.d('check cloud session expiration...');
+    final json = await storage.read(key: pSessionToken);
+    if (json == null) {
+      return true;
+    }
+    final session = SessionToken.fromJson(jsonDecode(json));
+    final expireTs =
+        DateTime.now().millisecondsSinceEpoch + session.expiresIn * 1000;
+    logger.d('sessionTs: $ts, expireTs: $expireTs');
+    if (expireTs - DateTime.now().millisecondsSinceEpoch < 0) {
+      return true;
+    }
+
     return false;
   }
 

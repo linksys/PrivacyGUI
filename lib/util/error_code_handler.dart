@@ -1,11 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/constants/error_code.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/util/logger.dart';
 
 String generalErrorCodeHandler(BuildContext context, String code) {
-  switch(code) {
+  switch (code) {
     case '':
       return '';
     case errorUsernameExists:
@@ -26,6 +25,8 @@ String generalErrorCodeHandler(BuildContext context, String code) {
       return getAppLocalizations(context).error_invalid_phone_number;
     case errorJNAPUnauthorized:
       return getAppLocalizations(context).error_incorrect_password;
+    case errorAdminAccountLocked:
+      return getAppLocalizations(context).error_local_access_locked;
     default:
       logger.e('Unhandled Error: $code');
       return getAppLocalizations(context).unknown_error_code(code);

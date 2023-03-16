@@ -20,3 +20,7 @@ const linksysPrefLocalPassword = 'LinksysLocalPassword';
 const linksysPrefCloudCertDataKey = 'LinksysCloudCertData';
 const linksysPrefCloudPrivateKey = 'LinksysCloudPrivateKey';
 const linksysPrefCloudAccountPasswordKey = 'LinksysCloudAccountPassword';
+///////
+
+const pSessionToken = 'SessionToken';
+const pSessionTokenTs = 'SessionTokenTimeStamp';

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
 
 Widget administrationSection({
   required String title,
@@ -11,25 +13,27 @@ Widget administrationSection({
   Color? contentBackground,
 }) {
   return SectionTile(
-    header: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+    header: AppPadding(
+      // padding:
+      //     const LinksysEdgeInsets.symmetric(horizontal: AppGapSize.regular),
       child: Container(
-        height: 48,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(child: sectionTitle(title)),
-            headerAction ?? const Center(),
-          ],
-        ),
+        // height: 48,
+        color: Colors.amber,
         alignment: Alignment.bottomLeft,
+        child: AppPadding(
+          padding:
+              const LinksysEdgeInsets.symmetric(vertical: AppGapSize.regular),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(child: LinksysText.tags(title)),
+              headerAction ?? const Center(),
+            ],
+          ),
+        ),
       ),
     ),
-    child: Container(
-        padding: contentPadding ?? EdgeInsets.symmetric(horizontal: 24),
-        decoration: BoxDecoration(
-            color: contentBackground ?? MoabColor.dashboardTileBackground),
-        child: content),
+    child: content,
   );
 }
 

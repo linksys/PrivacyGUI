@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+@Deprecated('MOAB version')
 class CloudNetwork extends Equatable {
   final String networkGroupId;
   final String networkId;

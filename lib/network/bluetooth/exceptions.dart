@@ -4,9 +4,9 @@ const btErrorInvalidJNAPCommand = 'invalid_jnap_command';
 const btErrorNoConnectedDevice = 'no_connected_device';
 const btErrorNoCharacteristicFound = 'no_characteristic_found';
 const btErrorNoResponse = 'no_response';
+const btErrorDeviceConnectFailed = 'device_connect_failed';
 
-class BTError implements Exception{
-
+class BTError implements Exception {
   final String code;
   final String message;
 
@@ -17,31 +17,47 @@ class BTError implements Exception{
 }
 
 class BTNoServicesFoundError extends BTError {
-  BTNoServicesFoundError(String deviceId): super(code: btErrorServicesNotFound,
-      message: 'BT connected device<$deviceId> no services found');
+  BTNoServicesFoundError(String deviceId)
+      : super(
+            code: btErrorServicesNotFound,
+            message: 'BT connected device<$deviceId> no services found');
 }
 
-
 class BTJNAPServiceNotFoundError extends BTError {
-  BTJNAPServiceNotFoundError(String deviceId): super(code: btErrorJNAPServiceNotFound,
-      message: 'BT connected device<$deviceId> no jnap service found');
+  BTJNAPServiceNotFoundError(String deviceId)
+      : super(
+            code: btErrorJNAPServiceNotFound,
+            message: 'BT connected device<$deviceId> no jnap service found');
 }
 
 class BTInvalidJNAPCommandError extends BTError {
-  BTInvalidJNAPCommandError(): super(code: btErrorInvalidJNAPCommand,
-      message: 'BT invalid jnap command');
+  BTInvalidJNAPCommandError()
+      : super(
+            code: btErrorInvalidJNAPCommand,
+            message: 'BT invalid jnap command');
 }
 
 class BTNoConnectedDeviceError extends BTError {
-  BTNoConnectedDeviceError(): super(code: btErrorNoConnectedDevice,
-      message: 'BT No device connected');
+  BTNoConnectedDeviceError()
+      : super(
+            code: btErrorNoConnectedDevice, message: 'BT No device connected');
 }
 
 class BTNoCharacteristicFoundError extends BTError {
-  BTNoCharacteristicFoundError(): super(code: btErrorNoCharacteristicFound,
-      message: 'BT No characteristic found');
+  BTNoCharacteristicFoundError()
+      : super(
+            code: btErrorNoCharacteristicFound,
+            message: 'BT No characteristic found');
 }
 
 class BTNoResponseError extends BTError {
-  BTNoResponseError(): super(code: btErrorNoResponse, message: 'BT No response');
+  BTNoResponseError()
+      : super(code: btErrorNoResponse, message: 'BT No response');
+}
+
+class BTDeviceConnectionError extends BTError {
+  BTDeviceConnectionError(String deviceId)
+      : super(
+            code: btErrorDeviceConnectFailed,
+            message: 'BT Connect to device <$deviceId> failed');
 }

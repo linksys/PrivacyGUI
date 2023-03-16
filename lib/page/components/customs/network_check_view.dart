@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/connectivity/cubit.dart';
 import 'package:linksys_moab/bloc/connectivity/state.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/util/permission.dart';
+import 'package:linksys_widgets/theme/theme.dart';
+import 'package:linksys_widgets/widgets/base/gap.dart';
+import 'package:linksys_widgets/widgets/base/icon.dart';
+import 'package:linksys_widgets/widgets/text/app_text.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class NetworkCheckView extends StatefulWidget {
-  const NetworkCheckView({Key? key, required this.description, required this.button }) : super(key: key);
+  const NetworkCheckView(
+      {Key? key, required this.description, required this.button})
+      : super(key: key);
 
   final String description;
   final Widget button;
@@ -17,13 +24,11 @@ class NetworkCheckView extends StatefulWidget {
 }
 
 class _NetworkCheckViewState extends State<NetworkCheckView> with Permissions {
-
   @override
   void initState() {
     super.initState();
     _initConnectivity();
   }
-
 
   @override
   void dispose() {
@@ -48,30 +53,17 @@ class _NetworkCheckViewState extends State<NetworkCheckView> with Permissions {
         builder: (context, state) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LinksysText.screenName(
                   widget.description,
-                  style: Theme.of(context)
-                      .textTheme
-                      .headline3
-                      ?.copyWith(color: Theme.of(context).colorScheme.primary),
                 ),
-                const SizedBox(
-                  height: 8,
-                ),
-                Image.asset('assets/images/icon_wifi.png'),
-                const SizedBox(
-                  height: 12,
-                ),
-                Text(
+                const LinksysGap.regular(),
+                AppIcon(
+                    icon: getCharactersIcons(context).wifiDefault),
+                const LinksysGap.semiSmall(),
+                LinksysText.descriptionMain(
                   state.connectivityInfo.ssid ?? '',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headline3
-                      ?.copyWith(color: Theme.of(context).colorScheme.primary),
                 ),
-                const SizedBox(
-                  height: 43,
-                ),
+                const Spacer(),
                 widget.button,
               ],
             ));

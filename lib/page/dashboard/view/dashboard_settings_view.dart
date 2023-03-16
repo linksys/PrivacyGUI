@@ -5,15 +5,13 @@ import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/model/group_profile.dart';
-import 'package:linksys_moab/model/profile_service_data.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/customs/enabled_with_opacity_widget.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 typedef OnMenuItemClick = void Function(int index, DashboardSettingsItem item);
@@ -38,7 +36,7 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
   Widget build(BuildContext context) {
     return BlocBuilder<NetworkCubit, NetworkState>(
       builder: (context, state) {
-        return BasePageView.noNavigationBar(
+        return LinksysPageView.noNavigationBar(
             scrollable: true,
             child: EnabledOpacityWidget(
               enabled: state.selected?.deviceInfo != null,
@@ -49,7 +47,7 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _title(),
-                    box36(),
+                    const LinksysGap.semiBig(),
                     _section(
                       _networkSettingsSection(context),
                       (index, item) {
@@ -57,7 +55,7 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
                         NavigationCubit.of(context).push(item.path);
                       },
                     ),
-                    box36(),
+                    const LinksysGap.semiBig(),
                     _section(
                       _youSettingsSection(),
                       (index, item) {
@@ -65,25 +63,19 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
                         NavigationCubit.of(context).push(item.path);
                       },
                     ),
-                    box36(),
-                    SimpleTextButton(
-                        text: 'Log out',
-                        onPressed: () {
-                          context.read<AuthBloc>().add(Logout());
-                        }),
-                    box36(),
+                    const LinksysGap.semiBig(),
+                    LinksysTertiaryButton.noPadding('Log out', onTap: () {
+                      context.read<AuthBloc>().add(Logout());
+                    }),
+                    const LinksysGap.semiBig(),
                     FutureBuilder(
                         future: PackageInfo.fromPlatform()
                             .then((value) => value.version),
                         initialData: '-',
                         builder: (context, data) {
-                          return Text('version ${data.data}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headline4
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ));
+                          return LinksysText.label(
+                            'version ${data.data}',
+                          );
                         }),
                   ],
                 ),
@@ -101,14 +93,9 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
         Wrap(
           alignment: WrapAlignment.start,
           crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(
+          children: const [
+            LinksysText.screenName(
               'Settings',
-              style: Theme.of(context)
-                  .textTheme
-                  .headline1
-                  ?.copyWith(fontSize: 32, fontWeight: FontWeight.w400),
-              textAlign: TextAlign.center,
             )
           ],
         ),
@@ -122,24 +109,17 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LinksysText.tags(
           sectionItem.title,
-          style: Theme.of(context)
-              .textTheme
-              .headline4
-              ?.copyWith(fontWeight: FontWeight.w700, color: Colors.black),
         ),
-        const SizedBox(
-          height: 4,
-        ),
+        const LinksysGap.small(),
         ...sectionItem.items.map((e) => InkWell(
               onTap: () => onItemClick(sectionItem.items.indexOf(e), e),
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 10.0),
-                child: Text(
+                child: LinksysText.descriptionSub(
                   e.title,
-                  style: Theme.of(context).textTheme.button,
                 ),
               ),
             )),
@@ -157,22 +137,6 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
               path: AdministrationViewPath()),
           DashboardSettingsItem(title: 'Priority', path: UnknownPath()),
           DashboardSettingsItem(title: 'Smart home', path: UnknownPath()),
-          ...(_authBloc.isCloudLogin()
-              ? [
-                  DashboardSettingsItem(
-                    title: 'Internet schedule',
-                    path: ProfileListPath()
-                      ..args = {'category': PService.internetSchedule},
-                  ),
-                  DashboardSettingsItem(
-                    title: 'Content filters',
-                    path: ProfileListPath()
-                      ..args = {'category': PService.contentFilter},
-                  ),
-                  DashboardSettingsItem(
-                      title: 'Profiles', path: ProfileListPath()),
-                ]
-              : [])
         ],
       );
 

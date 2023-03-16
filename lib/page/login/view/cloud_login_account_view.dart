@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
@@ -10,6 +8,7 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 
@@ -17,9 +16,14 @@ import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
+import 'package:linksys_widgets/theme/theme.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/page/base_page_view.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 import '../../../utils.dart';
-import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 
 class CloudLoginAccountView extends ArgumentsStatefulView {
   const CloudLoginAccountView({Key? key, super.args, super.next})
@@ -56,33 +60,37 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
         listenWhen: (previous, current) {
           if (previous is AuthOnCloudLoginState &&
               current is AuthOnCloudLoginState) {
-            return (previous.accountInfo.authenticationType == AuthenticationType.none) &&
-                (current.accountInfo.authenticationType != AuthenticationType.none);
+            return (previous.accountInfo.authenticationType ==
+                    AuthenticationType.none) &&
+                (current.accountInfo.authenticationType !=
+                    AuthenticationType.none);
           } else {
             return false;
           }
         },
         listener: (context, state) async {
           if (state is AuthOnCloudLoginState) {
-            final accInfo = await context
-                .read<AuthBloc>()
-                .getMaskedCommunicationMethods(state.accountInfo.username);
+            // final accInfo = await context
+            //     .read<AuthBloc>()
+            //     .getMaskedCommunicationMethods(state.accountInfo.username);
 
-            if (state.accountInfo.authenticationType == AuthenticationType.password) {
+            if (state.accountInfo.authenticationType ==
+                AuthenticationType.password) {
               logger.d('Go Password');
               NavigationCubit.of(context).push(AuthCloudLoginWithPasswordPath()
                 ..args = {
-                  'commMethods': accInfo.communicationMethods,
-                  'token': state.vToken,
+                  // 'commMethods': accInfo.communicationMethods,
+                  // 'token': state.vToken,
                   ...widget.args
                 }
                 ..next = widget.next);
-            } else if (state.accountInfo.authenticationType == AuthenticationType.passwordless) {
+            } else if (state.accountInfo.authenticationType ==
+                AuthenticationType.passwordless) {
               logger.d('Go Password-less');
               NavigationCubit.of(context).push(AuthCloudLoginOtpPath()
                 ..args = {
                   'username': state.accountInfo.username,
-                  'commMethods': accInfo.communicationMethods,
+                  // 'commMethods': accInfo.communicationMethods,
                   'token': state.vToken,
                   ...widget.args
                 }
@@ -93,30 +101,33 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
           }
         },
         builder: (context, state) => _isLoading
-            ? FullScreenSpinner(text: getAppLocalizations(context).processing)
+            ? LinksysFullScreenSpinner(
+                text: getAppLocalizations(context).processing)
             : _contentView(state));
   }
 
   Widget _contentView(AuthState state) {
-    return BasePageView(
+    return StyledLinksysPageView(
         scrollable: true,
-        child: BasicLayout(
+        child: LinksysBasicLayout(
           crossAxisAlignment: CrossAxisAlignment.start,
-          header: BasicHeader(
-            title: getAppLocalizations(context).cloud_account_login_title,
+          header: LinksysText.screenName(
+            getAppLocalizations(context).cloud_account_login_title,
           ),
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              InputField(
+              const LinksysGap.regular(),
+              LinksysInputField(
                 key: const Key('login_view_input_field_email'),
-                titleText: getAppLocalizations(context).email,
+                headerText: getAppLocalizations(context).email,
                 hintText: getAppLocalizations(context).email,
                 controller: _accountController,
                 onChanged: _checkFilledInfo,
                 inputType: TextInputType.emailAddress,
-                isError: _errorCode.isNotEmpty,
+                // isError: _errorCode.isNotEmpty,
                 errorText: generalErrorCodeHandler(context, _errorCode),
+                ctaText: getAppLocalizations(context).forgot_question,
               ),
               if (_errorCode == "RESOURCE_NOT_FOUND")
                 Padding(
@@ -129,17 +140,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
                       onPressed: () => NavigationCubit.of(context)
                           .push(AlreadyHaveOldAccountPath())),
                 ),
-              Offstage(
-                offstage: _fromSetup,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: SimpleTextButton(
-                      key: const Key('login_view_button_forgot_email'),
-                      text: getAppLocalizations(context).forgot_email,
-                      onPressed: () => NavigationCubit.of(context)
-                          .push(AuthForgotEmailPath())),
-                ),
-              ),
+              const Spacer(),
               FutureBuilder<bool>(
                 future: Utils.canUseBiometrics(),
                 initialData: false,
@@ -161,27 +162,18 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
                   );
                 },
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24.0),
-                child: PrimaryButton(
-                  key: const Key('login_view_button_continue'),
-                  text: getAppLocalizations(context).text_continue,
-                  onPress:
-                      _accountController.text.isNotEmpty ? _prepareLogin : null,
-                ),
+              LinksysPrimaryButton(
+                getAppLocalizations(context).login,
+                key: const Key('login_view_button_continue'),
+                onTap:
+                    _accountController.text.isNotEmpty ? _prepareLogin : null,
               ),
-              Offstage(
-                offstage: _fromSetup,
-                child: Center(
-                  child: SimpleTextButton(
-                      key: const Key('login_view_button_login_router_password'),
-                      text: getAppLocalizations(context)
-                          .cloud_account_login_with_router_password,
-                      onPressed: () => NavigationCubit.of(context)
-                          .push(AuthLocalLoginPath())),
-                ),
-              ),
-              const Spacer(),
+              LinksysSecondaryButton(
+                  getAppLocalizations(context)
+                      .cloud_account_login_with_router_password,
+                  key: const Key('login_view_button_login_router_password'),
+                  onTap: () =>
+                      NavigationCubit.of(context).push(AuthLocalLoginPath())),
             ],
           ),
         ));

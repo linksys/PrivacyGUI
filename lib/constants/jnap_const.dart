@@ -4,7 +4,7 @@ const kJNAPActionPrefix = '$kJNAPActionBase/jnap';
 const kJNAPSession = 'X-JNAP-Session';
 const kJNAPAction = 'X-JNAP-Action';
 const kJNAPAuthorization = 'X-JNAP-Authorization';
-const kJNAPNetworkId = 'X-Linksys-NetworkId';
+const kJNAPNetworkId = 'X-Linksys-Network-Id';
 //
 const varMqttGroupId = '{group_id}';
 const varMqttNetworkId = '{network_id}';

@@ -5,7 +5,12 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/input_field/password_input_field.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 import '../../../bloc/auth/bloc.dart';
 import '../../../bloc/auth/state.dart';
@@ -20,7 +25,7 @@ class CloudLoginPasswordView extends ArgumentsStatefulView {
       : super(key: key);
 
   @override
-  _LoginTraditionalPasswordViewState createState() =>
+  State<CloudLoginPasswordView> createState() =>
       _LoginTraditionalPasswordViewState();
 }
 
@@ -34,47 +39,44 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
         listenWhen: (previous, current) {
-          if (previous is AuthOnCloudLoginState &&
-              current is AuthOnCloudLoginState) {
-            return previous.accountInfo.authenticationType !=
-                current.accountInfo.authenticationType;
+          if (current is AuthCloudLoginState) {
+            return true;
           }
           return false;
         },
         listener: (context, state) {
-          if (state is AuthOnCloudLoginState) {
-            if (state.accountInfo.authenticationType == AuthenticationType.passwordless) {
-              context.read<AuthBloc>().add(SetLoginType(loginType: AuthenticationType.password));
-              NavigationCubit.of(context).push(AuthCloudLoginOtpPath()
-                ..args = {'username': _username, ...widget.args}
-                ..next = widget.next);
-            }
+          if (state is AuthCloudLoginState) {
+            NavigationCubit.of(context).push(PrepareDashboardPath());
           } else {
             logger.d('ERROR: Wrong state type on LoginTraditionalPasswordView');
           }
         },
         builder: (context, state) => _isLoading
-            ? FullScreenSpinner(text: getAppLocalizations(context).processing)
+            ? LinksysFullScreenSpinner(
+                text: getAppLocalizations(context).processing)
             : _contentView(state));
   }
 
   Widget _contentView(AuthState state) {
-    _username = (state as AuthOnCloudLoginState).accountInfo.username;
-    return BasePageView(
+    // TODO HERE
+    _username =
+        state is AuthOnCloudLoginState ? state.accountInfo.username : '';
+    return StyledLinksysPageView(
       scrollable: true,
-      child: BasicLayout(
+      child: LinksysBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: BasicHeader(
-          title: getAppLocalizations(context).enter_password,
+        header: LinksysText.screenName(
+          getAppLocalizations(context).enter_password,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            PasswordInputField(
+            const LinksysGap.big(),
+            LinksysPasswordInputField(
               key: const Key('login_password_view_input_field_password'),
-              titleText: getAppLocalizations(context).password,
+              // headerText: getAppLocalizations(context).password,
               hintText: getAppLocalizations(context).password,
-              isError: _errorCode.isNotEmpty,
+              // isError: _errorCode.isNotEmpty,
               errorText: generalErrorCodeHandler(context, _errorCode),
               controller: passwordController,
               onChanged: (value) {
@@ -83,23 +85,19 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
                 });
               },
             ),
-            const SizedBox(
-              height: 15,
+            const LinksysGap.small(),
+            LinksysTertiaryButton.noPadding(
+              getAppLocalizations(context).forgot_password,
+              key: const Key('login_password_view_button_forgot_password'),
+              onTap: () {
+                NavigationCubit.of(context).push(AuthCloudForgotPasswordPath());
+              },
             ),
-            SimpleTextButton(
-                key: const Key('login_password_view_button_forgot_password'),
-                text: getAppLocalizations(context).forgot_password,
-                onPressed: () {
-                  NavigationCubit.of(context)
-                      .push(AuthCloudForgotPasswordPath());
-                }),
-            const SizedBox(
-              height: 38,
-            ),
-            PrimaryButton(
+            const Spacer(),
+            LinksysPrimaryButton(
+              getAppLocalizations(context).text_continue,
               key: const Key('login_password_view_button_continue'),
-              text: getAppLocalizations(context).text_continue,
-              onPress: passwordController.text.isEmpty
+              onTap: passwordController.text.isEmpty
                   ? null
                   : () async {
                       setState(() {
@@ -107,7 +105,7 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
                       });
                       await context
                           .read<AuthBloc>()
-                          .loginPassword(passwordController.text)
+                          .loginPassword(password: passwordController.text)
                           .onError((error, stackTrace) =>
                               _handleError(error, stackTrace));
                       setState(() {

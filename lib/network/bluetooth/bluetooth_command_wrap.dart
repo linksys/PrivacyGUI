@@ -55,7 +55,7 @@ class BluetoothCommandWrap {
     if (service == null) {
       throw BTJNAPServiceNotFoundError(device.id.id);
     }
-
+    logger.d('BT: start find characteristics with service: $service');
     await _findCharacteristics(service);
     if (_ctrlCharacteristic == null || _jnapCharacteristic == null) {
       throw BTNoCharacteristicFoundError();
@@ -76,24 +76,24 @@ class BluetoothCommandWrap {
   }
 
   _subscribe(BluetoothService service) async {
-    await _jnapCharacteristic?.setNotifyValue(true);
-    _jnapSubscription = _jnapCharacteristic?.value.listen((value) {
-      logger.d('JNAP Notify changed: ${String.fromCharCodes(value)}');
-    });
+    // await _jnapCharacteristic?.setNotifyValue(true);
+    // _jnapSubscription = _jnapCharacteristic?.value.listen((value) {
+    //   logger.d('JNAP Notify changed: ${String.fromCharCodes(value)}');
+    // });
     await _ctrlCharacteristic?.setNotifyValue(true);
     _ctrlSubscription = _ctrlCharacteristic?.value.listen(_processFlow);
   }
 
   _unsubscribe() async {
-    await _jnapCharacteristic?.setNotifyValue(false);
+    // await _jnapCharacteristic?.setNotifyValue(false);
     await _ctrlCharacteristic?.setNotifyValue(false);
-    _jnapSubscription?.cancel();
+    // _jnapSubscription?.cancel();
     _ctrlSubscription?.cancel();
   }
 
   _processFlow(List<int> value) async {
     logger.d(
-        'Control Point Notify changed: ${base64Encode(value)}, value: $value');
+        'BT Control Point Notify changed: ${base64Encode(value)}, value: $value');
     if (value.isEmpty) {
       return;
     }

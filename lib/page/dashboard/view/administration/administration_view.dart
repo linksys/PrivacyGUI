@@ -3,13 +3,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
+import '../../../components/styled/styled_page_view.dart';
 import 'common_widget.dart';
 
 class AdministrationView extends ArgumentsStatefulView {
@@ -23,21 +25,13 @@ class AdministrationView extends ArgumentsStatefulView {
 class _AdministrationViewState extends State<AdministrationView> {
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
-      padding: EdgeInsets.zero,
+    return StyledLinksysPageView(
+      padding: const LinksysEdgeInsets.only(),
+      title: getAppLocalizations(context).administration,
       scrollable: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          getAppLocalizations(context).administration,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-        ),
-      ),
-      child: BasicLayout(
+      child: LinksysBasicLayout(
         content: Column(
           children: [
-            box16(),
             administrationSection(
               title: getAppLocalizations(context).general.toUpperCase(),
               content: Column(
@@ -108,8 +102,7 @@ class _AdministrationViewState extends State<AdministrationView> {
                         NavigationCubit.of(context).push(UnknownPath()),
                   ),
                   administrationTile(
-                    title:
-                        title(getAppLocalizations(context).advanced_routing),
+                    title: title(getAppLocalizations(context).advanced_routing),
                     value: const Text(''),
                     icon: Image.asset('assets/images/icon_chevron.png'),
                     onPress: () =>
@@ -130,28 +123,26 @@ class _AdministrationViewState extends State<AdministrationView> {
               content: Column(
                 children: [
                   administrationTile(
-                    title: title(getAppLocalizations(context)
-                        .local_management_access),
+                    title: title(
+                        getAppLocalizations(context).local_management_access),
                     value: const Text('On'),
                     icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () => NavigationCubit.of(context)
-                        .push(UnknownPath()),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(UnknownPath()),
                   ),
                   administrationTile(
-                    title: title(getAppLocalizations(context)
-                        .remote_access),
+                    title: title(getAppLocalizations(context).remote_access),
                     value: const Text('On'),
                     icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () => NavigationCubit.of(context)
-                        .push(UnknownPath()),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(UnknownPath()),
                   ),
                   administrationTile(
-                    title: title(getAppLocalizations(context)
-                        .web_ui),
+                    title: title(getAppLocalizations(context).web_ui),
                     value: const Text('On'),
                     icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () => NavigationCubit.of(context)
-                        .push(UnknownPath()),
+                    onPress: () =>
+                        NavigationCubit.of(context).push(UnknownPath()),
                   ),
                 ],
               ),
@@ -161,8 +152,8 @@ class _AdministrationViewState extends State<AdministrationView> {
               content: Column(
                 children: [
                   administrationTile(
-                    title: title(getAppLocalizations(context)
-                        .automatic_firmware_update),
+                    title: title(
+                        getAppLocalizations(context).automatic_firmware_update),
                     value: const Text('On'),
                     icon: Image.asset('assets/images/icon_chevron.png'),
                     onPress: () => NavigationCubit.of(context)
@@ -174,13 +165,17 @@ class _AdministrationViewState extends State<AdministrationView> {
                     value: Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        subTitle(
-                            getAppLocalizations(context).up_to_date),
-                        Image.asset(
-                            'assets/images/icon_check_green.png')
+                        subTitle(getAppLocalizations(context).up_to_date),
+                        Image.asset('assets/images/icon_check_green.png')
                       ],
                     ),
-                    description: context.read<NetworkCubit>().state.selected!.deviceInfo?.firmwareVersion ?? '',
+                    description: context
+                            .read<NetworkCubit>()
+                            .state
+                            .selected!
+                            .deviceInfo
+                            ?.firmwareVersion ??
+                        '',
                   )
                 ],
               ),

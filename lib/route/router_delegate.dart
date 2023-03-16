@@ -16,15 +16,16 @@ import 'package:linksys_moab/route/_route.dart';
 
 import 'package:linksys_moab/util/analytics.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_widgets/theme/responsive_theme.dart';
 import 'package:universal_link_plugin/universal_link_plugin.dart';
 
 import '../page/dashboard/view/_view.dart';
 
 class MoabRouterDelegate extends RouterDelegate<BasePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<BasePath> {
-
   MoabRouterDelegate(this._cubit) : navigatorKey = GlobalKey() {
-    _universalLinkSubscription = UniversalLinkPlugin().universalLinkStream.listen(_handleUniversalLink);
+    _universalLinkSubscription =
+        UniversalLinkPlugin().universalLinkStream.listen(_handleUniversalLink);
   }
   late StreamSubscription _universalLinkSubscription;
   final NavigationCubit _cubit;
@@ -61,10 +62,16 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
                           key: ValueKey(path.name),
                           fullscreenDialog: path.pageConfig.isFullScreenDialog,
                           opaque: path.pageConfig.isOpaque,
-                          child: Theme(
-                            data: path.pageConfig.themeData,
-                            child: path.pageConfig.isBackAvailable ? _buildPageView(path) : WillPopScope(child: _buildPageView(path), onWillPop: () async => true),
-                          ),
+                          // child: Theme(
+                          //   data: path.pageConfig.themeData,
+                          //   child: path.pageConfig.isBackAvailable ? _buildPageView(path) : WillPopScope(child: _buildPageView(path), onWillPop: () async => true),
+                          // ),
+                          child: AppResponsiveTheme(
+                              child: path.pageConfig.isBackAvailable
+                                  ? _buildPageView(path)
+                                  : WillPopScope(
+                                      child: _buildPageView(path),
+                                      onWillPop: () async => true)),
                         ),
                     ],
                     onPopPage: _onPopPage),
@@ -92,7 +99,6 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
   Widget _buildPageView(BasePath path) {
     return path.buildPage(_cubit);
   }
-
 
   @override
   void dispose() {
@@ -142,7 +148,8 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
       listenWhen: (previous, current) =>
           !currentConfiguration.pageConfig.ignoreConnectivityChanged,
       listener: (context, state) {
-        logger.d("Connectivity Listener: ${state.connectivityInfo.type}, ${state.connectivityInfo.ssid}");
+        logger.d(
+            "Connectivity Listener: ${state.connectivityInfo.type}, ${state.connectivityInfo.ssid}");
         if (state.connectivityInfo.type == ConnectivityResult.none &&
             currentConfiguration is! NoInternetConnectionPath) {
           _cubit.push(NoInternetConnectionPath());

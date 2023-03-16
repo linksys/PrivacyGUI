@@ -25,12 +25,14 @@ import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/bloc/security/bloc.dart';
 import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/network/http/linksys_http_client.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/notification/notification_helper.dart';
 import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
 import 'package:linksys_moab/repository/authenticate/impl/cloud_auth_repository.dart';
 import 'package:linksys_moab/repository/config/environment_repository.dart';
+import 'package:linksys_moab/repository/linksys_cloud_repository.dart';
 import 'package:linksys_moab/repository/networks/cloud_networks_repository.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/repository/subscription/subscription_repository.dart';
@@ -39,6 +41,8 @@ import 'package:linksys_moab/route/_route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/responsive_theme.dart';
 import 'bloc/setup/bloc.dart';
 import 'bloc/subscription/subscription_cubit.dart';
 import 'firebase_options.dart';
@@ -112,7 +116,10 @@ Widget _app() {
       RepositoryProvider(create: (context) => CloudNetworksRepository()),
       RepositoryProvider(
           create: (context) => OtpRepository(httpClient: MoabHttpClient())),
-      RepositoryProvider(create: (context) => SubscriptionRepository())
+      RepositoryProvider(create: (context) => SubscriptionRepository()),
+      RepositoryProvider(
+          create: (context) =>
+              LinksysCloudRepository(httpClient: LinksysHttpClient())),
     ],
     child: MultiBlocProvider(providers: [
       BlocProvider(
@@ -121,6 +128,7 @@ Widget _app() {
       BlocProvider(
         create: (BuildContext context) => AuthBloc(
           repo: context.read<CloudAuthRepository>(),
+          cloudRepo: context.read<LinksysCloudRepository>(),
           routerRepo: context.read<RouterRepository>(),
         ),
       ),
@@ -155,6 +163,7 @@ Widget _app() {
       BlocProvider(
           create: (BuildContext context) => NetworkCubit(
                 networksRepository: context.read<CloudNetworksRepository>(),
+                cloudRepository: context.read<LinksysCloudRepository>(),
                 routerRepository: context.read<RouterRepository>(),
               )),
       BlocProvider(
@@ -201,7 +210,7 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
     _cubit.stop();
     _subscription.cancel();
     apnsStreamSubscription?.cancel();
-    releaseErrorResponseStream();
+    releaseErrorStream();
     CloudEnvironmentManager().release();
     super.dispose();
   }
@@ -211,7 +220,11 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
     logger.d('Moab App build: ${describeIdentity(this)}');
     return MaterialApp.router(
       onGenerateTitle: (context) => getAppLocalizations(context).app_title,
-      theme: MoabTheme.mainLightModeData,
+      theme: ThemeData.light().copyWith(
+          backgroundColor: ConstantColors.primaryLinksysWhite,
+          scaffoldBackgroundColor: ConstantColors.primaryLinksysWhite),
+      darkTheme: ThemeData.dark()
+          .copyWith(backgroundColor: ConstantColors.primaryLinksysBlack),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       routerDelegate: MoabRouterDelegate(context.read<NavigationCubit>()),
@@ -244,10 +257,9 @@ class MyHTTPOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
-      ..badCertificateCallback =
-          (X509Certificate cert, String host, int port) {
-      // logger.d('cert:: issuer:${cert.issuer}, subject:${cert.subject}');
-      return true;
-          };
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
+        // logger.d('cert:: issuer:${cert.issuer}, subject:${cert.subject}');
+        return true;
+      };
   }
 }

@@ -5,13 +5,16 @@ import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
+import 'package:linksys_widgets/theme/theme.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/page/base_page_view.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,12 +28,6 @@ class HomeView extends ArgumentsStatefulView {
 class _HomeViewState extends State<HomeView> {
   bool _isOpenDebug = false;
   bool _isLoading = false;
-  final Widget logoImage = SvgPicture.asset(
-    'assets/images/linksys_logo_large_white.svg',
-    key: const Key('linksys_logo'),
-    semanticsLabel: 'Linksys Logo',
-    height: 180,
-  );
 
   @override
   void initState() {
@@ -40,14 +37,15 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
+    logger.d('home rebuild');
     return _isLoading
-        ? BasePageView.noNavigationBar(
-            child: const FullScreenSpinner(
+        ? const LinksysPageView.noNavigationBar(
+            child: LinksysFullScreenSpinner(
               text: 'Loading...',
             ),
           )
-        : BasePageView(
-            child: BasicLayout(
+        : LinksysPageView(
+            child: LinksysBasicLayout(
               content: _content(context),
               footer: _footer(context),
             ),
@@ -63,16 +61,16 @@ class _HomeViewState extends State<HomeView> {
               _isOpenDebug = !_isOpenDebug;
             });
           },
-          child: logoImage),
+          child: SvgPicture(AppTheme.of(context).images.linksysBlackLogo)),
     );
   }
 
   Widget _footer(BuildContext context) {
     return Column(children: [
-      PrimaryButton(
+      LinksysPrimaryButton(
+        getAppLocalizations(context).login,
         key: const Key('home_view_button_login'),
-        text: getAppLocalizations(context).login,
-        onPress: () async {
+        onTap: () async {
           // TODO local auth check
           final pref = await SharedPreferences.getInstance();
           if (pref.containsKey(linksysPrefEnableBiometrics)) {
@@ -96,29 +94,21 @@ class _HomeViewState extends State<HomeView> {
           }
         },
       ),
-      const SizedBox(
-        height: 24,
-      ),
-      SecondaryButton(
+      LinksysSecondaryButton(
+        getAppLocalizations(context).setup_new_router,
         key: const Key('home_view_button_setup'),
-        text: getAppLocalizations(context).setup_new_router,
-        onPress: () {
+        onTap: () {
           NavigationCubit.of(context).push(SetupWelcomeEulaPath());
         },
       ),
       ...showDebugButton(),
-      SizedBox(
-        height: 16,
-      ),
       FutureBuilder(
-          future:
-          PackageInfo.fromPlatform().then((value) => value.version),
+          future: PackageInfo.fromPlatform().then((value) => value.version),
           initialData: '-',
           builder: (context, data) {
-            return Text('version ${data.data} ${cloudEnvTarget == CloudEnvironment.prod ? '' : cloudEnvTarget.name}',
-                style: Theme.of(context).textTheme.headline4?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ));
+            return LinksysText.tags(
+              'version ${data.data} ${cloudEnvTarget == CloudEnvironment.prod ? '' : cloudEnvTarget.name}',
+            );
           }),
     ]);
   }
@@ -126,12 +116,10 @@ class _HomeViewState extends State<HomeView> {
   List<Widget> showDebugButton() {
     if (_isOpenDebug) {
       return [
-        const SizedBox(
-          height: 24,
-        ),
-        SecondaryButton(
-          text: 'Debug Tools',
-          onPress: () {
+        const LinksysGap.semiBig(),
+        LinksysSecondaryButton(
+          'Debug Tools',
+          onTap: () {
             NavigationCubit.of(context).push(DebugToolsMainPath());
           },
         ),
@@ -141,6 +129,5 @@ class _HomeViewState extends State<HomeView> {
     }
   }
 
-  _initialize() async {
-  }
+  _initialize() async {}
 }

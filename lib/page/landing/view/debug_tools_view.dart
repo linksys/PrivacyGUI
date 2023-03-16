@@ -387,6 +387,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
               logger.d('result1: $result1}');
               final result2 = await repository.getVersionInfo();
               logger.d('result2: $result2}');
+              // repository.setDeviceMode('Master');
               repository.enableBTSetup = false;
             },
           ),

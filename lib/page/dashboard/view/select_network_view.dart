@@ -11,8 +11,14 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_widgets/theme/data/colors.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 import '../../../bloc/subscription/subscription_cubit.dart';
+import '../../components/styled/styled_page_view.dart';
 
 class SelectNetworkView extends ArgumentsStatefulView {
   const SelectNetworkView({
@@ -20,7 +26,7 @@ class SelectNetworkView extends ArgumentsStatefulView {
   }) : super(key: key);
 
   @override
-  _SelectNetworkViewState createState() => _SelectNetworkViewState();
+  State<SelectNetworkView> createState() => _SelectNetworkViewState();
 }
 
 class _SelectNetworkViewState extends State<SelectNetworkView> {
@@ -41,22 +47,12 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
   @override
   Widget build(BuildContext context) {
     return isLoading
-        ? FullScreenSpinner(text: getAppLocalizations(context).processing)
+        ? LinksysFullScreenSpinner(
+            text: getAppLocalizations(context).processing)
         : BlocBuilder<NetworkCubit, NetworkState>(
-            builder: (context, state) => BasePageView(
-                  appBar: AppBar(
-                    backgroundColor: Colors.transparent,
-                    iconTheme:
-                    IconThemeData(color: Theme.of(context).colorScheme.primary),
-                    elevation: 0,
-                    automaticallyImplyLeading: false,
-                    actions: [
-                      IconButton(
-                          icon: const Icon(Icons.close, color: Colors.black,),
-                          onPressed: () => context.read<AuthBloc>().add(Logout()))
-                    ],
-                  ),
-                  child: BasicLayout(
+            builder: (context, state) => StyledLinksysPageView(
+                  isCloseStyle: true,
+                  child: LinksysBasicLayout(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     content: Column(
                       children: [
@@ -68,66 +64,56 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
   }
 
   Widget _networkSection(NetworkState state, {String title = ''}) {
-    return SizedBox(
-      height: 250,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LinksysText.tags(
+          title,
+        ),
+        const LinksysGap.small(),
+        ListView.builder(
+          shrinkWrap: true,
+          itemCount: state.networks.length,
+          itemBuilder: (context, index) => InkWell(
+            onTap: state.networks[index].isOnline
+                ? () async {
+                    setState(() {
+                      isLoading = true;
+                    });
+                    await _networkCubit.selectNetwork(state.networks[index]);
+                    await _subscriptionCubit.loadingProducts();
+                    _navigationCubit.clearAndPush(PrepareDashboardPath());
+                  }
+                : null,
+            child: AppPadding(
+              padding: const LinksysEdgeInsets.symmetric(
+                  vertical: AppGapSize.regular),
+              child: Row(
+                children: [
+                  Image.asset(
+                    'assets/images/icon_device.png',
+                    width: 40,
+                    height: 40,
+                  ),
+                  const LinksysGap.semiBig(),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      LinksysText.descriptionMain(
+                        state.networks[index].network.friendlyName,
+                        color: state.networks[index].isOnline
+                            ? null
+                            : ConstantColors.textBoxTextGray,
+                      ),
+                      const LinksysGap.small(),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-          box8(),
-          ListView.builder(
-            shrinkWrap: true,
-            itemCount: state.networks.length,
-            itemBuilder: (context, index) => InkWell(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Row(
-                  children: [
-                    Image.asset(
-                      'assets/images/icon_device.png',
-                      width: 40,
-                      height: 40,
-                    ),
-                    box24(),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          state.networks[index].serialNumber,
-                          style: const TextStyle(
-                            fontSize: 18,
-                          ),
-                        ),
-                        box4(),
-                        Text(
-                          state.networks[index].macAddress,
-                          style: const TextStyle(
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              onTap: () async {
-                setState(() {
-                  isLoading = true;
-                });
-                await _networkCubit.selectNetwork(state.networks[index]);
-                await _subscriptionCubit.loadingProducts();
-                _navigationCubit.clearAndPush(PrepareDashboardPath());
-              },
-            ),
-          )
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

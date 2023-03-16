@@ -5,10 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/customs/hidden_password_widget.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:linksys_moab/util/wifi_credential.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/layouts/layout.dart';
@@ -31,7 +34,7 @@ class ShareWifiView extends ArgumentsStatefulView {
   const ShareWifiView({Key? key, super.args}) : super(key: key);
 
   @override
-  _ShareWifiViewState createState() => _ShareWifiViewState();
+  State<ShareWifiView> createState() => _ShareWifiViewState();
 }
 
 class _ShareWifiViewState extends State<ShareWifiView> {
@@ -50,29 +53,21 @@ class _ShareWifiViewState extends State<ShareWifiView> {
 
   Widget _wifiInfoSection() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LinksysText.tags(
           _currentItem.wifiType.displayTitle,
-          style: Theme.of(context).textTheme.headline4,
         ),
-        const SizedBox(
-          height: 20,
-        ),
-        Text(
+        const LinksysGap.regular(),
+        LinksysText.descriptionMain(
           _currentItem.ssid,
-          style: Theme.of(context).textTheme.headline2,
         ),
         HiddenPasswordWidget(password: _currentItem.password),
-        const SizedBox(
-          height: 40,
-        ),
-        Text(
+        const LinksysGap.big(),
+        LinksysText.descriptionMain(
           'JOIN THIS NETWORK',
-          style: Theme.of(context).textTheme.headline4,
         ),
-        const SizedBox(
-          height: 20,
-        ),
+        const LinksysGap.regular(),
         RepaintBoundary(
           key: globalKey,
           child: SizedBox(
@@ -80,7 +75,8 @@ class _ShareWifiViewState extends State<ShareWifiView> {
               data: WiFiCredential(
                 ssid: _currentItem.ssid,
                 password: _currentItem.password,
-                type: SecurityType.wpa, //TODO: The security type is fixed for now
+                type:
+                    SecurityType.wpa, //TODO: The security type is fixed for now
               ).generate(),
               padding: EdgeInsets.zero,
             ),
@@ -89,7 +85,6 @@ class _ShareWifiViewState extends State<ShareWifiView> {
           ),
         ),
       ],
-      crossAxisAlignment: CrossAxisAlignment.start,
     );
   }
 
@@ -109,9 +104,8 @@ class _ShareWifiViewState extends State<ShareWifiView> {
           GestureDetector(
             behavior: HitTestBehavior.translucent,
             child: Container(
-              child: Text(
+              child: LinksysText.textLinkLarge(
                 options[index].displayTitle,
-                style: Theme.of(context).textTheme.headline3,
               ),
               height: 80,
               alignment: Alignment.centerLeft,
@@ -225,14 +219,15 @@ class _ShareWifiViewState extends State<ShareWifiView> {
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
+    return StyledLinksysPageView(
       scrollable: true,
-      child: BasicLayout(
-        header: BasicHeader(
-          title: 'Share ${_currentItem.wifiType.displayTitle} WiFi',
+      child: LinksysBasicLayout(
+        header: LinksysText.screenName(
+          'Share ${_currentItem.wifiType.displayTitle} WiFi',
         ),
         content: Column(
           children: [
+            const LinksysGap.big(),
             _wifiInfoSection(),
             _optionSection(),
           ],

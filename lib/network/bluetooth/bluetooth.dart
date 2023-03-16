@@ -9,7 +9,6 @@ import 'package:linksys_moab/network/jnap/command/base_command.dart';
 import 'package:linksys_moab/network/jnap/command/bt_base_command.dart';
 import 'package:linksys_moab/network/jnap/jnap_command_executor_mixin.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
-import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/util/logger.dart';
 
 part 'bluetooth_command_wrap.dart';
@@ -87,14 +86,19 @@ class BluetoothManager with JNAPCommandExecutor<JNAPResult> {
   }
 
   // Throw timeout exception when timeout occurs
-  connect(BluetoothDevice device) async {
-    logger.d('BT start to connect to $device');
-    await device.connect(timeout: const Duration(seconds: 120));
-    logger.d('BT ${device.id} connected');
-    final services = await device.discoverServices();
-    logger.d('Services on ${device.id}');
-    for (var service in services) {
-      logger.d('Service: $service');
+  connect(BluetoothDevice device, {int durationInSec = 120}) async {
+    try {
+      logger.d('BT start to connect to $device');
+      await device.connect(timeout: Duration(seconds: durationInSec));
+      logger.d('BT ${device.id} connected');
+      final services = await device.discoverServices();
+      logger.d('BT Services on ${device.id}');
+      for (var service in services) {
+        logger.d('BT Service: $service');
+      }
+    } catch (e) {
+      logger.e('BT connect error', e);
+      throw BTDeviceConnectionError(device.id.id);
     }
     _connectedDevice = device;
   }
@@ -143,7 +147,7 @@ class BluetoothManager with JNAPCommandExecutor<JNAPResult> {
     int retry = 0;
     for (;;) {
       final commandWrap = BluetoothCommandWrap(command: command);
-
+      logger.d('BT send command wrap: $commandWrap');
       try {
         await commandWrap.execute(_connectedDevice!);
       } catch (e) {
