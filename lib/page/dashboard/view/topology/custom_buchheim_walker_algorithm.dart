@@ -4,6 +4,8 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:graphview/GraphView.dart';
 
+import '../../../../util/logger.dart';
+
 class CustomBuchheimWalkerAlgorithm extends Algorithm {
   Map<Node, BuchheimWalkerNodeData> nodeData = {};
   double minNodeHeight = double.infinity;
@@ -33,11 +35,12 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
     secondWalk(graph, firstNode, 0.0);
     checkUnconnectedNotes(graph);
     positionNodes(graph);
-    shiftCoordinates(graph, shiftX, shiftY);
+    shiftCoordinates(graph, this.shiftX, this.shiftY);
     return calculateGraphSize(graph);
   }
 
-  Node getFirstNode(Graph graph) => graph.nodes.firstWhere((element) => !hasPredecessor(element));
+  Node getFirstNode(Graph graph) =>
+      graph.nodes.firstWhere((element) => !hasPredecessor(element));
 
   void checkUnconnectedNotes(Graph graph) {
     for (var element in graph.nodes) {
@@ -67,7 +70,8 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
       // here, because it's already initialized with 0
       if (hasLeftSibling(graph, node)) {
         final leftSibling = getLeftSibling(graph, node);
-        nodeData.prelim = getPrelim(leftSibling) + getSpacing(graph, leftSibling, node);
+        nodeData.prelim =
+            getPrelim(leftSibling) + getSpacing(graph, leftSibling, node);
       }
     } else {
       final leftMost = getLeftMostChild(graph, node);
@@ -87,12 +91,15 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
 
       var vertical = isVertical();
       var midPoint = 0.5 *
-          ((getPrelim(leftMost) + getPrelim(rightMost) + (vertical ? rightMost!.width : rightMost!.height)) -
+          ((getPrelim(leftMost) +
+                  getPrelim(rightMost) +
+                  (vertical ? rightMost!.width : rightMost!.height)) -
               (vertical ? node.width : node.height));
 
       if (hasLeftSibling(graph, node)) {
         final leftSibling = getLeftSibling(graph, node);
-        nodeData.prelim = getPrelim(leftSibling) + getSpacing(graph, leftSibling, node);
+        nodeData.prelim =
+            getPrelim(leftSibling) + getSpacing(graph, leftSibling, node);
         nodeData.modifier = nodeData.prelim - midPoint;
       } else {
         nodeData.prelim = midPoint;
@@ -105,8 +112,11 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
     var depth = nodeData.depth;
     var vertical = isVertical();
 
-    node.position = Offset((nodeData.prelim + modifier),
-        (depth * (vertical ? minNodeHeight : minNodeWidth) + depth * configuration.levelSeparation).ceilToDouble());
+    node.position = Offset(
+        (nodeData.prelim + modifier),
+        (depth * (vertical ? minNodeHeight : minNodeWidth) +
+                depth * configuration.levelSeparation)
+            .ceilToDouble());
 
     graph.successorsOf(node).forEach((w) {
       secondWalk(graph, w, modifier + nodeData.modifier);
@@ -125,9 +135,8 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
       right = max(right, node.x + node.width);
       bottom = max(bottom, node.y + node.height);
     }
-
-    // ++Austin add a padding
-    return Size(right - left + 30, bottom - top);
+    // ++Austin add shift values
+    return Size(right - left + shiftX, bottom - top + shiftY);
   }
 
   void executeShifts(Graph graph, Node node) {
@@ -164,15 +173,19 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
 
       Node? nextLeft;
       for (nextLeft = this.nextLeft(graph, node);
-      nextRight != null && nextLeft != null;
-      nextLeft = this.nextLeft(graph, nextLeft)) {
+          nextRight != null && nextLeft != null;
+          nextLeft = this.nextLeft(graph, nextLeft)) {
         vom = this.nextLeft(graph, vom);
         vop = this.nextRight(graph, vop);
 
         setAncestor(vop, node);
-        var shift = getPrelim(nextRight) + sim - (getPrelim(nextLeft) + sip) + getSpacing(graph, nextRight, node);
+        var shift = getPrelim(nextRight) +
+            sim -
+            (getPrelim(nextLeft) + sip) +
+            getSpacing(graph, nextRight, node);
         if (shift > 0) {
-          moveSubtree(this.ancestor(graph, nextRight, node, ancestor), node, shift);
+          moveSubtree(
+              this.ancestor(graph, nextRight, node, ancestor), node, shift);
           sip += shift;
           sop += shift;
         }
@@ -233,13 +246,16 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
 
   Node? ancestor(Graph graph, Node vim, Node node, Node defaultAncestor) {
     var vipNodeData = getNodeData(vim)!;
-    return predecessorsOf(vipNodeData.ancestor).first == predecessorsOf(node).first
+    return predecessorsOf(vipNodeData.ancestor).first ==
+            predecessorsOf(node).first
         ? vipNodeData.ancestor
         : defaultAncestor;
   }
 
   Node? nextRight(Graph graph, Node? node) {
-    return graph.hasSuccessor(node) ? getRightMostChild(graph, node) : getNodeData(node)?.thread;
+    return graph.hasSuccessor(node)
+        ? getRightMostChild(graph, node)
+        : getNodeData(node)?.thread;
   }
 
   Node? nextLeft(Graph graph, Node? node) {
@@ -427,19 +443,22 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
         finalOffset = Offset(node.x - offset.dx, node.y + globalPadding);
         break;
       case 2:
-        finalOffset = Offset(node.x - offset.dx, offset.dy - node.y - globalPadding);
+        finalOffset =
+            Offset(node.x - offset.dx, offset.dy - node.y - globalPadding);
         break;
       case 3:
         finalOffset = Offset(node.y + globalPadding, node.x - offset.dx);
         break;
       case 4:
-        finalOffset = Offset(offset.dy - node.y - globalPadding, node.x - offset.dx);
+        finalOffset =
+            Offset(offset.dy - node.y - globalPadding, node.x - offset.dx);
         break;
       default:
         finalOffset = Offset(0, 0);
         break;
     }
-    print('Node ${node.key?.value} (${node.x}, ${node.y}) final Position: ${finalOffset}');
+    print(
+        'Node ${node.key?.value} (${node.x}, ${node.y}) final Position: ${finalOffset}');
     return finalOffset;
   }
 
@@ -448,7 +467,8 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
     if (descending) {
       nodes.reversed;
     }
-    nodes.sort((data1, data2) => compare(getNodeData(data1)?.depth ?? 0, getNodeData(data2)?.depth ?? 0));
+    nodes.sort((data1, data2) => compare(
+        getNodeData(data1)?.depth ?? 0, getNodeData(data2)?.depth ?? 0));
 
     return nodes;
   }
@@ -459,6 +479,9 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
 
   @override
   EdgeRenderer? renderer;
+
+  final double shiftX;
+  final double shiftY;
 
   void initData(Graph? graph) {
     graph?.nodes.forEach((node) {
@@ -490,7 +513,12 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
     return nodeData[node]?.predecessorNodes ?? [];
   }
 
-  CustomBuchheimWalkerAlgorithm(this.configuration, EdgeRenderer? renderer) {
+  CustomBuchheimWalkerAlgorithm(
+    this.configuration,
+    EdgeRenderer? renderer, {
+    this.shiftX = 10,
+    this.shiftY = 10,
+  }) {
     this.renderer = renderer ?? TreeEdgeRenderer(configuration);
   }
 
@@ -504,7 +532,7 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
     secondWalk(graph, firstNode, 0.0);
     checkUnconnectedNotes(graph);
     positionNodes(graph);
-    // shiftCoordinates(graph, shiftX, shiftY);
+    shiftCoordinates(graph, shiftX, shiftY);
   }
 
   @override

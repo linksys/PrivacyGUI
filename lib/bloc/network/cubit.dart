@@ -64,6 +64,7 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
             extraHeaders: {
               kJNAPNetworkId: network.network.networkId,
             },
+            type: CommandType.remote,
           )
           .then((value) => value.result == 'OK')
           .onError((error, stackTrace) => false);

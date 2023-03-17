@@ -103,7 +103,7 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
 
   Future<RouterType> _testRouterType(String? newIp) async {
     final testJNAP = await _routerRepository
-        .send(JNAPAction.isAdminPasswordDefault, forceLocal: true)
+        .send(JNAPAction.isAdminPasswordDefault, type: CommandType.local)
         .then((value) => true)
         .onError((error, stackTrace) => false);
     if (!testJNAP) {
@@ -111,7 +111,7 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
     }
 
     final routerSN = await _routerRepository
-        .send(JNAPAction.getDeviceInfo, forceLocal: true)
+        .send(JNAPAction.getDeviceInfo, type: CommandType.local)
         .then<String>(
             (value) => RouterDeviceInfo.fromJson(value.output).serialNumber)
         .onError((error, stackTrace) => '');

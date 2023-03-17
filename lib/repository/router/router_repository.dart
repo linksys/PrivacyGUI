@@ -27,6 +27,11 @@ import 'package:linksys_moab/utils.dart';
 
 import '../model/cloud_session_model.dart';
 
+enum CommandType {
+  remote,
+  local,
+}
+
 class CommandWrap {
   CommandWrap({
     required this.action,
@@ -83,30 +88,29 @@ class RouterRepository with StateStreamListener {
     Map<String, dynamic> data = const {},
     Map<String, String> extraHeaders = const {},
     bool auth = false,
-    bool forceLocal = false,
+    CommandType? type,
   }) async {
-    final command = createCommand(
-      action.actionValue,
-      data: data,
-      extraHeaders: extraHeaders,
-      needAuth: auth,
-      forceLocal: forceLocal
-    );
+    final command = createCommand(action.actionValue,
+        data: data, extraHeaders: extraHeaders, needAuth: auth, type: type);
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
   TransactionHttpCommand createTransaction(List<Map<String, dynamic>> payload,
-      {bool needAuth = false}) {
+      {bool needAuth = false, CommandType? type}) {
+    final communicateType = type ??
+        (_loginType == LoginFrom.local
+            ? CommandType.local
+            : CommandType.remote);
     logger.d('create transaction');
     String url = _buildCommandUrl(
       routerType: _routerType,
-      from: _loginType,
+      type: communicateType,
     );
     Map<String, String> header = _buildCommandHeader(
       needAuth: needAuth,
       routerType: _routerType,
-      from: _loginType,
+      type: communicateType,
     );
 
     if (url.isNotEmpty) {
@@ -122,7 +126,7 @@ class RouterRepository with StateStreamListener {
     Map<String, dynamic> data = const {},
     Map<String, String> extraHeaders = const {},
     bool needAuth = false,
-    bool forceLocal = false,
+    CommandType? type,
   }) {
     if (isEnableBTSetup) {
       return _createBTCommand(
@@ -136,7 +140,7 @@ class RouterRepository with StateStreamListener {
         data: data,
         extraHeaders: extraHeaders,
         needAuth: needAuth,
-        forceLocal: forceLocal,
+        type: type,
       );
     }
   }
@@ -188,17 +192,26 @@ class RouterRepository with StateStreamListener {
 
   String _buildCommandUrl({
     required RouterType routerType,
-    required LoginFrom from,
+    required CommandType? type,
   }) {
     String url;
-    switch (routerType) {
+    final newRouterType = () {
+      if (type == CommandType.local) {
+        return RouterType.behindManaged;
+      } else if (type == CommandType.remote) {
+        return RouterType.others;
+      } else {
+        return routerType;
+      }
+    }();
+    switch (newRouterType) {
       case RouterType.others:
-        url = from == LoginFrom.remote
+        url = _loginType == LoginFrom.remote
             ? cloudEnvironmentConfig[kCloudJNAP]
             : 'https://$_localIp/JNAP/';
         break;
       case RouterType.behind:
-        url = from == LoginFrom.remote
+        url = _loginType == LoginFrom.remote
             ? 'https://$_localIp/cloud/JNAP/'
             : 'https://$_localIp/JNAP/';
         break;
@@ -212,10 +225,19 @@ class RouterRepository with StateStreamListener {
   Map<String, String> _buildCommandHeader({
     bool needAuth = false,
     required RouterType routerType,
-    required LoginFrom from,
+    required CommandType? type,
   }) {
     Map<String, String> header = {};
-    switch (_routerType) {
+    final newRouterType = () {
+      if (type == CommandType.local) {
+        return RouterType.behindManaged;
+      } else if (type == CommandType.remote) {
+        return RouterType.others;
+      } else {
+        return routerType;
+      }
+    }();
+    switch (newRouterType) {
       case RouterType.others:
 
         /// MUST Remote
@@ -274,16 +296,20 @@ class RouterRepository with StateStreamListener {
     Map<String, dynamic> data = const {},
     Map<String, String> extraHeaders = const {},
     bool needAuth = false,
-    bool forceLocal = false,
+    CommandType? type,
   }) {
+    final communicateType = type ??
+        (_loginType == LoginFrom.local
+            ? CommandType.local
+            : CommandType.remote);
     String url = _buildCommandUrl(
       routerType: _routerType,
-      from: forceLocal ? LoginFrom.local : _loginType,
+      type: communicateType,
     );
     Map<String, String> header = _buildCommandHeader(
       needAuth: needAuth,
       routerType: _routerType,
-      from: forceLocal ? LoginFrom.local : _loginType,
+      type: communicateType,
     );
     header.addEntries(extraHeaders.entries);
 

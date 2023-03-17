@@ -8,6 +8,7 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_widgets/theme/data/colors.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/panel/panel_bases.dart';
@@ -79,8 +80,10 @@ class _AdministrationViewState extends State<AdministrationView> {
                     onTap: () =>
                         NavigationCubit.of(context).push(MacFilteringPath()),
                   ),
-                  AppSimplePanel(
+                  AppPanelWithInfo(
                     title: getAppLocalizations(context).vlan,
+                    infoText: 'OFF',
+                    infoTextColor: ConstantColors.textBoxTextGray,
                     onTap: () =>
                         NavigationCubit.of(context).push(UnknownPath()),
                   ),
@@ -101,26 +104,25 @@ class _AdministrationViewState extends State<AdministrationView> {
               title: getAppLocalizations(context).administration_access,
               content: Column(
                 children: [
-                  administrationTile(
-                    title: title(
-                        getAppLocalizations(context).local_management_access),
-                    value: const Text('On'),
-                    icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () =>
+                  AppPanelWithInfo(
+                    title: getAppLocalizations(context).local_management_access,
+                    infoText: 'ON',
+                    infoTextColor: ConstantColors.secondaryElectricGreen,
+                    onTap: () =>
                         NavigationCubit.of(context).push(UnknownPath()),
                   ),
-                  administrationTile(
-                    title: title(getAppLocalizations(context).remote_access),
-                    value: const Text('On'),
-                    icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () =>
+                  AppPanelWithInfo(
+                    title: getAppLocalizations(context).remote_access,
+                    infoText: 'ON',
+                    infoTextColor: ConstantColors.secondaryElectricGreen,
+                    onTap: () =>
                         NavigationCubit.of(context).push(UnknownPath()),
                   ),
-                  administrationTile(
-                    title: title(getAppLocalizations(context).web_ui),
-                    value: const Text('On'),
-                    icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () =>
+                  AppPanelWithInfo(
+                    title: getAppLocalizations(context).web_ui,
+                    infoText: 'ON',
+                    infoTextColor: ConstantColors.secondaryElectricGreen,
+                    onTap: () =>
                         NavigationCubit.of(context).push(UnknownPath()),
                   ),
                 ],
@@ -130,24 +132,17 @@ class _AdministrationViewState extends State<AdministrationView> {
               title: getAppLocalizations(context).firmware.toUpperCase(),
               content: Column(
                 children: [
-                  administrationTile(
-                    title: title(
-                        getAppLocalizations(context).automatic_firmware_update),
-                    value: const Text('On'),
-                    icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () => NavigationCubit.of(context)
-                        .push(RouterPasswordViewPath()),
+                  AppPanelWithInfo(
+                    title:
+                        getAppLocalizations(context).automatic_firmware_update,
+                    infoText: 'ON',
+                    infoTextColor: ConstantColors.secondaryElectricGreen,
+                    onTap: () =>
+                        NavigationCubit.of(context).push(UnknownPath()),
                   ),
-                  administrationTileDesc(
-                    title: title(getAppLocalizations(context)
-                        .node_detail_label_firmware_version),
-                    value: Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        subTitle(getAppLocalizations(context).up_to_date),
-                        Image.asset('assets/images/icon_check_green.png')
-                      ],
-                    ),
+                  AppPanelWithValueCheck(
+                    title:
+                        getAppLocalizations(context).automatic_firmware_update,
                     description: context
                             .read<NetworkCubit>()
                             .state
@@ -155,7 +150,9 @@ class _AdministrationViewState extends State<AdministrationView> {
                             .deviceInfo
                             ?.firmwareVersion ??
                         '',
-                  )
+                    valueText: 'Up to date',
+                    isChecked: true,
+                  ),
                 ],
               ),
             ),

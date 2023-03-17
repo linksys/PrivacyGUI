@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:graphview/GraphView.dart';
 import 'package:linksys_moab/bloc/add_nodes/state.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
@@ -8,6 +9,7 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/bloc/cubit.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/bloc/state.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/topology_node.dart';
@@ -15,6 +17,14 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/utils.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/theme/data/colors.dart';
+import 'package:linksys_widgets/theme/theme.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/animation/fade_in_out.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import '../../../../util/logger.dart';
 import 'custom_buchheim_walker_algorithm.dart';
 import 'custom_tree_edge_renderer.dart';
 
@@ -47,22 +57,23 @@ class _TopologyContentView extends State<TopologyContentView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TopologyCubit, TopologyState>(builder: (context, state) {
-      return BasePageView(
-        padding: EdgeInsets.zero,
-        child: BasicLayout(
+      return StyledLinksysPageView(
+        padding: const LinksysEdgeInsets.regular(),
+        child: LinksysBasicLayout(
           content: Visibility(
             visible: state.rootNode.deviceID.isNotEmpty,
+            replacement: const FullScreenSpinner(),
             child: Column(
               children: [
                 state.rootNode.isOnline
-                    ? _addNodeWidget()
+                    ? _connectionStatus()
                     : _noInternetConnectionWidget(),
+                const LinksysGap.regular(),
                 Expanded(
                   child: TreeViewPage(root: state.rootNode),
                 ),
               ],
             ),
-            replacement: const FullScreenSpinner(),
           ),
           footer: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -79,23 +90,33 @@ class _TopologyContentView extends State<TopologyContentView> {
     });
   }
 
-  Widget _addNodeWidget() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        SimpleTextButton(
-          text: '+ Add Node',
-          onPressed: () {
-            NavigationCubit.of(context).push(SetupNthChildPlacePath()
-              ..next = NavigationCubit.of(context).currentPath()
-              ..args = {
-                'isAddonsNode': true,
-                'init': true,
-                'mode': AddNodesMode.addNodeOnly,
-              });
-          },
-        )
-      ],
+  Widget _connectionStatus() {
+    return Center(
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(100),
+          color: ConstantColors.primaryLinksysBlue.withOpacity(0.07),
+        ),
+        child: AppPadding(
+          padding: const LinksysEdgeInsets.symmetric(
+              vertical: AppGapSize.semiSmall, horizontal: AppGapSize.regular),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FadeInAndOut(
+                  child: Icon(
+                getCharactersIcons(context).statusOn,
+                color: ConstantColors.tertiaryGreen,
+              )),
+              const LinksysGap.regular(),
+              LinksysText.descriptionSub(
+                'Connected to Internet',
+              )
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -141,7 +162,7 @@ class TreeViewPage extends StatefulWidget {
   const TreeViewPage({Key? key, required this.root}) : super(key: key);
 
   @override
-  _TreeViewPageState createState() => _TreeViewPageState();
+  State<TreeViewPage> createState() => _TreeViewPageState();
 }
 
 class _TreeViewPageState extends State<TreeViewPage> {
@@ -161,36 +182,31 @@ class _TreeViewPageState extends State<TreeViewPage> {
   @override
   Widget build(BuildContext context) {
     return InteractiveViewer(
-        constrained: false,
-        boundaryMargin: const EdgeInsets.all(0),
-        // minScale: 1,
-        // maxScale: 5.6,
-        // scaleFactor: 4,
-        scaleEnabled: false,
-        child: GraphView(
-          graph: graph,
-          algorithm: CustomBuchheimWalkerAlgorithm(
-              builder, CustomEdgeRenderer(builder)),
-          paint: Paint()
-            ..color = Colors.black
-            ..strokeWidth = 1
-            ..style = PaintingStyle.stroke,
-          builder: (Node node) {
-            return rectangleWidget(node);
-          },
-        ));
+      constrained: false,
+      boundaryMargin: const EdgeInsets.all(0),
+      scaleEnabled: false,
+      child: GraphView(
+        graph: graph,
+        algorithm: CustomBuchheimWalkerAlgorithm(
+          builder,
+          CustomEdgeRenderer(builder),
+          shiftX: MediaQuery.of(context).size.width / 3,
+        ), // TODO Don't know why not /2
+        paint: Paint()
+          ..color = ConstantColors.primaryLinksysBlue.withOpacity(0.26)
+          ..strokeWidth = 1
+          ..style = PaintingStyle.stroke,
+        builder: (Node node) {
+          return rectangleWidget(node);
+        },
+      ),
+    );
   }
 
   _traverseNodes(TopologyNode? parentNode, TopologyNode node) {
-    if (node.isMaster && node.isOnline) {
-      final internetSourceNode = Node.Id('0');
-      graph.addNode(internetSourceNode);
-      graph.addEdge(internetSourceNode, node);
-    } else {
-      graph.addNode(node);
-      if (parentNode != null) {
-        graph.addEdge(parentNode, node);
-      }
+    graph.addNode(node);
+    if (parentNode != null) {
+      graph.addEdge(parentNode, node);
     }
     for (var child in node.children) {
       _traverseNodes(node, child);
@@ -199,27 +215,18 @@ class _TreeViewPageState extends State<TreeViewPage> {
 
   Widget rectangleWidget(Node node) {
     return InkWell(
-        onTap: node.key!.value == '0'
-            ? null
-            : () {
-                final nodeDevice = node as TopologyNode;
-                if (nodeDevice.isOnline) {
-                  // Update the current target Id for node state
-                  context
-                      .read<NodeCubit>()
-                      .setDetailNodeID(nodeDevice.deviceID);
-                  NavigationCubit.of(context).push(NodeDetailPath());
-                } else {
-                  NavigationCubit.of(context).push(NodeOfflineCheckPath());
-                }
-              },
-        child: node.key!.value == '0'
-            ? Image.asset(
-                'assets/images/icon_topology_internet.png',
-                width: 56,
-                height: 56,
-              )
-            : createNodeWidget(node));
+      onTap: () {
+        final nodeDevice = node as TopologyNode;
+        if (nodeDevice.isOnline) {
+          // Update the current target Id for node state
+          context.read<NodeCubit>().setDetailNodeID(nodeDevice.deviceID);
+          NavigationCubit.of(context).push(NodeDetailPath());
+        } else {
+          NavigationCubit.of(context).push(NodeOfflineCheckPath());
+        }
+      },
+      child: createNodeWidget(node),
+    );
   }
 
   Widget createNodeWidget(Node node) {
@@ -229,47 +236,56 @@ class _TreeViewPageState extends State<TreeViewPage> {
         Stack(
           alignment: AlignmentDirectional.bottomEnd,
           children: [
-            Image.asset(
-              _node.isOnline
-                  ? 'assets/images/img_topology_node.png'
-                  : 'assets/images/img_topology_node_offline.png',
-              width: 74,
-              height: 74,
-            ),
+            Container(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: ConstantColors.primaryLinksysBlue.withOpacity(0.26),
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(100),
+                  color: ConstantColors.primaryLinksysBlue.withOpacity(0.07),
+                ),
+                width: _node.isMaster ? 120 : 80,
+                height: _node.isMaster ? 120 : 80,
+                child: AppPadding(
+                  padding: const LinksysEdgeInsets.regular(),
+                  child: SvgPicture(
+                    AppTheme.of(context).images.imgRouterBlack,
+                  ),
+                )),
             Container(
               decoration: BoxDecoration(
-                border: Border.all(
-                  color:
-                      _node.isOnline ? MoabColor.placeholderGrey : Colors.red,
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(25),
-                color: _node.isOnline ? MoabColor.placeholderGrey : Colors.red,
+                borderRadius: BorderRadius.circular(100),
+                color: _node.isOnline
+                    ? ConstantColors.primaryLinksysBlack
+                    : Colors.red,
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(2.0),
-                child: Text(
-                  _node.isOnline ? '${_node.connectedDeviceCount}' : '0',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headline4
-                      ?.copyWith(color: Colors.white),
-                  textAlign: TextAlign.center,
+              width: 36,
+              height: 36,
+              child: AppPadding(
+                padding: const LinksysEdgeInsets.small(),
+                child: Center(
+                  child: LinksysText.descriptionSub(
+                    _node.isOnline ? '${_node.connectedDeviceCount}' : '0',
+                  ),
                 ),
               ),
             )
           ],
         ),
-        Text(
-          _node.location,
-          style: const TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
+        const LinksysGap.regular(),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            node.isMaster
+                ? Icon(getCharactersIcons(context).ethernetDefault)
+                : Icon(getCharactersIcons(context).wifiDefault),
+            const LinksysGap.regular(),
+            LinksysText.descriptionSub(
+              _node.location,
+            ),
+          ],
         ),
-        node.isOnline
-            ? _getConnectionImage(_node)
-            : Text(
-                getAppLocalizations(context).offline,
-                style: Theme.of(context).textTheme.headline4,
-              )
       ],
     );
   }
@@ -278,7 +294,9 @@ class _TreeViewPageState extends State<TreeViewPage> {
     return Wrap(
       children: [
         Image.asset(
-          node.isWiredConnection ? 'assets/images/icon_signal_wired.png' : Utils.getWifiSignalImage(node.signalStrength),
+          node.isWiredConnection
+              ? 'assets/images/icon_signal_wired.png'
+              : Utils.getWifiSignalImage(node.signalStrength),
           width: 14,
           height: 14,
         ),
