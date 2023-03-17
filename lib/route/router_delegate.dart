@@ -51,30 +51,33 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
         builder: (context, stack) => Overlay(
           initialEntries: [
             OverlayEntry(builder: (context) {
-              return DashboardBottomTabContainer(
-                cubit: _cubit,
-                navigator: Navigator(
-                    key: navigatorKey,
-                    pages: [
-                      for (final path in stack.configs)
-                        MoabPage(
-                          name: path.name,
-                          key: ValueKey(path.name),
-                          fullscreenDialog: path.pageConfig.isFullScreenDialog,
-                          opaque: path.pageConfig.isOpaque,
-                          // child: Theme(
-                          //   data: path.pageConfig.themeData,
-                          //   child: path.pageConfig.isBackAvailable ? _buildPageView(path) : WillPopScope(child: _buildPageView(path), onWillPop: () async => true),
-                          // ),
-                          child: AppResponsiveTheme(
-                              child: path.pageConfig.isBackAvailable
-                                  ? _buildPageView(path)
-                                  : WillPopScope(
-                                      child: _buildPageView(path),
-                                      onWillPop: () async => true)),
-                        ),
-                    ],
-                    onPopPage: _onPopPage),
+              return AppResponsiveTheme(
+                child: DashboardBottomTabContainer(
+                  cubit: _cubit,
+                  navigator: Navigator(
+                      key: navigatorKey,
+                      pages: [
+                        for (final path in stack.configs)
+                          MoabPage(
+                            name: path.name,
+                            key: ValueKey(path.name),
+                            fullscreenDialog:
+                                path.pageConfig.isFullScreenDialog,
+                            opaque: path.pageConfig.isOpaque,
+                            // child: Theme(
+                            //   data: path.pageConfig.themeData,
+                            //   child: path.pageConfig.isBackAvailable ? _buildPageView(path) : WillPopScope(child: _buildPageView(path), onWillPop: () async => true),
+                            // ),
+                            child: AppResponsiveTheme(
+                                child: path.pageConfig.isBackAvailable
+                                    ? _buildPageView(path)
+                                    : WillPopScope(
+                                        child: _buildPageView(path),
+                                        onWillPop: () async => true)),
+                          ),
+                      ],
+                      onPopPage: _onPopPage),
+                ),
               );
             })
           ],

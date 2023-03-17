@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/customs/debug_overlay_view.dart';
-import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
@@ -13,6 +12,10 @@ import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/util/debug_mixin.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/theme/data/icons.dart';
+import 'package:linksys_widgets/theme/theme.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 enum DashboardBottomItemType { home, security, health, settings }
@@ -37,7 +40,7 @@ class _DashboardViewState extends State<DashboardBottomTabContainer>
   @override
   void initState() {
     super.initState();
-    _prepareBottomTabItems();
+    _prepareBottomTabItems(context);
   }
 
   @override
@@ -81,15 +84,22 @@ class _DashboardViewState extends State<DashboardBottomTabContainer>
         offstage: widget.cubit.state.last.pageConfig.isHideBottomNavBar,
         child: BottomNavigationBar(
             type: BottomNavigationBarType.shifting,
-            iconSize: 16,
-            selectedFontSize: 18,
-            selectedIconTheme: IconThemeData(color: Colors.white, size: 24),
-            selectedItemColor: Colors.white,
-            selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold),
-            unselectedIconTheme: IconThemeData(
-              color: Colors.grey,
+            iconSize:
+                AppTheme.of(context).icons.sizes.resolve(AppIconSize.regular),
+            // selectedFontSize:
+            //     AppTheme.of(context).icons.sizes.resolve(AppIconSize.small),
+            selectedIconTheme: IconThemeData(
+              color: AppTheme.of(context).colors.textBoxText,
+              size:
+                  AppTheme.of(context).icons.sizes.resolve(AppIconSize.regular),
             ),
-            unselectedItemColor: Colors.grey,
+            selectedItemColor: AppTheme.of(context).colors.textBoxText,
+            unselectedIconTheme: IconThemeData(
+                color: AppTheme.of(context).colors.textBoxText, opacity: 0.6),
+            unselectedItemColor:
+                AppTheme.of(context).colors.textBoxText.withOpacity(0.6),
+            // unselectedFontSize:
+            //     AppTheme.of(context).icons.sizes.resolve(AppIconSize.small),
             showSelectedLabels: true,
             showUnselectedLabels: true,
             currentIndex: _selectedIndex,
@@ -114,57 +124,65 @@ class _DashboardViewState extends State<DashboardBottomTabContainer>
 
   BottomNavigationBarItem _bottomSheetIconView(DashboardBottomItem item) {
     return BottomNavigationBarItem(
-        icon: Image.asset(
-          item.icon,
-          width: 24,
-          height: 24,
+      icon: Icon(
+        getCharactersIcons(context).getByName(item.iconId),
+      ),
+      activeIcon: CircleAvatar(
+        backgroundColor: Colors.transparent,
+        child: Icon(
+          getCharactersIcons(context).getByName(item.iconId),
         ),
-        label: item.title,
-        backgroundColor: MoabColor.dashboardBottomBackground);
+      ),
+      label: item.title,
+      backgroundColor: AppTheme.of(context).colors.bottomBackground,
+    );
   }
 
-  _prepareBottomTabItems() {
+  _prepareBottomTabItems(BuildContext context) {
     //
-    _bottomTabItems.addAll(_dashboardBottomItems);
+    if (!mounted) {
+      return;
+    }
+    _bottomTabItems.addAll(navigationBottomItems());
   }
 }
 
-final List<DashboardBottomItem> _dashboardBottomItems = [
-  DashboardBottomItem(
-    icon: 'assets/images/icon_home.png',
-    title: 'Home',
-    type: DashboardBottomItemType.home,
-    rootPath: DashboardHomePath(),
-  ),
-  DashboardBottomItem(
-    icon: 'assets/images/icon_home.png',
-    title: 'Security',
-    type: DashboardBottomItemType.security,
-    rootPath: DashboardSecurityPath(),
-  ),
-  DashboardBottomItem(
-    icon: 'assets/images/icon_home.png',
-    title: 'Health',
-    type: DashboardBottomItemType.health,
-    rootPath: DashboardHealthPath(),
-  ),
-  DashboardBottomItem(
-    icon: 'assets/images/icon_settings.png',
-    title: 'Settings',
-    type: DashboardBottomItemType.settings,
-    rootPath: DashboardSettingsPath(),
-  ),
-];
+navigationBottomItems() => [
+      DashboardBottomItem(
+        iconId: 'homeDefault',
+        title: 'Home',
+        type: DashboardBottomItemType.home,
+        rootPath: DashboardHomePath(),
+      ),
+      DashboardBottomItem(
+        iconId: 'securityDefault',
+        title: 'Security',
+        type: DashboardBottomItemType.security,
+        rootPath: DashboardSecurityPath(),
+      ),
+      DashboardBottomItem(
+        iconId: 'healthDefault',
+        title: 'Health',
+        type: DashboardBottomItemType.health,
+        rootPath: DashboardHealthPath(),
+      ),
+      DashboardBottomItem(
+        iconId: 'settingsDefault',
+        title: 'Settings',
+        type: DashboardBottomItemType.settings,
+        rootPath: DashboardSettingsPath(),
+      ),
+    ];
 
 class DashboardBottomItem {
   const DashboardBottomItem({
-    required this.icon,
+    required this.iconId,
     required this.title,
     required this.type,
     required this.rootPath,
   });
 
-  final String icon;
+  final String iconId;
   final String title;
   final DashboardBottomItemType type;
   final BasePath rootPath;

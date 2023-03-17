@@ -90,6 +90,7 @@ class RouterRepository with StateStreamListener {
       data: data,
       extraHeaders: extraHeaders,
       needAuth: auth,
+      forceLocal: forceLocal
     );
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
@@ -121,7 +122,7 @@ class RouterRepository with StateStreamListener {
     Map<String, dynamic> data = const {},
     Map<String, String> extraHeaders = const {},
     bool needAuth = false,
-    bool falseLocal = false,
+    bool forceLocal = false,
   }) {
     if (isEnableBTSetup) {
       return _createBTCommand(
@@ -135,7 +136,7 @@ class RouterRepository with StateStreamListener {
         data: data,
         extraHeaders: extraHeaders,
         needAuth: needAuth,
-        forceLocal: falseLocal,
+        forceLocal: forceLocal,
       );
     }
   }

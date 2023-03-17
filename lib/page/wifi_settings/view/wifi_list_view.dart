@@ -96,10 +96,6 @@ class _WifiListViewState extends State<WifiListView> {
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AppIcon.regular(
-                icon: getCharactersIcons(context).wifiDefault,
-              ),
-              const LinksysGap.semiSmall(),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: _information(index),
@@ -119,7 +115,9 @@ class _WifiListViewState extends State<WifiListView> {
           Offstage(
             offstage: index == items.length - 1,
             child: const Divider(
-                thickness: 1, height: 1, color: MoabColor.dividerGrey),
+              thickness: 1,
+              height: 1,
+            ),
           )
         ],
       );
@@ -137,7 +135,6 @@ class _WifiListViewState extends State<WifiListView> {
             ),
             const LinksysGap.small(),
             Container(
-              color: const Color(0xffc5c5c5),
               padding: const EdgeInsets.all(5),
               child: LinksysText.label(
                 items[index].isWifiEnabled ? 'ON' : 'OFF',
@@ -161,12 +158,11 @@ class _WifiListViewState extends State<WifiListView> {
   @override
   Widget build(BuildContext context) {
     return StyledLinksysPageView(
-      
       scrollable: true,
       child: BasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: LinksysText.screenName(
-          'WiFi',
+          'Your WiFi networks',
         ),
         content: _wifiList(),
       ),

@@ -103,7 +103,7 @@ class ConnectivityCubit extends Cubit<ConnectivityState>
 
   Future<RouterType> _testRouterType(String? newIp) async {
     final testJNAP = await _routerRepository
-        .isAdminPasswordDefault()
+        .send(JNAPAction.isAdminPasswordDefault, forceLocal: true)
         .then((value) => true)
         .onError((error, stackTrace) => false);
     if (!testJNAP) {

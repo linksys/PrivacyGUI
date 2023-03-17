@@ -10,6 +10,7 @@ import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -115,12 +116,9 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
         const LinksysGap.small(),
         ...sectionItem.items.map((e) => InkWell(
               onTap: () => onItemClick(sectionItem.items.indexOf(e), e),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 10.0),
-                child: LinksysText.descriptionSub(
-                  e.title,
-                ),
+              child: AppSimplePanel(
+                title: e.title,
+                icon: getCharactersIcons(context).getByName(e.iconId),
               ),
             )),
       ],
@@ -131,12 +129,35 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
         title: 'NETWORK',
         items: [
           DashboardSettingsItem(
-              title: 'WiFi', path: WifiSettingsOverviewPath()),
+            title: 'WiFi',
+            iconId: 'wifiDefault',
+            path: WifiSettingsOverviewPath(),
+          ),
           DashboardSettingsItem(
-              title: getAppLocalizations(context).administration,
-              path: AdministrationViewPath()),
-          DashboardSettingsItem(title: 'Priority', path: UnknownPath()),
-          DashboardSettingsItem(title: 'Smart home', path: UnknownPath()),
+            title: getAppLocalizations(context).administration,
+            iconId: 'administrationDefault',
+            path: AdministrationViewPath(),
+          ),
+          DashboardSettingsItem(
+            title: 'Priority',
+            iconId: 'priorityDefault',
+            path: UnknownPath(),
+          ),
+          DashboardSettingsItem(
+            title: 'Internet schedule',
+            iconId: 'clockRound',
+            path: UnknownPath(),
+          ),
+          DashboardSettingsItem(
+            title: 'Safe browsing',
+            iconId: 'filterDefault',
+            path: UnknownPath(),
+          ),
+          DashboardSettingsItem(
+            title: 'Profiles',
+            iconId: 'profileDefault',
+            path: UnknownPath(),
+          ),
         ],
       );
 
@@ -144,10 +165,21 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
   _youSettingsSection() => DashboardSettingsSection(
         title: 'YOU',
         items: [
-          DashboardSettingsItem(title: 'Account', path: AccountDetailPath()),
-          DashboardSettingsItem(title: 'Notifications', path: UnknownPath()),
           DashboardSettingsItem(
-              title: 'Privacy and legal', path: UnknownPath()),
+            title: 'Account',
+            iconId: 'profileDefault',
+            path: AccountDetailPath(),
+          ),
+          DashboardSettingsItem(
+            title: 'Privacy and legal',
+            iconId: 'infoRound',
+            path: UnknownPath(),
+          ),
+          DashboardSettingsItem(
+            title: 'Support',
+            iconId: 'helpRound',
+            path: UnknownPath(),
+          ),
         ],
       );
 }
@@ -160,8 +192,13 @@ class DashboardSettingsSection {
 }
 
 class DashboardSettingsItem {
-  DashboardSettingsItem({required this.title, required this.path});
+  DashboardSettingsItem({
+    required this.title,
+    required this.iconId,
+    required this.path,
+  });
 
   final String title;
+  final String iconId;
   final BasePath path;
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -18,7 +17,6 @@ Widget administrationSection({
       //     const LinksysEdgeInsets.symmetric(horizontal: AppGapSize.regular),
       child: Container(
         // height: 48,
-        color: Colors.amber,
         alignment: Alignment.bottomLeft,
         child: AppPadding(
           padding:

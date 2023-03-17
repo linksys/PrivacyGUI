@@ -221,10 +221,12 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
     return MaterialApp.router(
       onGenerateTitle: (context) => getAppLocalizations(context).app_title,
       theme: ThemeData.light().copyWith(
-          backgroundColor: ConstantColors.primaryLinksysWhite,
-          scaffoldBackgroundColor: ConstantColors.primaryLinksysWhite),
-      darkTheme: ThemeData.dark()
-          .copyWith(backgroundColor: ConstantColors.primaryLinksysBlack),
+          backgroundColor: ConstantColors.gray98,
+          scaffoldBackgroundColor: ConstantColors.gray98),
+      darkTheme: ThemeData.dark().copyWith(
+        backgroundColor: ConstantColors.raisinBlock,
+        scaffoldBackgroundColor: ConstantColors.raisinBlock,
+      ),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       routerDelegate: MoabRouterDelegate(context.read<NavigationCubit>()),

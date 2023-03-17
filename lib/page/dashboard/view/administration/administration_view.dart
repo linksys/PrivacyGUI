@@ -10,6 +10,7 @@ import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/panel/panel_bases.dart';
 
 import '../../../components/styled/styled_page_view.dart';
 import 'common_widget.dart';
@@ -26,7 +27,6 @@ class _AdministrationViewState extends State<AdministrationView> {
   @override
   Widget build(BuildContext context) {
     return StyledLinksysPageView(
-      padding: const LinksysEdgeInsets.only(),
       title: getAppLocalizations(context).administration,
       scrollable: true,
       child: LinksysBasicLayout(
@@ -36,26 +36,20 @@ class _AdministrationViewState extends State<AdministrationView> {
               title: getAppLocalizations(context).general.toUpperCase(),
               content: Column(
                 children: [
-                  administrationTile(
-                    title: title(
-                        getAppLocalizations(context).router_password_and_hint),
-                    value: const Text(''),
-                    icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () => NavigationCubit.of(context)
+                  AppSimplePanel(
+                    title:
+                        getAppLocalizations(context).router_password_and_hint,
+                    onTap: () => NavigationCubit.of(context)
                         .push(RouterPasswordViewPath()),
                   ),
-                  administrationTile(
-                    title: title(getAppLocalizations(context).time_zone),
-                    value: const Text(''),
-                    icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () =>
+                  AppSimplePanel(
+                    title: getAppLocalizations(context).time_zone,
+                    onTap: () =>
                         NavigationCubit.of(context).push(TimeZoneViewPath()),
                   ),
-                  administrationTile(
-                    title: title(getAppLocalizations(context).ip_details),
-                    value: const Text(''),
-                    icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () =>
+                  AppSimplePanel(
+                    title: getAppLocalizations(context).ip_details,
+                    onTap: () =>
                         NavigationCubit.of(context).push(IpDetailsViewPath()),
                   ),
                 ],
@@ -65,54 +59,39 @@ class _AdministrationViewState extends State<AdministrationView> {
               title: getAppLocalizations(context).advanced.toUpperCase(),
               content: Column(
                 children: [
-                  administrationTile(
-                    title:
-                        title(getAppLocalizations(context).internet_settings),
-                    value: const Text(''),
-                    icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () => NavigationCubit.of(context)
+                  AppSimplePanel(
+                    title: getAppLocalizations(context).internet_settings,
+                    onTap: () => NavigationCubit.of(context)
                         .push(InternetSettingsPath()),
                   ),
-                  administrationTile(
-                    title: title(getAppLocalizations(context).lan),
-                    value: const Text(''),
-                    icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () =>
+                  AppSimplePanel(
+                    title: getAppLocalizations(context).lan,
+                    onTap: () =>
                         NavigationCubit.of(context).push(LANSettingsPath()),
                   ),
-                  administrationTile(
-                    title: title(getAppLocalizations(context).port_forwarding),
-                    value: const Text(''),
-                    icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () =>
+                  AppSimplePanel(
+                    title: getAppLocalizations(context).port_forwarding,
+                    onTap: () =>
                         NavigationCubit.of(context).push(PortForwardingPath()),
                   ),
-                  administrationTile(
-                    title: title(getAppLocalizations(context).mac_filtering),
-                    value: const Text(''),
-                    icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () =>
+                  AppSimplePanel(
+                    title: getAppLocalizations(context).mac_filtering,
+                    onTap: () =>
                         NavigationCubit.of(context).push(MacFilteringPath()),
                   ),
-                  administrationTile(
-                    title: title(getAppLocalizations(context).vlan),
-                    value: const Text(''),
-                    icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () =>
+                  AppSimplePanel(
+                    title: getAppLocalizations(context).vlan,
+                    onTap: () =>
                         NavigationCubit.of(context).push(UnknownPath()),
                   ),
-                  administrationTile(
-                    title: title(getAppLocalizations(context).advanced_routing),
-                    value: const Text(''),
-                    icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () =>
+                  AppSimplePanel(
+                    title: getAppLocalizations(context).advanced_routing,
+                    onTap: () =>
                         NavigationCubit.of(context).push(UnknownPath()),
                   ),
-                  administrationTile(
-                    title: title(getAppLocalizations(context).other),
-                    value: const Text(''),
-                    icon: Image.asset('assets/images/icon_chevron.png'),
-                    onPress: () =>
+                  AppSimplePanel(
+                    title: getAppLocalizations(context).other,
+                    onTap: () =>
                         NavigationCubit.of(context).push(UnknownPath()),
                   ),
                 ],

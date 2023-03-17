@@ -10,24 +10,26 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:linksys_moab/util/wifi_credential.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/theme/data/colors.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
-import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 enum ShareWifiOption {
-  clipboard(displayTitle: 'Copy to clipboard'),
-  qrCode(displayTitle: 'Send QR code'),
-  textMessage(displayTitle: 'Text message'),
-  email(displayTitle: 'Email'),
-  more(displayTitle: 'More options');
+  clipboard(displayTitle: 'Copy to clipboard', iconId: 'copyDefault'),
+  qrCode(displayTitle: 'Send QR code', iconId: 'qrcodeDefault'),
+  textMessage(displayTitle: 'Text message', iconId: 'smsDefault'),
+  email(displayTitle: 'Email', iconId: 'mailB'),
+  more(displayTitle: 'More options', iconId: 'optionsDefault');
 
-  const ShareWifiOption({required this.displayTitle});
+  const ShareWifiOption({required this.displayTitle, required this.iconId});
 
   final String displayTitle;
+  final String iconId;
 }
 
 class ShareWifiView extends ArgumentsStatefulView {
@@ -55,33 +57,33 @@ class _ShareWifiViewState extends State<ShareWifiView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        LinksysText.tags(
-          _currentItem.wifiType.displayTitle,
-        ),
         const LinksysGap.regular(),
         LinksysText.descriptionMain(
           _currentItem.ssid,
         ),
         HiddenPasswordWidget(password: _currentItem.password),
         const LinksysGap.big(),
-        LinksysText.descriptionMain(
+        LinksysText.tags(
           'JOIN THIS NETWORK',
         ),
         const LinksysGap.regular(),
         RepaintBoundary(
           key: globalKey,
-          child: SizedBox(
-            child: QrImage(
-              data: WiFiCredential(
-                ssid: _currentItem.ssid,
-                password: _currentItem.password,
-                type:
-                    SecurityType.wpa, //TODO: The security type is fixed for now
-              ).generate(),
-              padding: EdgeInsets.zero,
-            ),
+          child: Container(
+            color: ConstantColors.primaryLinksysWhite,
             height: 160,
             width: 160,
+            child: AppPadding.regular(
+              child: QrImage(
+                data: WiFiCredential(
+                  ssid: _currentItem.ssid,
+                  password: _currentItem.password,
+                  type: SecurityType
+                      .wpa, //TODO: The security type is fixed for now
+                ).generate(),
+                padding: EdgeInsets.zero,
+              ),
+            ),
           ),
         ),
       ],
@@ -103,19 +105,22 @@ class _ShareWifiViewState extends State<ShareWifiView> {
         children: [
           GestureDetector(
             behavior: HitTestBehavior.translucent,
-            child: Container(
-              child: LinksysText.textLinkLarge(
-                options[index].displayTitle,
-              ),
-              height: 80,
-              alignment: Alignment.centerLeft,
+            // child: Container(
+            //   child: LinksysText.textLinkLarge(
+            //     options[index].displayTitle,
+            //   ),
+            //   height: 80,
+            //   alignment: Alignment.centerLeft,
+            // ),
+            child: AppSimplePanel(
+              title: options[index].displayTitle,
+              icon:
+                  getCharactersIcons(context).getByName(options[index].iconId),
             ),
             onTap: () {
               _onOptionTapped(options[index]);
             },
           ),
-          if (index != options.length - 1)
-            const Divider(thickness: 1, height: 1, color: MoabColor.dividerGrey)
         ],
       );
     }));
@@ -229,6 +234,7 @@ class _ShareWifiViewState extends State<ShareWifiView> {
           children: [
             const LinksysGap.big(),
             _wifiInfoSection(),
+            const LinksysGap.big(),
             _optionSection(),
           ],
         ),
