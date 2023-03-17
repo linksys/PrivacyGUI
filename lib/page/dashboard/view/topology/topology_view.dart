@@ -2,13 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:graphview/GraphView.dart';
-import 'package:linksys_moab/bloc/add_nodes/state.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/design/colors.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/bloc/cubit.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/bloc/state.dart';
@@ -24,7 +20,7 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/animation/fade_in_out.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import '../../../../util/logger.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'custom_buchheim_walker_algorithm.dart';
 import 'custom_tree_edge_renderer.dart';
 
@@ -62,7 +58,7 @@ class _TopologyContentView extends State<TopologyContentView> {
         child: LinksysBasicLayout(
           content: Visibility(
             visible: state.rootNode.deviceID.isNotEmpty,
-            replacement: const FullScreenSpinner(),
+            replacement: const LinksysFullScreenSpinner(),
             child: Column(
               children: [
                 state.rootNode.isOnline
@@ -245,8 +241,13 @@ class _TreeViewPageState extends State<TreeViewPage> {
                   borderRadius: BorderRadius.circular(100),
                   color: ConstantColors.primaryLinksysBlue.withOpacity(0.07),
                 ),
-                width: _node.isMaster ? 120 : 80,
-                height: _node.isMaster ? 120 : 80,
+                width: _node.isMaster
+                    ? AppTheme.of(context).avatar.extraLarge
+                    : AppTheme.of(context).avatar.large,
+                height: _node.isMaster
+                    ? AppTheme.of(context).avatar.extraLarge
+                    : AppTheme.of(context).avatar.large,
+                margin: EdgeInsets.all(AppTheme.of(context).spacing.semiSmall),
                 child: AppPadding(
                   padding: const LinksysEdgeInsets.regular(),
                   child: SvgPicture(
@@ -260,13 +261,14 @@ class _TreeViewPageState extends State<TreeViewPage> {
                     ? ConstantColors.primaryLinksysBlack
                     : Colors.red,
               ),
-              width: 36,
-              height: 36,
+              width: AppTheme.of(context).avatar.normal,
+              height: AppTheme.of(context).avatar.normal,
               child: AppPadding(
                 padding: const LinksysEdgeInsets.small(),
                 child: Center(
                   child: LinksysText.descriptionSub(
                     _node.isOnline ? '${_node.connectedDeviceCount}' : '0',
+                    color: ConstantColors.primaryLinksysWhite,
                   ),
                 ),
               ),
