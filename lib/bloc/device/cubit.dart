@@ -6,6 +6,7 @@ import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/utils.dart';
+import 'package:linksys_widgets/icons/icon_rules.dart';
 
 class DeviceCubit extends Cubit<DeviceState> {
   DeviceCubit({required RouterRepository routerRepository})
@@ -19,7 +20,7 @@ class DeviceCubit extends Cubit<DeviceState> {
     List<DeviceDetailInfo> _mainOnlineDevices = [];
     List<DeviceDetailInfo> _guestOnlineDevices = [];
     List<DeviceDetailInfo> _offlineDevices = [];
-
+    emit(state.copyWith(isLoading: true));
     final results = await _routerRepository.fetchDeviceList();
     if (results.containsKey(JNAPAction.getNetworkConnections.actionValue)) {
       final networkConnections =
@@ -124,6 +125,7 @@ class DeviceCubit extends Cubit<DeviceState> {
                 _mainOnlineDevices.add(DeviceDetailInfo(
                     name: Utils.getDeviceName(device),
                     deviceID: device.deviceID,
+                    icon: iconTest(device.toJson()),
                     place: placeMap[parentDeviceID] ?? masterPlace,
                     connection: connection,
                     ipAddress: deviceConnection.ipAddress ?? '',
@@ -147,6 +149,7 @@ class DeviceCubit extends Cubit<DeviceState> {
         (e1, e2) => e2.lastChangeRevision.compareTo(e1.lastChangeRevision));
 
     emit(state.copyWith(
+      isLoading: false,
       offlineDeviceList: _offlineDevices,
       mainDeviceList: _mainOnlineDevices,
       guestDeviceList: _guestOnlineDevices,

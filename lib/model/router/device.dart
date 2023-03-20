@@ -79,10 +79,10 @@ class RouterDevice extends Equatable {
     return {
       'connections': connections,
       'properties': properties,
-      'unit': unit,
+      'unit': unit.toJson(),
       'deviceID': deviceID,
       'maxAllowedProperties': maxAllowedProperties,
-      'model': model,
+      'model': model.toJson(),
       'isAuthority': isAuthority,
       'lastChangeRevision': lastChangeRevision,
       'friendlyName': friendlyName,

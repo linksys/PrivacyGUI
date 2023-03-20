@@ -22,7 +22,7 @@ import 'model/base_response.dart';
 StreamController<ErrorResponse> _errorResponseStreamController =
     StreamController();
 
-Stream<ErrorResponse> get errorResponseStream =>
+Stream<ErrorResponse> get linksysErrorResponseStream =>
     _errorResponseStreamController.stream;
 
 void releaseErrorStream() {

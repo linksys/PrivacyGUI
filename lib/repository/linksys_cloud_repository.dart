@@ -21,6 +21,12 @@ class LinksysCloudRepository {
         .then((response) => SessionToken.fromJson(jsonDecode(response.body)));
   }
 
+  Future refreshToken(String refreshToken) {
+    return _httpClient
+        .refreshToken(token: refreshToken)
+        .then((response) => SessionToken.fromJson(jsonDecode(response.body)));
+  }
+
   Future<List<NetworkAccountAssociation>> getNetworks() async {
     final sessionToken = await const FlutterSecureStorage()
         .read(key: pSessionToken)

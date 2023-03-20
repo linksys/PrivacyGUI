@@ -11,7 +11,10 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/icons/icon_rules.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
+import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -90,10 +93,17 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
                   vertical: AppGapSize.regular),
               child: Row(
                 children: [
-                  Image.asset(
-                    'assets/images/icon_device.png',
-                    width: 40,
-                    height: 40,
+                  Image(
+                    image: AppTheme.of(context).images.devices.getByName(
+                          routerIconTest(
+                            modelNumber:
+                                state.networks[index].network.routerModelNumber,
+                            hardwareVersion: state
+                                .networks[index].network.routerHardwareVersion,
+                          ),
+                        ),
+                    width: 48,
+                    height: 48,
                   ),
                   const LinksysGap.semiBig(),
                   Column(

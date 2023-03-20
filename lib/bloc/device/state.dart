@@ -9,6 +9,7 @@ class DeviceState extends Equatable {
   final List<DeviceDetailInfo> mainDeviceList;
   final List<DeviceDetailInfo> guestDeviceList;
   final List<DeviceDetailInfo> iotDeviceList;
+  final bool isLoading;
 
   const DeviceState({
     this.selectedScope = DeviceListInfoScope.today,
@@ -19,6 +20,7 @@ class DeviceState extends Equatable {
     this.mainDeviceList = const [],
     this.guestDeviceList = const [],
     this.iotDeviceList = const [],
+    this.isLoading = false,
   });
 
   DeviceState.init()
@@ -29,7 +31,8 @@ class DeviceState extends Equatable {
         offlineDeviceList = [],
         mainDeviceList = [],
         guestDeviceList = [],
-        iotDeviceList = [];
+        iotDeviceList = [],
+        isLoading = false;
 
   DeviceState copyWith({
     DeviceListInfoScope? selectedScope,
@@ -40,6 +43,7 @@ class DeviceState extends Equatable {
     List<DeviceDetailInfo>? mainDeviceList,
     List<DeviceDetailInfo>? guestDeviceList,
     List<DeviceDetailInfo>? iotDeviceList,
+    bool? isLoading,
   }) {
     return DeviceState(
       selectedScope: selectedScope ?? this.selectedScope,
@@ -50,6 +54,7 @@ class DeviceState extends Equatable {
       mainDeviceList: mainDeviceList ?? this.mainDeviceList,
       guestDeviceList: guestDeviceList ?? this.guestDeviceList,
       iotDeviceList: iotDeviceList ?? this.iotDeviceList,
+      isLoading: isLoading ?? this.isLoading,
     );
   }
 
@@ -63,6 +68,7 @@ class DeviceState extends Equatable {
         mainDeviceList,
         guestDeviceList,
         iotDeviceList,
+        isLoading,
       ];
 }
 

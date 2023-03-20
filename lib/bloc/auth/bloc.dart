@@ -23,6 +23,7 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../network/http/linksys_http_client.dart';
 import '../../network/http/model/cloud_account_info.dart';
 import '../../network/http/model/cloud_auth_clallenge_method.dart';
 import '../../network/http/model/cloud_create_account_verified.dart';
@@ -60,7 +61,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
     on<OnRequestSession>(_onRequestSession);
 
     //
-    _errorStreamSubscription = errorResponseStream.listen((error) {
+    _errorStreamSubscription = linksysErrorResponseStream.listen((error) {
       logger.e(
           'Receive http response error: ${error.status}, ${error.code}, ${error.errorMessage}');
       if (error.status == 401 &&
@@ -68,6 +69,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
               error.code == errorNotAuthenticated ||
               error.code == errorAuthenticationMissing)) {
         add(Unauthorized());
+      } else if (error.status == 401 &&
+          error.code == errorInvalidSessionToken) {
+        add(Logout());
       }
     });
     //
@@ -263,6 +267,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
       await storage.delete(key: linksysPrefCloudCertDataKey);
       await storage.delete(key: linksysPrefLocalPassword);
       await prefs.remove(linksysPrefCloudPublicKey);
+
+      await storage.delete(key: pSessionToken);
+      await storage.delete(key: pSessionTokenTs);
     }
     emit(AuthState.unAuthorized());
   }

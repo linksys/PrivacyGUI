@@ -52,17 +52,13 @@ class _DashboardViewState extends State<DashboardBottomTabContainer>
       body: Stack(
         children: [
           GestureDetector(
-            onTap: () {
-              if (increase()) {
-                logger.d('Triggered!');
-                NavigationCubit.of(context).push(DebugToolsMainPath());
-              }
-            },
-            child: LinksysBasicLayout(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              content: widget.navigator,
-            ),
-          ),
+              onTap: () {
+                if (increase()) {
+                  logger.d('Triggered!');
+                  NavigationCubit.of(context).push(DebugToolsMainPath());
+                }
+              },
+              child: widget.navigator),
           kReleaseMode
               ? const Center()
               : Positioned(
