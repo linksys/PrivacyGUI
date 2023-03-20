@@ -60,10 +60,17 @@ class _DeviceListViewState extends State<DeviceListView> {
                     '${state.guestDeviceList.length}',
                   ),
                 ),
+                LinksysTab(
+                  title: 'Offline',
+                  icon: LinksysText.screenName(
+                    '${state.offlineDeviceList.length}',
+                  ),
+                ),
               ],
               tabContentViews: [
                 _buildDeviceListView(state.displayedDeviceList),
                 _buildDeviceListView(state.guestDeviceList),
+                _buildDeviceListView(state.offlineDeviceList),
               ],
             ),
     );
