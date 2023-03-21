@@ -132,15 +132,14 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
                 children: [Text(_hint)],
               ),
             ),
-          SimpleTextButton(
-              text: getAppLocalizations(context).forgot_router_password,
-              onPressed: () {
-                NavigationCubit.of(context).push(AuthLocalRecoveryKeyPath());
-              }),
+          LinksysTertiaryButton(
+              getAppLocalizations(context).forgot_router_password, onTap: () {
+            NavigationCubit.of(context).push(AuthLocalRecoveryKeyPath());
+          }),
           const Spacer(),
-          PrimaryButton(
-            text: getAppLocalizations(context).text_continue,
-            onPress: _isPasswordValidate ? _localLogin : null,
+          LinksysPrimaryButton(
+            getAppLocalizations(context).text_continue,
+            onTap: _isPasswordValidate ? _localLogin : null,
           ),
         ],
       ),

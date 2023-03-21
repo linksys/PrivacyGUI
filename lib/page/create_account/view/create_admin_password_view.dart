@@ -29,7 +29,7 @@ class CreateAdminPasswordView extends ArgumentsStatefulView {
   const CreateAdminPasswordView({Key? key, super.args}) : super(key: key);
 
   @override
-  _CreateAdminPasswordViewState createState() =>
+  State<CreateAdminPasswordView> createState() =>
       _CreateAdminPasswordViewState();
 }
 
@@ -142,7 +142,9 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
             text: getAppLocalizations(context).next,
             onPress: () {
               if (_type == AdminPasswordType.create) {
-                context.read<SetupBloc>().add(SetAdminPasswordHint(password: passwordController.text, hint:hintController.text));
+                context.read<SetupBloc>().add(SetAdminPasswordHint(
+                    password: passwordController.text,
+                    hint: hintController.text));
                 NavigationCubit.of(context).push(SaveSettingsPath());
               } else {
                 _createPassword(passwordController.text, hintController.text);

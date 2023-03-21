@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class SelectableItem extends StatelessWidget {
   final String text;
@@ -6,10 +8,7 @@ class SelectableItem extends StatelessWidget {
   final double? height;
 
   const SelectableItem(
-      {Key? key,
-      required this.text,
-      this.isSelected = false,
-      this.height})
+      {Key? key, required this.text, this.isSelected = false, this.height})
       : super(key: key);
 
   @override
@@ -38,12 +37,11 @@ class SelectableItem extends StatelessWidget {
 
   Widget message(BuildContext context) {
     List<Widget> children = [];
-    children.add(Text(
+    children.add(LinksysText.label(
       text,
-      style: Theme.of(context).textTheme.headline4?.copyWith(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.surface),
+      color: isSelected
+          ? AppTheme.of(context).colors.ctaPrimary
+          : AppTheme.of(context).colors.tertiaryText,
     ));
 
     return Column(

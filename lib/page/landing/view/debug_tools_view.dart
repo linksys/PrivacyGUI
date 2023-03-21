@@ -11,9 +11,6 @@ import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
-import 'package:linksys_moab/bloc/security/bloc.dart';
-import 'package:linksys_moab/bloc/security/event.dart';
-import 'package:linksys_moab/bloc/security/state.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/bluetooth/bluetooth.dart';
@@ -29,13 +26,15 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
 import 'package:linksys_moab/repository/router/commands/_commands.dart';
-import 'package:linksys_moab/repository/router/commands/core_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
-import 'package:multicast_dns/multicast_dns.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:share_plus/share_plus.dart';
 
 class DebugToolsView extends StatefulWidget {
@@ -75,12 +74,12 @@ class _DebugToolsViewState extends State<DebugToolsView> {
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
+    return StyledLinksysPageView(
       scrollable: true,
-      child: BasicLayout(
+      child: LinksysBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: const BasicHeader(
-          title: 'Debug Tools',
+        header: const LinksysText.screenName(
+          'Debug Tools',
         ),
         content: _content(),
       ),
@@ -92,16 +91,13 @@ class _DebugToolsViewState extends State<DebugToolsView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ..._buildInfo(),
-        Text(
+        const LinksysText.descriptionMain(
           'Log:',
-          style: Theme.of(context)
-              .textTheme
-              .headline2
-              ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
-        SecondaryButton(
-          text: 'Export log file',
-          onPress: () async {
+        const LinksysGap.regular(),
+        LinksysPrimaryButton(
+          'Export log file',
+          onTap: () async {
             final file = File.fromUri(Storage.logFileUri);
             final appInfo = await getAppInfoLogs();
             final screenInfo = getScreenInfo(context);
@@ -131,10 +127,10 @@ class _DebugToolsViewState extends State<DebugToolsView> {
             showSnackBar(context, Text("Share result: ${result.status}"));
           },
         ),
-        box16(),
+        const LinksysGap.regular(),
         _buildEnvPickerTile(),
         ..._buildDebug(),
-        box16(),
+        const LinksysGap.regular(),
       ],
     );
   }
@@ -153,9 +149,9 @@ class _DebugToolsViewState extends State<DebugToolsView> {
     return [
       ..._buildBluetoothTestSection(),
       ..._buildMdnsTestSection(),
-      SecondaryButton(
-        text: 'Raise an Exception!',
-        onPress: () async {
+      LinksysPrimaryButton(
+        'Raise an Exception!',
+        onTap: () async {
           // ScaffoldMessenger.of(context).showSnackBar(
           //     const SnackBar(content: Text('Throw a test exception!!')));
           // throw Exception('Throw a test exception!!');
@@ -172,9 +168,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           logger.d('Result: $result');
         },
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      const LinksysGap.regular(),
     ];
   }
 
@@ -184,15 +178,15 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: Text('Basic Info'),
+        title: LinksysText.descriptionMain('Basic Info'),
         children: [
-          Text(appInfo),
-          box16(),
-          SecondaryButton(
-            text: 'More',
-            onPress: () => _goToDeviceInfoPage(context),
+          LinksysText.descriptionSub(appInfo),
+          const LinksysGap.regular(),
+          LinksysPrimaryButton(
+            'More',
+            onTap: () => _goToDeviceInfoPage(context),
           ),
-          box16(),
+          const LinksysGap.regular(),
         ],
       ),
     ];
@@ -204,73 +198,17 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: Text('Connection Info'),
+        title: LinksysText.descriptionMain('Connection Info'),
         children: [
-          Text(
+          LinksysText.descriptionSub(
               'Router: ${_connectivityCubit.state.connectivityInfo.routerType.name}'),
-          Text(
+          LinksysText.descriptionSub(
               'Connectivity: ${_connectivityCubit.state.connectivityInfo.type.name}'),
-          Text(
+          LinksysText.descriptionSub(
               'Gateway Ip: ${_connectivityCubit.state.connectivityInfo.gatewayIp}'),
-          Text('SSID: ${_connectivityCubit.state.connectivityInfo.ssid}'),
+          LinksysText.descriptionSub(
+              'SSID: ${_connectivityCubit.state.connectivityInfo.ssid}'),
           box16(),
-        ],
-      ),
-    ];
-  }
-
-  List<Widget> _buildCloudApp() {
-    return [
-      ExpansionTile(
-        expandedAlignment: Alignment.centerLeft,
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        title: Text('Cloud App Info'),
-        onExpansionChanged: (expand) {
-          if (expand) {
-            setState(() {});
-          }
-        },
-        children: [
-          FutureBuilder<CloudApp>(
-              future: CloudEnvironmentManager()
-                  .fetchCloudApp()
-                  .then((value) => CloudEnvironmentManager().loadCloudApp()),
-              initialData: null,
-              builder: (context, snapshot) {
-                return snapshot.data == null
-                    ? Text('No Data')
-                    : Column(
-                        children: [
-                          Table(
-                            border: TableBorder.all(color: Colors.white60),
-                            children: [
-                              ...CloudEnvironmentManager()
-                                  .getCloudApp()
-                                  .toJson()
-                                  .entries
-                                  .map((e) => TableRow(children: [
-                                        Text(e.key),
-                                        Text(e.value ?? '')
-                                      ]))
-                            ],
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: PrimaryButton(
-                              text: 'Register smart device',
-                              onPress: snapshot.data is CloudSmartDeviceApp
-                                  ? (snapshot.data as CloudSmartDeviceApp)
-                                              .smartDevice
-                                              .smartDeviceStatus ==
-                                          'ACTIVE'
-                                      ? null
-                                      : _registerSmartDevice
-                                  : _registerSmartDevice,
-                            ),
-                          ),
-                        ],
-                      );
-              }),
         ],
       ),
     ];
@@ -282,7 +220,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: Text('PushNotification Info'),
+        title: LinksysText.descriptionMain('PushNotification Info'),
         children: [
           Offstage(
             offstage: Platform.isIOS,
@@ -292,7 +230,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
               children: [
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8.0),
-                  child: Text('FCM Token:'),
+                  child: LinksysText.descriptionSub('FCM Token:'),
                 ),
                 IconButton(
                     onPressed: _fcmToken != null
@@ -308,16 +246,14 @@ class _DebugToolsViewState extends State<DebugToolsView> {
               ],
             ),
           ),
-          const SizedBox(
-            height: 8,
-          ),
+          const LinksysGap.small(),
           Offstage(
             offstage: Platform.isAndroid,
             child: Wrap(
               alignment: WrapAlignment.start,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                const Text('APNS Token:'),
+                const LinksysText.descriptionSub('APNS Token:'),
                 IconButton(
                     onPressed: _apnsToken != null
                         ? () {
@@ -509,23 +445,18 @@ class _DebugToolsViewState extends State<DebugToolsView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LinksysText.descriptionMain(
           'Env picker: ${_selectedEnv.name}',
-          style: Theme.of(context)
-              .textTheme
-              .headline2
-              ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
-        Text(
+        const LinksysGap.regular(),
+        LinksysText.descriptionSub(
           'Will logout after change environment!',
-          style: Theme.of(context)
-              .textTheme
-              .headline2
-              ?.copyWith(color: Colors.red),
+          color: Colors.red,
         ),
-        SecondaryButton(
-          text: 'Select environment',
-          onPress: () async {
+        const LinksysGap.regular(),
+        LinksysPrimaryButton(
+          'Select environment',
+          onTap: () async {
             final result = await showModalBottomSheet(
                 enableDrag: false,
                 context: context,
@@ -543,7 +474,8 @@ class _DebugToolsViewState extends State<DebugToolsView> {
     bool _isLoading = false;
     return StatefulBuilder(builder: (context, setState) {
       return _isLoading
-          ? FullScreenSpinner(text: getAppLocalizations(context).processing)
+          ? LinksysFullScreenSpinner(
+              text: getAppLocalizations(context).processing)
           : Column(
               children: [
                 ListView.builder(
@@ -567,9 +499,9 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                           },
                         )),
                 const Spacer(),
-                PrimaryButton(
-                  text: 'Save',
-                  onPress: () async {
+                LinksysPrimaryButton(
+                  'Save',
+                  onTap: () async {
                     setState(() {
                       _isLoading = true;
                     });
@@ -596,9 +528,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                     });
                   },
                 ),
-                const SizedBox(
-                  height: 24,
-                )
+                const LinksysGap.regular(),
               ],
             );
     });

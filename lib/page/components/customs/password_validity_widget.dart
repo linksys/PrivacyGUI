@@ -11,10 +11,12 @@ class PasswordValidityWidget extends StatelessWidget {
         '1 special character', SpecialCharCheckRule().name, false),
   ];
   final String passwordText;
+  final void Function(bool isValid)? onValidationChanged;
 
   PasswordValidityWidget({
     Key? key,
     required this.passwordText,
+    this.onValidationChanged,
   }) : super(key: key) {
     Map<String, bool> validityList =
         ComplexPasswordValidator().validateDetail(passwordText);
