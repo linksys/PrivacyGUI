@@ -1,25 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
-import 'package:linksys_moab/bloc/auth/_auth.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
-import 'package:linksys_moab/bloc/profiles/cubit.dart';
-import 'package:linksys_moab/bloc/profiles/state.dart';
-import 'package:linksys_moab/design/colors.dart';
-import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/page/components/customs/enabled_with_opacity_widget.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_moab/page/components/shortcuts/profiles.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
-import 'package:linksys_moab/page/components/chart/LineChartSample.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
-import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
+import 'package:linksys_widgets/icons/icon_rules.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 
@@ -41,38 +34,36 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<NetworkCubit, NetworkState>(
-        builder: (context, state) => LinksysPageView.noNavigationBar(
-              scrollable: true,
-              child: EnabledOpacityWidget(
-                enabled: state.selected?.deviceInfo != null,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _homeTitle(state),
-                    const LinksysGap.semiBig(),
-                    _basicTiles(state),
-                    const LinksysGap.semiBig(),
-                    _speedTestTile(state),
-                    const LinksysGap.semiBig(),
-                    GestureDetector(
-                      onTap: () {
-                        NavigationCubit.of(context).push(DeviceListPath());
-                      },
-                      child: _usageTile(
-                          getConnectionDeviceCount(state.selected?.devices)),
-                    ),
-                    const LinksysGap.big(),
-                    const LinksysText.textLinkSmall(
-                      "Send feedback",
-                    ),
-                    const LinksysText.descriptionMain(
-                      "We love hearing from you",
-                    ),
-                  ],
-                ),
+      builder: (context, state) => LinksysPageView.noNavigationBar(
+        scrollable: true,
+        child: Stack(
+          children: [
+            Positioned(
+              right: -0, // negative value to position the image out of screen
+              top: -50, // negative value to position the image out of screen
+              child: Image(
+                image: AppTheme.of(context).images.dashboardBg,
+                fit: BoxFit.cover, // to cover the entire screen
               ),
-            ));
+            ),
+            EnabledOpacityWidget(
+              enabled: state.selected?.deviceInfo != null,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _homeTitle(state),
+                  const LinksysGap.big(),
+                  _networkInfoTiles(state),
+                  const LinksysGap.extraBig(),
+                  _speedTestTile(state),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _homeTitle(NetworkState state) {
@@ -90,7 +81,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
             ),
             const LinksysGap.semiSmall(),
             Expanded(
-              child: LinksysText.screenName(
+              child: LinksysText.subhead(
                 state.selected?.radioInfo?.first.settings.ssid ?? 'Home',
               ),
             ),
@@ -100,197 +91,239 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
             ),
           ],
         ),
-        const LinksysText.descriptionMain(
-          'Internet looks good!',
-        )
+        const LinksysGap.big(),
+        Row(
+          children: const [
+            LinksysText.screenName(
+              'Internet ',
+            ),
+            LinksysText.screenName(
+              'online',
+              color: ConstantColors.primaryLinksysBlue,
+            ),
+          ],
+        ),
       ],
     );
   }
 
-  Widget _basicTiles(NetworkState state) {
+  Widget _networkInfoTiles(NetworkState state) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _wifiInfoTile(state),
+          const LinksysGap.extraBig(),
+          _nodesInfoTile(state),
+          const LinksysGap.extraBig(),
+          _devicesInfoTile(state),
+        ],
+      ),
+    );
+  }
+
+  Widget _wifiInfoTile(NetworkState state) {
+    int wifiCount = getWifiCount(state.selected);
+    List<Widget> icons = [];
+    for (int i = 0; i < wifiCount; i++) {
+      icons.add(_circleIcon(
+          image: const AssetImage('assets/images/wifi_signal_3.png')));
+    }
+    return _infoTile(
+      count: wifiCount,
+      descripition: 'WiFi networks active',
+      icons: icons,
+      onTap: () {
+        NavigationCubit.of(context).push(WifiListPath());
+      },
+    );
+  }
+
+  Widget _nodesInfoTile(NetworkState state) {
+    int nodesCount = getRouterCount(state.selected?.devices);
+    List<Widget> icons = [];
+    for (int i = 0; i < nodesCount; i++) {
+      icons.add(_circleIcon(
+          svgPicture: SvgPicture(
+        AppTheme.of(context).images.imgRouterBlack,
+        height: 30,
+        width: 30,
+      )));
+    }
+    return _infoTile(
+      count: nodesCount,
+      descripition: 'Nodes online',
+      icons: icons,
+      onTap: () {
+        NavigationCubit.of(context).push(TopologyPath());
+      },
+    );
+  }
+
+  Widget _devicesInfoTile(NetworkState state) {
+    List<RouterDevice> connectedDevices =
+        getConnectedDevice(state.selected?.devices);
+    List<Widget> icons = [];
+    for (RouterDevice device in connectedDevices) {
+      icons.add(_circleIcon(
+          image: AppTheme.of(context)
+              .images
+              .devices
+              .getByName(iconTest(device.toJson()))));
+    }
+    return _infoTile(
+      count: connectedDevices.length,
+      descripition: 'Devices online',
+      icons: icons,
+      onTap: () {
+        NavigationCubit.of(context).push(DeviceListPath());
+      },
+    );
+  }
+
+  Widget _circleIcon({ImageProvider? image, SvgPicture? svgPicture}) {
+    // Check input only one kind of image
+    assert(image != null || svgPicture != null);
+    assert(!(image != null && svgPicture != null));
+
+    Widget child = Container();
+    final _image = image;
+    if (_image != null) {
+      child = Image(
+        image: _image,
+        width: 30,
+        height: 30,
+      );
+    } else {
+      child = svgPicture!;
+    }
+    return CircleAvatar(
+      radius: 23,
+      backgroundColor: ConstantColors.secondaryClearBlue,
+      child: CircleAvatar(
+        radius: 22,
+        backgroundColor: Colors.white,
+        child: child,
+      ),
+    );
+  }
+
+  Widget _iconStack(List<Widget> widgets) {
+    return Stack(
+      alignment: AlignmentDirectional.topEnd,
+      children: [
+        for (var index = 0; index < widgets.length; index++)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              widgets[index],
+              SizedBox(
+                width: 23.0 * index,
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Widget _infoTile(
+      {int count = 0,
+      String descripition = '',
+      List<Widget> icons = const [],
+      VoidCallback? onTap}) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        GestureDetector(
+          onTap: onTap,
+          child: Row(
+            children: [
+              LinksysText.mainTitle(count.toString()),
+              const LinksysGap.regular(),
+              _iconStack(icons),
+            ],
+          ),
+        ),
+        const LinksysGap.semiSmall(),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _blockTile(
-              'WIFI',
-              GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () {
-                  NavigationCubit.of(context).push(WifiListPath());
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    LinksysText.subhead(
-                      getWifiCount(state.selected),
-                    ),
-                    const LinksysText.subhead(
-                      'active',
-                    )
-                  ],
-                ),
-              ),
+            // const SizedBox(width: 3),
+            AppIcon(
+              icon: getCharactersIcons(context).checkRound,
+              color: ConstantColors.secondaryElectricGreen,
             ),
-            _blockTile(
-              'ROUTER + NODES',
-              GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () {
-                  NavigationCubit.of(context).push(TopologyPath());
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    LinksysText.subhead(
-                      getRouterCount(state.selected?.devices),
-                    ),
-                    const LinksysText.subhead(
-                      'online',
-                    )
-                  ],
-                ),
-              ),
-            ),
+            const LinksysGap.semiSmall(),
+            LinksysText.descriptionSub(descripition),
           ],
-        )
+        ),
       ],
     );
   }
 
   Widget _speedTestTile(NetworkState state) {
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: () {
-        NavigationCubit.of(context).push(SpeedCheckPath());
-      },
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const LinksysText.label('SPEED TEST'),
-          const LinksysGap.semiSmall(),
-          SizedBox(
-            width: double.infinity,
-            height: 100,
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: _speedResult(state),
-              ),
-            ),
-          ),
-        ],
+    return SizedBox(
+      width: double.infinity,
+      height: 80,
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(40.0),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 13.0),
+          child: _speedResult(state),
+        ),
       ),
     );
   }
 
   Widget _speedResult(NetworkState state) {
     final healthCheckResults = state.selected?.healthCheckResults;
+    int uploadBandwidth = 0;
+    int downloadBandwidth = 0;
     if (healthCheckResults != null && healthCheckResults.isNotEmpty) {
       final result = context
           .read<NetworkCubit>()
           .getLatestHealthCheckResult(healthCheckResults);
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Expanded(
-                    child: _speedItem(
-                        result.speedTestResult?.downloadBandwidth ?? 0,
-                        AppIcon(icon: getCharactersIcons(context).arrowDown))),
-                Expanded(
-                    child: _speedItem(
-                        result.speedTestResult?.uploadBandwidth ?? 0,
-                        AppIcon(icon: getCharactersIcons(context).arrowUp))),
-              ],
-            ),
-          ),
-          LinksysText.label(
-            DateFormat("yyyy-MM-dd hh:mm:ss").format(
-              DateFormat("yyyy-MM-ddThh:mm:ssZ")
-                  .parseUTC(result.timestamp)
-                  .toLocal(),
-            ),
-          ),
-        ],
-      );
-    } else {
-      return const Center(
-        child: LinksysText.textLinkLarge('Run Speed Test'),
-      );
+      uploadBandwidth = result.speedTestResult?.uploadBandwidth ?? 0;
+      downloadBandwidth = result.speedTestResult?.downloadBandwidth ?? 0;
     }
-  }
-
-  Widget _speedItem(int speed, AppIcon icon) {
-    return Row(
-      children: [
-        icon,
-        LinksysText.label(
-          Utils.formatBytes(speed),
-        )
-      ],
-    );
-  }
-
-  Widget _blockTile(String title, Widget content) {
-    return Expanded(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          LinksysText.label(title),
-          const LinksysGap.semiSmall(),
-          SizedBox(
-            width: double.infinity,
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: content,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _usageTile(int deviceCount) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const LinksysText.label('USAGE & DEVICES'),
-        const LinksysGap.semiSmall(),
-        SizedBox(
-          width: double.infinity,
-          height: 200,
-          child: Stack(
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              LineChartSample(),
-              Container(
-                alignment: Alignment.bottomLeft,
-                padding: EdgeInsets.only(left: 10, bottom: 10),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    LinksysText.mainTitle(
-                      '$deviceCount',
-                    ),
-                    LinksysText.subhead(
-                      'Devices online',
-                    )
-                  ],
+              Expanded(
+                  child: _speedItem(
+                      uploadBandwidth,
+                      AppIcon(
+                        icon: getCharactersIcons(context).arrowUp,
+                        color: ConstantColors.secondaryCyberPurple,
+                      ))),
+              Expanded(
+                  child: _speedItem(
+                      downloadBandwidth,
+                      AppIcon(
+                        icon: getCharactersIcons(context).arrowDown,
+                        color: ConstantColors.secondaryCyberPurple,
+                      ))),
+              GestureDetector(
+                onTap: () {
+                  NavigationCubit.of(context).push(SpeedCheckPath());
+                },
+                child: const CircleAvatar(
+                  radius: 21,
+                  backgroundColor: ConstantColors.primaryLinksysBlue,
+                  child: LinksysText.textLinkSmall(
+                    'Go',
+                    color: ConstantColors.primaryLinksysWhite,
+                  ),
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -298,77 +331,32 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
     );
   }
 
-  Widget _profileTile() {
-    final authBloc = context.read<AuthBloc>();
-    return authBloc.isCloudLogin()
-        ? BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('PROFILES'),
-                box8(),
-                SizedBox(
-                  height: 60,
-                  child: ListView.separated(
-                    itemBuilder: (context, index) => InkWell(
-                        onTap: () {
-                          if (index == state.profileList.length) {
-                            logger.d('add profile clicked: $index');
-                            //TODO: Check the next args
-                            NavigationCubit.of(context)
-                                .push(CreateProfileNamePath());
-                          } else {
-                            logger.d('profile clicked: $index');
-                            context
-                                .read<ProfilesCubit>()
-                                .selectProfile(state.profileList[index]);
-                            NavigationCubit.of(context)
-                                .push(ProfileOverviewPath());
-                          }
-                        },
-                        child: index == state.profileList.length
-                            ? _profileAdd()
-                            : _profileItem(state.profileList[index])),
-                    separatorBuilder: (_, __) => box16(),
-                    itemCount: state.profileList.length + 1,
-                    scrollDirection: Axis.horizontal,
-                    shrinkWrap: true,
-                  ),
-                ),
-              ],
-            );
-          })
-        : const Center();
-  }
+  Widget _speedItem(int speed, AppIcon icon) {
+    String num = '0';
+    String text = 'b';
+    // The speed is in kilobits per second
+    String speedText = Utils.formatBytes(speed * 1024);
+    num = speedText.split(' ').first;
+    text = speedText.split(' ').last;
 
-  Widget _profileAdd() {
-    return Container(
-      width: 29,
-      height: 29,
-      decoration: BoxDecoration(
-        color: MoabColor.dashboardTileBackground,
-        shape: BoxShape.circle,
-      ),
-      child: const Icon(Icons.add),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            icon,
+            const LinksysGap.semiSmall(),
+            LinksysText.screenName(num),
+          ],
+        ),
+        Text('${text}ps'),
+      ],
     );
   }
 
-  Widget _profileItem(UserProfile profile) {
-    return Container(
-      height: 58,
-      decoration: BoxDecoration(
-          color: MoabColor.dashboardTileBackground,
-          borderRadius: BorderRadius.circular(28)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: profileTileShort(context, profile),
-      ),
-    );
-  }
-
-  String getWifiCount(MoabNetwork? network) {
-    if (network == null) return '0';
+  int getWifiCount(MoabNetwork? network) {
+    if (network == null) return 0;
 
     int count = 0;
     final radioInfo = network.radioInfo;
@@ -387,10 +375,10 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
         network.iotNetworkSetting!.isIoTNetworkEnabled) {
       count += 1;
     }
-    return count.toString();
+    return count;
   }
 
-  String getRouterCount(List<RouterDevice>? devices) {
+  int getRouterCount(List<RouterDevice>? devices) {
     int routerCount = 0;
     if (devices != null && devices.isNotEmpty) {
       for (RouterDevice device in devices) {
@@ -399,21 +387,21 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
         }
       }
     }
-    return routerCount.toString();
+    return routerCount;
   }
 
-  int getConnectionDeviceCount(List<RouterDevice>? devices) {
-    int deviceCount = 0;
+  List<RouterDevice> getConnectedDevice(List<RouterDevice>? devices) {
+    List<RouterDevice> connectedDevices = [];
     if (devices != null && devices.isNotEmpty) {
       for (RouterDevice device in devices) {
         if (!device.isAuthority && device.nodeType == null) {
           if (device.connections.isNotEmpty) {
-            deviceCount += 1;
+            connectedDevices.add(device);
           }
         }
       }
     }
 
-    return deviceCount;
+    return connectedDevices;
   }
 }
