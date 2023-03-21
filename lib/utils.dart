@@ -16,6 +16,7 @@ import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
 import 'package:linksys_moab/util/uuid.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -610,18 +611,18 @@ class Utils {
     }
   }
 
-  static String getWifiSignalImage(int signalStrength) {
+  static IconData getWifiSignalIconData(BuildContext context, int signalStrength) {
     switch (getWifiSignalLevel(signalStrength)) {
       case NodeSignalLevel.excellent:
-        return 'assets/images/icon_signal_excellent.png';
+        return AppTheme.of(context).icons.characters.signalstrength4;
       case NodeSignalLevel.good:
-        return 'assets/images/icon_signal_good.png';
+        return AppTheme.of(context).icons.characters.signalstrength3;
       case NodeSignalLevel.fair:
-        return 'assets/images/icon_signal_fair.png';
+        return AppTheme.of(context).icons.characters.signalstrength2;
       case NodeSignalLevel.weak:
-        return 'assets/images/icon_signal_weak.png';
+        return AppTheme.of(context).icons.characters.signalstrength1;
       case NodeSignalLevel.none:
-        return 'assets/images/icon_signal_excellent.png';  // Default
+        return AppTheme.of(context).icons.characters.signalstrength0;  // Default
     }
   }
 

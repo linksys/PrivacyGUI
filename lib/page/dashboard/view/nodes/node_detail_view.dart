@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/nodes_path.dart';
-import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/utils.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
 
 class NodeDetailView extends ArgumentsStatefulView {
   const NodeDetailView({Key? key, super.args, super.next}) : super(key: key);
@@ -19,6 +20,7 @@ class NodeDetailView extends ArgumentsStatefulView {
 }
 
 class _NodeDetailViewState extends State<NodeDetailView> {
+  var isLightEnabled = true; //TODO: Move it to state
 
   @override
   void initState() {
@@ -29,85 +31,270 @@ class _NodeDetailViewState extends State<NodeDetailView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
-      return BasePageView.onDashboardSecondary(
-        scrollable: true,
+      return Scaffold(
         appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.transparent,
           elevation: 0,
-          title: Text(state.location,
-              style:
-                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-          leading:
-              BackButton(onPressed: () => NavigationCubit.of(context).pop()),
-          actions: [
-            IconButton(
-                icon: Image.asset('assets/images/icon_refresh.png'),
-                onPressed: () =>
-                    context.read<NodeCubit>().fetchNodeDetailData())
-          ],
+          backgroundColor: Color.fromRGBO(180, 210, 245, 1),
+          systemOverlayStyle: const SystemUiOverlayStyle(
+            //statusBarColor: Colors.pink, //TODO: Test for Android devices
+            statusBarIconBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.dark,
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _headerTile(state),
-            _nodeNameTile(state),
-            _connectedDeviceTile(state),
-            _upstreamNodeTile(state),
-            if (!state.isMaster) _signalStrengthTile(state),
-            _switchLightTile(state),
-            _serialNumberTile(state),
-            _modelNumberTile(state),
-            _firmwareInfoTile(state),
-            _lanTile(state),
-            if (state.isMaster) _wanTile(state),
-          ],
+        backgroundColor: AppTheme.of(context).colors.background,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, viewportConstraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: viewportConstraints.maxHeight,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _header(state),
+                        _content(state),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       );
     });
   }
 
-  Widget _headerTile(NodeState state) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Column(
-          children: [
-            Image.asset(
-              'assets/images/img_topology_node.png',
-              width: 74,
-              height: 74,
-            ),
-            const SizedBox(
-              height: 8,
-            ),
-            Wrap(
-                alignment: WrapAlignment.center,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  _getConnectionImage(state),
-                  box8(),
-                  Text(
-                    state.isOnline
-                        ? getAppLocalizations(context).online
-                        : getAppLocalizations(context).offline,
-                    style: Theme.of(context).textTheme.headline4?.copyWith(
-                        color: state.isOnline ? Colors.blue : Colors.grey),
-                  )
-                ]),
+  Widget _header(NodeState state) {
+    const textColor = ConstantColors.raisinBlock;
+    
+    return Container(
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [
+            Color.fromRGBO(231, 239, 247, 1),
+            Color.fromRGBO(180, 210, 245, 1),
           ],
         ),
+      ),
+      child: Column(
+        children: [
+          Stack(
+            alignment: AlignmentDirectional.center,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Color.fromRGBO(8, 112, 234, 0.26),
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(100),
+                  color: Color.fromRGBO(8, 112, 234, 0.07),
+                ),
+                width: 120,
+                height: 120,
+              ),
+              SvgPicture(
+                AppTheme.of(context).images.imgRouterBlack,
+                height: 120 * 0.75,
+                width: 120 * 0.75,
+              ),
+            ],
+          ),
+          const LinksysGap.regular(),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              LinksysText.textLinkLarge(
+                state.location,
+                color: textColor,
+              ),
+              Positioned(
+                right: -(AppTheme.of(context).spacing.big),
+                child: AppIconButton.noPadding(
+                  icon: getCharactersIcons(context).editDefault,
+                  onTap: () {
+                    //TODO: Go to edit page
+                  },
+                ),
+              ),
+            ],
+          ),
+          const LinksysGap.extraBig(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Column(
+                children: [
+                  Container(
+                    height: AppTheme.of(context).spacing.extraBig,
+                    width: AppTheme.of(context).spacing.extraBig,
+                    alignment: Alignment.center,
+                    child: LinksysText.mainTitle(
+                      '${state.connectedDevices.length}',
+                      color: textColor,
+                    ),
+                  ),
+                  LinksysText.label(
+                    getAppLocalizations(context).devices,
+                    color: textColor,
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Container(
+                    height: AppTheme.of(context).spacing.extraBig,
+                    width: AppTheme.of(context).spacing.extraBig,
+                    alignment: Alignment.center,
+                    child: _getConnectionImage(state),
+                  ),
+                  LinksysText.label(
+                    state.isWiredConnection
+                        ? "Wired"
+                        : Utils.getWifiSignalLevel(state.signalStrength)
+                            .displayTitle,
+                    color: textColor,
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Container(
+                    height: AppTheme.of(context).spacing.extraBig,
+                    width: AppTheme.of(context).spacing.extraBig,
+                    alignment: Alignment.center,
+                    child: AppSwitch.full(
+                      value: isLightEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          isLightEnabled = value;
+                          //NavigationCubit.of(context).push(NodeSwitchLightPath());
+                        });
+                      },
+                    ),
+                  ),
+                  const LinksysText.label(
+                    'Light',
+                    color: textColor,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const LinksysGap.big(),
+        ],
       ),
     );
   }
 
   Widget _getConnectionImage(NodeState state) {
-    return Image.asset(
-      state.isWiredConnection ? 'assets/images/icon_signal_wired.png' : Utils.getWifiSignalImage(state.signalStrength),
-      width: 22,
-      height: 22,
+    return AppIcon.big(
+      icon: state.isWiredConnection
+          ? AppTheme.of(context).icons.characters.ethernetDefault
+          : Utils.getWifiSignalIconData(
+              context,
+              state.signalStrength,
+            ),
     );
   }
+
+  Widget _content(NodeState state) {
+    return AppPadding(
+      padding:
+          const LinksysEdgeInsets.symmetric(horizontal: AppGapSize.semiBig),
+      child: Column(
+        children: [
+          _detailSection(state),
+          _lanSection(state),
+          if (state.isMaster) _wanSection(state),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailSection(NodeState state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const LinksysGap.big(),
+        LinksysText.tags(
+          getAppLocalizations(context).details_all_capital,
+          color: ConstantColors.secondaryCyberPurple,
+        ),
+        const LinksysGap.semiSmall(),
+        AppSimplePanel(
+          title: getAppLocalizations(context).node_detail_label_serial_number,
+          description: state.serialNumber,
+        ),
+        const LinksysGap.semiSmall(),
+        AppSimplePanel(
+          title: getAppLocalizations(context).node_detail_label_model_number,
+          description: state.modelNumber,
+        ),
+        const LinksysGap.semiSmall(),
+        Visibility(
+          visible: state.isLatestFw,
+          replacement: AppSimplePanel(
+            title:
+                getAppLocalizations(context).node_detail_label_firmware_version,
+            description: state.firmwareVersion,
+          ),
+          child: AppPanelWithInfo(
+            title:
+                getAppLocalizations(context).node_detail_label_firmware_version,
+            description: state.firmwareVersion,
+            infoText: getAppLocalizations(context).up_to_date,
+            infoTextColor: AppTheme.of(context).colors.ctaPrimaryDisable,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _lanSection(NodeState state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const LinksysGap.semiSmall(),
+        LinksysText.tags(
+          getAppLocalizations(context).node_detail_label_lan,
+          color: ConstantColors.secondaryCyberPurple,
+        ),
+        const LinksysGap.semiSmall(),
+        AppSimplePanel(
+          title: getAppLocalizations(context).node_detail_label_ip_address,
+          description: state.lanIpAddress,
+        ),
+      ],
+    );
+  }
+
+  Widget _wanSection(NodeState state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const LinksysGap.semiSmall(),
+        LinksysText.tags(
+          getAppLocalizations(context).node_detail_label_wan,
+          color: ConstantColors.secondaryCyberPurple,
+        ),
+        const LinksysGap.semiSmall(),
+        AppSimplePanel(
+          title: getAppLocalizations(context).node_detail_label_ip_address,
+          description: state.wanIpAddress,
+        ),
+      ],
+    );
+  }
+
+  /*
 
   Widget _nodeNameTile(NodeState state) {
     return SettingTile(
@@ -189,115 +376,5 @@ class _NodeDetailViewState extends State<NodeDetailView> {
       onPress: null,
     );
   }
-
-  Widget _switchLightTile(NodeState state) {
-    return SettingTile(
-      title: Text(
-        'Light',
-        style: Theme.of(context).textTheme.bodyText1,
-      ),
-      value: Text(
-        state.isLightTurnedOn ? 'On' : 'Off',
-        style: Theme.of(context).textTheme.bodyText1,
-      ),
-      onPress: () {
-        NavigationCubit.of(context).push(NodeSwitchLightPath());
-      },
-    );
-  }
-
-  Widget _serialNumberTile(NodeState state) {
-    return SettingTile(
-      axis: SettingTileAxis.vertical,
-      title: Text(
-        getAppLocalizations(context).node_detail_label_serial_number,
-        style: Theme.of(context).textTheme.bodyText1,
-      ),
-      value: Text(
-        state.serialNumber,
-        style: Theme.of(context).textTheme.bodyText1,
-      ),
-    );
-  }
-
-  Widget _modelNumberTile(NodeState state) {
-    return SettingTile(
-      axis: SettingTileAxis.vertical,
-      title: Text(
-        getAppLocalizations(context).node_detail_label_model_number,
-        style: Theme.of(context).textTheme.bodyText1,
-      ),
-      value: Text(
-        state.modelNumber,
-        style: Theme.of(context).textTheme.bodyText1,
-      ),
-    );
-  }
-
-  Widget _firmwareInfoTile(NodeState state) {
-    return SettingTile(
-      axis: SettingTileAxis.vertical,
-      title: Text(
-        getAppLocalizations(context).node_detail_label_firmware_version,
-        style: Theme.of(context).textTheme.bodyText1,
-      ),
-      value: Row(
-        children: [
-          Expanded(
-            child: Text(
-              state.firmwareVersion,
-              style: Theme.of(context).textTheme.bodyText1,
-            ),
-          ),
-          Offstage(
-            offstage: !state.isLatestFw,
-            child: Text(
-              getAppLocalizations(context).up_to_date,
-              style: Theme.of(context).textTheme.bodyText1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _lanTile(NodeState state) {
-    return SectionTile(
-      header: Text(
-        getAppLocalizations(context).node_detail_label_lan,
-        style: Theme.of(context).textTheme.headline3,
-      ),
-      child: SettingTile(
-        axis: SettingTileAxis.vertical,
-        title: Text(
-          getAppLocalizations(context).node_detail_label_ip_address,
-          style: Theme.of(context).textTheme.bodyText1,
-        ),
-        value: Text(
-          state.lanIpAddress,
-          style: Theme.of(context).textTheme.bodyText1,
-        ),
-      ),
-    );
-  }
-
-  Widget _wanTile(NodeState state) {
-    return SectionTile(
-      header: Text(
-        getAppLocalizations(context).node_detail_label_wan,
-        style: Theme.of(context).textTheme.headline3,
-      ),
-      child: SettingTile(
-          axis: SettingTileAxis.vertical,
-          title: Text(
-            getAppLocalizations(context).node_detail_label_ip_address,
-            style: Theme.of(context).textTheme.bodyText1,
-          ),
-          value: Text(
-            state.wanIpAddress,
-            style: Theme.of(context).textTheme.bodyText1,
-          ),
-          onPress: null),
-    );
-  }
+  */
 }

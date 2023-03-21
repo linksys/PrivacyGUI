@@ -295,12 +295,10 @@ class _TreeViewPageState extends State<TreeViewPage> {
   Widget _getConnectionImage(TopologyNode node) {
     return Wrap(
       children: [
-        Image.asset(
-          node.isWiredConnection
-              ? 'assets/images/icon_signal_wired.png'
-              : Utils.getWifiSignalImage(node.signalStrength),
-          width: 14,
-          height: 14,
+        AppIcon.small(
+          icon: node.isWiredConnection
+              ? AppTheme.of(context).icons.characters.ethernetDefault
+              : Utils.getWifiSignalIconData(context, node.signalStrength),
         ),
         Offstage(
           offstage: node.isWiredConnection,
