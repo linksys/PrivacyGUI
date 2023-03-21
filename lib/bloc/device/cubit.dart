@@ -83,6 +83,7 @@ class DeviceCubit extends Cubit<DeviceState> {
               _offlineDevices.add(DeviceDetailInfo(
                 name: Utils.getDeviceName(device),
                 deviceID: device.deviceID,
+                icon: iconTest(device.toJson()),
               ));
             } else {
               final deviceConnection = device.connections.first;
@@ -113,6 +114,7 @@ class DeviceCubit extends Cubit<DeviceState> {
                 _guestOnlineDevices.add(DeviceDetailInfo(
                     name: Utils.getDeviceName(device),
                     deviceID: device.deviceID,
+                    icon: iconTest(device.toJson()),
                     place: placeMap[parentDeviceID] ?? masterPlace,
                     connection: connection,
                     ipAddress: deviceConnection.ipAddress ?? '',
