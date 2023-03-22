@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/icons/icon_rules.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -34,34 +35,26 @@ class _NodeDetailViewState extends State<NodeDetailView> {
       return Scaffold(
         appBar: AppBar(
           elevation: 0,
-          backgroundColor: Color.fromRGBO(180, 210, 245, 1),
+          backgroundColor: ConstantColors.deviceGradientEnd,
           systemOverlayStyle: const SystemUiOverlayStyle(
             //statusBarColor: Colors.pink, //TODO: Test for Android devices
             statusBarIconBrightness: Brightness.dark,
-            statusBarBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.light,
+          ),
+          leading: AppIconButton(
+            icon: getCharactersIcons(context).arrowLeft,
+            onTap: () {
+              NavigationCubit.of(context).pop();
+            },
           ),
         ),
         backgroundColor: AppTheme.of(context).colors.background,
         body: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, viewportConstraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: viewportConstraints.maxHeight,
-                  ),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _header(state),
-                        _content(state),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
+          child: Column(
+            children: [
+              _header(state),
+              _content(state),
+            ],
           ),
         ),
       );
@@ -69,53 +62,31 @@ class _NodeDetailViewState extends State<NodeDetailView> {
   }
 
   Widget _header(NodeState state) {
-    const textColor = ConstantColors.raisinBlock;
-    
     return Container(
       alignment: Alignment.center,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
           colors: [
-            Color.fromRGBO(231, 239, 247, 1),
-            Color.fromRGBO(180, 210, 245, 1),
+            ConstantColors.deviceGradientBegin,
+            ConstantColors.deviceGradientEnd,
           ],
         ),
       ),
       child: Column(
         children: [
-          Stack(
-            alignment: AlignmentDirectional.center,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Color.fromRGBO(8, 112, 234, 0.26),
-                    width: 1,
-                  ),
-                  borderRadius: BorderRadius.circular(100),
-                  color: Color.fromRGBO(8, 112, 234, 0.07),
-                ),
-                width: 120,
-                height: 120,
-              ),
-              SvgPicture(
-                AppTheme.of(context).images.imgRouterBlack,
-                height: 120 * 0.75,
-                width: 120 * 0.75,
-              ),
-            ],
-          ),
+          _nodeAvatar(state),
           const LinksysGap.regular(),
           Stack(
             clipBehavior: Clip.none,
             children: [
               LinksysText.textLinkLarge(
                 state.location,
-                color: textColor,
+                color: ConstantColors.raisinBlock,
               ),
               Positioned(
+                top: -2.5,
                 right: -(AppTheme.of(context).spacing.big),
                 child: AppIconButton.noPadding(
                   icon: getCharactersIcons(context).editDefault,
@@ -127,70 +98,101 @@ class _NodeDetailViewState extends State<NodeDetailView> {
             ],
           ),
           const LinksysGap.extraBig(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Column(
-                children: [
-                  Container(
-                    height: AppTheme.of(context).spacing.extraBig,
-                    width: AppTheme.of(context).spacing.extraBig,
-                    alignment: Alignment.center,
-                    child: LinksysText.mainTitle(
-                      '${state.connectedDevices.length}',
-                      color: textColor,
-                    ),
-                  ),
-                  LinksysText.label(
-                    getAppLocalizations(context).devices,
-                    color: textColor,
-                  ),
-                ],
-              ),
-              Column(
-                children: [
-                  Container(
-                    height: AppTheme.of(context).spacing.extraBig,
-                    width: AppTheme.of(context).spacing.extraBig,
-                    alignment: Alignment.center,
-                    child: _getConnectionImage(state),
-                  ),
-                  LinksysText.label(
-                    state.isWiredConnection
-                        ? "Wired"
-                        : Utils.getWifiSignalLevel(state.signalStrength)
-                            .displayTitle,
-                    color: textColor,
-                  ),
-                ],
-              ),
-              Column(
-                children: [
-                  Container(
-                    height: AppTheme.of(context).spacing.extraBig,
-                    width: AppTheme.of(context).spacing.extraBig,
-                    alignment: Alignment.center,
-                    child: AppSwitch.full(
-                      value: isLightEnabled,
-                      onChanged: (value) {
-                        setState(() {
-                          isLightEnabled = value;
-                          //NavigationCubit.of(context).push(NodeSwitchLightPath());
-                        });
-                      },
-                    ),
-                  ),
-                  const LinksysText.label(
-                    'Light',
-                    color: textColor,
-                  ),
-                ],
-              ),
-            ],
-          ),
+          _nodeStatus(state),
           const LinksysGap.big(),
         ],
       ),
+    );
+  }
+
+  Widget _nodeAvatar(NodeState state) {
+    return Stack(
+      alignment: AlignmentDirectional.center,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: ConstantColors.deviceCircleBorder,
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(100),
+            color: ConstantColors.deviceCircleBackground,
+          ),
+          width: 120,
+          height: 120,
+        ),
+        Image(
+          image: AppTheme.of(context).images.devices.getByName(
+                routerIconTest(modelNumber: state.modelNumber),
+              ),
+          height: 120 * 0.75,
+          width: 120 * 0.75,
+        ),
+      ],
+    );
+  }
+
+  Widget _nodeStatus(NodeState state) {
+    const textColor = ConstantColors.raisinBlock;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        Column(
+          children: [
+            Container(
+              height: AppTheme.of(context).spacing.extraBig,
+              width: AppTheme.of(context).spacing.extraBig,
+              alignment: Alignment.center,
+              child: LinksysText.mainTitle(
+                '${state.connectedDevices.length}',
+                color: textColor,
+              ),
+            ),
+            LinksysText.label(
+              getAppLocalizations(context).devices,
+              color: textColor,
+            ),
+          ],
+        ),
+        Column(
+          children: [
+            Container(
+              height: AppTheme.of(context).spacing.extraBig,
+              width: AppTheme.of(context).spacing.extraBig,
+              alignment: Alignment.center,
+              child: _getConnectionImage(state),
+            ),
+            LinksysText.label(
+              state.isWiredConnection
+                  ? "Wired"
+                  : Utils.getWifiSignalLevel(state.signalStrength).displayTitle,
+              color: textColor,
+            ),
+          ],
+        ),
+        Column(
+          children: [
+            Container(
+              height: AppTheme.of(context).spacing.extraBig,
+              width: AppTheme.of(context).spacing.extraBig,
+              alignment: Alignment.center,
+              child: AppSwitch.full(
+                value: isLightEnabled,
+                onChanged: (value) {
+                  setState(() {
+                    isLightEnabled = value;
+                    //NavigationCubit.of(context).push(NodeSwitchLightPath());
+                  });
+                },
+              ),
+            ),
+            const LinksysText.label(
+              'Light',
+              color: textColor,
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -206,15 +208,36 @@ class _NodeDetailViewState extends State<NodeDetailView> {
   }
 
   Widget _content(NodeState state) {
-    return AppPadding(
-      padding:
-          const LinksysEdgeInsets.symmetric(horizontal: AppGapSize.semiBig),
-      child: Column(
-        children: [
-          _detailSection(state),
-          _lanSection(state),
-          if (state.isMaster) _wanSection(state),
-        ],
+    return Expanded(
+      child: LayoutBuilder(
+        builder: (context, viewportConstraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: viewportConstraints.maxHeight,
+              ),
+              child: IntrinsicHeight(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppPadding(
+                      padding: const LinksysEdgeInsets.symmetric(
+                        horizontal: AppGapSize.semiBig,
+                      ),
+                      child: Column(
+                        children: [
+                          _detailSection(state),
+                          _lanSection(state),
+                          if (state.isMaster) _wanSection(state),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
