@@ -16,6 +16,7 @@ import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class DashboardHomeView extends StatefulWidget {
   const DashboardHomeView({Key? key}) : super(key: key);
@@ -67,6 +68,8 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                 ],
               ),
             ),
+            if (state.selected?.devices == null)
+              const LinksysFullScreenSpinner(),
           ],
         ),
       ),
@@ -131,6 +134,12 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
   }
 
   Widget _wifiInfoTile(NetworkState state) {
+    if (state.selected?.radioInfo == null) {
+      return CircularProgressIndicator(
+        color: AppTheme.of(context).colors.textBoxText,
+      );
+    }
+
     int wifiCount = getWifiCount(state.selected);
     List<Widget> icons = [];
     for (int i = 0; i < wifiCount; i++) {
@@ -148,6 +157,12 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
   }
 
   Widget _nodesInfoTile(NetworkState state) {
+    if (state.selected?.devices == null) {
+      return CircularProgressIndicator(
+        color: AppTheme.of(context).colors.textBoxText,
+      );
+    }
+
     final nodes = getRouters(state.selected?.devices);
     List<Widget> icons = [];
     for (int i = 0; i < nodes.length; i++) {
@@ -171,6 +186,12 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
   }
 
   Widget _devicesInfoTile(NetworkState state) {
+    if (state.selected?.devices == null) {
+      return CircularProgressIndicator(
+        color: AppTheme.of(context).colors.textBoxText,
+      );
+    }
+
     List<RouterDevice> connectedDevices =
         getConnectedDevice(state.selected?.devices);
     List<Widget> icons = [];
