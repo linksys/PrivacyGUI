@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:graphview/GraphView.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/bloc/cubit.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/bloc/state.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/topology_node.dart';
@@ -24,20 +24,29 @@ import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'custom_buchheim_walker_algorithm.dart';
 import 'custom_tree_edge_renderer.dart';
 
-class TopologyView extends StatelessWidget {
-  const TopologyView({Key? key}) : super(key: key);
+class TopologyView extends ArgumentsStatelessView {
+  const TopologyView({
+    Key? key,
+    super.next,
+    super.args,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final selectedId = args['selectedDeviceId'];
     return BlocProvider(
       create: (context) => TopologyCubit(context.read<RouterRepository>()),
-      child: const TopologyContentView(),
+      child: TopologyContentView(
+        selectedDeviceId: selectedId,
+      ),
     );
   }
 }
 
 class TopologyContentView extends StatefulWidget {
-  const TopologyContentView({Key? key}) : super(key: key);
+  final String? selectedDeviceId;
+  const TopologyContentView({Key? key, this.selectedDeviceId})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _TopologyContentView();
@@ -47,13 +56,16 @@ class _TopologyContentView extends State<TopologyContentView> {
   @override
   void initState() {
     super.initState();
-    context.read<TopologyCubit>().fetchTopologyData();
+    context.read<TopologyCubit>().fetchTopologyData(
+          selectedId: widget.selectedDeviceId,
+        );
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TopologyCubit, TopologyState>(builder: (context, state) {
       return StyledLinksysPageView(
+        scrollable: true,
         padding: const LinksysEdgeInsets.regular(),
         child: LinksysBasicLayout(
           content: Visibility(
@@ -186,7 +198,7 @@ class _TreeViewPageState extends State<TreeViewPage> {
         algorithm: CustomBuchheimWalkerAlgorithm(
           builder,
           CustomEdgeRenderer(builder),
-          shiftX: MediaQuery.of(context).size.width / 3,
+          // shiftX: MediaQuery.of(context).size.width / 5,
         ), // TODO Don't know why not /2
         paint: Paint()
           ..color = ConstantColors.primaryLinksysBlue.withOpacity(0.26)
@@ -250,8 +262,11 @@ class _TreeViewPageState extends State<TreeViewPage> {
                 margin: EdgeInsets.all(AppTheme.of(context).spacing.semiSmall),
                 child: AppPadding(
                   padding: const LinksysEdgeInsets.regular(),
-                  child: SvgPicture(
-                    AppTheme.of(context).images.imgRouterBlack,
+                  child: Image(
+                    image: AppTheme.of(context)
+                        .images
+                        .devices
+                        .getByName(_node.icon),
                   ),
                 )),
             Container(

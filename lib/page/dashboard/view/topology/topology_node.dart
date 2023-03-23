@@ -8,6 +8,7 @@ class TopologyNode extends Node {
   final bool isWiredConnection;
   final int signalStrength;
   int connectedDeviceCount;
+  String icon;
   final List<TopologyNode> children;
 
   TopologyNode({
@@ -18,6 +19,7 @@ class TopologyNode extends Node {
     this.isWiredConnection = false,
     this.signalStrength = 0,
     this.connectedDeviceCount = 0,
+    this.icon = 'genericDevice',
     this.children = const [],
   }) : super.Id(deviceID);
 }

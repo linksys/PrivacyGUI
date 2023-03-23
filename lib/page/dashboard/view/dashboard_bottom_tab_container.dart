@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/customs/debug_overlay_view.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -15,7 +12,6 @@ import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 enum DashboardBottomItemType { home, security, health, settings }
 
@@ -61,18 +57,19 @@ class _DashboardViewState extends State<DashboardBottomTabContainer>
               child: widget.navigator),
           kReleaseMode
               ? const Center()
-              : Positioned(
-                  left: Utils.getScreenWidth(context) -
-                      Utils.getScreenWidth(context) / 2,
-                  child: IgnorePointer(
-                    ignoring: true,
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                          top: Utils.getTopSafeAreaPadding(context)),
-                      child: OverlayInfoView(),
-                    ),
-                  ),
-                ),
+              // : Positioned(
+              //     left: Utils.getScreenWidth(context) -
+              //         Utils.getScreenWidth(context) / 2,
+              //     child: IgnorePointer(
+              //       ignoring: true,
+              //       child: Padding(
+              //         padding: EdgeInsets.only(
+              //             top: Utils.getTopSafeAreaPadding(context)),
+              //         child: OverlayInfoView(),
+              //       ),
+              //     ),
+              //   ),
+              : Container(),
         ],
       ),
       bottomNavigationBar: Offstage(
@@ -121,11 +118,13 @@ class _DashboardViewState extends State<DashboardBottomTabContainer>
     return BottomNavigationBarItem(
       icon: Icon(
         getCharactersIcons(context).getByName(item.iconId),
+        color: AppTheme.of(context).colors.textBoxText,
       ),
       activeIcon: CircleAvatar(
         backgroundColor: Colors.transparent,
         child: Icon(
           getCharactersIcons(context).getByName(item.iconId),
+          color: AppTheme.of(context).colors.textBoxText,
         ),
       ),
       label: item.title,

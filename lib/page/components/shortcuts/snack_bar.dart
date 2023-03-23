@@ -12,12 +12,15 @@ showSuccessSnackBar(BuildContext context, String message) {
 showSimpleSnackBar(BuildContext context, Image? image, String message) {
   showSnackBar(
     context,
-    Row(
-      children: [
-        image ?? const Center(),
-        box16(),
-        Text(message),
-      ],
+    SizedBox(
+      height: 48,
+      child: Row(
+        children: [
+          image ?? const Center(),
+          box16(),
+          Text(message),
+        ],
+      ),
     ),
   );
 }

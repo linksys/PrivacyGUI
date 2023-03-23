@@ -5,6 +5,7 @@ import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/model/nodes_path.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -25,7 +26,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
       return Scaffold(
         appBar: AppBar(
           elevation: 0,
-          backgroundColor: ConstantColors.deviceGradientEnd,
+          backgroundColor: AppTheme.of(context).colors.headerBackgroundEnd,
           systemOverlayStyle: const SystemUiOverlayStyle(
             //statusBarColor: Colors.pink, //TODO: Test for Android devices
             statusBarIconBrightness: Brightness.dark,
@@ -55,13 +56,13 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
     final device = state.selectedDeviceInfo!;
     return Container(
       alignment: Alignment.center,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
           colors: [
-            ConstantColors.deviceGradientBegin,
-            ConstantColors.deviceGradientEnd,
+            AppTheme.of(context).colors.headerBackgroundStart,
+            AppTheme.of(context).colors.headerBackgroundEnd,
           ],
         ),
       ),
@@ -74,7 +75,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
             children: [
               LinksysText.textLinkLarge(
                 device.name,
-                color: ConstantColors.raisinBlock,
+                color: AppTheme.of(context).colors.textBoxText,
               ),
               Positioned(
                 top: -2.5,
@@ -103,11 +104,11 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
         Container(
           decoration: BoxDecoration(
             border: Border.all(
-              color: ConstantColors.deviceCircleBorder,
+              color: AppTheme.of(context).colors.deviceAvatarBorder,
               width: 1,
             ),
             borderRadius: BorderRadius.circular(100),
-            color: ConstantColors.deviceCircleBackground,
+            color: AppTheme.of(context).colors.deviceAvaterBackgtound,
           ),
           width: 120,
           height: 120,
@@ -126,7 +127,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
 
   Widget _deviceStatus(DeviceState state) {
     final device = state.selectedDeviceInfo!;
-    const textColor = ConstantColors.raisinBlock;
+    final textColor = AppTheme.of(context).colors.textBoxText;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
@@ -150,24 +151,32 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
             ),
           ],
         ),
-        Column(
-          children: [
-            Container(
-              height: AppTheme.of(context).spacing.extraBig,
-              width: AppTheme.of(context).spacing.extraBig,
-              alignment: Alignment.center,
-              child: AppIcon.big(
-                icon: Utils.getWifiSignalIconData(
-                  context,
-                  device.signal,
+        InkWell(
+          onTap: () {
+            NavigationCubit.of(context).push(TopologyPath()
+              ..args = {
+                'selectedDeviceId': device.deviceID,
+              });
+          },
+          child: Column(
+            children: [
+              Container(
+                height: AppTheme.of(context).spacing.extraBig,
+                width: AppTheme.of(context).spacing.extraBig,
+                alignment: Alignment.center,
+                child: AppIcon.big(
+                  icon: Utils.getWifiSignalIconData(
+                    context,
+                    device.signal,
+                  ),
                 ),
               ),
-            ),
-            LinksysText.label(
-              Utils.getWifiSignalLevel(device.signal).displayTitle,
-              color: textColor,
-            ),
-          ],
+              LinksysText.label(
+                Utils.getWifiSignalLevel(device.signal).displayTitle,
+                color: textColor,
+              ),
+            ],
+          ),
         ),
         Column(
           children: [
@@ -179,7 +188,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
                 icon: AppTheme.of(context).icons.characters.profileDefault,
               ),
             ),
-            const LinksysText.label(
+            LinksysText.label(
               'Timmy',
               color: textColor,
             ),
@@ -236,7 +245,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
         const LinksysGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).ip_address,
-          description: device.ipAddress,   //TODO: It may be empty
+          description: device.ipAddress, //TODO: It may be empty
         ),
         const LinksysGap.semiSmall(),
         AppSimplePanel(
@@ -246,7 +255,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
         const LinksysGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).ipv6_address,
-          description: device.macAddress,  //TODO: Get IPv6 data
+          description: device.macAddress, //TODO: Get IPv6 data
         ),
       ],
     );

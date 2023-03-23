@@ -14,6 +14,7 @@ import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/icons/icon_rules.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 
 class DashboardHomeView extends StatefulWidget {
@@ -36,6 +37,12 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
     return BlocBuilder<NetworkCubit, NetworkState>(
       builder: (context, state) => LinksysPageView.noNavigationBar(
         scrollable: true,
+        padding: const LinksysEdgeInsets.only(
+          top: AppGapSize.big,
+          left: AppGapSize.regular,
+          right: AppGapSize.regular,
+          bottom: AppGapSize.regular,
+        ),
         child: Stack(
           children: [
             Positioned(
@@ -141,18 +148,20 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
   }
 
   Widget _nodesInfoTile(NetworkState state) {
-    int nodesCount = getRouterCount(state.selected?.devices);
+    final nodes = getRouters(state.selected?.devices);
     List<Widget> icons = [];
-    for (int i = 0; i < nodesCount; i++) {
+    for (int i = 0; i < nodes.length; i++) {
+      final image =
+          AppTheme.of(context).images.devices.getByName(routerIconTest(
+                modelNumber: nodes[i].model.modelNumber ?? '',
+                hardwareVersion: nodes[i].model.hardwareVersion,
+              ));
       icons.add(_circleIcon(
-          svgPicture: SvgPicture(
-        AppTheme.of(context).images.imgRouterBlack,
-        height: 30,
-        width: 30,
-      )));
+        image: image,
+      ));
     }
     return _infoTile(
-      count: nodesCount,
+      count: nodes.length,
       descripition: 'Nodes online',
       icons: icons,
       onTap: () {
@@ -378,16 +387,16 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
     return count;
   }
 
-  int getRouterCount(List<RouterDevice>? devices) {
-    int routerCount = 0;
+  List<RouterDevice> getRouters(List<RouterDevice>? devices) {
+    List<RouterDevice> list = [];
     if (devices != null && devices.isNotEmpty) {
       for (RouterDevice device in devices) {
         if (device.isAuthority || device.nodeType != null) {
-          routerCount += 1;
+          list.add(device);
         }
       }
     }
-    return routerCount;
+    return list;
   }
 
   List<RouterDevice> getConnectedDevice(List<RouterDevice>? devices) {

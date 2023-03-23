@@ -10,13 +10,15 @@ import 'package:linksys_moab/page/dashboard/view/topology/topology_view.dart';
 import '_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 
-
 class NodesPath extends DashboardPath {
   @override
   Widget buildPage(NavigationCubit cubit) {
     switch (runtimeType) {
       case TopologyPath:
-        return const TopologyView();
+        return TopologyView(
+          args: args,
+          next: next,
+        );
       case NodeDetailPath:
         return NodeDetailView(
           args: args,
@@ -51,7 +53,6 @@ class NodesPath extends DashboardPath {
     }
   }
 }
-
 
 class TopologyPath extends NodesPath {
   @override

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
-import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/guest_radio_settings.dart';
 import 'package:linksys_moab/model/router/iot_network_settings.dart';

@@ -25,7 +25,6 @@ import 'package:linksys_moab/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../repository/linksys_cloud_repository.dart';
-import '../../repository/model/cloud_network_model.dart';
 
 class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   NetworkCubit({
