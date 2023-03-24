@@ -21,6 +21,7 @@ import 'package:linksys_widgets/widgets/animation/fade_in_out.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import '../../../../util/logger.dart';
 import 'custom_buchheim_walker_algorithm.dart';
 import 'custom_tree_edge_renderer.dart';
 
@@ -65,34 +66,39 @@ class _TopologyContentView extends State<TopologyContentView> {
   Widget build(BuildContext context) {
     return BlocBuilder<TopologyCubit, TopologyState>(builder: (context, state) {
       return StyledLinksysPageView(
+        padding: LinksysEdgeInsets.only(),
         scrollable: true,
-        padding: const LinksysEdgeInsets.regular(),
+        // padding: const LinksysEdgeInsets.regular(),
         child: LinksysBasicLayout(
           content: Visibility(
             visible: state.rootNode.deviceID.isNotEmpty,
             replacement: const LinksysFullScreenSpinner(),
             child: Column(
               children: [
-                state.rootNode.isOnline
-                    ? _connectionStatus()
-                    : _noInternetConnectionWidget(),
-                const LinksysGap.regular(),
+                widget.selectedDeviceId == null
+                    ? (state.rootNode.isOnline
+                        ? _connectionStatus()
+                        : _noInternetConnectionWidget())
+                    : Container(),
                 Expanded(
-                  child: TreeViewPage(root: state.rootNode),
+                  child: TreeViewPage(
+                    root: state.rootNode,
+                    isChainMode: widget.selectedDeviceId != null,
+                  ),
                 ),
               ],
             ),
           ),
-          footer: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SimpleTextButton(
-                  text: 'Restart mesh system',
-                  onPressed: () {
-                    NavigationCubit.of(context).push(NodeRestartPath());
-                  })
-            ],
-          ),
+          // footer: Row(
+          //   mainAxisAlignment: MainAxisAlignment.center,
+          //   children: [
+          //     SimpleTextButton(
+          //         text: 'Restart mesh system',
+          //         onPressed: () {
+          //           NavigationCubit.of(context).push(NodeRestartPath());
+          //         })
+          //   ],
+          // ),
         ),
       );
     });
@@ -166,8 +172,13 @@ class _TopologyContentView extends State<TopologyContentView> {
 
 class TreeViewPage extends StatefulWidget {
   final TopologyNode root;
+  final bool isChainMode;
 
-  const TreeViewPage({Key? key, required this.root}) : super(key: key);
+  const TreeViewPage({
+    Key? key,
+    required this.root,
+    this.isChainMode = false,
+  }) : super(key: key);
 
   @override
   State<TreeViewPage> createState() => _TreeViewPageState();
@@ -189,6 +200,7 @@ class _TreeViewPageState extends State<TreeViewPage> {
 
   @override
   Widget build(BuildContext context) {
+    logger.d('Interactive viewer width: ${MediaQuery.of(context).size.width}');
     return InteractiveViewer(
       constrained: false,
       boundaryMargin: const EdgeInsets.all(0),
@@ -198,10 +210,10 @@ class _TreeViewPageState extends State<TreeViewPage> {
         algorithm: CustomBuchheimWalkerAlgorithm(
           builder,
           CustomEdgeRenderer(builder),
-          // shiftX: MediaQuery.of(context).size.width / 5,
-        ), // TODO Don't know why not /2
+          viewWidth: MediaQuery.of(context).size.width,
+        ),
         paint: Paint()
-          ..color = ConstantColors.primaryLinksysBlue.withOpacity(0.26)
+          ..color = AppTheme.of(context).colors.tertiaryText
           ..strokeWidth = 1
           ..style = PaintingStyle.stroke,
         builder: (Node node) {
@@ -225,13 +237,15 @@ class _TreeViewPageState extends State<TreeViewPage> {
     return InkWell(
       onTap: () {
         final nodeDevice = node as TopologyNode;
-        if (nodeDevice.isOnline) {
-          // Update the current target Id for node state
-          context.read<NodeCubit>().setDetailNodeID(nodeDevice.deviceID);
-          NavigationCubit.of(context).push(NodeDetailPath());
-        } else {
-          NavigationCubit.of(context).push(NodeOfflineCheckPath());
-        }
+        if (nodeDevice.isRouter) {
+          if (nodeDevice.isOnline) {
+            // Update the current target Id for node state
+            context.read<NodeCubit>().setDetailNodeID(nodeDevice.deviceID);
+            NavigationCubit.of(context).push(NodeDetailPath());
+          } else {
+            NavigationCubit.of(context).push(NodeOfflineCheckPath());
+          }
+        } else {}
       },
       child: createNodeWidget(node),
     );
@@ -269,25 +283,26 @@ class _TreeViewPageState extends State<TreeViewPage> {
                         .getByName(_node.icon),
                   ),
                 )),
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(100),
-                color: _node.isOnline
-                    ? ConstantColors.primaryLinksysBlack
-                    : Colors.red,
-              ),
-              width: AppTheme.of(context).avatar.normal,
-              height: AppTheme.of(context).avatar.normal,
-              child: AppPadding(
-                padding: const LinksysEdgeInsets.small(),
-                child: Center(
-                  child: LinksysText.descriptionSub(
-                    _node.isOnline ? '${_node.connectedDeviceCount}' : '0',
-                    color: ConstantColors.primaryLinksysWhite,
+            if (!widget.isChainMode)
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(100),
+                  color: _node.isOnline
+                      ? ConstantColors.primaryLinksysBlack
+                      : Colors.red,
+                ),
+                width: AppTheme.of(context).avatar.normal,
+                height: AppTheme.of(context).avatar.normal,
+                child: AppPadding(
+                  padding: const LinksysEdgeInsets.small(),
+                  child: Center(
+                    child: LinksysText.descriptionSub(
+                      _node.isOnline ? '${_node.connectedDeviceCount}' : '0',
+                      color: ConstantColors.primaryLinksysWhite,
+                    ),
                   ),
                 ),
-              ),
-            )
+              )
           ],
         ),
         const LinksysGap.regular(),

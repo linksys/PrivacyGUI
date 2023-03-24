@@ -9,6 +9,7 @@ class TopologyNode extends Node {
   final int signalStrength;
   int connectedDeviceCount;
   String icon;
+  final isRouter;
   final List<TopologyNode> children;
 
   TopologyNode({
@@ -20,6 +21,7 @@ class TopologyNode extends Node {
     this.signalStrength = 0,
     this.connectedDeviceCount = 0,
     this.icon = 'genericDevice',
+    this.isRouter = false,
     this.children = const [],
   }) : super.Id(deviceID);
 }

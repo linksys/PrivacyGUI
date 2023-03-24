@@ -1,3 +1,6 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 class DeviceState extends Equatable {
@@ -87,7 +90,6 @@ enum DeviceListInfoType {
 class DeviceDetailInfo extends Equatable {
   final String name;
   final String deviceID;
-  final String place;
   final int uploadData;
   final int downloadData;
   final String connection;
@@ -101,11 +103,11 @@ class DeviceDetailInfo extends Equatable {
   final int signal;
   final int lastChangeRevision;
   final String? profileId;
+  final DeviceParentInfo? parentInfo;
 
   const DeviceDetailInfo({
     required this.name,
     required this.deviceID,
-    this.place = '',
     this.uploadData = 0,
     this.downloadData = 0,
     this.connection = '',
@@ -119,6 +121,7 @@ class DeviceDetailInfo extends Equatable {
     this.signal = 0,
     this.lastChangeRevision = 0,
     this.profileId,
+    this.parentInfo,
   });
 
   DeviceDetailInfo copyWith({
@@ -138,11 +141,11 @@ class DeviceDetailInfo extends Equatable {
     int? signal,
     int? lastChangeRevision,
     String? profileId,
+    DeviceParentInfo? parentInfo,
   }) {
     return DeviceDetailInfo(
       name: name ?? this.name,
       deviceID: deviceID ?? this.deviceID,
-      place: place ?? this.place,
       uploadData: uploadData ?? this.uploadData,
       downloadData: downloadData ?? this.downloadData,
       connection: connection ?? this.connection,
@@ -156,6 +159,7 @@ class DeviceDetailInfo extends Equatable {
       signal: signal ?? this.signal,
       lastChangeRevision: lastChangeRevision ?? this.lastChangeRevision,
       profileId: profileId ?? this.profileId,
+      parentInfo: parentInfo ?? this.parentInfo,
     );
   }
 
@@ -163,7 +167,6 @@ class DeviceDetailInfo extends Equatable {
   List<Object?> get props => [
         name,
         deviceID,
-        place,
         uploadData,
         downloadData,
         connection,
@@ -177,5 +180,58 @@ class DeviceDetailInfo extends Equatable {
         signal,
         lastChangeRevision,
         profileId,
+        parentInfo,
+      ];
+}
+
+class DeviceParentInfo extends Equatable {
+  final String place;
+  final String deviceId;
+  final String icon;
+
+  const DeviceParentInfo({
+    required this.place,
+    required this.deviceId,
+    required this.icon,
+  });
+
+  DeviceParentInfo copyWith({
+    String? place,
+    String? deviceId,
+    String? icon,
+  }) {
+    return DeviceParentInfo(
+      place: place ?? this.place,
+      deviceId: deviceId ?? this.deviceId,
+      icon: icon ?? this.icon,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'place': place,
+      'deviceId': deviceId,
+      'icon': icon,
+    };
+  }
+
+  factory DeviceParentInfo.fromMap(Map<String, dynamic> map) {
+    return DeviceParentInfo(
+      place: map['place'] as String,
+      deviceId: map['deviceId'] as String,
+      icon: map['icon'] as String,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory DeviceParentInfo.fromJson(String source) =>
+      DeviceParentInfo.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  List<Object?> get props => [
+        place,
+        deviceId,
+        icon,
       ];
 }

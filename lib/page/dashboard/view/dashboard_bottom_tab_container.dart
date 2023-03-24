@@ -57,19 +57,19 @@ class _DashboardViewState extends State<DashboardBottomTabContainer>
               child: widget.navigator),
           kReleaseMode
               ? const Center()
-              // : Positioned(
-              //     left: Utils.getScreenWidth(context) -
-              //         Utils.getScreenWidth(context) / 2,
-              //     child: IgnorePointer(
-              //       ignoring: true,
-              //       child: Padding(
-              //         padding: EdgeInsets.only(
-              //             top: Utils.getTopSafeAreaPadding(context)),
-              //         child: OverlayInfoView(),
-              //       ),
-              //     ),
-              //   ),
-              : Container(),
+              : Positioned(
+                  left: Utils.getScreenWidth(context) -
+                      Utils.getScreenWidth(context) / 2,
+                  child: IgnorePointer(
+                    ignoring: true,
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                          top: Utils.getTopSafeAreaPadding(context)),
+                      child: OverlayInfoView(),
+                    ),
+                  ),
+                ),
+          // : Container(),
         ],
       ),
       bottomNavigationBar: Offstage(

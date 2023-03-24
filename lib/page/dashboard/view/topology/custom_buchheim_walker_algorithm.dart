@@ -35,7 +35,10 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
     secondWalk(graph, firstNode, 0.0);
     checkUnconnectedNotes(graph);
     positionNodes(graph);
-    shiftCoordinates(graph, this.shiftX, this.shiftY);
+    moveToCenter(graph);
+    logger.d('get <0> node position: ${graph.getNodeAtPosition(0).x}');
+    shiftCoordinates(graph, _shiftX, _shiftY);
+    logger.d('get <0> node position: ${graph.getNodeAtPosition(0).x}');
     return calculateGraphSize(graph);
   }
 
@@ -136,7 +139,7 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
       bottom = max(bottom, node.y + node.height);
     }
     // ++Austin add shift values
-    return Size(right - left + shiftX, bottom - top + shiftY);
+    return Size(right - left + _shiftX, bottom - top + _shiftY);
   }
 
   void executeShifts(Graph graph, Node node) {
@@ -392,7 +395,6 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
             localPadding = max(localPadding, diff);
           }
       }
-      print('positionNode: ${node.key?.value}: $offset');
       node.position = getPosition(node, globalPadding, offset);
     }
   }
@@ -457,8 +459,6 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
         finalOffset = Offset(0, 0);
         break;
     }
-    print(
-        'Node ${node.key?.value} (${node.x}, ${node.y}) final Position: ${finalOffset}');
     return finalOffset;
   }
 
@@ -480,8 +480,10 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
   @override
   EdgeRenderer? renderer;
 
-  final double shiftX;
-  final double shiftY;
+  final double viewWidth;
+  final double viewHeight;
+  double _shiftX;
+  double _shiftY;
 
   void initData(Graph? graph) {
     graph?.nodes.forEach((node) {
@@ -513,12 +515,24 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
     return nodeData[node]?.predecessorNodes ?? [];
   }
 
+  moveToCenter(Graph graph) {
+    if (viewWidth == -1) {
+      return;
+    }
+
+    final root = graph.getNodeAtPosition(0);
+    final rootCenterX = root.x + (root.width / 2);
+    logger.d('root center X: $rootCenterX');
+    _shiftX = (viewWidth / 2) - rootCenterX;
+  }
+
   CustomBuchheimWalkerAlgorithm(
     this.configuration,
     EdgeRenderer? renderer, {
-    this.shiftX = 10,
-    this.shiftY = 10,
-  }) {
+    this.viewWidth = -1,
+    this.viewHeight = -1,
+  })  : _shiftX = 0,
+        _shiftY = 0 {
     this.renderer = renderer ?? TreeEdgeRenderer(configuration);
   }
 
@@ -532,7 +546,7 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
     secondWalk(graph, firstNode, 0.0);
     checkUnconnectedNotes(graph);
     positionNodes(graph);
-    shiftCoordinates(graph, shiftX, shiftY);
+    shiftCoordinates(graph, _shiftX, _shiftY);
   }
 
   @override

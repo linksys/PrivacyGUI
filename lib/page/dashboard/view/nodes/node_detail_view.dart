@@ -35,7 +35,7 @@ class _NodeDetailViewState extends State<NodeDetailView> {
       return Scaffold(
         appBar: AppBar(
           elevation: 0,
-          backgroundColor: ConstantColors.deviceGradientEnd,
+          backgroundColor: AppTheme.of(context).colors.headerBackgroundStart,
           systemOverlayStyle: const SystemUiOverlayStyle(
             //statusBarColor: Colors.pink, //TODO: Test for Android devices
             statusBarIconBrightness: Brightness.dark,
@@ -64,13 +64,13 @@ class _NodeDetailViewState extends State<NodeDetailView> {
   Widget _header(NodeState state) {
     return Container(
       alignment: Alignment.center,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
           colors: [
-            ConstantColors.deviceGradientBegin,
-            ConstantColors.deviceGradientEnd,
+            AppTheme.of(context).colors.headerBackgroundStart,
+            AppTheme.of(context).colors.headerBackgroundEnd,
           ],
         ),
       ),
@@ -83,7 +83,7 @@ class _NodeDetailViewState extends State<NodeDetailView> {
             children: [
               LinksysText.textLinkLarge(
                 state.location,
-                color: ConstantColors.raisinBlock,
+                color: AppTheme.of(context).colors.textBoxText,
               ),
               Positioned(
                 top: -2.5,
@@ -133,7 +133,8 @@ class _NodeDetailViewState extends State<NodeDetailView> {
   }
 
   Widget _nodeStatus(NodeState state) {
-    const textColor = ConstantColors.raisinBlock;
+    final textColor = AppTheme.of(context).colors.textBoxText;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
@@ -186,7 +187,7 @@ class _NodeDetailViewState extends State<NodeDetailView> {
                 },
               ),
             ),
-            const LinksysText.label(
+            LinksysText.label(
               'Light',
               color: textColor,
             ),

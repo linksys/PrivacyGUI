@@ -139,14 +139,14 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
               alignment: Alignment.center,
               child: Image(
                 image: AppTheme.of(context).images.devices.getByName(
-                      device.icon,
+                      device.parentInfo?.icon ?? 'genericDevice',
                     ),
                 height: 120 * 0.75,
                 width: 120 * 0.75,
               ),
             ),
             LinksysText.label(
-              device.place,
+              device.parentInfo?.place ?? '',
               color: textColor,
             ),
           ],

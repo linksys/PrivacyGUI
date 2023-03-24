@@ -92,7 +92,7 @@ class _DeviceListViewState extends State<DeviceListView> {
             const LinksysEdgeInsets.symmetric(horizontal: AppGapSize.regular),
         child: AppDevicePanel.normal(
           title: device.name,
-          place: device.place,
+          place: device.parentInfo?.place ?? '',
           frequency: device.connection,
           deviceImage:
               AppTheme.of(context).images.devices.getByName(device.icon),

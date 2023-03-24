@@ -62,27 +62,11 @@ class TopologyCubit extends Cubit<TopologyState> {
     Map<String, TopologyNode> nodeMap = {}; // {DeviceID : NodeObject}
 
     for (final device in nodeDevices) {
+      final deviceConnection = device.connections.first;
+      final macAddress = deviceConnection.macAddress;
       String deviceID = device.deviceID;
-      String location = Utils.getDeviceLocation(device);
-      bool isMaster = deviceID == masterDeviceID;
-      bool isOnline = device.connections.isNotEmpty;
-      bool isWiredConnection = Utils.checkIfWiredConnection(device);
-      int signalStrength = 0; //TODO: Find a way to get node signal data
-
-      nodeMap[deviceID] = TopologyNode(
-        deviceID: deviceID,
-        location: location,
-        isMaster: isMaster,
-        isOnline: isOnline,
-        isWiredConnection: isWiredConnection,
-        signalStrength: signalStrength,
-        connectedDeviceCount: 0,
-        icon: routerIconTest(
-            modelNumber: device.model.modelNumber ?? '',
-            hardwareVersion:
-                device.model.hardwareVersion), // Will get this later
-        children: [], // Will get this later
-      );
+      nodeMap[deviceID] =
+          _createTopologyNode(device, wirelessSignalMap[macAddress] ?? {});
     }
 
     final masterNode = nodeMap[masterDeviceID]!;
@@ -149,6 +133,7 @@ class TopologyCubit extends Cubit<TopologyState> {
       location: location,
       isMaster: isMaster,
       isOnline: isOnline,
+      isRouter: isNode,
       isWiredConnection: isWiredConnection,
       signalStrength: signalStrength,
       connectedDeviceCount: 0,

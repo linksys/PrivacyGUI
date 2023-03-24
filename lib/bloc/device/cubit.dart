@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/device/state.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
@@ -42,6 +43,8 @@ class DeviceCubit extends Cubit<DeviceState> {
           .map((e) => RouterDevice.fromJson(e))
           .toList();
 
+      final master = devices.firstWhereOrNull(
+          (device) => device.isAuthority || device.nodeType == 'Master');
       // To make sure devices can get correct place, sort the device list with
       // priority1: isAuthority, priority2: nodeType == "Master", priority3: nodeType == "Slave"
       devices.sort((e1, e2) {
@@ -107,35 +110,48 @@ class DeviceCubit extends Cubit<DeviceState> {
                 connection = _wirelessSpeedMap['connection'];
               }
 
+              final parent = devices.firstWhereOrNull(
+                      (device) => device.deviceID == parentDeviceID) ??
+                  master;
+              final deviceParentInfo = parent != null
+                  ? DeviceParentInfo(
+                      place: placeMap[parentDeviceID] ?? masterPlace,
+                      deviceId: parent.deviceID,
+                      icon: routerIconTest(
+                          modelNumber: parent.model.modelNumber ?? '',
+                          hardwareVersion: parent.model.hardwareVersion))
+                  : null;
               // TODO: #REFACTOR : iotOnlineDevices
               // TODO: #REFACTOR : uploadData, downloadData, weeklyData, icon, profileId
               if (deviceConnection.isGuest != null &&
                   deviceConnection.isGuest == true) {
                 _guestOnlineDevices.add(DeviceDetailInfo(
-                    name: Utils.getDeviceName(device),
-                    deviceID: device.deviceID,
-                    icon: iconTest(device.toJson()),
-                    place: placeMap[parentDeviceID] ?? masterPlace,
-                    connection: connection,
-                    ipAddress: deviceConnection.ipAddress ?? '',
-                    macAddress: macAddress,
-                    manufacturer: device.model.manufacturer ?? '',
-                    model: device.model.modelNumber ?? '',
-                    os: device.unit.operatingSystem ?? '',
-                    signal: signal));
+                  name: Utils.getDeviceName(device),
+                  deviceID: device.deviceID,
+                  icon: iconTest(device.toJson()),
+                  connection: connection,
+                  ipAddress: deviceConnection.ipAddress ?? '',
+                  macAddress: macAddress,
+                  manufacturer: device.model.manufacturer ?? '',
+                  model: device.model.modelNumber ?? '',
+                  os: device.unit.operatingSystem ?? '',
+                  signal: signal,
+                  parentInfo: deviceParentInfo,
+                ));
               } else {
                 _mainOnlineDevices.add(DeviceDetailInfo(
-                    name: Utils.getDeviceName(device),
-                    deviceID: device.deviceID,
-                    icon: iconTest(device.toJson()),
-                    place: placeMap[parentDeviceID] ?? masterPlace,
-                    connection: connection,
-                    ipAddress: deviceConnection.ipAddress ?? '',
-                    macAddress: macAddress,
-                    manufacturer: device.model.manufacturer ?? '',
-                    model: device.model.modelNumber ?? '',
-                    os: device.unit.operatingSystem ?? '',
-                    signal: signal));
+                  name: Utils.getDeviceName(device),
+                  deviceID: device.deviceID,
+                  icon: iconTest(device.toJson()),
+                  connection: connection,
+                  ipAddress: deviceConnection.ipAddress ?? '',
+                  macAddress: macAddress,
+                  manufacturer: device.model.manufacturer ?? '',
+                  model: device.model.modelNumber ?? '',
+                  os: device.unit.operatingSystem ?? '',
+                  signal: signal,
+                  parentInfo: deviceParentInfo,
+                ));
               }
             }
           }
