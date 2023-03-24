@@ -1,7 +1,5 @@
 import 'dart:io';
 
-import 'package:linksys_moab/network/http/model/cloud_config.dart';
-
 import 'build_config.dart';
 
 const kCloudBase = 'CLOUD_BASE_URL';

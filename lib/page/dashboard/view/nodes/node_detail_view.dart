@@ -12,6 +12,7 @@ import 'package:linksys_widgets/icons/icon_rules.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class NodeDetailView extends ArgumentsStatefulView {
   const NodeDetailView({Key? key, super.args, super.next}) : super(key: key);
@@ -32,32 +33,35 @@ class _NodeDetailViewState extends State<NodeDetailView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
-      return Scaffold(
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: AppTheme.of(context).colors.headerBackgroundStart,
-          systemOverlayStyle: const SystemUiOverlayStyle(
-            //statusBarColor: Colors.pink, //TODO: Test for Android devices
-            statusBarIconBrightness: Brightness.dark,
-            statusBarBrightness: Brightness.light,
-          ),
-          leading: AppIconButton(
-            icon: getCharactersIcons(context).arrowLeft,
-            onTap: () {
-              NavigationCubit.of(context).pop();
-            },
-          ),
-        ),
-        backgroundColor: AppTheme.of(context).colors.background,
-        body: SafeArea(
-          child: Column(
-            children: [
-              _header(state),
-              _content(state),
-            ],
-          ),
-        ),
-      );
+      return state.isLoading
+          ? LinksysFullScreenSpinner()
+          : Scaffold(
+              appBar: AppBar(
+                elevation: 0,
+                backgroundColor:
+                    AppTheme.of(context).colors.headerBackgroundEnd,
+                systemOverlayStyle: const SystemUiOverlayStyle(
+                  //statusBarColor: Colors.pink, //TODO: Test for Android devices
+                  statusBarIconBrightness: Brightness.dark,
+                  statusBarBrightness: Brightness.light,
+                ),
+                leading: AppIconButton(
+                  icon: getCharactersIcons(context).arrowLeft,
+                  onTap: () {
+                    NavigationCubit.of(context).pop();
+                  },
+                ),
+              ),
+              backgroundColor: AppTheme.of(context).colors.background,
+              body: SafeArea(
+                child: Column(
+                  children: [
+                    _header(state),
+                    _content(state),
+                  ],
+                ),
+              ),
+            );
     });
   }
 

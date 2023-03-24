@@ -22,5 +22,7 @@ const linksysPrefCloudPrivateKey = 'LinksysCloudPrivateKey';
 const linksysPrefCloudAccountPasswordKey = 'LinksysCloudAccountPassword';
 ///////
 
+const pCloudEnv = 'CloudEnvironment';
+
 const pSessionToken = 'SessionToken';
 const pSessionTokenTs = 'SessionTokenTimeStamp';

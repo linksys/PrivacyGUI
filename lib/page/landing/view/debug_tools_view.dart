@@ -14,16 +14,12 @@ import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/bluetooth/bluetooth.dart';
-import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/jnap/jnap_transaction.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/network/mdns/mdns_helper.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
-import 'package:linksys_moab/page/components/layouts/basic_header.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
@@ -129,6 +125,7 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         ),
         const LinksysGap.regular(),
         _buildEnvPickerTile(),
+        const LinksysGap.regular(),
         ..._buildDebug(),
         const LinksysGap.regular(),
       ],
@@ -147,8 +144,17 @@ class _DebugToolsViewState extends State<DebugToolsView> {
   List<Widget> _buildDebug() {
     if (kReleaseMode) return [];
     return [
-      ..._buildBluetoothTestSection(),
-      ..._buildMdnsTestSection(),
+      // ..._buildBluetoothTestSection(),
+      // ..._buildMdnsTestSection(),
+      AppPanelWithSwitch(
+        value: showDebugPanel,
+        title: 'Enable network debug panel',
+        onChangedEvent: (value) {
+          setState(() {
+            showDebugPanel = value;
+          });
+        },
+      ),
       LinksysPrimaryButton(
         'Raise an Exception!',
         onTap: () async {

@@ -23,6 +23,7 @@ class NodeCubit extends Cubit<NodeState> {
   }
 
   Future fetchNodeDetailData() async {
+    emit(state.copyWith(isLoading: true));
     final results = await _repository.fetchNodeDetails();
 
     String wanIpAddress = '';
@@ -43,8 +44,8 @@ class NodeCubit extends Cubit<NodeState> {
         .map((e) => RouterDevice.fromJson(e))
         .toList();
 
-    emit(
-        _getNodeDetailState(state.deviceID, wanIpAddress, isLatestFW, devices));
+    emit(_getNodeDetailState(state.deviceID, wanIpAddress, isLatestFW, devices)
+        .copyWith(isLoading: false));
   }
 
   Future updateNodeLocation(String newLocation) async {

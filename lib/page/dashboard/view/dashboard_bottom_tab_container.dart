@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/page/components/customs/debug_overlay_view.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -55,7 +56,7 @@ class _DashboardViewState extends State<DashboardBottomTabContainer>
                 }
               },
               child: widget.navigator),
-          kReleaseMode
+          !showDebugPanel
               ? const Center()
               : Positioned(
                   left: Utils.getScreenWidth(context) -

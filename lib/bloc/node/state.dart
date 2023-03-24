@@ -30,6 +30,7 @@ class NodeState extends Equatable {
   final String lanIpAddress;
   final String wanIpAddress;
   final bool isSystemRestarting;
+  final bool isLoading;
 
   const NodeState({
     this.deviceID = '',
@@ -48,6 +49,7 @@ class NodeState extends Equatable {
     this.lanIpAddress = '',
     this.wanIpAddress = '',
     this.isSystemRestarting = false,
+    this.isLoading = false,
   });
 
   NodeState copyWith({
@@ -67,6 +69,7 @@ class NodeState extends Equatable {
     String? lanIpAddress,
     String? wanIpAddress,
     bool? isSystemRestarting,
+    bool? isLoading,
   }) {
     return NodeState(
       deviceID: deviceID ?? this.deviceID,
@@ -85,26 +88,28 @@ class NodeState extends Equatable {
       lanIpAddress: lanIpAddress ?? this.lanIpAddress,
       wanIpAddress: wanIpAddress ?? this.wanIpAddress,
       isSystemRestarting: isSystemRestarting ?? this.isSystemRestarting,
+      isLoading: isLoading ?? this.isLoading,
     );
   }
 
   @override
   List<Object?> get props => [
-    deviceID,
-    location,
-    isMaster,
-    isOnline,
-    connectedDevices,
-    upstreamNode,
-    signalStrength,
-    isWiredConnection,
-    isLightTurnedOn,
-    serialNumber,
-    modelNumber,
-    firmwareVersion,
-    isLatestFw,
-    lanIpAddress,
-    wanIpAddress,
-    isSystemRestarting,
-  ];
+        deviceID,
+        location,
+        isMaster,
+        isOnline,
+        connectedDevices,
+        upstreamNode,
+        signalStrength,
+        isWiredConnection,
+        isLightTurnedOn,
+        serialNumber,
+        modelNumber,
+        firmwareVersion,
+        isLatestFw,
+        lanIpAddress,
+        wanIpAddress,
+        isSystemRestarting,
+        isLoading,
+      ];
 }

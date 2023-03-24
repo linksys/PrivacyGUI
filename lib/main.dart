@@ -23,6 +23,7 @@ import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/bloc/security/bloc.dart';
+import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/linksys_http_client.dart';
@@ -100,6 +101,7 @@ void main() async {
     // exit(1);
     return true;
   };
+  BuildConfig.load;
   initBetterActions();
   runApp(_app());
 }
