@@ -32,5 +32,5 @@ bool showDebugPanel = !kReleaseMode;
 
 CloudEnvironment cloudEnvTarget = CloudEnvironment.values
     .firstWhere((element) => element.name == BuildConfig.cloudEnv);
-Map<String, dynamic> cloudEnvironmentConfig =
+Map<String, dynamic> get cloudEnvironmentConfig =>
     kCloudEnvironmentMap[cloudEnvTarget];

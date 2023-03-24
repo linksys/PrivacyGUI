@@ -137,11 +137,7 @@ class TopologyCubit extends Cubit<TopologyState> {
       isWiredConnection: isWiredConnection,
       signalStrength: signalStrength,
       connectedDeviceCount: 0,
-      icon: isNode
-          ? routerIconTest(
-              modelNumber: device.model.modelNumber ?? '',
-              hardwareVersion: device.model.hardwareVersion)
-          : iconTest(device.toJson()),
+      icon: iconTest(device.toJson()),
       children: [], // Will get this later
     );
   }

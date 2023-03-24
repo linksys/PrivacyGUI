@@ -160,7 +160,7 @@ class Preferences extends Equatable {
   final Locale locale;
   final bool newsletterOptIn;
   final bool mfaEnabled;
-  final Mobile mobile;
+  final Mobile? mobile;
 
   const Preferences({
     required this.locale,
@@ -177,7 +177,7 @@ class Preferences extends Equatable {
       locale: Locale.fromJson(json['locale']),
       newsletterOptIn: json['newsletterOptIn'] == "true",
       mfaEnabled: json['mfaEnabled'],
-      mobile: Mobile.fromJson(json['mobile']),
+      mobile: json['mobile'] != null ? Mobile.fromJson(json['mobile']) : null,
     );
   }
 
@@ -186,7 +186,7 @@ class Preferences extends Equatable {
       'locale': locale.toJson(),
       'newsletterOptIn': newsletterOptIn,
       'mfaEnabled': mfaEnabled,
-      'mobile': mobile.toJson(),
+      'mobile': mobile?.toJson(),
     };
   }
 }

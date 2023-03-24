@@ -12,6 +12,7 @@ import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/bluetooth/bluetooth.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -32,6 +33,7 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DebugToolsView extends StatefulWidget {
   const DebugToolsView({
@@ -511,27 +513,16 @@ class _DebugToolsViewState extends State<DebugToolsView> {
                     setState(() {
                       _isLoading = true;
                     });
-                    final temp = cloudEnvTarget;
+
                     cloudEnvTarget = _selectedEnv;
-                    await CloudEnvironmentManager()
-                        .fetchCloudConfig()
-                        .then((value) =>
-                            CloudEnvironmentManager().createCloudApp())
-                        .then(
-                            (value) => Navigator.of(context).pop(_selectedEnv))
-                        .onError((error, stackTrace) {
-                      logger.e(
-                          'fetch cloud config error! $cloudEnvTarget}', error);
-                      setState(() {
-                        _selectedEnv = temp;
-                      });
-                      cloudEnvTarget = temp;
-                    }).whenComplete(() {
-                      setState(() {
-                        _isLoading = false;
-                      });
-                      context.read<AuthBloc>().add(Logout());
+                    final pref = await SharedPreferences.getInstance();
+                    pref.setString(pCloudEnv, _selectedEnv.name);
+                    BuildConfig.load();
+                    setState(() {
+                      _isLoading = false;
                     });
+                    context.read<AuthBloc>().add(Logout());
+                    Navigator.pop(context, _selectedEnv);
                   },
                 ),
                 const LinksysGap.regular(),
