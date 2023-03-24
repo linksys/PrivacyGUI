@@ -18,11 +18,12 @@ class StyledLinksysTabPageView extends StatelessWidget {
   final List<LinksysTab> tabs;
   final Widget? headerContent;
   final List<Widget> tabContentViews;
-  final bool? pinned;
-  final bool? snap;
-  final bool? floating;
+  final bool pinned;
+  final bool snap;
+  final bool floating;
   final bool isCloseStyle;
   final double? expandedHeight;
+  final ScrollController? scrollController;
 
   const StyledLinksysTabPageView({
     super.key,
@@ -35,10 +36,11 @@ class StyledLinksysTabPageView extends StatelessWidget {
     required this.tabs,
     this.headerContent,
     this.tabContentViews = const [],
-    this.pinned,
-    this.snap,
-    this.floating,
+    this.pinned = true,
+    this.snap = false,
+    this.floating = false,
     this.expandedHeight,
+    this.scrollController,
   });
 
   @override
@@ -52,6 +54,10 @@ class StyledLinksysTabPageView extends StatelessWidget {
           ),
         ),
         expandedHeight: expandedHeight,
+        scrollController: scrollController,
+        pinned: pinned,
+        floating: floating,
+        snap: snap,
         tabs: tabs,
         tabContentViews: tabContentViews,
       );
