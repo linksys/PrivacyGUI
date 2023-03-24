@@ -101,7 +101,7 @@ void main() async {
     // exit(1);
     return true;
   };
-  BuildConfig.load;
+  BuildConfig.load();
   initBetterActions();
   runApp(_app());
 }
