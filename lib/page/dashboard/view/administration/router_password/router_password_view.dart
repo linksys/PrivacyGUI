@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/layouts/layout.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -11,8 +8,11 @@ import 'package:linksys_moab/page/dashboard/view/administration/router_password/
 import 'package:linksys_moab/page/dashboard/view/administration/router_password/bloc/state.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/input_field/password_input_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class RouterPasswordView extends ArgumentsStatelessView {
   const RouterPasswordView({
@@ -47,9 +47,25 @@ class _RouterPasswordContentViewState extends State<RouterPasswordContentView> {
   late final RouterPasswordCubit _cubit;
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _hintController = TextEditingController();
+  late List<Validation> validations;
 
   @override
   void initState() {
+    // localize here
+    validations = [
+      Validation(
+          description: 'At least 10 characters',
+          validator: ((text) => LengthRule().validate(text))),
+      Validation(
+          description: 'Upper and lowercase letters',
+          validator: ((text) => HybridCaseRule().validate(text))),
+      Validation(
+          description: '1 number',
+          validator: ((text) => DigitalCheckRule().validate(text))),
+      Validation(
+          description: '1 special character',
+          validator: ((text) => SpecialCharCheckRule().validate(text))),
+    ];
     _cubit = context.read<RouterPasswordCubit>();
     _cubit.fetch();
     super.initState();
@@ -59,21 +75,23 @@ class _RouterPasswordContentViewState extends State<RouterPasswordContentView> {
   Widget build(BuildContext context) {
     return BlocBuilder<RouterPasswordCubit, RouterPasswordState>(
         builder: (context, state) {
-      return StyledLinksysPageView(
-        scrollable: true,
-        title: !state.isSetByUser
-            ? ' '
-            : getAppLocalizations(context).router_password,
-        actions: [
-          LinksysTertiaryButton(
-            getAppLocalizations(context).save,
-            onTap: (state.hasEdited && state.isValid) ? _save : null,
-          ),
-        ],
-        child: !state.isSetByUser
-            ? _createRouterPasswordView(state)
-            : _editRouterPasswordView(state),
-      );
+      return state.isLoading
+          ? const LinksysFullScreenSpinner()
+          : StyledLinksysPageView(
+              scrollable: true,
+              title: state.isSetByUser
+                  ? getAppLocalizations(context).router_password
+                  : ' ',
+              actions: [
+                LinksysTertiaryButton(
+                  getAppLocalizations(context).save,
+                  onTap: (state.hasEdited && state.isValid) ? _save : null,
+                ),
+              ],
+              child: state.isSetByUser
+                  ? _editRouterPasswordView(state)
+                  : _createRouterPasswordView(state),
+            );
     });
   }
 
@@ -83,12 +101,12 @@ class _RouterPasswordContentViewState extends State<RouterPasswordContentView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const LinksysGap.regular(),
-          PasswordInputField(
+          LinksysPasswordInputField(
             withValidator: state.hasEdited,
-            titleText: getAppLocalizations(context).router_password,
+            validations: validations,
+            headerText: getAppLocalizations(context).router_password,
+            hintText: 'Router password',
             controller: _passwordController,
-            color: Colors.black,
-            suffixIcon: state.hasEdited ? null : box4(),
             onFocusChanged: (hasFocus) {
               if (hasFocus && _passwordController.text == state.adminPassword) {
                 setState(() {
@@ -103,48 +121,39 @@ class _RouterPasswordContentViewState extends State<RouterPasswordContentView> {
               _cubit.setValidate(isValid);
             },
           ),
-          box36(),
-          InputField(
-            titleText: getAppLocalizations(context).password_hint,
-            hintText: '',
+          const LinksysGap.big(),
+          LinksysInputField(
+            headerText: getAppLocalizations(context).password_hint,
+            hintText: 'Password hint',
             controller: _hintController,
             readOnly: !state.hasEdited,
-            customPrimaryColor: state.hasEdited
-                ? Colors.black
-                : const Color.fromRGBO(153, 153, 153, 1.0),
           ),
-          box12(),
+          const LinksysGap.semiSmall(),
           if (!state.hasEdited)
-            Text(
-              getAppLocalizations(context)
-                  .enter_router_password_to_change_password_hint,
-              style: const TextStyle(fontSize: 11),
-            ),
+            LinksysText.descriptionSub(getAppLocalizations(context)
+                .enter_router_password_to_change_password_hint),
         ],
       ),
     );
   }
 
   _createRouterPasswordView(RouterPasswordState state) {
-    return BasicLayout(
+    return LinksysBasicLayout(
       crossAxisAlignment: CrossAxisAlignment.start,
-      header: Text(
+      header: LinksysText.screenName(
         getAppLocalizations(context).set_a_router_password,
-        style: const TextStyle(
-          fontSize: 23,
-          fontWeight: FontWeight.w700,
-        ),
       ),
       content: Column(
         children: [
-          box24(),
-          Text(getAppLocalizations(context).create_router_password_description),
-          box36(),
-          PasswordInputField.withValidator(
-            titleText: getAppLocalizations(context).router_password,
+          const LinksysGap.semiBig(),
+          LinksysText.descriptionMain(
+              getAppLocalizations(context).create_router_password_description),
+          const LinksysGap.big(),
+          LinksysPasswordInputField.withValidator(
+            validations: validations,
+            headerText: getAppLocalizations(context).router_password,
+            hintText: 'Router password',
             controller: _passwordController,
-            color: Colors.black,
-            suffixIcon: state.hasEdited ? null : box4(),
             onFocusChanged: (hasFocus) {
               if (hasFocus && _passwordController.text == state.adminPassword) {
                 setState(() {
@@ -158,25 +167,23 @@ class _RouterPasswordContentViewState extends State<RouterPasswordContentView> {
               _cubit.setValidate(isValid);
             },
           ),
-          box36(),
-          InputField(
-            titleText: getAppLocalizations(context).password_hint,
-            hintText: '',
+          const LinksysGap.big(),
+          LinksysInputField(
+            headerText: getAppLocalizations(context).password_hint,
+            hintText: 'Password hint',
             controller: _hintController,
             readOnly: !state.hasEdited,
-            customPrimaryColor: state.hasEdited
-                ? Colors.black
-                : const Color.fromRGBO(153, 153, 153, 1.0),
           ),
-          box36(),
+          const LinksysGap.big(),
           Row(
             children: [
               Expanded(
-                  child: SimpleTextButton(
-                text: getAppLocalizations(context)
-                    .create_router_password_how_to_access,
-                onPressed: () {},
-              ))
+                child: LinksysTertiaryButton(
+                  getAppLocalizations(context)
+                      .create_router_password_how_to_access,
+                  onTap: () {},
+                ),
+              ),
             ],
           ),
         ],

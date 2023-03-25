@@ -17,6 +17,8 @@ class RouterPasswordCubit extends Cubit<RouterPasswordState> {
   final RouterRepository _repository;
 
   fetch() async {
+    emit(state.copyWith(isLoading: true));
+
     final results = await _repository.fetchIsConfigured();
     final bool isAdminDefault = results[JNAPAction.isAdminPasswordDefault]
             ?.output['isAdminPasswordDefault'] ??
@@ -35,6 +37,7 @@ class RouterPasswordCubit extends Cubit<RouterPasswordState> {
     final password = await storage.read(key: linksysPrefLocalPassword);
 
     emit(state.copyWith(
+        isLoading: false,
         isDefault: isAdminDefault,
         isSetByUser: isSetByUser,
         adminPassword: password ?? '',
