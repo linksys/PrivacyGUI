@@ -22,7 +22,6 @@ class DeviceListView extends ArgumentsStatefulView {
 
 class _DeviceListViewState extends State<DeviceListView> {
   Map<DeviceListInfoScope, String> _intervalList = {};
-  final ScrollController _scrollController1 = ScrollController();
 
   @override
   initState() {
@@ -69,21 +68,17 @@ class _DeviceListViewState extends State<DeviceListView> {
                 ),
               ],
               tabContentViews: [
-                _buildDeviceListView(state.displayedDeviceList, null),
-                _buildDeviceListView(state.guestDeviceList, null),
-                _buildDeviceListView(state.offlineDeviceList, null),
+                _buildDeviceListView(state.displayedDeviceList),
+                _buildDeviceListView(state.guestDeviceList),
+                _buildDeviceListView(state.offlineDeviceList),
               ],
             ),
     );
   }
 
-  Widget _buildDeviceListView(
-    List<DeviceDetailInfo> deviceList,
-    ScrollController? scrollerController,
-  ) {
+  Widget _buildDeviceListView(List<DeviceDetailInfo> deviceList) {
     return ListView.builder(
       padding: EdgeInsets.zero,
-      controller: scrollerController,
       itemCount: deviceList.length,
       itemBuilder: (context, index) {
         final device = deviceList[index];
