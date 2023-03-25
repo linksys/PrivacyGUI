@@ -69,8 +69,7 @@ class _DeviceListViewState extends State<DeviceListView> {
                 ),
               ],
               tabContentViews: [
-                _buildDeviceListView(
-                    state.displayedDeviceList, _scrollController1),
+                _buildDeviceListView(state.displayedDeviceList, null),
                 _buildDeviceListView(state.guestDeviceList, null),
                 _buildDeviceListView(state.offlineDeviceList, null),
               ],

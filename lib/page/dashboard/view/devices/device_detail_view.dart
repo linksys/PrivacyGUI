@@ -12,6 +12,7 @@ import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/page/layout/profile_header_layout.dart';
 
 class DeviceDetailView extends ArgumentsStatefulView {
   const DeviceDetailView({Key? key, super.args, super.next}) : super(key: key);
@@ -24,30 +25,30 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DeviceCubit, DeviceState>(builder: (context, state) {
-      return Scaffold(
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: AppTheme.of(context).colors.headerBackgroundEnd,
-          systemOverlayStyle: const SystemUiOverlayStyle(
-            //statusBarColor: Colors.pink, //TODO: Test for Android devices
-            statusBarIconBrightness: Brightness.dark,
-            statusBarBrightness: Brightness.light,
-          ),
-          leading: AppIconButton(
-            icon: getCharactersIcons(context).arrowLeft,
-            onTap: () {
-              NavigationCubit.of(context).pop();
-            },
-          ),
+      return LinksysProfileHeaderLayout(
+        expandedHeight: 368,
+        collaspeTitle: state.selectedDeviceInfo?.name,
+        onCollaspeBackTap: () {
+          NavigationCubit.of(context).pop();
+        },
+        header: Column(
+          children: [
+            LinksysAppBar(
+              backgroundColor: AppTheme.of(context).colors.headerBackgroundEnd,
+              leading: AppIconButton(
+                icon: getCharactersIcons(context).arrowLeft,
+                onTap: () {
+                  NavigationCubit.of(context).pop();
+                },
+              ),
+            ),
+            _header(state),
+          ],
         ),
-        backgroundColor: AppTheme.of(context).colors.background,
-        body: SafeArea(
-          child: Column(
-            children: [
-              _header(state),
-              _content(state),
-            ],
-          ),
+        body: Column(
+          children: [
+            _content(state),
+          ],
         ),
       );
     });

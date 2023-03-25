@@ -13,6 +13,7 @@ import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/page/layout/profile_header_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class NodeDetailView extends ArgumentsStatefulView {
@@ -35,29 +36,31 @@ class _NodeDetailViewState extends State<NodeDetailView> {
   Widget build(BuildContext context) {
     return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
       return state.isLoading
-          ? LinksysFullScreenSpinner()
-          : Scaffold(
-              appBar: AppBar(
-                elevation: 0,
-                backgroundColor:
-                    AppTheme.of(context).colors.headerBackgroundEnd,
-                systemOverlayStyle: const SystemUiOverlayStyle(
-                  //statusBarColor: Colors.pink, //TODO: Test for Android devices
-                  statusBarIconBrightness: Brightness.dark,
-                  statusBarBrightness: Brightness.light,
-                ),
-                leading: AppIconButton(
-                  icon: getCharactersIcons(context).arrowLeft,
-                  onTap: () {
-                    NavigationCubit.of(context).pop();
-                  },
-                ),
+          ? const LinksysFullScreenSpinner()
+          : LinksysProfileHeaderLayout(
+              expandedHeight: 368,
+              collaspeTitle: state.location,
+              onCollaspeBackTap: () {
+                NavigationCubit.of(context).pop();
+              },
+              header: Column(
+                children: [
+                  LinksysAppBar(
+                    backgroundColor:
+                        AppTheme.of(context).colors.headerBackgroundEnd,
+                    leading: AppIconButton(
+                      icon: getCharactersIcons(context).arrowLeft,
+                      onTap: () {
+                        NavigationCubit.of(context).pop();
+                      },
+                    ),
+                  ),
+                  _header(state),
+                ],
               ),
-              backgroundColor: AppTheme.of(context).colors.background,
               body: SafeArea(
                 child: Column(
                   children: [
-                    _header(state),
                     _content(state),
                   ],
                 ),
