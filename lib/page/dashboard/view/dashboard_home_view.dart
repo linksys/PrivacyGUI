@@ -15,6 +15,7 @@ import 'package:linksys_widgets/icons/icon_rules.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/container/stacked_listview.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -240,20 +241,10 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
   }
 
   Widget _iconStack(List<Widget> widgets) {
-    return Stack(
-      alignment: AlignmentDirectional.topEnd,
-      children: [
-        for (var index = 0; index < widgets.length; index++)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              widgets[index],
-              SizedBox(
-                width: 23.0 * index,
-              ),
-            ],
-          ),
-      ],
+    return LinksysStackedListView(
+      itemExtent: 48,
+      widthFactor: 0.5,
+      items: widgets,
     );
   }
 
@@ -271,7 +262,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
             children: [
               LinksysText.mainTitle(count.toString()),
               const LinksysGap.regular(),
-              _iconStack(icons),
+              Expanded(child: _iconStack(icons)),
             ],
           ),
         ),

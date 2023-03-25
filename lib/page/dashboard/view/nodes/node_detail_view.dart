@@ -11,6 +11,7 @@ import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/icons/icon_rules.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -110,29 +111,10 @@ class _NodeDetailViewState extends State<NodeDetailView> {
   }
 
   Widget _nodeAvatar(NodeState state) {
-    return Stack(
-      alignment: AlignmentDirectional.center,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: ConstantColors.deviceCircleBorder,
-              width: 1,
-            ),
-            borderRadius: BorderRadius.circular(100),
-            color: ConstantColors.deviceCircleBackground,
+    return AppDeviceAvatar.extraLarge(
+      image: AppTheme.of(context).images.devices.getByName(
+            routerIconTest(modelNumber: state.modelNumber),
           ),
-          width: 120,
-          height: 120,
-        ),
-        Image(
-          image: AppTheme.of(context).images.devices.getByName(
-                routerIconTest(modelNumber: state.modelNumber),
-              ),
-          height: 120 * 0.75,
-          width: 120 * 0.75,
-        ),
-      ],
     );
   }
 

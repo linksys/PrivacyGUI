@@ -91,6 +91,7 @@ dependencies:
   flutter_blue_plus: ^1.4.0
   multicast_dns: ^0.3.2+2
   crypto: ^3.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

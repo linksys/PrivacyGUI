@@ -10,6 +10,7 @@ import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 
 class DeviceDetailView extends ArgumentsStatefulView {
@@ -98,31 +99,11 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
   }
 
   Widget _deviceAvatar(DeviceState state) {
-    return Stack(
-      alignment: AlignmentDirectional.center,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: AppTheme.of(context).colors.deviceAvatarBorder,
-              width: 1,
-            ),
-            borderRadius: BorderRadius.circular(100),
-            color: AppTheme.of(context).colors.deviceAvaterBackgtound,
-          ),
-          width: 120,
-          height: 120,
-        ),
-        Image(
-          image: AppTheme.of(context)
-              .images
-              .devices
-              .getByName(state.selectedDeviceInfo!.icon),
-          height: 120 * 0.75,
-          width: 120 * 0.75,
-        ),
-      ],
-    );
+    return AppDeviceAvatar.extraLarge(
+        image: AppTheme.of(context)
+            .images
+            .devices
+            .getByName(state.selectedDeviceInfo!.icon));
   }
 
   Widget _deviceStatus(DeviceState state) {
