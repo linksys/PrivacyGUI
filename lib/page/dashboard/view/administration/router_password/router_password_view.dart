@@ -12,7 +12,6 @@ import 'package:linksys_moab/page/dashboard/view/administration/router_password/
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/buttons/button.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class RouterPasswordView extends ArgumentsStatelessView {
@@ -63,7 +62,7 @@ class _RouterPasswordContentViewState extends State<RouterPasswordContentView> {
       return StyledLinksysPageView(
         scrollable: true,
         title: !state.isSetByUser
-            ? ''
+            ? ' '
             : getAppLocalizations(context).router_password,
         actions: [
           LinksysTertiaryButton(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
@@ -44,22 +43,25 @@ class StyledLinksysTabPageView extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => LinksysTabLayout(
-        flexibleSpace: FlexibleSpaceBar(
-          background: Column(
-            children: [
-              _buildAppBar(context),
-              headerContent ?? Container(),
-            ],
+  Widget build(BuildContext context) => LinksysPageView.noNavigationBar(
+        padding: const LinksysEdgeInsets.only(),
+        child: LinksysTabLayout(
+          flexibleSpace: FlexibleSpaceBar(
+            background: Column(
+              children: [
+                _buildAppBar(context),
+                headerContent ?? Container(),
+              ],
+            ),
           ),
+          expandedHeight: expandedHeight,
+          scrollController: scrollController,
+          pinned: pinned,
+          floating: floating,
+          snap: snap,
+          tabs: tabs,
+          tabContentViews: tabContentViews,
         ),
-        expandedHeight: expandedHeight,
-        scrollController: scrollController,
-        pinned: pinned,
-        floating: floating,
-        snap: snap,
-        tabs: tabs,
-        tabContentViews: tabContentViews,
       );
 
   bool isBackEnabled() => backState == StyledBackState.enabled;
