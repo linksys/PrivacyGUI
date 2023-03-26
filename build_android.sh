@@ -3,7 +3,7 @@ function build() {
   conf=$1
   type=$2
   echo start building "$conf" "$type" process...
-  if ! flutter build "$type" --"$conf" --obfuscate --split-debug-info=moab/build/app/outputs/temp/ --dart-define=cloud_env=qa; then
+  if ! flutter build "$type" --"$conf" --obfuscate --split-debug-info=moab/build/app/outputs/temp/ --dart-define=cloud_env=qa --no-tree-shake-icons; then
       echo build "$conf" failed
       exit 1
   fi
@@ -38,8 +38,9 @@ function copyFiles() {
   fi
 }
 
-echo cleaning...
+flutter --version
+flutter pub deps
 flutter clean
-build debug apk
+flutter pub cache repairbuild debug apk
 build release apk
 build release appbundle

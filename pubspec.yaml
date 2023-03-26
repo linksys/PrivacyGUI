@@ -15,10 +15,10 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 0.3.0+103000
+version: 0.4.0+104000
 
 environment:
-  sdk: ">=2.17.0 <3.0.0"
+  sdk: ">=2.17.0"
   flutter: ">=3.3.0"
 
 # Dependencies specify other packages that your package needs in order to work.
@@ -40,24 +40,24 @@ dependencies:
   flutter_bloc: ^8.0.1
   flutter_svg: ^1.0.3
   http: ^0.13.4
-  mobile_scanner: ^2.0.0
+  mobile_scanner: 2.0.0
   flutter_native_splash: ^2.2.11
   test: ^1.19.5
   bloc_test: ^9.0.0
   equatable: ^2.0.0
   connectivity_plus: ^3.0.2
-  network_info_plus: ^3.0.1
-  permission_handler: ^10.2.0
+  network_info_plus: 3.0.1
+  permission_handler: 10.2.0
   device_info_plus: ^8.0.0
   pin_code_fields: ^7.4.0
-  firebase_core: ^2.3.0
-  firebase_messaging: ^14.1.2
-  firebase_analytics: ^10.0.6
-  firebase_crashlytics: ^3.0.6
+  firebase_core: 2.4.1
+  firebase_messaging: 14.2.1
+  firebase_analytics: 10.1.0
+  firebase_crashlytics: 3.0.10
   flutter_local_notifications: ^12.0.4
   logger: ^1.1.0
   path_provider: ^2.0.11
-  share_plus: ^6.3.0
+  share_plus: 6.3.0
   package_info_plus: ^3.0.2
   phone_number: 1.0.0
   uuid: ^3.0.6

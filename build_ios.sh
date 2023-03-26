@@ -1,13 +1,13 @@
 
 function buildInHouse() {
   echo "start building in house #${inHouseBuildNumber}"
-  flutter build ipa --export-options-plist=ios/Scripts/Moab-EE-InHouse.plist --flavor=Enterprise --build-number="${inHouseBuildNumber}" --dart-define=cloud_env=qa
+  flutter build ipa --export-options-plist=ios/Scripts/Moab-EE-InHouse.plist --flavor=Enterprise --build-number="${inHouseBuildNumber}" --dart-define=cloud_env=qa --no-tree-shake-icons
   mv "./build/ios/ipa/Moab.ipa" "./build/ios/ipa/moab_app_ee_distribution_${inHouseBuildNumber}.ipa"
 }
 
 function buildAppStore() {
   echo "start building app store #${appStoreBuildNumber}"
-  flutter build ipa --export-options-plist=ios/Scripts/Moab-Distribution-app-store.plist --flavor=Moab --build-number="${appStoreBuildNumber}" --dart-define=cloud_env=qa
+  flutter build ipa --export-options-plist=ios/Scripts/Moab-Distribution-app-store.plist --flavor=Moab --build-number="${appStoreBuildNumber}" --dart-define=cloud_env=qa --no-tree-shake-icons
   mv -r "./build/ios/ipa/Moab.ipa" "./build/ios/ipa/moab_app_distribution_app_store_${appStoreBuildNumber}.ipa"
 }
 

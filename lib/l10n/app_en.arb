@@ -225,7 +225,7 @@
   "plug_modem_back_title": "Plug your modem back in",
   "wait_modem_disconnect_title": "Giving your modem time to fully disconnect from your ISP...",
   "nodes_doesnt_find_view_title": "We didn't find any nodes",
-  "nodes_doesnt_find_view_description_1": "1. Make sure the node has power and the light is {on}.",
+  "nodes_doesnt_find_view_description_1": "1. Make sure the node has power and the light is on.",
   "nodes_doesnt_find_view_description_2": "2. You may be out of range. Try getting closer to the router or an already configured add-on node(white light).\n\nUnconfigured nodes will be blinking blue.",
   "try_again_button": "Try again",
   "error_invalid_otp": "Incorrect code, please check your code and try again",
@@ -273,7 +273,7 @@
       }
     }
   },
-  "number_of_devices": "{count, plural, =0{No devices} =1{{count} device} other{{count} devices}",
+  "number_of_devices": "{count, plural, =0{No devices} =1{{count} device} other{{count} devices}}",
   "@number_of_devices": {
     "placeholders": {
       "count": {
