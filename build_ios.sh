@@ -23,8 +23,11 @@ inHouseBuildNumber=$1
 appStoreBuildNumber=$2
 inHouseBuild=$3
 appStoreBuild=$4
-pod repo update
+cd ios
+pod install --repo-update
+cd ..
 flutter --version
+flutter pub get
 flutter pub deps
 flutter clean
 flutter pub cache repair

@@ -39,6 +39,7 @@ function copyFiles() {
 }
 
 flutter --version
+flutter pub get
 flutter pub deps
 flutter clean
 flutter pub cache repairbuild debug apk
