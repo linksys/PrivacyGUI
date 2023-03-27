@@ -7,60 +7,75 @@
         {
             "name": "moab - Android",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "program": "lib/main.dart"
         },
         {
             "name": "moab - Android (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile",
-            "args": ["--flavor", "Moab"]
+            "program": "lib/main.dart"
+
         },
         {
             "name": "moab - Android (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release",
+            "program": "lib/main.dart"
+
         },
         {
             "name": "moab - iOS ",
             "request": "launch",
             "type": "dart",
-            "args": ["--flavor", "Moab"]
+            "args": ["--flavor", "Moab"],
+            "program": "lib/main.dart"
         },
         {
             "name": "moab - iOS (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile",
-            "args": ["--flavor", "Moab"]
+            "args": ["--flavor", "Moab"],
+            "program": "lib/main.dart"
+
         },
         {
             "name": "moab - iOS (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release",
-            "args": ["--flavor", "Moab"]
+            "args": ["--flavor", "Moab"],
+            "program": "lib/main.dart"
+
         },
         {
             "name": "moab - iOS - Enterprise ",
             "request": "launch",
             "type": "dart",
-            "args": ["--flavor", "Enterprise"]
+            "args": ["--flavor", "Enterprise"],
+            "program": "lib/main.dart"
+
         },
         {
             "name": "moab - iOS - Enterprise (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile",
-            "args": ["--flavor", "Enterprise"]
+            "args": ["--flavor", "Enterprise"],
+            "program": "lib/main.dart"
+
         },
         {
             "name": "moab - iOS - Enterprise (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release",
-            "args": ["--flavor", "Enterprise"]
+            "args": ["--flavor", "Enterprise"],
+            "program": "lib/main.dart"
+
         },
         {
             "name": "Linksys widget storybook",
