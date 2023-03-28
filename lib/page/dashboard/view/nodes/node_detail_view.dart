@@ -46,37 +46,38 @@ class _NodeDetailViewState extends State<NodeDetailView> {
     return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
       return state.isLoading
           ? const LinksysFullScreenSpinner()
-          : LinksysProfileHeaderLayout(
-              expandedHeight: 368,
-              collaspeTitle: state.location,
-              onCollaspeBackTap: () {
-                NavigationCubit.of(context).pop();
-              },
-              actions: actions,
-              header: Column(
-                children: [
-                  LinksysAppBar(
-                    backgroundColor:
-                        AppTheme.of(context).colors.headerBackgroundEnd,
-                    leading: AppIconButton(
-                      icon: getCharactersIcons(context).arrowLeft,
-                      onTap: () {
-                        NavigationCubit.of(context).pop();
-                      },
+          : LayoutBuilder(builder: (context, constraint) {
+              return LinksysProfileHeaderLayout(
+                expandedHeight: constraint.maxHeight / 2,
+                collaspeTitle: state.location,
+                onCollaspeBackTap: () {
+                  NavigationCubit.of(context).pop();
+                },
+                actions: actions,
+                header: Column(
+                  children: [
+                    LinksysAppBar(
+                      backgroundColor:
+                          AppTheme.of(context).colors.headerBackgroundEnd,
+                      leading: AppIconButton(
+                        icon: getCharactersIcons(context).arrowLeft,
+                        onTap: () {
+                          NavigationCubit.of(context).pop();
+                        },
+                      ),
+                      trailing: actions,
                     ),
-                    trailing: actions,
-                  ),
-                  _header(state),
-                ],
-              ),
-              body: SafeArea(
-                child: Column(
+                    const Spacer(),
+                    _header(state),
+                  ],
+                ),
+                body: Column(
                   children: [
                     _content(state),
                   ],
                 ),
-              ),
-            );
+              );
+            });
     });
   }
 

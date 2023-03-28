@@ -25,32 +25,36 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DeviceCubit, DeviceState>(builder: (context, state) {
-      return LinksysProfileHeaderLayout(
-        expandedHeight: 368,
-        collaspeTitle: state.selectedDeviceInfo?.name,
-        onCollaspeBackTap: () {
-          NavigationCubit.of(context).pop();
-        },
-        header: Column(
-          children: [
-            LinksysAppBar(
-              backgroundColor: AppTheme.of(context).colors.headerBackgroundEnd,
-              leading: AppIconButton(
-                icon: getCharactersIcons(context).arrowLeft,
-                onTap: () {
-                  NavigationCubit.of(context).pop();
-                },
+      return LayoutBuilder(builder: (context, constraint) {
+        return LinksysProfileHeaderLayout(
+          expandedHeight: constraint.maxHeight / 2,
+          collaspeTitle: state.selectedDeviceInfo?.name,
+          onCollaspeBackTap: () {
+            NavigationCubit.of(context).pop();
+          },
+          header: Column(
+            children: [
+              LinksysAppBar(
+                backgroundColor:
+                    AppTheme.of(context).colors.headerBackgroundEnd,
+                leading: AppIconButton(
+                  icon: getCharactersIcons(context).arrowLeft,
+                  onTap: () {
+                    NavigationCubit.of(context).pop();
+                  },
+                ),
               ),
-            ),
-            _header(state),
-          ],
-        ),
-        body: Column(
-          children: [
-            _content(state),
-          ],
-        ),
-      );
+              const Spacer(),
+              _header(state),
+            ],
+          ),
+          body: Column(
+            children: [
+              _content(state),
+            ],
+          ),
+        );
+      });
     });
   }
 
