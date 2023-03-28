@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/design/themes.dart';
+import 'package:linksys_moab/page/linkup/view/linkup_view.dart';
 import '_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 
@@ -29,6 +30,8 @@ abstract class DashboardPath extends BasePath {
         return const PrepareDashboardView();
       case SelectNetworkPath:
         return const SelectNetworkView();
+      case LinkupPath:
+        return const LinkupView();
       default:
         return const Center();
     }
@@ -60,3 +63,5 @@ class NoRouterPath extends DashboardPath {}
 class PrepareDashboardPath extends DashboardPath {}
 
 class SelectNetworkPath extends DashboardPath {}
+
+class LinkupPath extends DashboardPath {}

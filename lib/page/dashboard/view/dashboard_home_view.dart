@@ -96,9 +96,11 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                 state.selected?.radioInfo?.first.settings.ssid ?? 'Home',
               ),
             ),
-            AppIcon(
+            AppIconButton(
               icon: getCharactersIcons(context).bellDefault,
-              size: AppIconSize.big,
+              onTap: () {
+                NavigationCubit.of(context).push(LinkupPath());
+              },
             ),
           ],
         ),

@@ -1,0 +1,189 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:linksys_moab/bloc/node/cubit.dart';
+import 'package:linksys_moab/bloc/node/state.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
+import 'package:linksys_moab/util/node_util.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
+
+class LightGuideView extends StatelessWidget {
+  const LightGuideView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
+      final isCognitive = isCognitiveMeshRouter(
+        modelNumber: state.modelNumber,
+        hardwareVersion: state.firmwareVersion,
+      );
+      return StyledLinksysPageView(
+        title: 'Light guide',
+        isCloseStyle: true,
+        scrollable: true,
+        child: isCognitive
+            ? _buildCognitiveMeshLightGuide(context)
+            : _buildNodeMeshLightGuide(context),
+      );
+    });
+  }
+
+  Widget _buildCognitiveMeshLightGuide(BuildContext context) {
+    return Column(
+      children: [
+        _buildInfoCard(
+          context,
+          child: Column(
+            children: [
+              _buildLightInfo(
+                led: AppTheme.of(context).images.ledWhiteSolid,
+                title: 'White',
+                desc: 'Online, everything is good',
+              ),
+              _buildLightInfo(
+                led: AppTheme.of(context).images.ledRedSolid,
+                title: 'Red',
+                desc: 'No internet',
+              ),
+            ],
+          ),
+        ),
+        const LinksysGap.regular(),
+        _buildInfoCard(
+          context,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const AppPadding(
+                padding:
+                    LinksysEdgeInsets.symmetric(horizontal: AppGapSize.regular),
+                child: LinksysText.descriptionMain('During setup'),
+              ),
+              _buildLightInfo(
+                led: AppTheme.of(context).images.ledBlueBlink,
+                title: 'Blue (blinking)',
+                desc: 'Powering on',
+              ),
+              _buildLightInfo(
+                led: AppTheme.of(context).images.ledBlueSolid,
+                title: 'Blue',
+                desc: 'Ready for setup',
+              ),
+              _buildLightInfo(
+                led: AppTheme.of(context).images.ledWhiteBlink,
+                title: 'White (blinking)',
+                desc: 'Setup in progress',
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNodeMeshLightGuide(BuildContext context) {
+    return Column(
+      children: [
+        _buildInfoCard(
+          context,
+          child: Column(
+            children: [
+              _buildLightInfo(
+                led: AppTheme.of(context).images.ledBlueSolid,
+                title: 'Blue',
+                desc: 'Online, everything is good',
+              ),
+              _buildLightInfo(
+                led: AppTheme.of(context).images.ledYellowSolid,
+                title: 'Yellow',
+                desc: 'Weak signal',
+              ),
+              _buildLightInfo(
+                led: AppTheme.of(context).images.ledRedSolid,
+                title: 'Red',
+                desc: 'No internet',
+              ),
+              _buildLightInfo(
+                led: AppTheme.of(context).images.ledRedBlink,
+                title: 'Red',
+                desc:
+                    'Out of range. Move closer to another node. If it’s your parent node, make sure it’s connected to your modem.',
+              ),
+            ],
+          ),
+        ),
+        const LinksysGap.regular(),
+        _buildInfoCard(
+          context,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const AppPadding(
+                padding:
+                    LinksysEdgeInsets.symmetric(horizontal: AppGapSize.regular),
+                child: LinksysText.descriptionMain('During setup'),
+              ),
+              _buildLightInfo(
+                led: AppTheme.of(context).images.ledBlueBlink,
+                title: 'Blue (blinking)',
+                desc: 'Powering on',
+              ),
+              _buildLightInfo(
+                led: AppTheme.of(context).images.ledPurpleSolid,
+                title: 'Purple',
+                desc: 'Ready for setup',
+              ),
+              _buildLightInfo(
+                led: AppTheme.of(context).images.ledPurpleBlink,
+                title: 'Purple (blinking)',
+                desc: 'Setup in progress',
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoCard(
+    BuildContext context, {
+    required Widget child,
+  }) {
+    return Card(
+      child: AppPadding.regular(child: child),
+    );
+  }
+
+  Widget _buildLightInfo({
+    required PictureProvider led,
+    required String title,
+    required String desc,
+  }) {
+    return AppPadding.regular(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SvgPicture(led),
+          const LinksysGap.semiSmall(),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                LinksysText.descriptionMain(title),
+                const LinksysGap.small(),
+                LinksysText.descriptionSub(
+                  desc,
+                  maxLines: 5,
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}

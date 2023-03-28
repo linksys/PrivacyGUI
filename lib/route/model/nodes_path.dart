@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/page/dashboard/view/nodes/node_connected_devices_view.dart';
 import 'package:linksys_moab/page/dashboard/view/nodes/node_detail_view.dart';
+import 'package:linksys_moab/page/dashboard/view/nodes/node_light_guide_view.dart';
 import 'package:linksys_moab/page/dashboard/view/nodes/node_name_edit_view.dart';
 import 'package:linksys_moab/page/dashboard/view/nodes/node_offline_check_view.dart';
 import 'package:linksys_moab/page/dashboard/view/nodes/node_restart_view.dart';
@@ -48,6 +49,8 @@ class NodesPath extends DashboardPath {
         return const NodeSwitchLightView();
       case NodeRestartPath:
         return const NodeRestartView();
+      case NodeLightGuidePath:
+        return const LightGuideView();
       default:
         return const Center();
     }
@@ -78,6 +81,11 @@ class NodeDetailPath extends NodesPath {
 class NodeSwitchLightPath extends NodesPath {}
 
 class NodeRestartPath extends NodesPath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
+}
+
+class NodeLightGuidePath extends NodesPath {
   @override
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }

@@ -5,6 +5,7 @@ import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -34,6 +35,14 @@ class _NodeDetailViewState extends State<NodeDetailView> {
 
   @override
   Widget build(BuildContext context) {
+    final actions = [
+      AppIconButton.noPadding(
+        icon: getCharactersIcons(context).infoRound,
+        onTap: () {
+          NavigationCubit.of(context).push(NodeLightGuidePath());
+        },
+      )
+    ];
     return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
       return state.isLoading
           ? const LinksysFullScreenSpinner()
@@ -43,6 +52,7 @@ class _NodeDetailViewState extends State<NodeDetailView> {
               onCollaspeBackTap: () {
                 NavigationCubit.of(context).pop();
               },
+              actions: actions,
               header: Column(
                 children: [
                   LinksysAppBar(
@@ -54,6 +64,7 @@ class _NodeDetailViewState extends State<NodeDetailView> {
                         NavigationCubit.of(context).pop();
                       },
                     ),
+                    trailing: actions,
                   ),
                   _header(state),
                 ],
