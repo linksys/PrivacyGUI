@@ -11,10 +11,14 @@ class MoabPage<T> extends Page<T> {
     String? name,
     Object? arguments,
     String? restorationId,
-  }) : assert(child != null),
+  })  : assert(child != null),
         assert(maintainState != null),
         assert(fullscreenDialog != null),
-        super(key: key, name: name, arguments: arguments, restorationId: restorationId);
+        super(
+            key: key,
+            name: name,
+            arguments: arguments,
+            restorationId: restorationId);
 
   /// The content to be shown in the [Route] created by this page.
   final Widget child;
@@ -28,11 +32,13 @@ class MoabPage<T> extends Page<T> {
   final bool opaque;
   @override
   Route<T> createRoute(BuildContext context) {
-     if (opaque) {
-       return _PageBasedMoabPageRoute<T>(page: this);
-     } else {
-       return _PageBasedMoabTransparentPageRoute<T>(page: this);
-     }
+    // https://github.com/flutter/flutter/issues/57202
+    // Can't have custom transition for iOS, will lost swipe back gesture.
+    if (opaque) {
+      return _PageBasedMoabPageRoute<T>(page: this);
+    } else {
+      return _PageBasedMoabTransparentPageRoute<T>(page: this);
+    }
   }
 }
 
@@ -40,12 +46,11 @@ class MoabPage<T> extends Page<T> {
 //
 // This route uses the builder from the page to build its content. This ensures
 // the content is up to date after page updates.
-class _BaseMoabPageRoute<T> extends PageRoute<T> with MaterialRouteTransitionMixin<T> {
+class _BaseMoabPageRoute<T> extends PageRoute<T>
+    with MaterialRouteTransitionMixin<T> {
   _BaseMoabPageRoute({
     required MoabPage<T> page,
-  }) : assert(page != null),
-        super(settings: page) {
-  }
+  }) : super(settings: page);
   MoabPage<T> get _page => settings as MoabPage<T>;
 
   @override

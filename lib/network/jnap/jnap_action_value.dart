@@ -262,7 +262,12 @@ enum _JNAPActionValue {
           'http://linksys.com/jnap/nodes/bluetooth/BTGetScanUnconfiguredResult2'),
   btRequestScanUnconfigured2(
       value:
-          'http://linksys.com/jnap/nodes/bluetooth/BTRequestScanUnconfigured2');
+          'http://linksys.com/jnap/nodes/bluetooth/BTRequestScanUnconfigured2'),
+  startBlinkingNodeLed(
+      value: 'http://linksys.com/jnap/nodes/setup/StartBlinkingNodeLed'),
+  stopBlinkingNodeLed(
+      value: 'http://linksys.com/jnap/nodes/setup/StopBlinkingNodeLed'),
+  ;
 
   const _JNAPActionValue({required this.value});
 

@@ -104,6 +104,7 @@ class DeviceDetailInfo extends Equatable {
   final int lastChangeRevision;
   final String? profileId;
   final DeviceParentInfo? parentInfo;
+  final bool isOnline;
 
   const DeviceDetailInfo({
     required this.name,
@@ -122,6 +123,7 @@ class DeviceDetailInfo extends Equatable {
     this.lastChangeRevision = 0,
     this.profileId,
     this.parentInfo,
+    this.isOnline = false,
   });
 
   DeviceDetailInfo copyWith({
@@ -142,6 +144,7 @@ class DeviceDetailInfo extends Equatable {
     int? lastChangeRevision,
     String? profileId,
     DeviceParentInfo? parentInfo,
+    bool? isOnline,
   }) {
     return DeviceDetailInfo(
       name: name ?? this.name,
@@ -160,6 +163,7 @@ class DeviceDetailInfo extends Equatable {
       lastChangeRevision: lastChangeRevision ?? this.lastChangeRevision,
       profileId: profileId ?? this.profileId,
       parentInfo: parentInfo ?? this.parentInfo,
+      isOnline: isOnline ?? this.isOnline,
     );
   }
 
@@ -181,6 +185,7 @@ class DeviceDetailInfo extends Equatable {
         lastChangeRevision,
         profileId,
         parentInfo,
+        isOnline,
       ];
 }
 

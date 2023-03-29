@@ -126,8 +126,6 @@ class _DebugToolsViewState extends State<DebugToolsView> {
           },
         ),
         const LinksysGap.regular(),
-        _buildEnvPickerTile(),
-        const LinksysGap.regular(),
         ..._buildDebug(),
         const LinksysGap.regular(),
       ],
@@ -447,88 +445,6 @@ class _DebugToolsViewState extends State<DebugToolsView> {
         builder: (context) {
           return const DebugDeviceInfoView();
         });
-  }
-
-  Widget _buildEnvPickerTile() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        LinksysText.descriptionMain(
-          'Env picker: ${_selectedEnv.name}',
-        ),
-        const LinksysGap.regular(),
-        LinksysText.descriptionSub(
-          'Will logout after change environment!',
-          color: Colors.red,
-        ),
-        const LinksysGap.regular(),
-        LinksysPrimaryButton(
-          'Select environment',
-          onTap: () async {
-            final result = await showModalBottomSheet(
-                enableDrag: false,
-                context: context,
-                builder: (context) => _createEnvPicker());
-            setState(() {
-              _selectedEnv = result;
-            });
-          },
-        )
-      ],
-    );
-  }
-
-  Widget _createEnvPicker() {
-    bool _isLoading = false;
-    return StatefulBuilder(builder: (context, setState) {
-      return _isLoading
-          ? LinksysFullScreenSpinner(
-              text: getAppLocalizations(context).processing)
-          : Column(
-              children: [
-                ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: CloudEnvironment.values.length,
-                    itemBuilder: (context, index) => GestureDetector(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: SelectableItem(
-                              text: CloudEnvironment.values[index].name,
-                              isSelected: _selectedEnv ==
-                                  CloudEnvironment.values[index],
-                              height: 66,
-                            ),
-                          ),
-                          onTap: () {
-                            setState(() {
-                              _selectedEnv = CloudEnvironment.values[index];
-                            });
-                          },
-                        )),
-                const Spacer(),
-                LinksysPrimaryButton(
-                  'Save',
-                  onTap: () async {
-                    setState(() {
-                      _isLoading = true;
-                    });
-
-                    cloudEnvTarget = _selectedEnv;
-                    final pref = await SharedPreferences.getInstance();
-                    pref.setString(pCloudEnv, _selectedEnv.name);
-                    BuildConfig.load();
-                    setState(() {
-                      _isLoading = false;
-                    });
-                    context.read<AuthBloc>().add(Logout());
-                    Navigator.pop(context, _selectedEnv);
-                  },
-                ),
-                const LinksysGap.regular(),
-              ],
-            );
-    });
   }
 }
 

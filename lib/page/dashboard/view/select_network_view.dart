@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
@@ -54,14 +49,11 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
             text: getAppLocalizations(context).processing)
         : BlocBuilder<NetworkCubit, NetworkState>(
             builder: (context, state) => StyledLinksysPageView(
+                  scrollable: true,
                   isCloseStyle: true,
                   child: LinksysBasicLayout(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    content: Column(
-                      children: [
-                        _networkSection(state, title: 'Network'),
-                      ],
-                    ),
+                    content: _networkSection(state, title: 'Network'),
                   ),
                 ));
   }
@@ -74,51 +66,55 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
           title,
         ),
         const LinksysGap.small(),
-        ListView.builder(
-          shrinkWrap: true,
-          itemCount: state.networks.length,
-          itemBuilder: (context, index) => InkWell(
-            onTap: state.networks[index].isOnline
-                ? () async {
-                    setState(() {
-                      isLoading = true;
-                    });
-                    await _networkCubit.selectNetwork(state.networks[index]);
-                    await _subscriptionCubit.loadingProducts();
-                    _navigationCubit.clearAndPush(PrepareDashboardPath());
-                  }
-                : null,
-            child: AppPadding(
-              padding: const LinksysEdgeInsets.symmetric(
-                  vertical: AppGapSize.regular),
-              child: Row(
-                children: [
-                  Image(
-                    image: AppTheme.of(context).images.devices.getByName(
-                          routerIconTest(
-                            modelNumber:
-                                state.networks[index].network.routerModelNumber,
-                            hardwareVersion: state
-                                .networks[index].network.routerHardwareVersion,
+        SizedBox(
+          height: 92.0 * state.networks.length,
+          child: ListView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            itemCount: state.networks.length,
+            itemBuilder: (context, index) => InkWell(
+              onTap: state.networks[index].isOnline
+                  ? () async {
+                      setState(() {
+                        isLoading = true;
+                      });
+                      await _networkCubit.selectNetwork(state.networks[index]);
+                      await _subscriptionCubit.loadingProducts();
+                      _navigationCubit.clearAndPush(PrepareDashboardPath());
+                    }
+                  : null,
+              child: AppPadding(
+                padding: const LinksysEdgeInsets.symmetric(
+                    vertical: AppGapSize.regular),
+                child: Row(
+                  children: [
+                    Image(
+                      image: AppTheme.of(context).images.devices.getByName(
+                            routerIconTest(
+                              modelNumber: state
+                                  .networks[index].network.routerModelNumber,
+                              hardwareVersion: state.networks[index].network
+                                  .routerHardwareVersion,
+                            ),
                           ),
+                      width: 60,
+                      height: 60,
+                    ),
+                    const LinksysGap.semiBig(),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        LinksysText.descriptionMain(
+                          state.networks[index].network.friendlyName,
+                          color: state.networks[index].isOnline
+                              ? null
+                              : ConstantColors.textBoxTextGray,
                         ),
-                    width: 48,
-                    height: 48,
-                  ),
-                  const LinksysGap.semiBig(),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      LinksysText.descriptionMain(
-                        state.networks[index].network.friendlyName,
-                        color: state.networks[index].isOnline
-                            ? null
-                            : ConstantColors.textBoxTextGray,
-                      ),
-                      const LinksysGap.small(),
-                    ],
-                  ),
-                ],
+                        const LinksysGap.small(),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

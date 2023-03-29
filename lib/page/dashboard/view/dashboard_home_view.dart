@@ -291,10 +291,11 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
       child: Card(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(40.0),
+          borderRadius: BorderRadius.circular(100.0),
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 13.0),
+        child: AppPadding(
+          padding: const LinksysEdgeInsets.symmetric(
+              horizontal: AppGapSize.regular, vertical: AppGapSize.semiSmall),
           child: _speedResult(state),
         ),
       ),
@@ -318,7 +319,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
       children: [
         Expanded(
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                   child: _speedItem(

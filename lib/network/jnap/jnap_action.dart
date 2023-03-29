@@ -122,6 +122,8 @@ enum JNAPAction {
   setSimpleWiFiSettings,
   getMACAddress,
   getVersionInfo,
+  startBlinkNodeLed,
+  stopBlinkNodeLed,
   // smartMode
   getDeviceMode,
   getSupportedDeviceMode,

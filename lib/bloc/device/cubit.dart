@@ -87,6 +87,7 @@ class DeviceCubit extends Cubit<DeviceState> {
                 name: Utils.getDeviceName(device),
                 deviceID: device.deviceID,
                 icon: iconTest(device.toJson()),
+                isOnline: false,
               ));
             } else {
               final deviceConnection = device.connections.first;
@@ -137,6 +138,7 @@ class DeviceCubit extends Cubit<DeviceState> {
                   os: device.unit.operatingSystem ?? '',
                   signal: signal,
                   parentInfo: deviceParentInfo,
+                  isOnline: true,
                 ));
               } else {
                 _mainOnlineDevices.add(DeviceDetailInfo(
@@ -151,6 +153,7 @@ class DeviceCubit extends Cubit<DeviceState> {
                   os: device.unit.operatingSystem ?? '',
                   signal: signal,
                   parentInfo: deviceParentInfo,
+                  isOnline: true,
                 ));
               }
             }

@@ -475,7 +475,10 @@ void initBetterActions() {
       _JNAPActionValue.getVLANTaggingSettings.value;
   _betterActionMap[JNAPAction.setVLANTaggingSettings] =
       _JNAPActionValue.setVLANTaggingSettings.value;
-
+  _betterActionMap[JNAPAction.startBlinkNodeLed] =
+      _JNAPActionValue.startBlinkingNodeLed.value;
+  _betterActionMap[JNAPAction.stopBlinkNodeLed] =
+      _JNAPActionValue.stopBlinkingNodeLed.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

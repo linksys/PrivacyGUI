@@ -87,6 +87,23 @@ class _DeviceListViewState extends State<DeviceListView> {
     );
   }
 
+  Widget _wrapDeviceCell(DeviceDetailInfo device) {
+    bool isOnline = device.isOnline;
+    final child = _buildDeviceCell(device);
+    return isOnline
+        ? child
+        : AppSlideActionContainer(
+            rightMenuItems: [
+              AppMenuItem(
+                icon: getCharactersIcons(context).crossRound,
+                label: 'delete',
+                background: ConstantColors.tertiaryRed,
+              )
+            ],
+            child: child,
+          );
+  }
+
   Widget _buildDeviceCell(DeviceDetailInfo device) {
     return AppPadding(
         padding:

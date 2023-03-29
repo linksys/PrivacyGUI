@@ -52,6 +52,7 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
           initialEntries: [
             OverlayEntry(builder: (context) {
               return AppResponsiveTheme(
+                backgroundColor: Colors.transparent,
                 child: DashboardBottomTabContainer(
                   cubit: _cubit,
                   navigator: Navigator(
@@ -69,6 +70,9 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
                             //   child: path.pageConfig.isBackAvailable ? _buildPageView(path) : WillPopScope(child: _buildPageView(path), onWillPop: () async => true),
                             // ),
                             child: AppResponsiveTheme(
+                                backgroundColor: path.pageConfig.isOpaque
+                                    ? null
+                                    : Colors.transparent,
                                 child: path.pageConfig.isBackAvailable
                                     ? _buildPageView(path)
                                     : WillPopScope(
