@@ -17,7 +17,7 @@ import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/animation/fade_in_out.dart';
+import 'package:linksys_widgets/widgets/animation/blink.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -118,7 +118,7 @@ class _TopologyContentView extends State<TopologyContentView> {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              FadeInAndOut(
+              Blink(
                   child: Icon(
                 getCharactersIcons(context).statusOn,
                 color: ConstantColors.tertiaryGreen,

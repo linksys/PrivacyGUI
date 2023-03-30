@@ -14,6 +14,10 @@ import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/animation/blink.dart';
+import 'package:linksys_widgets/widgets/animation/hover.dart';
+import 'package:linksys_widgets/widgets/animation/rotation.dart';
+import 'package:linksys_widgets/widgets/animation/scale.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -62,7 +66,19 @@ class _HomeViewState extends State<HomeView> {
               _isOpenDebug = !_isOpenDebug;
             });
           },
-          child: SvgPicture(AppTheme.of(context).images.linksysBlackLogo)),
+          child: Scale(
+            begin: 1,
+            end: 1.2,
+            reverse: true,
+            child: Rotation(
+              begin: -0.1,
+              end: 0.1,
+              reverse: true,
+              child: Hover(
+                  child: SvgPicture(
+                      AppTheme.of(context).images.linksysBlackLogo)),
+            ),
+          )),
     );
   }
 

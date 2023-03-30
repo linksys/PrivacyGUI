@@ -14,6 +14,7 @@ import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/icons/icon_rules.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/animation/hover.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/container/stacked_listview.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
@@ -47,12 +48,18 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
         ),
         child: Stack(
           children: [
-            Positioned(
-              right: -0, // negative value to position the image out of screen
-              top: -50, // negative value to position the image out of screen
-              child: Image(
-                image: AppTheme.of(context).images.dashboardBg,
-                fit: BoxFit.cover, // to cover the entire screen
+            Hover(
+              reverse: false,
+              begin: const Offset(1, 0),
+              end: const Offset(-1.5, 0),
+              duration: const Duration(milliseconds: 5000),
+              child: Positioned(
+                right: -0, // negative value to position the image out of screen
+                top: -50, // negative value to position the image out of screen
+                child: Image(
+                  image: AppTheme.of(context).images.dashboardBg,
+                  fit: BoxFit.cover, // to cover the entire screen
+                ),
               ),
             ),
             EnabledOpacityWidget(

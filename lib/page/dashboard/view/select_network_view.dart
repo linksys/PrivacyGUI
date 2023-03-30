@@ -15,6 +15,8 @@ import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
+import '../../../bloc/auth/bloc.dart';
+import '../../../bloc/auth/event.dart';
 import '../../../bloc/subscription/subscription_cubit.dart';
 import '../../components/styled/styled_page_view.dart';
 
@@ -51,6 +53,9 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
             builder: (context, state) => StyledLinksysPageView(
                   scrollable: true,
                   isCloseStyle: true,
+                  onBackTap: () {
+                    context.read<AuthBloc>().add(Logout());
+                  },
                   child: LinksysBasicLayout(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     content: _networkSection(state, title: 'Network'),
