@@ -13,10 +13,7 @@ Widget administrationSection({
 }) {
   return SectionTile(
     header: AppPadding(
-      // padding:
-      //     const LinksysEdgeInsets.symmetric(horizontal: AppGapSize.regular),
       child: Container(
-        // height: 48,
         alignment: Alignment.bottomLeft,
         child: AppPadding(
           padding:
@@ -25,7 +22,7 @@ Widget administrationSection({
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(child: LinksysText.tags(title)),
-              headerAction ?? const Center(),
+              if (headerAction != null) headerAction,
             ],
           ),
         ),
@@ -74,25 +71,6 @@ Widget administrationTwoLineTile({
     tileHeight: tileHeight,
     background: background ?? Colors.transparent,
     padding: padding ?? EdgeInsets.zero,
-  );
-}
-
-Widget administrationTileDesc(
-    {required Widget title,
-    required Widget value,
-    String? description,
-    Color? background,
-    double? tileHeight = 88,
-    EdgeInsets? padding,
-    void Function()? onPress}) {
-  return SettingTile(
-    title: title,
-    value: value,
-    onPress: onPress,
-    tileHeight: tileHeight,
-    background: background ?? Colors.transparent,
-    padding: padding ?? EdgeInsets.zero,
-    description: description,
   );
 }
 

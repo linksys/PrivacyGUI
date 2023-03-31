@@ -7,23 +7,17 @@ import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
-
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/utils.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
-import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
-import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
-
-import '../../../utils.dart';
 
 class CloudLoginAccountView extends ArgumentsStatefulView {
   const CloudLoginAccountView({Key? key, super.args, super.next})
@@ -125,7 +119,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
                 controller: _accountController,
                 onChanged: _checkFilledInfo,
                 inputType: TextInputType.emailAddress,
-                // isError: _errorCode.isNotEmpty,
+                autofillHints: const [AutofillHints.username],
                 errorText: generalErrorCodeHandler(context, _errorCode),
                 ctaText: getAppLocalizations(context).forgot_question,
               ),

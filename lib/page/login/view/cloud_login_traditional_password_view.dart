@@ -3,21 +3,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
+import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/input_field/password_input_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
-
-import '../../../bloc/auth/bloc.dart';
-import '../../../bloc/auth/state.dart';
-import '../../../route/navigation_cubit.dart';
-import '../../../util/logger.dart';
-import '../../components/base_components/progress_bars/full_screen_spinner.dart';
-import '../../components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 
 class CloudLoginPasswordView extends ArgumentsStatefulView {
@@ -79,6 +73,7 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
               // isError: _errorCode.isNotEmpty,
               errorText: generalErrorCodeHandler(context, _errorCode),
               controller: passwordController,
+              autofillHint: const [AutofillHints.password],
               onChanged: (value) {
                 setState(() {
                   _errorCode = '';
