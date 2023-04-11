@@ -192,6 +192,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
   }
 
   void _cloudLoggedin(CloudLogin event, Emitter<AuthState> emit) async {
+    const storage = FlutterSecureStorage();
+    await storage.write(
+      key: pSessionToken,
+      value: jsonEncode(
+        event.sessionToken.toJson(),
+      ),
+    );
+    await storage.write(
+      key: pSessionTokenTs,
+      value: '${DateTime.now().millisecondsSinceEpoch}',
+    );
+    await storage.write(
+      key: pUserPassword,
+      value: event.password,
+    );
     emit(AuthState.cloudAuthorized(sessionToken: event.sessionToken));
   }
 
@@ -324,7 +339,7 @@ extension AuthBlocCloud on AuthBloc {
       add(SetLoginType(loginType: AuthenticationType.password));
       return await _cloudRepository
           .login(username: username, password: password)
-          .then((value) => _handleLoginPassword(value));
+          .then((value) => _handleLoginPassword(value, password));
     } else {
       throw Exception('Not on cloud login state');
     }
@@ -380,7 +395,7 @@ extension AuthBlocCloud on AuthBloc {
         preferences: CloudPreferences(
             isoLanguageCode: Utils.getLanguageCode(),
             isoCountryCode: Utils.getCountryCode(),
-            timeZone: await Utils.getTimeZone()));
+            timeZone: 'await Utils.getTimeZone()'));
     return await _repository
         .createVerifiedAccount(verified)
         .then((value) => _handleCreateVerifiedAccount(value));
@@ -461,13 +476,14 @@ extension AuthBlocCloud on AuthBloc {
     return accountInfo;
   }
 
-  Future<void> _handleLoginPassword(SessionToken sessionToken) async {
-    const storage = FlutterSecureStorage();
-    storage.write(key: pSessionToken, value: jsonEncode(sessionToken.toJson()));
-    storage.write(
-        key: pSessionTokenTs,
-        value: '${DateTime.now().millisecondsSinceEpoch}');
-    add(CloudLogin(sessionToken: sessionToken));
+  Future<void> _handleLoginPassword(
+    SessionToken sessionToken,
+    String password,
+  ) async {
+    add(CloudLogin(
+      sessionToken: sessionToken,
+      password: password,
+    ));
   }
 
   Future<bool> _handleLogin(CloudLoginAcceptState acceptState) async {
@@ -485,11 +501,11 @@ extension AuthBlocCloud on AuthBloc {
     List<CommunicationMethod> methods = [
       CommunicationMethod(
         method: CommunicationMethodType.sms.name.toUpperCase(),
-        targetValue: '',
+        target: '',
       ),
       CommunicationMethod(
         method: CommunicationMethodType.email.name.toUpperCase(),
-        targetValue: email,
+        target: email,
       )
     ];
 

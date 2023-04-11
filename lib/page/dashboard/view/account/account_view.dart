@@ -3,20 +3,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/account/state.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
-import 'package:linksys_moab/bloc/auth/event.dart';
-import 'package:linksys_moab/bloc/auth/state.dart';
-import 'package:linksys_moab/bloc/otp/otp.dart';
-import 'package:linksys_moab/design/colors.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
 import 'package:linksys_moab/page/components/shortcuts/dialogs.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
-import 'package:linksys_moab/route/model/account_path.dart';
-import 'package:linksys_moab/route/model/otp_path.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/utils.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/input_field/password_input_field.dart';
 import 'package:styled_text/styled_text.dart';
 
 import '../../../../bloc/internet_check/cubit.dart';
@@ -30,30 +25,27 @@ class AccountView extends StatefulWidget {
 }
 
 class _AccountViewState extends State<AccountView> {
+  late final TextEditingController _passwordController;
+  String _displayPhoneNumber = '';
   @override
   void initState() {
-    if (context.read<AuthBloc>().isCloudLogin()) {
-      context.read<AccountCubit>().fetchAccount();
-    }
     super.initState();
+    _passwordController = TextEditingController();
+
+    if (context.read<AuthBloc>().isCloudLogin()) {
+      final accountCubit = context.read<AccountCubit>();
+      accountCubit.fetchAccount().then((_) {
+        _passwordController.text = accountCubit.state.password;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AccountCubit, AccountState>(builder: (context, state) {
-      return BasePageView.onDashboardSecondary(
+      return StyledLinksysPageView(
         scrollable: true,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: Text(getAppLocalizations(context).account,
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-          leading: BackButton(onPressed: () {
-            NavigationCubit.of(context).pop();
-          }),
-          actions: [],
-        ),
+        title: 'Account',
         child: context.read<AuthBloc>().isCloudLogin()
             ? _remote(state)
             : _local(state),
@@ -65,11 +57,10 @@ class _AccountViewState extends State<AccountView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 33),
-        box16(),
+        const LinksysGap.regular(),
         _localLoginInformationSection(context),
         dividerWithPadding(),
-        _biometricsTile(state),
+        // _biometricsTile(state),
         const Spacer(),
       ],
     );
@@ -79,24 +70,9 @@ class _AccountViewState extends State<AccountView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 33),
-        Center(
-          child: CircleAvatar(
-            child: Image.asset(
-              'assets/images/icon_default_avatar.png',
-              width: 52,
-              height: 52,
-            ),
-            radius: 45,
-            backgroundColor: MoabColor.avatarBackground,
-          ),
-        ),
-        box16(),
         _informationSection(state),
         dividerWithPadding(),
-        _subscriptionSection(state),
-        dividerWithPadding(),
-        _preferencesSection(state),
+        _securitySection(state),
         const Spacer(),
       ],
     );
@@ -104,136 +80,51 @@ class _AccountViewState extends State<AccountView> {
 
   Widget _informationSection(AccountState state) {
     return SectionTile(
-      header: Text(
+      header: const LinksysText.tags(
         'YOUR INFORMATION',
-        style: Theme.of(context).textTheme.headline4,
       ),
       child: Column(
         children: [
-          ..._createCommunicationTiles(
-              state.username, state.communicationMethods),
-        ],
-      ),
-    );
-  }
-
-  Widget _subscriptionSection(AccountState state) {
-    return SectionTile(
-      header: Text(
-        'SUBSCRIPTION',
-        style: Theme.of(context).textTheme.headline4,
-      ),
-      child: SettingTile(
-          title: Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text('Linksys secure'),
-              box8(),
-              Text(
-                'Active',
-                style: Theme.of(context).textTheme.headline4,
-              )
-            ],
-          ),
-          description: 'Next charge is on April, 23, 2024',
-          value: Switch.adaptive(value: true, onChanged: (value) {})),
-    );
-  }
-
-  Widget _preferencesSection(AccountState state) {
-    return SectionTile(
-      header: Text(
-        'PREFERENCES',
-        style: Theme.of(context).textTheme.headline4,
-      ),
-      child: Column(
-        children: [
-          _passwordLessTile(state),
-          box16(),
-          _biometricsTile(state),
-          box16(),
-          SettingTile(
-            title: Text('Receive newsletter'),
-            value: Switch.adaptive(
-                value: state.pref.marketingOptIn, onChanged: (value) {}),
-            description:
-                'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.',
+          ..._createInfoTile(
+            state.username,
+            state.password,
+            state.mobile?.fullFormat,
           ),
         ],
       ),
     );
   }
 
-  List<Widget> _createCommunicationTiles(
-      String username, List<CommunicationMethod> methods) {
-    List<Widget> list = [];
-    if (!methods.any((element) => element.method == 'EMAIL')) {
-      list.add(
-        SectionTile(
-            header: Text('Email'),
-            child: SettingTile(
-              title: Text(username),
-              value: Text(
-                'Not verified',
-                style: Theme.of(context).textTheme.headline4?.copyWith(
-                      color: MoabColor.primaryBlue,
-                    ),
-              ),
-              onPress: () async {
-                String token = await context
-                    .read<AccountCubit>()
-                    .startAddCommunicationMethod(
-                      CommunicationMethod(
-                        method: 'EMAIL',
-                        targetValue: username,
-                      ),
-                    );
-                final selectedMethod = CommunicationMethod(
-                  method: CommunicationMethodType.email.name.toUpperCase(),
-                  targetValue: username,
-                );
-                // context.read<OtpCubit>().updateToken(token);
-                // context.read<OtpCubit>().selectOtpMethod(otpInfo);
-                // context
-                //     .read<AuthBloc>()
-                //     .authChallenge(method: otpInfo, token: token);
-                NavigationCubit.of(context).push(OtpPreparePath()
-                  ..next = AccountDetailPath()
-                  ..args = {
-                    'function': OtpFunction.add,
-                    'username': username,
-                    'commMethods': methods,
-                    'token': token,
-                    'selected': selectedMethod,
-                  });
-              },
-            )),
-      );
-    }
-    if (!methods.any((element) => element.method == 'SMS')) {
-      list.add(SettingTile(
-        axis: SettingTileAxis.vertical,
-        title: Text('Phone number'),
-        value: Text(
-          '+Add',
-          style: Theme.of(context).textTheme.headline4?.copyWith(
-                color: MoabColor.primaryBlue,
-              ),
+  Widget _securitySection(AccountState state) {
+    return SectionTile(
+      header: const LinksysText.tags(
+        'Security',
+      ),
+      child: Column(
+        children: [
+          AppPanelWithInfo(
+              title: '2-Step Verification',
+              infoText: state.mfaEnabled ? 'On' : 'Off'),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _createInfoTile(
+      String username, String password, String? phoneNumber) {
+    return [
+      AppSimplePanel(
+        title: 'Email',
+        description: username,
+      ),
+      LinksysPasswordInputField(
+          headerText: 'Password', controller: _passwordController),
+      if (phoneNumber != null)
+        AppSimplePanel(
+          title: 'Phone Number',
+          description: phoneNumber,
         ),
-        onPress: () {
-          NavigationCubit.of(context).push(OtpAddPhonePath()
-            ..next = AccountDetailPath()
-            ..args = {
-              'function': OtpFunction.add,
-            });
-        },
-      ));
-    }
-    if (list.length < 2) {
-      list.addAll(
-          methods.map((e) => _createCommunicationTile(e, methods.length == 2)));
-    }
-    return list;
+    ];
   }
 
   Widget _createCommunicationTile(CommunicationMethod method, bool showDelete) {
@@ -244,14 +135,14 @@ class _AccountViewState extends State<AccountView> {
             axis: SettingTileAxis.vertical,
             title: Text(method.method == 'EMAIL' ? 'Email' : 'Phone number'),
             value: Text(
-              method.targetValue,
+              method.target,
               style: Theme.of(context).textTheme.headline4,
             ),
             icon: Icon(Icons.delete),
             onPress: showDelete
                 ? () {
                     _showDeleteCommunicationMethodDialog(
-                        method.method, method.targetValue);
+                        method.method, method.target);
                   }
                 : null,
           ),
@@ -260,42 +151,43 @@ class _AccountViewState extends State<AccountView> {
     );
   }
 
-  Widget _passwordLessTile(AccountState state) {
-    return SettingTile(
-      title: const Text('Log in method'),
-      value: Text(
-          state.authMode.toLowerCase() == AuthenticationType.passwordless.name
-              ? "One-time passcode"
-              : "Password",
-          style: TextStyle(color: Colors.black.withOpacity(0.5))),
-      onPress: () {
-        NavigationCubit.of(context).push(LoginMethodOptionsPath());
-      },
-    );
-  }
+  // Widget _passwordLessTile(AccountState state) {
+  //   return SettingTile(
+  //     title: const Text('Log in method'),
+  //     value: Text(
+  //         state.authMode.toLowerCase() == AuthenticationType.passwordless.name
+  //             ? "One-time passcode"
+  //             : "Password",
+  //         style: TextStyle(color: Colors.black.withOpacity(0.5))),
+  //     onPress: () {
+  //       NavigationCubit.of(context).push(LoginMethodOptionsPath());
+  //     },
+  //   );
+  // }
 
-  Widget _biometricsTile(AccountState state) {
-    return SettingTile(
-      title: Text('Biometric login'),
-      description: 'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.',
-      value: Switch.adaptive(
-        value: state.isBiometricEnabled,
-        onChanged: (value) async {
-          if (!value) {
-            _showConfirmBiometricDialog(value);
-          } else {
-            final isValidate = await Utils.doLocalAuthenticate();
-            if (isValidate) {
-              final authBloc = context.read<AuthBloc>();
-              await authBloc.extendCertification();
-              await authBloc.requestSession();
-              await context.read<AccountCubit>().toggleBiometrics(value);
-            }
-          }
-        },
-      ),
-    );
-  }
+  // Widget _biometricsTile(AccountState state) {
+  //   return SettingTile(
+  //     title: Text('Biometric login'),
+  //     description:
+  //         'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.',
+  //     value: Switch.adaptive(
+  //       value: state.isBiometricEnabled,
+  //       onChanged: (value) async {
+  //         // if (!value) {
+  //         //   _showConfirmBiometricDialog(value);
+  //         // } else {
+  //         //   final isValidate = await Utils.doLocalAuthenticate();
+  //         //   if (isValidate) {
+  //         //     final authBloc = context.read<AuthBloc>();
+  //         //     await authBloc.extendCertification();
+  //         //     await authBloc.requestSession();
+  //         //     await context.read<AccountCubit>().toggleBiometrics(value);
+  //         //   }
+  //         // }
+  //       },
+  //     ),
+  //   );
+  // }
 
   Widget _localLoginInformationSection(BuildContext context) {
     return SectionTile(
@@ -376,9 +268,9 @@ class _AccountViewState extends State<AccountView> {
           SimpleTextButton(
               text: 'Turn off',
               onPressed: () async {
-                await context.read<AccountCubit>().toggleBiometrics(value);
-                context.read<AuthBloc>().add(Logout());
-                Navigator.pop(context);
+                // await context.read<AccountCubit>().toggleBiometrics(value);
+                // context.read<AuthBloc>().add(Logout());
+                // Navigator.pop(context);
               }),
           SimpleTextButton(
               text: 'Cancel', onPressed: () => Navigator.pop(context))
@@ -394,11 +286,11 @@ class _AccountViewState extends State<AccountView> {
         SimpleTextButton(
             text: 'Yes',
             onPressed: () {
-              final _cubit = context.read<AccountCubit>();
-              _cubit
-                  .deleteCommunicationMethod(method, value)
-                  .then((value) => _cubit.fetchAccount())
-                  .then((value) => Navigator.pop(context));
+              // final _cubit = context.read<AccountCubit>();
+              // _cubit
+              //     .deleteCommunicationMethod(method, value)
+              //     .then((value) => _cubit.fetchAccount())
+              //     .then((value) => Navigator.pop(context));
             }),
         SimpleTextButton(
             text: 'No',

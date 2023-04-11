@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
+import 'package:linksys_moab/bloc/otp/otp.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/layouts/layout.dart';
+import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -12,11 +13,8 @@ import 'package:linksys_widgets/widgets/input_field/password_input_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-import '../../../bloc/auth/bloc.dart';
-import '../../../bloc/auth/state.dart';
 import '../../../route/navigation_cubit.dart';
 import '../../../util/logger.dart';
-import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 import '../../components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 
@@ -35,6 +33,22 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
   String _errorCode = '';
   String _username = '';
 
+  late AuthBloc _authBloc;
+  late OtpCubit _optCubit;
+
+  @override
+  initState() {
+    super.initState();
+    _authBloc = context.read<AuthBloc>();
+    _optCubit = context.read<OtpCubit>();
+  }
+
+  @override
+  dispose() {
+    super.dispose();
+    passwordController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
@@ -46,7 +60,7 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
         },
         listener: (context, state) {
           if (state is AuthCloudLoginState) {
-            NavigationCubit.of(context).push(PrepareDashboardPath());
+            // NavigationCubit.of(context).push(PrepareDashboardPath());
           } else {
             logger.d('ERROR: Wrong state type on LoginTraditionalPasswordView');
           }
@@ -72,6 +86,7 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const LinksysGap.big(),
+            LinksysText.descriptionMain(_username),
             LinksysPasswordInputField(
               key: const Key('login_password_view_input_field_password'),
               // headerText: getAppLocalizations(context).password,
@@ -120,13 +135,26 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
   }
 
   _handleError(Object? e, StackTrace trace) {
-    if (e is ErrorResponse) {
-      setState(() {
-        _errorCode = e.code;
-      });
-    } else {
+    final error = e as ErrorResponse?;
+    if (error == null) {
       // Unknown error or error parsing
-      logger.d('Unknown error: $e');
+      logger.d('Unknown error: $error');
+      return;
+    }
+
+    if (error.code == errorMfaRequired) {
+      final mfaError = ErrorMfaRequired.fromResponse(error);
+      NavigationCubit.of(context).pushAndWait(OTPViewPath()
+        ..args = {
+          'username': _username,
+          'token': mfaError.verificationToken,
+          'password': passwordController.text,
+        }
+        ..next = PrepareDashboardPath());
+    } else {
+      setState(() {
+        _errorCode = error.code;
+      });
     }
   }
 }

@@ -1,4 +1,87 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:equatable/equatable.dart';
+
+class CAUserAccount extends Equatable {
+  final String accountId;
+  final String username;
+  final String? emailAddress;
+  final String? password;
+  final String firstName;
+  final String? middleName;
+  final String lastName;
+  final String? cdnUsername;
+  final String alias;
+  final String status;
+  final String? gender;
+  final CAPreferences? preferences;
+
+  const CAUserAccount({
+    required this.accountId,
+    required this.username,
+    this.emailAddress,
+    this.password,
+    required this.firstName,
+    this.middleName,
+    required this.lastName,
+    this.cdnUsername,
+    required this.alias,
+    required this.status,
+    this.gender,
+    required this.preferences,
+  });
+
+  factory CAUserAccount.fromJson(Map<String, dynamic> json) {
+    return CAUserAccount(
+      accountId: json['accountId'],
+      username: json['username'],
+      emailAddress: json['emailAddress'],
+      password: json['password'],
+      firstName: json['firstName'],
+      middleName: json['middleName'],
+      lastName: json['lastName'],
+      cdnUsername: json['cdnUsername'],
+      alias: json['alias'],
+      status: json['status'],
+      gender: json['gender'],
+      preferences: json['preferences'] != null
+          ? CAPreferences.fromJson(json['preferences'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'accountId': accountId,
+        'username': username,
+        'emailAddress': emailAddress,
+        'password': password,
+        'firstName': firstName,
+        'middleName': middleName,
+        'lastName': lastName,
+        'cdnUsername': cdnUsername,
+        'alias': alias,
+        'status': status,
+        'gender': gender,
+        'preferences': preferences?.toJson(),
+      }..removeWhere((key, value) => value == null);
+
+  @override
+  List<Object?> get props {
+    return [
+      accountId,
+      username,
+      emailAddress,
+      password,
+      firstName,
+      middleName,
+      lastName,
+      cdnUsername,
+      alias,
+      status,
+      gender,
+      preferences,
+    ];
+  }
+}
 
 class CANotification extends Equatable {
   final String? type;
@@ -72,6 +155,7 @@ class CAMobile extends Equatable {
   final String? countryCode;
   final String? phoneNumber;
 
+  String? get fullFormat => '$countryCode$phoneNumber';
   const CAMobile({
     this.countryCode,
     this.phoneNumber,
@@ -105,20 +189,20 @@ class CAMobile extends Equatable {
   List<Object?> get props => [countryCode, phoneNumber];
 }
 
-class CALocal extends Equatable {
+class CALocale extends Equatable {
   final String? language;
   final String? country;
 
-  const CALocal({
+  const CALocale({
     this.language,
     this.country,
   });
 
-  CALocal copyWith({
+  CALocale copyWith({
     String? language,
     String? country,
   }) {
-    return CALocal(
+    return CALocale(
       language: language ?? language,
       country: country ?? country,
     );
@@ -131,8 +215,8 @@ class CALocal extends Equatable {
     };
   }
 
-  factory CALocal.fromJson(Map<String, dynamic> json) {
-    return CALocal(
+  factory CALocale.fromJson(Map<String, dynamic> json) {
+    return CALocale(
       language: json['language'],
       country: json['country'],
     );
@@ -163,22 +247,34 @@ class CALocal extends Equatable {
 /// }
 ///
 class CAPreferences extends Equatable {
-  final CALocal? locale;
+  final String? newsletterOptIn;
+  final String? fakeSubscription;
+  final bool? mfaEnabled;
+  final CALocale? locale;
   final CAMobile? mobile;
   final CANotifications? notifications;
 
   const CAPreferences({
+    this.newsletterOptIn,
+    this.fakeSubscription,
+    this.mfaEnabled,
     this.locale,
     this.mobile,
     this.notifications,
   });
 
   CAPreferences copyWith({
-    CALocal? locale,
+    String? newsletterOptIn,
+    String? fakeSubscription,
+    bool? mfaEnabled,
+    CALocale? locale,
     CAMobile? mobile,
     CANotifications? notifications,
   }) {
     return CAPreferences(
+      newsletterOptIn: newsletterOptIn ?? this.newsletterOptIn,
+      fakeSubscription: fakeSubscription ?? this.fakeSubscription,
+      mfaEnabled: mfaEnabled ?? this.mfaEnabled,
       locale: locale ?? this.locale,
       mobile: mobile ?? this.mobile,
       notifications: notifications ?? this.notifications,
@@ -187,6 +283,9 @@ class CAPreferences extends Equatable {
 
   Map<String, dynamic> toJson() {
     return {
+      'newsletterOptIn': newsletterOptIn,
+      'fakeSubscription': fakeSubscription,
+      'mfaEnabled': mfaEnabled,
       'locale': locale?.toJson(),
       'mobile': mobile?.toJson(),
       'notifications': notifications?.toJson(),
@@ -195,12 +294,24 @@ class CAPreferences extends Equatable {
 
   factory CAPreferences.fromJson(Map<String, dynamic> json) {
     return CAPreferences(
-      locale: json['locale'],
-      mobile: json['mobile'],
-      notifications: json['notifications'],
+      newsletterOptIn: json['newsletterOptIn'],
+      fakeSubscription: json['fakeSubscription'],
+      mfaEnabled: json['mfaEnabled'],
+      locale: json['locale'] != null ? CALocale.fromJson(json['locale']) : null,
+      mobile: json['mobile'] != null ? CAMobile.fromJson(json['mobile']) : null,
+      notifications: json['notifications'] != null
+          ? CANotifications.fromJson(json['notifications'])
+          : null,
     );
   }
 
   @override
-  List<Object?> get props => [locale];
+  List<Object?> get props => [
+        newsletterOptIn,
+        fakeSubscription,
+        mfaEnabled,
+        locale,
+        mobile,
+        notifications,
+      ];
 }

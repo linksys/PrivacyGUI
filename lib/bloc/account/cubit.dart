@@ -1,61 +1,31 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/account/state.dart';
 import 'package:linksys_moab/constants/_constants.dart';
-import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
-import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:linksys_moab/repository/linksys_cloud_repository.dart';
 
 import '../../util/logger.dart';
 
 class AccountCubit extends Cubit<AccountState> {
-  AccountCubit({required CloudAccountRepository repository})
+  AccountCubit({required LinksysCloudRepository repository})
       : _repo = repository,
         super(AccountState.empty());
 
-  final CloudAccountRepository _repo;
+  final LinksysCloudRepository _repo;
 
   Future<void> fetchAccount() async {
+    const storage = FlutterSecureStorage();
+
     final account = await _repo.getAccount();
-    final defaultGroupId = await _repo.getDefaultGroupId(account.id);
-    logger.d('accountId: ${account.id}, defaultGroupId:$defaultGroupId');
-    await SharedPreferences.getInstance().then((pref) async {
-      await pref.setString(linksysPrefCloudAccountId, account.id);
-      await pref.setString(linksysPrefCloudDefaultGroupId, defaultGroupId);
-    });
-    final isBiometricEnabled = (await SharedPreferences.getInstance())
-            .getBool(linksysPrefEnableBiometrics) ??
-        false;
-    emit(state
-        .copyWithAccountInfo(
-            info: account, isBiometricEnabled: isBiometricEnabled)
-        .copyWith(groupId: defaultGroupId));
-  }
-
-  Future<String> startAddCommunicationMethod(CommunicationMethod method) async {
-    return _repo.addCommunicationMethods(state.id, method);
-  }
-
-  Future<void> deleteCommunicationMethod(
-      String method, String targetValue) async {
-    return _repo.deleteCommunicationMethods(state.id, method, targetValue);
-  }
-
-  Future<void> changePassword(String password, String token) async {
-    return _repo.changePassword(state.id, password, token);
-  }
-
-  Future<String> verifyPassword(String password) async {
-    return _repo.verifyPassword(state.id, password);
-  }
-
-  Future<void> toggleBiometrics(bool value) async {
-    final pref = await SharedPreferences.getInstance();
-    if (value) {
-      pref.setBool(linksysPrefEnableBiometrics, value);
-    } else {
-      pref.remove(linksysPrefEnableBiometrics);
-    }
-    emit(state.copyWith(isBiometricEnabled: value));
+    final methods = (account.preferences?.mfaEnabled ?? false)
+        ? await _repo.getMfaMethod()
+        : null;
+    final password = await storage.read(key: pUserPassword);
+    emit(
+      AccountState.fromCloudAccount(account)
+          .copyWith(methods: methods ?? [])
+          .copyWith(password: password),
+    );
   }
 
   @override

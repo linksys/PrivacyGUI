@@ -25,7 +25,7 @@ void main() {
           username: email,
           password: password,
           preferences:
-              CAPreferences(locale: CALocal(language: 'en', country: 'US')));
+              CAPreferences(locale: CALocale(language: 'en', country: 'US')));
 
       final response = await client.createAccount(input: input);
     });
@@ -71,8 +71,8 @@ void main() {
           .passwordLogin(username: email, password: password)
           .then((value) => jsonDecode(value.body)['access_token']);
 
-      const newPreferences =
-          CAPreferences(mobile: CAMobile(countryCode: '+886', phoneNumber: '908720012'));
+      const newPreferences = CAPreferences(
+          mobile: CAMobile(countryCode: '+886', phoneNumber: '908720012'));
 
       final response = await client.setPreferences(
           token: token!, preferences: newPreferences);
@@ -91,6 +91,38 @@ void main() {
 
       final response = await client.checkPhoneNumber(
           token: token!, countryCode: '+886', phoneNumber: '908720012');
+    });
+
+    test('POST /getMaskedMethods', () async {
+      const email = 'austin.chang.chia.hao@gmail.com';
+      const password = 'Belkin123!';
+
+      final host = kCloudEnvironmentConfigQa[kCloudBase] as String;
+      final client = TestableHttpClient('https://$host');
+
+      final token = await client.getMaskedMfaMethods(username: email);
+      //     .then((value) => jsonDecode(value.body)['access_token']);
+      //
+      // final response = await client.checkPhoneNumber(
+      //     token: token!, countryCode: '+886', phoneNumber: '908720012');
+    });
+
+    test('GET /accounts/self/', () async {
+      const email = 'hank.yu@belkin.com';
+      const password = 'Belkin123!';
+
+      final host = kCloudEnvironmentConfigQa[kCloudBase] as String;
+      final client = TestableHttpClient('https://$host');
+
+      final token = await client
+          .passwordLogin(username: email, password: password)
+          .then((value) => jsonDecode(value.body)['access_token']);
+
+      final response = await client.getAccount(
+        token: token!,
+      ).then((response) => CAUserAccount.fromJson(jsonDecode(response.body)['account']));
+
+      print(response);
     });
   });
 }

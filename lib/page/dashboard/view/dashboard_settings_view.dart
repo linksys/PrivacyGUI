@@ -47,6 +47,7 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const LinksysGap.semiBig(),
                     _title(),
                     const LinksysGap.semiBig(),
                     _section(

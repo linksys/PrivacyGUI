@@ -4,28 +4,42 @@ import 'package:linksys_moab/network/http/model/cloud_auth_clallenge_method.dart
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/repository/authenticate/otp_repository.dart';
 
+import '../../repository/linksys_cloud_repository.dart';
+import '../../repository/model/cloud_session_model.dart';
 import 'otp_state.dart';
 
 class OtpCubit extends Cubit<OtpState> {
-  OtpCubit({ required OtpRepository otpRepository}) : _otpRepository = otpRepository, super(OtpState.init());
+  OtpCubit({
+    required OtpRepository otpRepository,
+    required LinksysCloudRepository repository,
+  })  : _otpRepository = otpRepository,
+        _repository = repository,
+        super(OtpState.init());
 
   final OtpRepository _otpRepository;
-
+  final LinksysCloudRepository _repository;
   void init() {
     emit(OtpState.init());
   }
+
+  Future<void> fetchMaskedMethods({required String username}) async {
+    final methods = await _repository.getMfaMaskedMethods(username: username);
+    emit(state.copyWith(methods: methods));
+  }
+
   void updateOtpMethods(
-      List<CommunicationMethod> methods, OtpFunction function) {
-    var selected = methods.length > 1
-        ? methods.firstWhere((element) =>
+      List<CommunicationMethod>? methods, OtpFunction function) {
+    final targetMethods = methods ?? state.methods;
+    var selected = targetMethods.length > 1
+        ? targetMethods.firstWhere((element) =>
             element.method == CommunicationMethodType.sms.name.toUpperCase())
-        : methods[0];
-    final step = (function == OtpFunction.send && methods.length == 1)
+        : targetMethods[0];
+    final step = (function == OtpFunction.send && targetMethods.length == 1)
         ? OtpStep.inputOtp
         : OtpStep.chooseOtpMethod;
     emit(state.copyWith(
         step: step,
-        methods: methods,
+        methods: targetMethods,
         selectedMethod: selected,
         function: function));
   }
@@ -68,7 +82,6 @@ class OtpCubit extends Cubit<OtpState> {
     }
   }
 
-
   Future<void> authChallenge(
       {required CommunicationMethod method, required String token}) async {
     BaseAuthChallenge challenge;
@@ -79,15 +92,21 @@ class OtpCubit extends Cubit<OtpState> {
       challenge = AuthChallengeMethod(
         token: token,
         method: method.method,
-        target: method.targetValue,
+        target: method.target,
       );
     }
-    return await _otpRepository.authChallenge(challenge);
+    return await _repository.mfaChallenge(
+      verificationToken: token,
+      method: method.method,
+    );
   }
 
-  Future<void> authChallengeVerify(
+  Future<SessionToken> authChallengeVerify(
       {required String code, required String token}) async {
-    return await _otpRepository.authChallengeVerify(token, code);
+    return await _repository.mfaValidate(
+      otpCode: code,
+      verificationToken: token,
+    );
   }
 
   Future<void> authChallengeVerifyAccept(String code, String token) async {

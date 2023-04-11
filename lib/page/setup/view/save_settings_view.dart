@@ -109,14 +109,14 @@ class _SaveSettingsViewState extends State<SaveSettingsView> {
   }
 
   Future _associateNetwork() async {
-    await _accountCubit.fetchAccount();
-    // connect to local broker again
-    // await _connectivityCubit.connectToLocalBroker();
-    // get group ID, account ID from cloud
-    final accountId = _accountCubit.state.id;
-    final groupId = _accountCubit.state.groupId;
-    // get network ID from router
-    await _setupBloc.associateNetwork(accountId, groupId);
+    // await _accountCubit.fetchAccount();
+    // // connect to local broker again
+    // // await _connectivityCubit.connectToLocalBroker();
+    // // get group ID, account ID from cloud
+    // final accountId = _accountCubit.state.id;
+    // final groupId = _accountCubit.state.groupId;
+    // // get network ID from router
+    // await _setupBloc.associateNetwork(accountId, groupId);
     //
   }
 

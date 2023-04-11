@@ -46,6 +46,14 @@ extension UserService on LinksysHttpClient {
     return this.get(Uri.parse(endpoint), headers: header);
   }
 
+  Future<Response> getMaskedMfaMethods({required String username}) {
+    final endpoint =
+        combineUrl(kUserGetMaskedMfaMethods, args: {kVarUsername: username});
+    final header = defaultHeader;
+
+    return this.get(Uri.parse(endpoint), headers: header);
+  }
+
   Future<Response> checkPhoneNumber({
     required String token,
     required String countryCode,
@@ -63,5 +71,25 @@ extension UserService on LinksysHttpClient {
     };
     return this
         .post(Uri.parse(endpoint), headers: header, body: jsonEncode(body));
+  }
+
+  Future<Response> getAccount({
+    required String token,
+  }) {
+    final endpoint = combineUrl(kUserGetAccount);
+    final header = defaultHeader
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+
+    return this.get(Uri.parse(endpoint), headers: header);
+  }
+
+  Future<Response> getMfaMethods({
+    required String token,
+  }) {
+    final endpoint = combineUrl(kUserGetMfaMethods);
+    final header = defaultHeader
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+
+    return this.get(Uri.parse(endpoint), headers: header);
   }
 }

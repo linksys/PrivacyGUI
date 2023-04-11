@@ -58,8 +58,8 @@ extension AuthorizationService on LinksysHttpClient {
   }
 
   Future<Response> mfaChallenge(
-      {required String target,
-      required String verificationToken,
+      {required String verificationToken,
+      String method = 'EMAIL',
       String? token}) {
     final endpoint = combineUrl(kOauthChallengeEndpoint);
 
@@ -73,8 +73,7 @@ extension AuthorizationService on LinksysHttpClient {
 
     final body = {
       'challengeType': 'push-code',
-      'communicationMethod': 'EMAIL',
-      'communicationTarget': target,
+      'communicationMethod': method,
       'verificationToken': verificationToken,
     };
     return this

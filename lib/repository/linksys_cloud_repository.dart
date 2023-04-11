@@ -1,13 +1,16 @@
 import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:http/http.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/network/http/linksys_http_client.dart';
 import 'package:linksys_moab/network/http/linksys_requests/authorization_service.dart';
 import 'package:linksys_moab/network/http/linksys_requests/device_service.dart';
+import 'package:linksys_moab/network/http/linksys_requests/user_service.dart';
+import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/repository/model/cloud_network_model.dart';
 import 'package:linksys_moab/repository/model/cloud_session_model.dart';
+
+import '../network/http/linksys_requests/data/cloud_account.dart';
 
 class LinksysCloudRepository {
   final LinksysHttpClient _httpClient;
@@ -28,16 +31,72 @@ class LinksysCloudRepository {
   }
 
   Future<List<NetworkAccountAssociation>> getNetworks() async {
-    final sessionToken = await const FlutterSecureStorage()
-        .read(key: pSessionToken)
-        .then((value) =>
-            value != null ? SessionToken.fromJson(jsonDecode(value)) : null);
-
-    return _httpClient.getNetworks(token: sessionToken?.accessToken ?? '').then(
-        (response) =>
+    return loadSessionToken().then((token) => _httpClient
+        .getNetworks(token: token)
+        .then((response) =>
             List.from(jsonDecode(response.body)['networkAccountAssociations'])
                 .map((e) => e['networkAccountAssociation'])
                 .map((e) => NetworkAccountAssociation.fromJson(e))
-                .toList());
+                .toList()));
+  }
+
+  Future<List<CommunicationMethod>> getMfaMaskedMethods(
+      {required String username}) async {
+    return _httpClient.getMaskedMfaMethods(username: username).then(
+        (response) => List.from(jsonDecode(response.body))
+            .map((e) => CommunicationMethod.fromJson(e))
+            .toList());
+  }
+
+  Future mfaChallenge({
+    required String verificationToken,
+    required String method,
+  }) {
+    return _httpClient.mfaChallenge(
+      verificationToken: verificationToken,
+      method: method,
+    );
+  }
+
+  Future mfaValidate({
+    required String otpCode,
+    required String verificationToken,
+    bool rememberUserAgent = false,
+  }) {
+    return _httpClient
+        .mfaValidate(
+          otpCode: otpCode,
+          verificationToken: verificationToken,
+          rememberUserAgent: rememberUserAgent,
+        )
+        .then((response) => SessionToken.fromJson(jsonDecode(response.body)));
+  }
+
+  Future<CAUserAccount> getAccount() async {
+    return loadSessionToken()
+        .then((token) => _httpClient.getAccount(token: token))
+        .then(
+          (response) => CAUserAccount.fromJson(
+            jsonDecode(response.body)['account'],
+          ),
+        );
+  }
+
+  Future<List<CommunicationMethod>> getMfaMethod() async {
+    return loadSessionToken()
+        .then((token) => _httpClient.getMfaMethods(token: token))
+        .then(
+          (response) => List.from(jsonDecode(response.body))
+              .map((e) => CommunicationMethod.fromJson(e))
+              .toList(),
+        );
+  }
+
+  Future<String> loadSessionToken() async {
+    return const FlutterSecureStorage()
+        .read(key: pSessionToken)
+        .then((value) =>
+            value != null ? SessionToken.fromJson(jsonDecode(value)) : null)
+        .then((value) => value?.accessToken ?? '');
   }
 }

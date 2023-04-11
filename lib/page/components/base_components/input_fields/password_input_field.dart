@@ -56,7 +56,7 @@ class PasswordInputField extends StatefulWidget {
   final Widget? suffixIcon;
 
   @override
-  _PasswordInputFieldState createState() => _PasswordInputFieldState();
+  State<PasswordInputField> createState() => _PasswordInputFieldState();
 }
 
 class _PasswordInputFieldState extends State<PasswordInputField> {

@@ -1,155 +1,113 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/network/http/model/cloud_account_info.dart';
+
+import 'package:linksys_moab/network/http/linksys_requests/data/cloud_account.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
-import 'package:linksys_moab/network/http/model/cloud_preferences.dart';
 
 class AccountState extends Equatable {
+  final String id;
+  final String username;
+  final String password;
+  final String status;
+  final CAMobile? mobile;
+  final bool mfaEnabled;
+  final bool newsletterOptIn;
+  final List<CommunicationMethod> methods;
+
   const AccountState({
     required this.id,
-    required this.groupId,
     required this.username,
+    required this.password,
     required this.status,
-    required this.type,
-    required this.authMode,
-    required this.pref,
-    required this.communicationMethods,
-    this.isBiometricEnabled = false,
+    this.mobile,
+    required this.mfaEnabled,
+    required this.newsletterOptIn,
+    required this.methods,
   });
 
-  factory AccountState.empty() {
-    return AccountState(
-      id: '',
-      groupId: '',
-      username: '',
-      status: '',
-      type: '',
-      authMode: '',
-      pref: AccountPreference.empty(),
-      communicationMethods: const [],
-    );
+  @override
+  List<Object?> get props {
+    return [
+      id,
+      username,
+      password,
+      status,
+      mobile,
+      mfaEnabled,
+      newsletterOptIn,
+      methods,
+    ];
   }
-
-  final String id;
-  final String groupId;
-  final String username;
-  final String status;
-  final String type;
-  final String authMode;
-  final AccountPreference pref;
-  final List<CommunicationMethod> communicationMethods;
-  final bool isBiometricEnabled;
 
   AccountState copyWith({
     String? id,
-    String? groupId,
     String? username,
+    String? password,
     String? status,
-    String? type,
-    String? authMode,
-    AccountPreference? pref,
-    List<CommunicationMethod>? communicationMethods,
-    bool? isBiometricEnabled,
+    CAMobile? mobile,
+    bool? mfaEnabled,
+    bool? newsletterOptIn,
+    List<CommunicationMethod>? methods,
   }) {
     return AccountState(
       id: id ?? this.id,
-      groupId: groupId ?? this.groupId,
       username: username ?? this.username,
+      password: password ?? this.password,
       status: status ?? this.status,
-      type: type ?? this.type,
-      authMode: authMode ?? this.authMode,
-      pref: pref ?? this.pref,
-      communicationMethods: communicationMethods ?? this.communicationMethods,
-      isBiometricEnabled: isBiometricEnabled ?? this.isBiometricEnabled,
+      mobile: mobile ?? this.mobile,
+      mfaEnabled: mfaEnabled ?? this.mfaEnabled,
+      newsletterOptIn: newsletterOptIn ?? this.newsletterOptIn,
+      methods: methods ?? this.methods,
     );
   }
 
-  AccountState copyWithAccountInfo(
-      {required CloudAccountInfo info, bool isBiometricEnabled = false}) {
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'username': username,
+      'password': password,
+      'status': status,
+      'mobile': mobile?.toJson(),
+      'mfaEnabled': mfaEnabled,
+      'newsletterOptIn': newsletterOptIn,
+      'methods': methods.map((method) => method.toJson()).toList(),
+    };
+  }
+
+  factory AccountState.fromJson(Map<String, dynamic> json) {
     return AccountState(
-      id: info.id,
-      groupId: '',
-      username: info.username,
-      status: info.status,
-      type: info.type,
-      authMode: info.authenticationMode,
-      pref: AccountPreference.fromCloud(info.preferences),
-      communicationMethods: info.communicationMethods,
-      isBiometricEnabled: isBiometricEnabled,
+      id: json['id'],
+      username: json['username'],
+      password: json['password'],
+      status: json['status'],
+      mobile: json['mobile'] != null ? CAMobile.fromJson(json['mobile']) : null,
+      mfaEnabled: json['mfaEnabled'],
+      newsletterOptIn: json['newsletterOptIn'],
+      methods: (json['methods'] as List<dynamic>)
+          .map((method) => CommunicationMethod.fromJson(method))
+          .toList(),
     );
   }
 
-  AccountState copyWithCreateAccountVerified(
-      {required CloudAccountVerifyInfo info, bool isBiometricEnabled = false}) {
+  factory AccountState.empty() => const AccountState(
+        id: '',
+        username: '',
+        password: '',
+        status: '',
+        mfaEnabled: false,
+        newsletterOptIn: false,
+        methods: [],
+      );
+
+  factory AccountState.fromCloudAccount(CAUserAccount userAccount) {
     return AccountState(
-      id: info.id,
-      groupId: '',
-      username: info.username,
-      status: info.status,
-      type: info.type,
-      authMode: info.authenticationMode,
-      pref: AccountPreference.empty(),
-      communicationMethods: const [],
-      isBiometricEnabled: isBiometricEnabled,
-    );
+        id: userAccount.accountId,
+        username: userAccount.username,
+        password: '',
+        status: userAccount.status,
+        mfaEnabled: userAccount.preferences?.mfaEnabled ?? false,
+        newsletterOptIn: userAccount.preferences?.newsletterOptIn == 'true',
+        mobile: userAccount.preferences?.mobile,
+        methods: const []);
   }
-
-  @override
-  List<Object?> get props => [
-        id,
-        groupId,
-        username,
-        status,
-        type,
-        authMode,
-        pref,
-        communicationMethods,
-        isBiometricEnabled,
-      ];
-}
-
-class AccountPreference extends Equatable {
-  const AccountPreference({
-    required this.isoLanguageCode,
-    required this.isoCountryCode,
-    required this.timeZone,
-    this.marketingOptIn = false,
-  });
-
-  factory AccountPreference.empty() {
-    return const AccountPreference(
-      isoLanguageCode: '',
-      isoCountryCode: '',
-      timeZone: '',
-    );
-  }
-
-  factory AccountPreference.fromCloud(CloudPreferences pref) {
-    return AccountPreference(
-        isoLanguageCode: pref.isoLanguageCode,
-        isoCountryCode: pref.isoCountryCode,
-        timeZone: pref.timeZone);
-  }
-
-  final String isoLanguageCode;
-  final String isoCountryCode;
-  final String timeZone;
-  final bool marketingOptIn;
-
-  AccountPreference copyWith({
-    String? isoLanguageCode,
-    String? isoCountryCode,
-    String? timeZone,
-    bool? marketingOptIn,
-  }) {
-    return AccountPreference(
-      isoLanguageCode: isoLanguageCode ?? this.isoLanguageCode,
-      isoCountryCode: isoCountryCode ?? this.isoCountryCode,
-      timeZone: timeZone ?? this.timeZone,
-      marketingOptIn: marketingOptIn ?? this.marketingOptIn,
-    );
-  }
-
-  @override
-  List<Object?> get props =>
-      [isoLanguageCode, isoCountryCode, timeZone, marketingOptIn];
 }

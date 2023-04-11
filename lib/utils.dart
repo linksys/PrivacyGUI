@@ -6,7 +6,6 @@ import 'dart:typed_data';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
@@ -233,9 +232,9 @@ class Utils {
     };
   }
 
-  static Future<String> getTimeZone() async {
-    return await FlutterNativeTimezone.getLocalTimezone();
-  }
+  // static Future<String> getTimeZone() async {
+  //   return await FlutterNativeTimezone.getLocalTimezone();
+  // }
 
   static String getLanguageCode() {
     List<String> localeNames = Platform.localeName.split('_');

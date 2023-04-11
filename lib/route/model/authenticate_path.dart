@@ -88,7 +88,10 @@ class SelectPhoneRegionCodePath extends AuthenticatePath with ReturnablePath {
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
 
-class AuthCloudLoginWithPasswordPath extends AuthenticatePath {}
+class AuthCloudLoginWithPasswordPath extends AuthenticatePath {
+  @override
+  PageConfig get pageConfig => super.pageConfig..ignoreAuthChanged = false;
+}
 
 class AuthCloudForgotPasswordPath extends AuthenticatePath {}
 

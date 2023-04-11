@@ -140,8 +140,11 @@ Widget _app() {
               )),
       BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
       BlocProvider(
-          create: (BuildContext context) =>
-              OtpCubit(otpRepository: context.read<OtpRepository>())),
+        create: (BuildContext context) => OtpCubit(
+          otpRepository: context.read<OtpRepository>(),
+          repository: context.read<LinksysCloudRepository>(),
+        ),
+      ),
       BlocProvider(
           create: (BuildContext context) =>
               SetupBloc(routerRepository: context.read<RouterRepository>())),
@@ -156,7 +159,7 @@ Widget _app() {
               NodeCubit(context.read<RouterRepository>())),
       BlocProvider(
           create: (BuildContext context) =>
-              AccountCubit(repository: context.read<CloudAccountRepository>())),
+              AccountCubit(repository: context.read<LinksysCloudRepository>())),
       BlocProvider(create: (BuildContext context) => ContentFilterCubit()),
       BlocProvider(create: (BuildContext context) => SecurityBloc()),
       BlocProvider(

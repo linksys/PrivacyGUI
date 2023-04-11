@@ -75,15 +75,15 @@ class _InputNewPasswordViewState extends State<InputNewPasswordView> {
   }
 
   _applyPassword() {
-    String token = widget.args['token'] ?? '';
-    context
-        .read<AccountCubit>()
-        .changePassword(passwordController.text, token)
-        .then((value) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Change password success!!')),);
-      NavigationCubit.of(context).popTo(AccountDetailPath());
-    }).onError((error, stackTrace) => _handleError(error));
+    // String token = widget.args['token'] ?? '';
+    // context
+    //     .read<AccountCubit>()
+    //     .changePassword(passwordController.text, token)
+    //     .then((value) {
+    //   ScaffoldMessenger.of(context)
+    //       .showSnackBar(SnackBar(content: Text('Change password success!!')),);
+    //   NavigationCubit.of(context).popTo(AccountDetailPath());
+    // }).onError((error, stackTrace) => _handleError(error));
   }
 
   _handleError(Object? error) {

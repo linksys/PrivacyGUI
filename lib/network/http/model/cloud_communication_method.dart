@@ -28,7 +28,7 @@ class CommunicationMethod extends Equatable {
   const CommunicationMethod({
     this.id,
     required this.method,
-    required this.targetValue,
+    required this.target,
     this.phone,
   });
 
@@ -36,14 +36,16 @@ class CommunicationMethod extends Equatable {
     return CommunicationMethod(
         id: json['id'],
         method: json['method'],
-        targetValue: json['targetValue'],
-        phone: json['phone'] == null ? null : CloudPhoneModel.fromJson(json['phone']));
+        target: json['target'],
+        phone: json['phone'] == null
+            ? null
+            : CloudPhoneModel.fromJson(json['phone']));
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> json = {
       'method': method,
-      'targetValue': targetValue,
+      'target': target,
     };
     if (id != null) {
       json.addAll({'id': id});
@@ -56,9 +58,9 @@ class CommunicationMethod extends Equatable {
 
   final String? id;
   final String method;
-  final String targetValue;
+  final String target;
   final CloudPhoneModel? phone;
 
   @override
-  List<Object?> get props => [id, method, targetValue, phone];
+  List<Object?> get props => [id, method, target, phone];
 }

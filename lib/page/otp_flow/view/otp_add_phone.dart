@@ -68,7 +68,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
           regionCode: currentRegion.countryCode);
       final phoneMethod = CommunicationMethod(
           method: CommunicationMethodType.sms.name.toUpperCase(),
-          targetValue: phoneNumber.e164,
+          target: phoneNumber.e164,
           phone: CloudPhoneModel(
             country: currentRegion.countryCode,
             countryCallingCode: '+${currentRegion.countryCallingCode}',
@@ -78,21 +78,23 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
       context.read<OtpCubit>().onInputOtp(method: phoneMethod);
       final OtpFunction function = widget.args['function'] ?? OtpFunction.send;
       if (function == OtpFunction.add) {
-        String token = await context
-            .read<AccountCubit>()
-            .startAddCommunicationMethod(
-              CommunicationMethod(
-                method: CommunicationMethodType.sms.name.toUpperCase(),
-                targetValue: phoneNumber.e164,
-                phone: CloudPhoneModel(
-                  country: currentRegion.countryCode,
-                  countryCallingCode: '+${currentRegion.countryCallingCode}',
-                  phoneNumber: phoneNumber.nationalNumber,
-                ),
-              ),
-            );
-        context.read<OtpCubit>().updateToken(token);
-        context.read<OtpCubit>().authChallenge(method: phoneMethod, token: token);
+        // String token = await context
+        //     .read<AccountCubit>()
+        //     .startAddCommunicationMethod(
+        //       CommunicationMethod(
+        //         method: CommunicationMethodType.sms.name.toUpperCase(),
+        //         target: phoneNumber.e164,
+        //         phone: CloudPhoneModel(
+        //           country: currentRegion.countryCode,
+        //           countryCallingCode: '+${currentRegion.countryCallingCode}',
+        //           phoneNumber: phoneNumber.nationalNumber,
+        //         ),
+        //       ),
+        //     );
+        // context.read<OtpCubit>().updateToken(token);
+        // context
+        //     .read<OtpCubit>()
+        //     .authChallenge(method: phoneMethod, token: token);
       }
       NavigationCubit.of(context).push(OtpInputCodePath()
         ..next = widget.next

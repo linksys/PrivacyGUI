@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
-import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
@@ -9,7 +7,6 @@ import 'package:linksys_moab/page/components/base_components/progress_bars/full_
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
-
 
 // class OtpFlowView extends ArgumentsStatelessView {
 //   const OtpFlowView({Key? key, super.args, super.next}) : super(key: key);
@@ -39,16 +36,20 @@ class OtpFlowViewState extends State<OtpFlowView> {
   initState() {
     _cubit = context.read<OtpCubit>();
     _cubit.init();
-    OtpFunction _function = OtpFunction.send;
+    OtpFunction function = OtpFunction.send;
     if (widget.args.containsKey('function')) {
-      _function = widget.args['function'] as OtpFunction;
+      function = widget.args['function'] as OtpFunction;
     }
     CommunicationMethod? selected = widget.args['selected'];
-    final List<CommunicationMethod> _methods = widget.args['commMethods'] ?? [];
-    final String _vToken = widget.args['token'] ?? '';
-    Future.delayed(Duration(milliseconds: 100), () {
-      _cubit.updateToken(_vToken);
-      _cubit.updateOtpMethods(_methods, _function);
+    final List<CommunicationMethod>? methods = widget.args['commMethods'];
+    final String vToken = widget.args['token'] ?? '';
+    final String username = widget.args['username'] ?? '';
+    final future = username.isEmpty
+        ? Future.delayed(const Duration(milliseconds: 100))
+        : _cubit.fetchMaskedMethods(username: username);
+    future.then((_) {
+      _cubit.updateToken(vToken);
+      _cubit.updateOtpMethods(methods, function);
       if (selected != null) {
         _cubit.onInputOtp(method: selected);
       }

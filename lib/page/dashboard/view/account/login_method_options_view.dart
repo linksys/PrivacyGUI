@@ -33,10 +33,10 @@ class _LoginMethodOptionsViewState extends State<LoginMethodOptionsView> {
   @override
   void initState() {
     super.initState();
-    _choose = context.read<AccountCubit>().state.authMode.toLowerCase() ==
-            AuthenticationType.passwordless.name
-        ? LoginMethod.otp
-        : LoginMethod.password;
+    // _choose = context.read<AccountCubit>().state.authMode.toLowerCase() ==
+    //         AuthenticationType.passwordless.name
+    //     ? LoginMethod.otp
+    //     : LoginMethod.password;
     initPassword();
   }
 
@@ -80,9 +80,9 @@ class _LoginMethodOptionsViewState extends State<LoginMethodOptionsView> {
               onChanged: (LoginMethod? value) {
                 setState(() {
                   _choose = value;
-                  if (state.authMode.toUpperCase() == 'PASSWORD') {
-                    changeAuthModePrepare(context, state);
-                  }
+                  // if (state.authMode.toUpperCase() == 'PASSWORD') {
+                  //   changeAuthModePrepare(context, state);
+                  // }
                 });
               },
               activeColor: Colors.black,
@@ -164,27 +164,27 @@ class _LoginMethodOptionsViewState extends State<LoginMethodOptionsView> {
 
   Future<void> changeAuthModePrepare(
       BuildContext context, AccountState state) async {
-    String mode = state.authMode.toUpperCase() == 'PASSWORD'
-        ? AuthenticationType.passwordless.name.toUpperCase()
-        : AuthenticationType.password.name.toUpperCase();
-    String? password;
-    if(state.authMode.toUpperCase() == 'PASSWORD') {
-      const storage = FlutterSecureStorage();
-      final pwd = await storage.read(key: linksysPrefCloudAccountPasswordKey);
-      if(pwd != null) {
-        password = pwd;
-      }
-    }
-    ChangeAuthenticationModeChallenge challenge = await context
-        .read<AuthBloc>()
-        .changeAuthModePrepare(state.id, password, mode);
-    NavigationCubit.of(context).push(OTPViewPath()
-      ..next = ChangeAuthModePasswordPath()
-      ..args = {
-        'commMethods': context.read<AccountCubit>().state.communicationMethods,
-        'token': challenge.token,
-        'changeModeTo' : mode
-      });
+    // String mode = state.authMode.toUpperCase() == 'PASSWORD'
+    //     ? AuthenticationType.passwordless.name.toUpperCase()
+    //     : AuthenticationType.password.name.toUpperCase();
+    // String? password;
+    // if(state.authMode.toUpperCase() == 'PASSWORD') {
+    //   const storage = FlutterSecureStorage();
+    //   final pwd = await storage.read(key: linksysPrefCloudAccountPasswordKey);
+    //   if(pwd != null) {
+    //     password = pwd;
+    //   }
+    // }
+    // ChangeAuthenticationModeChallenge challenge = await context
+    //     .read<AuthBloc>()
+    //     .changeAuthModePrepare(state.id, password, mode);
+    // NavigationCubit.of(context).push(OTPViewPath()
+    //   ..next = ChangeAuthModePasswordPath()
+    //   ..args = {
+    //     'commMethods': context.read<AccountCubit>().state.communicationMethods,
+    //     'token': challenge.token,
+    //     'changeModeTo' : mode
+    //   });
   }
 
   Future<void> initPassword() async {

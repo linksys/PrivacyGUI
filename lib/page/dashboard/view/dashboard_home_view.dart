@@ -53,13 +53,9 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
               begin: const Offset(1, 0),
               end: const Offset(-1.5, 0),
               duration: const Duration(milliseconds: 5000),
-              child: Positioned(
-                right: -0, // negative value to position the image out of screen
-                top: -50, // negative value to position the image out of screen
-                child: Image(
-                  image: AppTheme.of(context).images.dashboardBg,
-                  fit: BoxFit.cover, // to cover the entire screen
-                ),
+              child: Image(
+                image: AppTheme.of(context).images.dashboardBg,
+                fit: BoxFit.cover, // to cover the entire screen
               ),
             ),
             EnabledOpacityWidget(

@@ -17,7 +17,9 @@ void main() {
   const appSecret =
       'laxhR+c4Z61RU0yQhM22zro0Ej4XqKSjjQFY9nOQaWH/TnS91JIaVy7Ckq1eNSH1uHjFE0HthsLF7Bdt4tpTUXbteU4N7M9/RG1LIQ9AD8wAsp2zKR8KZE5RDRiwd6s2pgcL4SPCcEj8W4lecG1ynqS10R5sW8RiPZFjfmLtBSY=';
 
-  group('GROUP 1 - test create account preparation and send auth challenge in dev', () {
+  group(
+      'GROUP 1 - test create account preparation and send auth challenge in dev',
+      () {
     final client = DevTestableClient();
     test('STEP 1 - post account preparation', () async {
       final response = await client.createAccountPreparation(username);
@@ -29,7 +31,7 @@ void main() {
         token,
         const CommunicationMethod(
           method: "EMAIL",
-          targetValue: username,
+          target: username,
         ),
       );
       print('STEP2: ${response.statusCode}, ${response.body}');
@@ -44,7 +46,9 @@ void main() {
     });
   });
 
-  group('GROUP 2 - test auth challenge verify and actually create account in dev', () {
+  group(
+      'GROUP 2 - test auth challenge verify and actually create account in dev',
+      () {
     String token = '6594B83C-4E42-4512-9B9A-D9590DA45FDA';
     test('STEP 4 - auth challenge verify', () async {
       String code = '8325'; // PUT received code from email/SMS here

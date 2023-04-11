@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -8,19 +7,20 @@ import 'package:linksys_moab/network/http/model/cloud_communication_method.dart'
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/route/_route.dart';
-
-
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class OTPMethodSelectorView extends ArgumentsStatefulView {
   const OTPMethodSelectorView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  _OTPMethodSelectorViewState createState() => _OTPMethodSelectorViewState();
+  State<OTPMethodSelectorView> createState() => _OTPMethodSelectorViewState();
 }
 
 class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
@@ -32,12 +32,12 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
   }
 
   Widget _contentView(OtpState state) {
-    return BasePageView(
-      child: BasicLayout(
+    return StyledLinksysPageView(
+      child: LinksysBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: BasicHeader(
-          title: _createTitle(state),
-          description: _createDescription(state),
+        header: LinksysText.screenName(
+          _createTitle(state),
+          // description: _createDescription(state),
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,14 +47,17 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: state.methods.length,
                 itemBuilder: (context, index) => GestureDetector(
-                      key: Key(state.methods[index].method == CommunicationMethodType.email.name.toUpperCase()
+                      key: Key(state.methods[index].method ==
+                              CommunicationMethodType.email.name.toUpperCase()
                           ? 'otp_method_selector_view_button_email'
                           : 'otp_method_selector_view_button_sms'),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: SelectableItem(
-                          text: state.methods[index].method == CommunicationMethodType.email.name.toUpperCase()
-                              ? state.methods[index].targetValue
+                          text: state.methods[index].method ==
+                                  CommunicationMethodType.email.name
+                                      .toUpperCase()
+                              ? state.methods[index].target
                               : state.methods[index].method,
                           isSelected:
                               state.selectedMethod == state.methods[index],
@@ -73,7 +76,8 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
             PrimaryButton(
               key: const Key('otp_method_selector_view_button_continue'),
               text: !state.isSendFunction() &&
-                      state.selectedMethod?.method == CommunicationMethodType.sms.name.toUpperCase()
+                      state.selectedMethod?.method ==
+                          CommunicationMethodType.sms.name.toUpperCase()
                   ? getAppLocalizations(context).add_phone_number
                   : getAppLocalizations(context).text_continue,
               onPress: () {

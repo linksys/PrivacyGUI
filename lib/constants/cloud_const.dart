@@ -61,20 +61,31 @@ const kDeviceService = '/cloud/device-service';
 
 /// Cloud API Endpoint
 // Authorization service
-const kOauthEndpoint = '$kAuthorizationService/oauth/v2/token?grant_type=$kVarGrantType';
+const kOauthEndpoint =
+    '$kAuthorizationService/oauth/v2/token?grant_type=$kVarGrantType';
 const kOauthChallengeEndpoint = '$kAuthorizationService/oauth/challenge';
 // User service
-const kUserAccountEndpoint = '$kUserService/rest/v2/accounts/u?purpose=CLOUD_ACCT_SETUP';
-const kUserAccountPreferencesEndpoint = '$kUserService/rest/accounts/self/preferences';
+const kUserAccountEndpoint =
+    '$kUserService/rest/v2/accounts/u?purpose=CLOUD_ACCT_SETUP';
+const kUserAccountPreferencesEndpoint =
+    '$kUserService/rest/accounts/self/preferences';
 const kUserPhoneCallingCodesEndpoint = '$kUserService/rest/phonecallingcodes';
 const kUserPhoneNumberCheckEndpoint = '$kUserService/rest/phonenumbercheck';
+const kUserGetMaskedMfaMethods =
+    '$kUserService/rest/accounts/$kVarUsername/masked-mfa-methods';
+const kUserGetMfaMethods = '$kUserService/rest/accounts/self/mfa-methods';
+const kUserGetAccount = '$kUserService/rest/accounts/self';
 // Device service
 const kDeviceNetworksEndpoint = '$kDeviceService/rest/networks/$kVarNetworkId';
 const kAccountNetworksEndpoint = '$kDeviceService/rest/accounts/self/networks';
 
 // Client type id/secret
-final kClientTypeId = Platform.isIOS ? 'E918E731-F2CD-4A85-8CFA-1CD8C495939B' : 'B2101C5E-0E0C-4094-8BC5-6B97DE71C5BB';
-final kClientSecret = Platform.isIOS ? "I6BVSkCrAvQCR6FjOxfxVDdhGcqTsJr2" : 'wm2HbbWXEx1zWPsdg2Rskzjr9Ps6GQ8y';
+final kClientTypeId = Platform.isIOS
+    ? 'E918E731-F2CD-4A85-8CFA-1CD8C495939B'
+    : 'B2101C5E-0E0C-4094-8BC5-6B97DE71C5BB';
+final kClientSecret = Platform.isIOS
+    ? "I6BVSkCrAvQCR6FjOxfxVDdhGcqTsJr2"
+    : 'wm2HbbWXEx1zWPsdg2Rskzjr9Ps6GQ8y';
 
 // Header keys
 const kHeaderClientTypeId = 'X-Linksys-Client-Type-Id';
@@ -99,7 +110,7 @@ const moabAppClientId = '991490F1-AD1D-47E0-81AD-190B11757252'; // TODO fake
 const moabCloudConfigHost = 'https://config.linksys.cloud/';
 // TODO #1 update resource url
 String get moabCloudResourceHost =>
-    'https://${cloudEnvTarget == CloudEnvironment.prod ? '' : (cloudEnvTarget.name  + '-')}resource.linksys.cloud';
+    'https://${cloudEnvTarget == CloudEnvironment.prod ? '' : (cloudEnvTarget.name + '-')}resource.linksys.cloud';
 
 const configFileName = 'environment.json';
 const allConfigFileName = 'all-environments.json';

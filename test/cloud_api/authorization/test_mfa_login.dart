@@ -47,8 +47,8 @@ void main() {
       final host = kCloudEnvironmentConfigQa[kCloudBase] as String;
       final client = TestableHttpClient('https://$host');
 
-      final response = await client.mfaChallenge(
-          target: email, verificationToken: verificationToken!);
+      final response =
+          await client.mfaChallenge(verificationToken: verificationToken!);
       //RESPONSE: 200, {"status":"OK","method":"EMAIL"}
     });
   });

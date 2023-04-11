@@ -43,8 +43,10 @@ void main() {
         "appType": "DISTRIBUTION",
         "smartDeviceType": "PRODUCTION",
         "platform": "GCM",
-        "deviceToken": "fls5MCxWT5WjM3j_Z7PsRd:APA91bH6cJ6y8wZsN4hOL66N7oN7mJEc-DuLRFnkJFAFVlAE_g09Kbcy2y2aqR2rrdbMRg1b6PG9tYQw_xs2wfB09XwWvT6V0y6f9wXHbIUPfQPfB7Bxxj1nHnrX8Ee2CCSYP5Qv8nl7",
-        "snsArn": "arn:aws:sns:ap-northeast-1:193713173851:endpoint/GCM/MoabLocalFCM/8e84557d-2af7-3508-a736-ead83177f377",
+        "deviceToken":
+            "fls5MCxWT5WjM3j_Z7PsRd:APA91bH6cJ6y8wZsN4hOL66N7oN7mJEc-DuLRFnkJFAFVlAE_g09Kbcy2y2aqR2rrdbMRg1b6PG9tYQw_xs2wfB09XwWvT6V0y6f9wXHbIUPfQPfB7Bxxj1nHnrX8Ee2CCSYP5Qv8nl7",
+        "snsArn":
+            "arn:aws:sns:ap-northeast-1:193713173851:endpoint/GCM/MoabLocalFCM/8e84557d-2af7-3508-a736-ead83177f377",
         "smartDeviceStatus": "ACTIVE"
       };
 
@@ -74,7 +76,7 @@ void main() {
       const CloudPhoneModel phone = CloudPhoneModel(
           country: 'TW', countryCallingCode: '+886', phoneNumber: '91234567');
       const CommunicationMethod method = CommunicationMethod(
-          method: 'SMS', targetValue: '+88691234567', phone: phone);
+          method: 'SMS', target: '+88691234567', phone: phone);
       final jsonObj = method.toJson();
       expect(jsonObj['method'], 'SMS');
       expect(jsonObj['targetValue'], '+88691234567');
@@ -85,7 +87,7 @@ void main() {
 
       final convertBack = CommunicationMethod.fromJson(jsonObj);
       expect(convertBack.method, 'SMS');
-      expect(convertBack.targetValue, '+88691234567');
+      expect(convertBack.target, '+88691234567');
       expect(convertBack.phone?.country, 'TW');
       expect(convertBack.phone?.countryCallingCode, '+886');
       expect(convertBack.phone?.phoneNumber, '91234567');
@@ -95,7 +97,7 @@ void main() {
     test('test CloudCommunicationMethod - method = EMAIL', () async {
       const CommunicationMethod method = CommunicationMethod(
         method: 'EMAIL',
-        targetValue: 'austin.chang@linksys.com',
+        target: 'austin.chang@linksys.com',
       );
       final jsonObj = method.toJson();
       expect(jsonObj['method'], 'EMAIL');
@@ -104,7 +106,7 @@ void main() {
 
       final convertBack = CommunicationMethod.fromJson(jsonObj);
       expect(convertBack.method, 'EMAIL');
-      expect(convertBack.targetValue, 'austin.chang@linksys.com');
+      expect(convertBack.target, 'austin.chang@linksys.com');
       expect(convertBack.phone, null);
     });
 
@@ -197,7 +199,8 @@ void main() {
       const jsonStr =
           '{"id": "47d9cce2-eb15-4339-9535-8dfba4423d21","username": "peter.jhong.belkin@gmail.com","usernames": ["peter.jhong.belkin@gmail.com"],"status": "ACTIVE","type": "NORMAL","authenticationMode": "PASSWORDLESS","createdAt": "2022-07-29T02:25:15.095864413Z","updatedAt": "2022-07-29T02:25:15.095864413Z"}';
 
-      final CloudAccountInfo info = CloudAccountInfo.fromJson(jsonDecode(jsonStr));
+      final CloudAccountInfo info =
+          CloudAccountInfo.fromJson(jsonDecode(jsonStr));
 
       expect(info.id, '47d9cce2-eb15-4339-9535-8dfba4423d21');
       expect(info.username, 'peter.jhong.belkin@gmail.com');

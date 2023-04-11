@@ -56,8 +56,12 @@ class SetEnableBiometrics extends AuthEvent {
 class OnRequestSession extends AuthEvent {}
 
 class CloudLogin extends AuthEvent {
-  CloudLogin({required this.sessionToken});
+  CloudLogin({
+    required this.sessionToken,
+    required this.password,
+  });
   final SessionToken sessionToken;
+  final String password;
 }
 
 class LocalLogin extends AuthEvent {

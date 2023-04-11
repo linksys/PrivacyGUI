@@ -78,12 +78,12 @@ class _CloudPasswordValidationViewState
   }
 
   _verifyPassword() {
-    context
-        .read<AccountCubit>()
-        .verifyPassword(passwordController.text)
-        .then((value) => NavigationCubit.of(context)
-            .push(InputNewPasswordPath()..args = {'token': value}))
-        .onError((error, stackTrace) => _handleError(error));
+    // context
+    //     .read<AccountCubit>()
+    //     .verifyPassword(passwordController.text)
+    //     .then((value) => NavigationCubit.of(context)
+    //         .push(InputNewPasswordPath()..args = {'token': value}))
+    //     .onError((error, stackTrace) => _handleError(error));
   }
 
   _handleError(Object? error) {

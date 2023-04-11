@@ -56,7 +56,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   }
 
   void createOrderToCloud() async {
-    String? productListingId = Platform.isIOS ? state.subscriptionProductDetails?.firstWhere((product) => product.channel.family == 'APPLE').id : state.subscriptionProductDetails?.firstWhere((product) => product.channel.family == 'GOOGLE')?.id;
+    String? productListingId = Platform.isIOS ? state.subscriptionProductDetails?.firstWhere((product) => product.channel.family == 'APPLE').id : state.subscriptionProductDetails?.firstWhere((product) => product.channel.family == 'GOOGLE').id;
     if(productListingId == null) {
       return;
     }
