@@ -1,12 +1,12 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/util/string_mapping.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class ConnectionTypeSelectionView extends ArgumentsStatefulView {
   const ConnectionTypeSelectionView({super.key, super.next, super.args});
@@ -30,26 +30,116 @@ class _ConnectionTypeSelectionViewState
     super.initState();
   }
 
+  Widget _buildPanel(String supportedType) {
+    final connectionType = toConnectionTypeData(context, supportedType);
+    return AppPanelWithTrailWidget(
+      title: connectionType.title,
+      description: connectionType.description,
+      trailing: Center(
+        child: connectionType.type == _selected
+            ? AppIcon.regular(
+                icon: AppTheme.of(context).icons.characters.checkDefault,
+              )
+            : null,
+      ),
+      onTap: _disabled.contains(connectionType.type)
+          ? null
+          : () {
+              setState(() {
+                _selected = connectionType.type;
+              });
+              NavigationCubit.of(context).popWithResult(_selected);
+            },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BasePageView.onDashboardSecondary(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        // iconTheme:
-        // IconThemeData(color: Theme.of(context).colorScheme.primary),
-        elevation: 0,
-        title: Text(
-          getAppLocalizations(context).connection_type,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-          ),
+    List<Widget> supportedList = _supportedList
+        .map((e) => toConnectionTypeData(context, e))
+        .map((connectionType) {
+      return AppPanelWithTrailWidget(
+        title: connectionType.title,
+        description: connectionType.description,
+        trailing: Center(
+          child: connectionType.type == _selected
+              ? AppIcon.regular(
+                  icon: AppTheme.of(context).icons.characters.checkDefault,
+                )
+              : null,
         ),
-      ),
-      child: BasicLayout(
+        onTap: _disabled.contains(connectionType.type)
+            ? null
+            : () {
+                setState(() {
+                  _selected = connectionType.type;
+                });
+                NavigationCubit.of(context).popWithResult(_selected);
+              },
+      );
+    }).toList();
+    return StyledLinksysPageView(
+      scrollable: true,
+      title: getAppLocalizations(context).connection_type,
+      child: LinksysBasicLayout(
         content: Column(
           children: [
-            box24(),
+            const LinksysGap.semiBig(),
+
+            // TODO: Need to fix
+
+            // for (String supportedType in _supportedList)
+            //   _buildPanel(supportedType),
+
+            // _buildPanel(_supportedList[0]),
+            // _buildPanel(_supportedList[1]),
+            // _buildPanel(_supportedList[2]),
+            // _buildPanel(_supportedList[3]),
+            // _buildPanel(_supportedList[4]),
+            // _buildPanel(_supportedList[5]),
+
+            // SizedBox(
+            //   height: (174.0) * _supportedList.length,
+            //   child: ListView.builder(
+            //     shrinkWrap: true,
+            //     physics: const NeverScrollableScrollPhysics(),
+            //     itemCount: _supportedList.length,
+            //     itemBuilder: (context, index) =>
+            //         _buildPanel(_supportedList[index]),
+            //   ),
+            // ),
+
+            // ..._supportedList
+            //     .map((e) => toConnectionTypeData(context, e))
+            //     .map((connectionType) {
+            //   // return AppSimplePanel(
+            //   //   title: connectionType.title,
+            //   //   description: connectionType.description,
+            //   // );
+
+            //   return AppPanelWithTrailWidget(
+            //     title: connectionType.title,
+            //     description: connectionType.description,
+            //     trailing: Center(
+            //       child: connectionType.type == _selected
+            //           ? AppIcon.regular(
+            //               icon: AppTheme.of(context)
+            //                   .icons
+            //                   .characters
+            //                   .checkDefault,
+            //             )
+            //           : null,
+            //     ),
+            //     onTap: _disabled.contains(connectionType.type)
+            //         ? null
+            //         : () {
+            //             setState(() {
+            //               _selected = connectionType.type;
+            //             });
+            //             NavigationCubit.of(context).popWithResult(_selected);
+            //           },
+            //   );
+
             ..._supportedList
                 .map((e) => toConnectionTypeData(context, e))
                 .map((connectionType) {
@@ -57,11 +147,16 @@ class _ConnectionTypeSelectionViewState
                 title: Text(connectionType.title),
                 subtitle: Text(connectionType.description),
                 trailing: SizedBox(
-                  child: connectionType.type == _selected
-                      ? Image.asset('assets/images/icon_check_black.png')
-                      : null,
                   height: 36,
                   width: 36,
+                  child: connectionType.type == _selected
+                      ? AppIcon(
+                          icon: AppTheme.of(context)
+                              .icons
+                              .characters
+                              .checkDefault,
+                        )
+                      : null,
                 ),
                 contentPadding: const EdgeInsets.only(bottom: 24),
                 enabled: !_disabled.contains(connectionType.type),

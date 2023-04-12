@@ -9,6 +9,7 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
+import 'package:linksys_widgets/widgets/input_field/app_password_field.dart';
 
 import '../../../bloc/auth/bloc.dart';
 import '../../../bloc/auth/state.dart';
@@ -58,10 +59,9 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
             const SizedBox(
               height: 37,
             ),
-            PasswordInputField.withValidator(
-              titleText: getAppLocalizations(context).enter_password,
+            AppPasswordField.withValidator(
+              headerText: getAppLocalizations(context).enter_password,
               controller: _passwordController,
-              isError: _errorReason.isNotEmpty,
               errorText: _checkErrorReason(),
               onChanged: (value) {
                 setState(() {
@@ -170,7 +170,8 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
       setState(() {
         _errorReason = e.code;
       });
-    } else { // Unknown error or error parsing
+    } else {
+      // Unknown error or error parsing
       logger.d('Unknown error: $e');
     }
   }

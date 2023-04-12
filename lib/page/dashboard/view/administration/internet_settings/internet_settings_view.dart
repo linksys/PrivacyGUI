@@ -1,13 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
+import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
@@ -16,6 +14,12 @@ import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/model/administration_path.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/string_mapping.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/input_field/app_password_field.dart';
+import 'package:linksys_widgets/widgets/input_field/app_text_field.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'bloc/cubit.dart';
 import 'bloc/state.dart';
@@ -103,98 +107,90 @@ class _InternetSettingsContentViewState
   Widget build(BuildContext context) {
     return BlocBuilder<InternetSettingsCubit, InternetSettingsState>(
         builder: (context, state) {
-      return BasePageView(
-        padding: EdgeInsets.zero,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          // iconTheme:
-          // IconThemeData(color: Theme.of(context).colorScheme.primary),
-          elevation: 0,
-          title: Text(
-            getAppLocalizations(context).ip_details,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
+      return StyledLinksysPageView(
+        padding: const LinksysEdgeInsets.zero(),
+        scrollable: true,
+        title: getAppLocalizations(context).ip_details,
+        actions: [
+          LinksysTertiaryButton(
+            getAppLocalizations(context).save,
+            onTap: () {},
           ),
-          actions: [
-            SimpleTextButton(
-              text: getAppLocalizations(context).save,
-              onPressed: () {},
-            ),
-          ],
-        ),
-        child: BasicLayout(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+        child: LinksysBasicLayout(
           content: Column(
             children: [
               if (!_isBehindRouter)
                 Container(
                   width: double.infinity,
                   height: 100,
-                  decoration: BoxDecoration(color: Colors.black26),
+                  decoration: BoxDecoration(
+                      color: AppTheme.of(context).colors.ctaPrimaryDisable),
                   alignment: Alignment.center,
-                  child: Text(
-                    'To change these settings. connect to {SSID}',
-                    style: Theme.of(context).textTheme.headline2,
+                  child: LinksysText.descriptionMain(
+                    'To change these settings. connect to ${context.read<NetworkCubit>().state.selected?.radioInfo?.first.settings.ssid ?? ' '}',
                   ),
                 ),
-              Stack(
-                children: [
-                  Column(
-                    children: [
+              AppPadding(
+                padding: const LinksysEdgeInsets.semiBig(),
+                child: Stack(
+                  children: [
+                    Column(
+                      children: [
+                        _buildSegmentController(state),
+                        const LinksysGap.semiBig(),
+                        _buildSegment(state),
+                        const LinksysGap.semiBig(),
+                        _buildAdditionalSettings(state),
+                      ],
+                    ),
+                    if (!_isBehindRouter)
                       Container(
-                        padding: EdgeInsets.all(24),
-                        width: double.infinity,
-                        child: CupertinoSlidingSegmentedControl<
-                            InternetSettingsViewType>(
-                          backgroundColor:
-                              const Color.fromRGBO(211, 211, 211, 1.0),
-                          thumbColor: const Color.fromRGBO(248, 248, 248, 1.0),
-                          groupValue: _selected,
-                          onValueChanged: (InternetSettingsViewType? value) {
-                            if (value != null) {
-                              setState(() {
-                                _selected = value;
-                                switch (value) {
-                                  case InternetSettingsViewType.ipv4:
-                                    break;
-                                  case InternetSettingsViewType.ipv6:
-                                    break;
-                                }
-                              });
-                            }
-                          },
-                          children: {
-                            InternetSettingsViewType.ipv4: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              child:
-                                  Text(getAppLocalizations(context).label_ipv4),
-                            ),
-                            InternetSettingsViewType.ipv6: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              child:
-                                  Text(getAppLocalizations(context).label_ipv6),
-                            ),
-                          },
-                        ),
-                      ),
-                      _buildSegment(state),
-                      box24(),
-                      _buildAdditionalSettings(state),
-                    ],
-                  ),
-                  if (!_isBehindRouter)
-                    Container(
-                      decoration: BoxDecoration(color: Color(0x88aaaaaa)),
-                    )
-                ],
+                        decoration:
+                            const BoxDecoration(color: Color(0x88aaaaaa)),
+                      )
+                  ],
+                ),
               ),
             ],
           ),
         ),
       );
     });
+  }
+
+  Widget _buildSegmentController(InternetSettingsState state) {
+    return SizedBox(
+      width: double.infinity,
+      child: CupertinoSlidingSegmentedControl<InternetSettingsViewType>(
+        backgroundColor: const Color.fromRGBO(211, 211, 211, 1.0),
+        thumbColor: const Color.fromRGBO(248, 248, 248, 1.0),
+        groupValue: _selected,
+        onValueChanged: (InternetSettingsViewType? value) {
+          if (value != null) {
+            setState(() {
+              _selected = value;
+              switch (value) {
+                case InternetSettingsViewType.ipv4:
+                  break;
+                case InternetSettingsViewType.ipv6:
+                  break;
+              }
+            });
+          }
+        },
+        children: {
+          InternetSettingsViewType.ipv4: AppPadding.semiSmall(
+            child: LinksysText.descriptionMain(
+                getAppLocalizations(context).label_ipv4),
+          ),
+          InternetSettingsViewType.ipv6: AppPadding.semiSmall(
+            child: LinksysText.descriptionMain(
+                getAppLocalizations(context).label_ipv6),
+          ),
+        },
+      ),
+    );
   }
 
   Widget _buildSegment(InternetSettingsState state) {
@@ -208,13 +204,13 @@ class _InternetSettingsContentViewState
       title: getAppLocalizations(context).additional_setting,
       content: Column(
         children: [
-          administrationTwoLineTile(
-            title: Text(getAppLocalizations(context).mtu),
-            value: Text(state.mtu == 0
+          AppPanelWithInfo(
+            title: getAppLocalizations(context).mtu,
+            description: state.mtu == 0
                 ? getAppLocalizations(context).auto
-                : getAppLocalizations(context).manual),
-            icon: Image.asset('assets/images/icon_chevron.png'),
-            onPress: () async {
+                : getAppLocalizations(context).manual,
+            infoText: ' ',
+            onTap: () async {
               int? value =
                   await NavigationCubit.of(context).pushAndWait(MTUPickerPath()
                     ..args = {
@@ -225,18 +221,19 @@ class _InternetSettingsContentViewState
               }
             },
           ),
-          administrationTile(
-            title: Text(getAppLocalizations(context).mac_address_clone),
-            value: Text(
-              state.macClone
-                  ? getAppLocalizations(context).on
-                  : getAppLocalizations(context).off,
-            ),
-            icon: Image.asset('assets/images/icon_chevron.png'),
-            onPress: () async {
+          AppPanelWithInfo(
+            title: getAppLocalizations(context).mac_address_clone,
+            description: state.macClone
+                ? getAppLocalizations(context).on
+                : getAppLocalizations(context).off,
+            infoText: ' ',
+            onTap: () async {
               String? mac = await NavigationCubit.of(context).pushAndWait(
                   MACClonePath()
-                    ..args = {'enabled': state.macClone, 'macAddress': state.macCloneAddress});
+                    ..args = {
+                      'enabled': state.macClone,
+                      'macAddress': state.macCloneAddress
+                    });
               if (mac != null) {
                 final enabled = mac.isEmpty;
                 final macAddress = mac;
@@ -251,14 +248,12 @@ class _InternetSettingsContentViewState
   Widget _buildIPv4Segment(InternetSettingsState state) {
     return Column(
       children: [
-        administrationTwoLineTile(
-          title: Text(getAppLocalizations(context).connection_type),
-          value: Text(
-              toConnectionTypeData(context, state.ipv4ConnectionType).title),
-          icon: Image.asset('assets/images/icon_chevron.png'),
-          background: Colors.transparent,
-          padding: EdgeInsets.symmetric(horizontal: 24),
-          onPress: () async {
+        AppPanelWithInfo(
+          title: getAppLocalizations(context).connection_type,
+          description:
+              toConnectionTypeData(context, state.ipv4ConnectionType).title,
+          infoText: ' ',
+          onTap: () async {
             String? select = await NavigationCubit.of(context)
                 .pushAndWait(ConnectionTypeSelectionPath()
                   ..args = {
@@ -295,140 +290,127 @@ class _InternetSettingsContentViewState
   }
 
   Widget _buildDHCPSettings(InternetSettingsState state) {
-    return Center();
+    return const Center();
   }
 
   Widget _buildPPPoESettings(InternetSettingsState state) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InputField(
-            titleText: getAppLocalizations(context).username,
-            controller: _pppoeUsernameController,
-            customPrimaryColor: Colors.black,
-          ),
-          box8(),
-          InputField(
-            titleText: getAppLocalizations(context).password,
-            controller: _pppoePasswordController,
-            customPrimaryColor: Colors.black,
-          ),
-          box8(),
-          InputField(
-            titleText: getAppLocalizations(context).vlan_id,
-            controller: _pppoeVLANIDController,
-            customPrimaryColor: Colors.black,
-          ),
-          box8(),
-          Text(getAppLocalizations(context).vlan_id_desc),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppTextField(
+          headerText: getAppLocalizations(context).username,
+          hintText: getAppLocalizations(context).username,
+          controller: _pppoeUsernameController,
+        ),
+        const LinksysGap.semiSmall(),
+        AppPasswordField(
+          headerText: getAppLocalizations(context).password,
+          hintText: getAppLocalizations(context).password,
+          controller: _pppoePasswordController,
+        ),
+        const LinksysGap.semiSmall(),
+        AppTextField(
+          headerText: getAppLocalizations(context).vlan_id,
+          hintText: getAppLocalizations(context).vlan_id,
+          controller: _pppoeVLANIDController,
+        ),
+        const LinksysGap.semiSmall(),
+        LinksysText.descriptionSub(getAppLocalizations(context).vlan_id_desc),
+      ],
     );
   }
 
   Widget _buildStaticSettings(InternetSettingsState state) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        children: [
-          InputField(
-            titleText: getAppLocalizations(context).internet_ipv4_address,
-            controller: _staticIpAddressController,
-            customPrimaryColor: Colors.black,
-          ),
-          box8(),
-          InputField(
-            titleText: getAppLocalizations(context).subnet_mask,
-            controller: _staticSubnetController,
-            customPrimaryColor: Colors.black,
-          ),
-          box8(),
-          InputField(
-            titleText: getAppLocalizations(context).default_gateway,
-            controller: _staticGatewayController,
-            customPrimaryColor: Colors.black,
-          ),
-          box8(),
-          InputField(
-            titleText: getAppLocalizations(context).dns1,
-            controller: _staticDns1Controller,
-            customPrimaryColor: Colors.black,
-          ),
-        ],
-      ),
+    return Column(
+      children: [
+        AppTextField(
+          headerText: getAppLocalizations(context).internet_ipv4_address,
+          hintText: getAppLocalizations(context).internet_ipv4_address,
+          controller: _staticIpAddressController,
+        ),
+        const LinksysGap.semiSmall(),
+        AppTextField(
+          headerText: getAppLocalizations(context).subnet_mask,
+          hintText: getAppLocalizations(context).subnet_mask,
+          controller: _staticSubnetController,
+        ),
+        const LinksysGap.semiSmall(),
+        AppTextField(
+          headerText: getAppLocalizations(context).default_gateway,
+          hintText: getAppLocalizations(context).default_gateway,
+          controller: _staticGatewayController,
+        ),
+        const LinksysGap.semiSmall(),
+        AppTextField(
+          headerText: getAppLocalizations(context).dns1,
+          hintText: getAppLocalizations(context).dns1,
+          controller: _staticDns1Controller,
+        ),
+      ],
     );
   }
 
   Widget _buildPPTPSettings(InternetSettingsState state) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        children: [
-          InputField(
-            titleText: getAppLocalizations(context).username,
-            controller: _pptpUsernameController,
-            customPrimaryColor: Colors.black,
-          ),
-          box8(),
-          InputField(
-            titleText: getAppLocalizations(context).password,
-            controller: _pptpPasswordController,
-            customPrimaryColor: Colors.black,
-          ),
-          box8(),
-          InputField(
-            titleText: getAppLocalizations(context).server_ipv4_address,
-            controller: _pptpServerIpController,
-            customPrimaryColor: Colors.black,
-          ),
-        ],
-      ),
+    return Column(
+      children: [
+        AppTextField(
+          headerText: getAppLocalizations(context).username,
+          hintText: getAppLocalizations(context).username,
+          controller: _pptpUsernameController,
+        ),
+        const LinksysGap.semiSmall(),
+        AppPasswordField(
+          headerText: getAppLocalizations(context).password,
+          hintText: getAppLocalizations(context).password,
+          controller: _pptpPasswordController,
+        ),
+        const LinksysGap.semiSmall(),
+        AppTextField(
+          headerText: getAppLocalizations(context).server_ipv4_address,
+          hintText: getAppLocalizations(context).server_ipv4_address,
+          controller: _pptpServerIpController,
+        ),
+      ],
     );
   }
 
   Widget _buildL2TPSettings(InternetSettingsState state) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        children: [
-          InputField(
-            titleText: getAppLocalizations(context).username,
-            controller: _l2tpUsernameController,
-            customPrimaryColor: Colors.black,
-          ),
-          box8(),
-          InputField(
-            titleText: getAppLocalizations(context).password,
-            controller: _l2tpPasswordController,
-            customPrimaryColor: Colors.black,
-          ),
-          box8(),
-          InputField(
-            titleText: getAppLocalizations(context).server_ipv4_address,
-            controller: _l2tpServerIpController,
-            customPrimaryColor: Colors.black,
-          ),
-        ],
-      ),
+    return Column(
+      children: [
+        AppTextField(
+          headerText: getAppLocalizations(context).username,
+          hintText: getAppLocalizations(context).username,
+          controller: _l2tpUsernameController,
+        ),
+        const LinksysGap.semiSmall(),
+        AppPasswordField(
+          headerText: getAppLocalizations(context).password,
+          hintText: getAppLocalizations(context).password,
+          controller: _l2tpPasswordController,
+        ),
+        const LinksysGap.semiSmall(),
+        AppTextField(
+          headerText: getAppLocalizations(context).server_ipv4_address,
+          hintText: getAppLocalizations(context).server_ipv4_address,
+          controller: _l2tpServerIpController,
+        ),
+      ],
     );
   }
 
   Widget _buildBridgeModeSettings(InternetSettingsState state) {
-    return Center();
+    return const Center();
   }
 
   Widget _buildIPv6Segment(InternetSettingsState state) {
     return Column(
       children: [
-        administrationTwoLineTile(
-          title: Text(getAppLocalizations(context).connection_type),
-          value: Text(
-              toConnectionTypeData(context, state.ipv6ConnectionType).title),
-          icon: Image.asset('assets/images/icon_chevron.png'),
-          padding: EdgeInsets.symmetric(horizontal: 24),
-          onPress: () async {
+        AppPanelWithInfo(
+          title: getAppLocalizations(context).connection_type,
+          description:
+              toConnectionTypeData(context, state.ipv6ConnectionType).title,
+          infoText: ' ',
+          onTap: () async {
             final disabled = state.supportedIPv6ConnectionType
                 .where((ipv6) => !state.supportedWANCombinations.any(
                     (combine) =>
@@ -447,26 +429,25 @@ class _InternetSettingsContentViewState
             }
           },
         ),
-        administrationTwoLineTile(
-          title: Text(getAppLocalizations(context).ipv6_automatic),
-          value: Text(state.isIPv6AutomaticEnabled
+        AppPanelWithInfo(
+          title: getAppLocalizations(context).ipv6_automatic,
+          description: state.isIPv6AutomaticEnabled
               ? getAppLocalizations(context).enabled
-              : getAppLocalizations(context).disabled),
-          icon: Image.asset('assets/images/icon_chevron.png'),
-          padding: EdgeInsets.symmetric(horizontal: 24),
-          onPress: () {},
+              : getAppLocalizations(context).disabled,
+          infoText: ' ',
+          onTap: () {},
         ),
-        administrationTwoLineTile(
-          title: Text(getAppLocalizations(context).duid),
-          value: Text(state.duid),
-          icon: Image.asset('assets/images/icon_chevron.png'),
-          padding: EdgeInsets.symmetric(horizontal: 24),
+        AppPanelWithInfo(
+          title: getAppLocalizations(context).duid,
+          description: state.duid,
+          infoText: ' ',
+          onTap: () {},
         ),
-        administrationTwoLineTile(
-          title: Text(getAppLocalizations(context).sixth_tunnel),
-          value: Text('Disabled'),
-          icon: Image.asset('assets/images/icon_chevron.png'),
-          padding: EdgeInsets.symmetric(horizontal: 24),
+        AppPanelWithInfo(
+          title: getAppLocalizations(context).sixth_tunnel,
+          description: 'Disabled',
+          infoText: ' ',
+          onTap: () {},
         ),
       ],
     );

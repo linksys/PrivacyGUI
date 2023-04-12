@@ -10,7 +10,8 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/input_field/password_input_field.dart';
+import 'package:linksys_widgets/widgets/input_field/app_password_field.dart';
+import 'package:linksys_widgets/widgets/input_field/app_text_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -101,7 +102,7 @@ class _RouterPasswordContentViewState extends State<RouterPasswordContentView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const LinksysGap.regular(),
-          LinksysPasswordInputField(
+          AppPasswordField(
             withValidator: state.hasEdited,
             validations: validations,
             headerText: getAppLocalizations(context).router_password,
@@ -122,7 +123,7 @@ class _RouterPasswordContentViewState extends State<RouterPasswordContentView> {
             },
           ),
           const LinksysGap.big(),
-          LinksysInputField(
+          AppTextField(
             headerText: getAppLocalizations(context).password_hint,
             hintText: 'Password hint',
             controller: _hintController,
@@ -149,7 +150,7 @@ class _RouterPasswordContentViewState extends State<RouterPasswordContentView> {
           LinksysText.descriptionMain(
               getAppLocalizations(context).create_router_password_description),
           const LinksysGap.big(),
-          LinksysPasswordInputField.withValidator(
+          AppPasswordField.withValidator(
             validations: validations,
             headerText: getAppLocalizations(context).router_password,
             hintText: 'Router password',
@@ -168,7 +169,7 @@ class _RouterPasswordContentViewState extends State<RouterPasswordContentView> {
             },
           ),
           const LinksysGap.big(),
-          LinksysInputField(
+          AppTextField(
             headerText: getAppLocalizations(context).password_hint,
             hintText: 'Password hint',
             controller: _hintController,

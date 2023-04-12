@@ -11,7 +11,6 @@ import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/input_field/password_input_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:linksys_moab/route/model/_model.dart';
@@ -85,7 +84,7 @@ class _LoginTraditionalPasswordViewState extends State<CloudLoginPasswordView> {
           children: [
             const LinksysGap.big(),
             LinksysText.descriptionMain(_username),
-            LinksysPasswordInputField(
+            AppPasswordField(
               key: const Key('login_password_view_input_field_password'),
               // headerText: getAppLocalizations(context).password,
               hintText: getAppLocalizations(context).password,

@@ -5,16 +5,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/router/port_range_triggering_rule.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
-import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/port_range_triggering/bloc/port_range_triggering_rule_cubit.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/input_field/app_text_field.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class PortRangeTriggeringRuleView extends ArgumentsStatelessView {
   const PortRangeTriggeringRuleView({super.key, super.next, super.args});
@@ -44,7 +44,6 @@ class _AddRuleContentViewState
     extends State<PortRangeTriggeringRuleContentView> {
   late final PortRangeTriggeringRuleCubit _cubit;
 
-  bool _isBehindRouter = false;
   StreamSubscription? _subscription;
 
   final TextEditingController _ruleNameController = TextEditingController();
@@ -64,12 +63,7 @@ class _AddRuleContentViewState
     _cubit = context.read<PortRangeTriggeringRuleCubit>();
     _subscription = context.read<ConnectivityCubit>().stream.listen((state) {
       logger.d('IP detail royterType: ${state.connectivityInfo.routerType}');
-      _isBehindRouter =
-          state.connectivityInfo.routerType == RouterType.behindManaged;
     });
-    _isBehindRouter =
-        context.read<ConnectivityCubit>().state.connectivityInfo.routerType ==
-            RouterType.behindManaged;
     _rules = widget.args['rules'] ?? [];
     final PortRangeTriggeringRule? _rule = widget.args['edit'];
     if (_rule != null) {
@@ -95,58 +89,47 @@ class _AddRuleContentViewState
   Widget build(BuildContext context) {
     return BlocBuilder<PortRangeTriggeringRuleCubit,
         PortRangeTriggeringRuleState>(builder: (context, state) {
-      return BasePageView(
-        padding: EdgeInsets.zero,
+      return StyledLinksysPageView(
         scrollable: true,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          // iconTheme:
-          // IconThemeData(color: Theme.of(context).colorScheme.primary),
-          elevation: 0,
-          title: Text(
-            getAppLocalizations(context).single_port_forwarding,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          actions: [
-            SimpleTextButton(
-              text: getAppLocalizations(context).save,
-              onPressed: () {
-                final rule = PortRangeTriggeringRule(
-                    isEnabled: true,
-                    firstTriggerPort:
-                        int.parse(_firstTriggerPortController.text),
-                    lastTriggerPort: int.parse(_lastTriggerPortController.text),
-                    firstForwardedPort:
-                        int.parse(_firstForwardedPortController.text),
-                    lastForwardedPort:
-                        int.parse(_lastForwardedPortController.text),
-                    description: _ruleNameController.text);
-                _cubit.save(rule).then((value) {
-                  if (value) {
-                    if (_cubit.isEdit()) {
-                      showSuccessSnackBar(
-                          context, getAppLocalizations(context).rule_updated);
-                    } else {
-                      showSuccessSnackBar(
-                          context, getAppLocalizations(context).rule_added);
-                    }
-
-                    NavigationCubit.of(context).popWithResult(true);
+        title: getAppLocalizations(context).single_port_forwarding,
+        actions: [
+          LinksysTertiaryButton(
+            getAppLocalizations(context).save,
+            onTap: () {
+              final rule = PortRangeTriggeringRule(
+                  isEnabled: true,
+                  firstTriggerPort: int.parse(_firstTriggerPortController.text),
+                  lastTriggerPort: int.parse(_lastTriggerPortController.text),
+                  firstForwardedPort:
+                      int.parse(_firstForwardedPortController.text),
+                  lastForwardedPort:
+                      int.parse(_lastForwardedPortController.text),
+                  description: _ruleNameController.text);
+              _cubit.save(rule).then((value) {
+                if (value) {
+                  if (_cubit.isEdit()) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      AppToastHelp.positiveToast(context,
+                          text: getAppLocalizations(context).rule_updated),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      AppToastHelp.positiveToast(context,
+                          text: getAppLocalizations(context).rule_added),
+                    );
                   }
-                });
-              },
-            ),
-          ],
-        ),
-        child: BasicLayout(
-          crossAxisAlignment: CrossAxisAlignment.start,
+
+                  NavigationCubit.of(context).popWithResult(true);
+                }
+              });
+            },
+          ),
+        ],
+        child: LinksysBasicLayout(
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              box24(),
+              const LinksysGap.semiBig(),
               if (state is EditPortRangeTriggeringRule)
                 ..._buildEditContents(state)
               else
@@ -164,18 +147,21 @@ class _AddRuleContentViewState
 
   List<Widget> _buildEditContents(EditPortRangeTriggeringRule state) {
     return [
-      administrationTile(
-          title: title(getAppLocalizations(context).rule_enabled),
-          value: Switch.adaptive(
-              value: state.rule.isEnabled, onChanged: (value) {})),
+      AppPanelWithSwitch(
+        value: state.rule.isEnabled,
+        title: getAppLocalizations(context).rule_enabled,
+        onChangedEvent: (value) {},
+      ),
       ...buildInputForms(),
-      SimpleTextButton(
-        text: getAppLocalizations(context).delete_rule,
-        onPressed: () {
+      LinksysTertiaryButton(
+        getAppLocalizations(context).delete_rule,
+        onTap: () {
           _cubit.delete().then((value) {
             if (value) {
-              showSuccessSnackBar(
-                  context, getAppLocalizations(context).rule_deleted);
+              ScaffoldMessenger.of(context).showSnackBar(
+                AppToastHelp.positiveToast(context,
+                    text: getAppLocalizations(context).rule_deleted),
+              );
               NavigationCubit.of(context).popWithResult(true);
             }
           });
@@ -186,34 +172,28 @@ class _AddRuleContentViewState
 
   List<Widget> buildInputForms() {
     return [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: InputField(
-            titleText: getAppLocalizations(context).rule_name,
-            hintText: getAppLocalizations(context).rule_name,
-            customPrimaryColor: Colors.black,
-            controller: _ruleNameController),
-      ),
-      box8(),
+      AppTextField(
+          headerText: getAppLocalizations(context).rule_name,
+          hintText: getAppLocalizations(context).rule_name,
+          controller: _ruleNameController),
+      const LinksysGap.semiSmall(),
       administrationSection(
         title: getAppLocalizations(context).triggered_range,
         content: Column(
           children: [
-            box16(),
-            InputField(
-                titleText: getAppLocalizations(context).start_port,
+            const LinksysGap.regular(),
+            AppTextField(
+                headerText: getAppLocalizations(context).start_port,
                 hintText: getAppLocalizations(context).end_port,
-                customPrimaryColor: Colors.black,
                 inputType: TextInputType.number,
                 controller: _firstTriggerPortController),
-            box16(),
-            InputField(
-                titleText: getAppLocalizations(context).start_port,
+            const LinksysGap.regular(),
+            AppTextField(
+                headerText: getAppLocalizations(context).start_port,
                 hintText: getAppLocalizations(context).end_port,
-                customPrimaryColor: Colors.black,
                 inputType: TextInputType.number,
                 controller: _lastTriggerPortController),
-            box16(),
+            const LinksysGap.regular(),
           ],
         ),
       ),
@@ -221,21 +201,19 @@ class _AddRuleContentViewState
         title: getAppLocalizations(context).forwarded_range,
         content: Column(
           children: [
-            box16(),
-            InputField(
-                titleText: getAppLocalizations(context).start_port,
+            const LinksysGap.regular(),
+            AppTextField(
+                headerText: getAppLocalizations(context).start_port,
                 hintText: getAppLocalizations(context).end_port,
-                customPrimaryColor: Colors.black,
                 inputType: TextInputType.number,
                 controller: _firstForwardedPortController),
-            box16(),
-            InputField(
-                titleText: getAppLocalizations(context).start_port,
+            const LinksysGap.regular(),
+            AppTextField(
+                headerText: getAppLocalizations(context).start_port,
                 hintText: getAppLocalizations(context).end_port,
-                customPrimaryColor: Colors.black,
                 inputType: TextInputType.number,
                 controller: _lastForwardedPortController),
-            box16(),
+            const LinksysGap.regular(),
           ],
         ),
       ),

@@ -13,7 +13,6 @@ import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
-
 class CreateAccountPasswordView extends ArgumentsStatefulView {
   const CreateAccountPasswordView({Key? key, super.args}) : super(key: key);
 
@@ -80,6 +79,7 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
           title: 'Create a password',
         ),
         content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(
               height: 15,
@@ -107,7 +107,6 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
               onPress: _onNextAction,
             ),
           ],
-          crossAxisAlignment: CrossAxisAlignment.start,
         ),
         crossAxisAlignment: CrossAxisAlignment.start,
       ),

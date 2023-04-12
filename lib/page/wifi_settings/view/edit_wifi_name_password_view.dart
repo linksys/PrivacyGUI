@@ -9,7 +9,8 @@ import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
-import 'package:linksys_widgets/widgets/input_field/password_input_field.dart';
+import 'package:linksys_widgets/widgets/input_field/app_password_field.dart';
+import 'package:linksys_widgets/widgets/input_field/app_text_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -119,7 +120,7 @@ class _EditWifiNamePasswordViewState extends State<EditWifiNamePasswordView> {
             child: LinksysBasicLayout(
               content: Column(
                 children: [
-                  LinksysInputField(
+                  AppTextField(
                     headerText: getAppLocalizations(context).wifi_name,
                     controller: nameController,
                     onChanged: _onSSIDChanged,
@@ -127,7 +128,7 @@ class _EditWifiNamePasswordViewState extends State<EditWifiNamePasswordView> {
                   const SizedBox(
                     height: 26,
                   ),
-                  LinksysPasswordInputField(
+                  AppPasswordField(
                     headerText: getAppLocalizations(context).wifi_password,
                     controller: passwordController,
                     // isError: isPasswordInvalid,

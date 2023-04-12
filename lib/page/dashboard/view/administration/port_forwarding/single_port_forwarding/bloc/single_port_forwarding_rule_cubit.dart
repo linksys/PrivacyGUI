@@ -9,7 +9,8 @@ import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
 part 'single_port_forwarding_rule_state.dart';
 
-class SinglePortForwardingRuleCubit extends Cubit<SinglePortForwardingRuleState> {
+class SinglePortForwardingRuleCubit
+    extends Cubit<SinglePortForwardingRuleState> {
   late InputValidator _localIpValidator;
 
   SinglePortForwardingRuleCubit({required RouterRepository repository})
@@ -23,7 +24,8 @@ class SinglePortForwardingRuleCubit extends Cubit<SinglePortForwardingRuleState>
   }
 
   goEdit(List<SinglePortForwardingRule> rules, SinglePortForwardingRule rule) {
-    fetch().then((value) => emit(EditSinglePortForwardingRule(rules: rules, rule: rule)));
+    fetch().then((value) =>
+        emit(EditSinglePortForwardingRule(rules: rules, rule: rule)));
   }
 
   Future fetch() async {

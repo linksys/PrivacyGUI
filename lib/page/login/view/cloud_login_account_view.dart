@@ -16,6 +16,7 @@ import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/input_field/app_text_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -112,7 +113,7 @@ class LoginCloudAccountState extends State<CloudLoginAccountView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const LinksysGap.regular(),
-              LinksysInputField(
+              AppTextField(
                 key: const Key('login_view_input_field_email'),
                 headerText: getAppLocalizations(context).email,
                 hintText: getAppLocalizations(context).email,

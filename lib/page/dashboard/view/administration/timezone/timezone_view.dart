@@ -8,7 +8,6 @@ import 'package:linksys_moab/page/dashboard/view/administration/timezone/bloc/cu
 import 'package:linksys_moab/page/dashboard/view/administration/timezone/bloc/state.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/timezone.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/page/components/base_components/input_fields/mac_form_field.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
 
 class MACInputField extends StatelessWidget {
   const MACInputField({
@@ -22,15 +24,15 @@ class MACInputField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        titleText.isEmpty ? const Center() : Padding(
-          child:  Text(
-            titleText,
-            style: Theme.of(context).textTheme.headline4?.copyWith(
-              color: Theme.of(context).primaryColor
-            ),
-          ),
-          padding: const EdgeInsets.only(bottom: 8),
-        ),
+        titleText.isEmpty
+            ? const Center()
+            : AppPadding(
+                padding:
+                    const LinksysEdgeInsets.only(bottom: AppGapSize.semiSmall),
+                child: LinksysText.mainTitle(
+                  titleText,
+                ),
+              ),
         MACFormField(
           controller: controller,
           onChanged: onChanged,
@@ -46,8 +48,8 @@ class MACInputField extends StatelessWidget {
               Text(
                 errorText,
                 style: Theme.of(context).textTheme.bodyText1?.copyWith(
-                  color: Colors.red,
-                ),
+                      color: Colors.red,
+                    ),
               )
             ],
           ),

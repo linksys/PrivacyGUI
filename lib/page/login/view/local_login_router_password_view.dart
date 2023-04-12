@@ -6,9 +6,7 @@ import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
-import 'package:linksys_moab/network/http/model/cloud_app.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/customs/network_check_view.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
@@ -19,8 +17,7 @@ import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/input_field/password_input_field.dart';
-import 'package:linksys_widgets/widgets/page/base_page_view.dart';
+import 'package:linksys_widgets/widgets/input_field/app_password_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -105,7 +102,7 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const LinksysGap.regular(),
-          LinksysPasswordInputField(
+          AppPasswordField(
             headerText: getAppLocalizations(context).router_password,
             controller: _passwordController,
             hintText: getAppLocalizations(context).router_password,

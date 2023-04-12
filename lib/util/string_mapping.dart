@@ -44,10 +44,10 @@ ConnectionTypeData toConnectionTypeData(BuildContext context, String type) {
         type: type,
         title: getAppLocalizations(context).connection_type_automatic,
         description:
-        getAppLocalizations(context).connection_type_automatic_desc,
+            getAppLocalizations(context).connection_type_automatic_desc,
       );
     default:
-      return ConnectionTypeData(type: type, title: '', description: '');
+      return ConnectionTypeData(type: type, title: ' ', description: ' ');
   }
 }
 

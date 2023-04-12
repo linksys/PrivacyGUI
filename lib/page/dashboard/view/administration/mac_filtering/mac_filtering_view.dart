@@ -8,13 +8,16 @@ import 'package:linksys_moab/page/components/base_components/base_components.dar
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
-import '../common_widget.dart';
 import 'bloc/cubit.dart';
 
 class MacFilteringView extends ArgumentsStatelessView {
@@ -72,37 +75,21 @@ class _MacFilteringContentViewState extends State<MacFilteringContentView> {
   Widget build(BuildContext context) {
     return BlocBuilder<MacFilteringCubit, MacFilteringState>(
       builder: (context, state) {
-        return BasePageView(
-          padding: EdgeInsets.zero,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            // iconTheme:
-            // IconThemeData(color: Theme.of(context).colorScheme.primary),
-            elevation: 0,
-            title: Text(
-              getAppLocalizations(context).ip_details,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          child: BasicLayout(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        return StyledLinksysPageView(
+          scrollable: true,
+          title: getAppLocalizations(context).ip_details,
+          child: LinksysBasicLayout(
             content: Column(
               children: [
-                box24(),
-                administrationTile(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  title: title(getAppLocalizations(context).wifi_mac_filters),
-                  value: Switch.adaptive(
-                    value: state.status != MacFilterStatus.off,
-                    onChanged: (value) {
-                      _cubit.setEnable(value);
-                    },
-                  ),
+                const LinksysGap.semiBig(),
+                AppPanelWithSwitch(
+                  value: state.status != MacFilterStatus.off,
+                  title: getAppLocalizations(context).wifi_mac_filters,
+                  onChangedEvent: (value) {
+                    _cubit.setEnable(value);
+                  },
                 ),
-                box24(),
+                const LinksysGap.semiBig(),
                 ..._buildEnabledContent(state)
               ],
             ),
@@ -115,75 +102,54 @@ class _MacFilteringContentViewState extends State<MacFilteringContentView> {
   List<Widget> _buildEnabledContent(MacFilteringState state) {
     return state.status != MacFilterStatus.off
         ? [
-            administrationTile(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                title: title(getAppLocalizations(context).access),
-                value: subTitle(state.status.name),
-                onPress: () async {
-                  final String? selected = await NavigationCubit.of(context)
-                      .pushAndWait(SimpleItemPickerPath()
-                        ..args = {
-                          'items': [
-                            Item(
-                              title: getAppLocalizations(context).allow_access,
-                              description: getAppLocalizations(context)
-                                  .allow_access_description,
-                              id: MacFilterStatus.allow.name,
-                            ),
-                            Item(
-                              title: getAppLocalizations(context).deny_access,
-                              description: getAppLocalizations(context)
-                                  .deny_access_description,
-                              id: MacFilterStatus.deny.name,
-                            ),
-                          ],
-                          'selected': state.status.name,
-                        });
-                  if (selected != null) {
-                    _cubit.setAccess(selected);
-                  }
-                }),
-            administrationTwoLineTile(
-              tileHeight: null,
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              title: Row(
-                children: [
-                  Expanded(
-                      child:
-                          Text(getAppLocalizations(context).device_ip_address)),
-                  SimpleTextButton(
-                    text: getAppLocalizations(context).select_device,
-                    padding: EdgeInsets.zero,
-                    onPressed: () async {
-                      // String? deviceIp = await NavigationCubit.of(context)
-                      //     .pushAndWait(SelectDevicePtah());
-                    },
-                  ),
-                ],
-              ),
-              value: InkWell(
+            AppPanelWithInfo(
+              title: getAppLocalizations(context).access,
+              infoText: state.status.name,
+              onTap: () async {
+                final String? selected = await NavigationCubit.of(context)
+                    .pushAndWait(SimpleItemPickerPath()
+                      ..args = {
+                        'items': [
+                          Item(
+                            title: getAppLocalizations(context).allow_access,
+                            description: getAppLocalizations(context)
+                                .allow_access_description,
+                            id: MacFilterStatus.allow.name,
+                          ),
+                          Item(
+                            title: getAppLocalizations(context).deny_access,
+                            description: getAppLocalizations(context)
+                                .deny_access_description,
+                            id: MacFilterStatus.deny.name,
+                          ),
+                        ],
+                        'selected': state.status.name,
+                      });
+                if (selected != null) {
+                  _cubit.setAccess(selected);
+                }
+              },
+            ),
+            AppPanelWithTrailWidget(
+              title: getAppLocalizations(context).device_ip_address,
+              trailing: LinksysTertiaryButton.noPadding(
+                getAppLocalizations(context).select_device,
                 onTap: () async {
-                  String? macAddress = await NavigationCubit.of(context)
-                      .pushAndWait(MacFilteringInputPath());
-                  if (macAddress != null) {
-                    // TODO query devices name and save device
-                    // showSuccessSnackBar(context, 'message');
-                  }
+                  // String? deviceIp = await NavigationCubit.of(context)
+                  //     .pushAndWait(SelectDevicePtah());
                 },
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.black,
-                      width: 1,
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(getAppLocalizations(context).enter_mac_address),
-                  ),
-                ),
               ),
+            ),
+            AppSimplePanel(
+              title: getAppLocalizations(context).enter_mac_address,
+              onTap: () async {
+                String? macAddress = await NavigationCubit.of(context)
+                    .pushAndWait(MacFilteringInputPath());
+                if (macAddress != null) {
+                  // TODO query devices name and save device
+                  // showSuccessSnackBar(context, 'message');
+                }
+              },
             ),
             _buildFilteredDevices(state),
           ]
@@ -194,15 +160,15 @@ class _MacFilteringContentViewState extends State<MacFilteringContentView> {
     return state.selectedDevices.isEmpty
         ? Expanded(
             child: Center(
-              child: subTitle(
+              child: LinksysText.descriptionSub(
                   getAppLocalizations(context).no_filtered_devices_yet),
             ),
           )
-        : administrationSection(
-            title: getAppLocalizations(context).filtered_devices,
-            content: Column(
-              children: [],
-            ),
+        : Column(
+            children: [
+              LinksysText.tags(getAppLocalizations(context).filtered_devices),
+              // Add filtered devices
+            ],
           );
   }
 }
