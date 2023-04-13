@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
-import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/provider/select_network.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
@@ -22,6 +21,12 @@ import '../../../bloc/auth/event.dart';
 import '../../../bloc/subscription/subscription_cubit.dart';
 import '../../components/styled/styled_page_view.dart';
 
+final fetchSelectNetworkProvider =
+    FutureProvider<SelectNetworkModel>((ref) async {
+  final selectNetworkRepository = ref.watch(selectNetworkRepositoryProvider);
+  return selectNetworkRepository.getUserNetworks();
+});
+
 class SelectNetworkView extends ArgumentsConsumerStatefulView {
   const SelectNetworkView({
     Key? key,
@@ -32,8 +37,6 @@ class SelectNetworkView extends ArgumentsConsumerStatefulView {
 }
 
 class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
-  // TODO: #REFACTOR : Need to refactor this page, only for demo now
-  bool isLoading = false;
   late final NetworkCubit _networkCubit;
   late final SubscriptionCubit _subscriptionCubit;
   late final NavigationNotifier _navigationNotifier;
@@ -48,24 +51,29 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
 
   @override
   Widget build(BuildContext context) {
-    return isLoading
-        ? LinksysFullScreenSpinner(
-            text: getAppLocalizations(context).processing)
-        : BlocBuilder<NetworkCubit, NetworkState>(
-            builder: (context, state) => StyledLinksysPageView(
-                  scrollable: true,
-                  isCloseStyle: true,
-                  onBackTap: () {
-                    context.read<AuthBloc>().add(Logout());
-                  },
-                  child: LinksysBasicLayout(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    content: _networkSection(state, title: 'Network'),
-                  ),
-                ));
+    return ref.watch(fetchSelectNetworkProvider).when(data: (state) {
+      return StyledLinksysPageView(
+        scrollable: true,
+        isCloseStyle: true,
+        onBackTap: () {
+          context.read<AuthBloc>().add(Logout());
+        },
+        child: LinksysBasicLayout(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          content: _networkSection(state, title: 'Network'),
+        ),
+      );
+    }, error: (error, stackTrace) {
+      return Center(
+        child: Text('Error - $error'),
+      );
+    }, loading: () {
+      return LinksysFullScreenSpinner(
+          text: getAppLocalizations(context).processing);
+    });
   }
 
-  Widget _networkSection(NetworkState state, {String title = ''}) {
+  Widget _networkSection(SelectNetworkModel state, {String title = ''}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -82,9 +90,6 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
             itemBuilder: (context, index) => InkWell(
               onTap: state.networks[index].isOnline
                   ? () async {
-                      setState(() {
-                        isLoading = true;
-                      });
                       await _networkCubit.selectNetwork(state.networks[index]);
                       await _subscriptionCubit.loadingProducts();
                       _navigationNotifier.clearAndPush(PrepareDashboardPath());
@@ -92,7 +97,8 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                   : null,
               child: AppPadding(
                 padding: const LinksysEdgeInsets.symmetric(
-                    vertical: AppGapSize.regular),
+                  vertical: AppGapSize.regular,
+                ),
                 child: Row(
                   children: [
                     Image(

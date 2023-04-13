@@ -25,12 +25,13 @@ import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/bloc/security/bloc.dart';
 import 'package:linksys_moab/constants/build_config.dart';
-import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/linksys_http_client.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/notification/notification_helper.dart';
+import 'package:linksys_moab/provider/low_level_provider.dart';
+import 'package:linksys_moab/provider/temp_global_repo.dart';
 import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
 import 'package:linksys_moab/repository/authenticate/impl/cloud_auth_repository.dart';
 import 'package:linksys_moab/repository/config/environment_repository.dart';
@@ -45,7 +46,6 @@ import 'package:linksys_moab/route/router_delegate.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/theme/responsive_theme.dart';
 import 'bloc/setup/bloc.dart';
 import 'bloc/subscription/subscription_cubit.dart';
 import 'firebase_options.dart';
@@ -105,7 +105,12 @@ void main() async {
   };
   BuildConfig.load();
   initBetterActions();
-  runApp(_app());
+  runApp(
+    ProviderScope(
+      observers: [ProviderLogger()],
+      child: _app(),
+    ),
+  );
 }
 
 final container = ProviderContainer();
