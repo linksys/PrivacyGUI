@@ -11,7 +11,6 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/input_field/password_input_field.dart';
 import 'package:styled_text/styled_text.dart';
 
 import '../../../../bloc/internet_check/cubit.dart';
@@ -117,8 +116,10 @@ class _AccountViewState extends State<AccountView> {
         title: 'Email',
         description: username,
       ),
-      LinksysPasswordInputField(
-          headerText: 'Password', controller: _passwordController),
+      AppPasswordField(
+        headerText: 'Password',
+        controller: _passwordController,
+      ),
       if (phoneNumber != null)
         AppSimplePanel(
           title: 'Phone Number',
