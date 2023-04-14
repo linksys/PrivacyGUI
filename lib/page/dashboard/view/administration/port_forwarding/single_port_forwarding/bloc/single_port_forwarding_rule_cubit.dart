@@ -11,7 +11,7 @@ part 'single_port_forwarding_rule_state.dart';
 
 class SinglePortForwardingRuleCubit
     extends Cubit<SinglePortForwardingRuleState> {
-  late InputValidator _localIpValidator;
+  InputValidator? _localIpValidator;
 
   SinglePortForwardingRuleCubit({required RouterRepository repository})
       : _repository = repository,
@@ -70,7 +70,10 @@ class SinglePortForwardingRuleCubit
   }
 
   bool isDeviceIpValidate(String ipAddress) {
-    return _localIpValidator.validate(ipAddress);
+    final localIpValidator = _localIpValidator;
+    return localIpValidator != null
+        ? localIpValidator.validate(ipAddress)
+        : false;
   }
 
   bool isEdit() {

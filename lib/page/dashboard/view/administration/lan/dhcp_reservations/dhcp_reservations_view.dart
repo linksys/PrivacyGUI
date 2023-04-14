@@ -8,6 +8,7 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/single_port_forwarding/bloc/single_port_forwarding_list_cubit.dart';
@@ -15,6 +16,8 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'bloc/dhcp_reservations_cubit.dart';
 import 'bloc/dhcp_reservations_state.dart';
@@ -47,7 +50,6 @@ class _SinglePortForwardingContentViewState
     extends State<DHCPReservationsContentView> {
   late final DHCPReservationsCubit _cubit;
 
-  bool _isBehindRouter = false;
   StreamSubscription? _subscription;
 
   @override
@@ -56,12 +58,7 @@ class _SinglePortForwardingContentViewState
     _cubit.fetch();
     _subscription = context.read<ConnectivityCubit>().stream.listen((state) {
       logger.d('IP detail royterType: ${state.connectivityInfo.routerType}');
-      _isBehindRouter =
-          state.connectivityInfo.routerType == RouterType.behindManaged;
     });
-    _isBehindRouter =
-        context.read<ConnectivityCubit>().state.connectivityInfo.routerType ==
-            RouterType.behindManaged;
 
     super.initState();
   }
@@ -76,28 +73,14 @@ class _SinglePortForwardingContentViewState
   Widget build(BuildContext context) {
     return BlocBuilder<DHCPReservationsCubit, DHCPReservationsState>(
         builder: (context, state) {
-      return BasePageView(
-        padding: EdgeInsets.zero,
+      return StyledLinksysPageView(
         scrollable: true,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          // iconTheme:
-          // IconThemeData(color: Theme.of(context).colorScheme.primary),
-          elevation: 0,
-          title: Text(
-            getAppLocalizations(context).dhcp_reservations,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        child: BasicLayout(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: getAppLocalizations(context).dhcp_reservations,
+        child: LinksysBasicLayout(
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              box24(),
+              const LinksysGap.semiBig(),
               administrationSection(
                   title: getAppLocalizations(context).reserved_addresses,
                   content: SizedBox(
@@ -105,38 +88,30 @@ class _SinglePortForwardingContentViewState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SimpleTextButton(
-                          text: getAppLocalizations(context)
-                              .add_device_reservations,
-                          onPressed: () {},
+                        LinksysTertiaryButton.noPadding(
+                          getAppLocalizations(context).add_device_reservations,
+                          onTap: () {},
                         ),
-                        box24(),
                       ],
                     ),
                   )),
+              const LinksysGap.semiBig(),
               administrationSection(
-                  title: getAppLocalizations(context).dhcp_list,
-                  headerAction: InkWell(
-                    child: Text(
-                      getAppLocalizations(context).add,
-                      style: TextStyle(color: MoabColor.primaryBlue),
+                title: getAppLocalizations(context).dhcp_list,
+                headerAction: LinksysTertiaryButton.noPadding(
+                  getAppLocalizations(context).add,
+                  onTap: () {},
+                ),
+                content: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    LinksysTertiaryButton.noPadding(
+                      getAppLocalizations(context).add_device_reservations,
+                      onTap: () {},
                     ),
-                    onTap: () {},
-                  ),
-                  content: SizedBox(
-                    width: double.infinity,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SimpleTextButton(
-                          text: getAppLocalizations(context)
-                              .add_device_reservations,
-                          onPressed: () {},
-                        ),
-                        box24(),
-                      ],
-                    ),
-                  )),
+                  ],
+                ),
+              ),
             ],
           ),
         ),

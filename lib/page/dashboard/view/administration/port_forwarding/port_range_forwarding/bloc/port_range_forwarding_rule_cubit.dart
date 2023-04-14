@@ -10,7 +10,7 @@ import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 part 'port_range_forwarding_rule_state.dart';
 
 class PortRangeForwardingRuleCubit extends Cubit<PortRangeForwardingRuleState> {
-  late InputValidator _localIpValidator;
+  InputValidator? _localIpValidator;
 
   PortRangeForwardingRuleCubit({required RouterRepository repository})
       : _repository = repository,
@@ -23,7 +23,8 @@ class PortRangeForwardingRuleCubit extends Cubit<PortRangeForwardingRuleState> {
   }
 
   goEdit(List<PortRangeForwardingRule> rules, PortRangeForwardingRule rule) {
-    fetch().then((value) => emit(EditPortRangeForwardingRule(rules: rules, rule: rule)));
+    fetch().then(
+        (value) => emit(EditPortRangeForwardingRule(rules: rules, rule: rule)));
   }
 
   Future fetch() async {
@@ -68,7 +69,10 @@ class PortRangeForwardingRuleCubit extends Cubit<PortRangeForwardingRuleState> {
   }
 
   bool isDeviceIpValidate(String ipAddress) {
-    return _localIpValidator.validate(ipAddress);
+    final localIpValidator = _localIpValidator;
+    return localIpValidator != null
+        ? localIpValidator.validate(ipAddress)
+        : false;
   }
 
   bool isEdit() {

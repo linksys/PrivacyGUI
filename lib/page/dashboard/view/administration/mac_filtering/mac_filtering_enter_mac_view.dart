@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/input_fields/mac_input_field.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';

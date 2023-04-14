@@ -55,29 +55,6 @@ class _ConnectionTypeSelectionViewState
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> supportedList = _supportedList
-        .map((e) => toConnectionTypeData(context, e))
-        .map((connectionType) {
-      return AppPanelWithTrailWidget(
-        title: connectionType.title,
-        description: connectionType.description,
-        trailing: Center(
-          child: connectionType.type == _selected
-              ? AppIcon.regular(
-                  icon: AppTheme.of(context).icons.characters.checkDefault,
-                )
-              : null,
-        ),
-        onTap: _disabled.contains(connectionType.type)
-            ? null
-            : () {
-                setState(() {
-                  _selected = connectionType.type;
-                });
-                NavigationCubit.of(context).popWithResult(_selected);
-              },
-      );
-    }).toList();
     return StyledLinksysPageView(
       scrollable: true,
       title: getAppLocalizations(context).connection_type,
@@ -85,81 +62,10 @@ class _ConnectionTypeSelectionViewState
         content: Column(
           children: [
             const LinksysGap.semiBig(),
-
-            // TODO: Need to fix
-
-            // for (String supportedType in _supportedList)
-            //   _buildPanel(supportedType),
-
-            // _buildPanel(_supportedList[0]),
-            // _buildPanel(_supportedList[1]),
-            // _buildPanel(_supportedList[2]),
-            // _buildPanel(_supportedList[3]),
-            // _buildPanel(_supportedList[4]),
-            // _buildPanel(_supportedList[5]),
-
-            // SizedBox(
-            //   height: (174.0) * _supportedList.length,
-            //   child: ListView.builder(
-            //     shrinkWrap: true,
-            //     physics: const NeverScrollableScrollPhysics(),
-            //     itemCount: _supportedList.length,
-            //     itemBuilder: (context, index) =>
-            //         _buildPanel(_supportedList[index]),
-            //   ),
-            // ),
-
-            // ..._supportedList
-            //     .map((e) => toConnectionTypeData(context, e))
-            //     .map((connectionType) {
-            //   // return AppSimplePanel(
-            //   //   title: connectionType.title,
-            //   //   description: connectionType.description,
-            //   // );
-
-            //   return AppPanelWithTrailWidget(
-            //     title: connectionType.title,
-            //     description: connectionType.description,
-            //     trailing: Center(
-            //       child: connectionType.type == _selected
-            //           ? AppIcon.regular(
-            //               icon: AppTheme.of(context)
-            //                   .icons
-            //                   .characters
-            //                   .checkDefault,
-            //             )
-            //           : null,
-            //     ),
-            //     onTap: _disabled.contains(connectionType.type)
-            //         ? null
-            //         : () {
-            //             setState(() {
-            //               _selected = connectionType.type;
-            //             });
-            //             NavigationCubit.of(context).popWithResult(_selected);
-            //           },
-            //   );
-
             ..._supportedList
                 .map((e) => toConnectionTypeData(context, e))
                 .map((connectionType) {
-              return ListTile(
-                title: Text(connectionType.title),
-                subtitle: Text(connectionType.description),
-                trailing: SizedBox(
-                  height: 36,
-                  width: 36,
-                  child: connectionType.type == _selected
-                      ? AppIcon(
-                          icon: AppTheme.of(context)
-                              .icons
-                              .characters
-                              .checkDefault,
-                        )
-                      : null,
-                ),
-                contentPadding: const EdgeInsets.only(bottom: 24),
-                enabled: !_disabled.contains(connectionType.type),
+              return InkWell(
                 onTap: _disabled.contains(connectionType.type)
                     ? null
                     : () {
@@ -168,6 +74,12 @@ class _ConnectionTypeSelectionViewState
                         });
                         NavigationCubit.of(context).popWithResult(_selected);
                       },
+                child: AppPanelWithValueCheck(
+                  title: connectionType.title,
+                  description: connectionType.description,
+                  valueText: '',
+                  isChecked: connectionType.type == _selected,
+                ),
               );
             }).toList(),
           ],

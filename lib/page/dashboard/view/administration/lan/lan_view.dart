@@ -1,24 +1,18 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/input_fields/ip_form_field.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/picker/simple_item_picker.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/dashboard/view/administration/lan/dhcp_reservations/dhcp_reservations_view.dart';
+import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/util/logger.dart';
-import 'package:linksys_moab/validator_rules/_validator_rules.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
-import '../common_widget.dart';
 import 'bloc/cubit.dart';
 import 'bloc/state.dart';
 
@@ -54,11 +48,6 @@ class _LANContentViewState extends State<LANContentView> {
   final TextEditingController _clientLeaseController = TextEditingController();
   final TextEditingController _dns1Controller = TextEditingController();
   final TextEditingController _dns2Controller = TextEditingController();
-  final TextEditingController _dns3Controller = TextEditingController();
-  final TextEditingController _winsController = TextEditingController();
-
-  bool _isBehindRouter = false;
-  StreamSubscription? _subscription;
 
   @override
   void initState() {
@@ -71,60 +60,30 @@ class _LANContentViewState extends State<LANContentView> {
       _maxNumUserController.text = '${state.maxNumUsers}';
       _clientLeaseController.text = '${state.clientLeaseTime}';
     });
-    _subscription = context.read<ConnectivityCubit>().stream.listen((state) {
-      _isBehindRouter =
-          state.connectivityInfo.routerType == RouterType.behindManaged;
-    });
-    _isBehindRouter =
-        context.read<ConnectivityCubit>().state.connectivityInfo.routerType ==
-            RouterType.behindManaged;
-
     super.initState();
-  }
-
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<LANCubit, LANState>(builder: (context, state) {
-      return BasePageView(
+      return StyledLinksysPageView(
         scrollable: true,
-        padding: EdgeInsets.zero,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          // iconTheme:
-          // IconThemeData(color: Theme.of(context).colorScheme.primary),
-          elevation: 0,
-          title: Text(
-            getAppLocalizations(context).ip_details,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          actions: [
-            SimpleTextButton(
-              text: getAppLocalizations(context).save,
-              onPressed: () {},
-            ),
-          ],
-        ),
-        child: BasicLayout(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: getAppLocalizations(context).ip_details,
+        actions: [
+          LinksysTertiaryButton(
+            getAppLocalizations(context).save,
+            onTap: () {},
+          )
+        ],
+        child: LinksysBasicLayout(
           content: Column(
             children: [
               administrationSection(
-                enabled: false,
                 title: getAppLocalizations(context).router_details,
-                contentPadding: EdgeInsets.all(24),
                 content: Column(
                   children: [
                     IPFormField(
-                      header: Text(
+                      header: LinksysText.descriptionMain(
                         getAppLocalizations(context).ip_address,
                       ),
                       controller: _ipAddressController,
@@ -135,9 +94,9 @@ class _LANContentViewState extends State<LANContentView> {
                       },
                       isError: state.errors['ipAddress'] != null,
                     ),
-                    box24(),
+                    const LinksysGap.semiBig(),
                     IPFormField(
-                      header: Text(
+                      header: LinksysText.descriptionMain(
                         getAppLocalizations(context).subnet_mask,
                       ),
                       controller: _subnetMaskController,
@@ -156,13 +115,14 @@ class _LANContentViewState extends State<LANContentView> {
                 content: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    box24(),
-                    administrationTile(
-                        title: Text(getAppLocalizations(context).dhcp_server),
-                        value: Switch.adaptive(
-                            value: state.isDHCPEnabled, onChanged: (value) {})),
+                    const LinksysGap.semiBig(),
+                    AppPanelWithSwitch(
+                      value: state.isDHCPEnabled,
+                      title: getAppLocalizations(context).dhcp_server,
+                      onChangedEvent: (value) {},
+                    ),
                     IPFormField(
-                      header: Text(
+                      header: LinksysText.descriptionMain(
                         getAppLocalizations(context).start_ip_address,
                       ),
                       controller: _firstIPController,
@@ -173,64 +133,43 @@ class _LANContentViewState extends State<LANContentView> {
                       },
                       isError: state.errors['firstIPAddress'] != null,
                     ),
-                    box24(),
-                    administrationTwoLineTile(
-                      tileHeight: null,
-                      title: Text(
-                          getAppLocalizations(context).max_number_of_users),
-                      value: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 100,
-                            child: InputField(
-                              titleText: '',
-                              controller: _maxNumUserController,
-                              customPrimaryColor: Colors.black,
-                              onFocusChanged: (focused) {
-                                if (!focused) {
-                                  _cubit
-                                      .setMaxUsers(_maxNumUserController.text);
-                                }
-                              },
-                            ),
-                          ),
-                          box24(),
-                          Text(getAppLocalizations(context)
-                              .dhcp_users_limit(state.maxNumUsers)),
-                        ],
-                      ),
-                      description: getAppLocalizations(context).dhcp_ip_range(
+                    const LinksysGap.semiBig(),
+                    AppTextField(
+                      controller: _maxNumUserController,
+                      width: 116,
+                      headerText:
+                          getAppLocalizations(context).max_number_of_users,
+                      hintText:
+                          getAppLocalizations(context).max_number_of_users,
+                      descriptionText: getAppLocalizations(context)
+                          .dhcp_users_limit(state.maxNumUsers),
+                      onFocusChanged: (focused) {
+                        if (!focused) {
+                          _cubit.setMaxUsers(_maxNumUserController.text);
+                        }
+                      },
+                    ),
+                    const LinksysGap.semiSmall(),
+                    LinksysText.descriptionSub(
+                      getAppLocalizations(context).dhcp_ip_range(
                           state.firstIPAddress, state.lastIPAddress),
+                      color: ConstantColors.baseTertiaryGray,
                     ),
-                    box24(),
-                    administrationTwoLineTile(
-                      tileHeight: null,
-                      title:
-                          Text(getAppLocalizations(context).client_lease_time),
-                      value: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 100,
-                            child: InputField(
-                              titleText: '',
-                              controller: _clientLeaseController,
-                              customPrimaryColor: Colors.black,
-                              onFocusChanged: (focused) {
-                                if (!focused) {
-                                  _cubit.setLeaseTime(
-                                      _clientLeaseController.text);
-                                }
-                              },
-                            ),
-                          ),
-                          box24(),
-                          Text(getAppLocalizations(context).minutes),
-                        ],
-                      ),
+                    const LinksysGap.semiBig(),
+                    AppTextField(
+                      controller: _clientLeaseController,
+                      width: 116,
+                      headerText:
+                          getAppLocalizations(context).client_lease_time,
+                      hintText: getAppLocalizations(context).client_lease_time,
+                      descriptionText: getAppLocalizations(context).minutes,
+                      onFocusChanged: (focused) {
+                        if (!focused) {
+                          _cubit.setLeaseTime(_clientLeaseController.text);
+                        }
+                      },
                     ),
-                    box24(),
+                    const LinksysGap.semiBig(),
                   ],
                 ),
               ),
@@ -239,12 +178,12 @@ class _LANContentViewState extends State<LANContentView> {
                 title: getAppLocalizations(context).dns_settings,
                 content: Column(
                   children: [
-                    administrationTile(
-                      title: Text(getAppLocalizations(context).dns),
-                      value: Text(state.isAutoDNS
+                    AppPanelWithInfo(
+                      title: getAppLocalizations(context).dns,
+                      infoText: state.isAutoDNS
                           ? getAppLocalizations(context).auto
-                          : getAppLocalizations(context).manual),
-                      onPress: () async {
+                          : getAppLocalizations(context).manual,
+                      onTap: () async {
                         String? result = await NavigationCubit.of(context)
                             .pushAndWait(SimpleItemPickerPath()
                               ..args = {
@@ -260,18 +199,18 @@ class _LANContentViewState extends State<LANContentView> {
                       },
                     ),
                     ..._buildDNSInputFields(state),
-                    administrationTile(
-                      title:
-                          Text(getAppLocalizations(context).dhcp_reservations),
-                      value: Center(),
-                      onPress: () {
-                        NavigationCubit.of(context).push(DHCPReservationsPath());
+                    AppPanelWithInfo(
+                      title: getAppLocalizations(context).dhcp_reservations,
+                      infoText: ' ',
+                      onTap: () {
+                        NavigationCubit.of(context)
+                            .push(DHCPReservationsPath());
                       },
                     ),
                   ],
                 ),
               ),
-              box48(),
+              const LinksysGap.extraBig(),
             ],
           ),
         ),
@@ -287,7 +226,7 @@ class _LANContentViewState extends State<LANContentView> {
     } else {
       return [
         IPFormField(
-          header: Text(
+          header: LinksysText.descriptionMain(
             getAppLocalizations(context).static_dns1,
           ),
           controller: _dns1Controller,
@@ -298,9 +237,9 @@ class _LANContentViewState extends State<LANContentView> {
           },
           isError: state.errors['dns1'] != null,
         ),
-        box24(),
+        const LinksysGap.semiBig(),
         IPFormField(
-          header: Text(
+          header: LinksysText.descriptionMain(
             getAppLocalizations(context).static_dns2_optional,
           ),
           controller: _dns2Controller,
@@ -311,7 +250,7 @@ class _LANContentViewState extends State<LANContentView> {
           },
           isError: state.errors['dns2'] != null,
         ),
-        box24(),
+        const LinksysGap.semiBig(),
       ];
     }
   }

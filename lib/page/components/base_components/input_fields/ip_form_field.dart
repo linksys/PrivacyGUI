@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
 
 class IPFormField extends StatefulWidget {
   const IPFormField({
@@ -89,7 +92,10 @@ class _IPFormFieldState extends State<IPFormField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (widget.header != null) ...[widget.header!, box8()],
+        if (widget.header != null) ...[
+          widget.header!,
+          const LinksysGap.semiSmall(),
+        ],
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -107,11 +113,10 @@ class _IPFormFieldState extends State<IPFormField> {
     );
   }
 
-  _buildDotWidget() => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: Text(
+  _buildDotWidget() => const AppPadding(
+        padding: LinksysEdgeInsets.symmetric(horizontal: AppGapSize.semiSmall),
+        child: LinksysText.screenName(
           '.',
-          style: Theme.of(context).textTheme.bodyText1?.copyWith(fontSize: 24),
         ),
       );
 
@@ -122,24 +127,27 @@ class _IPFormFieldState extends State<IPFormField> {
     bool isLast = false,
     ValueChanged<String>? onChanged,
   }) {
+    final theme = AppTheme.of(context);
     return Expanded(
       child: TextFormField(
         controller: controller,
         focusNode: focus,
         decoration: InputDecoration(
-          contentPadding: const EdgeInsets.all(8),
-          hintStyle: Theme.of(context).textTheme.bodyText1?.copyWith(
-              color: widget.isError
-                  ? Colors.red
-                  : Theme.of(context).colorScheme.surface),
+          hintStyle: AppTheme.of(context)
+              .typography
+              .inputFieldText
+              .copyWith(color: ConstantColors.textBoxTextGray),
           enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-                width: 1, color: widget.isError ? Colors.red : Colors.black),
-            borderRadius: BorderRadius.zero,
-          ),
+              borderSide: BorderSide(
+                  color: theme.colors.textBoxStrokeHovered, width: 2),
+              borderRadius: BorderRadius.zero),
           focusedBorder: OutlineInputBorder(
               borderSide: BorderSide(
-                  width: 1, color: widget.isError ? Colors.red : Colors.black),
+                  color: theme.colors.textBoxStrokeHovered, width: 2),
+              borderRadius: BorderRadius.zero),
+          disabledBorder: const OutlineInputBorder(
+              borderSide:
+                  BorderSide(color: ConstantColors.transparent, width: 2),
               borderRadius: BorderRadius.zero),
         ),
         inputFormatters: [

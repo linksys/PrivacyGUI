@@ -4,13 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/picker/simple_item_picker.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
@@ -46,7 +42,6 @@ class MacFilteringContentView extends ArgumentsStatefulView {
 class _MacFilteringContentViewState extends State<MacFilteringContentView> {
   late final MacFilteringCubit _cubit;
 
-  bool _isBehindRouter = false;
   StreamSubscription? _subscription;
 
   @override
@@ -55,12 +50,7 @@ class _MacFilteringContentViewState extends State<MacFilteringContentView> {
 
     _subscription = context.read<ConnectivityCubit>().stream.listen((state) {
       logger.d('IP detail royterType: ${state.connectivityInfo.routerType}');
-      _isBehindRouter =
-          state.connectivityInfo.routerType == RouterType.behindManaged;
     });
-    _isBehindRouter =
-        context.read<ConnectivityCubit>().state.connectivityInfo.routerType ==
-            RouterType.behindManaged;
 
     super.initState();
   }
