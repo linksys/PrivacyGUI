@@ -14,25 +14,30 @@ import 'package:shared_preferences/shared_preferences.dart';
 class JNAPSideEffect extends Equatable {
   final bool hasSideEffect;
   final String? reason;
+  final int progress;
 
   const JNAPSideEffect({
     required this.hasSideEffect,
     this.reason,
+    this.progress = 0,
   });
 
   @override
   List<Object?> get props => [
         hasSideEffect,
         reason,
+        progress,
       ];
 
   JNAPSideEffect copyWith({
     bool? hasSideEffect,
     String? reason,
+    int? progress,
   }) {
     return JNAPSideEffect(
       hasSideEffect: hasSideEffect ?? this.hasSideEffect,
       reason: reason ?? this.reason,
+      progress: progress ?? this.progress,
     );
   }
 
@@ -40,6 +45,7 @@ class JNAPSideEffect extends Equatable {
     return {
       'hasSideEffect': hasSideEffect,
       'reason': reason,
+      'progress': progress,
     };
   }
 
@@ -47,6 +53,7 @@ class JNAPSideEffect extends Equatable {
     return JNAPSideEffect(
       hasSideEffect: json['hasSideEffect'],
       reason: json['reason'],
+      progress: json['progress'],
     );
   }
 }
@@ -55,18 +62,39 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
   @override
   JNAPSideEffect build() => const JNAPSideEffect(hasSideEffect: false);
 
+  // TODO check again
+  Future handleDeviceRestart() async {
+    poll(
+      pollFunc: testRouterReconnected,
+      timeDelayStartInSec: 40,
+      retryDelayInSec: 10,
+      maxPollTimeInSec: 240,
+    );
+  }
+
   Future<JNAPSuccess> handleSideEffect(JNAPSuccess result) async {
-    logger.d('SideEffectManager: handleSideEffect: $result');
     final sideEffects = result.sideEffects ?? [];
     if (sideEffects.isEmpty) {
       state = state.copyWith(hasSideEffect: false);
       return result;
     }
+    logger.d('SideEffectManager: handleSideEffect: $result');
+
     state = state.copyWith(hasSideEffect: true, reason: sideEffects[0]);
     if (sideEffects.contains('WirelessInterruption')) {
-      return poll(pollFunc: testRouterReconnected).then((value) => result);
+      return poll(
+        pollFunc: testRouterReconnected,
+        timeDelayStartInSec: 10,
+        retryDelayInSec: 10,
+        maxPollTimeInSec: 120,
+      ).then((value) => result);
     } else {
-      return poll(pollFunc: testRouterFullyBootedUp).then((value) => result);
+      return poll(
+        pollFunc: testRouterFullyBootedUp,
+        maxRetry: 5,
+        timeDelayStartInSec: 5,
+        retryDelayInSec: 15,
+      ).then((value) => result);
     }
   }
 
@@ -77,20 +105,27 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
   Future<bool> poll({
     required Future<bool> Function() pollFunc,
     int retryDelayInSec = 5,
-    int maxRetry = 10,
-    int maxPollTimeInSec = 60,
+    int maxRetry = -1,
+    int maxPollTimeInSec = -1,
     int timeDelayStartInSec = 3,
     bool Function()? condition,
   }) async {
+    // Log poll config
+    logger.d('''Start Poll with config:
+        retry delay: $retryDelayInSec,
+        max retry: $maxRetry,
+        max poll time: $maxPollTimeInSec,
+        start time delay: $timeDelayStartInSec,
+        ''');
     int retry = 0;
     if (timeDelayStartInSec > 0) {
       await Future.delayed(Duration(seconds: timeDelayStartInSec));
     }
     final startTime = DateTime.now().millisecondsSinceEpoch;
-    while (++retry <= maxRetry) {
+    while (maxRetry == -1 || ++retry <= maxRetry) {
       logger.d('poll <$retry> times');
-      // TODO #ERRORHANDLING handle other errors - timeout error, etc...
-      final result = await pollFunc.call();
+      final result =
+          await pollFunc.call().onError((error, stackTrace) => false);
       if (result) {
         return result;
       }
@@ -98,9 +133,11 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
         break;
       }
       final currentTime = DateTime.now().millisecondsSinceEpoch;
-      if (currentTime > startTime + 60 * 1000) {
+      if (maxPollTimeInSec != -1 &&
+          currentTime > startTime + maxPollTimeInSec * 1000) {
         break;
       }
+      _updateProgress(retry, maxRetry, startTime, maxPollTimeInSec);
       await Future.delayed(Duration(seconds: retryDelayInSec));
     }
     return false;
@@ -135,6 +172,22 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
         .then(
             (value) async => (value ? await testRouterFullyBootedUp() : false))
         .onError((error, stackTrace) => false);
+  }
+
+  _updateProgress(
+    int currentRetry,
+    int maxRetry,
+    int startTime,
+    int maxPollTime,
+  ) {
+    if (maxPollTime != -1) {
+      final diff = DateTime.now().millisecondsSinceEpoch - startTime;
+      state = state.copyWith(
+          progress: ((diff / (maxPollTime * 1000)) * 100).toInt());
+    } else {
+      final diff = maxRetry - currentRetry;
+      state = state.copyWith(progress: ((diff / maxRetry) * 100).toInt());
+    }
   }
 }
 
