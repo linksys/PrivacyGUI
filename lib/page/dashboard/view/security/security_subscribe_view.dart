@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/security/bloc.dart';
 import 'package:linksys_moab/bloc/security/event.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -10,6 +11,7 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:styled_text/styled_text.dart';
 
 import '../../../../bloc/network/cubit.dart';
@@ -18,11 +20,11 @@ import '../../../../bloc/subscription/subscription_state.dart';
 import '../../../../route/model/dashboard_path.dart';
 import '../../../../util/logger.dart';
 
-class SecuritySubscribeView extends StatelessWidget {
+class SecuritySubscribeView extends ConsumerWidget {
   const SecuritySubscribeView({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BasePageView(
         scrollable: true,
         child: BasicLayout(
@@ -56,8 +58,8 @@ class SecuritySubscribeView extends StatelessWidget {
                   if (state.subscriptionOrderResponse != null &&
                       state.networkEntitlementResponse != null) {
                     context.read<SecurityBloc>().add(SetFormalActiveEvent());
-                    context
-                        .read<NavigationCubit>()
+                    ref
+                        .read(navigationsProvider.notifier)
                         .popTo(DashboardSecurityPath());
                   }
                 },

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/router/advanced_routing_rule.dart';
@@ -13,18 +14,18 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/advanced_routing/bloc/advanced_routing_rule_cubit.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/administration_path.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-class AdvancedRoutingRuleView extends ArgumentsStatelessView {
+class AdvancedRoutingRuleView extends ArgumentsConsumerStatelessView {
   const AdvancedRoutingRuleView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
-      create: (context) =>
-          AdvancedRoutingRuleCubit(repository: context.read<RouterRepository>()),
+      create: (context) => AdvancedRoutingRuleCubit(
+          repository: context.read<RouterRepository>()),
       child: AdvancedRoutingRuleContentView(
         next: super.next,
         args: super.args,
@@ -33,17 +34,16 @@ class AdvancedRoutingRuleView extends ArgumentsStatelessView {
   }
 }
 
-class AdvancedRoutingRuleContentView extends ArgumentsStatefulView {
-  const AdvancedRoutingRuleContentView(
-      {super.key, super.next, super.args});
+class AdvancedRoutingRuleContentView extends ArgumentsConsumerStatefulView {
+  const AdvancedRoutingRuleContentView({super.key, super.next, super.args});
 
   @override
-  State<AdvancedRoutingRuleContentView> createState() =>
+  ConsumerState<AdvancedRoutingRuleContentView> createState() =>
       _AddRuleContentViewState();
 }
 
 class _AddRuleContentViewState
-    extends State<AdvancedRoutingRuleContentView> {
+    extends ConsumerState<AdvancedRoutingRuleContentView> {
   late final AdvancedRoutingRuleCubit _cubit;
 
   bool _isBehindRouter = false;
@@ -91,7 +91,8 @@ class _AddRuleContentViewState
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AdvancedRoutingRuleCubit, AdvancedRoutingRuleState>(builder: (context, state) {
+    return BlocBuilder<AdvancedRoutingRuleCubit, AdvancedRoutingRuleState>(
+        builder: (context, state) {
       return BasePageView(
         scrollable: true,
         appBar: AppBar(
@@ -127,7 +128,7 @@ class _AddRuleContentViewState
                           context, getAppLocalizations(context).rule_added);
                     }
 
-                    NavigationCubit.of(context).popWithResult(true);
+                    ref.read(navigationsProvider.notifier).popWithResult(true);
                   }
                 });
               },
@@ -169,7 +170,7 @@ class _AddRuleContentViewState
             if (value) {
               showSuccessSnackBar(
                   context, getAppLocalizations(context).rule_deleted);
-              NavigationCubit.of(context).popWithResult(true);
+              ref.read(navigationsProvider.notifier).popWithResult(true);
             }
           });
         },
@@ -207,7 +208,8 @@ class _AddRuleContentViewState
         customPrimaryColor: Colors.black,
         isError: !_isDeviceIpValid,
         rightAction: () async {
-          String? deviceIp = await NavigationCubit.of(context)
+          String? deviceIp = await ref
+              .read(navigationsProvider.notifier)
               .pushAndWait(SelectDevicePtah());
         },
         onChanged: (value) {
@@ -225,8 +227,10 @@ class _AddRuleContentViewState
           title: title(getAppLocalizations(context).protocol),
           value: subTitle(getProtocolTitle(_protocol)),
           onPress: () async {
-            String? protocol = await NavigationCubit.of(context).pushAndWait(
-                SelectProtocolPath()..args = {'selected': _protocol});
+            String? protocol = await ref
+                .read(navigationsProvider.notifier)
+                .pushAndWait(
+                    SelectProtocolPath()..args = {'selected': _protocol});
             if (protocol != null) {
               setState(() {
                 _protocol = protocol;

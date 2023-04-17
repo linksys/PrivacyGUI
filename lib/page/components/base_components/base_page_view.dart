@@ -1,10 +1,10 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/route/_route.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
-
-class BasePageView extends StatelessWidget {
+class BasePageView extends ConsumerWidget {
   static const _containerPadding = EdgeInsets.fromLTRB(24, 0, 24, 30);
   static const _noPadding = EdgeInsets.all(0);
 
@@ -30,7 +30,7 @@ class BasePageView extends StatelessWidget {
         super(key: key);
 
   BasePageView.withCloseButton(
-    BuildContext context, {
+    BuildContext context, WidgetRef ref, {
     Key? key,
     this.child,
     this.padding = _containerPadding,
@@ -44,7 +44,7 @@ class BasePageView extends StatelessWidget {
           actions: [
             IconButton(
                 icon: const Icon(Icons.close),
-                onPressed: () => NavigationCubit.of(context).pop())
+                onPressed: () => ref.read(navigationsProvider.notifier).pop())
           ],
         ),
         bottomSheet = null,
@@ -73,10 +73,10 @@ class BasePageView extends StatelessWidget {
     this.padding = _containerPadding,
     this.scrollable = false,
   })  : appBar = AppBar(
-    automaticallyImplyLeading: false,
-    backgroundColor: Colors.transparent,
-    elevation: 0,
-  ),
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
         child = BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(),
@@ -105,7 +105,7 @@ class BasePageView extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: bottomSheet == null
           ? Theme.of(context).scaffoldBackgroundColor

@@ -2,9 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/utils.dart';
 
-class TimePickerView extends StatefulWidget {
+class TimePickerView extends ConsumerStatefulWidget {
   const TimePickerView({
     Key? key,
     required this.title,
@@ -19,10 +20,10 @@ class TimePickerView extends StatefulWidget {
   final Function(Duration)? onChanged;
 
   @override
-  State<TimePickerView> createState() => _TimePickerViewState();
+  ConsumerState<TimePickerView> createState() => _TimePickerViewState();
 }
 
-class _TimePickerViewState extends State<TimePickerView> {
+class _TimePickerViewState extends ConsumerState<TimePickerView> {
   late Duration _current;
 
   _androidSelectTime(BuildContext context) async {
@@ -67,7 +68,6 @@ class _TimePickerViewState extends State<TimePickerView> {
                   mode: CupertinoDatePickerMode.time,
                   use24hFormat: false,
                   onDateTimeChanged: (DateTime newTime) {
-
                     setState(() => _current =
                         Duration(hours: newTime.hour, minutes: newTime.minute));
                     widget.onChanged?.call(_current);

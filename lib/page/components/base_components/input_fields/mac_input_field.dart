@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/page/components/base_components/input_fields/mac_form_field.dart';
 
-class MACInputField extends StatelessWidget {
+class MACInputField extends ConsumerWidget {
   const MACInputField({
     super.key,
     required this.titleText,
@@ -18,19 +19,22 @@ class MACInputField extends StatelessWidget {
   final void Function(String value)? onChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        titleText.isEmpty ? const Center() : Padding(
-          child:  Text(
-            titleText,
-            style: Theme.of(context).textTheme.headline4?.copyWith(
-              color: Theme.of(context).primaryColor
-            ),
-          ),
-          padding: const EdgeInsets.only(bottom: 8),
-        ),
+        titleText.isEmpty
+            ? const Center()
+            : Padding(
+                child: Text(
+                  titleText,
+                  style: Theme.of(context)
+                      .textTheme
+                      .headline4
+                      ?.copyWith(color: Theme.of(context).primaryColor),
+                ),
+                padding: const EdgeInsets.only(bottom: 8),
+              ),
         MACFormField(
           controller: controller,
           onChanged: onChanged,
@@ -46,8 +50,8 @@ class MACInputField extends StatelessWidget {
               Text(
                 errorText,
                 style: Theme.of(context).textTheme.bodyText1?.copyWith(
-                  color: Colors.red,
-                ),
+                      color: Colors.red,
+                    ),
               )
             ],
           ),

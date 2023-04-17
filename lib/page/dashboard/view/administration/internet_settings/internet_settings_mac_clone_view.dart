@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/input_fields/mac_input_field.dart';
@@ -6,18 +7,19 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
 import '../common_widget.dart';
 
-class MACCloneView extends ArgumentsStatefulView {
+class MACCloneView extends ArgumentsConsumerStatefulView {
   const MACCloneView({super.key, super.next, super.args});
 
   @override
-  State<MACCloneView> createState() => _MACCloneViewState();
+  ConsumerState<MACCloneView> createState() => _MACCloneViewState();
 }
 
-class _MACCloneViewState extends State<MACCloneView> {
+class _MACCloneViewState extends ConsumerState<MACCloneView> {
   final _valueController = TextEditingController();
   late final List<String> _items = ['Auto', 'Manual'];
 
@@ -54,7 +56,7 @@ class _MACCloneViewState extends State<MACCloneView> {
             onPressed: _isValid
                 ? () {
                     FocusManager.instance.primaryFocus?.unfocus();
-                    NavigationCubit.of(context).popWithResult(
+                    ref.read(navigationsProvider.notifier).popWithResult(
                         _isEnabled ? _valueController.value : '');
                   }
                 : null,

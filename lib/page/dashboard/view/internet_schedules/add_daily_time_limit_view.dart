@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -10,20 +11,21 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/components/picker/number_picker_view.dart';
 import 'package:linksys_moab/route/model/internet_schedule_path.dart';
 import 'package:linksys_moab/route/_route.dart';
-
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import '../../../../design/colors.dart';
 import '../../../components/picker/day_picker_view.dart';
 
-class AddDailyTimeLimitView extends ArgumentsStatefulView {
+class AddDailyTimeLimitView extends ArgumentsConsumerStatefulView {
   const AddDailyTimeLimitView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<AddDailyTimeLimitView> createState() => _AddDailyTimeLimitViewState();
+  ConsumerState<AddDailyTimeLimitView> createState() =>
+      _AddDailyTimeLimitViewState();
 }
 
-class _AddDailyTimeLimitViewState extends State<AddDailyTimeLimitView> {
+class _AddDailyTimeLimitViewState extends ConsumerState<AddDailyTimeLimitView> {
   int hour = 0;
   int minutes = 0;
   List<bool> weeklySet = [];
@@ -54,7 +56,7 @@ class _AddDailyTimeLimitViewState extends State<AddDailyTimeLimitView> {
             title: Text(getAppLocalizations(context).daily_time_limit,
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
             leading: BackButton(onPressed: () {
-              NavigationCubit.of(context).pop();
+              ref.read(navigationsProvider.notifier).pop();
             }),
             actions: [
               TextButton(
@@ -64,7 +66,8 @@ class _AddDailyTimeLimitViewState extends State<AddDailyTimeLimitView> {
                         .read<ProfilesCubit>()
                         .updateDetailTimeLimitDetail(
                             _profileId, _rule, weeklySet, timeInSeconds)
-                        .then((value) => NavigationCubit.of(context)
+                        .then((value) => ref
+                            .read(navigationsProvider.notifier)
                             .popTo(DailyTimeLimitListPath()));
                   },
                   child: const Text('Save',
@@ -99,7 +102,11 @@ class _AddDailyTimeLimitViewState extends State<AddDailyTimeLimitView> {
                 offstage: !_isEdit,
                 child: TextButton(
                     onPressed: () {
-                      context.read<ProfilesCubit>().deleteTimeLimitRule(_profileId, _rule).then((value) => NavigationCubit.of(context).pop());
+                      context
+                          .read<ProfilesCubit>()
+                          .deleteTimeLimitRule(_profileId, _rule)
+                          .then((value) =>
+                              ref.read(navigationsProvider.notifier).pop());
                     },
                     child: const Text('Delete',
                         style: TextStyle(

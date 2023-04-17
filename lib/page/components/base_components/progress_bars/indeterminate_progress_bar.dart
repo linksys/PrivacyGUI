@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class IndeterminateProgressBar extends StatefulWidget {
+class IndeterminateProgressBar extends ConsumerStatefulWidget {
   const IndeterminateProgressBar({Key? key}) : super(key: key);
 
   @override
-  State<IndeterminateProgressBar> createState() =>
+  ConsumerState<IndeterminateProgressBar> createState() =>
       _IndeterminateProgressBarState();
 }
 
-class _IndeterminateProgressBarState extends State<IndeterminateProgressBar>
+class _IndeterminateProgressBarState
+    extends ConsumerState<IndeterminateProgressBar>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 

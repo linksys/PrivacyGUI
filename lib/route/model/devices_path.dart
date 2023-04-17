@@ -5,7 +5,7 @@ import 'package:linksys_moab/route/_route.dart';
 
 class DevicesPath extends DashboardPath {
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
       case DeviceListPath:
         return const DeviceListView();

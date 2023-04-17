@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class CountdownTimerProgressBar extends StatefulWidget {
+class CountdownTimerProgressBar extends ConsumerStatefulWidget {
   const CountdownTimerProgressBar({
     Key? key,
     required this.duration,
@@ -9,11 +10,12 @@ class CountdownTimerProgressBar extends StatefulWidget {
   final int duration;
 
   @override
-  State<CountdownTimerProgressBar> createState() =>
+  ConsumerState<CountdownTimerProgressBar> createState() =>
       _CountdownTimerProgressBarState();
 }
 
-class _CountdownTimerProgressBarState extends State<CountdownTimerProgressBar>
+class _CountdownTimerProgressBarState
+    extends ConsumerState<CountdownTimerProgressBar>
     with TickerProviderStateMixin {
   late AnimationController _controller;
   double progress = 1.0;

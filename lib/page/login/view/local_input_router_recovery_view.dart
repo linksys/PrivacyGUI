@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -10,11 +11,11 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/create_account/view/_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import 'package:pin_code_fields/pin_code_fields.dart';
 
-class LocalRecoveryKeyView extends ArgumentsStatefulView {
+class LocalRecoveryKeyView extends ArgumentsConsumerStatefulView {
   const LocalRecoveryKeyView({Key? key, super.args}) : super(key: key);
 
   @override
@@ -23,7 +24,7 @@ class LocalRecoveryKeyView extends ArgumentsStatefulView {
 }
 
 class _LocalResetRouterPasswordState
-    extends State<LocalRecoveryKeyView> {
+    extends ConsumerState<LocalRecoveryKeyView> {
   bool _isLoading = false;
   final TextEditingController _otpController = TextEditingController();
   String _errorReason = '';
@@ -92,8 +93,9 @@ class _LocalResetRouterPasswordState
   }
 
   _onNext(String? value) {
-    NavigationCubit.of(context).push(AuthLocalResetPasswordPath()..args = {'type': AdminPasswordType.reset});
-    // NavigationCubit.of(context).push(AuthResetLocalOtpPath()
+    ref.read(navigationsProvider.notifier).push(
+        AuthLocalResetPasswordPath()..args = {'type': AdminPasswordType.reset});
+    // ref.read(navigationsProvider.notifier).push(AuthResetLocalOtpPath()
     //   ..args = {
     //     'username': 'austin.chang@linksys.com', // TODO
     //   });

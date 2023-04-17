@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -8,15 +9,16 @@ import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 
-class NodeOfflineCheckView extends ArgumentsStatefulView {
+class NodeOfflineCheckView extends ArgumentsConsumerStatefulView {
   const NodeOfflineCheckView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _NodeOfflineCheckViewState();
+  ConsumerState<NodeOfflineCheckView> createState() =>
+      _NodeOfflineCheckViewState();
 }
 
-class _NodeOfflineCheckViewState extends State<NodeOfflineCheckView> {
+class _NodeOfflineCheckViewState extends ConsumerState<NodeOfflineCheckView> {
   @override
   void initState() {
     super.initState();
@@ -25,7 +27,7 @@ class _NodeOfflineCheckViewState extends State<NodeOfflineCheckView> {
   @override
   Widget build(BuildContext context) {
     return BasePageView.withCloseButton(
-      context,
+      context, ref,
       child: BasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).node_offline_check_title,

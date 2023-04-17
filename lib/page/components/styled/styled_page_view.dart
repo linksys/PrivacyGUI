@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 
 import 'consts.dart';
 
-class StyledLinksysPageView extends StatelessWidget {
+class StyledLinksysPageView extends ConsumerWidget {
   static const double kDefaultToolbarHeight = 80;
   final String? title;
   final Widget? child;
@@ -36,8 +38,8 @@ class StyledLinksysPageView extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => LinksysPageView(
-        appBar: _buildAppBar(context),
+  Widget build(BuildContext context, WidgetRef ref) => LinksysPageView(
+        appBar: _buildAppBar(context, ref),
         padding: padding,
         scrollable: scrollable,
         bottomSheet: bottomSheet,
@@ -47,7 +49,7 @@ class StyledLinksysPageView extends StatelessWidget {
 
   bool isBackEnabled() => backState == StyledBackState.enabled;
 
-  LinksysAppBar _buildAppBar(BuildContext context) {
+  LinksysAppBar _buildAppBar(BuildContext context, WidgetRef ref) {
     final title = this.title;
     return isCloseStyle
         ? LinksysAppBar.withClose(
@@ -57,7 +59,7 @@ class StyledLinksysPageView extends StatelessWidget {
             onBackTap: isBackEnabled()
                 ? (onBackTap ??
                     () {
-                      NavigationCubit.of(context).pop();
+                      ref.read(navigationsProvider.notifier).pop();
                     })
                 : null,
             showBack: backState != StyledBackState.none,
@@ -69,7 +71,7 @@ class StyledLinksysPageView extends StatelessWidget {
             onBackTap: isBackEnabled()
                 ? (onBackTap ??
                     () {
-                      NavigationCubit.of(context).pop();
+                      ref.read(navigationsProvider.notifier).pop();
                     })
                 : null,
             showBack: backState != StyledBackState.none,

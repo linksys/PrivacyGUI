@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
@@ -10,11 +11,11 @@ import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/animation/blink.dart';
 import 'package:linksys_widgets/widgets/animation/hover.dart';
 import 'package:linksys_widgets/widgets/animation/rotation.dart';
 import 'package:linksys_widgets/widgets/animation/scale.dart';
@@ -24,14 +25,14 @@ import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class HomeView extends ArgumentsStatefulView {
+class HomeView extends ArgumentsConsumerStatefulView {
   const HomeView({Key? key, super.args}) : super(key: key);
 
   @override
-  State<HomeView> createState() => _HomeViewState();
+  ConsumerState<HomeView> createState() => _HomeViewState();
 }
 
-class _HomeViewState extends State<HomeView> {
+class _HomeViewState extends ConsumerState<HomeView> {
   bool _isOpenDebug = false;
   bool _isLoading = false;
 
@@ -75,8 +76,8 @@ class _HomeViewState extends State<HomeView> {
               end: 0.1,
               reverse: true,
               child: Hover(
-                  child: SvgPicture(
-                      AppTheme.of(context).images.linksysBlackLogo)),
+                  child:
+                      SvgPicture(AppTheme.of(context).images.linksysBlackLogo)),
             ),
           )),
     );
@@ -101,19 +102,26 @@ class _HomeViewState extends State<HomeView> {
                 await authBloc.requestSession();
                 authBloc.add(Authorized(isCloud: true));
               } else {
-                NavigationCubit.of(context).push(AuthInputAccountPath());
+                ref
+                    .read(navigationsProvider.notifier)
+                    .push(AuthInputAccountPath());
               }
             } else {
-              NavigationCubit.of(context).push(AuthInputAccountPath());
+              ref
+                  .read(navigationsProvider.notifier)
+                  .push(AuthInputAccountPath());
             }
           } else {
-            NavigationCubit.of(context).push(AuthInputAccountPath());
+            ref.read(navigationsProvider.notifier).push(AuthInputAccountPath());
           }
         },
       ),
       LinksysSecondaryButton(
         getAppLocalizations(context).setup_new_router,
         key: const Key('home_view_button_setup'),
+        onTap: () {
+          ref.read(navigationsProvider.notifier).push(AuthInputAccountPath());
+        },
       ),
       ...showDebugButton(),
       Stack(
@@ -152,7 +160,7 @@ class _HomeViewState extends State<HomeView> {
         LinksysSecondaryButton(
           'Debug Tools',
           onTap: () {
-            NavigationCubit.of(context).push(DebugToolsMainPath());
+            ref.read(navigationsProvider.notifier).push(DebugToolsMainPath());
           },
         ),
       ];

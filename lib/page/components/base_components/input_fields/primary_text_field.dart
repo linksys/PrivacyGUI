@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class PrimaryTextField extends StatefulWidget {
+class PrimaryTextField extends ConsumerStatefulWidget {
   const PrimaryTextField({
     Key? key,
     required this.controller,
@@ -34,7 +35,7 @@ class PrimaryTextField extends StatefulWidget {
   _PrimaryTextFieldState createState() => _PrimaryTextFieldState();
 }
 
-class _PrimaryTextFieldState extends State<PrimaryTextField> {
+class _PrimaryTextFieldState extends ConsumerState<PrimaryTextField> {
   final FocusNode _focus = FocusNode();
 
   @override

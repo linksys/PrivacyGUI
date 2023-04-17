@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SimpleTextButton extends StatelessWidget {
+class SimpleTextButton extends ConsumerWidget {
   const SimpleTextButton({
     Key? key,
     required this.text,
@@ -41,9 +42,10 @@ class SimpleTextButton extends StatelessWidget {
   final TextStyle? style;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return TextButton(
       style: padding == null ? null : TextButton.styleFrom(padding: padding),
+      onPressed: onPressed,
       child: Text(
         text,
         style: style ??
@@ -53,7 +55,6 @@ class SimpleTextButton extends StatelessWidget {
                       : const Color.fromRGBO(8, 112, 234, 0.5),
                 ),
       ),
-      onPressed: onPressed,
     );
   }
 }

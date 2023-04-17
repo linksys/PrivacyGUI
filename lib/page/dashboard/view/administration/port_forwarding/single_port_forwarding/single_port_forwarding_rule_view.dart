@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/router/single_port_forwarding_rule.dart';
@@ -16,16 +17,17 @@ import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/administration_path.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-class SinglePortForwardingRuleView extends ArgumentsStatelessView {
+class SinglePortForwardingRuleView extends ArgumentsConsumerStatelessView {
   const SinglePortForwardingRuleView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
-      create: (context) =>
-          SinglePortForwardingRuleCubit(repository: context.read<RouterRepository>()),
+      create: (context) => SinglePortForwardingRuleCubit(
+          repository: context.read<RouterRepository>()),
       child: SinglePortForwardingRuleContentView(
         next: super.next,
         args: super.args,
@@ -34,17 +36,18 @@ class SinglePortForwardingRuleView extends ArgumentsStatelessView {
   }
 }
 
-class SinglePortForwardingRuleContentView extends ArgumentsStatefulView {
+class SinglePortForwardingRuleContentView
+    extends ArgumentsConsumerStatefulView {
   const SinglePortForwardingRuleContentView(
       {super.key, super.next, super.args});
 
   @override
-  State<SinglePortForwardingRuleContentView> createState() =>
+  ConsumerState<SinglePortForwardingRuleContentView> createState() =>
       _AddRuleContentViewState();
 }
 
 class _AddRuleContentViewState
-    extends State<SinglePortForwardingRuleContentView> {
+    extends ConsumerState<SinglePortForwardingRuleContentView> {
   late final SinglePortForwardingRuleCubit _cubit;
 
   bool _isBehindRouter = false;
@@ -92,7 +95,8 @@ class _AddRuleContentViewState
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SinglePortForwardingRuleCubit, SinglePortForwardingRuleState>(builder: (context, state) {
+    return BlocBuilder<SinglePortForwardingRuleCubit,
+        SinglePortForwardingRuleState>(builder: (context, state) {
       return BasePageView(
         scrollable: true,
         appBar: AppBar(
@@ -128,7 +132,7 @@ class _AddRuleContentViewState
                           context, getAppLocalizations(context).rule_added);
                     }
 
-                    NavigationCubit.of(context).popWithResult(true);
+                    ref.read(navigationsProvider.notifier).popWithResult(true);
                   }
                 });
               },
@@ -170,7 +174,7 @@ class _AddRuleContentViewState
             if (value) {
               showSuccessSnackBar(
                   context, getAppLocalizations(context).rule_deleted);
-              NavigationCubit.of(context).popWithResult(true);
+              ref.read(navigationsProvider.notifier).popWithResult(true);
             }
           });
         },
@@ -208,7 +212,8 @@ class _AddRuleContentViewState
         customPrimaryColor: Colors.black,
         isError: !_isDeviceIpValid,
         rightAction: () async {
-          String? deviceIp = await NavigationCubit.of(context)
+          String? deviceIp = await ref
+              .read(navigationsProvider.notifier)
               .pushAndWait(SelectDevicePtah());
         },
         onChanged: (value) {
@@ -226,8 +231,10 @@ class _AddRuleContentViewState
           title: title(getAppLocalizations(context).protocol),
           value: subTitle(getProtocolTitle(_protocol)),
           onPress: () async {
-            String? protocol = await NavigationCubit.of(context).pushAndWait(
-                SelectProtocolPath()..args = {'selected': _protocol});
+            String? protocol = await ref
+                .read(navigationsProvider.notifier)
+                .pushAndWait(
+                    SelectProtocolPath()..args = {'selected': _protocol});
             if (protocol != null) {
               setState(() {
                 _protocol = protocol;

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/icons/icon_rules.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
@@ -20,27 +22,27 @@ import '../../../bloc/auth/event.dart';
 import '../../../bloc/subscription/subscription_cubit.dart';
 import '../../components/styled/styled_page_view.dart';
 
-class SelectNetworkView extends ArgumentsStatefulView {
+class SelectNetworkView extends ArgumentsConsumerStatefulView {
   const SelectNetworkView({
     Key? key,
   }) : super(key: key);
 
   @override
-  State<SelectNetworkView> createState() => _SelectNetworkViewState();
+  ConsumerState<SelectNetworkView> createState() => _SelectNetworkViewState();
 }
 
-class _SelectNetworkViewState extends State<SelectNetworkView> {
+class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
   // TODO: #REFACTOR : Need to refactor this page, only for demo now
   bool isLoading = false;
   late final NetworkCubit _networkCubit;
   late final SubscriptionCubit _subscriptionCubit;
-  late final NavigationCubit _navigationCubit;
+  late final NavigationNotifier _navigationNotifier;
 
   @override
   void initState() {
     _networkCubit = context.read<NetworkCubit>();
     _subscriptionCubit = context.read<SubscriptionCubit>();
-    _navigationCubit = NavigationCubit.of(context);
+    _navigationNotifier = ref.read(navigationsProvider.notifier);
     super.initState();
   }
 
@@ -85,7 +87,7 @@ class _SelectNetworkViewState extends State<SelectNetworkView> {
                       });
                       await _networkCubit.selectNetwork(state.networks[index]);
                       await _subscriptionCubit.loadingProducts();
-                      _navigationCubit.clearAndPush(PrepareDashboardPath());
+                      _navigationNotifier.clearAndPush(PrepareDashboardPath());
                     }
                   : null,
               child: AppPadding(

@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
-class EditWifiModeView extends ArgumentsStatefulView {
+class EditWifiModeView extends ArgumentsConsumerStatefulView {
   const EditWifiModeView({
     Key? key,
     super.args,
   }) : super(key: key);
 
   @override
-  State<EditWifiModeView> createState() => _EditWifiModeViewState();
+  ConsumerState<EditWifiModeView> createState() => _EditWifiModeViewState();
 }
 
-class _EditWifiModeViewState extends State<EditWifiModeView> {
+class _EditWifiModeViewState extends ConsumerState<EditWifiModeView> {
   final List<WifiMode> _modeList = [WifiMode.mixed];
   late WifiListItem _wifiItem;
 
@@ -32,7 +33,7 @@ class _EditWifiModeViewState extends State<EditWifiModeView> {
   }
 
   void _save() {
-    NavigationCubit.of(context).popWithResult(_wifiItem);
+    ref.read(navigationsProvider.notifier).popWithResult(_wifiItem);
   }
 
   @override

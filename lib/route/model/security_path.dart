@@ -8,7 +8,7 @@ import '_model.dart';
 
 class SecurityPath extends DashboardPath {
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch(runtimeType) {
       case SecurityProtectionStatusPath:
         return const SecurityProtectionStatusView();

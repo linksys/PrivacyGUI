@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
@@ -6,16 +7,17 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/profile/profile_select_avatar_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
-class EditDeviceIconView extends ArgumentsStatefulView {
+class EditDeviceIconView extends ArgumentsConsumerStatefulView {
   const EditDeviceIconView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<EditDeviceIconView> createState() => _EditDeviceIconViewState();
+  ConsumerState<EditDeviceIconView> createState() => _EditDeviceIconViewState();
 }
 
-class _EditDeviceIconViewState extends State<EditDeviceIconView> {
+class _EditDeviceIconViewState extends ConsumerState<EditDeviceIconView> {
   Avatar _selectedIcon = Avatar(imageUrl: '', isSelected: false);
   final _icons = [
     Avatar(imageUrl: 'assets/images/img_profile_icon_1.png', isSelected: false),
@@ -41,7 +43,7 @@ class _EditDeviceIconViewState extends State<EditDeviceIconView> {
           leading: [
             IconButton(
               icon: const Icon(Icons.close),
-              onPressed: () => NavigationCubit.of(context).pop(),
+              onPressed: () => ref.read(navigationsProvider.notifier).pop(),
             ),
           ],
           action: [
@@ -51,7 +53,8 @@ class _EditDeviceIconViewState extends State<EditDeviceIconView> {
               onPressed: () {
                 bool isReturnable = widget.args['return'] ?? false;
                 if (isReturnable) {
-                  NavigationCubit.of(context)
+                  ref
+                      .read(navigationsProvider.notifier)
                       .popWithResult(_selectedIcon.imageUrl);
                 }
               },

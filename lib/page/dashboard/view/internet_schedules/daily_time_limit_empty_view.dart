@@ -1,16 +1,15 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/button/primary_button.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import '../../../../design/colors.dart';
-import '../../../../route/navigation_cubit.dart';
 
-class DailyTimeLimitEmptyView extends StatelessWidget {
+class DailyTimeLimitEmptyView extends ConsumerWidget {
   const DailyTimeLimitEmptyView({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final Widget img = Image.asset('assets/images/alarm_clock.png');
     return BasePageView.onDashboardSecondary(
         appBar: AppBar(
@@ -19,7 +18,7 @@ class DailyTimeLimitEmptyView extends StatelessWidget {
           elevation: 0,
           title: const Text('Daily time limit', style: TextStyle(fontSize: 15)),
           leading: BackButton(onPressed: () {
-            NavigationCubit.of(context).pop();
+            ref.read(navigationsProvider.notifier).pop();
           }),
           actions: [
             TextButton(

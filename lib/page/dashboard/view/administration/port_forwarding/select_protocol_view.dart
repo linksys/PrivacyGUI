@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -9,14 +10,14 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-
-class SelectProtocolView extends ArgumentsStatelessView {
+class SelectProtocolView extends ArgumentsConsumerStatelessView {
   const SelectProtocolView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SelectProtocolContentView(
       next: super.next,
       args: super.args,
@@ -24,15 +25,16 @@ class SelectProtocolView extends ArgumentsStatelessView {
   }
 }
 
-class SelectProtocolContentView extends ArgumentsStatefulView {
+class SelectProtocolContentView extends ArgumentsConsumerStatefulView {
   const SelectProtocolContentView({super.key, super.next, super.args});
 
   @override
-  State<SelectProtocolContentView> createState() =>
+  ConsumerState<SelectProtocolContentView> createState() =>
       _SelectProtocolContentViewState();
 }
 
-class _SelectProtocolContentViewState extends State<SelectProtocolContentView> {
+class _SelectProtocolContentViewState
+    extends ConsumerState<SelectProtocolContentView> {
   bool _isBehindRouter = false;
   StreamSubscription? _subscription;
 
@@ -82,22 +84,24 @@ class _SelectProtocolContentViewState extends State<SelectProtocolContentView> {
           children: [
             box24(),
             ..._keys.map((e) => ListTile(
-              title: Text(getProtocolTitle(e)),
-              trailing: SizedBox(
-                child: e == _selected
-                    ? Image.asset('assets/images/icon_check_black.png')
-                    : null,
-                height: 36,
-                width: 36,
-              ),
-              contentPadding: const EdgeInsets.only(bottom: 24),
-              onTap: () {
-                setState(() {
-                  _selected = e;
-                });
-                NavigationCubit.of(context).popWithResult(_selected);
-              },
-            ))
+                  title: Text(getProtocolTitle(e)),
+                  trailing: SizedBox(
+                    child: e == _selected
+                        ? Image.asset('assets/images/icon_check_black.png')
+                        : null,
+                    height: 36,
+                    width: 36,
+                  ),
+                  contentPadding: const EdgeInsets.only(bottom: 24),
+                  onTap: () {
+                    setState(() {
+                      _selected = e;
+                    });
+                    ref
+                        .read(navigationsProvider.notifier)
+                        .popWithResult(_selected);
+                  },
+                ))
           ],
         ),
       ),

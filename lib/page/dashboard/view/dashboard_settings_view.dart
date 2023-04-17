@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
@@ -7,7 +8,7 @@ import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/customs/enabled_with_opacity_widget.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -17,14 +18,15 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 typedef OnMenuItemClick = void Function(int index, DashboardSettingsItem item);
 
-class DashboardSettingsView extends StatefulWidget {
+class DashboardSettingsView extends ConsumerStatefulWidget {
   const DashboardSettingsView({Key? key}) : super(key: key);
 
   @override
-  State<DashboardSettingsView> createState() => _DashboardSettingsViewState();
+  ConsumerState<DashboardSettingsView> createState() =>
+      _DashboardSettingsViewState();
 }
 
-class _DashboardSettingsViewState extends State<DashboardSettingsView> {
+class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
   late final AuthBloc _authBloc;
 
   @override
@@ -54,7 +56,7 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
                       _networkSettingsSection(context),
                       (index, item) {
                         logger.d('MenuItem click $index');
-                        NavigationCubit.of(context).push(item.path);
+                        ref.read(navigationsProvider.notifier).push(item.path);
                       },
                     ),
                     const LinksysGap.semiBig(),
@@ -62,7 +64,7 @@ class _DashboardSettingsViewState extends State<DashboardSettingsView> {
                       _youSettingsSection(),
                       (index, item) {
                         logger.d('MenuItem click $index');
-                        NavigationCubit.of(context).push(item.path);
+                        ref.read(navigationsProvider.notifier).push(item.path);
                       },
                     ),
                     const LinksysGap.semiBig(),

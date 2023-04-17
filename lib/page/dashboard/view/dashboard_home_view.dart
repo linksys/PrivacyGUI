@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
@@ -7,9 +8,9 @@ import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/page/components/customs/enabled_with_opacity_widget.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/icons/icon_rules.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -20,14 +21,14 @@ import 'package:linksys_widgets/widgets/container/stacked_listview.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-class DashboardHomeView extends StatefulWidget {
+class DashboardHomeView extends ConsumerStatefulWidget {
   const DashboardHomeView({Key? key}) : super(key: key);
 
   @override
-  State<DashboardHomeView> createState() => _DashboardHomeViewState();
+  ConsumerState<DashboardHomeView> createState() => _DashboardHomeViewState();
 }
 
-class _DashboardHomeViewState extends State<DashboardHomeView> {
+class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   @override
   void initState() {
     super.initState();
@@ -102,7 +103,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
             AppIconButton(
               icon: getCharactersIcons(context).bellDefault,
               onTap: () {
-                NavigationCubit.of(context).push(LinkupPath());
+                ref.read(navigationsProvider.notifier).push(LinkupPath());
               },
             ),
           ],
@@ -157,7 +158,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
       descripition: 'WiFi networks active',
       icons: icons,
       onTap: () {
-        NavigationCubit.of(context).push(WifiListPath());
+        ref.read(navigationsProvider.notifier).push(WifiListPath());
       },
     );
   }
@@ -186,7 +187,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
       descripition: 'Nodes online',
       icons: icons,
       onTap: () {
-        NavigationCubit.of(context).push(TopologyPath());
+        ref.read(navigationsProvider.notifier).push(TopologyPath());
       },
     );
   }
@@ -213,7 +214,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
       descripition: 'Devices online',
       icons: icons,
       onTap: () {
-        NavigationCubit.of(context).push(DeviceListPath());
+        ref.read(navigationsProvider.notifier).push(DeviceListPath());
       },
     );
   }
@@ -340,7 +341,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                       ))),
               GestureDetector(
                 onTap: () {
-                  NavigationCubit.of(context).push(SpeedCheckPath());
+                  ref.read(navigationsProvider.notifier).push(SpeedCheckPath());
                 },
                 child: const CircleAvatar(
                   radius: 21,

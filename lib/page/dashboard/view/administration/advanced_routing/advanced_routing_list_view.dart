@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -14,13 +15,14 @@ import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-class AdvancedRoutingListView extends ArgumentsStatelessView {
+class AdvancedRoutingListView extends ArgumentsConsumerStatelessView {
   const AdvancedRoutingListView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider<AdvancedRoutingListCubit>(
       create: (context) => AdvancedRoutingListCubit(
           repository: context.read<RouterRepository>()),
@@ -32,17 +34,16 @@ class AdvancedRoutingListView extends ArgumentsStatelessView {
   }
 }
 
-class AdvancedRoutingListContentView extends ArgumentsStatefulView {
-  const AdvancedRoutingListContentView(
-      {super.key, super.next, super.args});
+class AdvancedRoutingListContentView extends ArgumentsConsumerStatefulView {
+  const AdvancedRoutingListContentView({super.key, super.next, super.args});
 
   @override
-  State<AdvancedRoutingListContentView> createState() =>
+  ConsumerState<AdvancedRoutingListContentView> createState() =>
       _AdvancedRoutingContentViewState();
 }
 
 class _AdvancedRoutingContentViewState
-    extends State<AdvancedRoutingListContentView> {
+    extends ConsumerState<AdvancedRoutingListContentView> {
   late final AdvancedRoutingListCubit _cubit;
 
   bool _isBehindRouter = false;
@@ -72,8 +73,8 @@ class _AdvancedRoutingContentViewState
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AdvancedRoutingListCubit,
-        AdvancedRoutingListState>(builder: (context, state) {
+    return BlocBuilder<AdvancedRoutingListCubit, AdvancedRoutingListState>(
+        builder: (context, state) {
       return BasePageView(
         scrollable: true,
         appBar: AppBar(
@@ -109,9 +110,10 @@ class _AdvancedRoutingContentViewState
                 SimpleTextButton(
                   text: getAppLocalizations(context).add_rule,
                   onPressed: () {
-                    NavigationCubit.of(context)
-                        .pushAndWait(
-                            AdvancedRoutingRulePath()..args = {'rules': state.rules})
+                    ref
+                        .read(navigationsProvider.notifier)
+                        .pushAndWait(AdvancedRoutingRulePath()
+                          ..args = {'rules': state.rules})
                         .then((value) {
                       if (value ?? false) {
                         _cubit.fetch();
@@ -129,7 +131,8 @@ class _AdvancedRoutingContentViewState
                           : getAppLocalizations(context).off,
                     ),
                     onPress: () {
-                      NavigationCubit.of(context)
+                      ref
+                          .read(navigationsProvider.notifier)
                           .pushAndWait(AdvancedRoutingRulePath()
                             ..args = {'rules': state.rules, 'edit': e})
                           .then((value) {

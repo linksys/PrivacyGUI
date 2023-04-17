@@ -4,15 +4,15 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
-import 'package:linksys_moab/bloc/connectivity/connectivity_info.dart';
 import 'package:linksys_moab/bloc/connectivity/cubit.dart';
 import 'package:linksys_moab/bloc/connectivity/state.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_bottom_tab_container.dart';
-import 'package:linksys_moab/route/moab_page.dart';
+import 'package:linksys_moab/repository/router/side_effect_manager.dart';
+import 'package:linksys_moab/route/linksys_page.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/_route.dart';
 
 import 'package:linksys_moab/util/analytics.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -20,91 +20,92 @@ import 'package:linksys_widgets/theme/responsive_theme.dart';
 import 'package:universal_link_plugin/universal_link_plugin.dart';
 
 import '../page/dashboard/view/_view.dart';
+import 'navigations_notifier.dart';
 
-class MoabRouterDelegate extends RouterDelegate<BasePath>
-    with ChangeNotifier, PopNavigatorRouterDelegateMixin<BasePath> {
-  MoabRouterDelegate(this._cubit) : navigatorKey = GlobalKey() {
+final routerDelegateProvider = Provider((ref) => LinksysRouterDelegate(ref));
+
+class LinksysRouterDelegate extends RouterDelegate<List<BasePath>>
+    with ChangeNotifier, PopNavigatorRouterDelegateMixin<List<BasePath>> {
+  LinksysRouterDelegate(Ref ref) : navigatorKey = GlobalKey() {
+    _ref = ref;
+    final unListen =
+        _ref.listen(navigationsProvider, (_, __) => notifyListeners());
+    final sideEffectSubscription =
+        _ref.listen(sideEffectProvider, _listenSideEffect);
+    _ref.onDispose(() {
+      unListen.close();
+      sideEffectSubscription.close();
+    });
     _universalLinkSubscription =
         UniversalLinkPlugin().universalLinkStream.listen(_handleUniversalLink);
   }
+
   late StreamSubscription _universalLinkSubscription;
-  final NavigationCubit _cubit;
-  //
-  // static MoabRouterDelegate of(BuildContext context) {
-  //   final delegate = Router.of(context).routerDelegate;
-  //   assert(delegate is MoabRouterDelegate, 'Delegate type must match');
-  //   return delegate as MoabRouterDelegate;
-  // }
+  late final Ref _ref;
 
   @override
-  BasePath get currentConfiguration => _cubit.state.last;
+  List<BasePath> get currentConfiguration => _ref.read(navigationsProvider);
 
   @override
   final GlobalKey<NavigatorState> navigatorKey;
 
   @override
   Widget build(BuildContext context) {
-    logger.d("Route Delegate Rebuild! ${describeIdentity(this)}");
+    // logger.d("Route Delegate Rebuild! ${describeIdentity(this)}");
     return MultiBlocListener(
       listeners: [_listenForAuth(), _listenForConnectivity()],
-      child: BlocConsumer<NavigationCubit, NavigationStack>(
-        builder: (context, stack) => Overlay(
-          initialEntries: [
-            OverlayEntry(builder: (context) {
-              return AppResponsiveTheme(
-                backgroundColor: Colors.transparent,
-                child: DashboardBottomTabContainer(
-                  cubit: _cubit,
-                  navigator: Navigator(
-                      key: navigatorKey,
-                      pages: [
-                        for (final path in stack.configs)
-                          MoabPage(
-                            name: path.name,
-                            key: ValueKey(path.name),
-                            fullscreenDialog:
-                                path.pageConfig.isFullScreenDialog,
-                            opaque: path.pageConfig.isOpaque,
-                            // child: Theme(
-                            //   data: path.pageConfig.themeData,
-                            //   child: path.pageConfig.isBackAvailable ? _buildPageView(path) : WillPopScope(child: _buildPageView(path), onWillPop: () async => true),
-                            // ),
-                            child: AppResponsiveTheme(
-                                backgroundColor: path.pageConfig.isOpaque
-                                    ? null
-                                    : Colors.transparent,
-                                child: path.pageConfig.isBackAvailable
-                                    ? _buildPageView(path)
-                                    : WillPopScope(
-                                        child: _buildPageView(path),
-                                        onWillPop: () async => true)),
-                          ),
-                      ],
-                      onPopPage: _onPopPage),
-                ),
-              );
-            })
-          ],
-        ),
-        listener: (context, stack) {},
+      child: Overlay(
+        initialEntries: [
+          OverlayEntry(builder: (context) {
+            return AppResponsiveTheme(
+              backgroundColor: Colors.transparent,
+              child: DashboardBottomTabContainer(
+                navigator: Navigator(
+                    key: navigatorKey,
+                    pages: [
+                      for (final path in currentConfiguration)
+                        LinksysPage(
+                          name: path.name,
+                          key: ValueKey(path.name),
+                          fullscreenDialog: path.pageConfig.isFullScreenDialog,
+                          opaque: path.pageConfig.isOpaque,
+                          // child: Theme(
+                          //   data: path.pageConfig.themeData,
+                          //   child: path.pageConfig.isBackAvailable ? _buildPageView(path) : WillPopScope(child: _buildPageView(path), onWillPop: () async => true),
+                          // ),
+                          child: AppResponsiveTheme(
+                              backgroundColor: path.pageConfig.isOpaque
+                                  ? null
+                                  : Colors.transparent,
+                              child: path.pageConfig.isBackAvailable
+                                  ? _buildPageView(path)
+                                  : WillPopScope(
+                                      child: _buildPageView(path),
+                                      onWillPop: () async => true)),
+                        ),
+                    ],
+                    onPopPage: _onPopPage),
+              ),
+            );
+          })
+        ],
       ),
     );
   }
 
   @override
-  Future<void> setInitialRoutePath(BasePath configuration) {
+  Future<void> setInitialRoutePath(List<BasePath> configuration) {
     return setNewRoutePath(configuration);
   }
 
   @override
-  Future<void> setNewRoutePath(BasePath configuration) async {
-    print('MoabRouterDelegate::setNewRoutePath:${configuration.name}');
-    _cubit.clearAndPush(configuration);
+  Future<void> setNewRoutePath(List<BasePath> configuration) async {
+    _ref.read(navigationsProvider.notifier).clearAndPushAll(configuration);
     return SynchronousFuture(null);
   }
 
   Widget _buildPageView(BasePath path) {
-    return path.buildPage(_cubit);
+    return path.buildPage();
   }
 
   @override
@@ -118,51 +119,63 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
 
     bool didPop = route.didPop(result);
     if (didPop) {
-      if (_cubit.canPop()) {
-        _cubit.pop();
+      if (_ref.read(navigationsProvider.notifier).canPop()) {
+        _ref.read(navigationsProvider.notifier).pop();
         didPop = true;
       } else {
         didPop = false;
       }
     }
-    logger.d('Navigation Back:: current:${currentConfiguration.name}');
+    logger.d('Navigation Back:: current:${currentConfiguration.last.name}');
     logEvent(eventName: "NavigationBack", parameters: {
-      'currentPage': currentConfiguration.name,
+      'currentPage': currentConfiguration.last.name,
     });
     return didPop;
   }
 
+  _listenSideEffect(JNAPSideEffect? previous, JNAPSideEffect current) {
+    logger.d('router_delegate:: $previous, $current');
+  }
+
+  // TODO refactor w/ provider
   BlocListener _listenForAuth() {
     return BlocListener<AuthBloc, AuthState>(
       listenWhen: (previous, current) =>
           previous.status != current.status &&
-          !currentConfiguration.pageConfig.ignoreAuthChanged,
+          !currentConfiguration.last.pageConfig.ignoreAuthChanged,
       listener: (context, state) {
         logger.d("Auth Listener: $state");
         if (state.status == AuthStatus.unAuthorized) {
-          _cubit.clearAndPush(HomePath());
+          _ref.read(navigationsProvider.notifier).clearAndPush(HomePath());
         } else if (state.status == AuthStatus.cloudAuthorized) {
-          _cubit.clearAndPush(PrepareDashboardPath());
+          _ref
+              .read(navigationsProvider.notifier)
+              .clearAndPush(PrepareDashboardPath());
         } else if (state.status == AuthStatus.localAuthorized) {
-          _cubit.clearAndPush(PrepareDashboardPath());
+          _ref
+              .read(navigationsProvider.notifier)
+              .clearAndPush(PrepareDashboardPath());
         }
       },
     );
   }
 
+  // TODO refactor w/ provider
   BlocListener _listenForConnectivity() {
     return BlocListener<ConnectivityCubit, ConnectivityState>(
       listenWhen: (previous, current) =>
-          !currentConfiguration.pageConfig.ignoreConnectivityChanged,
+          !currentConfiguration.last.pageConfig.ignoreConnectivityChanged,
       listener: (context, state) {
         logger.d(
             "Connectivity Listener: ${state.connectivityInfo.type}, ${state.connectivityInfo.ssid}");
         if (state.connectivityInfo.type == ConnectivityResult.none &&
             currentConfiguration is! NoInternetConnectionPath) {
-          _cubit.push(NoInternetConnectionPath());
+          _ref
+              .read(navigationsProvider.notifier)
+              .push(NoInternetConnectionPath());
         } else {
           if (currentConfiguration is NoInternetConnectionPath) {
-            _cubit.pop();
+            _ref.read(navigationsProvider.notifier).pop();
           }
         }
       },
@@ -171,10 +184,5 @@ class MoabRouterDelegate extends RouterDelegate<BasePath>
 
   _handleUniversalLink(dynamic event) {
     logger.d('received an universal link: $event');
-  }
-
-  @override
-  Future<bool> popRoute() {
-    return super.popRoute();
   }
 }

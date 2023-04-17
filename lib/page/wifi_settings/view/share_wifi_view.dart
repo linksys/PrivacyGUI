@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/customs/hidden_password_widget.dart';
@@ -32,14 +33,14 @@ enum ShareWifiOption {
   final String iconId;
 }
 
-class ShareWifiView extends ArgumentsStatefulView {
+class ShareWifiView extends ArgumentsConsumerStatefulView {
   const ShareWifiView({Key? key, super.args}) : super(key: key);
 
   @override
-  State<ShareWifiView> createState() => _ShareWifiViewState();
+  ConsumerState<ShareWifiView> createState() => _ShareWifiViewState();
 }
 
-class _ShareWifiViewState extends State<ShareWifiView> {
+class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
   GlobalKey globalKey = GlobalKey();
   late WifiListItem _currentItem;
   String get sharingContent =>

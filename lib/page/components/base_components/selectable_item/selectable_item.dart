@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
-class SelectableItem extends StatelessWidget {
+class SelectableItem extends ConsumerWidget {
   final String text;
   final bool isSelected;
   final double? height;
@@ -12,7 +13,7 @@ class SelectableItem extends StatelessWidget {
       : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 22),
       height: height,

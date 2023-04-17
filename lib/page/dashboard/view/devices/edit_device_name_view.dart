@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -7,16 +8,17 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
-class EditDeviceNameView extends ArgumentsStatefulView {
+class EditDeviceNameView extends ArgumentsConsumerStatefulView {
   const EditDeviceNameView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<EditDeviceNameView> createState() => _EditDeviceNameViewState();
+  ConsumerState<EditDeviceNameView> createState() => _EditDeviceNameViewState();
 }
 
-class _EditDeviceNameViewState extends State<EditDeviceNameView> {
+class _EditDeviceNameViewState extends ConsumerState<EditDeviceNameView> {
   final _textController = TextEditingController();
 
   @override
@@ -51,7 +53,8 @@ class _EditDeviceNameViewState extends State<EditDeviceNameView> {
                   .updateDeviceInfoName(
                       context.read<DeviceCubit>().state.selectedDeviceInfo!,
                       _textController.text)
-                  .then((value) => NavigationCubit.of(context).pop());
+                  .then(
+                      (value) => ref.read(navigationsProvider.notifier).pop());
             },
           ),
         ],

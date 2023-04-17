@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/account/_account.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
@@ -8,25 +9,26 @@ import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../localization/localization_hook.dart';
 import '../../../route/model/dashboard_path.dart';
-import '../../../route/navigation_cubit.dart';
 import '../../../util/logger.dart';
 import '../../components/views/arguments_view.dart';
 
-class PrepareDashboardView extends ArgumentsStatefulView {
+class PrepareDashboardView extends ArgumentsConsumerStatefulView {
   const PrepareDashboardView({
     Key? key,
   }) : super(key: key);
 
   @override
-  State<PrepareDashboardView> createState() => _PrepareDashboardViewState();
+  ConsumerState<PrepareDashboardView> createState() =>
+      _PrepareDashboardViewState();
 }
 
-class _PrepareDashboardViewState extends State<PrepareDashboardView> {
+class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
   @override
   void initState() {
     super.initState();
@@ -38,7 +40,8 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
   Widget build(BuildContext context) {
     logger.d('DEBUG:: PrepareDashboardView: build');
 
-    return LinksysFullScreenSpinner(text: getAppLocalizations(context).processing);
+    return LinksysFullScreenSpinner(
+        text: getAppLocalizations(context).processing);
   }
 
   _checkSelfNetworks() async {
@@ -50,7 +53,9 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
         await context
             .read<NetworkCubit>()
             .getNetworks(accountId: context.read<AccountCubit>().state.id);
-        NavigationCubit.of(context).clearAndPush(SelectNetworkPath());
+        ref
+            .read(navigationsProvider.notifier)
+            .clearAndPush(SelectNetworkPath());
         return;
       }
     }
@@ -64,7 +69,7 @@ class _PrepareDashboardViewState extends State<PrepareDashboardView> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
           linkstyPrefCurrentSN, routerDeviceInfo.serialNumber);
-      NavigationCubit.of(context).clearAndPush(DashboardHomePath());
+      ref.read(navigationsProvider.notifier).clearAndPush(DashboardHomePath());
     } else {
       // TODO #LINKSYS Error handling for unable to get deviceinfo
     }

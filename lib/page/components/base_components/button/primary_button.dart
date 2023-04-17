@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class PrimaryButton extends StatelessWidget {
+class PrimaryButton extends ConsumerWidget {
   final String? text;
   final Icon? icon;
   final VoidCallback? onPress;
@@ -9,7 +10,7 @@ class PrimaryButton extends StatelessWidget {
       : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final buttonTitle = Text(text ?? '');
     final buttonStyle = ElevatedButton.styleFrom(
       minimumSize: const Size.fromHeight(56),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
@@ -7,8 +8,9 @@ import 'package:linksys_moab/page/components/base_components/progress_bars/full_
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
-// class OtpFlowView extends ArgumentsStatelessView {
+// class OtpFlowView extends ArgumentsConsumerStatelessView {
 //   const OtpFlowView({Key? key, super.args, super.next}) : super(key: key);
 //
 //   @override
@@ -20,14 +22,14 @@ import 'package:linksys_moab/route/_route.dart';
 //   }
 // }
 
-class OtpFlowView extends ArgumentsStatefulView {
+class OtpFlowView extends ArgumentsConsumerStatefulView {
   const OtpFlowView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
-  State<OtpFlowView> createState() => OtpFlowViewState();
+  ConsumerState<OtpFlowView> createState() => OtpFlowViewState();
 }
 
-class OtpFlowViewState extends State<OtpFlowView> {
+class OtpFlowViewState extends ConsumerState<OtpFlowView> {
   late final OtpCubit _cubit;
   late String _username;
   late OtpFunction _function;
@@ -73,12 +75,12 @@ class OtpFlowViewState extends State<OtpFlowView> {
         if (state.step == OtpStep.inputOtp) {
           final next = widget.next ?? UnknownPath();
 
-          NavigationCubit.of(context).replace(OtpInputCodePath()
+          ref.read(navigationsProvider.notifier).replace(OtpInputCodePath()
             ..args.addAll(widget.args)
             ..next = next);
         } else if (state.step == OtpStep.chooseOtpMethod) {
           final next = widget.next ?? UnknownPath();
-          NavigationCubit.of(context).replace(OtpMethodChoosesPath()
+          ref.read(navigationsProvider.notifier).replace(OtpMethodChoosesPath()
             ..next = next
             ..args.addAll(widget.args));
         }

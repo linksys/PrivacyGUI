@@ -6,7 +6,7 @@ import 'base_path.dart';
 
 abstract class PopUpPath extends BasePath {
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
       case NoInternetConnectionPath:
         return const NoInternetConnectionModal();

@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
-class HiddenPasswordWidget extends StatefulWidget {
+class HiddenPasswordWidget extends ConsumerStatefulWidget {
   final String password;
   const HiddenPasswordWidget({Key? key, required this.password})
       : super(key: key);
 
   @override
-  State<HiddenPasswordWidget> createState() => _HiddenPasswordWidgetState();
+  ConsumerState<HiddenPasswordWidget> createState() =>
+      _HiddenPasswordWidgetState();
 }
 
-class _HiddenPasswordWidgetState extends State<HiddenPasswordWidget> {
+class _HiddenPasswordWidgetState extends ConsumerState<HiddenPasswordWidget> {
   bool isPwSecure = true;
 
   @override

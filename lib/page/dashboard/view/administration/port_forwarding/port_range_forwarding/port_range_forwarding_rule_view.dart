@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/router/port_range_forwarding_rule.dart';
@@ -14,18 +15,18 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/port_range_forwarding/bloc/port_range_forwarding_rule_cubit.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/administration_path.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-class PortRangeForwardingRuleView extends ArgumentsStatelessView {
+class PortRangeForwardingRuleView extends ArgumentsConsumerStatelessView {
   const PortRangeForwardingRuleView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
-      create: (context) =>
-          PortRangeForwardingRuleCubit(repository: context.read<RouterRepository>()),
+      create: (context) => PortRangeForwardingRuleCubit(
+          repository: context.read<RouterRepository>()),
       child: PortRangeForwardingRuleContentView(
         next: super.next,
         args: super.args,
@@ -34,25 +35,26 @@ class PortRangeForwardingRuleView extends ArgumentsStatelessView {
   }
 }
 
-class PortRangeForwardingRuleContentView extends ArgumentsStatefulView {
-  const PortRangeForwardingRuleContentView(
-      {super.key, super.next, super.args});
+class PortRangeForwardingRuleContentView extends ArgumentsConsumerStatefulView {
+  const PortRangeForwardingRuleContentView({super.key, super.next, super.args});
 
   @override
-  State<PortRangeForwardingRuleContentView> createState() =>
+  ConsumerState<PortRangeForwardingRuleContentView> createState() =>
       _AddRuleContentViewState();
 }
 
 class _AddRuleContentViewState
-    extends State<PortRangeForwardingRuleContentView> {
+    extends ConsumerState<PortRangeForwardingRuleContentView> {
   late final PortRangeForwardingRuleCubit _cubit;
 
   bool _isBehindRouter = false;
   StreamSubscription? _subscription;
 
   final TextEditingController _ruleNameController = TextEditingController();
-  final TextEditingController _firstExternalPortController = TextEditingController();
-  final TextEditingController _lastExternalPortController = TextEditingController();
+  final TextEditingController _firstExternalPortController =
+      TextEditingController();
+  final TextEditingController _lastExternalPortController =
+      TextEditingController();
   final TextEditingController _deviceIpAddressController =
       TextEditingController();
   bool _isDeviceIpValid = true;
@@ -92,7 +94,8 @@ class _AddRuleContentViewState
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PortRangeForwardingRuleCubit, PortRangeForwardingRuleState>(builder: (context, state) {
+    return BlocBuilder<PortRangeForwardingRuleCubit,
+        PortRangeForwardingRuleState>(builder: (context, state) {
       return BasePageView(
         scrollable: true,
         appBar: AppBar(
@@ -113,10 +116,12 @@ class _AddRuleContentViewState
               onPressed: () {
                 final rule = PortRangeForwardingRule(
                     isEnabled: true,
-                    firstExternalPort: int.parse(_firstExternalPortController.text),
+                    firstExternalPort:
+                        int.parse(_firstExternalPortController.text),
                     protocol: _protocol,
                     internalServerIPAddress: _deviceIpAddressController.text,
-                    lastExternalPort: int.parse(_lastExternalPortController.text),
+                    lastExternalPort:
+                        int.parse(_lastExternalPortController.text),
                     description: _ruleNameController.text);
                 _cubit.save(rule).then((value) {
                   if (value) {
@@ -128,7 +133,7 @@ class _AddRuleContentViewState
                           context, getAppLocalizations(context).rule_added);
                     }
 
-                    NavigationCubit.of(context).popWithResult(true);
+                    ref.read(navigationsProvider.notifier).popWithResult(true);
                   }
                 });
               },
@@ -170,7 +175,7 @@ class _AddRuleContentViewState
             if (value) {
               showSuccessSnackBar(
                   context, getAppLocalizations(context).rule_deleted);
-              NavigationCubit.of(context).popWithResult(true);
+              ref.read(navigationsProvider.notifier).popWithResult(true);
             }
           });
         },
@@ -208,7 +213,8 @@ class _AddRuleContentViewState
         customPrimaryColor: Colors.black,
         isError: !_isDeviceIpValid,
         rightAction: () async {
-          String? deviceIp = await NavigationCubit.of(context)
+          String? deviceIp = await ref
+              .read(navigationsProvider.notifier)
               .pushAndWait(SelectDevicePtah());
         },
         onChanged: (value) {
@@ -226,8 +232,10 @@ class _AddRuleContentViewState
           title: title(getAppLocalizations(context).protocol),
           value: subTitle(getProtocolTitle(_protocol)),
           onPress: () async {
-            String? protocol = await NavigationCubit.of(context).pushAndWait(
-                SelectProtocolPath()..args = {'selected': _protocol});
+            String? protocol = await ref
+                .read(navigationsProvider.notifier)
+                .pushAndWait(
+                    SelectProtocolPath()..args = {'selected': _protocol});
             if (protocol != null) {
               setState(() {
                 _protocol = protocol;

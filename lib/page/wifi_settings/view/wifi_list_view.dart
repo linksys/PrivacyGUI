@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/model/router/device.dart';
@@ -11,17 +12,18 @@ import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/model/wifi_settings_path.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
-class WifiListView extends StatefulWidget {
+class WifiListView extends ConsumerStatefulWidget {
   const WifiListView({Key? key}) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _WifiListViewState();
+  ConsumerState<WifiListView> createState() => _WifiListViewState();
 }
 
-class _WifiListViewState extends State<WifiListView> {
+class _WifiListViewState extends ConsumerState<WifiListView> {
   //TODO: Remove the dummy data
   List<WifiListItem> items = [];
 
@@ -102,7 +104,8 @@ class _WifiListViewState extends State<WifiListView> {
               const Spacer(),
               GestureDetector(
                 onTap: () {
-                  NavigationCubit.of(context)
+                  ref
+                      .read(navigationsProvider.notifier)
                       .push(ShareWifiPath()..args = {'info': items[index]});
                 },
                 child: AppIcon.regular(

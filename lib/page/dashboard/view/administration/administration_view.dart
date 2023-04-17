@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
@@ -7,21 +8,22 @@ import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/panel/panel_bases.dart';
 
 import 'common_widget.dart';
 
-class AdministrationView extends ArgumentsStatefulView {
+class AdministrationView extends ArgumentsConsumerStatefulView {
   const AdministrationView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<AdministrationView> createState() => _AdministrationViewState();
+  ConsumerState<AdministrationView> createState() => _AdministrationViewState();
 }
 
-class _AdministrationViewState extends State<AdministrationView> {
+class _AdministrationViewState extends ConsumerState<AdministrationView> {
   @override
   Widget build(BuildContext context) {
     return StyledLinksysPageView(
@@ -37,18 +39,21 @@ class _AdministrationViewState extends State<AdministrationView> {
                   AppSimplePanel(
                     title:
                         getAppLocalizations(context).router_password_and_hint,
-                    onTap: () => NavigationCubit.of(context)
+                    onTap: () => ref
+                        .read(navigationsProvider.notifier)
                         .push(RouterPasswordViewPath()),
                   ),
                   AppSimplePanel(
                     title: getAppLocalizations(context).time_zone,
-                    onTap: () =>
-                        NavigationCubit.of(context).push(TimeZoneViewPath()),
+                    onTap: () => ref
+                        .read(navigationsProvider.notifier)
+                        .push(TimeZoneViewPath()),
                   ),
                   AppSimplePanel(
                     title: getAppLocalizations(context).ip_details,
-                    onTap: () =>
-                        NavigationCubit.of(context).push(IpDetailsViewPath()),
+                    onTap: () => ref
+                        .read(navigationsProvider.notifier)
+                        .push(IpDetailsViewPath()),
                   ),
                 ],
               ),
@@ -59,40 +64,47 @@ class _AdministrationViewState extends State<AdministrationView> {
                 children: [
                   AppSimplePanel(
                     title: getAppLocalizations(context).internet_settings,
-                    onTap: () => NavigationCubit.of(context)
+                    onTap: () => ref
+                        .read(navigationsProvider.notifier)
                         .push(InternetSettingsPath()),
                   ),
                   AppSimplePanel(
                     title: getAppLocalizations(context).lan,
-                    onTap: () =>
-                        NavigationCubit.of(context).push(LANSettingsPath()),
+                    onTap: () => ref
+                        .read(navigationsProvider.notifier)
+                        .push(LANSettingsPath()),
                   ),
                   AppSimplePanel(
                     title: getAppLocalizations(context).port_forwarding,
-                    onTap: () =>
-                        NavigationCubit.of(context).push(PortForwardingPath()),
+                    onTap: () => ref
+                        .read(navigationsProvider.notifier)
+                        .push(PortForwardingPath()),
                   ),
                   AppSimplePanel(
                     title: getAppLocalizations(context).mac_filtering,
-                    onTap: () =>
-                        NavigationCubit.of(context).push(MacFilteringPath()),
+                    onTap: () => ref
+                        .read(navigationsProvider.notifier)
+                        .push(MacFilteringPath()),
                   ),
                   AppPanelWithInfo(
                     title: getAppLocalizations(context).vlan,
                     infoText: 'OFF',
                     infoTextColor: ConstantColors.textBoxTextGray,
-                    onTap: () =>
-                        NavigationCubit.of(context).push(UnknownPath()),
+                    onTap: () => ref
+                        .read(navigationsProvider.notifier)
+                        .push(UnknownPath()),
                   ),
                   AppSimplePanel(
                     title: getAppLocalizations(context).advanced_routing,
-                    onTap: () =>
-                        NavigationCubit.of(context).push(UnknownPath()),
+                    onTap: () => ref
+                        .read(navigationsProvider.notifier)
+                        .push(UnknownPath()),
                   ),
                   AppSimplePanel(
                     title: getAppLocalizations(context).other,
-                    onTap: () =>
-                        NavigationCubit.of(context).push(UnknownPath()),
+                    onTap: () => ref
+                        .read(navigationsProvider.notifier)
+                        .push(UnknownPath()),
                   ),
                 ],
               ),
@@ -105,22 +117,25 @@ class _AdministrationViewState extends State<AdministrationView> {
                     title: getAppLocalizations(context).local_management_access,
                     infoText: 'ON',
                     infoTextColor: ConstantColors.secondaryElectricGreen,
-                    onTap: () =>
-                        NavigationCubit.of(context).push(UnknownPath()),
+                    onTap: () => ref
+                        .read(navigationsProvider.notifier)
+                        .push(UnknownPath()),
                   ),
                   AppPanelWithInfo(
                     title: getAppLocalizations(context).remote_access,
                     infoText: 'ON',
                     infoTextColor: ConstantColors.secondaryElectricGreen,
-                    onTap: () =>
-                        NavigationCubit.of(context).push(UnknownPath()),
+                    onTap: () => ref
+                        .read(navigationsProvider.notifier)
+                        .push(UnknownPath()),
                   ),
                   AppPanelWithInfo(
                     title: getAppLocalizations(context).web_ui,
                     infoText: 'ON',
                     infoTextColor: ConstantColors.secondaryElectricGreen,
-                    onTap: () =>
-                        NavigationCubit.of(context).push(UnknownPath()),
+                    onTap: () => ref
+                        .read(navigationsProvider.notifier)
+                        .push(UnknownPath()),
                   ),
                 ],
               ),
@@ -134,8 +149,9 @@ class _AdministrationViewState extends State<AdministrationView> {
                         getAppLocalizations(context).automatic_firmware_update,
                     infoText: 'ON',
                     infoTextColor: ConstantColors.secondaryElectricGreen,
-                    onTap: () =>
-                        NavigationCubit.of(context).push(UnknownPath()),
+                    onTap: () => ref
+                        .read(navigationsProvider.notifier)
+                        .push(UnknownPath()),
                   ),
                   AppPanelWithValueCheck(
                     title:

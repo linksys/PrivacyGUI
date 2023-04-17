@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/model/wifi_settings_path.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
-import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-class WifiSettingsView extends StatefulWidget {
+class WifiSettingsView extends ConsumerStatefulWidget {
   const WifiSettingsView({Key? key}) : super(key: key);
 
   @override
-  State<WifiSettingsView> createState() => _WifiSettingsViewState();
+  ConsumerState<WifiSettingsView> createState() => _WifiSettingsViewState();
 }
 
-class _WifiSettingsViewState extends State<WifiSettingsView> {
+class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
   @override
   void initState() {
     super.initState();
@@ -48,7 +48,8 @@ class _WifiSettingsViewState extends State<WifiSettingsView> {
                           context
                               .read<WifiSettingCubit>()
                               .selectWifi(state.wifiList[index]);
-                          NavigationCubit.of(context)
+                          ref
+                              .read(navigationsProvider.notifier)
                               .push(WifiSettingsReviewPath());
                         },
                         child: Column(

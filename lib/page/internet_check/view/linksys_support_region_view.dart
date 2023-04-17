@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 
-class LinksysSupportRegionView extends StatelessWidget {
-  LinksysSupportRegionView({Key? key}): super(key: key);
+class LinksysSupportRegionView extends ConsumerWidget {
+  LinksysSupportRegionView({Key? key}) : super(key: key);
 
   final regions = [
     //TODO: Check the localization
@@ -18,9 +19,9 @@ class LinksysSupportRegionView extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BasePageView.withCloseButton(
-      context,
+      context, ref,
       child: BasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).linksys_support_region_title,
@@ -31,9 +32,10 @@ class LinksysSupportRegionView extends StatelessWidget {
             return ListTile(
               title: Text(
                 regions[index],
-                style: Theme.of(context).textTheme.headline3?.copyWith(
-                  color: Theme.of(context).primaryColor
-                ),
+                style: Theme.of(context)
+                    .textTheme
+                    .headline3
+                    ?.copyWith(color: Theme.of(context).primaryColor),
               ),
               onTap: () {
                 print('Tap region: ${regions[index]}'); //TODO: Go to next page

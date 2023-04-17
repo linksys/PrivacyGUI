@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:graphview/GraphView.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/design/colors.dart';
@@ -12,6 +13,7 @@ import 'package:linksys_moab/page/dashboard/view/topology/topology_node.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
@@ -25,7 +27,7 @@ import '../../../../util/logger.dart';
 import 'custom_buchheim_walker_algorithm.dart';
 import 'custom_tree_edge_renderer.dart';
 
-class TopologyView extends ArgumentsStatelessView {
+class TopologyView extends ArgumentsConsumerStatelessView {
   const TopologyView({
     Key? key,
     super.next,
@@ -33,7 +35,7 @@ class TopologyView extends ArgumentsStatelessView {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final selectedId = args['selectedDeviceId'];
     return BlocProvider(
       create: (context) => TopologyCubit(context.read<RouterRepository>()),
@@ -44,16 +46,16 @@ class TopologyView extends ArgumentsStatelessView {
   }
 }
 
-class TopologyContentView extends StatefulWidget {
+class TopologyContentView extends ConsumerStatefulWidget {
   final String? selectedDeviceId;
   const TopologyContentView({Key? key, this.selectedDeviceId})
       : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _TopologyContentView();
+  ConsumerState<ConsumerStatefulWidget> createState() => _TopologyContentView();
 }
 
-class _TopologyContentView extends State<TopologyContentView> {
+class _TopologyContentView extends ConsumerState<TopologyContentView> {
   @override
   void initState() {
     super.initState();
@@ -95,7 +97,7 @@ class _TopologyContentView extends State<TopologyContentView> {
           //     SimpleTextButton(
           //         text: 'Restart mesh system',
           //         onPressed: () {
-          //           NavigationCubit.of(context).push(NodeRestartPath());
+          //           ref.read(navigationsProvider.notifier).push(NodeRestartPath());
           //         })
           //   ],
           // ),
@@ -170,7 +172,7 @@ class _TopologyContentView extends State<TopologyContentView> {
   }
 }
 
-class TreeViewPage extends StatefulWidget {
+class TreeViewPage extends ConsumerStatefulWidget {
   final TopologyNode root;
   final bool isChainMode;
 
@@ -181,10 +183,10 @@ class TreeViewPage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<TreeViewPage> createState() => _TreeViewPageState();
+  ConsumerState<TreeViewPage> createState() => _TreeViewPageState();
 }
 
-class _TreeViewPageState extends State<TreeViewPage> {
+class _TreeViewPageState extends ConsumerState<TreeViewPage> {
   final Graph graph = Graph()..isTree = true;
   BuchheimWalkerConfiguration builder = BuchheimWalkerConfiguration();
 
@@ -241,9 +243,9 @@ class _TreeViewPageState extends State<TreeViewPage> {
           if (nodeDevice.isOnline) {
             // Update the current target Id for node state
             context.read<NodeCubit>().setDetailNodeID(nodeDevice.deviceID);
-            NavigationCubit.of(context).push(NodeDetailPath());
+            ref.read(navigationsProvider.notifier).push(NodeDetailPath());
           } else {
-            NavigationCubit.of(context).push(NodeOfflineCheckPath());
+            ref.read(navigationsProvider.notifier).push(NodeOfflineCheckPath());
           }
         } else {}
       },

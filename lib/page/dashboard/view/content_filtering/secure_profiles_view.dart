@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/content_filter/cubit.dart';
 import 'package:linksys_moab/bloc/content_filter/state.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
@@ -15,22 +16,23 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/content_filter_path.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
 
 import 'component.dart';
 
-class ContentFilteringPresetsView extends ArgumentsStatefulView {
+class ContentFilteringPresetsView extends ArgumentsConsumerStatefulView {
   const ContentFilteringPresetsView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<ContentFilteringPresetsView> createState() =>
+  ConsumerState<ContentFilteringPresetsView> createState() =>
       _ContentFilteringPresetsViewState();
 }
 
 class _ContentFilteringPresetsViewState
-    extends State<ContentFilteringPresetsView> {
+    extends ConsumerState<ContentFilteringPresetsView> {
   List<CFSecureProfile> _presets = const [];
   late final String? _profileId;
   bool isLoading = false;
@@ -73,14 +75,15 @@ class _ContentFilteringPresetsViewState
                     style:
                         TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                 leading: BackButton(onPressed: () {
-                  NavigationCubit.of(context).pop();
+                  ref.read(navigationsProvider.notifier).pop();
                 }),
                 actions: [
                   TextButton(
                       onPressed: () {
                         final profileId = _profileId;
                         if (profileId != null) {
-                          final networkId = context.read<NetworkCubit>().state.selected!.id;
+                          final networkId =
+                              context.read<NetworkCubit>().state.selected!.id;
                           context
                               .read<ProfilesCubit>()
                               .updateContentFilterDetails(
@@ -89,8 +92,8 @@ class _ContentFilteringPresetsViewState
                                 state.selectedSecureProfile!,
                                 state.searchAppSignatureSet,
                               )
-                              .then(
-                                  (value) => NavigationCubit.of(context).pop());
+                              .then((value) =>
+                                  ref.read(navigationsProvider.notifier).pop());
                         } else {
                           logger.e('No profile id');
                         }
@@ -116,7 +119,9 @@ class _ContentFilteringPresetsViewState
                         box36(),
                         InkWell(
                           onTap: () {
-                            NavigationCubit.of(context).push(CFAppSearchPath());
+                            ref
+                                .read(navigationsProvider.notifier)
+                                .push(CFAppSearchPath());
                           },
                           child: Container(
                             decoration: BoxDecoration(
@@ -226,7 +231,7 @@ class _ContentFilteringPresetsViewState
             .map((category) => InkWell(
                 onTap: () async {
                   final newCategory = await showPopup(
-                      context: context,
+                      ref: ref,
                       config: CFFilterCategoryPath()
                         ..args = {'selected': category}) as CFSecureCategory;
                   final index = state.selectedSecureProfile?.securityCategories
@@ -261,7 +266,7 @@ class _ContentFilteringPresetsViewState
   }
 }
 
-class FilterItem extends StatelessWidget {
+class FilterItem extends ConsumerWidget {
   const FilterItem({Key? key, required this.name, required this.status})
       : super(key: key);
 
@@ -269,7 +274,7 @@ class FilterItem extends StatelessWidget {
   final FilterStatus status;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return (Row(
       children: [
         Icon(Icons.add),

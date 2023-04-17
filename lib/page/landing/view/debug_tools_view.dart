@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
@@ -15,7 +16,6 @@ import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/bluetooth/bluetooth.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/jnap/jnap_transaction.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
@@ -31,20 +31,18 @@ import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-class DebugToolsView extends StatefulWidget {
+class DebugToolsView extends ConsumerStatefulWidget {
   const DebugToolsView({
     Key? key,
   }) : super(key: key);
 
   @override
-  State<DebugToolsView> createState() => _DebugToolsViewState();
+  ConsumerState<DebugToolsView> createState() => _DebugToolsViewState();
 }
 
-class _DebugToolsViewState extends State<DebugToolsView> {
+class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
   StreamSubscription? _streamSubscription;
   String? _fcmToken;
   String? _apnsToken;

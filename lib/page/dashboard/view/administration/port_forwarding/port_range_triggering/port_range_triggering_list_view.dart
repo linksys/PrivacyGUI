@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -14,13 +15,14 @@ import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-class PortRangeTriggeringListView extends ArgumentsStatelessView {
+class PortRangeTriggeringListView extends ArgumentsConsumerStatelessView {
   const PortRangeTriggeringListView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider<PortRangeTriggeringListCubit>(
       create: (context) => PortRangeTriggeringListCubit(
           repository: context.read<RouterRepository>()),
@@ -32,17 +34,16 @@ class PortRangeTriggeringListView extends ArgumentsStatelessView {
   }
 }
 
-class PortRangeTriggeringListContentView extends ArgumentsStatefulView {
-  const PortRangeTriggeringListContentView(
-      {super.key, super.next, super.args});
+class PortRangeTriggeringListContentView extends ArgumentsConsumerStatefulView {
+  const PortRangeTriggeringListContentView({super.key, super.next, super.args});
 
   @override
-  State<PortRangeTriggeringListContentView> createState() =>
+  ConsumerState<PortRangeTriggeringListContentView> createState() =>
       _PortRangeTriggeringContentViewState();
 }
 
 class _PortRangeTriggeringContentViewState
-    extends State<PortRangeTriggeringListContentView> {
+    extends ConsumerState<PortRangeTriggeringListContentView> {
   late final PortRangeTriggeringListCubit _cubit;
 
   bool _isBehindRouter = false;
@@ -109,9 +110,10 @@ class _PortRangeTriggeringContentViewState
                 SimpleTextButton(
                   text: getAppLocalizations(context).add_rule,
                   onPressed: () {
-                    NavigationCubit.of(context)
-                        .pushAndWait(
-                            PortRangeTriggeringRulePath()..args = {'rules': state.rules})
+                    ref
+                        .read(navigationsProvider.notifier)
+                        .pushAndWait(PortRangeTriggeringRulePath()
+                          ..args = {'rules': state.rules})
                         .then((value) {
                       if (value ?? false) {
                         _cubit.fetch();
@@ -129,7 +131,8 @@ class _PortRangeTriggeringContentViewState
                           : getAppLocalizations(context).off,
                     ),
                     onPress: () {
-                      NavigationCubit.of(context)
+                      ref
+                          .read(navigationsProvider.notifier)
                           .pushAndWait(SinglePortForwardingRulePath()
                             ..args = {'rules': state.rules, 'edit': e})
                           .then((value) {

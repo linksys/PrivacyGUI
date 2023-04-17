@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
@@ -13,6 +14,7 @@ import 'package:linksys_moab/page/components/customs/network_check_view.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 
 import 'package:linksys_moab/util/logger.dart';
@@ -24,16 +26,17 @@ import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-class EnterRouterPasswordView extends StatefulWidget {
+class EnterRouterPasswordView extends ConsumerStatefulWidget {
   const EnterRouterPasswordView({
     Key? key,
   }) : super(key: key);
 
   @override
-  State<EnterRouterPasswordView> createState() => _EnterRouterPasswordState();
+  ConsumerState<EnterRouterPasswordView> createState() =>
+      _EnterRouterPasswordState();
 }
 
-class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
+class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
   bool _isConnectedToRouter = false;
   bool _isLoading = false;
   bool _isPasswordValidate = false;
@@ -134,7 +137,9 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
             ),
           LinksysTertiaryButton(
               getAppLocalizations(context).forgot_router_password, onTap: () {
-            NavigationCubit.of(context).push(AuthLocalRecoveryKeyPath());
+            ref
+                .read(navigationsProvider.notifier)
+                .push(AuthLocalRecoveryKeyPath());
           }),
           const Spacer(),
           LinksysPrimaryButton(
@@ -168,7 +173,9 @@ class _EnterRouterPasswordState extends State<EnterRouterPasswordView> {
 
   _handleAdminPasswordInfo(AdminPasswordInfo info) {
     if (!info.hasAdminPassword) {
-      NavigationCubit.of(context).replace(CreateAdminPasswordPath()..args = {});
+      ref
+          .read(navigationsProvider.notifier)
+          .replace(CreateAdminPasswordPath()..args = {});
     } else {
       setState(() {
         _hint = info.hint;

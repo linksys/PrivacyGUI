@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -11,13 +12,14 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-class PortForwardingView extends ArgumentsStatelessView {
+class PortForwardingView extends ArgumentsConsumerStatelessView {
   const PortForwardingView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return PortForwardingContentView(
       next: super.next,
       args: super.args,
@@ -25,16 +27,16 @@ class PortForwardingView extends ArgumentsStatelessView {
   }
 }
 
-class PortForwardingContentView extends ArgumentsStatefulView {
+class PortForwardingContentView extends ArgumentsConsumerStatefulView {
   const PortForwardingContentView({super.key, super.next, super.args});
 
   @override
-  State<PortForwardingContentView> createState() =>
+  ConsumerState<PortForwardingContentView> createState() =>
       _PortForwardingContentViewState();
 }
 
-class _PortForwardingContentViewState extends State<PortForwardingContentView> {
-
+class _PortForwardingContentViewState
+    extends ConsumerState<PortForwardingContentView> {
   bool _isBehindRouter = false;
   StreamSubscription? _subscription;
 
@@ -80,23 +82,28 @@ class _PortForwardingContentViewState extends State<PortForwardingContentView> {
           children: [
             box24(),
             administrationTile(
-              title:
-              title(getAppLocalizations(context).single_port_forwarding),
+              title: title(getAppLocalizations(context).single_port_forwarding),
               onPress: () {
-                NavigationCubit.of(context).push(SinglePortForwardingListPath());
+                ref
+                    .read(navigationsProvider.notifier)
+                    .push(SinglePortForwardingListPath());
               },
             ),
             administrationTile(
                 title:
-                title(getAppLocalizations(context).port_range_forwarding),
+                    title(getAppLocalizations(context).port_range_forwarding),
                 onPress: () {
-                  NavigationCubit.of(context).push(PortRangeForwardingListPath());
+                  ref
+                      .read(navigationsProvider.notifier)
+                      .push(PortRangeForwardingListPath());
                 }),
             administrationTile(
                 title:
-                title(getAppLocalizations(context).port_range_triggering),
+                    title(getAppLocalizations(context).port_range_triggering),
                 onPress: () {
-                  NavigationCubit.of(context).push(PortRangeTriggeringListPath());
+                  ref
+                      .read(navigationsProvider.notifier)
+                      .push(PortRangeTriggeringListPath());
                 }),
           ],
         ),

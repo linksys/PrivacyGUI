@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/account/state.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
@@ -10,6 +11,7 @@ import 'package:linksys_moab/page/components/shortcuts/dialogs.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/input_field/password_input_field.dart';
 import 'package:styled_text/styled_text.dart';
@@ -17,14 +19,14 @@ import 'package:styled_text/styled_text.dart';
 import '../../../../bloc/internet_check/cubit.dart';
 import '../../../../route/model/create_account_path.dart';
 
-class AccountView extends StatefulWidget {
+class AccountView extends ConsumerStatefulWidget {
   const AccountView({super.key});
 
   @override
-  State<AccountView> createState() => _AccountViewState();
+  ConsumerState<AccountView> createState() => _AccountViewState();
 }
 
-class _AccountViewState extends State<AccountView> {
+class _AccountViewState extends ConsumerState<AccountView> {
   late final TextEditingController _passwordController;
   String _displayPhoneNumber = '';
   @override
@@ -160,7 +162,7 @@ class _AccountViewState extends State<AccountView> {
   //             : "Password",
   //         style: TextStyle(color: Colors.black.withOpacity(0.5))),
   //     onPress: () {
-  //       NavigationCubit.of(context).push(LoginMethodOptionsPath());
+  //       ref.read(navigationsProvider.notifier).push(LoginMethodOptionsPath());
   //     },
   //   );
   // }
@@ -246,7 +248,7 @@ class _AccountViewState extends State<AccountView> {
             text: 'Create an account',
             onPress: () {
               context.read<InternetCheckCubit>().getInternetConnectionStatus();
-              context.read<NavigationCubit>().push(CreateCloudAccountPath()
+              ref.read(navigationsProvider.notifier).push(CreateCloudAccountPath()
                 ..args = {'config': 'LOCALAUTHCREATEACCOUNT'});
             },
           ),

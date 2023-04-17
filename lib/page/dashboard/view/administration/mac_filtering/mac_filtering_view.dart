@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -12,16 +13,17 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 
 import '../common_widget.dart';
 import 'bloc/cubit.dart';
 
-class MacFilteringView extends ArgumentsStatelessView {
+class MacFilteringView extends ArgumentsConsumerStatelessView {
   const MacFilteringView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
       create: (context) => MacFilteringCubit(context.read<RouterRepository>()),
       child: MacFilteringContentView(
@@ -32,15 +34,16 @@ class MacFilteringView extends ArgumentsStatelessView {
   }
 }
 
-class MacFilteringContentView extends ArgumentsStatefulView {
+class MacFilteringContentView extends ArgumentsConsumerStatefulView {
   const MacFilteringContentView({super.key, super.next, super.args});
 
   @override
-  State<MacFilteringContentView> createState() =>
+  ConsumerState<MacFilteringContentView> createState() =>
       _MacFilteringContentViewState();
 }
 
-class _MacFilteringContentViewState extends State<MacFilteringContentView> {
+class _MacFilteringContentViewState
+    extends ConsumerState<MacFilteringContentView> {
   late final MacFilteringCubit _cubit;
 
   bool _isBehindRouter = false;
@@ -120,7 +123,8 @@ class _MacFilteringContentViewState extends State<MacFilteringContentView> {
                 title: title(getAppLocalizations(context).access),
                 value: subTitle(state.status.name),
                 onPress: () async {
-                  final String? selected = await NavigationCubit.of(context)
+                  final String? selected = await ref
+                      .read(navigationsProvider.notifier)
                       .pushAndWait(SimpleItemPickerPath()
                         ..args = {
                           'items': [
@@ -155,7 +159,7 @@ class _MacFilteringContentViewState extends State<MacFilteringContentView> {
                     text: getAppLocalizations(context).select_device,
                     padding: EdgeInsets.zero,
                     onPressed: () async {
-                      // String? deviceIp = await NavigationCubit.of(context)
+                      // String? deviceIp = await ref.read(navigationsProvider.notifier)
                       //     .pushAndWait(SelectDevicePtah());
                     },
                   ),
@@ -163,7 +167,8 @@ class _MacFilteringContentViewState extends State<MacFilteringContentView> {
               ),
               value: InkWell(
                 onTap: () async {
-                  String? macAddress = await NavigationCubit.of(context)
+                  String? macAddress = await ref
+                      .read(navigationsProvider.notifier)
                       .pushAndWait(MacFilteringInputPath());
                   if (macAddress != null) {
                     // TODO query devices name and save device

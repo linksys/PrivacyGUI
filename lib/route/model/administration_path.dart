@@ -22,7 +22,7 @@ import 'package:linksys_moab/route/model/_model.dart';
 
 class AdministrationPath extends DashboardPath {
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
       case AdministrationViewPath:
         return const AdministrationView();

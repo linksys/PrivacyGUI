@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
@@ -14,7 +15,7 @@ import 'package:linksys_widgets/widgets/input_field/password_input_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-class RouterPasswordView extends ArgumentsStatelessView {
+class RouterPasswordView extends ArgumentsConsumerStatelessView {
   const RouterPasswordView({
     Key? key,
     super.next,
@@ -22,7 +23,7 @@ class RouterPasswordView extends ArgumentsStatelessView {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
       create: (context) =>
           RouterPasswordCubit(context.read<RouterRepository>()),
@@ -34,16 +35,17 @@ class RouterPasswordView extends ArgumentsStatelessView {
   }
 }
 
-class RouterPasswordContentView extends ArgumentsStatefulView {
+class RouterPasswordContentView extends ArgumentsConsumerStatefulView {
   const RouterPasswordContentView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<RouterPasswordContentView> createState() =>
+  ConsumerState<RouterPasswordContentView> createState() =>
       _RouterPasswordContentViewState();
 }
 
-class _RouterPasswordContentViewState extends State<RouterPasswordContentView> {
+class _RouterPasswordContentViewState
+    extends ConsumerState<RouterPasswordContentView> {
   late final RouterPasswordCubit _cubit;
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _hintController = TextEditingController();

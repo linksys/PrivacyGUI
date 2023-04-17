@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/add_nodes/cubit.dart';
@@ -40,6 +41,7 @@ import 'package:linksys_moab/repository/subscription/subscription_repository.dar
 import 'package:linksys_moab/route/_route.dart';
 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:linksys_moab/route/router_delegate.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -106,7 +108,10 @@ void main() async {
   runApp(_app());
 }
 
+final container = ProviderContainer();
 Widget _app() {
+  final routerRepository = container.read(routerRepositoryProvider);
+
   return MultiRepositoryProvider(
     providers: [
       RepositoryProvider(
@@ -114,7 +119,7 @@ Widget _app() {
       RepositoryProvider(
           create: (context) => MoabEnvironmentRepository(MoabHttpClient())),
       RepositoryProvider(create: (context) => CloudAccountRepository()),
-      RepositoryProvider(create: (context) => RouterRepository()),
+      RepositoryProvider(create: (context) => routerRepository),
       RepositoryProvider(create: (context) => CloudNetworksRepository()),
       RepositoryProvider(
           create: (context) => OtpRepository(httpClient: MoabHttpClient())),
@@ -123,81 +128,84 @@ Widget _app() {
           create: (context) =>
               LinksysCloudRepository(httpClient: LinksysHttpClient())),
     ],
-    child: MultiBlocProvider(providers: [
-      BlocProvider(
-        create: (BuildContext context) => NavigationCubit([HomePath()]),
-      ),
-      BlocProvider(
-        create: (BuildContext context) => AuthBloc(
-          repo: context.read<CloudAuthRepository>(),
-          cloudRepo: context.read<LinksysCloudRepository>(),
-          routerRepo: context.read<RouterRepository>(),
-        ),
-      ),
-      BlocProvider(
-          create: (BuildContext context) => ConnectivityCubit(
-                routerRepository: context.read<RouterRepository>(),
-              )),
-      BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
-      BlocProvider(
-        create: (BuildContext context) => OtpCubit(
-          otpRepository: context.read<OtpRepository>(),
-          repository: context.read<LinksysCloudRepository>(),
-        ),
-      ),
-      BlocProvider(
-          create: (BuildContext context) =>
-              SetupBloc(routerRepository: context.read<RouterRepository>())),
-      BlocProvider(
-          create: (BuildContext context) =>
-              ProfilesCubit(context.read<RouterRepository>())),
-      BlocProvider(
-          create: (BuildContext context) =>
-              DeviceCubit(routerRepository: context.read<RouterRepository>())),
-      BlocProvider(
-          create: (BuildContext context) =>
-              NodeCubit(context.read<RouterRepository>())),
-      BlocProvider(
-          create: (BuildContext context) =>
-              AccountCubit(repository: context.read<LinksysCloudRepository>())),
-      BlocProvider(create: (BuildContext context) => ContentFilterCubit()),
-      BlocProvider(create: (BuildContext context) => SecurityBloc()),
-      BlocProvider(
-          create: (BuildContext context) => SubscriptionCubit(
-              repository: context.read<SubscriptionRepository>())),
-      BlocProvider(
-          create: (BuildContext context) => NetworkCubit(
-                networksRepository: context.read<CloudNetworksRepository>(),
-                cloudRepository: context.read<LinksysCloudRepository>(),
-                routerRepository: context.read<RouterRepository>(),
-              )),
-      BlocProvider(
-          create: (BuildContext context) => InternetCheckCubit(
-              routerRepository: context.read<RouterRepository>())),
-      BlocProvider(
-          create: (BuildContext context) => AddNodesCubit(
-              routerRepository: context.read<RouterRepository>())),
-      BlocProvider(
-          create: (BuildContext context) => WifiSettingCubit(
-              routerRepository: context.read<RouterRepository>())),
-    ], child: const MoabApp()),
+    child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (BuildContext context) => AuthBloc(
+              repo: context.read<CloudAuthRepository>(),
+              cloudRepo: context.read<LinksysCloudRepository>(),
+              routerRepo: context.read<RouterRepository>(),
+            ),
+          ),
+          BlocProvider(
+              create: (BuildContext context) => ConnectivityCubit(
+                    routerRepository: context.read<RouterRepository>(),
+                  )),
+          BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
+          BlocProvider(
+            create: (BuildContext context) => OtpCubit(
+              otpRepository: context.read<OtpRepository>(),
+              repository: context.read<LinksysCloudRepository>(),
+            ),
+          ),
+          BlocProvider(
+              create: (BuildContext context) => SetupBloc(
+                  routerRepository: context.read<RouterRepository>())),
+          BlocProvider(
+              create: (BuildContext context) =>
+                  ProfilesCubit(context.read<RouterRepository>())),
+          BlocProvider(
+              create: (BuildContext context) => DeviceCubit(
+                  routerRepository: context.read<RouterRepository>())),
+          BlocProvider(
+              create: (BuildContext context) =>
+                  NodeCubit(context.read<RouterRepository>())),
+          BlocProvider(
+              create: (BuildContext context) => AccountCubit(
+                  repository: context.read<LinksysCloudRepository>())),
+          BlocProvider(create: (BuildContext context) => ContentFilterCubit()),
+          BlocProvider(create: (BuildContext context) => SecurityBloc()),
+          BlocProvider(
+              create: (BuildContext context) => SubscriptionCubit(
+                  repository: context.read<SubscriptionRepository>())),
+          BlocProvider(
+              create: (BuildContext context) => NetworkCubit(
+                    networksRepository: context.read<CloudNetworksRepository>(),
+                    cloudRepository: context.read<LinksysCloudRepository>(),
+                    routerRepository: context.read<RouterRepository>(),
+                  )),
+          BlocProvider(
+              create: (BuildContext context) => InternetCheckCubit(
+                  routerRepository: context.read<RouterRepository>())),
+          BlocProvider(
+              create: (BuildContext context) => AddNodesCubit(
+                  routerRepository: context.read<RouterRepository>())),
+          BlocProvider(
+              create: (BuildContext context) => WifiSettingCubit(
+                  routerRepository: context.read<RouterRepository>())),
+        ],
+        child: ProviderScope(
+          observers: [Logger()],
+          parent: container,
+          child: const MoabApp(),
+        )),
   );
 }
 
-class MoabApp extends StatefulWidget {
+class MoabApp extends ConsumerStatefulWidget {
   const MoabApp({Key? key}) : super(key: key);
 
   @override
-  State<MoabApp> createState() => _MoabAppState();
+  ConsumerState<MoabApp> createState() => _MoabAppState();
 }
 
-class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
+class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
   late ConnectivityCubit _cubit;
   late StreamSubscription<List<PurchaseDetails>> _subscription;
 
   @override
   void initState() {
-    logger.d('Moab App init state: ${describeIdentity(this)}');
+    // logger.d('Moab App init state: ${describeIdentity(this)}');
     _initAuth();
     _intIAP();
 
@@ -222,7 +230,7 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    logger.d('Moab App build: ${describeIdentity(this)}');
+    // logger.d('Moab App build: ${describeIdentity(this)}');
     return MaterialApp.router(
       onGenerateTitle: (context) => getAppLocalizations(context).app_title,
       theme: ThemeData.light().copyWith(
@@ -234,8 +242,8 @@ class _MoabAppState extends State<MoabApp> with WidgetsBindingObserver {
       ),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      routerDelegate: MoabRouterDelegate(context.read<NavigationCubit>()),
-      routeInformationParser: MoabRouteInformationParser(),
+      routerDelegate: ref.read(routerDelegateProvider),
+      routeInformationParser: LinksysRouteInformationParser(),
     );
   }
 
@@ -268,5 +276,21 @@ class MyHTTPOverrides extends HttpOverrides {
         // logger.d('cert:: issuer:${cert.issuer}, subject:${cert.subject}');
         return true;
       };
+  }
+}
+
+class Logger extends ProviderObserver {
+  @override
+  void didUpdateProvider(
+    ProviderBase<Object?> provider,
+    Object? previousValue,
+    Object? newValue,
+    ProviderContainer container,
+  ) {
+    print('''
+{
+  "provider": "${provider.name ?? provider.runtimeType}",
+  "newValue": "$newValue"
+}''');
   }
 }

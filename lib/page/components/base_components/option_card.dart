@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 
-class OptionCard extends StatelessWidget {
+class OptionCard extends ConsumerWidget {
   const OptionCard({
     Key? key,
     required this.title,
     required this.description,
     this.minHeight = 120,
     this.onPress,
-  }): super(key: key);
+  }) : super(key: key);
 
   final String title;
   final String description;
@@ -16,7 +17,7 @@ class OptionCard extends StatelessWidget {
   final VoidCallback? onPress;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: onPress,
       child: Container(
@@ -39,16 +40,15 @@ class OptionCard extends StatelessWidget {
                     title,
                     style: Theme.of(context).textTheme.headline3?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: Theme.of(context).primaryColor
-                    ),
+                        color: Theme.of(context).primaryColor),
                   ),
                   box16(),
                   Text(
                     description,
                     style: Theme.of(context).textTheme.headline4?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).primaryColor,
-                    ),
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).primaryColor,
+                        ),
                   ),
                 ],
               ),

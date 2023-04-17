@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/internet_check/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -8,22 +9,24 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
-class EnterStaticIpView extends StatefulWidget {
+class EnterStaticIpView extends ConsumerStatefulWidget {
   const EnterStaticIpView({Key? key}) : super(key: key);
 
   @override
-  State<EnterStaticIpView> createState() => _EnterStaticIpViewState();
+  ConsumerState<EnterStaticIpView> createState() => _EnterStaticIpViewState();
 }
 
-class _EnterStaticIpViewState extends State<EnterStaticIpView> {
+class _EnterStaticIpViewState extends ConsumerState<EnterStaticIpView> {
   final TextEditingController ipController = TextEditingController();
   final TextEditingController subnetController = TextEditingController();
   final TextEditingController gatewayController = TextEditingController();
   final TextEditingController dns1Controller = TextEditingController();
   final TextEditingController dns2Controller = TextEditingController();
-  final IpAddressRequiredValidator ipAddressValidator = IpAddressRequiredValidator();
+  final IpAddressRequiredValidator ipAddressValidator =
+      IpAddressRequiredValidator();
   final SubnetValidator subnetValidator = SubnetValidator();
-  final IpAddressRequiredValidator gatewayValidator = IpAddressRequiredValidator();
+  final IpAddressRequiredValidator gatewayValidator =
+      IpAddressRequiredValidator();
   final IpAddressRequiredValidator dns1Validator = IpAddressRequiredValidator();
   final IpAddressValidator dns2Validator = IpAddressValidator();
 

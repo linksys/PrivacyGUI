@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum SettingTileAxis {
   vertical,
   horizontal,
 }
 
-class SettingTile extends StatelessWidget {
+class SettingTile extends ConsumerWidget {
   const SettingTile({
     Key? key,
     required this.title,
@@ -73,7 +73,7 @@ class SettingTile extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
       onTap: onPress,
       child: Container(
@@ -104,7 +104,7 @@ class SettingTile extends StatelessWidget {
   }
 }
 
-class SectionTile extends StatelessWidget {
+class SectionTile extends ConsumerWidget {
   const SectionTile({
     Key? key,
     this.enabled = true,
@@ -117,7 +117,7 @@ class SectionTile extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,

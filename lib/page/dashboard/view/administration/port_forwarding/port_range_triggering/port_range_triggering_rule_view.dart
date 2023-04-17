@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/router/port_range_triggering_rule.dart';
@@ -14,13 +15,14 @@ import 'package:linksys_moab/page/dashboard/view/administration/common_widget.da
 import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/port_range_triggering/bloc/port_range_triggering_rule_cubit.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-class PortRangeTriggeringRuleView extends ArgumentsStatelessView {
+class PortRangeTriggeringRuleView extends ArgumentsConsumerStatelessView {
   const PortRangeTriggeringRuleView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
       create: (context) => PortRangeTriggeringRuleCubit(
           repository: context.read<RouterRepository>()),
@@ -32,16 +34,16 @@ class PortRangeTriggeringRuleView extends ArgumentsStatelessView {
   }
 }
 
-class PortRangeTriggeringRuleContentView extends ArgumentsStatefulView {
+class PortRangeTriggeringRuleContentView extends ArgumentsConsumerStatefulView {
   const PortRangeTriggeringRuleContentView({super.key, super.next, super.args});
 
   @override
-  State<PortRangeTriggeringRuleContentView> createState() =>
+  ConsumerState<PortRangeTriggeringRuleContentView> createState() =>
       _AddRuleContentViewState();
 }
 
 class _AddRuleContentViewState
-    extends State<PortRangeTriggeringRuleContentView> {
+    extends ConsumerState<PortRangeTriggeringRuleContentView> {
   late final PortRangeTriggeringRuleCubit _cubit;
 
   bool _isBehindRouter = false;
@@ -134,7 +136,7 @@ class _AddRuleContentViewState
                           context, getAppLocalizations(context).rule_added);
                     }
 
-                    NavigationCubit.of(context).popWithResult(true);
+                    ref.read(navigationsProvider.notifier).popWithResult(true);
                   }
                 });
               },
@@ -176,7 +178,7 @@ class _AddRuleContentViewState
             if (value) {
               showSuccessSnackBar(
                   context, getAppLocalizations(context).rule_deleted);
-              NavigationCubit.of(context).popWithResult(true);
+              ref.read(navigationsProvider.notifier).popWithResult(true);
             }
           });
         },

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -7,15 +8,15 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
 import '../../../bloc/auth/bloc.dart';
 import '../../../bloc/auth/state.dart';
-import '../../../route/navigation_cubit.dart';
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 
-class CloudResetPasswordView extends ArgumentsStatefulView {
+class CloudResetPasswordView extends ArgumentsConsumerStatefulView {
   const CloudResetPasswordView({Key? key}) : super(key: key);
 
   @override
@@ -23,7 +24,8 @@ class CloudResetPasswordView extends ArgumentsStatefulView {
       _CloudForgotPasswordViewState();
 }
 
-class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
+class _CloudForgotPasswordViewState
+    extends ConsumerState<CloudResetPasswordView> {
   final TextEditingController _passwordController = TextEditingController();
   String _errorReason = '';
   bool _isLoading = false;
@@ -45,7 +47,7 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
 
   Widget _setNewPasswordView() {
     return BasePageView.withCloseButton(
-      context,
+      context, ref,
       scrollable: true,
       child: BasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,7 +115,7 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
                 color: Colors.white,
               ),
               onPressed: () {
-                NavigationCubit.of(context).clearAndPush(HomePath());
+                ref.read(navigationsProvider.notifier).clearAndPush(HomePath());
               },
             ),
           ],
@@ -124,7 +126,7 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
 
   Widget _linkExpiredView() {
     return BasePageView.withCloseButton(
-      context,
+      context, ref,
       child: BasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
@@ -138,7 +140,7 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
             PrimaryButton(
               text: getAppLocalizations(context).back_to_login,
               onPress: () {
-                NavigationCubit.of(context).clearAndPush(HomePath());
+                ref.read(navigationsProvider.notifier).clearAndPush(HomePath());
               },
             )
           ],
@@ -170,7 +172,8 @@ class _CloudForgotPasswordViewState extends State<CloudResetPasswordView> {
       setState(() {
         _errorReason = e.code;
       });
-    } else { // Unknown error or error parsing
+    } else {
+      // Unknown error or error parsing
       logger.d('Unknown error: $e');
     }
   }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
-class PasswordValidityWidget extends StatelessWidget {
+class PasswordValidityWidget extends ConsumerWidget {
   final List<PasswordValidation> _validityList = [
     PasswordValidation('At least 10 characters', LengthRule().name, false),
     PasswordValidation(
@@ -27,7 +28,7 @@ class PasswordValidityWidget extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     TextStyle? _textStyle = Theme.of(context)
         .textTheme
         .headline4

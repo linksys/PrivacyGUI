@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -43,14 +44,14 @@ const tempData = {
   ]
 };
 
-class LinkupView extends StatefulWidget {
+class LinkupView extends ConsumerStatefulWidget {
   const LinkupView({super.key});
 
   @override
-  State<LinkupView> createState() => _LinkupViewState();
+  ConsumerState<LinkupView> createState() => _LinkupViewState();
 }
 
-class _LinkupViewState extends State<LinkupView> {
+class _LinkupViewState extends ConsumerState<LinkupView> {
   late final Future<Map<String, dynamic>> _future;
 
   @override

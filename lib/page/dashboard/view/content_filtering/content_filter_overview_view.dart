@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/content_filter/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/_profiles.dart';
 import 'package:linksys_moab/design/colors.dart';
@@ -14,20 +15,20 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/content_filter_path.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/security/security_profile_manager.dart';
 
-
-class ContentFilterOverviewView extends ArgumentsStatefulView {
+class ContentFilterOverviewView extends ArgumentsConsumerStatefulView {
   const ContentFilterOverviewView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<ContentFilterOverviewView> createState() =>
+  ConsumerState<ContentFilterOverviewView> createState() =>
       _ContentFilterOverviewViewState();
 }
 
 class _ContentFilterOverviewViewState
-    extends State<ContentFilterOverviewView> {
+    extends ConsumerState<ContentFilterOverviewView> {
   ContentFilterData? _data;
   @override
   void initState() {
@@ -37,7 +38,12 @@ class _ContentFilterOverviewViewState
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
-      _data = context.read<ProfilesCubit>().state.selectedProfile?.contentFilterConfig?.data;
+      _data = context
+          .read<ProfilesCubit>()
+          .state
+          .selectedProfile
+          ?.contentFilterConfig
+          ?.data;
       return BasePageView.onDashboardSecondary(
         appBar: AppBar(
           automaticallyImplyLeading: false,
@@ -46,13 +52,14 @@ class _ContentFilterOverviewViewState
           title: Text(state.selectedProfile?.name ?? '',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           leading: BackButton(onPressed: () {
-            NavigationCubit.of(context).pop();
+            ref.read(navigationsProvider.notifier).pop();
           }),
         ),
         child: Column(
           children: [
             box16(),
-            _contentFilterToggle(_data?.isEnabled ?? false, _data?.profileId ?? ''),
+            _contentFilterToggle(
+                _data?.isEnabled ?? false, _data?.profileId ?? ''),
             _contentFilterLevel(_data),
           ],
         ),
@@ -63,9 +70,13 @@ class _ContentFilterOverviewViewState
   Widget _contentFilterToggle(bool isEnabled, String profileId) {
     return SettingTile(
         title: Text(getAppLocalizations(context).content_filter_toggle_title),
-        value: Switch.adaptive(value: isEnabled, onChanged: (value) {
-          context.read<ProfilesCubit>().updateContentFilterEnabled(profileId, value);
-        }));
+        value: Switch.adaptive(
+            value: isEnabled,
+            onChanged: (value) {
+              context
+                  .read<ProfilesCubit>()
+                  .updateContentFilterEnabled(profileId, value);
+            }));
   }
 
   Widget _contentFilterLevel(ContentFilterData? data) {
@@ -84,13 +95,15 @@ class _ContentFilterOverviewViewState
             ),
       onPress: () {
         context.read<ContentFilterCubit>().selectSecureProfile(_preset);
-        NavigationCubit.of(context).push(CFPresetsPath()..args = {'profileId': data?.profileId});
+        ref
+            .read(navigationsProvider.notifier)
+            .push(CFPresetsPath()..args = {'profileId': data?.profileId});
       },
     );
   }
 }
 
-class CFPresetLabel extends StatelessWidget {
+class CFPresetLabel extends ConsumerWidget {
   const CFPresetLabel({Key? key, required this.name, required this.color})
       : super(key: key);
 
@@ -118,7 +131,7 @@ class CFPresetLabel extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [

@@ -2,7 +2,6 @@ import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/network/jnap/result/fcn_result.dart';
 
-
 abstract class JNAPResult extends Equatable {
   const JNAPResult({required this.result});
 
@@ -30,6 +29,7 @@ class JNAPSuccess extends JNAPResult {
   const JNAPSuccess({
     required super.result,
     this.output = const {},
+    this.sideEffects,
   });
 
   factory JNAPSuccess.fromJson(Map<String, dynamic> json) {
@@ -38,16 +38,21 @@ class JNAPSuccess extends JNAPResult {
         : JNAPSuccess(
             result: json[keyJnapResult],
             output: json[keyJnapOutput] ?? {},
+            sideEffects: json[keyJnapSideEffects] != null
+                ? List.from(json[keyJnapSideEffects])
+                : null,
           );
   }
 
   final Map<String, dynamic> output;
+  final List<String>? sideEffects;
 
   @override
   Map<String, dynamic> toJson() {
     return super.toJson()
       ..addAll({
         keyJnapOutput: output,
+        keyJnapSideEffects: sideEffects,
       });
   }
 
@@ -64,13 +69,17 @@ class JNAPSuccess extends JNAPResult {
 }
 
 class JNAPTransactionSuccess extends JNAPSuccess {
-  const JNAPTransactionSuccess(
-      {required super.result, required this.responses,});
+  const JNAPTransactionSuccess({
+    required super.result,
+    required this.responses,
+  });
 
   factory JNAPTransactionSuccess.fromJson(Map<String, dynamic> json) {
     return JNAPTransactionSuccess(
       result: json[keyJnapResult],
-      responses: List.from(json[keyJnapResponses]).map((e) => JNAPResult.fromJson(e)).toList(),
+      responses: List.from(json[keyJnapResponses])
+          .map((e) => JNAPResult.fromJson(e))
+          .toList(),
     );
   }
 

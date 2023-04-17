@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
@@ -15,20 +16,21 @@ import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'dart:convert';
 import 'package:phone_number/phone_number.dart';
 
-class OtpAddPhoneView extends ArgumentsStatefulView {
+class OtpAddPhoneView extends ArgumentsConsumerStatefulView {
   const OtpAddPhoneView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
   _OtpAddPhoneViewState createState() => _OtpAddPhoneViewState();
 }
 
-class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
+class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
   final PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil();
   TextEditingController phoneController = TextEditingController();
 
@@ -96,7 +98,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
         //     .read<OtpCubit>()
         //     .authChallenge(method: phoneMethod, token: token);
       }
-      NavigationCubit.of(context).push(OtpInputCodePath()
+      ref.read(navigationsProvider.notifier).push(OtpInputCodePath()
         ..next = widget.next
         ..args.addAll(widget.args));
     } catch (e) {
@@ -146,6 +148,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
             title: getAppLocalizations(context).otp_add_phone_number,
           ),
           content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
                 padding: const EdgeInsets.only(top: 63, bottom: 7),
@@ -153,11 +156,12 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
               ),
               IntrinsicHeight(
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     GestureDetector(
                       onTap: () async {
                         final selectedRegion = await showPopup(
-                            context: context,
+                            ref: ref,
                             config: SelectPhoneRegionCodePath());
                         if (selectedRegion != null) {
                           updateRegion(selectedRegion);
@@ -172,6 +176,7 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
                               : Theme.of(context).colorScheme.primary,
                           width: 1,
                         )),
+                        alignment: Alignment.center,
                         child: Text(
                           '+${currentRegion.countryCallingCode}',
                           style: Theme.of(context)
@@ -182,7 +187,6 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
                                       ? Colors.red
                                       : Theme.of(context).colorScheme.primary),
                         ),
-                        alignment: Alignment.center,
                       ),
                     ),
                     const SizedBox(
@@ -205,7 +209,6 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
                           }),
                     ),
                   ],
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
                 ),
               ),
               const SizedBox(
@@ -222,7 +225,6 @@ class _OtpAddPhoneViewState extends State<OtpAddPhoneView> {
                 ),
               ),
             ],
-            crossAxisAlignment: CrossAxisAlignment.start,
           ),
           footer: Column(
             children: [

@@ -15,7 +15,7 @@ import 'base_path.dart';
 
 class AccountPath extends DashboardPath {
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
       case AccountDetailPath:
         return const AccountView();

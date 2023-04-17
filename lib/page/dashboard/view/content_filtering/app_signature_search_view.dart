@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/content_filter/cubit.dart';
 import 'package:linksys_moab/model/app_signature.dart';
 import 'package:linksys_moab/model/group_profile.dart';
@@ -15,14 +16,16 @@ import 'package:linksys_moab/util/logger.dart';
 
 import '_content_filtering.dart';
 
-class AppSignatureSearchView extends ArgumentsStatefulView {
+class AppSignatureSearchView extends ArgumentsConsumerStatefulView {
   const AppSignatureSearchView({super.key, super.args, super.next});
 
   @override
-  State<AppSignatureSearchView> createState() => _AppSignatureSearchViewState();
+  ConsumerState<AppSignatureSearchView> createState() =>
+      _AppSignatureSearchViewState();
 }
 
-class _AppSignatureSearchViewState extends State<AppSignatureSearchView> {
+class _AppSignatureSearchViewState
+    extends ConsumerState<AppSignatureSearchView> {
   final _searchTextController = TextEditingController();
   List<CloudAppSignature> _data = [];
   List<CloudAppSignature> _searchResult = [];

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
@@ -17,11 +18,11 @@ import 'package:linksys_moab/network/jnap/command/base_command.dart';
 import 'package:linksys_moab/network/jnap/command/bt_base_command.dart';
 import 'package:linksys_moab/network/jnap/jnap_command_executor_mixin.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
-import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/jnap/command/http_base_command.dart';
 import 'package:linksys_moab/network/jnap/jnap_command_queue.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/network/jnap/spec/jnap_spec.dart';
+import 'package:linksys_moab/repository/router/side_effect_manager.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 
@@ -44,15 +45,16 @@ class CommandWrap {
   final bool needAuth;
 }
 
+final routerRepositoryProvider = Provider((ref) => RouterRepository(ref));
+
 class RouterRepository with StateStreamListener {
-  RouterRepository() {
+  RouterRepository(this.ref) {
     CloudEnvironmentManager().register(this);
   }
-
+  final Ref ref;
   bool _btSetupMode = false;
   final LinksysHttpClient _client = LinksysHttpClient();
   String _cloudToken = '';
-  String? _groupId;
   String _localIp = '';
   String _localPassword = '';
   LoginFrom _loginType = LoginFrom.none;
@@ -92,8 +94,16 @@ class RouterRepository with StateStreamListener {
   }) async {
     final command = createCommand(action.actionValue,
         data: data, extraHeaders: extraHeaders, needAuth: auth, type: type);
-    final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    final sideEffectManager =
+        ref.read(sideEffectProvider.notifier);
+    return CommandQueue()
+        .enqueue(command)
+        .then((value) => handleJNAPResult(value))
+        .then((value) => sideEffectManager.handleSideEffect(value))
+        .then((value) {
+      sideEffectManager.finishSideEffect();
+      return value;
+    });
   }
 
   TransactionHttpCommand createTransaction(List<Map<String, dynamic>> payload,

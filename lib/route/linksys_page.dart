@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-class MoabPage<T> extends Page<T> {
+class LinksysPage<T> extends Page<T> {
   /// Creates a material page.
-  const MoabPage({
+  const LinksysPage({
     required this.child,
     this.maintainState = true,
     this.fullscreenDialog = false,
@@ -11,10 +11,7 @@ class MoabPage<T> extends Page<T> {
     String? name,
     Object? arguments,
     String? restorationId,
-  })  : assert(child != null),
-        assert(maintainState != null),
-        assert(fullscreenDialog != null),
-        super(
+  }) : super(
             key: key,
             name: name,
             arguments: arguments,
@@ -35,9 +32,9 @@ class MoabPage<T> extends Page<T> {
     // https://github.com/flutter/flutter/issues/57202
     // Can't have custom transition for iOS, will lost swipe back gesture.
     if (opaque) {
-      return _PageBasedMoabPageRoute<T>(page: this);
+      return _PageBasedLinksysPageRoute<T>(page: this);
     } else {
-      return _PageBasedMoabTransparentPageRoute<T>(page: this);
+      return _PageBasedLinksysTransparentPageRoute<T>(page: this);
     }
   }
 }
@@ -46,12 +43,12 @@ class MoabPage<T> extends Page<T> {
 //
 // This route uses the builder from the page to build its content. This ensures
 // the content is up to date after page updates.
-class _BaseMoabPageRoute<T> extends PageRoute<T>
+class _BaseLinksysPageRoute<T> extends PageRoute<T>
     with MaterialRouteTransitionMixin<T> {
-  _BaseMoabPageRoute({
-    required MoabPage<T> page,
+  _BaseLinksysPageRoute({
+    required LinksysPage<T> page,
   }) : super(settings: page);
-  MoabPage<T> get _page => settings as MoabPage<T>;
+  LinksysPage<T> get _page => settings as LinksysPage<T>;
 
   @override
   Widget buildContent(BuildContext context) {
@@ -68,18 +65,18 @@ class _BaseMoabPageRoute<T> extends PageRoute<T>
   String get debugLabel => '${super.debugLabel}(${_page.name})';
 }
 
-class _PageBasedMoabTransparentPageRoute<T> extends _BaseMoabPageRoute<T> {
-  _PageBasedMoabTransparentPageRoute({
-    required MoabPage<T> page,
+class _PageBasedLinksysTransparentPageRoute<T> extends _BaseLinksysPageRoute<T> {
+  _PageBasedLinksysTransparentPageRoute({
+    required LinksysPage<T> page,
   }) : super(page: page);
 
   @override
   bool get opaque => false;
 }
 
-class _PageBasedMoabPageRoute<T> extends _BaseMoabPageRoute<T> {
-  _PageBasedMoabPageRoute({
-    required MoabPage<T> page,
+class _PageBasedLinksysPageRoute<T> extends _BaseLinksysPageRoute<T> {
+  _PageBasedLinksysPageRoute({
+    required LinksysPage<T> page,
   }) : super(page: page);
 
   @override

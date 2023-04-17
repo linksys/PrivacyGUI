@@ -8,7 +8,7 @@ import '_model.dart';
 
 class ContentFilterPath extends DashboardPath {
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
       case ContentFilteringOverviewPath:
         return ContentFilterOverviewView(

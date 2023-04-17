@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -11,12 +12,11 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-
-class SelectOnlineDeviceView extends ArgumentsStatelessView {
+class SelectOnlineDeviceView extends ArgumentsConsumerStatelessView {
   const SelectOnlineDeviceView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SelectOnlineDeviceContentView(
       next: super.next,
       args: super.args,
@@ -24,17 +24,16 @@ class SelectOnlineDeviceView extends ArgumentsStatelessView {
   }
 }
 
-class SelectOnlineDeviceContentView extends ArgumentsStatefulView {
+class SelectOnlineDeviceContentView extends ArgumentsConsumerStatefulView {
   const SelectOnlineDeviceContentView({super.key, super.next, super.args});
 
   @override
-  State<SelectOnlineDeviceContentView> createState() =>
+  ConsumerState<SelectOnlineDeviceContentView> createState() =>
       _SelectOnlineDeviceContentViewState();
 }
 
 class _SelectOnlineDeviceContentViewState
-    extends State<SelectOnlineDeviceContentView> {
-
+    extends ConsumerState<SelectOnlineDeviceContentView> {
   bool _isBehindRouter = false;
   StreamSubscription? _subscription;
 
@@ -80,17 +79,16 @@ class _SelectOnlineDeviceContentViewState
           children: [
             box24(),
             administrationTile(
-              title:
-              title(getAppLocalizations(context).single_port_forwarding),
+              title: title(getAppLocalizations(context).single_port_forwarding),
               onPress: () {},
             ),
             administrationTile(
                 title:
-                title(getAppLocalizations(context).port_range_forwarding),
+                    title(getAppLocalizations(context).port_range_forwarding),
                 onPress: () {}),
             administrationTile(
                 title:
-                title(getAppLocalizations(context).port_range_triggering),
+                    title(getAppLocalizations(context).port_range_triggering),
                 onPress: () {}),
           ],
         ),

@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/base_components/option_card.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/route/model/internet_check_path.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
-class SelectIspSettingsView extends StatelessWidget {
-  const SelectIspSettingsView({Key? key}): super(key: key);
+class SelectIspSettingsView extends ConsumerWidget {
+  const SelectIspSettingsView({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BasePageView(
       child: BasicLayout(
         header: BasicHeader(
@@ -23,7 +24,9 @@ class SelectIspSettingsView extends StatelessWidget {
               title: getAppLocalizations(context).pppoe,
               description: getAppLocalizations(context).pppoe_card_description,
               onPress: () {
-                NavigationCubit.of(context).push(EnterIspSettingsPath());
+                ref
+                    .read(navigationsProvider.notifier)
+                    .push(EnterIspSettingsPath());
               },
             ),
             const SizedBox(
@@ -31,9 +34,12 @@ class SelectIspSettingsView extends StatelessWidget {
             ),
             OptionCard(
               title: getAppLocalizations(context).static_ip_address,
-              description: getAppLocalizations(context).static_ip_card_description,
+              description:
+                  getAppLocalizations(context).static_ip_card_description,
               onPress: () {
-                NavigationCubit.of(context).push(EnterStaticIpPath());
+                ref
+                    .read(navigationsProvider.notifier)
+                    .push(EnterStaticIpPath());
               },
             ),
           ],

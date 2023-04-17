@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/page/components/base_components/input_fields/primary_text_field.dart';
 
-class InputField extends StatelessWidget {
+class InputField extends ConsumerWidget {
   const InputField({
     Key? key,
     required this.titleText,
@@ -36,21 +37,24 @@ class InputField extends StatelessWidget {
   final bool readOnly;
 
   @override
-  Widget build(BuildContext context) {
-    final primaryColor = customPrimaryColor ?? Theme.of(context).colorScheme.primary;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final primaryColor =
+        customPrimaryColor ?? Theme.of(context).colorScheme.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        titleText.isEmpty ? const Center() : Padding(
-          child: Text(
-            titleText,
-            style: Theme.of(context).textTheme.headline4?.copyWith(
-                color: isError
-                    ? errorColor
-                    : primaryColor),
-          ),
-          padding: const EdgeInsets.only(bottom: 8),
-        ),
+        titleText.isEmpty
+            ? const Center()
+            : Padding(
+                child: Text(
+                  titleText,
+                  style: Theme.of(context)
+                      .textTheme
+                      .headline4
+                      ?.copyWith(color: isError ? errorColor : primaryColor),
+                ),
+                padding: const EdgeInsets.only(bottom: 8),
+              ),
         PrimaryTextField(
           controller: controller,
           hintText: hintText,

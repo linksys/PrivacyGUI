@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/design/colors.dart';
@@ -8,15 +9,17 @@ import 'package:linksys_moab/page/components/base_components/base_components.dar
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/topology_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
-class NodeNameEditView extends ArgumentsStatefulView {
+class NodeNameEditView extends ArgumentsConsumerStatefulView {
   const NodeNameEditView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _NodeNameEditViewState();
+  ConsumerState<NodeNameEditView> createState() =>
+      _NodeNameEditViewState();
 }
 
-class _NodeNameEditViewState extends State<NodeNameEditView> {
+class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
   final TextEditingController _controller = TextEditingController();
 
   @override
@@ -37,7 +40,7 @@ class _NodeNameEditViewState extends State<NodeNameEditView> {
               style:
                   const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           leading: BackButton(onPressed: () {
-            NavigationCubit.of(context).pop();
+            ref.read(navigationsProvider.notifier).pop();
           }),
           actions: [
             TextButton(

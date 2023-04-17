@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -11,15 +12,15 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/single_port_forwarding/bloc/single_port_forwarding_list_cubit.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-class SinglePortForwardingListView extends ArgumentsStatelessView {
+class SinglePortForwardingListView extends ArgumentsConsumerStatelessView {
   const SinglePortForwardingListView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider<SinglePortForwardingListCubit>(
       create: (context) => SinglePortForwardingListCubit(
           repository: context.read<RouterRepository>()),
@@ -31,17 +32,18 @@ class SinglePortForwardingListView extends ArgumentsStatelessView {
   }
 }
 
-class SinglePortForwardingListContentView extends ArgumentsStatefulView {
+class SinglePortForwardingListContentView
+    extends ArgumentsConsumerStatefulView {
   const SinglePortForwardingListContentView(
       {super.key, super.next, super.args});
 
   @override
-  State<SinglePortForwardingListContentView> createState() =>
+  ConsumerState<SinglePortForwardingListContentView> createState() =>
       _SinglePortForwardingContentViewState();
 }
 
 class _SinglePortForwardingContentViewState
-    extends State<SinglePortForwardingListContentView> {
+    extends ConsumerState<SinglePortForwardingListContentView> {
   late final SinglePortForwardingListCubit _cubit;
 
   bool _isBehindRouter = false;
@@ -108,9 +110,10 @@ class _SinglePortForwardingContentViewState
                 SimpleTextButton(
                   text: getAppLocalizations(context).add_rule,
                   onPressed: () {
-                    NavigationCubit.of(context)
-                        .pushAndWait(
-                            SinglePortForwardingRulePath()..args = {'rules': state.rules})
+                    ref
+                        .read(navigationsProvider.notifier)
+                        .pushAndWait(SinglePortForwardingRulePath()
+                          ..args = {'rules': state.rules})
                         .then((value) {
                       if (value ?? false) {
                         _cubit.fetch();
@@ -128,7 +131,8 @@ class _SinglePortForwardingContentViewState
                           : getAppLocalizations(context).off,
                     ),
                     onPress: () {
-                      NavigationCubit.of(context)
+                      ref
+                          .read(navigationsProvider.notifier)
                           .pushAndWait(SinglePortForwardingRulePath()
                             ..args = {'rules': state.rules, 'edit': e})
                           .then((value) {

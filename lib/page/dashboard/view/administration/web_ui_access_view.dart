@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
@@ -8,14 +9,14 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/utils.dart';
 
-class WebUiAccessView extends ArgumentsStatefulView {
+class WebUiAccessView extends ArgumentsConsumerStatefulView {
   const WebUiAccessView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
-  State<WebUiAccessView> createState() => _WebUiAccessViewState();
+  ConsumerState<WebUiAccessView> createState() => _WebUiAccessViewState();
 }
 
-class _WebUiAccessViewState extends State<WebUiAccessView> {
+class _WebUiAccessViewState extends ConsumerState<WebUiAccessView> {
   bool webUiAccess = false;
 
   @override

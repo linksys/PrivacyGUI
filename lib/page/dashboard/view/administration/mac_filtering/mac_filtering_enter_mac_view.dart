@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/input_fields/mac_input_field.dart';
@@ -7,16 +8,16 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
-class MacFilteringEnterDeviceView extends ArgumentsStatefulView {
+class MacFilteringEnterDeviceView extends ArgumentsConsumerStatefulView {
   const MacFilteringEnterDeviceView({super.key, super.next, super.args});
 
   @override
-  State<MacFilteringEnterDeviceView> createState() =>
+  ConsumerState<MacFilteringEnterDeviceView> createState() =>
       _MacFilteringEnterDeviceViewState();
 }
 
 class _MacFilteringEnterDeviceViewState
-    extends State<MacFilteringEnterDeviceView> {
+    extends ConsumerState<MacFilteringEnterDeviceView> {
   final InputValidator _macValidator = InputValidator([MACAddressRule()]);
   bool _isValid = false;
 
@@ -33,7 +34,7 @@ class _MacFilteringEnterDeviceViewState
   @override
   Widget build(BuildContext context) {
     return BasePageView.withCloseButton(
-      context,
+      context, ref,
       child: BasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: Column(

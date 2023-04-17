@@ -1,16 +1,17 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../design/colors.dart';
 
-class LineChartSample extends StatefulWidget {
+class LineChartSample extends ConsumerStatefulWidget {
   const LineChartSample({Key? key}) : super(key: key);
 
   @override
   _LineChartSampleState createState() => _LineChartSampleState();
 }
 
-class _LineChartSampleState extends State<LineChartSample> {
+class _LineChartSampleState extends ConsumerState<LineChartSample> {
   List<Color> gradientColors = [
     MoabColor.cardBackground,
     MoabColor.cardBackground,

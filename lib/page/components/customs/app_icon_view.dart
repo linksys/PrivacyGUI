@@ -1,14 +1,14 @@
-
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/security/app_icon_manager.dart';
 
 ///
 /// This widget is only used for the AppSignatures
 ///
-class AppIconView extends StatefulWidget {
+class AppIconView extends ConsumerStatefulWidget {
   const AppIconView({
     Key? key,
     this.appId = '0',
@@ -17,13 +17,11 @@ class AppIconView extends StatefulWidget {
   final String appId;
 
   @override
-  State<AppIconView> createState() => _AppIconViewState();
+  ConsumerState<AppIconView> createState() => _AppIconViewState();
 }
 
-class _AppIconViewState extends State<AppIconView> {
-
+class _AppIconViewState extends ConsumerState<AppIconView> {
   late Future<Uint8List> _future;
-
 
   @override
   void initState() {

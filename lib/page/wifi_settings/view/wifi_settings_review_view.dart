@@ -1,29 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/wifi_settings_path.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-class WifiSettingsReviewView extends ArgumentsStatefulView {
+class WifiSettingsReviewView extends ArgumentsConsumerStatefulView {
   const WifiSettingsReviewView({
     Key? key,
     super.args,
   }) : super(key: key);
 
   @override
-  State<WifiSettingsReviewView> createState() => _WifiSettingsReviewViewState();
+  ConsumerState<WifiSettingsReviewView> createState() =>
+      _WifiSettingsReviewViewState();
 }
 
-class _WifiSettingsReviewViewState extends State<WifiSettingsReviewView> {
+class _WifiSettingsReviewViewState
+    extends ConsumerState<WifiSettingsReviewView> {
   bool isLoading = false;
 
   @override
@@ -34,7 +36,8 @@ class _WifiSettingsReviewViewState extends State<WifiSettingsReviewView> {
   @override
   Widget build(BuildContext context) {
     return isLoading
-        ? LinksysFullScreenSpinner(text: getAppLocalizations(context).processing)
+        ? LinksysFullScreenSpinner(
+            text: getAppLocalizations(context).processing)
         : BlocBuilder<WifiSettingCubit, WifiSettingState>(
             builder: (context, state) => StyledLinksysPageView(
               title: state.selectedWifiItem.ssid,
@@ -153,16 +156,17 @@ class _WifiSettingsReviewViewState extends State<WifiSettingsReviewView> {
     final currentOption = wifiItem.wifiType.settingOptions[index];
     switch (currentOption) {
       case WifiSettingOption.nameAndPassword:
-        NavigationCubit.of(context).push(EditWifiNamePasswordPath());
+        ref.read(navigationsProvider.notifier).push(EditWifiNamePasswordPath());
         break;
       case WifiSettingOption.securityType6G:
       case WifiSettingOption.securityTypeBelow6G:
       case WifiSettingOption.securityType:
-        NavigationCubit.of(context).pushAndWait(EditWifiSecurityPath()
-          ..args = {'wifiSettingOption': currentOption});
+        ref.read(navigationsProvider.notifier).pushAndWait(
+            EditWifiSecurityPath()
+              ..args = {'wifiSettingOption': currentOption});
         break;
       case WifiSettingOption.mode:
-        NavigationCubit.of(context).push(EditWifiModePath());
+        ref.read(navigationsProvider.notifier).push(EditWifiModePath());
         break;
     }
   }

@@ -1,14 +1,14 @@
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 class Item {
-
   final String title;
   final String description;
   final String id;
@@ -32,16 +32,15 @@ class Item {
   }
 }
 
-class SimpleItemPickerView extends ArgumentsStatefulView {
+class SimpleItemPickerView extends ArgumentsConsumerStatefulView {
   const SimpleItemPickerView({super.key, super.next, super.args});
 
   @override
-  State<SimpleItemPickerView> createState() =>
+  ConsumerState<SimpleItemPickerView> createState() =>
       _SimpleItemPickerViewState();
 }
 
-class _SimpleItemPickerViewState
-    extends State<SimpleItemPickerView> {
+class _SimpleItemPickerViewState extends ConsumerState<SimpleItemPickerView> {
   late final List<Item> _items;
   late final List<String> _disabled;
   String _selected = '';
@@ -74,8 +73,7 @@ class _SimpleItemPickerViewState
         content: Column(
           children: [
             box24(),
-            ..._items
-                .map((item) {
+            ..._items.map((item) {
               return ListTile(
                 title: Text(item.title),
                 subtitle: Text(item.description),
@@ -94,7 +92,9 @@ class _SimpleItemPickerViewState
                         setState(() {
                           _selected = item.id;
                         });
-                        NavigationCubit.of(context).popWithResult(_selected);
+                        ref
+                            .read(navigationsProvider.notifier)
+                            .popWithResult(_selected);
                       },
               );
             }).toList(),

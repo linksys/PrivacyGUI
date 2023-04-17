@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -14,6 +15,7 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/model/administration_path.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/string_mapping.dart';
 
@@ -25,11 +27,11 @@ enum InternetSettingsViewType {
   ipv6,
 }
 
-class InternetSettingsView extends ArgumentsStatelessView {
+class InternetSettingsView extends ArgumentsConsumerStatelessView {
   const InternetSettingsView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
       create: (context) =>
           InternetSettingsCubit(context.read<RouterRepository>()),
@@ -41,16 +43,16 @@ class InternetSettingsView extends ArgumentsStatelessView {
   }
 }
 
-class InternetSettingsContentView extends ArgumentsStatefulView {
+class InternetSettingsContentView extends ArgumentsConsumerStatefulView {
   const InternetSettingsContentView({super.key, super.next, super.args});
 
   @override
-  State<InternetSettingsContentView> createState() =>
+  ConsumerState<InternetSettingsContentView> createState() =>
       _InternetSettingsContentViewState();
 }
 
 class _InternetSettingsContentViewState
-    extends State<InternetSettingsContentView> {
+    extends ConsumerState<InternetSettingsContentView> {
   late final InternetSettingsCubit _cubit;
 
   final TextEditingController _pppoeUsernameController =
@@ -215,8 +217,9 @@ class _InternetSettingsContentViewState
                 : getAppLocalizations(context).manual),
             icon: Image.asset('assets/images/icon_chevron.png'),
             onPress: () async {
-              int? value =
-                  await NavigationCubit.of(context).pushAndWait(MTUPickerPath()
+              int? value = await ref
+                  .read(navigationsProvider.notifier)
+                  .pushAndWait(MTUPickerPath()
                     ..args = {
                       'selected': state.mtu,
                     });
@@ -234,9 +237,13 @@ class _InternetSettingsContentViewState
             ),
             icon: Image.asset('assets/images/icon_chevron.png'),
             onPress: () async {
-              String? mac = await NavigationCubit.of(context).pushAndWait(
-                  MACClonePath()
-                    ..args = {'enabled': state.macClone, 'macAddress': state.macCloneAddress});
+              String? mac = await ref
+                  .read(navigationsProvider.notifier)
+                  .pushAndWait(MACClonePath()
+                    ..args = {
+                      'enabled': state.macClone,
+                      'macAddress': state.macCloneAddress
+                    });
               if (mac != null) {
                 final enabled = mac.isEmpty;
                 final macAddress = mac;
@@ -259,7 +266,8 @@ class _InternetSettingsContentViewState
           background: Colors.transparent,
           padding: EdgeInsets.symmetric(horizontal: 24),
           onPress: () async {
-            String? select = await NavigationCubit.of(context)
+            String? select = await ref
+                .read(navigationsProvider.notifier)
                 .pushAndWait(ConnectionTypeSelectionPath()
                   ..args = {
                     'supportedList': state.supportedIPv4ConnectionType,
@@ -435,7 +443,8 @@ class _InternetSettingsContentViewState
                         combine.wanType == state.ipv4ConnectionType &&
                         combine.wanIPv6Type == ipv6))
                 .toList();
-            String? select = await NavigationCubit.of(context)
+            String? select = await ref
+                .read(navigationsProvider.notifier)
                 .pushAndWait(ConnectionTypeSelectionPath()
                   ..args = {
                     'supportedList': state.supportedIPv6ConnectionType,

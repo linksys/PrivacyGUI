@@ -1,15 +1,13 @@
 import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/page/create_account/view/_view.dart';
 import 'package:linksys_moab/page/otp_flow/view/_view.dart';
-import 'package:linksys_moab/page/setup/view/_view.dart';
 
-import 'package:linksys_moab/route/_route.dart';
 
 import 'base_path.dart';
 
 abstract class CreateAccountPath extends BasePath {
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
       case CreateCloudAccountPath:
         return AddAccountView(
@@ -24,20 +22,20 @@ abstract class CreateAccountPath extends BasePath {
           args: args,
           next: SaveSettingsPath(),
         );
-      case SaveSettingsPath:
-        return SaveSettingsView(
-          args: args,
-        );
-      case AlreadyHaveOldAccountPath:
-        return const HaveOldAccountView();
-      case NoUseCloudAccountPath:
-        return const NoUseAccountConfirmView();
+      // case SaveSettingsPath:
+      //   return SaveSettingsView(
+      //     args: args,
+      //   );
+      // case AlreadyHaveOldAccountPath:
+      //   return const HaveOldAccountView();
+      // case NoUseCloudAccountPath:
+      //   return const NoUseAccountConfirmView();
       case CreateCloudPasswordPath:
         return CreateAccountPasswordView(
           args: args,
         );
-      case SameAccountPromptPath:
-        return UseSameAccountPromptView();
+      // case SameAccountPromptPath:
+      //   return UseSameAccountPromptView();
       case CreateAccount2SVPath:
         return OtpFlowView(
           args: args,

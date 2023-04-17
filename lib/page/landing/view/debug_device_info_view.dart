@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import '../../../util/logger.dart';
 
-class DebugDeviceInfoView extends StatefulWidget {
-  const DebugDeviceInfoView({Key? key}): super(key: key);
+class DebugDeviceInfoView extends ConsumerStatefulWidget {
+  const DebugDeviceInfoView({Key? key}) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _DebugDeviceInfoViewState();
+  ConsumerState<DebugDeviceInfoView> createState() =>
+      _DebugDeviceInfoViewState();
 }
 
-class _DebugDeviceInfoViewState extends State<DebugDeviceInfoView> {
+class _DebugDeviceInfoViewState extends ConsumerState<DebugDeviceInfoView> {
   String _appInfoFromLogger = '';
 
   _DebugDeviceInfoViewState() {
@@ -25,7 +27,7 @@ class _DebugDeviceInfoViewState extends State<DebugDeviceInfoView> {
   @override
   Widget build(BuildContext context) {
     return BasePageView.withCloseButton(
-      context,
+      context, ref,
       scrollable: true,
       child: BasicLayout(
         header: const BasicHeader(
@@ -43,8 +45,8 @@ class _DebugDeviceInfoViewState extends State<DebugDeviceInfoView> {
         Text(
           _appInfoFromLogger,
           style: Theme.of(context).textTheme.headline3?.copyWith(
-            color: Theme.of(context).primaryColor,
-          ),
+                color: Theme.of(context).primaryColor,
+              ),
         ),
         const SizedBox(
           height: 20,
@@ -52,8 +54,8 @@ class _DebugDeviceInfoViewState extends State<DebugDeviceInfoView> {
         Text(
           getScreenInfo(context),
           style: Theme.of(context).textTheme.headline3?.copyWith(
-            color: Theme.of(context).primaryColor,
-          ),
+                color: Theme.of(context).primaryColor,
+              ),
         ),
       ],
       crossAxisAlignment: CrossAxisAlignment.start,

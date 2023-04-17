@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 
-class InputFieldWithAction extends StatelessWidget {
+class InputFieldWithAction extends ConsumerWidget {
   const InputFieldWithAction({
     Key? key,
     required this.controller,
@@ -40,7 +41,7 @@ class InputFieldWithAction extends StatelessWidget {
   final bool readOnly;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final primaryColor =
         customPrimaryColor ?? Theme.of(context).colorScheme.primary;
     return Column(

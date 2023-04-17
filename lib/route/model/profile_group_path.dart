@@ -7,7 +7,7 @@ import 'package:linksys_moab/route/_route.dart';
 
 class ProfileGroupPath extends DashboardPath {
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
       case ProfileListPath:
         return ProfileListView(

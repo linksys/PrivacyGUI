@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class MACFormField extends StatefulWidget {
+class MACFormField extends ConsumerStatefulWidget {
   const MACFormField({
     super.key,
     this.onChanged,
@@ -14,10 +15,10 @@ class MACFormField extends StatefulWidget {
   final bool hasBorder;
 
   @override
-  State<MACFormField> createState() => _MACFormFieldState();
+  ConsumerState<MACFormField> createState() => _MACFormFieldState();
 }
 
-class _MACFormFieldState extends State<MACFormField> {
+class _MACFormFieldState extends ConsumerState<MACFormField> {
   @override
   Widget build(BuildContext context) {
     return TextFormField(

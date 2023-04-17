@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
@@ -21,19 +22,21 @@ import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/util/in_app_browser.dart';
 
 import '../../../bloc/setup/state.dart';
+import '../../../route/navigations_notifier.dart';
 import '../../components/base_components/input_fields/password_input_field.dart';
 
 enum AdminPasswordType { create, reset }
 
-class CreateAdminPasswordView extends ArgumentsStatefulView {
+class CreateAdminPasswordView extends ArgumentsConsumerStatefulView {
   const CreateAdminPasswordView({Key? key, super.args}) : super(key: key);
 
   @override
-  State<CreateAdminPasswordView> createState() =>
+  ConsumerState<CreateAdminPasswordView> createState() =>
       _CreateAdminPasswordViewState();
 }
 
-class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
+class _CreateAdminPasswordViewState
+    extends ConsumerState<CreateAdminPasswordView> {
   bool _isValidData = false;
   bool _isLoading = false;
   bool _isSuccess = false;
@@ -86,7 +89,9 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
             PrimaryButton(
               text: getAppLocalizations(context).go_to_dashboard,
               onPress: () {
-                NavigationCubit.of(context).clearAndPush(DashboardHomePath());
+                ref
+                    .read(navigationsProvider.notifier)
+                    .clearAndPush(DashboardHomePath());
               },
             )
           ],
@@ -145,7 +150,7 @@ class _CreateAdminPasswordViewState extends State<CreateAdminPasswordView> {
                 context.read<SetupBloc>().add(SetAdminPasswordHint(
                     password: passwordController.text,
                     hint: hintController.text));
-                NavigationCubit.of(context).push(SaveSettingsPath());
+                ref.read(navigationsProvider.notifier).push(SaveSettingsPath());
               } else {
                 _createPassword(passwordController.text, hintController.text);
               }

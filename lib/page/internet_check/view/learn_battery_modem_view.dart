@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/util/in_app_browser.dart';
 
-class LearnBatteryModemView extends StatelessWidget {
-  const LearnBatteryModemView({Key? key}): super(key: key);
+class LearnBatteryModemView extends ConsumerWidget {
+  const LearnBatteryModemView({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BasePageView.withCloseButton(
-      context,
+      context, ref,
       child: BasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).learn_battery_modem_title,
@@ -31,9 +32,8 @@ class LearnBatteryModemView extends StatelessWidget {
               onPressed: () {
                 MoabInAppBrowser.withDefaultOption().openUrlRequest(
                     urlRequest: URLRequest(
-                        url: Uri.parse('https://www.linksys.com/us/support-article?articleNum=302834')
-                    )
-                );
+                        url: Uri.parse(
+                            'https://www.linksys.com/us/support-article?articleNum=302834')));
               },
             ),
           ],
