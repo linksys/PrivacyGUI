@@ -20,6 +20,7 @@ import 'package:linksys_moab/network/jnap/jnap_command_executor_mixin.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/jnap/command/http_base_command.dart';
 import 'package:linksys_moab/network/jnap/jnap_command_queue.dart';
+import 'package:linksys_moab/network/jnap/jnap_transaction.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/network/jnap/spec/jnap_spec.dart';
 import 'package:linksys_moab/repository/router/side_effect_manager.dart';
@@ -94,8 +95,7 @@ class RouterRepository with StateStreamListener {
   }) async {
     final command = createCommand(action.actionValue,
         data: data, extraHeaders: extraHeaders, needAuth: auth, type: type);
-    final sideEffectManager =
-        ref.read(sideEffectProvider.notifier);
+    final sideEffectManager = ref.read(sideEffectProvider.notifier);
     return CommandQueue()
         .enqueue(command)
         .then((value) => handleJNAPResult(value))
@@ -104,6 +104,22 @@ class RouterRepository with StateStreamListener {
       sideEffectManager.finishSideEffect();
       return value;
     });
+  }
+
+  Future<JNAPTransactionSuccessWrap> transaction(
+      JNAPTransactionBuilder builder) async {
+    final payload = builder.commands.entries
+        .map((entry) =>
+            {'action': entry.key.actionValue, 'request': entry.value})
+        .toList();
+    final command = createTransaction(payload, needAuth: builder.auth);
+
+    return CommandQueue()
+        .enqueue(command)
+        .then((value) => handleJNAPResult(value))
+        .then((value) => JNAPTransactionSuccessWrap.convert(
+            actions: List.from(builder.commands.keys),
+            jnapSuccess: value as JNAPTransactionSuccess));
   }
 
   TransactionHttpCommand createTransaction(List<Map<String, dynamic>> payload,

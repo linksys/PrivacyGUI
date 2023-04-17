@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
+import 'package:collection/collection.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
+import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/jnap/result/fcn_result.dart';
 
 abstract class JNAPResult extends Equatable {
@@ -66,6 +68,27 @@ class JNAPSuccess extends JNAPResult {
 
   @override
   List<Object?> get props => super.props..add(output);
+}
+
+class JNAPTransactionSuccessWrap extends JNAPSuccess {
+  final Map<JNAPAction, JNAPResult> responses;
+
+  const JNAPTransactionSuccessWrap({
+    required super.result,
+    this.responses = const {},
+  });
+
+  factory JNAPTransactionSuccessWrap.convert(
+      {required List<JNAPAction> actions,
+      required JNAPTransactionSuccess jnapSuccess}) {
+    return JNAPTransactionSuccessWrap(
+      result: jnapSuccess.result,
+      responses: Map.fromIterables(actions, jnapSuccess.responses),
+    );
+  }
+
+  @override
+  List<Object?> get props => super.props..add(responses);
 }
 
 class JNAPTransactionSuccess extends JNAPSuccess {
