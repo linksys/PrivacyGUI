@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 import 'dart:math' as math;
 
-class CircleProgressBar extends StatefulWidget {
+class CircleProgressBar extends ConsumerStatefulWidget {
   final double progress;
   final double strokeWidth;
   final Color backgroundColor;
@@ -19,10 +20,10 @@ class CircleProgressBar extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<CircleProgressBar> createState() => _CircleProgressBarState();
+  ConsumerState<CircleProgressBar> createState() => _CircleProgressBarState();
 }
 
-class _CircleProgressBarState extends State<CircleProgressBar> {
+class _CircleProgressBarState extends ConsumerState<CircleProgressBar> {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
@@ -90,7 +91,7 @@ class CircleProgressBarPainter extends CustomPainter {
   }
 }
 
-class TriLayerButton extends StatefulWidget {
+class TriLayerButton extends ConsumerStatefulWidget {
   final Widget child;
   final VoidCallback? onPressed;
 
@@ -101,10 +102,10 @@ class TriLayerButton extends StatefulWidget {
   });
 
   @override
-  State<TriLayerButton> createState() => _TriLayerButtonState();
+  ConsumerState<TriLayerButton> createState() => _TriLayerButtonState();
 }
 
-class _TriLayerButtonState extends State<TriLayerButton>
+class _TriLayerButtonState extends ConsumerState<TriLayerButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;

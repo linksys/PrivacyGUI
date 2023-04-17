@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -19,11 +20,11 @@ import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import '../common_widget.dart';
 import 'bloc/cubit.dart';
 
-class IpDetailsView extends ArgumentsStatelessView {
+class IpDetailsView extends ArgumentsConsumerStatelessView {
   const IpDetailsView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
       create: (context) => IpDetailsCubit(context.read<RouterRepository>()),
       child: IpDetailsContentView(
@@ -34,14 +35,15 @@ class IpDetailsView extends ArgumentsStatelessView {
   }
 }
 
-class IpDetailsContentView extends ArgumentsStatefulView {
+class IpDetailsContentView extends ArgumentsConsumerStatefulView {
   const IpDetailsContentView({super.key, super.next, super.args});
 
   @override
-  State<IpDetailsContentView> createState() => _IpDetailsContentViewState();
+  ConsumerState<IpDetailsContentView> createState() =>
+      _IpDetailsContentViewState();
 }
 
-class _IpDetailsContentViewState extends State<IpDetailsContentView> {
+class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
   late final IpDetailsCubit _cubit;
 
   bool _isBehindRouter = false;

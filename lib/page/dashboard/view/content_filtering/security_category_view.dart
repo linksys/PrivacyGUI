@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/secure_profile.dart';
@@ -12,6 +13,7 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import 'package:linksys_moab/util/in_app_browser.dart';
 import 'package:styled_text/styled_text.dart';
@@ -21,17 +23,17 @@ import 'component.dart';
 
 typedef ValueChanged<T> = void Function(T value);
 
-class ContentFilteringCategoryView extends ArgumentsStatefulView {
+class ContentFilteringCategoryView extends ArgumentsConsumerStatefulView {
   const ContentFilteringCategoryView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<ContentFilteringCategoryView> createState() =>
+  ConsumerState<ContentFilteringCategoryView> createState() =>
       _ContentFilteringCategoryViewState();
 }
 
 class _ContentFilteringCategoryViewState
-    extends State<ContentFilteringCategoryView> {
+    extends ConsumerState<ContentFilteringCategoryView> {
   late CFSecureCategory _category;
 
   @override
@@ -51,8 +53,8 @@ class _ContentFilteringCategoryViewState
         leading: IconButton(
             icon: Icon(Icons.close),
             onPressed: () {
-              // NavigationCubit.of(context).pop();
-              NavigationCubit.of(context).popWithResult(_category);
+              // ref.read(navigationsProvider.notifier).pop();
+              ref.read(navigationsProvider.notifier).popWithResult(_category);
             }),
       ),
       child: Column(
@@ -85,36 +87,30 @@ class _ContentFilteringCategoryViewState
                     style: Theme.of(context).textTheme.headline2,
                   )),
                   PopupButton(
-                    icon: Icon(Icons.info_outlined),
-                    content: StyledText(
-                        text: 'Websites are reviewed and categorized by Fortinet, a cyber security company.  To check a website’s categorization, visit <link1 href="https://fortiguard.com/webfilter">fortiguard.com/webfilter</link1> and enter the URL.',
-                        style: Theme
-                            .of(context)
-                            .textTheme
-                            .headline3
-                            ?.copyWith(color: Theme
-                            .of(context)
-                            .colorScheme
-                            .tertiary)
-                            .copyWith(height: 1.5),
-                        tags: {
-                          'link1': StyledTextActionTag(
-                                  (String? text, Map<String?, String?> attrs) {
-                                String? link = attrs['href'];
-                                MoabInAppBrowser.withDefaultOption().openUrlRequest(
-                                    urlRequest: URLRequest(
-                                        url: Uri.parse(link!)
-                                    )
-                                );
-                              }
-                              ,style: const TextStyle(color: Colors.blue)),
-                        }
-                    )
-                  ),
+                      icon: Icon(Icons.info_outlined),
+                      content: StyledText(
+                          text:
+                              'Websites are reviewed and categorized by Fortinet, a cyber security company.  To check a website’s categorization, visit <link1 href="https://fortiguard.com/webfilter">fortiguard.com/webfilter</link1> and enter the URL.',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headline3
+                              ?.copyWith(
+                                  color: Theme.of(context).colorScheme.tertiary)
+                              .copyWith(height: 1.5),
+                          tags: {
+                            'link1': StyledTextActionTag(
+                                (String? text, Map<String?, String?> attrs) {
+                              String? link = attrs['href'];
+                              MoabInAppBrowser.withDefaultOption()
+                                  .openUrlRequest(
+                                      urlRequest:
+                                          URLRequest(url: Uri.parse(link!)));
+                            }, style: const TextStyle(color: Colors.blue)),
+                          })),
                   createStatusButton(context, _category.status, onPressed: () {
                     setState(() {
-                      _category = _category.copyWith(
-                          status: _category.switchStatus());
+                      _category =
+                          _category.copyWith(status: _category.switchStatus());
                     });
                   })
                 ],
@@ -148,9 +144,13 @@ class _ContentFilteringCategoryViewState
                 'App (${_category.apps.length})',
                 style: Theme.of(context).textTheme.headline2,
               )),
-              IconButton(onPressed: () {
-                NavigationCubit.of(context).push(CFAppSearchPath());
-              }, icon: Icon(Icons.search)),
+              IconButton(
+                  onPressed: () {
+                    ref
+                        .read(navigationsProvider.notifier)
+                        .push(CFAppSearchPath());
+                  },
+                  icon: Icon(Icons.search)),
               createStatusButton(
                 context,
                 _category.getAppSummaryStatus(),
@@ -160,12 +160,13 @@ class _ContentFilteringCategoryViewState
         ),
         dividerWithPadding(padding: EdgeInsets.symmetric(horizontal: 16)),
         ..._category.apps.map((e) => ListTile(
-            leading: AppIconView(appId: e.icon,),
+            leading: AppIconView(
+              appId: e.icon,
+            ),
             title: Text(e.name),
             trailing: createStatusButton(context, e.status, onPressed: () {
               setState(() {
-                final newOne =
-                    e.copyWith(status: e.switchStatus());
+                final newOne = e.copyWith(status: e.switchStatus());
                 _category.apps.replaceRange(_category.apps.indexOf(e),
                     _category.apps.indexOf(e) + 1, [newOne]);
               });

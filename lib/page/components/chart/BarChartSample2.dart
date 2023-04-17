@@ -1,14 +1,15 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BarChartSample2 extends StatefulWidget {
+class BarChartSample2 extends ConsumerStatefulWidget {
   const BarChartSample2({Key? key}) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => BarChartSample2State();
+  ConsumerState<ConsumerStatefulWidget> createState() => BarChartSample2State();
 }
 
-class BarChartSample2State extends State<BarChartSample2> {
+class BarChartSample2State extends ConsumerState<BarChartSample2> {
   final Color barBackgroundColor = Colors.transparent;
 
   @override
@@ -43,12 +44,12 @@ class BarChartSample2State extends State<BarChartSample2> {
   }
 
   BarChartGroupData makeGroupData(
-      int x,
-      double y, {
-        Color barColor = const Color.fromRGBO(144, 144, 144, 1.0),
-        double width = 15,
-        List<int> showTooltips = const [],
-      }) {
+    int x,
+    double y, {
+    Color barColor = const Color.fromRGBO(144, 144, 144, 1.0),
+    double width = 15,
+    List<int> showTooltips = const [],
+  }) {
     return BarChartGroupData(
       x: x,
       barRods: [
@@ -69,25 +70,25 @@ class BarChartSample2State extends State<BarChartSample2> {
   }
 
   List<BarChartGroupData> showingGroups() => List.generate(7, (i) {
-    switch (i) {
-      case 0:
-        return makeGroupData(0, 60);
-      case 1:
-        return makeGroupData(1, 40);
-      case 2:
-        return makeGroupData(2, 50);
-      case 3:
-        return makeGroupData(3, 20);
-      case 4:
-        return makeGroupData(4, 20);
-      case 5:
-        return makeGroupData(5, 20);
-      case 6:
-        return makeGroupData(6, 30);
-      default:
-        return throw Error();
-    }
-  });
+        switch (i) {
+          case 0:
+            return makeGroupData(0, 60);
+          case 1:
+            return makeGroupData(1, 40);
+          case 2:
+            return makeGroupData(2, 50);
+          case 3:
+            return makeGroupData(3, 20);
+          case 4:
+            return makeGroupData(4, 20);
+          case 5:
+            return makeGroupData(5, 20);
+          case 6:
+            return makeGroupData(6, 30);
+          default:
+            return throw Error();
+        }
+      });
 
   BarChartData mainBarData() {
     return BarChartData(
@@ -108,11 +109,10 @@ class BarChartSample2State extends State<BarChartSample2> {
         ),
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 28,
-            interval: 1,
-            getTitlesWidget: getLeftTitles
-          ),
+              showTitles: true,
+              reservedSize: 28,
+              interval: 1,
+              getTitlesWidget: getLeftTitles),
         ),
       ),
       borderData: FlBorderData(

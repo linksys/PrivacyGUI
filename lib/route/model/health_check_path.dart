@@ -6,7 +6,7 @@ import 'package:linksys_moab/route/_route.dart';
 
 class HealthCheckPath extends DashboardPath {
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
       case SpeedCheckPath:
         return const SpeedTestView();

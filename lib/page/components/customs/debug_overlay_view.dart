@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/connectivity/state.dart';
 import 'package:linksys_moab/util/permission.dart';
@@ -8,14 +9,15 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 
 import '../../../constants/build_config.dart';
 
-class OverlayInfoView extends StatefulWidget {
+class OverlayInfoView extends ConsumerStatefulWidget {
   const OverlayInfoView({super.key});
 
   @override
-  State<OverlayInfoView> createState() => _OverlayInfoViewState();
+  ConsumerState<OverlayInfoView> createState() => _OverlayInfoViewState();
 }
 
-class _OverlayInfoViewState extends State<OverlayInfoView> with Permissions {
+class _OverlayInfoViewState extends ConsumerState<OverlayInfoView>
+    with Permissions {
   @override
   void initState() {
     super.initState();

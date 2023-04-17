@@ -1,14 +1,15 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BarChartSample1 extends StatefulWidget {
+class BarChartSample1 extends ConsumerStatefulWidget {
   const BarChartSample1({Key? key}) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => BarChartSample1State();
+  ConsumerState<ConsumerStatefulWidget> createState() => BarChartSample1State();
 }
 
-class BarChartSample1State extends State<BarChartSample1> {
+class BarChartSample1State extends ConsumerState<BarChartSample1> {
   final Color barBackgroundColor = Colors.transparent;
 
   @override

@@ -1,26 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
-import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/internet_schedule_path.dart';
-import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
-
-class InternetScheduleOverviewView extends ArgumentsStatefulView {
+class InternetScheduleOverviewView extends ArgumentsConsumerStatefulView {
   const InternetScheduleOverviewView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<InternetScheduleOverviewView> createState() =>
+  ConsumerState<InternetScheduleOverviewView> createState() =>
       _InternetScheduleOverviewViewState();
 }
 
 class _InternetScheduleOverviewViewState
-    extends State<InternetScheduleOverviewView> {
+    extends ConsumerState<InternetScheduleOverviewView> {
   @override
   void initState() {
     super.initState();
@@ -40,17 +39,21 @@ class _InternetScheduleOverviewViewState
           title: Text(profile?.name ?? '',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           leading: BackButton(onPressed: () {
-            NavigationCubit.of(context).pop();
+            ref.read(navigationsProvider.notifier).pop();
           }),
         ),
         child: Column(
           children: [
             const SizedBox(height: 16),
             timeLimitSettingsItem(context, (context) {
-              NavigationCubit.of(context).push(DailyTimeLimitListPath());
+              ref
+                  .read(navigationsProvider.notifier)
+                  .push(DailyTimeLimitListPath());
             }, data),
             schedulePauseSettingsItem(context, (context) {
-              NavigationCubit.of(context).push(SchedulePauseListPath());
+              ref
+                  .read(navigationsProvider.notifier)
+                  .push(SchedulePauseListPath());
             }, data)
           ],
         ),

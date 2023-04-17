@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/utils.dart';
 
-class PopupButton extends StatefulWidget {
+class PopupButton extends ConsumerStatefulWidget {
   final Icon icon;
   final Widget content;
   final BorderRadius? borderRadius;
@@ -13,13 +14,13 @@ class PopupButton extends StatefulWidget {
     required this.content,
     this.borderRadius,
     this.backgroundColor = const Color(0xFFF67C0B9),
-  })  : super(key: key);
+  }) : super(key: key);
 
   @override
   _PopupButtonState createState() => _PopupButtonState();
 }
 
-class _PopupButtonState extends State<PopupButton>
+class _PopupButtonState extends ConsumerState<PopupButton>
     with SingleTickerProviderStateMixin {
   late GlobalKey _key;
   bool isMenuOpen = false;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
@@ -9,15 +10,15 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/account_path.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
 
 import '../../../../constants/pref_key.dart';
 
-class ChangeAuthModePasswordView extends ArgumentsStatefulView {
+class ChangeAuthModePasswordView extends ArgumentsConsumerStatefulView {
   const ChangeAuthModePasswordView({Key? key, super.args, super.next})
       : super(key: key);
 
@@ -27,7 +28,7 @@ class ChangeAuthModePasswordView extends ArgumentsStatefulView {
 }
 
 class _ChangeAuthModePasswordViewState
-    extends State<ChangeAuthModePasswordView> {
+    extends ConsumerState<ChangeAuthModePasswordView> {
   final TextEditingController passwordController = TextEditingController();
   String _errorMessage = '';
   String mode = '';
@@ -57,7 +58,7 @@ class _ChangeAuthModePasswordViewState
         title: Text('Create a password',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
         leading: BackButton(onPressed: () {
-          // NavigationCubit.of(context).pop();
+          // ref.read(navigationsProvider.notifier).pop();
         }),
         actions: [],
       ),
@@ -91,13 +92,14 @@ class _ChangeAuthModePasswordViewState
     const storage = FlutterSecureStorage();
     String accountId = context.read<AccountCubit>().state.id;
     await storage.write(
-        key: linksysPrefCloudAccountPasswordKey, value: passwordController.text);
+        key: linksysPrefCloudAccountPasswordKey,
+        value: passwordController.text);
     context
         .read<AuthBloc>()
         .changeAuthMode(accountId, token, passwordController.text)
         .then((value) async {
       await context.read<AccountCubit>().fetchAccount();
-      NavigationCubit.of(context).push(LoginMethodOptionsPath());
+      ref.read(navigationsProvider.notifier).push(LoginMethodOptionsPath());
     }).onError((error, stackTrace) => _handleError(error));
   }
 
@@ -117,9 +119,9 @@ class _ChangeAuthModePasswordViewState
     context
         .read<AuthBloc>()
         .changeAuthMode(accountId, widget.args['token'], null)
-        .then((value) async{
+        .then((value) async {
       await context.read<AccountCubit>().fetchAccount();
-      context.read<NavigationCubit>().push(LoginMethodOptionsPath());
+      ref.read(navigationsProvider.notifier).push(LoginMethodOptionsPath());
     });
   }
 }

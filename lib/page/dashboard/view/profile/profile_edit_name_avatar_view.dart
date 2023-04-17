@@ -1,29 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/route/model/profile_group_path.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import '../../../../design/colors.dart';
 import '../../../../localization/localization_hook.dart';
-import '../../../../route/model/base_path.dart';
-import '../../../../route/model/dashboard_path.dart';
-import '../../../../route/navigation_cubit.dart';
 import '../../../components/views/arguments_view.dart';
 
-class ProfileEditNameAvatarView extends ArgumentsStatefulView {
+class ProfileEditNameAvatarView extends ArgumentsConsumerStatefulView {
   const ProfileEditNameAvatarView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<ProfileEditNameAvatarView> createState() =>
+  ConsumerState<ProfileEditNameAvatarView> createState() =>
       _ProfileEditNameAvatarViewState();
 }
 
-class _ProfileEditNameAvatarViewState extends State<ProfileEditNameAvatarView> {
+class _ProfileEditNameAvatarViewState
+    extends ConsumerState<ProfileEditNameAvatarView> {
   final TextEditingController _textController = TextEditingController();
   late String _iconPath;
 
@@ -45,7 +44,7 @@ class _ProfileEditNameAvatarViewState extends State<ProfileEditNameAvatarView> {
         title: Text(getAppLocalizations(context).name,
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
         leading: BackButton(onPressed: () {
-          NavigationCubit.of(context).pop();
+          ref.read(navigationsProvider.notifier).pop();
         }),
         actions: [
           TextButton(
@@ -78,7 +77,7 @@ class _ProfileEditNameAvatarViewState extends State<ProfileEditNameAvatarView> {
                 text: getAppLocalizations(context).change,
                 onPressed: () {
                   showPopup(
-                    context: context,
+                    ref: ref,
                     config: CreateProfileAvatarPath()..args = {'return': true},
                   ).then((value) {
                     setState(() {

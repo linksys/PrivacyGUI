@@ -1,4 +1,3 @@
-
 const kJNAPActionBase = 'http://linksys.com';
 const kJNAPActionPrefix = '$kJNAPActionBase/jnap';
 const kJNAPSession = 'X-JNAP-Session';
@@ -11,6 +10,7 @@ const varMqttNetworkId = '{network_id}';
 
 const keyJnapResult = 'result';
 const keyJnapOutput = 'output';
+const keyJnapSideEffects = 'sideEffects';
 const keyJnapResponses = 'responses';
 const keyJnapError = 'error';
 

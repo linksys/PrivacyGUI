@@ -1,7 +1,8 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'input_field.dart';
 
-class ShortInputField extends StatelessWidget {
+class ShortInputField extends ConsumerWidget {
   const ShortInputField({
     super.key,
     required this.titleText,
@@ -24,7 +25,7 @@ class ShortInputField extends StatelessWidget {
   final double? width;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SizedBox(
       width: width,
       child: InputField(

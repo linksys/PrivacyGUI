@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/bloc/profiles/_profiles.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -10,16 +11,18 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
-class OfflineDeviceListView extends ArgumentsStatefulView {
+class OfflineDeviceListView extends ArgumentsConsumerStatefulView {
   const OfflineDeviceListView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<OfflineDeviceListView> createState() => _OfflineDeviceListViewState();
+  ConsumerState<OfflineDeviceListView> createState() =>
+      _OfflineDeviceListViewState();
 }
 
-class _OfflineDeviceListViewState extends State<OfflineDeviceListView> {
+class _OfflineDeviceListViewState extends ConsumerState<OfflineDeviceListView> {
   @override
   void initState() {
     super.initState();
@@ -49,8 +52,8 @@ class _OfflineDeviceListViewState extends State<OfflineDeviceListView> {
                   context.read<DeviceCubit>().state.offlineDeviceList.isEmpty
                       ? null
                       : () {
-                          context
-                              .read<NavigationCubit>()
+                          ref
+                              .read(navigationsProvider.notifier)
                               .push(ClearOfflineDevicesPath());
                         },
             ),

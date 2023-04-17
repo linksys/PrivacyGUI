@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/customs/_customs.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
@@ -6,7 +7,7 @@ import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'input_field.dart';
 
 // TODO @Peter
-class PasswordInputField extends StatefulWidget {
+class PasswordInputField extends ConsumerStatefulWidget {
   const PasswordInputField({
     Key? key,
     required this.titleText,
@@ -56,10 +57,10 @@ class PasswordInputField extends StatefulWidget {
   final Widget? suffixIcon;
 
   @override
-  State<PasswordInputField> createState() => _PasswordInputFieldState();
+  ConsumerState<PasswordInputField> createState() => _PasswordInputFieldState();
 }
 
-class _PasswordInputFieldState extends State<PasswordInputField> {
+class _PasswordInputFieldState extends ConsumerState<PasswordInputField> {
   bool secured = true;
 
   @override

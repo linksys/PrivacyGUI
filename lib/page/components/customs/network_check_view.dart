@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/cubit.dart';
 import 'package:linksys_moab/bloc/connectivity/state.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/util/permission.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/base/gap.dart';
@@ -11,7 +11,9 @@ import 'package:linksys_widgets/widgets/base/icon.dart';
 import 'package:linksys_widgets/widgets/text/app_text.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class NetworkCheckView extends StatefulWidget {
+import '../../../route/navigations_notifier.dart';
+
+class NetworkCheckView extends ConsumerStatefulWidget {
   const NetworkCheckView(
       {Key? key, required this.description, required this.button})
       : super(key: key);
@@ -20,10 +22,11 @@ class NetworkCheckView extends StatefulWidget {
   final Widget button;
 
   @override
-  State<NetworkCheckView> createState() => _NetworkCheckViewState();
+  ConsumerState<NetworkCheckView> createState() => _NetworkCheckViewState();
 }
 
-class _NetworkCheckViewState extends State<NetworkCheckView> with Permissions {
+class _NetworkCheckViewState extends ConsumerState<NetworkCheckView>
+    with Permissions {
   @override
   void initState() {
     super.initState();
@@ -40,7 +43,7 @@ class _NetworkCheckViewState extends State<NetworkCheckView> with Permissions {
     await checkLocationPermissions().then((value) {
       if (!value) {
         openAppSettings();
-        NavigationCubit.of(context).pop();
+        ref.read(navigationsProvider.notifier).pop();
       } else {
         context.read<ConnectivityCubit>().forceUpdate();
       }
@@ -57,8 +60,7 @@ class _NetworkCheckViewState extends State<NetworkCheckView> with Permissions {
                   widget.description,
                 ),
                 const LinksysGap.regular(),
-                AppIcon(
-                    icon: getCharactersIcons(context).wifiDefault),
+                AppIcon(icon: getCharactersIcons(context).wifiDefault),
                 const LinksysGap.semiSmall(),
                 LinksysText.descriptionMain(
                   state.connectivityInfo.ssid ?? '',

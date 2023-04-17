@@ -2,20 +2,22 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
-class SelectProtocolView extends ArgumentsStatelessView {
+class SelectProtocolView extends ArgumentsConsumerStatelessView {
   const SelectProtocolView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SelectProtocolContentView(
       next: super.next,
       args: super.args,
@@ -23,15 +25,16 @@ class SelectProtocolView extends ArgumentsStatelessView {
   }
 }
 
-class SelectProtocolContentView extends ArgumentsStatefulView {
+class SelectProtocolContentView extends ArgumentsConsumerStatefulView {
   const SelectProtocolContentView({super.key, super.next, super.args});
 
   @override
-  State<SelectProtocolContentView> createState() =>
+  ConsumerState<SelectProtocolContentView> createState() =>
       _SelectProtocolContentViewState();
 }
 
-class _SelectProtocolContentViewState extends State<SelectProtocolContentView> {
+class _SelectProtocolContentViewState
+    extends ConsumerState<SelectProtocolContentView> {
   StreamSubscription? _subscription;
 
   late String _selected;
@@ -66,7 +69,9 @@ class _SelectProtocolContentViewState extends State<SelectProtocolContentView> {
                     setState(() {
                       _selected = e;
                     });
-                    NavigationCubit.of(context).popWithResult(_selected);
+                    ref
+                        .read(navigationsProvider.notifier)
+                        .popWithResult(_selected);
                   },
                   child: AppPanelWithValueCheck(
                     title: getProtocolTitle(e),

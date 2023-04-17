@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -9,12 +10,11 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/_route.dart';
-
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 
-class CloudForgotPasswordView extends ArgumentsStatefulView {
+class CloudForgotPasswordView extends ArgumentsConsumerStatefulView {
   const CloudForgotPasswordView({
     Key? key,
   }) : super(key: key);
@@ -24,7 +24,8 @@ class CloudForgotPasswordView extends ArgumentsStatefulView {
       _CloudForgotPasswordViewState();
 }
 
-class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
+class _CloudForgotPasswordViewState
+    extends ConsumerState<CloudForgotPasswordView> {
   bool _isLoading = false;
   bool _isLinkSent = false;
 
@@ -43,14 +44,17 @@ class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
 
   Widget _contentView(AuthState state) {
     // TODO: need modify
-    _hasPhoneNumber =
-        (state as AuthOnCloudLoginState).accountInfo.communicationMethods.length > 1;
+    _hasPhoneNumber = (state as AuthOnCloudLoginState)
+            .accountInfo
+            .communicationMethods
+            .length >
+        1;
     return _isLinkSent ? _linkSentView(state) : _sendLinkView(state);
   }
 
   Widget _sendLinkView(AuthState state) {
     return BasePageView.withCloseButton(
-      context,
+      context, ref,
       child: BasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
@@ -147,7 +151,9 @@ class _CloudForgotPasswordViewState extends State<CloudForgotPasswordView> {
               text: getAppLocalizations(context).back_to_login,
               onPress: () {
                 // TODO: need universal link after sending link, keep go on next page for now
-                NavigationCubit.of(context).push(AuthCloudResetPasswordPath());
+                ref
+                    .read(navigationsProvider.notifier)
+                    .push(AuthCloudResetPasswordPath());
               },
             ),
           ],

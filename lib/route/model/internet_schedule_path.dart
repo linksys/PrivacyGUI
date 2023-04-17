@@ -10,7 +10,7 @@ import 'package:linksys_moab/route/_route.dart';
 
 class InternetSchedulePath extends DashboardPath {
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
       case InternetScheduleOverviewPath:
         return InternetScheduleOverviewView(

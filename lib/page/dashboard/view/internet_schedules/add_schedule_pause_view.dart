@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
-import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/design/colors.dart';
-import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/components/picker/time_picker_view.dart';
 import 'package:linksys_moab/route/model/internet_schedule_path.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/_route.dart';
-
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import '../../../components/picker/day_picker_view.dart';
 
-class AddSchedulePauseView extends ArgumentsStatefulView {
+class AddSchedulePauseView extends ArgumentsConsumerStatefulView {
   const AddSchedulePauseView({
     Key? key,
     super.args,
@@ -23,10 +21,11 @@ class AddSchedulePauseView extends ArgumentsStatefulView {
   }) : super(key: key);
 
   @override
-  State<AddSchedulePauseView> createState() => _AddSchedulePauseViewState();
+  ConsumerState<AddSchedulePauseView> createState() =>
+      _AddSchedulePauseViewState();
 }
 
-class _AddSchedulePauseViewState extends State<AddSchedulePauseView> {
+class _AddSchedulePauseViewState extends ConsumerState<AddSchedulePauseView> {
   bool _isCustomizeTime = false;
   List<bool> weeklySet = [];
   late final ScheduledPausedRule _rule;
@@ -58,7 +57,7 @@ class _AddSchedulePauseViewState extends State<AddSchedulePauseView> {
           title: const Text('Add schedule',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           leading: BackButton(onPressed: () {
-            NavigationCubit.of(context).pop();
+            ref.read(navigationsProvider.notifier).pop();
           }),
           actions: [
             TextButton(
@@ -73,7 +72,8 @@ class _AddSchedulePauseViewState extends State<AddSchedulePauseView> {
                         _endTimeInSeconds.inSeconds,
                         !_isCustomizeTime,
                       )
-                      .then((value) => NavigationCubit.of(context)
+                      .then((value) => ref
+                          .read(navigationsProvider.notifier)
                           .popTo(SchedulePauseListPath()));
                 },
                 child: const Text('Save',
@@ -160,7 +160,8 @@ class _AddSchedulePauseViewState extends State<AddSchedulePauseView> {
                   context
                       .read<ProfilesCubit>()
                       .deleteSchedulePausesRule(_profileId, _rule)
-                      .then((value) => NavigationCubit.of(context).pop());
+                      .then((value) =>
+                          ref.read(navigationsProvider.notifier).pop());
                 },
                 child: const Text('Delete',
                     style: TextStyle(

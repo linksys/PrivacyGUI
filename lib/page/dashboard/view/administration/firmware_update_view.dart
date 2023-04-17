@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
@@ -8,15 +9,15 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/utils.dart';
 
-class FirmwareUpdateView extends ArgumentsStatefulView {
+class FirmwareUpdateView extends ArgumentsConsumerStatefulView {
   const FirmwareUpdateView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<FirmwareUpdateView> createState() => _FirmwareUpdateViewState();
+  ConsumerState<FirmwareUpdateView> createState() => _FirmwareUpdateViewState();
 }
 
-class _FirmwareUpdateViewState extends State<FirmwareUpdateView> {
+class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
   bool autoUpdate = false;
 
   @override

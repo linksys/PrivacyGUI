@@ -1,26 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/dialogs.dart';
 import 'package:linksys_moab/route/model/profile_group_path.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import '../../../../design/colors.dart';
 import '../../../../localization/localization_hook.dart';
 import '../../../../route/model/base_path.dart';
-import '../../../../route/navigation_cubit.dart';
 import '../../../components/views/arguments_view.dart';
 
-class CreateProfileNameView extends ArgumentsStatefulView {
+class CreateProfileNameView extends ArgumentsConsumerStatefulView {
   const CreateProfileNameView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<CreateProfileNameView> createState() => _CreateProfileNameViewState();
+  ConsumerState<CreateProfileNameView> createState() =>
+      _CreateProfileNameViewState();
 }
 
-class _CreateProfileNameViewState extends State<CreateProfileNameView> {
+class _CreateProfileNameViewState extends ConsumerState<CreateProfileNameView> {
   final TextEditingController _textController = TextEditingController();
 
   @override
@@ -39,7 +41,7 @@ class _CreateProfileNameViewState extends State<CreateProfileNameView> {
           leading: [
             IconButton(
               icon: const Icon(Icons.close),
-              onPressed: () => NavigationCubit.of(context).pop(),
+              onPressed: () => ref.read(navigationsProvider.notifier).pop(),
             ),
           ],
           action: [
@@ -52,7 +54,8 @@ class _CreateProfileNameViewState extends State<CreateProfileNameView> {
                       .read<ProfilesCubit>()
                       .createProfile(name: _textController.text);
                   final next = widget.next ?? UnknownPath();
-                  NavigationCubit.of(context)
+                  ref
+                      .read(navigationsProvider.notifier)
                       .push(CreateProfileDevicesSelectedPath()..next = next);
                 } else {
                   showAdaptiveDialog(

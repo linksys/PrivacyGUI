@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 typedef OnResultScanned = Function(Barcode barcode);
 
-class CustomQRView extends StatefulWidget {
+class CustomQRView extends ConsumerStatefulWidget {
   final OnResultScanned? onResult;
 
   const CustomQRView({
@@ -12,10 +13,10 @@ class CustomQRView extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _QRViewState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _QRViewState();
 }
 
-class _QRViewState extends State<CustomQRView> {
+class _QRViewState extends ConsumerState<CustomQRView> {
   Barcode? result;
   MobileScannerController? controller =
       MobileScannerController(facing: CameraFacing.back, torchEnabled: false);

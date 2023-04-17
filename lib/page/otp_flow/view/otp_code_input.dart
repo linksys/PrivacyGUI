@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
@@ -15,6 +16,7 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/repository/model/cloud_session_model.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -23,14 +25,14 @@ import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:sms_receiver_plugin/sms_receiver_plugin.dart';
 
-class OtpCodeInputView extends ArgumentsStatefulView {
+class OtpCodeInputView extends ArgumentsConsumerStatefulView {
   const OtpCodeInputView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
-  State<OtpCodeInputView> createState() => _OtpCodeInputViewState();
+  ConsumerState<OtpCodeInputView> createState() => _OtpCodeInputViewState();
 }
 
-class _OtpCodeInputViewState extends State<OtpCodeInputView> {
+class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
   String _errorCode = '';
   StreamSubscription? _subscription;
   late final TextEditingController _otpController;
@@ -73,7 +75,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
             final function = widget.args['function'] ?? OtpFunction.send;
             final next = widget.next ?? UnknownPath();
             if (function == OtpFunction.add) {
-              NavigationCubit.of(context).popTo(next);
+              ref.read(navigationsProvider.notifier).popTo(next);
             } else {
               final token = _sessionToken;
               if (token == null) {
@@ -84,7 +86,7 @@ class _OtpCodeInputViewState extends State<OtpCodeInputView> {
                     sessionToken: token,
                     password: password,
                   ));
-              // NavigationCubit.of(context)
+              // ref.read(navigationsProvider.notifier)
               //     .clearAndPush(next..args.addAll(widget.args));
             }
           }

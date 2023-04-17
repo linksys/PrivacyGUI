@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import '../../../../localization/localization_hook.dart';
 import '../../../../route/model/base_path.dart';
-import '../../../../route/navigation_cubit.dart';
 import '../../../components/views/arguments_view.dart';
 
-class ProfileSelectAvatarView extends ArgumentsStatefulView {
+class ProfileSelectAvatarView extends ArgumentsConsumerStatefulView {
   const ProfileSelectAvatarView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<ProfileSelectAvatarView> createState() =>
+  ConsumerState<ProfileSelectAvatarView> createState() =>
       _CreateProfileAvatarViewState();
 }
 
-class _CreateProfileAvatarViewState extends State<ProfileSelectAvatarView> {
+class _CreateProfileAvatarViewState
+    extends ConsumerState<ProfileSelectAvatarView> {
   Avatar _selectedAvatar = Avatar(imageUrl: '', isSelected: false);
   final _avatars = [
     Avatar(imageUrl: 'assets/images/img_profile_icon_1.png', isSelected: false),
@@ -51,7 +53,7 @@ class _CreateProfileAvatarViewState extends State<ProfileSelectAvatarView> {
           leading: [
             IconButton(
               icon: const Icon(Icons.close),
-              onPressed: () => NavigationCubit.of(context).pop(),
+              onPressed: () => ref.read(navigationsProvider.notifier).pop(),
             ),
           ],
           action: const [
@@ -86,14 +88,16 @@ class _CreateProfileAvatarViewState extends State<ProfileSelectAvatarView> {
                 onPress: () {
                   bool isReturnable = widget.args['return'] ?? false;
                   if (isReturnable) {
-                    NavigationCubit.of(context).popWithResult(_selectedAvatar.imageUrl);
+                    ref
+                        .read(navigationsProvider.notifier)
+                        .popWithResult(_selectedAvatar.imageUrl);
                   } else {
-                    context.read<ProfilesCubit>().createProfile(
-                        icon: _selectedAvatar.imageUrl
-                    );
+                    context
+                        .read<ProfilesCubit>()
+                        .createProfile(icon: _selectedAvatar.imageUrl);
                     context.read<ProfilesCubit>().saveCreatedProfile();
                     final next = widget.next ?? UnknownPath();
-                    NavigationCubit.of(context).popTo(next);
+                    ref.read(navigationsProvider.notifier).popTo(next);
                   }
                 },
               ),

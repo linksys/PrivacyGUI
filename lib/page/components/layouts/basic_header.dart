@@ -1,11 +1,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/page/components/base_components/text/description_text.dart';
 import 'package:linksys_moab/page/components/base_components/text/title_text.dart';
 
-class BasicHeader extends StatelessWidget {
+class BasicHeader extends ConsumerWidget {
   const BasicHeader(
-      {Key? key, this.title, this.description, this.spacing, this.alignment, this.titleTextStyle})
+      {Key? key,
+      this.title,
+      this.description,
+      this.spacing,
+      this.alignment,
+      this.titleTextStyle})
       : super(key: key);
 
   final String? title;
@@ -15,11 +21,14 @@ class BasicHeader extends StatelessWidget {
   final TextStyle? titleTextStyle;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: alignment ?? CrossAxisAlignment.start,
       children: [
-        TitleText(text: title ?? '', style: titleTextStyle,),
+        TitleText(
+          text: title ?? '',
+          style: titleTextStyle,
+        ),
         SizedBox(
           height: spacing ?? 15,
         ),

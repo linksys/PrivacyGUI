@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/model/group_profile.dart';
@@ -9,20 +10,20 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/route/model/profile_group_path.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import '../../../components/views/arguments_view.dart';
 
-class ProfileOverviewView extends ArgumentsStatefulView {
+class ProfileOverviewView extends ArgumentsConsumerStatefulView {
   const ProfileOverviewView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<ProfileOverviewView> createState() => _ProfileOverviewViewState();
+  ConsumerState<ProfileOverviewView> createState() =>
+      _ProfileOverviewViewState();
 }
 
-class _ProfileOverviewViewState extends State<ProfileOverviewView> {
-
+class _ProfileOverviewViewState extends ConsumerState<ProfileOverviewView> {
   final _blockedItems = [
     BlockedItem(category: 'Adult content', count: 10),
     BlockedItem(category: 'Streaming', count: 3),
@@ -35,76 +36,74 @@ class _ProfileOverviewViewState extends State<ProfileOverviewView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ProfilesCubit, ProfilesState>(
-      builder: (context, state) {
-        return BasePageView(
-          scrollable: true,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
+    return BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
+      return BasePageView(
+        scrollable: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        child: BasicLayout(
+          header: ProfileHeader(
+            profile: state.selectedProfile!,
           ),
-          child: BasicLayout(
-            header: ProfileHeader(
-              profile: state.selectedProfile!,
-            ),
-            content: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                box36(),
-                ProfileOverviewItemView(
-                  icon: Image.asset(
-                    'assets/images/icon_wifi.png',
-                    width: 24,
-                    height: 24,
-                  ),
-                  description:
-                      getAppLocalizations(context).time_remaining_today('1:15'),
-                  onPress: () {},
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              box36(),
+              ProfileOverviewItemView(
+                icon: Image.asset(
+                  'assets/images/icon_wifi.png',
+                  width: 24,
+                  height: 24,
                 ),
-                box16(),
-                ProfileOverviewItemView(
-                  icon: Image.asset(
-                    'assets/images/icon_clock.png',
-                    width: 24,
-                    height: 24,
-                  ),
-                  description:
-                      getAppLocalizations(context).access_until_time_today('11pm'),
-                  onPress: () {},
+                description:
+                    getAppLocalizations(context).time_remaining_today('1:15'),
+                onPress: () {},
+              ),
+              box16(),
+              ProfileOverviewItemView(
+                icon: Image.asset(
+                  'assets/images/icon_clock.png',
+                  width: 24,
+                  height: 24,
                 ),
-                box16(),
-                ProfileOverviewItemView(
-                  icon: Image.asset(
-                    'assets/images/icon_block.png',
-                    width: 24,
-                    height: 24,
-                  ),
-                  description:
-                      getAppLocalizations(context).count_blocked_this_week('13'),
-                  padding: 12,
-                  onPress: () {},
+                description: getAppLocalizations(context)
+                    .access_until_time_today('11pm'),
+                onPress: () {},
+              ),
+              box16(),
+              ProfileOverviewItemView(
+                icon: Image.asset(
+                  'assets/images/icon_block.png',
+                  width: 24,
+                  height: 24,
                 ),
-                box16(),
-                SizedBox(
-                  height: _blockedItems.length * 45,
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _blockedItems.length,
-                    itemBuilder: (context, index) => InkWell(
-                      child: BlockedItemView(
-                        blockedItem: _blockedItems[index],
-                      ),
-                      onTap: () {},
+                description:
+                    getAppLocalizations(context).count_blocked_this_week('13'),
+                padding: 12,
+                onPress: () {},
+              ),
+              box16(),
+              SizedBox(
+                height: _blockedItems.length * 45,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _blockedItems.length,
+                  itemBuilder: (context, index) => InkWell(
+                    child: BlockedItemView(
+                      blockedItem: _blockedItems[index],
                     ),
+                    onTap: () {},
                   ),
-                )
-              ],
-            ),
+                ),
+              )
+            ],
           ),
-        );
-      }
-    );
+        ),
+      );
+    });
   }
 
   _divider() {
@@ -116,12 +115,12 @@ class _ProfileOverviewViewState extends State<ProfileOverviewView> {
   }
 }
 
-class ProfileHeader extends StatelessWidget {
+class ProfileHeader extends ConsumerWidget {
   const ProfileHeader({Key? key, required this.profile}) : super(key: key);
   final UserProfile profile;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -137,8 +136,11 @@ class ProfileHeader extends StatelessWidget {
             const Spacer(),
             SimpleTextButton(
                 onPressed: () {
-                  NavigationCubit.of(context).push(ProfileEditPath());
-                }, text: getAppLocalizations(context).edit),
+                  ref
+                      .read(navigationsProvider.notifier)
+                      .push(ProfileEditPath());
+                },
+                text: getAppLocalizations(context).edit),
           ],
         ),
         const SizedBox(height: 16),
@@ -182,7 +184,8 @@ class ProfileHeader extends StatelessWidget {
                 ),
                 box8(),
                 Text(
-                  getAppLocalizations(context).number_of_devices(profile.devices.length),
+                  getAppLocalizations(context)
+                      .number_of_devices(profile.devices.length),
                   style: const TextStyle(
                     fontSize: 13,
                   ),
@@ -196,7 +199,7 @@ class ProfileHeader extends StatelessWidget {
   }
 }
 
-class ProfileOverviewItemView extends StatelessWidget {
+class ProfileOverviewItemView extends ConsumerWidget {
   const ProfileOverviewItemView({
     Key? key,
     this.icon,
@@ -211,7 +214,7 @@ class ProfileOverviewItemView extends StatelessWidget {
   final Image? icon;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -234,7 +237,7 @@ class BlockedItem {
   BlockedItem({required this.category, required this.count});
 }
 
-class BlockedItemView extends StatelessWidget {
+class BlockedItemView extends ConsumerWidget {
   const BlockedItemView({
     Key? key,
     required this.blockedItem,
@@ -245,7 +248,10 @@ class BlockedItemView extends StatelessWidget {
   final Widget? icon;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Wrap(

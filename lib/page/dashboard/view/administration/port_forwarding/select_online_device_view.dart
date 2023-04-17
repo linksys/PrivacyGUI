@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
@@ -10,11 +11,11 @@ import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
-class SelectOnlineDeviceView extends ArgumentsStatelessView {
+class SelectOnlineDeviceView extends ArgumentsConsumerStatelessView {
   const SelectOnlineDeviceView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SelectOnlineDeviceContentView(
       next: super.next,
       args: super.args,
@@ -22,16 +23,16 @@ class SelectOnlineDeviceView extends ArgumentsStatelessView {
   }
 }
 
-class SelectOnlineDeviceContentView extends ArgumentsStatefulView {
+class SelectOnlineDeviceContentView extends ArgumentsConsumerStatefulView {
   const SelectOnlineDeviceContentView({super.key, super.next, super.args});
 
   @override
-  State<SelectOnlineDeviceContentView> createState() =>
+  ConsumerState<SelectOnlineDeviceContentView> createState() =>
       _SelectOnlineDeviceContentViewState();
 }
 
 class _SelectOnlineDeviceContentViewState
-    extends State<SelectOnlineDeviceContentView> {
+    extends ConsumerState<SelectOnlineDeviceContentView> {
   StreamSubscription? _subscription;
 
   @override

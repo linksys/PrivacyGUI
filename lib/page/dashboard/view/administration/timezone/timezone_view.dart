@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
@@ -11,11 +12,11 @@ import 'package:linksys_moab/util/timezone.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
-class TimezoneView extends ArgumentsStatelessView {
+class TimezoneView extends ArgumentsConsumerStatelessView {
   const TimezoneView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
       create: (context) => TimezoneCubit(context.read<RouterRepository>()),
       child: TimezoneContentView(
@@ -26,15 +27,16 @@ class TimezoneView extends ArgumentsStatelessView {
   }
 }
 
-class TimezoneContentView extends ArgumentsStatefulView {
+class TimezoneContentView extends ArgumentsConsumerStatefulView {
   const TimezoneContentView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<TimezoneContentView> createState() => _TimezoneContentViewState();
+  ConsumerState<TimezoneContentView> createState() =>
+      _TimezoneContentViewState();
 }
 
-class _TimezoneContentViewState extends State<TimezoneContentView> {
+class _TimezoneContentViewState extends ConsumerState<TimezoneContentView> {
   late final TimezoneCubit _cubit;
 
   @override

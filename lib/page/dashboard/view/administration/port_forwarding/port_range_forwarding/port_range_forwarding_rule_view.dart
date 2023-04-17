@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/router/port_range_forwarding_rule.dart';
@@ -9,17 +10,17 @@ import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/port_range_forwarding/bloc/port_range_forwarding_rule_cubit.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/administration_path.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
-class PortRangeForwardingRuleView extends ArgumentsStatelessView {
+class PortRangeForwardingRuleView extends ArgumentsConsumerStatelessView {
   const PortRangeForwardingRuleView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
       create: (context) => PortRangeForwardingRuleCubit(
           repository: context.read<RouterRepository>()),
@@ -31,16 +32,16 @@ class PortRangeForwardingRuleView extends ArgumentsStatelessView {
   }
 }
 
-class PortRangeForwardingRuleContentView extends ArgumentsStatefulView {
+class PortRangeForwardingRuleContentView extends ArgumentsConsumerStatefulView {
   const PortRangeForwardingRuleContentView({super.key, super.next, super.args});
 
   @override
-  State<PortRangeForwardingRuleContentView> createState() =>
+  ConsumerState<PortRangeForwardingRuleContentView> createState() =>
       _AddRuleContentViewState();
 }
 
 class _AddRuleContentViewState
-    extends State<PortRangeForwardingRuleContentView> {
+    extends ConsumerState<PortRangeForwardingRuleContentView> {
   late final PortRangeForwardingRuleCubit _cubit;
 
   StreamSubscription? _subscription;
@@ -114,7 +115,7 @@ class _AddRuleContentViewState
                     );
                   }
 
-                  NavigationCubit.of(context).popWithResult(true);
+                  ref.read(navigationsProvider.notifier).popWithResult(true);
                 }
               });
             },
@@ -157,7 +158,7 @@ class _AddRuleContentViewState
                 AppToastHelp.positiveToast(context,
                     text: getAppLocalizations(context).rule_deleted),
               );
-              NavigationCubit.of(context).popWithResult(true);
+              ref.read(navigationsProvider.notifier).popWithResult(true);
             }
           });
         },
@@ -193,8 +194,9 @@ class _AddRuleContentViewState
         textValidator: () =>
             _cubit.isDeviceIpValidate(_deviceIpAddressController.text),
         onCtaTap: () async {
-          String? deviceIp =
-              await NavigationCubit.of(context).pushAndWait(SelectDevicePtah());
+          String? deviceIp = await ref
+              .read(navigationsProvider.notifier)
+              .pushAndWait(SelectDevicePtah());
         },
       ),
       const LinksysGap.semiSmall(),
@@ -202,8 +204,10 @@ class _AddRuleContentViewState
         title: getAppLocalizations(context).protocol,
         infoText: getProtocolTitle(_protocol),
         onTap: () async {
-          String? protocol = await NavigationCubit.of(context).pushAndWait(
-              SelectProtocolPath()..args = {'selected': _protocol});
+          String? protocol = await ref
+              .read(navigationsProvider.notifier)
+              .pushAndWait(
+                  SelectProtocolPath()..args = {'selected': _protocol});
           if (protocol != null) {
             setState(() {
               _protocol = protocol;

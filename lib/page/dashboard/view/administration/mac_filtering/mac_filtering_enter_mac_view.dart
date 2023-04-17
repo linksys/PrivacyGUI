@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -6,16 +7,16 @@ import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
-class MacFilteringEnterDeviceView extends ArgumentsStatefulView {
+class MacFilteringEnterDeviceView extends ArgumentsConsumerStatefulView {
   const MacFilteringEnterDeviceView({super.key, super.next, super.args});
 
   @override
-  State<MacFilteringEnterDeviceView> createState() =>
+  ConsumerState<MacFilteringEnterDeviceView> createState() =>
       _MacFilteringEnterDeviceViewState();
 }
 
 class _MacFilteringEnterDeviceViewState
-    extends State<MacFilteringEnterDeviceView> {
+    extends ConsumerState<MacFilteringEnterDeviceView> {
   final InputValidator _macValidator = InputValidator([MACAddressRule()]);
   final TextEditingController _macController = TextEditingController();
   bool _isValid = false;

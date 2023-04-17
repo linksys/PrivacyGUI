@@ -96,12 +96,19 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
       case WifiType.main:
         List<NewRadioSettings> radioSettings = [];
         for (RouterRadioInfo radioInfo in state.mainRadioInfo ?? []) {
-          RouterRadioInfoSettings _settings =
+          RouterRadioInfoSettings settings =
               radioInfo.settings.copyWith(isEnable: enable);
           radioSettings.add(NewRadioSettings(
-              radioID: radioInfo.radioID, settings: _settings));
+              radioID: radioInfo.radioID, settings: settings));
         }
-        await _routerRepository.setRadioSettings(radioSettings).then((value) {
+
+        await _routerRepository.send(
+          JNAPAction.setRadioSettings,
+          auth: true,
+          data: {
+            'radios': radioSettings.map((e) => e.toJson()).toList(),
+          },
+        ).then((value) {
           fetchAllRadioInfo();
           emit(state.copyWith(
               selectedWifiItem:
@@ -111,12 +118,14 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
       case WifiType.guest:
         List<GuestRadioInfo> radios = [];
         for (GuestRadioInfo radioInfo in state.guestRadioInfo?.radios ?? []) {
-          GuestRadioInfo _radioInfo = radioInfo.copyWith(isEnabled: enable);
-          radios.add(_radioInfo);
+          GuestRadioInfo newRadioInfo = radioInfo.copyWith(isEnabled: enable);
+          radios.add(newRadioInfo);
         }
         await _routerRepository
-            .setGuestRadioSettings(enable, radios)
-            .then((value) {
+            .send(JNAPAction.setGuestRadioSettings, auth: true, data: {
+          'isGuestNetworkEnabled': enable,
+          'radios': radios.map((e) => e.toJson()).toList(),
+        }).then((value) {
           fetchAllRadioInfo();
           emit(state.copyWith(
               selectedWifiItem:
@@ -145,19 +154,19 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
               radioSettings.add(NewRadioSettings(
                   radioID: radioInfo.radioID, settings: radioInfo.settings));
             } else if (radioInfo.band == '6GHz') {
-              RouterRadioInfoSettings _settings =
+              RouterRadioInfoSettings settings =
                   radioInfo.settings.copyWith(security: securityType.value);
               radioSettings.add(NewRadioSettings(
-                  radioID: radioInfo.radioID, settings: _settings));
+                  radioID: radioInfo.radioID, settings: settings));
             }
           }
         } else {
           for (RouterRadioInfo radioInfo in state.mainRadioInfo ?? []) {
             if (radioInfo.band == '2.4GHz' || radioInfo.band == '5GHz') {
-              RouterRadioInfoSettings _settings =
+              RouterRadioInfoSettings settings =
                   radioInfo.settings.copyWith(security: securityType.value);
               radioSettings.add(NewRadioSettings(
-                  radioID: radioInfo.radioID, settings: _settings));
+                  radioID: radioInfo.radioID, settings: settings));
             } else if (radioInfo.band == '6GHz') {
               radioSettings.add(NewRadioSettings(
                   radioID: radioInfo.radioID, settings: radioInfo.settings));
@@ -165,7 +174,13 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
           }
         }
 
-        await _routerRepository.setRadioSettings(radioSettings).then((value) {
+        await _routerRepository.send(
+          JNAPAction.setRadioSettings,
+          auth: true,
+          data: {
+            'radios': radioSettings.map((e) => e.toJson()).toList(),
+          },
+        ).then((value) {
           fetchAllRadioInfo();
           if (settingOption == WifiSettingOption.securityType6G) {
             emit(state.copyWith(
@@ -195,12 +210,18 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
           RouterWPAPersonalSettings routerWPAPersonalSettings = radioInfo
               .settings.wpaPersonalSettings
               .copyWith(password: password);
-          RouterRadioInfoSettings _settings = radioInfo.settings.copyWith(
+          RouterRadioInfoSettings settings = radioInfo.settings.copyWith(
               ssid: name, wpaPersonalSettings: routerWPAPersonalSettings);
-          radioSettings.add(NewRadioSettings(
-              radioID: radioInfo.radioID, settings: _settings));
+          radioSettings.add(
+              NewRadioSettings(radioID: radioInfo.radioID, settings: settings));
         }
-        await _routerRepository.setRadioSettings(radioSettings).then((value) {
+        await _routerRepository.send(
+          JNAPAction.setRadioSettings,
+          auth: true,
+          data: {
+            'radios': radioSettings.map((e) => e.toJson()).toList(),
+          },
+        ).then((value) {
           fetchAllRadioInfo();
           emit(state.copyWith(
               selectedWifiItem: state.selectedWifiItem
@@ -210,14 +231,16 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
       case WifiType.guest:
         List<GuestRadioInfo> radios = [];
         for (GuestRadioInfo radioInfo in state.guestRadioInfo?.radios ?? []) {
-          GuestRadioInfo _radioInfo =
+          GuestRadioInfo newRadioInfo =
               radioInfo.copyWith(guestSSID: name, guestWPAPassphrase: password);
-          radios.add(_radioInfo);
+          radios.add(newRadioInfo);
         }
         await _routerRepository
-            .setGuestRadioSettings(
-                state.guestRadioInfo!.isGuestNetworkEnabled, radios)
-            .then((value) {
+            .send(JNAPAction.setGuestRadioSettings, auth: true, data: {
+          'isGuestNetworkEnabled':
+              state.guestRadioInfo?.isGuestNetworkEnabled ?? false,
+          'radios': radios.map((e) => e.toJson()).toList(),
+        }).then((value) {
           fetchAllRadioInfo();
           emit(state.copyWith(
               selectedWifiItem: state.selectedWifiItem
@@ -229,17 +252,24 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
     }
   }
 
+  // modify WiFi mode
   Future<void> updateWifiMode(WifiMode wifiMode, WifiType wifiType) async {
     switch (wifiType) {
       case WifiType.main:
         List<NewRadioSettings> radioSettings = [];
         for (RouterRadioInfo radioInfo in state.mainRadioInfo ?? []) {
-          RouterRadioInfoSettings _settings =
+          RouterRadioInfoSettings settings =
               radioInfo.settings.copyWith(mode: wifiMode.value);
-          radioSettings.add(NewRadioSettings(
-              radioID: radioInfo.radioID, settings: _settings));
+          radioSettings.add(
+              NewRadioSettings(radioID: radioInfo.radioID, settings: settings));
         }
-        await _routerRepository.setRadioSettings(radioSettings).then((value) {
+        await _routerRepository.send(
+          JNAPAction.setRadioSettings,
+          auth: true,
+          data: {
+            'radios': radioSettings.map((e) => e.toJson()).toList(),
+          },
+        ).then((value) {
           fetchAllRadioInfo();
           emit(state.copyWith(
               selectedWifiItem:

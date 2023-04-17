@@ -7,7 +7,7 @@ import 'base_path.dart';
 
 abstract class OtpPath extends BasePath {
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
       case OtpPreparePath:
         return OtpFlowView(

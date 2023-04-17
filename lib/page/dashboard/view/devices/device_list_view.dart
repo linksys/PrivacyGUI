@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-import '../../../../route/_route.dart';
 import '../../../../route/model/devices_path.dart';
 import '../../../components/styled/styled_tab_page_view.dart';
 
-class DeviceListView extends ArgumentsStatefulView {
+class DeviceListView extends ArgumentsConsumerStatefulView {
   const DeviceListView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
-  State<DeviceListView> createState() => _DeviceListViewState();
+  ConsumerState<DeviceListView> createState() => _DeviceListViewState();
 }
 
-class _DeviceListViewState extends State<DeviceListView> {
+class _DeviceListViewState extends ConsumerState<DeviceListView> {
   Map<DeviceListInfoScope, String> _intervalList = {};
 
   @override
@@ -117,7 +118,7 @@ class _DeviceListViewState extends State<DeviceListView> {
           rssi: device.signal,
           onTap: () {
             context.read<DeviceCubit>().updateSelectedDeviceInfo(device);
-            NavigationCubit.of(context).push(DeviceDetailPath());
+            ref.read(navigationsProvider.notifier).push(DeviceDetailPath());
           },
         ));
   }

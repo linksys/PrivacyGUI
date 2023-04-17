@@ -14,7 +14,7 @@ abstract class DashboardPath extends BasePath {
       super.pageConfig..themeData = MoabTheme.dashboardLightModeData;
 
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
       case DashboardHomePath:
         return const DashboardHomeView();

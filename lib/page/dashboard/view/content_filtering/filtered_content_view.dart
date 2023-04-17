@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 
@@ -36,14 +37,15 @@ class CFProfile {
   final String name;
 }
 
-class FilteredContentView extends StatefulWidget {
+class FilteredContentView extends ConsumerStatefulWidget {
   const FilteredContentView({Key? key}) : super(key: key);
 
   @override
-  State<FilteredContentView> createState() => _FilteredContentViewState();
+  ConsumerState<FilteredContentView> createState() =>
+      _FilteredContentViewState();
 }
 
-class _FilteredContentViewState extends State<FilteredContentView> {
+class _FilteredContentViewState extends ConsumerState<FilteredContentView> {
   FilteredContentType? _selectedSegment = FilteredContentType.category;
 
   //TODO: Remove the dummy data
@@ -157,8 +159,8 @@ class _FilteredContentViewState extends State<FilteredContentView> {
                     Text(
                       dummyCategories[index]['category']!,
                       style: Theme.of(context).textTheme.headline4?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
                     Container(
                       height: 6,
@@ -172,8 +174,8 @@ class _FilteredContentViewState extends State<FilteredContentView> {
               Text(
                 dummyCategories[index]['number']!,
                 style: Theme.of(context).textTheme.headline4?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                      fontWeight: FontWeight.w700,
+                    ),
               )
             ],
           ),
@@ -199,15 +201,15 @@ class _FilteredContentViewState extends State<FilteredContentView> {
                     Text(
                       dummyRecords[index].description,
                       style: Theme.of(context).textTheme.headline4?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
                     box4(),
                     Text(
                       dummyRecords[index].categoryName,
                       style: Theme.of(context).textTheme.headline4?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
                   ],
                 ),
@@ -219,8 +221,8 @@ class _FilteredContentViewState extends State<FilteredContentView> {
                   Text(
                     dummyRecords[index].date,
                     style: Theme.of(context).textTheme.headline4?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
+                          fontWeight: FontWeight.w500,
+                        ),
                   ),
                   box4(),
                   Row(
@@ -233,8 +235,8 @@ class _FilteredContentViewState extends State<FilteredContentView> {
                       Text(
                         dummyRecords[index].profile.name,
                         style: Theme.of(context).textTheme.headline4?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
+                              fontWeight: FontWeight.w500,
+                            ),
                       )
                     ],
                   ),
@@ -259,8 +261,8 @@ class _FilteredContentViewState extends State<FilteredContentView> {
             child: Text(
               'Sep 1-7',
               style: Theme.of(context).textTheme.headline1?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
           ),
           _selectedSegment == FilteredContentType.category

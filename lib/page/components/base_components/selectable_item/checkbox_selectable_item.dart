@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class CheckboxSelectableItem extends StatelessWidget {
+class CheckboxSelectableItem extends ConsumerWidget {
   // TODO: Support right to left layout
   final String title;
   final bool isSelected;
@@ -16,7 +17,7 @@ class CheckboxSelectableItem extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 19),
       width: weight ?? double.infinity,

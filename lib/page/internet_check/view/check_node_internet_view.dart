@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/internet_check/cubit.dart';
@@ -15,18 +16,22 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/internet_check_path.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-class CheckNodeInternetView extends ArgumentsStatefulView {
+class CheckNodeInternetView extends ArgumentsConsumerStatefulView {
   const CheckNodeInternetView({
-    Key? key, super.next, super.args,
+    Key? key,
+    super.next,
+    super.args,
   }) : super(key: key);
 
   @override
-  State<CheckNodeInternetView> createState() => _CheckNodeInternetViewState();
+  ConsumerState<CheckNodeInternetView> createState() =>
+      _CheckNodeInternetViewState();
 }
 
-class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
+class _CheckNodeInternetViewState extends ConsumerState<CheckNodeInternetView> {
   late final SetupBloc _setupBloc;
   late final InternetCheckCubit _internetCheckCubit;
   late final ConnectivityCubit _connectivityCubit;
@@ -81,30 +86,31 @@ class _CheckNodeInternetViewState extends State<CheckNodeInternetView> {
           _internetCheckCubit.detectWANStatus();
         } else if (state.status == InternetCheckStatus.pppoe) {
           // go pppoe page
-          NavigationCubit.of(context).push(EnterIspSettingsPath());
+          ref.read(navigationsProvider.notifier).push(EnterIspSettingsPath());
         } else if (state.status == InternetCheckStatus.static) {
           // go static page
-          NavigationCubit.of(context).push(EnterStaticIpPath());
+          ref.read(navigationsProvider.notifier).push(EnterStaticIpPath());
         } else if (state.status == InternetCheckStatus.connectedToRouter) {
           _internetCheckCubit.initDevice();
         } else if (state.status == InternetCheckStatus.errorConnectedToRouter) {
           // Not a moab/linksys router
-          NavigationCubit.of(context).push(UnplugModemPath());
+          ref.read(navigationsProvider.notifier).push(UnplugModemPath());
         } else if (state.status == InternetCheckStatus.checkWiring) {
           // go check wiring page
-          NavigationCubit.of(context).push(CheckWiringPath());
+          ref.read(navigationsProvider.notifier).push(CheckWiringPath());
         } else if (state.status ==
             InternetCheckStatus.getInternetConnectionStatus) {
           _internetCheckCubit.getInternetConnectionStatus();
         } else if (state.status == InternetCheckStatus.noInternet) {
           // Go no internet page
-          NavigationCubit.of(context).push(NoInternetOptionsPath()..args = {'isSecondTime': state.afterPlugModemBack});
+          ref.read(navigationsProvider.notifier).push(NoInternetOptionsPath()
+            ..args = {'isSecondTime': state.afterPlugModemBack});
         } else if (state.status == InternetCheckStatus.manually) {
           // go manually
-          NavigationCubit.of(context).push(SelectIspSettingsPath());
+          ref.read(navigationsProvider.notifier).push(SelectIspSettingsPath());
         } else if (state.status == InternetCheckStatus.connected) {
           // go connected page
-          NavigationCubit.of(context).push(InternetConnectedPath());
+          ref.read(navigationsProvider.notifier).push(InternetConnectedPath());
         }
       },
       builder: (context, state) => BasePageView.noNavigationBar(

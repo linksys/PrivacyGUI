@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/content_filter/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
@@ -12,19 +13,20 @@ import 'package:linksys_moab/route/model/content_filter_path.dart';
 import 'package:linksys_moab/route/model/internet_schedule_path.dart';
 import 'package:linksys_moab/route/model/profile_group_path.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import '../../../../design/colors.dart';
 import '../../../../localization/localization_hook.dart';
 import '../../../components/views/arguments_view.dart';
 
-class ProfileEditView extends ArgumentsStatefulView {
+class ProfileEditView extends ArgumentsConsumerStatefulView {
   const ProfileEditView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
-  State<ProfileEditView> createState() => _ProfileEditViewViewState();
+  ConsumerState<ProfileEditView> createState() => _ProfileEditViewViewState();
 }
 
-class _ProfileEditViewViewState extends State<ProfileEditView> {
+class _ProfileEditViewViewState extends ConsumerState<ProfileEditView> {
   @override
   void initState() {
     super.initState();
@@ -42,7 +44,7 @@ class _ProfileEditViewViewState extends State<ProfileEditView> {
           title: Text(getAppLocalizations(context).profile_edit,
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           leading: BackButton(onPressed: () {
-            NavigationCubit.of(context).pop();
+            ref.read(navigationsProvider.notifier).pop();
           }),
           actions: [
             Offstage(
@@ -65,7 +67,9 @@ class _ProfileEditViewViewState extends State<ProfileEditView> {
               title: Text(getAppLocalizations(context).name),
               value: profileTileShort(context, state.selectedProfile!),
               onPress: () {
-                NavigationCubit.of(context).push(ProfileEditNameAvatarPath());
+                ref
+                    .read(navigationsProvider.notifier)
+                    .push(ProfileEditNameAvatarPath());
               },
             ),
             box16(),
@@ -74,7 +78,7 @@ class _ProfileEditViewViewState extends State<ProfileEditView> {
               value: Text('${state.selectedProfile!.devices.length}'),
               onPress: () {
                 showPopup(
-                        context: context,
+                        ref: ref,
                         config: CreateProfileDevicesSelectedPath()
                           ..args = {'return': true})
                     .then((value) {
@@ -91,12 +95,14 @@ class _ProfileEditViewViewState extends State<ProfileEditView> {
                 bool hasData = state.selectedProfile!
                     .hasServiceDetail(PService.contentFilter);
                 if (hasData) {
-                  NavigationCubit.of(context)
+                  ref
+                      .read(navigationsProvider.notifier)
                       .push(ContentFilteringOverviewPath());
                 } else {
                   context.read<ContentFilterCubit>().selectSecureProfile(null);
                   //TODO: There's no longer profileId!!
-                  NavigationCubit.of(context).push(CFPresetsPath()..args = {'profileId': state.selectedProfile?.name});
+                  ref.read(navigationsProvider.notifier).push(CFPresetsPath()
+                    ..args = {'profileId': state.selectedProfile?.name});
                 }
               },
             ),
@@ -106,7 +112,8 @@ class _ProfileEditViewViewState extends State<ProfileEditView> {
               value: Text(state.selectedProfile!
                   .serviceOverallStatus(context, PService.internetSchedule)),
               onPress: () {
-                NavigationCubit.of(context)
+                ref
+                    .read(navigationsProvider.notifier)
                     .push(InternetScheduleOverviewPath());
               },
             ),

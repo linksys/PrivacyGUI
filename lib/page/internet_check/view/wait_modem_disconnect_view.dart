@@ -1,21 +1,24 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/route/model/internet_check_path.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/utils.dart';
 
-class WaitModemDisconnectView extends StatefulWidget {
-  const WaitModemDisconnectView({Key? key}): super(key: key);
+class WaitModemDisconnectView extends ConsumerStatefulWidget {
+  const WaitModemDisconnectView({Key? key}) : super(key: key);
 
   @override
-  State<WaitModemDisconnectView> createState() => _WaitModemDisconnectViewState();
+  ConsumerState<WaitModemDisconnectView> createState() =>
+      _WaitModemDisconnectViewState();
 }
 
-class _WaitModemDisconnectViewState extends State<WaitModemDisconnectView> {
+class _WaitModemDisconnectViewState
+    extends ConsumerState<WaitModemDisconnectView> {
   String timeText = '';
 
   void _startTimer() {
@@ -34,7 +37,7 @@ class _WaitModemDisconnectViewState extends State<WaitModemDisconnectView> {
   }
 
   void goToNext() {
-    NavigationCubit.of(context).push(PlugModemBackPath());
+    ref.read(navigationsProvider.notifier).push(PlugModemBackPath());
   }
 
   @override
@@ -54,9 +57,10 @@ class _WaitModemDisconnectViewState extends State<WaitModemDisconnectView> {
           children: [
             Text(
               timeText,
-              style: Theme.of(context).textTheme.headline1?.copyWith(
-                  color: Theme.of(context).primaryColor
-              ),
+              style: Theme.of(context)
+                  .textTheme
+                  .headline1
+                  ?.copyWith(color: Theme.of(context).primaryColor),
             ),
           ],
         ),

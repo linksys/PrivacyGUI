@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../components/base_components/base_page_view.dart';
 import '../../../components/base_components/button/simple_text_button.dart';
@@ -7,13 +8,14 @@ import '../../../components/layouts/basic_layout.dart';
 import '../../../components/shortcuts/sized_box.dart';
 import '../../../components/views/arguments_view.dart';
 
-class SecurityContentFilterIntroductionView extends ArgumentsStatelessView {
+class SecurityContentFilterIntroductionView
+    extends ArgumentsConsumerStatelessView {
   SecurityContentFilterIntroductionView({super.key, super.next, super.args});
 
   final Widget image = Image.asset('assets/images/icon_family_security.png');
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BasePageView(
       scrollable: true,
       child: BasicLayout(
@@ -30,13 +32,18 @@ class SecurityContentFilterIntroductionView extends ArgumentsStatelessView {
               child: image,
             ),
             box24(),
-            const Text('Lorem ipsum dolor sit amet, consectetur adipiscing elit.', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w400)),
+            const Text(
+                'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w400)),
             box24(),
-            _checkItem('Age appropriate filters', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit'),
+            _checkItem('Age appropriate filters',
+                'Lorem ipsum dolor sit amet, consectetur adipiscing elit'),
             box24(),
-            _checkItem('Millions of sites inspected ', 'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'),
+            _checkItem('Millions of sites inspected ',
+                'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'),
             box24(),
-            _checkItem('Customize for your family’s needs', 'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'),
+            _checkItem('Customize for your family’s needs',
+                'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'),
             const SizedBox(
               height: 64,
             ),

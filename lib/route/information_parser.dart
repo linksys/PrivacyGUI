@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/util/logger.dart';
 
-class MoabRouteInformationParser extends RouteInformationParser<BasePath> {
+class LinksysRouteInformationParser
+    extends RouteInformationParser<List<BasePath>> {
   @override
-  Future<BasePath> parseRouteInformation(
+  Future<List<BasePath>> parseRouteInformation(
       RouteInformation routeInformation) async {
     logger.d(
         'SetupRouteInformationParser::parseRouteInformation: ${routeInformation.location}');
@@ -13,14 +14,14 @@ class MoabRouteInformationParser extends RouteInformationParser<BasePath> {
 
     // Handle '/'
     if (uri.pathSegments.isEmpty) {
-      return SynchronousFuture(HomePath());
+      return SynchronousFuture([HomePath()]);
     }
 
-    return SynchronousFuture(UnknownPath());
+    return SynchronousFuture([UnknownPath()]);
   }
 
   @override
-  RouteInformation? restoreRouteInformation(BasePath configuration) {
+  RouteInformation? restoreRouteInformation(List<BasePath> configuration) {
     // print(
     //     'SetupRouteInformationParser::restoreRouteInformation: ${configuration.name}');
     return null;

@@ -1,11 +1,12 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -14,18 +15,19 @@ import 'package:linksys_widgets/widgets/input_field/app_text_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-class EditWifiNamePasswordView extends ArgumentsStatefulView {
+class EditWifiNamePasswordView extends ArgumentsConsumerStatefulView {
   const EditWifiNamePasswordView({
     Key? key,
     super.args,
   }) : super(key: key);
 
   @override
-  State<EditWifiNamePasswordView> createState() =>
+  ConsumerState<EditWifiNamePasswordView> createState() =>
       _EditWifiNamePasswordViewState();
 }
 
-class _EditWifiNamePasswordViewState extends State<EditWifiNamePasswordView> {
+class _EditWifiNamePasswordViewState
+    extends ConsumerState<EditWifiNamePasswordView> {
   bool isLoading = false;
   final TextEditingController nameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -84,7 +86,7 @@ class _EditWifiNamePasswordViewState extends State<EditWifiNamePasswordView> {
                   nameController.text, passwordController.text, wifiType)
               .then((value) {
             setState(() => isLoading = false);
-            NavigationCubit.of(context).pop();
+            ref.read(navigationsProvider.notifier).pop();
           }).onError((error, stackTrace) {
             setState(() => isLoading = false);
             showOkCancelAlertDialog(

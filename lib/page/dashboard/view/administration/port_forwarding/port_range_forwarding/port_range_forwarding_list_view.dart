@@ -2,23 +2,24 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/port_range_forwarding/bloc/port_range_forwarding_list_cubit.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
-class PortRangeForwardingListView extends ArgumentsStatelessView {
+class PortRangeForwardingListView extends ArgumentsConsumerStatelessView {
   const PortRangeForwardingListView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider<PortRangeForwardingListCubit>(
       create: (context) => PortRangeForwardingListCubit(
           repository: context.read<RouterRepository>()),
@@ -30,16 +31,16 @@ class PortRangeForwardingListView extends ArgumentsStatelessView {
   }
 }
 
-class PortRangeForwardingListContentView extends ArgumentsStatefulView {
+class PortRangeForwardingListContentView extends ArgumentsConsumerStatefulView {
   const PortRangeForwardingListContentView({super.key, super.next, super.args});
 
   @override
-  State<PortRangeForwardingListContentView> createState() =>
+  ConsumerState<PortRangeForwardingListContentView> createState() =>
       _PortRangeForwardingContentViewState();
 }
 
 class _PortRangeForwardingContentViewState
-    extends State<PortRangeForwardingListContentView> {
+    extends ConsumerState<PortRangeForwardingListContentView> {
   late final PortRangeForwardingListCubit _cubit;
 
   StreamSubscription? _subscription;
@@ -87,7 +88,8 @@ class _PortRangeForwardingContentViewState
                 LinksysTertiaryButton(
                   getAppLocalizations(context).add_rule,
                   onTap: () {
-                    NavigationCubit.of(context)
+                    ref
+                        .read(navigationsProvider.notifier)
                         .pushAndWait(PortRangeForwardingRulePath()
                           ..args = {'rules': state.rules})
                         .then((value) {
@@ -100,7 +102,8 @@ class _PortRangeForwardingContentViewState
               const LinksysGap.semiBig(),
               ...state.rules.map((e) => AppPanelWithInfo(
                     onTap: () {
-                      NavigationCubit.of(context)
+                      ref
+                          .read(navigationsProvider.notifier)
                           .pushAndWait(SinglePortForwardingRulePath()
                             ..args = {'rules': state.rules, 'edit': e})
                           .then((value) {
@@ -114,26 +117,6 @@ class _PortRangeForwardingContentViewState
                         ? getAppLocalizations(context).on
                         : getAppLocalizations(context).off,
                   )),
-              // ...state.rules.map(
-              //   (e) => administrationTile(
-              //     title: title(e.description),
-              //     value: subTitle(
-              //       e.isEnabled
-              //           ? getAppLocalizations(context).on
-              //           : getAppLocalizations(context).off,
-              //     ),
-              //     onPress: () {
-              //       NavigationCubit.of(context)
-              //           .pushAndWait(SinglePortForwardingRulePath()
-              //             ..args = {'rules': state.rules, 'edit': e})
-              //           .then((value) {
-              //         if (value ?? false) {
-              //           _cubit.fetch();
-              //         }
-              //       });
-              //     },
-              //   ),
-              // ),
             ],
           ),
         ),

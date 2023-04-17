@@ -1,13 +1,11 @@
 import 'dart:async';
 
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_moab/page/landing/view/_view.dart';
-import 'package:linksys_moab/page/setup/view/_view.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/model/_model.dart';
 
 import 'package:linksys_moab/util/logger.dart';
 
@@ -50,7 +48,7 @@ mixin ReturnablePath<T> {
 /// and some interfaces -
 /// BasePath.buildPage() this better to implement on the sub abstract path,
 /// this is because we can easy to understand the whole route in the setup.
-abstract class BasePath {
+abstract class BasePath extends Equatable {
   Map<String, dynamic> args = {};
   final PathConfig _pathConfig = PathConfig();
   final PageConfig _pageConfig = PageConfig();
@@ -61,15 +59,10 @@ abstract class BasePath {
 
   PageConfig get pageConfig => _pageConfig;
 
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
       case HomePath:
         return HomeView(
-          args: args,
-        );
-      case LoadingTransitionPath:
-        return LoadingTransitionView(
-          next: next,
           args: args,
         );
       case SimpleItemPickerPath:
@@ -92,6 +85,13 @@ abstract class BasePath {
     pathConfig.next = next;
     logger.d('set next: ${this.next} to $runtimeType');
   }
+
+  @override
+  List<Object?> get props => [
+        name,
+        next,
+        args,
+      ];
 }
 
 class HomePath extends BasePath {}
@@ -111,7 +111,7 @@ class LoadingTransitionPath extends BasePath {
 
 abstract class DebugToolsPath extends BasePath {
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
       case DebugToolsMainPath:
         return const DebugToolsView();

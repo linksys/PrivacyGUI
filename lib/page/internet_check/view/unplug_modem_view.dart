@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/route/model/internet_check_path.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
-class UnplugModemView extends StatelessWidget {
-  const UnplugModemView({Key? key}): super(key: key);
+class UnplugModemView extends ConsumerWidget {
+  const UnplugModemView({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BasePageView(
       child: BasicLayout(
         header: BasicHeader(
@@ -23,9 +24,12 @@ class UnplugModemView extends StatelessWidget {
         footer: Column(
           children: [
             SimpleTextButton(
-              text: getAppLocalizations(context).unplug_modem_troubleshooting_link,
+              text: getAppLocalizations(context)
+                  .unplug_modem_troubleshooting_link,
               onPressed: () {
-                NavigationCubit.of(context).push(LearnBatteryModemPath());
+                ref
+                    .read(navigationsProvider.notifier)
+                    .push(LearnBatteryModemPath());
               },
             ),
             const SizedBox(
@@ -34,7 +38,9 @@ class UnplugModemView extends StatelessWidget {
             PrimaryButton(
               text: getAppLocalizations(context).next,
               onPress: () {
-                NavigationCubit.of(context).push(WaitModemDisconnectPath());
+                ref
+                    .read(navigationsProvider.notifier)
+                    .push(WaitModemDisconnectPath());
               },
             ),
           ],

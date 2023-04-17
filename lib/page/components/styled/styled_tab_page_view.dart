@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
@@ -7,7 +9,7 @@ import 'package:linksys_widgets/widgets/page/layout/tab_layout.dart';
 
 import 'consts.dart';
 
-class StyledLinksysTabPageView extends StatelessWidget {
+class StyledLinksysTabPageView extends ConsumerWidget {
   static const double kDefaultToolbarHeight = 80;
   final String? title;
   final double toolbarHeight;
@@ -43,13 +45,13 @@ class StyledLinksysTabPageView extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => LinksysPageView.noNavigationBar(
+  Widget build(BuildContext context, WidgetRef ref) => LinksysPageView.noNavigationBar(
         padding: const LinksysEdgeInsets.only(),
         child: LinksysTabLayout(
           flexibleSpace: FlexibleSpaceBar(
             background: Column(
               children: [
-                _buildAppBar(context),
+                _buildAppBar(context, ref),
                 headerContent ?? Container(),
               ],
             ),
@@ -66,7 +68,7 @@ class StyledLinksysTabPageView extends StatelessWidget {
 
   bool isBackEnabled() => backState == StyledBackState.enabled;
 
-  LinksysAppBar _buildAppBar(BuildContext context) {
+  LinksysAppBar _buildAppBar(BuildContext context, WidgetRef ref) {
     final title = this.title;
     return isCloseStyle
         ? LinksysAppBar.withClose(
@@ -76,7 +78,7 @@ class StyledLinksysTabPageView extends StatelessWidget {
             onBackTap: isBackEnabled()
                 ? (onBackTap ??
                     () {
-                      NavigationCubit.of(context).pop();
+                      ref.read(navigationsProvider.notifier).pop();
                     })
                 : null,
             showBack: backState != StyledBackState.none,
@@ -88,7 +90,7 @@ class StyledLinksysTabPageView extends StatelessWidget {
             onBackTap: isBackEnabled()
                 ? (onBackTap ??
                     () {
-                      NavigationCubit.of(context).pop();
+                      ref.read(navigationsProvider.notifier).pop();
                     })
                 : null,
             showBack: backState != StyledBackState.none,

@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 
 import '../../../components/shortcuts/sized_box.dart';
 import '../../../components/views/arguments_view.dart';
 
-class SecurityFreeTrailPromotionView extends ArgumentsStatelessView {
+class SecurityFreeTrailPromotionView extends ArgumentsConsumerStatelessView {
   SecurityFreeTrailPromotionView({super.key, super.args, super.next});
 
   final Widget image = Image.asset('assets/images/security_checked_icon.png');
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BasePageView(
       scrollable: true,
       child: Column(

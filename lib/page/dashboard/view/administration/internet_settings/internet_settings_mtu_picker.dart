@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
-class MTUPickerView extends ArgumentsStatefulView {
+class MTUPickerView extends ArgumentsConsumerStatefulView {
   const MTUPickerView({super.key, super.next, super.args});
 
   @override
-  State<MTUPickerView> createState() => _MTUPickerViewState();
+  ConsumerState<MTUPickerView> createState() => _MTUPickerViewState();
 }
 
-class _MTUPickerViewState extends State<MTUPickerView> {
+class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
   final _valueController = TextEditingController();
   late final List<String> _items = ['Auto', 'Manual'];
   String _selected = '';
@@ -39,9 +41,10 @@ class _MTUPickerViewState extends State<MTUPickerView> {
           getAppLocalizations(context).done,
           onTap: () {
             FocusManager.instance.primaryFocus?.unfocus();
-            NavigationCubit.of(context).popWithResult(_selected == _items[0]
-                ? 0
-                : (int.tryParse(_valueController.text)) ?? 0);
+            ref.read(navigationsProvider.notifier).popWithResult(
+                _selected == _items[0]
+                    ? 0
+                    : (int.tryParse(_valueController.text)) ?? 0);
           },
         ),
       ],

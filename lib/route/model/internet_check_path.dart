@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/page/internet_check/view/_view.dart';
-import 'package:linksys_moab/page/setup/view/_view.dart';
 import '_model.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
 
 abstract class InternetCheckPath extends BasePath {
   @override
@@ -13,13 +11,13 @@ abstract class InternetCheckPath extends BasePath {
   PathConfig get pathConfig => super.pathConfig..removeFromHistory = true;
 
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
-      case CheckNodeInternetPath:
-        return CheckNodeInternetView(
-          next: next,
-          args: args,
-        );
+      // case CheckNodeInternetPath:
+      //   return CheckNodeInternetView(
+      //     next: next,
+      //     args: args,
+      //   );
       case SelectIspSettingsPath:
         return const SelectIspSettingsView();
       case CheckWiringPath:
@@ -40,8 +38,8 @@ abstract class InternetCheckPath extends BasePath {
         return const PlugModemBackView();
       case LearnBatteryModemPath:
         return const LearnBatteryModemView();
-      case InternetConnectedPath:
-        return InternetConnectedView();
+      // case InternetConnectedPath:
+      //   return InternetConnectedView();
       case NoInternetOptionsAfterPlugModemPath:
         return NoInternetOptionsView(
           next: next,

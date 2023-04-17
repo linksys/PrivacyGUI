@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
-import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 
-class IPFormField extends StatefulWidget {
+class IPFormField extends ConsumerStatefulWidget {
   const IPFormField({
     super.key,
     this.header,
@@ -24,10 +24,10 @@ class IPFormField extends StatefulWidget {
   final bool isError;
 
   @override
-  State<IPFormField> createState() => _IPFormFieldState();
+  ConsumerState<IPFormField> createState() => _IPFormFieldState();
 }
 
-class _IPFormFieldState extends State<IPFormField> {
+class _IPFormFieldState extends ConsumerState<IPFormField> {
   final _octet1Controller = TextEditingController();
   final _octet2Controller = TextEditingController();
   final _octet3Controller = TextEditingController();

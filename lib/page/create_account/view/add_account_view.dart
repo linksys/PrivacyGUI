@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
@@ -15,6 +16,7 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -23,14 +25,14 @@ import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 
-class AddAccountView extends ArgumentsStatefulView {
+class AddAccountView extends ArgumentsConsumerStatefulView {
   const AddAccountView({Key? key, super.args}) : super(key: key);
 
   @override
   _AddAccountState createState() => _AddAccountState();
 }
 
-class _AddAccountState extends State<AddAccountView> {
+class _AddAccountState extends ConsumerState<AddAccountView> {
   bool _isLoading = false;
   final TextEditingController _emailController = TextEditingController();
   var isEmailInvalid = false;
@@ -113,7 +115,7 @@ class _AddAccountState extends State<AddAccountView> {
               context.read<AuthBloc>().add(SetCloudPassword(password: ''));
               context.read<AuthBloc>().add(
                   SetLoginType(loginType: AuthenticationType.passwordless));
-              NavigationCubit.of(context).push(CreateAccountOtpPath()
+              ref.read(navigationsProvider.notifier).push(CreateAccountOtpPath()
                 ..args = {
                   'username': _emailController.text,
                   'function': OtpFunction.setting,
@@ -218,7 +220,8 @@ class _AddAccountState extends State<AddAccountView> {
                   : SimpleTextButton(
                       text: getAppLocalizations(context).use_router_password,
                       onPressed: () {
-                        NavigationCubit.of(context)
+                        ref
+                            .read(navigationsProvider.notifier)
                             .push(NoUseCloudAccountPath());
                       },
                     )
@@ -239,6 +242,8 @@ class _AddAccountState extends State<AddAccountView> {
   }
 
   _goLogin() {
-    NavigationCubit.of(context).push(AuthSetupLoginPath()..args.addAll(widget.args));
+    ref
+        .read(navigationsProvider.notifier)
+        .push(AuthSetupLoginPath()..args.addAll(widget.args));
   }
 }

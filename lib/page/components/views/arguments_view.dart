@@ -1,25 +1,56 @@
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 
-abstract class ArgumentsBaseStatefulView<T> extends StatefulWidget {
+// abstract class ArgumentsBaseStatefulView<T> extends ConsumerStatefulWidget {
+//   final Map<String, T> args;
+//   const ArgumentsBaseStatefulView({Key? key, this.args = const {}})
+//       : super(key: key);
+// }
+
+// abstract class ArgumentsBaseStatelessView<T> extends ConsumerWidget {
+//   final Map<String, T> args;
+//   const ArgumentsBaseStatelessView({Key? key, this.args = const {}})
+//       : super(key: key);
+// }
+
+// abstract class ArgumentsConsumerStatefulView
+//     extends ArgumentsBaseStatefulView<dynamic> {
+//   final BasePath? next;
+//   const ArgumentsConsumerStatefulView({Key? key, super.args, this.next})
+//       : super(key: key);
+// }
+
+// abstract class ArgumentsConsumerStatelessView
+//     extends ArgumentsBaseStatelessView<dynamic> {
+//   final BasePath? next;
+//   const ArgumentsConsumerStatelessView({Key? key, super.args, this.next})
+//       : super(key: key);
+// }
+
+abstract class ArgumentsBaseConsumerStatefulView<T>
+    extends ConsumerStatefulWidget {
   final Map<String, T> args;
-  const ArgumentsBaseStatefulView({Key? key, this.args = const {}}) : super(key: key);
-
+  const ArgumentsBaseConsumerStatefulView({Key? key, this.args = const {}})
+      : super(key: key);
 }
-abstract class ArgumentsBaseStatelessView<T> extends StatelessWidget {
+
+abstract class ArgumentsConsumerStatefulView
+    extends ArgumentsBaseConsumerStatefulView<dynamic> {
+  final BasePath? next;
+  const ArgumentsConsumerStatefulView({Key? key, super.args, this.next})
+      : super(key: key);
+}
+
+abstract class ArgumentsBaseConsumerStatelessView<T> extends ConsumerWidget {
   final Map<String, T> args;
-  const ArgumentsBaseStatelessView({Key? key, this.args = const {}}) : super(key: key);
-
-}
-abstract class ArgumentsStatefulView extends ArgumentsBaseStatefulView<dynamic> {
-  final BasePath? next;
-  const ArgumentsStatefulView({Key? key, super.args, this.next}) : super(key: key);
-
+  const ArgumentsBaseConsumerStatelessView({Key? key, this.args = const {}})
+      : super(key: key);
 }
 
-abstract class ArgumentsStatelessView extends ArgumentsBaseStatelessView<dynamic> {
+abstract class ArgumentsConsumerStatelessView
+    extends ArgumentsBaseConsumerStatelessView<dynamic> {
   final BasePath? next;
-  const ArgumentsStatelessView({Key? key, super.args, this.next}) : super(key: key);
-
+  const ArgumentsConsumerStatelessView({Key? key, super.args, this.next})
+      : super(key: key);
 }

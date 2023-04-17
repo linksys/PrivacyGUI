@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/nodes_path.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -14,14 +16,14 @@ import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/profile_header_layout.dart';
 
-class DeviceDetailView extends ArgumentsStatefulView {
+class DeviceDetailView extends ArgumentsConsumerStatefulView {
   const DeviceDetailView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
-  State<DeviceDetailView> createState() => _DeviceDetailViewState();
+  ConsumerState<DeviceDetailView> createState() => _DeviceDetailViewState();
 }
 
-class _DeviceDetailViewState extends State<DeviceDetailView> {
+class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DeviceCubit, DeviceState>(builder: (context, state) {
@@ -30,7 +32,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
           expandedHeight: constraint.maxHeight / 2,
           collaspeTitle: state.selectedDeviceInfo?.name,
           onCollaspeBackTap: () {
-            NavigationCubit.of(context).pop();
+            ref.read(navigationsProvider.notifier).pop();
           },
           header: Column(
             children: [
@@ -40,7 +42,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
                 leading: AppIconButton(
                   icon: getCharactersIcons(context).arrowLeft,
                   onTap: () {
-                    NavigationCubit.of(context).pop();
+                    ref.read(navigationsProvider.notifier).pop();
                   },
                 ),
               ),
@@ -139,7 +141,7 @@ class _DeviceDetailViewState extends State<DeviceDetailView> {
         ),
         InkWell(
           onTap: () {
-            NavigationCubit.of(context).push(TopologyPath()
+            ref.read(navigationsProvider.notifier).push(TopologyPath()
               ..args = {
                 'selectedDeviceId': device.deviceID,
               });

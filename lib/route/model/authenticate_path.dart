@@ -12,7 +12,7 @@ abstract class AuthenticatePath extends BasePath {
   PageConfig get pageConfig => super.pageConfig..ignoreAuthChanged = true;
 
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
       case AuthInputAccountPath:
         return CloudLoginAccountView(

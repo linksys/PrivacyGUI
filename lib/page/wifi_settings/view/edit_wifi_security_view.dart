@@ -1,28 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-class EditWifiSecurityView extends ArgumentsStatefulView {
+class EditWifiSecurityView extends ArgumentsConsumerStatefulView {
   const EditWifiSecurityView({
     Key? key,
     super.args,
   }) : super(key: key);
 
   @override
-  State<EditWifiSecurityView> createState() => _EditWifiSecurityViewState();
+  ConsumerState<EditWifiSecurityView> createState() =>
+      _EditWifiSecurityViewState();
 }
 
-class _EditWifiSecurityViewState extends State<EditWifiSecurityView> {
+class _EditWifiSecurityViewState extends ConsumerState<EditWifiSecurityView> {
   bool isLoading = false;
   late WifiSettingOption _wifiSettingOption;
   late List<WifiSecurityType> _typeList;
@@ -136,7 +139,7 @@ class _EditWifiSecurityViewState extends State<EditWifiSecurityView> {
         isLoading = false;
         _currentType = _selectedType;
       });
-      NavigationCubit.of(context).pop();
+      ref.read(navigationsProvider.notifier).pop();
     }).onError((error, stackTrace) {
       setState(() => isLoading = false);
       showOkCancelAlertDialog(

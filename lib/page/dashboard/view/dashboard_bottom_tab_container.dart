@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/page/components/customs/debug_overlay_view.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import 'package:linksys_moab/util/debug_mixin.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -15,19 +17,21 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 
 enum DashboardBottomItemType { home, security, health, settings }
 
-class DashboardBottomTabContainer extends ArgumentsStatefulView {
-  const DashboardBottomTabContainer(
-      {Key? key, required this.navigator, required this.cubit})
-      : super(key: key);
+class DashboardBottomTabContainer extends ArgumentsConsumerStatefulView {
+  const DashboardBottomTabContainer({
+    Key? key,
+    required this.navigator,
+  }) : super(key: key);
 
-  final NavigationCubit cubit;
   final Navigator navigator;
 
   @override
-  State<DashboardBottomTabContainer> createState() => _DashboardViewState();
+  ConsumerState<DashboardBottomTabContainer> createState() =>
+      _DashboardViewState();
 }
 
-class _DashboardViewState extends State<DashboardBottomTabContainer>
+class _DashboardViewState
+    extends ConsumerState<DashboardBottomTabContainer>
     with DebugObserver {
   int _selectedIndex = 0;
   final List<DashboardBottomItem> _bottomTabItems = [];
@@ -51,7 +55,9 @@ class _DashboardViewState extends State<DashboardBottomTabContainer>
               onTap: () {
                 if (increase()) {
                   logger.d('Triggered!');
-                  NavigationCubit.of(context).push(DebugToolsMainPath());
+                  ref
+                      .read(navigationsProvider.notifier)
+                      .push(DebugToolsMainPath());
                 }
               },
               child: widget.navigator),
@@ -73,7 +79,8 @@ class _DashboardViewState extends State<DashboardBottomTabContainer>
         ],
       ),
       bottomNavigationBar: Offstage(
-        offstage: widget.cubit.state.last.pageConfig.isHideBottomNavBar,
+        offstage:
+            ref.read(navigationsProvider).last.pageConfig.isHideBottomNavBar,
         child: BottomNavigationBar(
             type: BottomNavigationBarType.shifting,
             iconSize:
@@ -108,7 +115,9 @@ class _DashboardViewState extends State<DashboardBottomTabContainer>
       showSimpleSnackBar(context, null, "Not Implemented!");
       return;
     }
-    widget.cubit.clearAndPush(_bottomTabItems[index].rootPath);
+    ref
+        .read(navigationsProvider.notifier)
+        .clearAndPush(_bottomTabItems[index].rootPath);
     setState(() {
       _selectedIndex = index;
     });

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/icons/icon_rules.dart';
@@ -17,14 +18,14 @@ import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/profile_header_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-class NodeDetailView extends ArgumentsStatefulView {
+class NodeDetailView extends ArgumentsConsumerStatefulView {
   const NodeDetailView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _NodeDetailViewState();
+  ConsumerState<NodeDetailView> createState() => _NodeDetailViewState();
 }
 
-class _NodeDetailViewState extends State<NodeDetailView> {
+class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   var isLightEnabled = true; //TODO: Move it to state
 
   @override
@@ -39,7 +40,7 @@ class _NodeDetailViewState extends State<NodeDetailView> {
       AppIconButton.noPadding(
         icon: getCharactersIcons(context).infoRound,
         onTap: () {
-          NavigationCubit.of(context).push(NodeLightGuidePath());
+          ref.read(navigationsProvider.notifier).push(NodeLightGuidePath());
         },
       )
     ];
@@ -51,7 +52,7 @@ class _NodeDetailViewState extends State<NodeDetailView> {
                 expandedHeight: constraint.maxHeight / 2,
                 collaspeTitle: state.location,
                 onCollaspeBackTap: () {
-                  NavigationCubit.of(context).pop();
+                  ref.read(navigationsProvider.notifier).pop();
                 },
                 actions: actions,
                 header: Column(
@@ -62,7 +63,7 @@ class _NodeDetailViewState extends State<NodeDetailView> {
                       leading: AppIconButton(
                         icon: getCharactersIcons(context).arrowLeft,
                         onTap: () {
-                          NavigationCubit.of(context).pop();
+                          ref.read(navigationsProvider.notifier).pop();
                         },
                       ),
                       trailing: actions,
@@ -183,7 +184,7 @@ class _NodeDetailViewState extends State<NodeDetailView> {
                 onChanged: (value) {
                   setState(() {
                     isLightEnabled = value;
-                    //NavigationCubit.of(context).push(NodeSwitchLightPath());
+                    //ref.read(navigationsProvider.notifier).push(NodeSwitchLightPath());
                   });
                 },
               ),
@@ -332,7 +333,7 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         style: Theme.of(context).textTheme.bodyText1,
       ),
       onPress: () {
-        NavigationCubit.of(context)
+        ref.read(navigationsProvider.notifier)
             .push(NodeNameEditPath()..args = {'location': state.location});
       },
     );
@@ -349,7 +350,7 @@ class _NodeDetailViewState extends State<NodeDetailView> {
         style: Theme.of(context).textTheme.bodyText1,
       ),
       onPress: () {
-        NavigationCubit.of(context)
+        ref.read(navigationsProvider.notifier)
             .push(NodeConnectedDevicesPath()..args = widget.args);
       },
     );
@@ -393,7 +394,7 @@ class _NodeDetailViewState extends State<NodeDetailView> {
           SimpleTextButton(
             text: getAppLocalizations(context).details,
             onPressed: () {
-              NavigationCubit.of(context).push(SignalStrengthInfoPath());
+              ref.read(navigationsProvider.notifier).push(SignalStrengthInfoPath());
             },
           ),
         ],

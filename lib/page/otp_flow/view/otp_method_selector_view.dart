@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -10,20 +11,21 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
-class OTPMethodSelectorView extends ArgumentsStatefulView {
+class OTPMethodSelectorView extends ArgumentsConsumerStatefulView {
   const OTPMethodSelectorView({Key? key, super.args, super.next})
       : super(key: key);
 
   @override
-  State<OTPMethodSelectorView> createState() => _OTPMethodSelectorViewState();
+  ConsumerState<OTPMethodSelectorView> createState() =>
+      _OTPMethodSelectorViewState();
 }
 
-class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
+class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<OtpCubit, OtpState>(
@@ -97,8 +99,9 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
                       getAppLocalizations(context).otp_create_password_instead,
                   onPressed: () {
                     final username = widget.args['username'];
-                    NavigationCubit.of(context).push(CreateCloudPasswordPath()
-                      ..args = {'username': username});
+                    ref.read(navigationsProvider.notifier).push(
+                        CreateCloudPasswordPath()
+                          ..args = {'username': username});
                   }),
           ],
         ),
@@ -133,7 +136,7 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
   _checkPhoneExist(CommunicationMethod method, String token) {
     if (method.method == CommunicationMethodType.sms.name.toUpperCase()) {
       context.read<OtpCubit>().addPhone();
-      NavigationCubit.of(context).push(OtpAddPhonePath()
+      ref.read(navigationsProvider.notifier).push(OtpAddPhonePath()
         ..next = widget.next
         ..args.addAll(widget.args));
     } else {
@@ -144,7 +147,7 @@ class _OTPMethodSelectorViewState extends State<OTPMethodSelectorView> {
   _onSend(CommunicationMethod method) {
     _setLoading(true);
     context.read<OtpCubit>().onInputOtp();
-    NavigationCubit.of(context).push(OtpInputCodePath()
+    ref.read(navigationsProvider.notifier).push(OtpInputCodePath()
       ..next = widget.next
       ..args.addAll(widget.args));
     _setLoading(false);

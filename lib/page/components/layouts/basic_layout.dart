@@ -1,7 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BasicLayout extends StatelessWidget {
+class BasicLayout extends ConsumerWidget {
   final Widget? header;
   final Widget? content;
   final Widget? footer;
@@ -16,7 +17,7 @@ class BasicLayout extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     List<Widget> widgets = [];
     if (header != null) widgets.add(header!);
     if (content != null) widgets.add(Expanded(child: content!));

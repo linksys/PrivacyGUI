@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/input_fields/ip_form_field.dart';
 import 'package:linksys_moab/page/components/picker/simple_item_picker.dart';
@@ -7,20 +8,20 @@ import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import 'bloc/cubit.dart';
 import 'bloc/state.dart';
 
-class LANView extends ArgumentsStatelessView {
+class LANView extends ArgumentsConsumerStatelessView {
   const LANView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
       create: (context) => LANCubit(context.read<RouterRepository>()),
       child: LANContentView(
@@ -31,14 +32,14 @@ class LANView extends ArgumentsStatelessView {
   }
 }
 
-class LANContentView extends ArgumentsStatefulView {
+class LANContentView extends ArgumentsConsumerStatefulView {
   const LANContentView({super.key, super.next, super.args});
 
   @override
-  State<LANContentView> createState() => _LANContentViewState();
+  ConsumerState<LANContentView> createState() => _LANContentViewState();
 }
 
-class _LANContentViewState extends State<LANContentView> {
+class _LANContentViewState extends ConsumerState<LANContentView> {
   late final LANCubit _cubit;
 
   final TextEditingController _ipAddressController = TextEditingController();
@@ -184,7 +185,8 @@ class _LANContentViewState extends State<LANContentView> {
                           ? getAppLocalizations(context).auto
                           : getAppLocalizations(context).manual,
                       onTap: () async {
-                        String? result = await NavigationCubit.of(context)
+                        String? result = await ref
+                            .read(navigationsProvider.notifier)
                             .pushAndWait(SimpleItemPickerPath()
                               ..args = {
                                 'items': [
@@ -203,7 +205,8 @@ class _LANContentViewState extends State<LANContentView> {
                       title: getAppLocalizations(context).dhcp_reservations,
                       infoText: ' ',
                       onTap: () {
-                        NavigationCubit.of(context)
+                        ref
+                            .read(navigationsProvider.notifier)
                             .push(DHCPReservationsPath());
                       },
                     ),

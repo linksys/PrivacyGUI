@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
@@ -9,11 +10,11 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
-class CreateAccountPasswordView extends ArgumentsStatefulView {
+class CreateAccountPasswordView extends ArgumentsConsumerStatefulView {
   const CreateAccountPasswordView({Key? key, super.args}) : super(key: key);
 
   @override
@@ -21,7 +22,8 @@ class CreateAccountPasswordView extends ArgumentsStatefulView {
       _CreateAccountPasswordViewState();
 }
 
-class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
+class _CreateAccountPasswordViewState
+    extends ConsumerState<CreateAccountPasswordView> {
   final TextEditingController passwordController = TextEditingController();
   bool hasError = false;
 
@@ -58,7 +60,7 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
           if (state is AuthOnCreateAccountState) {
             if (state.accountInfo.password.isNotEmpty) {
               final username = state.accountInfo.username;
-              NavigationCubit.of(context).push(CreateAccount2SVPath()
+              ref.read(navigationsProvider.notifier).push(CreateAccount2SVPath()
                 ..args = {
                   'username': username,
                   'function': OtpFunction.setting2sv,
@@ -97,7 +99,9 @@ class _CreateAccountPasswordViewState extends State<CreateAccountPasswordView> {
             SimpleTextButton(
                 text: 'I already have a Linksys account password',
                 onPressed: () {
-                  NavigationCubit.of(context).push(SameAccountPromptPath());
+                  ref
+                      .read(navigationsProvider.notifier)
+                      .push(SameAccountPromptPath());
                 }),
             const SizedBox(
               height: 30,

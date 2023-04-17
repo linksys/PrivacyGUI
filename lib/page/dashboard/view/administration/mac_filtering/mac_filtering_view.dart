@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/picker/simple_item_picker.dart';
@@ -10,17 +11,18 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'bloc/cubit.dart';
 
-class MacFilteringView extends ArgumentsStatelessView {
+class MacFilteringView extends ArgumentsConsumerStatelessView {
   const MacFilteringView({super.key, super.next, super.args});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
       create: (context) => MacFilteringCubit(context.read<RouterRepository>()),
       child: MacFilteringContentView(
@@ -31,15 +33,16 @@ class MacFilteringView extends ArgumentsStatelessView {
   }
 }
 
-class MacFilteringContentView extends ArgumentsStatefulView {
+class MacFilteringContentView extends ArgumentsConsumerStatefulView {
   const MacFilteringContentView({super.key, super.next, super.args});
 
   @override
-  State<MacFilteringContentView> createState() =>
+  ConsumerState<MacFilteringContentView> createState() =>
       _MacFilteringContentViewState();
 }
 
-class _MacFilteringContentViewState extends State<MacFilteringContentView> {
+class _MacFilteringContentViewState
+    extends ConsumerState<MacFilteringContentView> {
   late final MacFilteringCubit _cubit;
 
   StreamSubscription? _subscription;
@@ -96,7 +99,8 @@ class _MacFilteringContentViewState extends State<MacFilteringContentView> {
               title: getAppLocalizations(context).access,
               infoText: state.status.name,
               onTap: () async {
-                final String? selected = await NavigationCubit.of(context)
+                final String? selected = await ref
+                    .read(navigationsProvider.notifier)
                     .pushAndWait(SimpleItemPickerPath()
                       ..args = {
                         'items': [
@@ -125,7 +129,7 @@ class _MacFilteringContentViewState extends State<MacFilteringContentView> {
               trailing: LinksysTertiaryButton.noPadding(
                 getAppLocalizations(context).select_device,
                 onTap: () async {
-                  // String? deviceIp = await NavigationCubit.of(context)
+                  // String? deviceIp = await ref.read(navigationsProvider.notifier)
                   //     .pushAndWait(SelectDevicePtah());
                 },
               ),
@@ -133,7 +137,8 @@ class _MacFilteringContentViewState extends State<MacFilteringContentView> {
             AppSimplePanel(
               title: getAppLocalizations(context).enter_mac_address,
               onTap: () async {
-                String? macAddress = await NavigationCubit.of(context)
+                String? macAddress = await ref
+                    .read(navigationsProvider.notifier)
                     .pushAndWait(MacFilteringInputPath());
                 if (macAddress != null) {
                   // TODO query devices name and save device

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/content_filter/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
@@ -9,22 +10,18 @@ import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/content_filter_path.dart';
-import 'package:linksys_moab/route/model/internet_schedule_path.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/model/profile_group_path.dart';
-import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
-import 'package:linksys_moab/util/logger.dart';
 
-class ProfileListView extends ArgumentsStatefulView {
+class ProfileListView extends ArgumentsConsumerStatefulView {
   const ProfileListView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
-  State<ProfileListView> createState() => _ProfileListViewState();
+  ConsumerState<ProfileListView> createState() => _ProfileListViewState();
 }
 
-class _ProfileListViewState extends State<ProfileListView> {
+class _ProfileListViewState extends ConsumerState<ProfileListView> {
   late PService _category;
 
   @override
@@ -44,12 +41,12 @@ class _ProfileListViewState extends State<ProfileListView> {
             elevation: 0,
             title: _buildTitle(),
             leading: BackButton(onPressed: () {
-              NavigationCubit.of(context).pop();
+              ref.read(navigationsProvider.notifier).pop();
             }),
             actions: [
               TextButton(
                   onPressed: () {
-                    NavigationCubit.of(context).push(
+                    ref.read(navigationsProvider.notifier).push(
                         CreateProfileNamePath()..next = ProfileListPath());
                   },
                   child: Text(getAppLocalizations(context).add_profile,
@@ -144,7 +141,7 @@ class _ProfileListViewState extends State<ProfileListView> {
       }
     }
     context.read<ProfilesCubit>().selectProfile(profile);
-    NavigationCubit.of(context).push(path);
+    ref.read(navigationsProvider.notifier).push(path);
   }
 
   Widget _profileValue(UserProfile profile) {

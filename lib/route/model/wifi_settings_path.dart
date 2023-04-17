@@ -6,7 +6,7 @@ import 'package:linksys_moab/route/_route.dart';
 
 class WifiSettingsPath extends DashboardPath {
   @override
-  Widget buildPage(NavigationCubit cubit) {
+  Widget buildPage() {
     switch (runtimeType) {
       case WifiSettingsOverviewPath:
         return const WifiSettingsView();

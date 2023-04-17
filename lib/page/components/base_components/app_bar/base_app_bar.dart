@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BaseAppBar extends StatelessWidget {
+class BaseAppBar extends ConsumerWidget {
   const BaseAppBar(
       {Key? key,
       this.title,
@@ -15,7 +16,7 @@ class BaseAppBar extends StatelessWidget {
   final MainAxisAlignment? alignment;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     List<Widget> children = [];
     children.addAll(leading);
     children.add(const Spacer());

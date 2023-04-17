@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/page/components/base_components/input_fields/mac_form_field.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 
-class MACInputField extends StatelessWidget {
+class MACInputField extends ConsumerWidget {
   const MACInputField({
     super.key,
     required this.titleText,
@@ -20,7 +21,7 @@ class MACInputField extends StatelessWidget {
   final void Function(String value)? onChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

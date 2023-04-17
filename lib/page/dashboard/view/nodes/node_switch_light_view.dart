@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
-import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 
-class NodeSwitchLightView extends StatelessWidget {
+class NodeSwitchLightView extends ConsumerWidget {
   const NodeSwitchLightView({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
       return BasePageView(
         appBar: AppBar(
@@ -19,8 +20,8 @@ class NodeSwitchLightView extends StatelessWidget {
           elevation: 0,
           title: const Text('Node light',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-          leading:
-              BackButton(onPressed: () => NavigationCubit.of(context).pop()),
+          leading: BackButton(
+              onPressed: () => ref.read(navigationsProvider.notifier).pop()),
         ),
         child: Column(
           children: [

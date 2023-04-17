@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
@@ -11,28 +12,31 @@ import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:styled_text/styled_text.dart';
 
 import '../../../bloc/subscription/subscription_cubit.dart';
 import '../../../bloc/subscription/subscription_state.dart';
 
-class DashboardSecurityView extends StatefulWidget {
+class DashboardSecurityView extends ConsumerStatefulWidget {
   const DashboardSecurityView({Key? key}) : super(key: key);
 
   @override
-  State<DashboardSecurityView> createState() => _DashboardSecurityViewState();
+  ConsumerState<DashboardSecurityView> createState() =>
+      _DashboardSecurityViewState();
 }
 
-class _DashboardSecurityViewState extends State<DashboardSecurityView> {
+class _DashboardSecurityViewState extends ConsumerState<DashboardSecurityView> {
   String serialNumber = '';
 
   @override
   void initState() {
     super.initState();
     context.read<SubscriptionCubit>().queryProductsFromCloud();
-    context.read<SubscriptionCubit>().getNetworkEntitlement(
-        context.read<NetworkCubit>().getSerialNumber());
+    context
+        .read<SubscriptionCubit>()
+        .getNetworkEntitlement(context.read<NetworkCubit>().getSerialNumber());
   }
 
   Widget _unsubscribedView(SecurityState state) {
@@ -214,7 +218,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
           },
           listener: (context, state) {
             if (context.read<SecurityBloc>().state is TurnedOffState) {
-            context.read<SecurityBloc>().add(TurnOffSecurityEvent());
+              context.read<SecurityBloc>().add(TurnOffSecurityEvent());
             } else {
               print(
                   'dashboard security view status ${state.networkEntitlementResponse?.first.order.status}');
@@ -338,7 +342,9 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             ),
           ),
           onTap: () {
-            NavigationCubit.of(context).push(SecurityMarketingPath());
+            ref
+                .read(navigationsProvider.notifier)
+                .push(SecurityMarketingPath());
           },
         ),
         box16(),
@@ -347,7 +353,9 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             child: PrimaryButton(
               text: 'Subscribe',
               onPress: () {
-                context.read<NavigationCubit>().push(SecurityMarketingPath());
+                ref
+                    .read(navigationsProvider.notifier)
+                    .push(SecurityMarketingPath());
               },
             )),
       ],
@@ -391,7 +399,9 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             width: 26,
           ),
           onPressed: () {
-            NavigationCubit.of(context).push(SecurityProtectionStatusPath());
+            ref
+                .read(navigationsProvider.notifier)
+                .push(SecurityProtectionStatusPath());
           },
         ),
       ),
@@ -426,7 +436,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                     height: 96,
                     onPress: () {
                       if (!disable) {
-                        NavigationCubit.of(context).push(
+                        ref.read(navigationsProvider.notifier).push(
                             SecurityCyberThreatPath()
                               ..args = {'type': CyberthreatType.virus});
                       }
@@ -443,7 +453,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                     height: 96,
                     onPress: () {
                       if (!disable) {
-                        NavigationCubit.of(context).push(
+                        ref.read(navigationsProvider.notifier).push(
                             SecurityCyberThreatPath()
                               ..args = {'type': CyberthreatType.botnet});
                       }
@@ -460,7 +470,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                     height: 96,
                     onPress: () {
                       if (!disable) {
-                        NavigationCubit.of(context).push(
+                        ref.read(navigationsProvider.notifier).push(
                             SecurityCyberThreatPath()
                               ..args = {'type': CyberthreatType.website});
                       }
@@ -526,8 +536,8 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
             width: 26,
           ),
           onPressed: () {
-            context
-                .read<NavigationCubit>()
+            ref
+                .read(navigationsProvider.notifier)
                 .push(SecurityContentFilterIntroductionPath());
           },
         ),
@@ -581,7 +591,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
         PrimaryButton(
           text: 'Create filter',
           onPress: () {
-            if(!disable) {
+            if (!disable) {
               context.read<SecurityBloc>().add(ContentFilterCreatedEvent());
             }
           },
@@ -630,7 +640,9 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
                       ?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 onTap: () {
-                    NavigationCubit.of(context).push(CFFilteredContentPath());
+                  ref
+                      .read(navigationsProvider.notifier)
+                      .push(CFFilteredContentPath());
                 },
               ),
             ),
@@ -664,7 +676,7 @@ class _DashboardSecurityViewState extends State<DashboardSecurityView> {
   }
 }
 
-class TitleWithIcons extends StatelessWidget {
+class TitleWithIcons extends ConsumerWidget {
   TitleWithIcons({
     Key? key,
     required this.text,
@@ -689,7 +701,7 @@ class TitleWithIcons extends StatelessWidget {
   final List<Widget> _widgets = [];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 0.0),
       child: Row(
@@ -699,7 +711,7 @@ class TitleWithIcons extends StatelessWidget {
   }
 }
 
-class InfoBlockWidget extends StatelessWidget {
+class InfoBlockWidget extends ConsumerWidget {
   const InfoBlockWidget({
     Key? key,
     required this.count,
@@ -722,7 +734,7 @@ class InfoBlockWidget extends StatelessWidget {
   final VoidCallback? onPress;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: onPress,
       child: Container(
