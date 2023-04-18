@@ -1,16 +1,19 @@
 import 'dart:convert';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/network/http/linksys_http_client.dart';
 import 'package:linksys_moab/network/http/linksys_requests/authorization_service.dart';
+import 'package:linksys_moab/network/http/linksys_requests/data/cloud_account.dart';
 import 'package:linksys_moab/network/http/linksys_requests/device_service.dart';
 import 'package:linksys_moab/network/http/linksys_requests/user_service.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/repository/model/cloud_network_model.dart';
 import 'package:linksys_moab/repository/model/cloud_session_model.dart';
 
-import '../network/http/linksys_requests/data/cloud_account.dart';
+final cloudRepositoryProvider = Provider((ref) => LinksysCloudRepository(
+      httpClient: LinksysHttpClient(),
+    ));
 
 class LinksysCloudRepository {
   final LinksysHttpClient _httpClient;

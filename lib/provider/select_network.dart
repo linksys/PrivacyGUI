@@ -4,7 +4,7 @@ import 'package:linksys_moab/bloc/network/cloud_network_model.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
-import 'package:linksys_moab/provider/low_level_provider.dart';
+import 'package:linksys_moab/repository/linksys_cloud_repository.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

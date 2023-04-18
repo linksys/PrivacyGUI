@@ -30,8 +30,7 @@ import 'package:linksys_moab/network/http/linksys_http_client.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/notification/notification_helper.dart';
-import 'package:linksys_moab/provider/low_level_provider.dart';
-import 'package:linksys_moab/provider/temp_global_repo.dart';
+import 'package:linksys_moab/provider/provider_observer.dart';
 import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
 import 'package:linksys_moab/repository/authenticate/impl/cloud_auth_repository.dart';
 import 'package:linksys_moab/repository/config/environment_repository.dart';
@@ -114,8 +113,10 @@ void main() async {
 }
 
 final container = ProviderContainer();
+
 Widget _app() {
   final routerRepository = container.read(routerRepositoryProvider);
+  final cloudRepository = container.read(cloudRepositoryProvider);
 
   return MultiRepositoryProvider(
     providers: [
@@ -129,9 +130,7 @@ Widget _app() {
       RepositoryProvider(
           create: (context) => OtpRepository(httpClient: MoabHttpClient())),
       RepositoryProvider(create: (context) => SubscriptionRepository()),
-      RepositoryProvider(
-          create: (context) =>
-              LinksysCloudRepository(httpClient: LinksysHttpClient())),
+      RepositoryProvider(create: (context) => cloudRepository),
     ],
     child: MultiBlocProvider(
         providers: [
