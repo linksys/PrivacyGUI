@@ -36,6 +36,7 @@ import 'package:linksys_moab/repository/authenticate/impl/cloud_auth_repository.
 import 'package:linksys_moab/repository/config/environment_repository.dart';
 import 'package:linksys_moab/repository/linksys_cloud_repository.dart';
 import 'package:linksys_moab/repository/networks/cloud_networks_repository.dart';
+import 'package:linksys_moab/repository/router/providers/polling_provider.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/repository/subscription/subscription_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
@@ -111,7 +112,6 @@ void main() async {
 final container = ProviderContainer();
 Widget _app() {
   final routerRepository = container.read(routerRepositoryProvider);
-
   return MultiRepositoryProvider(
     providers: [
       RepositoryProvider(

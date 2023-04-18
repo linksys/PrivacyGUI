@@ -23,7 +23,7 @@ import 'package:linksys_moab/network/jnap/jnap_command_queue.dart';
 import 'package:linksys_moab/network/jnap/jnap_transaction.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/network/jnap/spec/jnap_spec.dart';
-import 'package:linksys_moab/repository/router/side_effect_manager.dart';
+import 'package:linksys_moab/repository/router/providers/side_effect_provider.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 
