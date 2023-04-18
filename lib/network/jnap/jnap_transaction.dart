@@ -1,10 +1,29 @@
 import 'better_action.dart';
 
 class JNAPTransactionBuilder {
-  final Map<JNAPAction, Map<String, dynamic>> _commands = {};
+  final Map<JNAPAction, Map<String, dynamic>> _commands;
   final bool auth;
 
-  JNAPTransactionBuilder({this.auth = false});
+  JNAPTransactionBuilder({
+    Map<JNAPAction, Map<String, dynamic>> commands = const {},
+    this.auth = false,
+  }) : _commands = commands;
+
+  factory JNAPTransactionBuilder.coreTransactions() {
+    return JNAPTransactionBuilder(
+      commands: {
+        JNAPAction.getDeviceInfo: {},
+        JNAPAction.getWANStatus: {},
+        JNAPAction.getNodesWirelessNetworkConnections: {},
+        JNAPAction.getRadioInfo: {},
+        JNAPAction.getGuestRadioSettings: {},
+        JNAPAction.getDevices: {},
+        JNAPAction.getHealthCheckResults: {'includeModuleResults': true},
+        JNAPAction.getSupportedHealthCheckModules: {},
+      },
+      auth: true,
+    );
+  }
 
   Map<JNAPAction, Map<String, dynamic>> get commands => _commands;
 
@@ -14,7 +33,8 @@ class JNAPTransactionBuilder {
     return this;
   }
 
-  JNAPTransactionBuilder addAll(Map<JNAPAction, Map<String, dynamic>> commands) {
+  JNAPTransactionBuilder addAll(
+      Map<JNAPAction, Map<String, dynamic>> commands) {
     _commands.addAll(commands);
     return this;
   }

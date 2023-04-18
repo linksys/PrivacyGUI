@@ -2,12 +2,13 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/bloc/network/cloud_network_model.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
-import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
+import 'package:linksys_moab/main.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
 import 'package:linksys_moab/model/router/guest_radio_settings.dart';
@@ -17,9 +18,11 @@ import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/model/router/wan_status.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
-import 'package:linksys_moab/network/http/model/cloud_network.dart';
+import 'package:linksys_moab/network/jnap/jnap_transaction.dart';
+import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/networks/cloud_networks_repository.dart';
 import 'package:linksys_moab/repository/router/commands/_commands.dart';
+import 'package:linksys_moab/repository/router/providers/polling_provider.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,6 +40,10 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
         super(const NetworkState()) {
     shareStream = stream;
     register(_routerRepository);
+
+    container.listen(pollingProvider, (previous, next) {
+      next.whenData((value) => pollingData(value.data));
+    });
   }
 
   final CloudNetworksRepository _networksRepository;
@@ -216,53 +223,46 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   /// UI methods
   ///
 
-  Future pollingData() async {
-    logger.d('start polling data');
-    final result = await _routerRepository.pollingData();
-    if (result.containsKey(JNAPAction.getDeviceInfo.actionValue)) {
-      final routerDeviceInfo = RouterDeviceInfo.fromJson(
-          result[JNAPAction.getDeviceInfo.actionValue]!.output);
+  Future pollingData(Map<JNAPAction, JNAPResult> result) async {
+    if (result.containsKey(JNAPAction.getDeviceInfo)) {
+      final output = (result[JNAPAction.getDeviceInfo] as JNAPSuccess).output;
+      final routerDeviceInfo = RouterDeviceInfo.fromJson(output);
       _handleDeviceInfoResult(routerDeviceInfo);
     }
-    if (result.containsKey(JNAPAction.getWANStatus.actionValue)) {
-      final wanStatus = RouterWANStatus.fromJson(
-          result[JNAPAction.getWANStatus.actionValue]!.output);
+    if (result.containsKey(JNAPAction.getWANStatus)) {
+      final output = (result[JNAPAction.getWANStatus] as JNAPSuccess).output;
+      final wanStatus = RouterWANStatus.fromJson(output);
       _handleWANStatusResult(wanStatus);
     }
-    if (result.containsKey(JNAPAction.getRadioInfo.actionValue)) {
-      final radioInfo = List.from(
-              result[JNAPAction.getRadioInfo.actionValue]!.output['radios'])
+    if (result.containsKey(JNAPAction.getRadioInfo)) {
+      final output = (result[JNAPAction.getRadioInfo] as JNAPSuccess).output;
+      final radioInfo = List.from(output['radios'])
           .map((e) => RouterRadioInfo.fromJson(e))
           .toList();
       _handleRadioInfoResult(radioInfo);
     }
-    if (result.containsKey(JNAPAction.getGuestRadioSettings.actionValue)) {
-      final guestRadioInfoSetting = GuestRadioSetting.fromJson(
-          result[JNAPAction.getGuestRadioSettings.actionValue]!.output);
+    if (result.containsKey(JNAPAction.getGuestRadioSettings)) {
+      final output =
+          (result[JNAPAction.getGuestRadioSettings] as JNAPSuccess).output;
+      final guestRadioInfoSetting = GuestRadioSetting.fromJson(output);
       _handleGuestRadioSettingsResult(guestRadioInfoSetting);
     }
-    // if (result.containsKey(JNAPAction.getIoTNetworkSettings.actionValue)) {
-    //   final iotNetworkSetting = IoTNetworkSetting.fromJson(
-    //       result[JNAPAction.getIoTNetworkSettings.actionValue]!.output);
-    //   _handleIoTNetworkSettingResult(iotNetworkSetting);
-    // }
-    if (result.containsKey(JNAPAction.getDevices.actionValue)) {
-      final devices = List.from(
-              result[JNAPAction.getDevices.actionValue]!.output['devices'])
+
+    if (result.containsKey(JNAPAction.getDevices)) {
+      final output = (result[JNAPAction.getDevices] as JNAPSuccess).output;
+      final devices = List.from(output['devices'])
           .map((e) => RouterDevice.fromJson(e))
           .toList();
       _handleDevicesResult(devices);
     }
-    if (result.containsKey(JNAPAction.getHealthCheckResults.actionValue)) {
-      final healthCheckResults = List.from(
-              result[JNAPAction.getHealthCheckResults.actionValue]!
-                  .output['healthCheckResults'])
+    if (result.containsKey(JNAPAction.getHealthCheckResults)) {
+      final output =
+          (result[JNAPAction.getHealthCheckResults] as JNAPSuccess).output;
+      final healthCheckResults = List.from(output['healthCheckResults'])
           .map((e) => HealthCheckResult.fromJson(e))
           .toList();
       _handleHealthCheckResults(healthCheckResults);
     }
-
-    logger.d('finish polling data');
   }
 
   init() {

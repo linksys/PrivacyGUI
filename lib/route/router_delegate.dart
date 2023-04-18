@@ -10,7 +10,7 @@ import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/connectivity/cubit.dart';
 import 'package:linksys_moab/bloc/connectivity/state.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_bottom_tab_container.dart';
-import 'package:linksys_moab/repository/router/side_effect_manager.dart';
+import 'package:linksys_moab/repository/router/providers/side_effect_provider.dart';
 import 'package:linksys_moab/route/linksys_page.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 

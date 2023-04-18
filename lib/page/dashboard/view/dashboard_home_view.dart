@@ -33,7 +33,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   void initState() {
     super.initState();
 
-    context.read<NetworkCubit>().pollingData();
   }
 
   @override
