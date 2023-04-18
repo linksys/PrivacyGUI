@@ -6,7 +6,6 @@ import 'package:linksys_moab/bloc/account/_account.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
-import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
@@ -32,17 +31,12 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
   @override
   void initState() {
     super.initState();
-
     _checkSelfNetworks();
   }
 
   @override
-  Widget build(BuildContext context) {
-    logger.d('DEBUG:: PrepareDashboardView: build');
-
-    return LinksysFullScreenSpinner(
-        text: getAppLocalizations(context).processing);
-  }
+  Widget build(BuildContext context) =>
+      LinksysFullScreenSpinner(text: getAppLocalizations(context).processing);
 
   _checkSelfNetworks() async {
     await context.read<ConnectivityCubit>().forceUpdate();

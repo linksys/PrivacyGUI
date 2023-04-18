@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/provider/select_network.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
@@ -21,16 +22,8 @@ import '../../../bloc/auth/event.dart';
 import '../../../bloc/subscription/subscription_cubit.dart';
 import '../../components/styled/styled_page_view.dart';
 
-final fetchSelectNetworkProvider =
-    FutureProvider<SelectNetworkModel>((ref) async {
-  final selectNetworkRepository = ref.watch(selectNetworkRepositoryProvider);
-  return selectNetworkRepository.getUserNetworks();
-});
-
 class SelectNetworkView extends ArgumentsConsumerStatefulView {
-  const SelectNetworkView({
-    Key? key,
-  }) : super(key: key);
+  const SelectNetworkView({super.key});
 
   @override
   ConsumerState<SelectNetworkView> createState() => _SelectNetworkViewState();
@@ -51,7 +44,9 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
 
   @override
   Widget build(BuildContext context) {
-    return ref.watch(fetchSelectNetworkProvider).when(data: (state) {
+    final AsyncValue<SelectNetworkModel> model =
+        CloudNetworkService(ref).watchSelectNetwork();
+    return model.when(data: (state) {
       return StyledLinksysPageView(
         scrollable: true,
         isCloseStyle: true,
