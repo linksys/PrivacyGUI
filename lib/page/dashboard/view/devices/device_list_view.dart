@@ -45,25 +45,25 @@ class _DeviceListViewState extends ConsumerState<DeviceListView> {
     _initIntervalListWithLocalizedString();
     return BlocBuilder<DeviceCubit, DeviceState>(
       builder: (context, state) => state.isLoading
-          ? const LinksysFullScreenSpinner()
-          : StyledLinksysTabPageView(
+          ? const AppFullScreenSpinner()
+          : StyledAppTabPageView(
               title: 'Devices',
               tabs: [
-                LinksysTab(
+                AppTab(
                   title: 'Main',
-                  icon: LinksysText.screenName(
+                  icon: AppText.screenName(
                     '${state.mainDeviceList.length}',
                   ),
                 ),
-                LinksysTab(
+                AppTab(
                   title: 'Guest',
-                  icon: LinksysText.screenName(
+                  icon: AppText.screenName(
                     '${state.guestDeviceList.length}',
                   ),
                 ),
-                LinksysTab(
+                AppTab(
                   title: 'Offline',
-                  icon: LinksysText.screenName(
+                  icon: AppText.screenName(
                     '${state.offlineDeviceList.length}',
                   ),
                 ),
@@ -107,8 +107,7 @@ class _DeviceListViewState extends ConsumerState<DeviceListView> {
 
   Widget _buildDeviceCell(DeviceDetailInfo device) {
     return AppPadding(
-        padding:
-            const LinksysEdgeInsets.symmetric(horizontal: AppGapSize.regular),
+        padding: const AppEdgeInsets.symmetric(horizontal: AppGapSize.regular),
         child: AppDevicePanel.normal(
           title: device.name,
           place: device.parentInfo?.place ?? '',

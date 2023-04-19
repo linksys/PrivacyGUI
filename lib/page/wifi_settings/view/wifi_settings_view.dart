@@ -31,12 +31,12 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<WifiSettingCubit, WifiSettingState>(
-      builder: (context, state) => StyledLinksysPageView(
-        child: LinksysBasicLayout(
+      builder: (context, state) => StyledAppPageView(
+        child: AppBasicLayout(
           crossAxisAlignment: CrossAxisAlignment.start,
           content: Visibility(
             visible: state.wifiList.isNotEmpty,
-            replacement: const LinksysFullScreenSpinner(),
+            replacement: const AppFullScreenSpinner(),
             child: ListView.separated(
               physics: const ClampingScrollPhysics(),
               itemCount: state.wifiList.length + 1,
@@ -56,9 +56,9 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             AppPadding(
-                              padding: const LinksysEdgeInsets.symmetric(
+                              padding: const AppEdgeInsets.symmetric(
                                   vertical: AppGapSize.regular),
-                              child: LinksysText.tags(
+                              child: AppText.tags(
                                 state.wifiList[index].wifiType.displayTitle,
                               ),
                             ),
@@ -70,12 +70,12 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                                       .characters
                                       .wifiDefault,
                                 ),
-                                const LinksysGap.semiSmall(),
-                                LinksysText.descriptionSub(
+                                const AppGap.semiSmall(),
+                                AppText.descriptionSub(
                                   state.wifiList[index].ssid,
                                 ),
                                 const Spacer(),
-                                LinksysText.descriptionSub(
+                                AppText.descriptionSub(
                                   state.wifiList[index].isWifiEnabled
                                       ? getAppLocalizations(context)
                                           .on
@@ -84,7 +84,7 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                                           .off
                                           .toUpperCase(),
                                 ),
-                                const LinksysGap.regular(),
+                                const AppGap.regular(),
                                 AppIcon(
                                   icon: AppTheme.of(context)
                                       .icons
@@ -93,18 +93,18 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                                 ),
                               ],
                             ),
-                            const LinksysGap.regular(),
+                            const AppGap.regular(),
                           ],
                         ),
                       )
                     : AppPadding(
-                        padding: LinksysEdgeInsets.symmetric(
-                            vertical: AppGapSize.big),
+                        padding:
+                            AppEdgeInsets.symmetric(vertical: AppGapSize.big),
                         child: InkWell(
                           onTap: () {
                             //TODO: Go to next
                           },
-                          child: LinksysText.textLinkSmall(
+                          child: AppText.textLinkSmall(
                             'Learn more about WiFi networks and settings',
                           ),
                         ),

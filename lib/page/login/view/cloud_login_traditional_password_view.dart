@@ -66,7 +66,7 @@ class _LoginTraditionalPasswordViewState
           }
         },
         builder: (context, state) => _isLoading
-            ? LinksysFullScreenSpinner(
+            ? AppFullScreenSpinner(
                 text: getAppLocalizations(context).processing)
             : _contentView(state));
   }
@@ -75,18 +75,18 @@ class _LoginTraditionalPasswordViewState
     // TODO HERE
     _username =
         state is AuthOnCloudLoginState ? state.accountInfo.username : '';
-    return StyledLinksysPageView(
+    return StyledAppPageView(
       scrollable: true,
-      child: LinksysBasicLayout(
+      child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: LinksysText.screenName(
+        header: AppText.screenName(
           getAppLocalizations(context).enter_password,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const LinksysGap.big(),
-            LinksysText.descriptionMain(_username),
+            const AppGap.big(),
+            AppText.descriptionMain(_username),
             AppPasswordField(
               key: const Key('login_password_view_input_field_password'),
               // headerText: getAppLocalizations(context).password,
@@ -101,8 +101,8 @@ class _LoginTraditionalPasswordViewState
                 });
               },
             ),
-            const LinksysGap.small(),
-            LinksysTertiaryButton.noPadding(
+            const AppGap.small(),
+            AppTertiaryButton.noPadding(
               getAppLocalizations(context).forgot_password,
               key: const Key('login_password_view_button_forgot_password'),
               onTap: () {
@@ -112,7 +112,7 @@ class _LoginTraditionalPasswordViewState
               },
             ),
             const Spacer(),
-            LinksysPrimaryButton(
+            AppPrimaryButton(
               getAppLocalizations(context).text_continue,
               key: const Key('login_password_view_button_continue'),
               onTap: passwordController.text.isEmpty

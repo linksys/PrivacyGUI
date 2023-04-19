@@ -19,8 +19,8 @@ class NoInternetConnectionModal extends ConsumerWidget {
       onWillPop: () async {
         return false;
       },
-      child: LinksysPageView.bottomSheetModalBlur(
-        padding: const LinksysEdgeInsets.only(),
+      child: AppPageView.bottomSheetModalBlur(
+        padding: const AppEdgeInsets.only(),
         bottomSheet: Container(
           color: Colors.white,
           height: 240,
@@ -33,12 +33,12 @@ class NoInternetConnectionModal extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    LinksysText.descriptionMain(
+                    AppText.descriptionMain(
                       getAppLocalizations(context)
                           .prompt_no_internet_connection,
                     ),
-                    const LinksysGap.big(),
-                    LinksysText.descriptionSub(
+                    const AppGap.big(),
+                    AppText.descriptionSub(
                       getAppLocalizations(context)
                           .prompt_no_internet_connection_description,
                     )

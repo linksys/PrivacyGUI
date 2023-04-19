@@ -36,18 +36,17 @@ class _WifiSettingsReviewViewState
   @override
   Widget build(BuildContext context) {
     return isLoading
-        ? LinksysFullScreenSpinner(
-            text: getAppLocalizations(context).processing)
+        ? AppFullScreenSpinner(text: getAppLocalizations(context).processing)
         : BlocBuilder<WifiSettingCubit, WifiSettingState>(
-            builder: (context, state) => StyledLinksysPageView(
+            builder: (context, state) => StyledAppPageView(
               title: state.selectedWifiItem.ssid,
-              child: LinksysBasicLayout(
+              child: AppBasicLayout(
                 content: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        LinksysText.descriptionMain(
+                        AppText.descriptionMain(
                           state.selectedWifiItem.wifiType.displayTitle,
                         ),
                         const Spacer(),
@@ -73,13 +72,13 @@ class _WifiSettingsReviewViewState
                             })
                       ],
                     ),
-                    const LinksysText.descriptionSub(
+                    const AppText.descriptionSub(
                       'Where most of your devices connect.',
                     ),
                     AppPadding(
-                      padding: const LinksysEdgeInsets.only(
+                      padding: const AppEdgeInsets.only(
                           top: AppGapSize.small, bottom: AppGapSize.regular),
-                      child: LinksysText.descriptionSub(
+                      child: AppText.descriptionSub(
                         '6 GHz, 5 GHz, 2.4 GHz',
                         //TODO: Remove the dummy recent bands
                       ),
@@ -129,16 +128,16 @@ class _WifiSettingsReviewViewState
       child: Row(
         children: [
           AppPadding(
-              padding: const LinksysEdgeInsets.symmetric(
-                  vertical: AppGapSize.regular),
+              padding:
+                  const AppEdgeInsets.symmetric(vertical: AppGapSize.regular),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  LinksysText.descriptionSub(
+                  AppText.descriptionSub(
                     currentOption.displayTitle,
                   ),
-                  const LinksysGap.small(),
-                  LinksysText.descriptionSub(
+                  const AppGap.small(),
+                  AppText.descriptionSub(
                     content,
                   ),
                 ],

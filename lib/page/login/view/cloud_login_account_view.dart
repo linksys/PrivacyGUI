@@ -102,23 +102,23 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
           }
         },
         builder: (context, state) => _isLoading
-            ? LinksysFullScreenSpinner(
+            ? AppFullScreenSpinner(
                 text: getAppLocalizations(context).processing)
             : _contentView(state));
   }
 
   Widget _contentView(AuthState state) {
-    return StyledLinksysPageView(
+    return StyledAppPageView(
         scrollable: true,
-        child: LinksysBasicLayout(
+        child: AppBasicLayout(
           crossAxisAlignment: CrossAxisAlignment.start,
-          header: LinksysText.screenName(
+          header: AppText.screenName(
             getAppLocalizations(context).cloud_account_login_title,
           ),
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const LinksysGap.regular(),
+              const AppGap.regular(),
               AppTextField(
                 key: const Key('login_view_input_field_email'),
                 headerText: getAppLocalizations(context).email,
@@ -164,13 +164,13 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
                   );
                 },
               ),
-              LinksysPrimaryButton(
+              AppPrimaryButton(
                 getAppLocalizations(context).login,
                 key: const Key('login_view_button_continue'),
                 onTap:
                     _accountController.text.isNotEmpty ? _prepareLogin : null,
               ),
-              LinksysSecondaryButton(
+              AppSecondaryButton(
                   getAppLocalizations(context)
                       .cloud_account_login_with_router_password,
                   key: const Key('login_view_button_login_router_password'),

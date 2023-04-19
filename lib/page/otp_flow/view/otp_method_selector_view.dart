@@ -34,10 +34,10 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
   }
 
   Widget _contentView(OtpState state) {
-    return StyledLinksysPageView(
-      child: LinksysBasicLayout(
+    return StyledAppPageView(
+      child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: LinksysText.screenName(
+        header: AppText.screenName(
           _createTitle(state),
           // description: _createDescription(state),
         ),

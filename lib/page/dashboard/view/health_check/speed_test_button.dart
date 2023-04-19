@@ -166,7 +166,7 @@ class _TriLayerButtonState extends ConsumerState<TriLayerButton>
               width: 150,
               height: 150,
             ),
-            const LinksysText.subhead(
+            const AppText.subhead(
               'START',
               color: Colors.white,
             ),

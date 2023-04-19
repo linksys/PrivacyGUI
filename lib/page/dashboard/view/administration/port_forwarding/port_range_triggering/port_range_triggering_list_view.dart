@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,26 +57,26 @@ class _PortRangeTriggeringContentViewState
   Widget build(BuildContext context) {
     return BlocBuilder<PortRangeTriggeringListCubit,
         PortRangeTriggeringListState>(builder: (context, state) {
-      return StyledLinksysPageView(
+      return StyledAppPageView(
         scrollable: true,
         title: getAppLocalizations(context).port_range_triggering,
         actions: [
-          LinksysTertiaryButton(
+          AppTertiaryButton(
             getAppLocalizations(context).edit,
             onTap: () {
               // TODO
             },
           ),
         ],
-        child: LinksysBasicLayout(
+        child: AppBasicLayout(
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const LinksysGap.semiBig(),
-              LinksysText.descriptionMain(getAppLocalizations(context)
+              const AppGap.semiBig(),
+              AppText.descriptionMain(getAppLocalizations(context)
                   .port_range_triggering_description),
               if (!_cubit.isExceedMax())
-                LinksysTertiaryButton(
+                AppTertiaryButton(
                   getAppLocalizations(context).add_rule,
                   onTap: () {
                     ref
@@ -91,7 +90,7 @@ class _PortRangeTriggeringContentViewState
                     });
                   },
                 ),
-              const LinksysGap.semiBig(),
+              const AppGap.semiBig(),
               ...state.rules.map(
                 (e) => AppPanelWithInfo(
                   title: e.description,

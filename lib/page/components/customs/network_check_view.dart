@@ -53,13 +53,13 @@ class _NetworkCheckViewState extends ConsumerState<NetworkCheckView>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        LinksysText.screenName(
+        AppText.screenName(
           widget.description,
         ),
-        const LinksysGap.regular(),
+        const AppGap.regular(),
         AppIcon(icon: getCharactersIcons(context).wifiDefault),
-        const LinksysGap.semiSmall(),
-        LinksysText.descriptionMain(
+        const AppGap.semiSmall(),
+        AppText.descriptionMain(
           state.connectivityInfo.ssid ?? '',
         ),
         const Spacer(),

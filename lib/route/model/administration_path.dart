@@ -177,10 +177,6 @@ class MacFilteringInputPath extends AdministrationPath with ReturnablePath {
   PageConfig get pageConfig => super.pageConfig..isFullScreenDialog = true;
 }
 
-class AdvancedRoutingListPath extends AdministrationPath {}
-
-class AdvancedRoutingRulePath extends AdministrationPath with ReturnablePath {}
-
 class MTUPickerPath extends AdministrationPath with ReturnablePath {}
 
 class MACClonePath extends AdministrationPath with ReturnablePath {}

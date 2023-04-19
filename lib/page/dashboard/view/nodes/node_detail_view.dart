@@ -46,9 +46,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     ];
     return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
       return state.isLoading
-          ? const LinksysFullScreenSpinner()
+          ? const AppFullScreenSpinner()
           : LayoutBuilder(builder: (context, constraint) {
-              return LinksysProfileHeaderLayout(
+              return AppProfileHeaderLayout(
                 expandedHeight: constraint.maxHeight / 2,
                 collaspeTitle: state.location,
                 onCollaspeBackTap: () {
@@ -98,11 +98,11 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       child: Column(
         children: [
           _nodeAvatar(state),
-          const LinksysGap.regular(),
+          const AppGap.regular(),
           Stack(
             clipBehavior: Clip.none,
             children: [
-              LinksysText.textLinkLarge(
+              AppText.textLinkLarge(
                 state.location,
                 color: AppTheme.of(context).colors.textBoxText,
               ),
@@ -118,9 +118,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               ),
             ],
           ),
-          const LinksysGap.extraBig(),
+          const AppGap.extraBig(),
           _nodeStatus(state),
-          const LinksysGap.big(),
+          const AppGap.big(),
         ],
       ),
     );
@@ -146,12 +146,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               height: AppTheme.of(context).spacing.extraBig,
               width: AppTheme.of(context).spacing.extraBig,
               alignment: Alignment.center,
-              child: LinksysText.mainTitle(
+              child: AppText.mainTitle(
                 '${state.connectedDevices.length}',
                 color: textColor,
               ),
             ),
-            LinksysText.label(
+            AppText.label(
               getAppLocalizations(context).devices,
               color: textColor,
             ),
@@ -165,7 +165,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               alignment: Alignment.center,
               child: _getConnectionImage(state),
             ),
-            LinksysText.label(
+            AppText.label(
               state.isWiredConnection
                   ? "Wired"
                   : Utils.getWifiSignalLevel(state.signalStrength).displayTitle,
@@ -189,7 +189,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 },
               ),
             ),
-            LinksysText.label(
+            AppText.label(
               'Light',
               color: textColor,
             ),
@@ -224,7 +224,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppPadding(
-                      padding: const LinksysEdgeInsets.symmetric(
+                      padding: const AppEdgeInsets.symmetric(
                         horizontal: AppGapSize.semiBig,
                       ),
                       child: Column(
@@ -249,22 +249,22 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const LinksysGap.big(),
-        LinksysText.tags(
+        const AppGap.big(),
+        AppText.tags(
           getAppLocalizations(context).details_all_capital,
           color: ConstantColors.secondaryCyberPurple,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).node_detail_label_serial_number,
           description: state.serialNumber,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).node_detail_label_model_number,
           description: state.modelNumber,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         Visibility(
           visible: state.isLatestFw,
           replacement: AppSimplePanel(
@@ -288,12 +288,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const LinksysGap.semiSmall(),
-        LinksysText.tags(
+        const AppGap.semiSmall(),
+        AppText.tags(
           getAppLocalizations(context).node_detail_label_lan,
           color: ConstantColors.secondaryCyberPurple,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).node_detail_label_ip_address,
           description: state.lanIpAddress,
@@ -306,12 +306,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const LinksysGap.semiSmall(),
-        LinksysText.tags(
+        const AppGap.semiSmall(),
+        AppText.tags(
           getAppLocalizations(context).node_detail_label_wan,
           color: ConstantColors.secondaryCyberPurple,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).node_detail_label_ip_address,
           description: state.wanIpAddress,

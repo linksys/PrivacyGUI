@@ -8,7 +8,7 @@ import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 
 import 'consts.dart';
 
-class StyledLinksysPageView extends ConsumerWidget {
+class StyledAppPageView extends ConsumerWidget {
   static const double kDefaultToolbarHeight = 80;
   final String? title;
   final Widget? child;
@@ -16,13 +16,13 @@ class StyledLinksysPageView extends ConsumerWidget {
   final VoidCallback? onBackTap;
   final StyledBackState backState;
   final List<Widget>? actions;
-  final LinksysEdgeInsets? padding;
+  final AppEdgeInsets? padding;
   final Widget? bottomSheet;
   final Widget? bottomNavigationBar;
   final bool? scrollable;
   final bool isCloseStyle;
 
-  const StyledLinksysPageView({
+  const StyledAppPageView({
     super.key,
     this.title,
     this.padding,
@@ -38,7 +38,7 @@ class StyledLinksysPageView extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => LinksysPageView(
+  Widget build(BuildContext context, WidgetRef ref) => AppPageView(
         appBar: _buildAppBar(context, ref),
         padding: padding,
         scrollable: scrollable,
@@ -54,7 +54,7 @@ class StyledLinksysPageView extends ConsumerWidget {
     return isCloseStyle
         ? LinksysAppBar.withClose(
             context: context,
-            title: title == null ? null : LinksysText.screenName(title),
+            title: title == null ? null : AppText.screenName(title),
             toolbarHeight: toolbarHeight,
             onBackTap: isBackEnabled()
                 ? (onBackTap ??
@@ -66,7 +66,7 @@ class StyledLinksysPageView extends ConsumerWidget {
           )
         : LinksysAppBar.withBack(
             context: context,
-            title: title == null ? null : LinksysText.screenName(title),
+            title: title == null ? null : AppText.screenName(title),
             toolbarHeight: toolbarHeight,
             onBackTap: isBackEnabled()
                 ? (onBackTap ??

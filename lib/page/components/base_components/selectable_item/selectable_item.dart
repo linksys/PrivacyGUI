@@ -38,7 +38,7 @@ class SelectableItem extends ConsumerWidget {
 
   Widget message(BuildContext context) {
     List<Widget> children = [];
-    children.add(LinksysText.label(
+    children.add(AppText.label(
       text,
       color: isSelected
           ? AppTheme.of(context).colors.ctaPrimary

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -94,7 +93,7 @@ class _IPFormFieldState extends ConsumerState<IPFormField> {
       children: [
         if (widget.header != null) ...[
           widget.header!,
-          const LinksysGap.semiSmall(),
+          const AppGap.semiSmall(),
         ],
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -114,8 +113,8 @@ class _IPFormFieldState extends ConsumerState<IPFormField> {
   }
 
   _buildDotWidget() => const AppPadding(
-        padding: LinksysEdgeInsets.symmetric(horizontal: AppGapSize.semiSmall),
-        child: LinksysText.screenName(
+        padding: AppEdgeInsets.symmetric(horizontal: AppGapSize.semiSmall),
+        child: AppText.screenName(
           '.',
         ),
       );
@@ -133,9 +132,7 @@ class _IPFormFieldState extends ConsumerState<IPFormField> {
         controller: controller,
         focusNode: focus,
         decoration: InputDecoration(
-          hintStyle: AppTheme.of(context)
-              .typography
-              .inputFieldText
+          hintStyle: theme.typography.inputFieldText
               .copyWith(color: ConstantColors.textBoxTextGray),
           enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(

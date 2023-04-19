@@ -132,25 +132,25 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
       children: [
         Row(
           children: [
-            LinksysText.tags(
+            AppText.tags(
               items[index].wifiType.displayTitle,
             ),
-            const LinksysGap.small(),
+            const AppGap.small(),
             Container(
               padding: const EdgeInsets.all(5),
-              child: LinksysText.label(
+              child: AppText.label(
                 items[index].isWifiEnabled ? 'ON' : 'OFF',
               ),
             )
           ],
         ),
-        const LinksysGap.semiSmall(),
-        LinksysText.descriptionMain(
+        const AppGap.semiSmall(),
+        AppText.descriptionMain(
           items[index].ssid,
         ),
-        const LinksysGap.small(),
+        const AppGap.small(),
         HiddenPasswordWidget(password: items[index].password),
-        LinksysText.descriptionSub(
+        AppText.descriptionSub(
           '${items[index].numOfDevices} devices',
         ),
       ],
@@ -159,11 +159,11 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledLinksysPageView(
+    return StyledAppPageView(
       scrollable: true,
       child: BasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: LinksysText.screenName(
+        header: AppText.screenName(
           'Your WiFi networks',
         ),
         content: _wifiList(),

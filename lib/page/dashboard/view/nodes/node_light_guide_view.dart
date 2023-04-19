@@ -20,7 +20,7 @@ class LightGuideView extends ConsumerWidget {
         modelNumber: state.modelNumber,
         hardwareVersion: state.firmwareVersion,
       );
-      return StyledLinksysPageView(
+      return StyledAppPageView(
         title: 'Light guide',
         isCloseStyle: true,
         scrollable: true,
@@ -51,7 +51,7 @@ class LightGuideView extends ConsumerWidget {
             ],
           ),
         ),
-        const LinksysGap.regular(),
+        const AppGap.regular(),
         _buildInfoCard(
           context,
           child: Column(
@@ -59,8 +59,8 @@ class LightGuideView extends ConsumerWidget {
             children: [
               const AppPadding(
                 padding:
-                    LinksysEdgeInsets.symmetric(horizontal: AppGapSize.regular),
-                child: LinksysText.descriptionMain('During setup'),
+                    AppEdgeInsets.symmetric(horizontal: AppGapSize.regular),
+                child: AppText.descriptionMain('During setup'),
               ),
               _buildLightInfo(
                 led: AppTheme.of(context).images.ledBlueBlink,
@@ -115,7 +115,7 @@ class LightGuideView extends ConsumerWidget {
             ],
           ),
         ),
-        const LinksysGap.regular(),
+        const AppGap.regular(),
         _buildInfoCard(
           context,
           child: Column(
@@ -123,8 +123,8 @@ class LightGuideView extends ConsumerWidget {
             children: [
               const AppPadding(
                 padding:
-                    LinksysEdgeInsets.symmetric(horizontal: AppGapSize.regular),
-                child: LinksysText.descriptionMain('During setup'),
+                    AppEdgeInsets.symmetric(horizontal: AppGapSize.regular),
+                child: AppText.descriptionMain('During setup'),
               ),
               _buildLightInfo(
                 led: AppTheme.of(context).images.ledBlueBlink,
@@ -168,15 +168,15 @@ class LightGuideView extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SvgPicture(led),
-          const LinksysGap.semiSmall(),
+          const AppGap.semiSmall(),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                LinksysText.descriptionMain(title),
-                const LinksysGap.small(),
-                LinksysText.descriptionSub(
+                AppText.descriptionMain(title),
+                const AppGap.small(),
+                AppText.descriptionSub(
                   desc,
                   maxLines: 5,
                 ),

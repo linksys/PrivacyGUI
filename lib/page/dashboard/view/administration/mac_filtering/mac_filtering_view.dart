@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,13 +57,13 @@ class _MacFilteringContentViewState
   Widget build(BuildContext context) {
     return BlocBuilder<MacFilteringCubit, MacFilteringState>(
       builder: (context, state) {
-        return StyledLinksysPageView(
+        return StyledAppPageView(
           scrollable: true,
           title: getAppLocalizations(context).ip_details,
-          child: LinksysBasicLayout(
+          child: AppBasicLayout(
             content: Column(
               children: [
-                const LinksysGap.semiBig(),
+                const AppGap.semiBig(),
                 AppPanelWithSwitch(
                   value: state.status != MacFilterStatus.off,
                   title: getAppLocalizations(context).wifi_mac_filters,
@@ -72,7 +71,7 @@ class _MacFilteringContentViewState
                     _cubit.setEnable(value);
                   },
                 ),
-                const LinksysGap.semiBig(),
+                const AppGap.semiBig(),
                 ..._buildEnabledContent(state)
               ],
             ),
@@ -116,7 +115,7 @@ class _MacFilteringContentViewState
             ),
             AppPanelWithTrailWidget(
               title: getAppLocalizations(context).device_ip_address,
-              trailing: LinksysTertiaryButton.noPadding(
+              trailing: AppTertiaryButton.noPadding(
                 getAppLocalizations(context).select_device,
                 onTap: () async {
                   // String? deviceIp = await ref.read(navigationsProvider.notifier)
@@ -145,13 +144,13 @@ class _MacFilteringContentViewState
     return state.selectedDevices.isEmpty
         ? Expanded(
             child: Center(
-              child: LinksysText.descriptionSub(
+              child: AppText.descriptionSub(
                   getAppLocalizations(context).no_filtered_devices_yet),
             ),
           )
         : Column(
             children: [
-              LinksysText.tags(getAppLocalizations(context).filtered_devices),
+              AppText.tags(getAppLocalizations(context).filtered_devices),
               // Add filtered devices
             ],
           );

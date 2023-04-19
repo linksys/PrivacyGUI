@@ -21,10 +21,10 @@ class _HiddenPasswordWidgetState extends ConsumerState<HiddenPasswordWidget> {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        LinksysText.descriptionSub(
+        AppText.descriptionSub(
           _getPasswordContent(),
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppIconButton(
           icon: isPwSecure
               ? getCharactersIcons(context).showDefault

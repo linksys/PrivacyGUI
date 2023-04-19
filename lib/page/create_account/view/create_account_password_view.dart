@@ -8,11 +8,13 @@ import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class CreateAccountPasswordView extends ArgumentsConsumerStatefulView {
   const CreateAccountPasswordView({Key? key, super.args}) : super(key: key);
@@ -74,9 +76,9 @@ class _CreateAccountPasswordViewState
   }
 
   Widget _contentView() {
-    return BasePageView(
+    return StyledAppPageView(
       scrollable: true,
-      child: BasicLayout(
+      child: AppBasicLayout(
         header: const BasicHeader(
           title: 'Create a password',
         ),

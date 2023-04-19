@@ -45,13 +45,13 @@ class _HomeViewState extends ConsumerState<HomeView> {
   @override
   Widget build(BuildContext context) {
     logger.d('home rebuild');
-    return StyledLinksysPageView(
+    return StyledAppPageView(
       backState: StyledBackState.none,
       child: _isLoading
-          ? const LinksysFullScreenSpinner(
+          ? const AppFullScreenSpinner(
               text: 'Loading...',
             )
-          : LinksysBasicLayout(
+          : AppBasicLayout(
               content: _content(context),
               footer: _footer(context),
             ),
@@ -85,14 +85,14 @@ class _HomeViewState extends ConsumerState<HomeView> {
 
   Widget _footer(BuildContext context) {
     return Column(children: [
-      LinksysPrimaryButton(
+      AppPrimaryButton(
         getAppLocalizations(context).login,
         key: const Key('home_view_button_login'),
         onTap: () async {
           ref.read(navigationsProvider.notifier).push(AuthInputAccountPath());
         },
       ),
-      LinksysSecondaryButton(
+      AppSecondaryButton(
         getAppLocalizations(context).setup_new_router,
         key: const Key('home_view_button_setup'),
         onTap: null,
@@ -106,7 +106,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                     PackageInfo.fromPlatform().then((value) => value.version),
                 initialData: '-',
                 builder: (context, data) {
-                  return LinksysText.tags(
+                  return AppText.tags(
                     'version ${data.data} ${cloudEnvTarget == CloudEnvironment.prod ? '' : cloudEnvTarget.name}',
                   );
                 }),
@@ -114,8 +114,8 @@ class _HomeViewState extends ConsumerState<HomeView> {
           if (BuildConfig.isEnableEnvPicker)
             Align(
                 alignment: Alignment.bottomRight,
-                child: LinksysTertiaryButton.noPadding('Select Env',
-                    onTap: () async {
+                child:
+                    AppTertiaryButton.noPadding('Select Env', onTap: () async {
                   final result = await showModalBottomSheet(
                       enableDrag: false,
                       context: context,
@@ -130,8 +130,8 @@ class _HomeViewState extends ConsumerState<HomeView> {
   List<Widget> showDebugButton() {
     if (_isOpenDebug) {
       return [
-        const LinksysGap.semiBig(),
-        LinksysSecondaryButton(
+        const AppGap.semiBig(),
+        AppSecondaryButton(
           'Debug Tools',
           onTap: () {
             ref.read(navigationsProvider.notifier).push(DebugToolsMainPath());
@@ -149,8 +149,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
     bool _isLoading = false;
     return StatefulBuilder(builder: (context, setState) {
       return _isLoading
-          ? LinksysFullScreenSpinner(
-              text: getAppLocalizations(context).processing)
+          ? AppFullScreenSpinner(text: getAppLocalizations(context).processing)
           : AppPadding.regular(
               child: Column(
                 children: [
@@ -160,7 +159,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                       itemCount: CloudEnvironment.values.length,
                       itemBuilder: (context, index) => InkWell(
                             child: AppPadding(
-                              padding: const LinksysEdgeInsets.symmetric(
+                              padding: const AppEdgeInsets.symmetric(
                                   horizontal: AppGapSize.regular),
                               child: AppPanelWithValueCheck(
                                 title: CloudEnvironment.values[index].name,
@@ -176,7 +175,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                             },
                           )),
                   const Spacer(),
-                  LinksysPrimaryButton(
+                  AppPrimaryButton(
                     'Save',
                     onTap: () async {
                       setState(() {
@@ -192,7 +191,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                       Navigator.pop(context, cloudEnvTarget);
                     },
                   ),
-                  const LinksysGap.regular(),
+                  const AppGap.regular(),
                 ],
               ),
             );

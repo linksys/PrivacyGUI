@@ -67,11 +67,11 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledLinksysPageView(
+    return StyledAppPageView(
       scrollable: true,
-      child: LinksysBasicLayout(
+      child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: const LinksysText.screenName(
+        header: const AppText.screenName(
           'Debug Tools',
         ),
         content: _content(),
@@ -84,11 +84,11 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ..._buildInfo(),
-        const LinksysText.descriptionMain(
+        const AppText.descriptionMain(
           'Log:',
         ),
-        const LinksysGap.regular(),
-        LinksysPrimaryButton(
+        const AppGap.regular(),
+        AppPrimaryButton(
           'Export log file',
           onTap: () async {
             final file = File.fromUri(Storage.logFileUri);
@@ -120,9 +120,9 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
             showSnackBar(context, Text("Share result: ${result.status}"));
           },
         ),
-        const LinksysGap.regular(),
+        const AppGap.regular(),
         ..._buildDebug(),
-        const LinksysGap.regular(),
+        const AppGap.regular(),
       ],
     );
   }
@@ -150,7 +150,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
           });
         },
       ),
-      LinksysPrimaryButton(
+      AppPrimaryButton(
         'Raise an Exception!',
         onTap: () async {
           // ScaffoldMessenger.of(context).showSnackBar(
@@ -169,7 +169,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
           logger.d('Result: $result');
         },
       ),
-      const LinksysGap.regular(),
+      const AppGap.regular(),
     ];
   }
 
@@ -179,15 +179,15 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: LinksysText.descriptionMain('Basic Info'),
+        title: AppText.descriptionMain('Basic Info'),
         children: [
-          LinksysText.descriptionSub(appInfo),
-          const LinksysGap.regular(),
-          LinksysPrimaryButton(
+          AppText.descriptionSub(appInfo),
+          const AppGap.regular(),
+          AppPrimaryButton(
             'More',
             onTap: () => _goToDeviceInfoPage(context),
           ),
-          const LinksysGap.regular(),
+          const AppGap.regular(),
         ],
       ),
     ];
@@ -200,15 +200,15 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: LinksysText.descriptionMain('Connection Info'),
+        title: AppText.descriptionMain('Connection Info'),
         children: [
-          LinksysText.descriptionSub(
+          AppText.descriptionSub(
               'Router: ${connectivityState.connectivityInfo.routerType.name}'),
-          LinksysText.descriptionSub(
+          AppText.descriptionSub(
               'Connectivity: ${connectivityState.connectivityInfo.type.name}'),
-          LinksysText.descriptionSub(
+          AppText.descriptionSub(
               'Gateway Ip: ${connectivityState.connectivityInfo.gatewayIp}'),
-          LinksysText.descriptionSub(
+          AppText.descriptionSub(
               'SSID: ${connectivityState.connectivityInfo.ssid}'),
           box16(),
         ],
@@ -222,7 +222,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: LinksysText.descriptionMain('PushNotification Info'),
+        title: AppText.descriptionMain('PushNotification Info'),
         children: [
           Offstage(
             offstage: Platform.isIOS,
@@ -232,7 +232,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               children: [
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8.0),
-                  child: LinksysText.descriptionSub('FCM Token:'),
+                  child: AppText.descriptionSub('FCM Token:'),
                 ),
                 IconButton(
                     onPressed: _fcmToken != null
@@ -248,14 +248,14 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               ],
             ),
           ),
-          const LinksysGap.small(),
+          const AppGap.small(),
           Offstage(
             offstage: Platform.isAndroid,
             child: Wrap(
               alignment: WrapAlignment.start,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                const LinksysText.descriptionSub('APNS Token:'),
+                const AppText.descriptionSub('APNS Token:'),
                 IconButton(
                     onPressed: _apnsToken != null
                         ? () {

@@ -33,13 +33,13 @@ class _ConnectionTypeSelectionViewState
 
   @override
   Widget build(BuildContext context) {
-    return StyledLinksysPageView(
+    return StyledAppPageView(
       scrollable: true,
       title: getAppLocalizations(context).connection_type,
-      child: LinksysBasicLayout(
+      child: AppBasicLayout(
         content: Column(
           children: [
-            const LinksysGap.semiBig(),
+            const AppGap.semiBig(),
             ..._supportedList
                 .map((e) => toConnectionTypeData(context, e))
                 .map((connectionType) {

@@ -32,15 +32,14 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   @override
   void initState() {
     super.initState();
-
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<NetworkCubit, NetworkState>(
-      builder: (context, state) => LinksysPageView.noNavigationBar(
+      builder: (context, state) => AppPageView.noNavigationBar(
         scrollable: true,
-        padding: const LinksysEdgeInsets.only(
+        padding: const AppEdgeInsets.only(
           top: AppGapSize.big,
           left: AppGapSize.regular,
           right: AppGapSize.regular,
@@ -65,15 +64,14 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _homeTitle(state),
-                  const LinksysGap.big(),
+                  const AppGap.big(),
                   _networkInfoTiles(state),
-                  const LinksysGap.extraBig(),
+                  const AppGap.extraBig(),
                   _speedTestTile(state),
                 ],
               ),
             ),
-            if (state.selected?.devices == null)
-              const LinksysFullScreenSpinner(),
+            if (state.selected?.devices == null) const AppFullScreenSpinner(),
           ],
         ),
       ),
@@ -93,9 +91,9 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               icon: getCharactersIcons(context).homeDefault,
               size: AppIconSize.big,
             ),
-            const LinksysGap.semiSmall(),
+            const AppGap.semiSmall(),
             Expanded(
-              child: LinksysText.subhead(
+              child: AppText.subhead(
                 state.selected?.radioInfo?.first.settings.ssid ?? 'Home',
               ),
             ),
@@ -107,13 +105,13 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             ),
           ],
         ),
-        const LinksysGap.big(),
+        const AppGap.big(),
         Row(
           children: const [
-            LinksysText.screenName(
+            AppText.screenName(
               'Internet ',
             ),
-            LinksysText.screenName(
+            AppText.screenName(
               'online',
               color: ConstantColors.primaryLinksysBlue,
             ),
@@ -130,9 +128,9 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _wifiInfoTile(state),
-          const LinksysGap.extraBig(),
+          const AppGap.extraBig(),
           _nodesInfoTile(state),
-          const LinksysGap.extraBig(),
+          const AppGap.extraBig(),
           _devicesInfoTile(state),
         ],
       ),
@@ -265,13 +263,13 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           onTap: onTap,
           child: Row(
             children: [
-              LinksysText.mainTitle(count.toString()),
-              const LinksysGap.regular(),
+              AppText.mainTitle(count.toString()),
+              const AppGap.regular(),
               Expanded(child: _iconStack(icons)),
             ],
           ),
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         Row(
           children: [
             // const SizedBox(width: 3),
@@ -279,8 +277,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               icon: getCharactersIcons(context).checkRound,
               color: ConstantColors.secondaryElectricGreen,
             ),
-            const LinksysGap.semiSmall(),
-            LinksysText.descriptionSub(descripition),
+            const AppGap.semiSmall(),
+            AppText.descriptionSub(descripition),
           ],
         ),
       ],
@@ -297,7 +295,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           borderRadius: BorderRadius.circular(100.0),
         ),
         child: AppPadding(
-          padding: const LinksysEdgeInsets.symmetric(
+          padding: const AppEdgeInsets.symmetric(
               horizontal: AppGapSize.regular, vertical: AppGapSize.semiSmall),
           child: _speedResult(state),
         ),
@@ -345,7 +343,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                 child: const CircleAvatar(
                   radius: 21,
                   backgroundColor: ConstantColors.primaryLinksysBlue,
-                  child: LinksysText.textLinkSmall(
+                  child: AppText.textLinkSmall(
                     'Go',
                     color: ConstantColors.primaryLinksysWhite,
                   ),
@@ -373,8 +371,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         Row(
           children: [
             icon,
-            const LinksysGap.semiSmall(),
-            LinksysText.screenName(num),
+            const AppGap.semiSmall(),
+            AppText.screenName(num),
           ],
         ),
         Text('${text}ps'),

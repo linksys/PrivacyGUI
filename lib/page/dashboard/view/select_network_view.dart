@@ -47,13 +47,13 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
     final AsyncValue<SelectNetworkModel> model =
         CloudNetworkService(ref).watchSelectNetwork();
     return model.when(data: (state) {
-      return StyledLinksysPageView(
+      return StyledAppPageView(
         scrollable: true,
         isCloseStyle: true,
         onBackTap: () {
           context.read<AuthBloc>().add(Logout());
         },
-        child: LinksysBasicLayout(
+        child: AppBasicLayout(
           crossAxisAlignment: CrossAxisAlignment.start,
           content: _networkSection(state, title: 'Network'),
         ),
@@ -63,7 +63,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
         child: Text('Error - $error'),
       );
     }, loading: () {
-      return LinksysFullScreenSpinner(
+      return AppFullScreenSpinner(
           text: getAppLocalizations(context).processing);
     });
   }
@@ -72,10 +72,10 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        LinksysText.tags(
+        AppText.tags(
           title,
         ),
-        const LinksysGap.small(),
+        const AppGap.small(),
         SizedBox(
           height: 92.0 * state.networks.length,
           child: ListView.builder(
@@ -91,7 +91,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                     }
                   : null,
               child: AppPadding(
-                padding: const LinksysEdgeInsets.symmetric(
+                padding: const AppEdgeInsets.symmetric(
                   vertical: AppGapSize.regular,
                 ),
                 child: Row(
@@ -108,17 +108,17 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                       width: 60,
                       height: 60,
                     ),
-                    const LinksysGap.semiBig(),
+                    const AppGap.semiBig(),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        LinksysText.descriptionMain(
+                        AppText.descriptionMain(
                           state.networks[index].network.friendlyName,
                           color: state.networks[index].isOnline
                               ? null
                               : ConstantColors.textBoxTextGray,
                         ),
-                        const LinksysGap.small(),
+                        const AppGap.small(),
                       ],
                     ),
                   ],

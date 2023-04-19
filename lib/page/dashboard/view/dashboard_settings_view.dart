@@ -39,7 +39,7 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
   Widget build(BuildContext context) {
     return BlocBuilder<NetworkCubit, NetworkState>(
       builder: (context, state) {
-        return LinksysPageView.noNavigationBar(
+        return AppPageView.noNavigationBar(
             scrollable: true,
             child: EnabledOpacityWidget(
               enabled: state.selected?.deviceInfo != null,
@@ -49,9 +49,9 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const LinksysGap.semiBig(),
+                    const AppGap.semiBig(),
                     _title(),
-                    const LinksysGap.semiBig(),
+                    const AppGap.semiBig(),
                     _section(
                       _networkSettingsSection(context),
                       (index, item) {
@@ -59,7 +59,7 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
                         ref.read(navigationsProvider.notifier).push(item.path);
                       },
                     ),
-                    const LinksysGap.semiBig(),
+                    const AppGap.semiBig(),
                     _section(
                       _youSettingsSection(),
                       (index, item) {
@@ -67,17 +67,17 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
                         ref.read(navigationsProvider.notifier).push(item.path);
                       },
                     ),
-                    const LinksysGap.semiBig(),
-                    LinksysTertiaryButton.noPadding('Log out', onTap: () {
+                    const AppGap.semiBig(),
+                    AppTertiaryButton.noPadding('Log out', onTap: () {
                       context.read<AuthBloc>().add(Logout());
                     }),
-                    const LinksysGap.semiBig(),
+                    const AppGap.semiBig(),
                     FutureBuilder(
                         future: PackageInfo.fromPlatform()
                             .then((value) => value.version),
                         initialData: '-',
                         builder: (context, data) {
-                          return LinksysText.label(
+                          return AppText.label(
                             'version ${data.data}',
                           );
                         }),
@@ -98,7 +98,7 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
           alignment: WrapAlignment.start,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: const [
-            LinksysText.screenName(
+            AppText.screenName(
               'Settings',
             )
           ],
@@ -113,10 +113,10 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        LinksysText.tags(
+        AppText.tags(
           sectionItem.title,
         ),
-        const LinksysGap.small(),
+        const AppGap.small(),
         ...sectionItem.items.map((e) => InkWell(
               onTap: () => onItemClick(sectionItem.items.indexOf(e), e),
               child: AppSimplePanel(

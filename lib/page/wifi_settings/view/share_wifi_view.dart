@@ -58,16 +58,16 @@ class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const LinksysGap.regular(),
-        LinksysText.descriptionMain(
+        const AppGap.regular(),
+        AppText.descriptionMain(
           _currentItem.ssid,
         ),
         HiddenPasswordWidget(password: _currentItem.password),
-        const LinksysGap.big(),
-        LinksysText.tags(
+        const AppGap.big(),
+        AppText.tags(
           'JOIN THIS NETWORK',
         ),
-        const LinksysGap.regular(),
+        const AppGap.regular(),
         RepaintBoundary(
           key: globalKey,
           child: Container(
@@ -107,7 +107,7 @@ class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
           GestureDetector(
             behavior: HitTestBehavior.translucent,
             // child: Container(
-            //   child: LinksysText.textLinkLarge(
+            //   child: AppText.textLinkLarge(
             //     options[index].displayTitle,
             //   ),
             //   height: 80,
@@ -225,17 +225,17 @@ class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledLinksysPageView(
+    return StyledAppPageView(
       scrollable: true,
-      child: LinksysBasicLayout(
-        header: LinksysText.screenName(
+      child: AppBasicLayout(
+        header: AppText.screenName(
           'Share ${_currentItem.wifiType.displayTitle} WiFi',
         ),
         content: Column(
           children: [
-            const LinksysGap.big(),
+            const AppGap.big(),
             _wifiInfoSection(),
-            const LinksysGap.big(),
+            const AppGap.big(),
             _optionSection(),
           ],
         ),

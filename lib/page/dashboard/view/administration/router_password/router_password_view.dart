@@ -77,14 +77,14 @@ class _RouterPasswordContentViewState
     return BlocBuilder<RouterPasswordCubit, RouterPasswordState>(
         builder: (context, state) {
       return state.isLoading
-          ? const LinksysFullScreenSpinner()
-          : StyledLinksysPageView(
+          ? const AppFullScreenSpinner()
+          : StyledAppPageView(
               scrollable: true,
               title: state.isSetByUser
                   ? getAppLocalizations(context).router_password
                   : ' ',
               actions: [
-                LinksysTertiaryButton(
+                AppTertiaryButton(
                   getAppLocalizations(context).save,
                   onTap: (state.hasEdited && state.isValid) ? _save : null,
                 ),
@@ -97,11 +97,11 @@ class _RouterPasswordContentViewState
   }
 
   _editRouterPasswordView(RouterPasswordState state) {
-    return LinksysBasicLayout(
+    return AppBasicLayout(
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const LinksysGap.regular(),
+          const AppGap.regular(),
           AppPasswordField(
             withValidator: state.hasEdited,
             validations: validations,
@@ -122,16 +122,16 @@ class _RouterPasswordContentViewState
               _cubit.setValidate(isValid);
             },
           ),
-          const LinksysGap.big(),
+          const AppGap.big(),
           AppTextField(
             headerText: getAppLocalizations(context).password_hint,
             hintText: 'Password hint',
             controller: _hintController,
             readOnly: !state.hasEdited,
           ),
-          const LinksysGap.semiSmall(),
+          const AppGap.semiSmall(),
           if (!state.hasEdited)
-            LinksysText.descriptionSub(getAppLocalizations(context)
+            AppText.descriptionSub(getAppLocalizations(context)
                 .enter_router_password_to_change_password_hint),
         ],
       ),
@@ -139,17 +139,17 @@ class _RouterPasswordContentViewState
   }
 
   _createRouterPasswordView(RouterPasswordState state) {
-    return LinksysBasicLayout(
+    return AppBasicLayout(
       crossAxisAlignment: CrossAxisAlignment.start,
-      header: LinksysText.screenName(
+      header: AppText.screenName(
         getAppLocalizations(context).set_a_router_password,
       ),
       content: Column(
         children: [
-          const LinksysGap.semiBig(),
-          LinksysText.descriptionMain(
+          const AppGap.semiBig(),
+          AppText.descriptionMain(
               getAppLocalizations(context).create_router_password_description),
-          const LinksysGap.big(),
+          const AppGap.big(),
           AppPasswordField.withValidator(
             validations: validations,
             headerText: getAppLocalizations(context).router_password,
@@ -168,18 +168,18 @@ class _RouterPasswordContentViewState
               _cubit.setValidate(isValid);
             },
           ),
-          const LinksysGap.big(),
+          const AppGap.big(),
           AppTextField(
             headerText: getAppLocalizations(context).password_hint,
             hintText: 'Password hint',
             controller: _hintController,
             readOnly: !state.hasEdited,
           ),
-          const LinksysGap.big(),
+          const AppGap.big(),
           Row(
             children: [
               Expanded(
-                child: LinksysTertiaryButton(
+                child: AppTertiaryButton(
                   getAppLocalizations(context)
                       .create_router_password_how_to_access,
                   onTap: () {},

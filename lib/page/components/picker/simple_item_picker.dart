@@ -55,12 +55,12 @@ class _SimpleItemPickerViewState extends ConsumerState<SimpleItemPickerView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledLinksysPageView(
+    return StyledAppPageView(
       title: getAppLocalizations(context).connection_type,
-      child: LinksysBasicLayout(
+      child: AppBasicLayout(
         content: Column(
           children: [
-            const LinksysGap.semiBig(),
+            const AppGap.semiBig(),
             ..._items.map((item) {
               return InkWell(
                 onTap: _disabled.contains(item.id)

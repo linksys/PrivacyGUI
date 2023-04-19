@@ -28,7 +28,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   Widget build(BuildContext context) {
     return BlocBuilder<DeviceCubit, DeviceState>(builder: (context, state) {
       return LayoutBuilder(builder: (context, constraint) {
-        return LinksysProfileHeaderLayout(
+        return AppProfileHeaderLayout(
           expandedHeight: constraint.maxHeight / 2,
           collaspeTitle: state.selectedDeviceInfo?.name,
           onCollaspeBackTap: () {
@@ -77,11 +77,11 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       child: Column(
         children: [
           _deviceAvatar(state),
-          const LinksysGap.regular(),
+          const AppGap.regular(),
           Stack(
             clipBehavior: Clip.none,
             children: [
-              LinksysText.textLinkLarge(
+              AppText.textLinkLarge(
                 device.name,
                 color: AppTheme.of(context).colors.textBoxText,
               ),
@@ -97,9 +97,9 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
               ),
             ],
           ),
-          const LinksysGap.extraBig(),
+          const AppGap.extraBig(),
           _deviceStatus(state),
-          const LinksysGap.big(),
+          const AppGap.big(),
         ],
       ),
     );
@@ -133,7 +133,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                 width: 120 * 0.75,
               ),
             ),
-            LinksysText.label(
+            AppText.label(
               device.parentInfo?.place ?? '',
               color: textColor,
             ),
@@ -159,7 +159,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                   ),
                 ),
               ),
-              LinksysText.label(
+              AppText.label(
                 Utils.getWifiSignalLevel(device.signal).displayTitle,
                 color: textColor,
               ),
@@ -176,7 +176,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                 icon: AppTheme.of(context).icons.characters.profileDefault,
               ),
             ),
-            LinksysText.label(
+            AppText.label(
               'Timmy',
               color: textColor,
             ),
@@ -200,7 +200,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppPadding(
-                      padding: const LinksysEdgeInsets.symmetric(
+                      padding: const AppEdgeInsets.symmetric(
                         horizontal: AppGapSize.semiBig,
                       ),
                       child: Column(
@@ -225,22 +225,22 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const LinksysGap.big(),
-        LinksysText.tags(
+        const AppGap.big(),
+        AppText.tags(
           getAppLocalizations(context).wifi_all_capital,
           color: ConstantColors.secondaryCyberPurple,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).ip_address,
           description: device.ipAddress, //TODO: It may be empty
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).mac_address,
           description: device.macAddress,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).ipv6_address,
           description: device.macAddress, //TODO: Get IPv6 data
@@ -254,22 +254,22 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const LinksysGap.semiSmall(),
-        LinksysText.tags(
+        const AppGap.semiSmall(),
+        AppText.tags(
           getAppLocalizations(context).details_all_capital,
           color: ConstantColors.secondaryCyberPurple,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).manufacturer,
           description: device.manufacturer,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).model,
           description: device.model,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).operating_system,
           description: device.os,

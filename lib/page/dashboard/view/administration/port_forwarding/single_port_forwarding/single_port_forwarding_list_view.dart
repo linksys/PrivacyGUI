@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,10 +58,10 @@ class _SinglePortForwardingContentViewState
   Widget build(BuildContext context) {
     return BlocBuilder<SinglePortForwardingListCubit,
         SinglePortForwardingListState>(builder: (context, state) {
-      return StyledLinksysPageView(
+      return StyledAppPageView(
         title: getAppLocalizations(context).single_port_forwarding,
         actions: [
-          LinksysTertiaryButton(
+          AppTertiaryButton(
             getAppLocalizations(context).edit,
             onTap: () {
               // TODO
@@ -70,15 +69,15 @@ class _SinglePortForwardingContentViewState
           ),
         ],
         scrollable: true,
-        child: LinksysBasicLayout(
+        child: AppBasicLayout(
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const LinksysGap.semiBig(),
-              LinksysText.descriptionMain(getAppLocalizations(context)
+              const AppGap.semiBig(),
+              AppText.descriptionMain(getAppLocalizations(context)
                   .single_port_forwarding_description),
               if (!_cubit.isExceedMax())
-                LinksysTertiaryButton(
+                AppTertiaryButton(
                   getAppLocalizations(context).add_rule,
                   onTap: () {
                     ref
@@ -92,7 +91,7 @@ class _SinglePortForwardingContentViewState
                     });
                   },
                 ),
-              const LinksysGap.semiBig(),
+              const AppGap.semiBig(),
               ...state.rules.map(
                 (e) => AppPanelWithInfo(
                   title: e.description,

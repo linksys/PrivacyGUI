@@ -34,10 +34,10 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledLinksysPageView(
+    return StyledAppPageView(
       title: getAppLocalizations(context).mac_address_clone,
       actions: [
-        LinksysTertiaryButton(
+        AppTertiaryButton(
           getAppLocalizations(context).save,
           onTap: _isValid
               ? () {
@@ -49,10 +49,10 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
               : null,
         ),
       ],
-      child: LinksysBasicLayout(
+      child: AppBasicLayout(
         content: Column(
           children: [
-            const LinksysGap.semiBig(),
+            const AppGap.semiBig(),
             AppPanelWithSwitch(
               value: _isEnabled,
               title: getAppLocalizations(context).enabled,

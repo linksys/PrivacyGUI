@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -32,7 +31,6 @@ class PortForwardingContentView extends ArgumentsConsumerStatefulView {
 
 class _PortForwardingContentViewState
     extends ConsumerState<PortForwardingContentView> {
-
   @override
   void initState() {
     super.initState();
@@ -45,12 +43,12 @@ class _PortForwardingContentViewState
 
   @override
   Widget build(BuildContext context) {
-    return StyledLinksysPageView(
+    return StyledAppPageView(
       title: getAppLocalizations(context).port_forwarding,
-      child: LinksysBasicLayout(
+      child: AppBasicLayout(
         content: Column(
           children: [
-            const LinksysGap.semiBig(),
+            const AppGap.semiBig(),
             AppSimplePanel(
               title: getAppLocalizations(context).single_port_forwarding,
               onTap: () {

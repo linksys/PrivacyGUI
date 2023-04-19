@@ -105,21 +105,19 @@ class _EditWifiNamePasswordViewState
   @override
   Widget build(BuildContext context) {
     return isLoading
-        ? LinksysFullScreenSpinner(
-            text: getAppLocalizations(context).processing)
-        : StyledLinksysPageView(
+        ? AppFullScreenSpinner(text: getAppLocalizations(context).processing)
+        : StyledAppPageView(
             title: _title,
             actions: [
               AppPadding(
-                padding:
-                    const LinksysEdgeInsets.only(right: AppGapSize.regular),
-                child: LinksysTertiaryButton.noPadding(
+                padding: const AppEdgeInsets.only(right: AppGapSize.regular),
+                child: AppTertiaryButton.noPadding(
                   getAppLocalizations(context).save,
                   onTap: isChanged ? _checkInputData : null,
                 ),
               ),
             ],
-            child: LinksysBasicLayout(
+            child: AppBasicLayout(
               content: Column(
                 children: [
                   AppTextField(

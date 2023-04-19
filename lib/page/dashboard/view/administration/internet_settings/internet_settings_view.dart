@@ -99,17 +99,17 @@ class _InternetSettingsContentViewState
         RouterType.behindManaged;
     return BlocBuilder<InternetSettingsCubit, InternetSettingsState>(
         builder: (context, state) {
-      return StyledLinksysPageView(
-        padding: const LinksysEdgeInsets.zero(),
+      return StyledAppPageView(
+        padding: const AppEdgeInsets.zero(),
         scrollable: true,
         title: getAppLocalizations(context).ip_details,
         actions: [
-          LinksysTertiaryButton(
+          AppTertiaryButton(
             getAppLocalizations(context).save,
             onTap: () {},
           ),
         ],
-        child: LinksysBasicLayout(
+        child: AppBasicLayout(
           content: Column(
             children: [
               if (!_isBehindRouter)
@@ -119,20 +119,20 @@ class _InternetSettingsContentViewState
                   decoration: BoxDecoration(
                       color: AppTheme.of(context).colors.ctaPrimaryDisable),
                   alignment: Alignment.center,
-                  child: LinksysText.descriptionMain(
+                  child: AppText.descriptionMain(
                     'To change these settings. connect to ${context.read<NetworkCubit>().state.selected?.radioInfo?.first.settings.ssid ?? ' '}',
                   ),
                 ),
               AppPadding(
-                padding: const LinksysEdgeInsets.semiBig(),
+                padding: const AppEdgeInsets.semiBig(),
                 child: Stack(
                   children: [
                     Column(
                       children: [
                         _buildSegmentController(state),
-                        const LinksysGap.semiBig(),
+                        const AppGap.semiBig(),
                         _buildSegment(state),
-                        const LinksysGap.semiBig(),
+                        const AppGap.semiBig(),
                         _buildAdditionalSettings(state),
                       ],
                     ),
@@ -173,11 +173,11 @@ class _InternetSettingsContentViewState
         },
         children: {
           InternetSettingsViewType.ipv4: AppPadding.semiSmall(
-            child: LinksysText.descriptionMain(
+            child: AppText.descriptionMain(
                 getAppLocalizations(context).label_ipv4),
           ),
           InternetSettingsViewType.ipv6: AppPadding.semiSmall(
-            child: LinksysText.descriptionMain(
+            child: AppText.descriptionMain(
                 getAppLocalizations(context).label_ipv6),
           ),
         },
@@ -297,20 +297,20 @@ class _InternetSettingsContentViewState
           hintText: getAppLocalizations(context).username,
           controller: _pppoeUsernameController,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppPasswordField(
           headerText: getAppLocalizations(context).password,
           hintText: getAppLocalizations(context).password,
           controller: _pppoePasswordController,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppTextField(
           headerText: getAppLocalizations(context).vlan_id,
           hintText: getAppLocalizations(context).vlan_id,
           controller: _pppoeVLANIDController,
         ),
-        const LinksysGap.semiSmall(),
-        LinksysText.descriptionSub(getAppLocalizations(context).vlan_id_desc),
+        const AppGap.semiSmall(),
+        AppText.descriptionSub(getAppLocalizations(context).vlan_id_desc),
       ],
     );
   }
@@ -323,19 +323,19 @@ class _InternetSettingsContentViewState
           hintText: getAppLocalizations(context).internet_ipv4_address,
           controller: _staticIpAddressController,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppTextField(
           headerText: getAppLocalizations(context).subnet_mask,
           hintText: getAppLocalizations(context).subnet_mask,
           controller: _staticSubnetController,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppTextField(
           headerText: getAppLocalizations(context).default_gateway,
           hintText: getAppLocalizations(context).default_gateway,
           controller: _staticGatewayController,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppTextField(
           headerText: getAppLocalizations(context).dns1,
           hintText: getAppLocalizations(context).dns1,
@@ -353,13 +353,13 @@ class _InternetSettingsContentViewState
           hintText: getAppLocalizations(context).username,
           controller: _pptpUsernameController,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppPasswordField(
           headerText: getAppLocalizations(context).password,
           hintText: getAppLocalizations(context).password,
           controller: _pptpPasswordController,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppTextField(
           headerText: getAppLocalizations(context).server_ipv4_address,
           hintText: getAppLocalizations(context).server_ipv4_address,
@@ -377,13 +377,13 @@ class _InternetSettingsContentViewState
           hintText: getAppLocalizations(context).username,
           controller: _l2tpUsernameController,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppPasswordField(
           headerText: getAppLocalizations(context).password,
           hintText: getAppLocalizations(context).password,
           controller: _l2tpPasswordController,
         ),
-        const LinksysGap.semiSmall(),
+        const AppGap.semiSmall(),
         AppTextField(
           headerText: getAppLocalizations(context).server_ipv4_address,
           hintText: getAppLocalizations(context).server_ipv4_address,

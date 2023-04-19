@@ -67,14 +67,14 @@ class _TopologyContentView extends ConsumerState<TopologyContentView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TopologyCubit, TopologyState>(builder: (context, state) {
-      return StyledLinksysPageView(
-        padding: LinksysEdgeInsets.only(),
+      return StyledAppPageView(
+        padding: AppEdgeInsets.only(),
         scrollable: true,
-        // padding: const LinksysEdgeInsets.regular(),
-        child: LinksysBasicLayout(
+        // padding: const AppEdgeInsets.regular(),
+        child: AppBasicLayout(
           content: Visibility(
             visible: state.rootNode.deviceID.isNotEmpty,
-            replacement: const LinksysFullScreenSpinner(),
+            replacement: const AppFullScreenSpinner(),
             child: Column(
               children: [
                 widget.selectedDeviceId == null
@@ -114,7 +114,7 @@ class _TopologyContentView extends ConsumerState<TopologyContentView> {
           color: ConstantColors.primaryLinksysBlue.withOpacity(0.07),
         ),
         child: AppPadding(
-          padding: const LinksysEdgeInsets.symmetric(
+          padding: const AppEdgeInsets.symmetric(
               vertical: AppGapSize.semiSmall, horizontal: AppGapSize.regular),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -125,8 +125,8 @@ class _TopologyContentView extends ConsumerState<TopologyContentView> {
                 getCharactersIcons(context).statusOn,
                 color: ConstantColors.tertiaryGreen,
               )),
-              const LinksysGap.regular(),
-              LinksysText.descriptionSub(
+              const AppGap.regular(),
+              AppText.descriptionSub(
                 'Connected to Internet',
               )
             ],
@@ -277,7 +277,7 @@ class _TreeViewPageState extends ConsumerState<TreeViewPage> {
                     : AppTheme.of(context).avatar.large,
                 margin: EdgeInsets.all(AppTheme.of(context).spacing.semiSmall),
                 child: AppPadding(
-                  padding: const LinksysEdgeInsets.regular(),
+                  padding: const AppEdgeInsets.regular(),
                   child: Image(
                     image: AppTheme.of(context)
                         .images
@@ -296,9 +296,9 @@ class _TreeViewPageState extends ConsumerState<TreeViewPage> {
                 width: AppTheme.of(context).avatar.normal,
                 height: AppTheme.of(context).avatar.normal,
                 child: AppPadding(
-                  padding: const LinksysEdgeInsets.small(),
+                  padding: const AppEdgeInsets.small(),
                   child: Center(
-                    child: LinksysText.descriptionSub(
+                    child: AppText.descriptionSub(
                       _node.isOnline ? '${_node.connectedDeviceCount}' : '0',
                       color: ConstantColors.primaryLinksysWhite,
                     ),
@@ -307,15 +307,15 @@ class _TreeViewPageState extends ConsumerState<TreeViewPage> {
               )
           ],
         ),
-        const LinksysGap.regular(),
+        const AppGap.regular(),
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             node.isMaster
                 ? Icon(getCharactersIcons(context).ethernetDefault)
                 : Icon(getCharactersIcons(context).wifiDefault),
-            const LinksysGap.regular(),
-            LinksysText.descriptionSub(
+            const AppGap.regular(),
+            AppText.descriptionSub(
               _node.location,
             ),
           ],

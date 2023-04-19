@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,7 +40,6 @@ class _AddRuleContentViewState
     extends ConsumerState<PortRangeForwardingRuleContentView> {
   late final PortRangeForwardingRuleCubit _cubit;
 
-
   final TextEditingController _ruleNameController = TextEditingController();
   final TextEditingController _firstExternalPortController =
       TextEditingController();
@@ -78,11 +76,11 @@ class _AddRuleContentViewState
   Widget build(BuildContext context) {
     return BlocBuilder<PortRangeForwardingRuleCubit,
         PortRangeForwardingRuleState>(builder: (context, state) {
-      return StyledLinksysPageView(
+      return StyledAppPageView(
         scrollable: true,
         title: getAppLocalizations(context).port_range_forwarding,
         actions: [
-          LinksysTertiaryButton(
+          AppTertiaryButton(
             getAppLocalizations(context).save,
             onTap: () {
               final rule = PortRangeForwardingRule(
@@ -113,11 +111,11 @@ class _AddRuleContentViewState
             },
           )
         ],
-        child: LinksysBasicLayout(
+        child: AppBasicLayout(
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const LinksysGap.semiBig(),
+              const AppGap.semiBig(),
               if (state is EditPortRangeForwardingRule)
                 ..._buildEditContents(state)
               else
@@ -141,7 +139,7 @@ class _AddRuleContentViewState
         onChangedEvent: (value) {},
       ),
       ...buildInputForms(),
-      LinksysTertiaryButton(
+      AppTertiaryButton(
         getAppLocalizations(context).delete_rule,
         onTap: () {
           _cubit.delete().then((value) {
@@ -164,19 +162,19 @@ class _AddRuleContentViewState
           headerText: getAppLocalizations(context).rule_name,
           hintText: getAppLocalizations(context).rule_name,
           controller: _ruleNameController),
-      const LinksysGap.semiSmall(),
+      const AppGap.semiSmall(),
       AppTextField(
           headerText: getAppLocalizations(context).start_port,
           hintText: getAppLocalizations(context).start_port,
           inputType: TextInputType.number,
           controller: _firstExternalPortController),
-      const LinksysGap.semiSmall(),
+      const AppGap.semiSmall(),
       AppTextField(
           headerText: getAppLocalizations(context).end_port,
           hintText: getAppLocalizations(context).end_port,
           inputType: TextInputType.number,
           controller: _lastExternalPortController),
-      const LinksysGap.semiSmall(),
+      const AppGap.semiSmall(),
       AppTextField(
         controller: _deviceIpAddressController,
         hintText: getAppLocalizations(context).device_ip_address,
@@ -191,7 +189,7 @@ class _AddRuleContentViewState
               .pushAndWait(SelectDevicePtah());
         },
       ),
-      const LinksysGap.semiSmall(),
+      const AppGap.semiSmall(),
       AppPanelWithInfo(
         title: getAppLocalizations(context).protocol,
         infoText: getProtocolTitle(_protocol),

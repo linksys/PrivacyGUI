@@ -53,15 +53,15 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
   @override
   Widget build(BuildContext context) {
     return _isLoading
-        ? const LinksysFullScreenSpinner()
-        : StyledLinksysPageView(
+        ? const AppFullScreenSpinner()
+        : StyledAppPageView(
             scrollable: true,
             child: _isConnectedToRouter
                 ? _enterRouterPasswordView(context)
                 : NetworkCheckView(
                     description: getAppLocalizations(context)
                         .local_login_connect_to_your_router,
-                    button: LinksysPrimaryButton(
+                    button: AppPrimaryButton(
                       getAppLocalizations(context).text_continue,
                       onTap: () {
                         checkWifi();
@@ -97,15 +97,15 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
   }
 
   Widget _enterRouterPasswordView(BuildContext context) {
-    return LinksysBasicLayout(
+    return AppBasicLayout(
       crossAxisAlignment: CrossAxisAlignment.start,
-      header: LinksysText.screenName(
+      header: AppText.screenName(
         getAppLocalizations(context).local_login_title,
       ),
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const LinksysGap.regular(),
+          const AppGap.regular(),
           AppPasswordField(
             headerText: getAppLocalizations(context).router_password,
             controller: _passwordController,
@@ -119,7 +119,7 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
               data:
                   Theme.of(context).copyWith(dividerColor: Colors.transparent),
               child: ExpansionTile(
-                title: LinksysText.label(
+                title: AppText.label(
                   getAppLocalizations(context).show_hint,
                   color: ConstantColors.primaryLinksysBlue,
                 ),
@@ -133,14 +133,14 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
                 children: [Text(_hint)],
               ),
             ),
-          LinksysTertiaryButton(
-              getAppLocalizations(context).forgot_router_password, onTap: () {
+          AppTertiaryButton(getAppLocalizations(context).forgot_router_password,
+              onTap: () {
             ref
                 .read(navigationsProvider.notifier)
                 .push(AuthLocalRecoveryKeyPath());
           }),
           const Spacer(),
-          LinksysPrimaryButton(
+          AppPrimaryButton(
             getAppLocalizations(context).text_continue,
             onTap: _isPasswordValidate ? _localLogin : null,
           ),

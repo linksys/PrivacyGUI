@@ -48,8 +48,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<NetworkCubit, NetworkState>(
-      builder: (context, state) => StyledLinksysPageView(
-        child: LinksysBasicLayout(
+      builder: (context, state) => StyledAppPageView(
+        child: AppBasicLayout(
           crossAxisAlignment: CrossAxisAlignment.start,
           header: const Text(
             'Speed Test',
@@ -120,17 +120,17 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: const [
-                LinksysText.subhead('Upload'),
-                LinksysText.subhead('Download'),
+                AppText.subhead('Upload'),
+                AppText.subhead('Download'),
               ],
             ),
-            const LinksysGap.regular(),
+            const AppGap.regular(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: const [
-                LinksysText.subhead('98Mbps'),
-                LinksysText.subhead('24Mpbs'),
+                AppText.subhead('98Mbps'),
+                AppText.subhead('24Mpbs'),
               ],
             ),
           ],

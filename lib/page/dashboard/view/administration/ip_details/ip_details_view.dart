@@ -69,15 +69,15 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
         RouterType.behindManaged;
     return BlocBuilder<IpDetailsCubit, IpDetailsState>(
         builder: (context, state) {
-      return StyledLinksysPageView(
+      return StyledAppPageView(
         scrollable: true,
         title: getAppLocalizations(context).ip_details,
-        child: LinksysBasicLayout(
+        child: AppBasicLayout(
           content: Column(
             children: [
-              const LinksysGap.semiBig(),
+              const AppGap.semiBig(),
               _wanSection(state),
-              const LinksysGap.semiBig(),
+              const AppGap.semiBig(),
               _lanSection(state),
             ],
           ),
@@ -133,7 +133,7 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
   }
 
   _buildRenewButton(bool isIPv6) {
-    return LinksysTertiaryButton.noPadding(
+    return AppTertiaryButton.noPadding(
       getAppLocalizations(context).release_and_renew,
       onTap: _isBehindRouter
           ? () {
@@ -150,8 +150,8 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
       children: [
         const SizedBox(
             width: 18, height: 18, child: CircularProgressIndicator()),
-        const LinksysGap.semiSmall(),
-        LinksysText.descriptionSub(
+        const AppGap.semiSmall(),
+        AppText.descriptionSub(
           getAppLocalizations(context).ip_renewing,
           color: AppTheme.of(context).colors.ctaPrimaryDisable,
         ),
@@ -170,7 +170,7 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
               .settings
               .ssid ??
           '';
-      return LinksysText.descriptionMain(
+      return AppText.descriptionMain(
           getAppLocalizations(context).release_ip_description(ssid));
     }
     return const Center();

@@ -26,10 +26,10 @@ class AdministrationView extends ArgumentsConsumerStatefulView {
 class _AdministrationViewState extends ConsumerState<AdministrationView> {
   @override
   Widget build(BuildContext context) {
-    return StyledLinksysPageView(
+    return StyledAppPageView(
       title: getAppLocalizations(context).administration,
       scrollable: true,
-      child: LinksysBasicLayout(
+      child: AppBasicLayout(
         content: Column(
           children: [
             administrationSection(

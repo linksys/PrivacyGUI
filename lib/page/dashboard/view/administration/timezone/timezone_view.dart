@@ -49,11 +49,11 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneContentView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TimezoneCubit, TimezoneState>(builder: (context, state) {
-      return StyledLinksysPageView(
+      return StyledAppPageView(
         scrollable: true,
         title: getAppLocalizations(context).timezone,
         actions: [
-          LinksysTertiaryButton(
+          AppTertiaryButton(
             getAppLocalizations(context).save,
             onTap: () {
               _cubit.save().then((_) => showSuccessSnackBar(
@@ -61,11 +61,11 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneContentView> {
             },
           ),
         ],
-        child: LinksysBasicLayout(
+        child: AppBasicLayout(
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const LinksysGap.semiBig(),
+              const AppGap.semiBig(),
               AppPanelWithSwitch(
                 title: getAppLocalizations(context).daylight_savings_time,
                 value: state.isDaylightSaving,
@@ -75,7 +75,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneContentView> {
                       }
                     : null,
               ),
-              const LinksysGap.big(),
+              const AppGap.big(),
               SizedBox(
                 height: (70.0) * state.supportedTimezones.length,
                 child: ListView.builder(

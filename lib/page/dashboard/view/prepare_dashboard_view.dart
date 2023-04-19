@@ -38,7 +38,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
 
   @override
   Widget build(BuildContext context) =>
-      LinksysFullScreenSpinner(text: getAppLocalizations(context).processing);
+      AppFullScreenSpinner(text: getAppLocalizations(context).processing);
 
   _checkSelfNetworks() async {
     await ref.read(connectivityProvider.notifier).forceUpdate();

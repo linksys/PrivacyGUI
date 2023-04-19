@@ -67,16 +67,16 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<LANCubit, LANState>(builder: (context, state) {
-      return StyledLinksysPageView(
+      return StyledAppPageView(
         scrollable: true,
         title: getAppLocalizations(context).ip_details,
         actions: [
-          LinksysTertiaryButton(
+          AppTertiaryButton(
             getAppLocalizations(context).save,
             onTap: () {},
           )
         ],
-        child: LinksysBasicLayout(
+        child: AppBasicLayout(
           content: Column(
             children: [
               administrationSection(
@@ -84,7 +84,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                 content: Column(
                   children: [
                     IPFormField(
-                      header: LinksysText.descriptionMain(
+                      header: AppText.descriptionMain(
                         getAppLocalizations(context).ip_address,
                       ),
                       controller: _ipAddressController,
@@ -95,9 +95,9 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                       },
                       isError: state.errors['ipAddress'] != null,
                     ),
-                    const LinksysGap.semiBig(),
+                    const AppGap.semiBig(),
                     IPFormField(
-                      header: LinksysText.descriptionMain(
+                      header: AppText.descriptionMain(
                         getAppLocalizations(context).subnet_mask,
                       ),
                       controller: _subnetMaskController,
@@ -116,14 +116,14 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                 content: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const LinksysGap.semiBig(),
+                    const AppGap.semiBig(),
                     AppPanelWithSwitch(
                       value: state.isDHCPEnabled,
                       title: getAppLocalizations(context).dhcp_server,
                       onChangedEvent: (value) {},
                     ),
                     IPFormField(
-                      header: LinksysText.descriptionMain(
+                      header: AppText.descriptionMain(
                         getAppLocalizations(context).start_ip_address,
                       ),
                       controller: _firstIPController,
@@ -134,7 +134,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                       },
                       isError: state.errors['firstIPAddress'] != null,
                     ),
-                    const LinksysGap.semiBig(),
+                    const AppGap.semiBig(),
                     AppTextField(
                       controller: _maxNumUserController,
                       width: 116,
@@ -150,13 +150,13 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                         }
                       },
                     ),
-                    const LinksysGap.semiSmall(),
-                    LinksysText.descriptionSub(
+                    const AppGap.semiSmall(),
+                    AppText.descriptionSub(
                       getAppLocalizations(context).dhcp_ip_range(
                           state.firstIPAddress, state.lastIPAddress),
                       color: ConstantColors.baseTertiaryGray,
                     ),
-                    const LinksysGap.semiBig(),
+                    const AppGap.semiBig(),
                     AppTextField(
                       controller: _clientLeaseController,
                       width: 116,
@@ -170,7 +170,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                         }
                       },
                     ),
-                    const LinksysGap.semiBig(),
+                    const AppGap.semiBig(),
                   ],
                 ),
               ),
@@ -213,7 +213,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                   ],
                 ),
               ),
-              const LinksysGap.extraBig(),
+              const AppGap.extraBig(),
             ],
           ),
         ),
@@ -229,7 +229,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
     } else {
       return [
         IPFormField(
-          header: LinksysText.descriptionMain(
+          header: AppText.descriptionMain(
             getAppLocalizations(context).static_dns1,
           ),
           controller: _dns1Controller,
@@ -240,9 +240,9 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
           },
           isError: state.errors['dns1'] != null,
         ),
-        const LinksysGap.semiBig(),
+        const AppGap.semiBig(),
         IPFormField(
-          header: LinksysText.descriptionMain(
+          header: AppText.descriptionMain(
             getAppLocalizations(context).static_dns2_optional,
           ),
           controller: _dns2Controller,
@@ -253,7 +253,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
           },
           isError: state.errors['dns2'] != null,
         ),
-        const LinksysGap.semiBig(),
+        const AppGap.semiBig(),
       ];
     }
   }

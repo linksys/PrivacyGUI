@@ -38,8 +38,8 @@ class _EditWifiModeViewState extends ConsumerState<EditWifiModeView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledLinksysPageView(
-      child: LinksysBasicLayout(
+    return StyledAppPageView(
+      child: AppBasicLayout(
         content: ListView.builder(
           itemCount: _modeList.length,
           itemBuilder: (context, index) {
@@ -53,17 +53,17 @@ class _EditWifiModeViewState extends ConsumerState<EditWifiModeView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        LinksysText.descriptionMain(
+                        AppText.descriptionMain(
                           _modeList[index].value,
                         ),
-                        const LinksysGap.small(),
-                        LinksysText.descriptionSub(
+                        const AppGap.small(),
+                        AppText.descriptionSub(
                           'Communicate to various network adapter standards. If you have a mixed network environment or if you are unsure of your network adapters on your wireless devices, this is the best network mode to choose.',
                         ),
                       ],
                     ),
                   ),
-                  const LinksysGap.regular(),
+                  const AppGap.regular(),
                   Visibility(
                     maintainAnimation: true,
                     maintainState: true,

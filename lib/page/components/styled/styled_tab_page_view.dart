@@ -9,14 +9,14 @@ import 'package:linksys_widgets/widgets/page/layout/tab_layout.dart';
 
 import 'consts.dart';
 
-class StyledLinksysTabPageView extends ConsumerWidget {
+class StyledAppTabPageView extends ConsumerWidget {
   static const double kDefaultToolbarHeight = 80;
   final String? title;
   final double toolbarHeight;
   final VoidCallback? onBackTap;
   final StyledBackState backState;
   final List<Widget>? actions;
-  final List<LinksysTab> tabs;
+  final List<AppTab> tabs;
   final Widget? headerContent;
   final List<Widget> tabContentViews;
   final bool pinned;
@@ -26,7 +26,7 @@ class StyledLinksysTabPageView extends ConsumerWidget {
   final double? expandedHeight;
   final ScrollController? scrollController;
 
-  const StyledLinksysTabPageView({
+  const StyledAppTabPageView({
     super.key,
     this.title,
     this.toolbarHeight = kDefaultToolbarHeight,
@@ -45,9 +45,10 @@ class StyledLinksysTabPageView extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => LinksysPageView.noNavigationBar(
-        padding: const LinksysEdgeInsets.only(),
-        child: LinksysTabLayout(
+  Widget build(BuildContext context, WidgetRef ref) =>
+      AppPageView.noNavigationBar(
+        padding: const AppEdgeInsets.only(),
+        child: AppTabLayout(
           flexibleSpace: FlexibleSpaceBar(
             background: Column(
               children: [
@@ -73,7 +74,7 @@ class StyledLinksysTabPageView extends ConsumerWidget {
     return isCloseStyle
         ? LinksysAppBar.withClose(
             context: context,
-            title: title == null ? null : LinksysText.screenName(title),
+            title: title == null ? null : AppText.screenName(title),
             toolbarHeight: toolbarHeight,
             onBackTap: isBackEnabled()
                 ? (onBackTap ??
@@ -85,7 +86,7 @@ class StyledLinksysTabPageView extends ConsumerWidget {
           )
         : LinksysAppBar.withBack(
             context: context,
-            title: title == null ? null : LinksysText.screenName(title),
+            title: title == null ? null : AppText.screenName(title),
             toolbarHeight: toolbarHeight,
             onBackTap: isBackEnabled()
                 ? (onBackTap ??

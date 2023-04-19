@@ -33,13 +33,13 @@ class _MacFilteringEnterDeviceViewState
 
   @override
   Widget build(BuildContext context) {
-    return StyledLinksysPageView(
+    return StyledAppPageView(
       isCloseStyle: true,
-      child: LinksysBasicLayout(
+      child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: Column(
           children: [
-            const LinksysGap.semiBig(),
+            const AppGap.semiBig(),
             AppMacField(
               controller: _macController,
               headerText: getAppLocalizations(context).enter_mac_address,
@@ -51,8 +51,8 @@ class _MacFilteringEnterDeviceViewState
                 });
               },
             ),
-            const LinksysGap.extraBig(),
-            LinksysPrimaryButton(
+            const AppGap.extraBig(),
+            AppPrimaryButton(
               getAppLocalizations(context).save,
               onTap: _isValid ? () {} : null,
             ),

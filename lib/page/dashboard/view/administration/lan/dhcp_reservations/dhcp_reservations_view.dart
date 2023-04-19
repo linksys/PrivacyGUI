@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,7 +40,6 @@ class _SinglePortForwardingContentViewState
     extends ConsumerState<DHCPReservationsContentView> {
   late final DHCPReservationsCubit _cubit;
 
-
   @override
   void initState() {
     _cubit = context.read<DHCPReservationsCubit>();
@@ -59,14 +57,14 @@ class _SinglePortForwardingContentViewState
   Widget build(BuildContext context) {
     return BlocBuilder<DHCPReservationsCubit, DHCPReservationsState>(
         builder: (context, state) {
-      return StyledLinksysPageView(
+      return StyledAppPageView(
         scrollable: true,
         title: getAppLocalizations(context).dhcp_reservations,
-        child: LinksysBasicLayout(
+        child: AppBasicLayout(
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const LinksysGap.semiBig(),
+              const AppGap.semiBig(),
               administrationSection(
                   title: getAppLocalizations(context).reserved_addresses,
                   content: SizedBox(
@@ -74,24 +72,24 @@ class _SinglePortForwardingContentViewState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        LinksysTertiaryButton.noPadding(
+                        AppTertiaryButton.noPadding(
                           getAppLocalizations(context).add_device_reservations,
                           onTap: () {},
                         ),
                       ],
                     ),
                   )),
-              const LinksysGap.semiBig(),
+              const AppGap.semiBig(),
               administrationSection(
                 title: getAppLocalizations(context).dhcp_list,
-                headerAction: LinksysTertiaryButton.noPadding(
+                headerAction: AppTertiaryButton.noPadding(
                   getAppLocalizations(context).add,
                   onTap: () {},
                 ),
                 content: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    LinksysTertiaryButton.noPadding(
+                    AppTertiaryButton.noPadding(
                       getAppLocalizations(context).add_device_reservations,
                       onTap: () {},
                     ),

@@ -63,27 +63,26 @@ class _EditWifiSecurityViewState extends ConsumerState<EditWifiSecurityView> {
   @override
   Widget build(BuildContext context) {
     return isLoading
-        ? LinksysFullScreenSpinner(
-            text: getAppLocalizations(context).processing)
+        ? AppFullScreenSpinner(text: getAppLocalizations(context).processing)
         : BlocBuilder<WifiSettingCubit, WifiSettingState>(
-            builder: (context, state) => StyledLinksysPageView(
-              child: LinksysBasicLayout(
+            builder: (context, state) => StyledAppPageView(
+              child: AppBasicLayout(
                 content: ListView.builder(
                   itemCount: _typeList.length,
                   itemBuilder: (context, index) {
                     return GestureDetector(
                       onTap: () => _onTypeTapped(index),
                       child: AppPadding(
-                        padding: const LinksysEdgeInsets.symmetric(
+                        padding: const AppEdgeInsets.symmetric(
                             vertical: AppGapSize.regular),
                         child: Row(
                           children: [
                             Expanded(
-                              child: LinksysText.label(
+                              child: AppText.label(
                                 _typeList[index].displayTitle,
                               ),
                             ),
-                            const LinksysGap.regular(),
+                            const AppGap.regular(),
                             Visibility(
                               maintainAnimation: true,
                               maintainState: true,
@@ -99,7 +98,7 @@ class _EditWifiSecurityViewState extends ConsumerState<EditWifiSecurityView> {
                     );
                   },
                 ),
-                footer: LinksysPrimaryButton(
+                footer: AppPrimaryButton(
                   getAppLocalizations(context).save,
                   onTap: _selectedType != _currentType ? _save : null,
                 ),

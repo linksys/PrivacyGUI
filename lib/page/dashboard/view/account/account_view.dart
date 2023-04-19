@@ -44,7 +44,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AccountCubit, AccountState>(builder: (context, state) {
-      return StyledLinksysPageView(
+      return StyledAppPageView(
         scrollable: true,
         title: 'Account',
         child: context.read<AuthBloc>().isCloudLogin()
@@ -58,7 +58,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const LinksysGap.regular(),
+        const AppGap.regular(),
         _localLoginInformationSection(context),
         dividerWithPadding(),
         // _biometricsTile(state),
@@ -81,7 +81,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
 
   Widget _informationSection(AccountState state) {
     return SectionTile(
-      header: const LinksysText.tags(
+      header: const AppText.tags(
         'YOUR INFORMATION',
       ),
       child: Column(
@@ -98,7 +98,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
 
   Widget _securitySection(AccountState state) {
     return SectionTile(
-      header: const LinksysText.tags(
+      header: const AppText.tags(
         'Security',
       ),
       child: Column(
@@ -249,8 +249,9 @@ class _AccountViewState extends ConsumerState<AccountView> {
             text: 'Create an account',
             onPress: () {
               context.read<InternetCheckCubit>().getInternetConnectionStatus();
-              ref.read(navigationsProvider.notifier).push(CreateCloudAccountPath()
-                ..args = {'config': 'LOCALAUTHCREATEACCOUNT'});
+              ref.read(navigationsProvider.notifier).push(
+                  CreateCloudAccountPath()
+                    ..args = {'config': 'LOCALAUTHCREATEACCOUNT'});
             },
           ),
           const SizedBox(

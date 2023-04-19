@@ -34,10 +34,10 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledLinksysPageView(
+    return StyledAppPageView(
       title: getAppLocalizations(context).connection_type,
       actions: [
-        LinksysTertiaryButton(
+        AppTertiaryButton(
           getAppLocalizations(context).done,
           onTap: () {
             FocusManager.instance.primaryFocus?.unfocus();
@@ -48,10 +48,10 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
           },
         ),
       ],
-      child: LinksysBasicLayout(
+      child: AppBasicLayout(
         content: Column(
           children: [
-            const LinksysGap.semiBig(),
+            const AppGap.semiBig(),
             ..._items.map((item) {
               return InkWell(
                 onTap: () {

@@ -16,12 +16,11 @@ Widget administrationSection({
       child: Container(
         alignment: Alignment.bottomLeft,
         child: AppPadding(
-          padding:
-              const LinksysEdgeInsets.symmetric(vertical: AppGapSize.regular),
+          padding: const AppEdgeInsets.symmetric(vertical: AppGapSize.regular),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(child: LinksysText.tags(title)),
+              Expanded(child: AppText.tags(title)),
               if (headerAction != null) headerAction,
             ],
           ),

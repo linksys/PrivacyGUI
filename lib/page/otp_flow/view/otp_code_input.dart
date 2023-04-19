@@ -92,16 +92,16 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
           }
         },
         builder: (context, state) => state.isLoading
-            ? const LinksysFullScreenSpinner()
+            ? const AppFullScreenSpinner()
             : _contentView(state));
   }
 
   Widget _contentView(OtpState state) {
-    return StyledLinksysPageView(
+    return StyledAppPageView(
       scrollable: true,
-      child: LinksysBasicLayout(
+      child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: LinksysText.screenName(
+        header: AppText.screenName(
           state.selectedMethod?.method ==
                   CommunicationMethodType.sms.name.toUpperCase()
               ? getAppLocalizations(context)
@@ -112,7 +112,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const LinksysGap.big(),
+            const AppGap.big(),
             AppPinCodeInput(
               key: const Key('otp_input_view_input_field_code'),
               onChanged: (String value) {
@@ -133,8 +133,8 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
                 });
               },
             ),
-            const LinksysGap.regular(),
-            LinksysTertiaryButton.noPadding(
+            const AppGap.regular(),
+            AppTertiaryButton.noPadding(
                 getAppLocalizations(context).otp_resend_code, onTap: () {
               _setLoading(true);
               _onSend(state.selectedMethod!, state.token)
@@ -147,12 +147,12 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
             if (_errorCode.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: LinksysText.flavorText(
+                child: AppText.flavorText(
                   generalErrorCodeHandler(context, _errorCode),
                 ),
               ),
             const Spacer(),
-            LinksysPrimaryButton(
+            AppPrimaryButton(
               'Next',
               onTap: _otpController.text.length >= 6
                   ? () {

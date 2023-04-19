@@ -63,7 +63,7 @@ class _LinkupViewState extends ConsumerState<LinkupView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledLinksysPageView(
+    return StyledAppPageView(
       child: FutureBuilder(
           future: _future,
           builder: ((context, snapshot) {
@@ -71,7 +71,7 @@ class _LinkupViewState extends ConsumerState<LinkupView> {
             if (snapshot.hasError) {
               // TODO Something wrong here
               return const Center(
-                child: LinksysText.descriptionMain('Unexceped error'),
+                child: AppText.descriptionMain('Unexceped error'),
               );
             }
 
@@ -80,7 +80,7 @@ class _LinkupViewState extends ConsumerState<LinkupView> {
               final data = snapshot.data;
               if (data == null) {
                 return const Center(
-                  child: LinksysText.descriptionMain('No news!'),
+                  child: AppText.descriptionMain('No news!'),
                 );
               }
               return ListView(
@@ -88,15 +88,15 @@ class _LinkupViewState extends ConsumerState<LinkupView> {
                 primary: false,
                 children: [
                   const Center(
-                    child: LinksysText.screenName('Linksys linkup'),
+                    child: AppText.screenName('Linksys linkup'),
                   ),
-                  const LinksysGap.regular(),
-                  LinksysText.descriptionMain(data['subject'] ?? ''),
-                  const LinksysGap.big(),
+                  const AppGap.regular(),
+                  AppText.descriptionMain(data['subject'] ?? ''),
+                  const AppGap.big(),
                   ...List.from(data['contents']).map((content) {
                     return ExpansionTile(
                       initiallyExpanded: true,
-                      title: LinksysText.tags(content['category']),
+                      title: AppText.tags(content['category']),
                       children: List.from(content['items'])
                           .map((item) => AppSimplePanel(
                                 title: item['title'],
@@ -110,7 +110,7 @@ class _LinkupViewState extends ConsumerState<LinkupView> {
             }
 
             // Otherwise, show something whilst waiting for initialization to complete
-            return const LinksysFullScreenSpinner();
+            return const AppFullScreenSpinner();
           })),
     );
   }

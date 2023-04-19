@@ -28,8 +28,8 @@ class _CloudReadyForLoginViewState
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) => LinksysPageView.noNavigationBar(
-              child: LinksysFullScreenSpinner(
+        builder: (context, state) => AppPageView.noNavigationBar(
+              child: AppFullScreenSpinner(
                   text: getAppLocalizations(context).processing),
             ));
   }
