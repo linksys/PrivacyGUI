@@ -36,9 +36,7 @@ class _ChangeAuthModePasswordViewState
   @override
   void initState() {
     super.initState();
-    if (widget.args['changeModeTo'] == 'PASSWORDLESS') {
-      changeAuthModeToPasswordless(context);
-    }
+
   }
 
   @override
@@ -88,19 +86,19 @@ class _ChangeAuthModePasswordViewState
   }
 
   _applyPassword() async {
-    String token = widget.args['token'] ?? '';
-    const storage = FlutterSecureStorage();
-    String accountId = context.read<AccountCubit>().state.id;
-    await storage.write(
-        key: linksysPrefCloudAccountPasswordKey,
-        value: passwordController.text);
-    context
-        .read<AuthBloc>()
-        .changeAuthMode(accountId, token, passwordController.text)
-        .then((value) async {
-      await context.read<AccountCubit>().fetchAccount();
-      ref.read(navigationsProvider.notifier).push(LoginMethodOptionsPath());
-    }).onError((error, stackTrace) => _handleError(error));
+    // String token = widget.args['token'] ?? '';
+    // const storage = FlutterSecureStorage();
+    // String accountId = context.read<AccountCubit>().state.id;
+    // await storage.write(
+    //     key: linksysPrefCloudAccountPasswordKey,
+    //     value: passwordController.text);
+    // context
+    //     .read<AuthBloc>()
+    //     .changeAuthMode(accountId, token, passwordController.text)
+    //     .then((value) async {
+    //   await context.read<AccountCubit>().fetchAccount();
+    //   ref.read(navigationsProvider.notifier).push(LoginMethodOptionsPath());
+    // }).onError((error, stackTrace) => _handleError(error));
   }
 
   _handleError(Object? error) {
@@ -109,19 +107,6 @@ class _ChangeAuthModePasswordViewState
       if (error is ErrorResponse) {
         _errorMessage = generalErrorCodeHandler(context, error.code);
       }
-    });
-  }
-
-  Future<void> changeAuthModeToPasswordless(BuildContext context) async {
-    const storage = FlutterSecureStorage();
-    await storage.delete(key: linksysPrefCloudAccountPasswordKey);
-    String accountId = context.read<AccountCubit>().state.id;
-    context
-        .read<AuthBloc>()
-        .changeAuthMode(accountId, widget.args['token'], null)
-        .then((value) async {
-      await context.read<AccountCubit>().fetchAccount();
-      ref.read(navigationsProvider.notifier).push(LoginMethodOptionsPath());
     });
   }
 }

@@ -2,7 +2,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
-import 'package:linksys_moab/repository/authenticate/otp_repository.dart';
 
 import '../../repository/linksys_cloud_repository.dart';
 import '../../repository/model/cloud_session_model.dart';
@@ -10,13 +9,10 @@ import 'otp_state.dart';
 
 class OtpCubit extends Cubit<OtpState> {
   OtpCubit({
-    required OtpRepository otpRepository,
     required LinksysCloudRepository repository,
-  })  : _otpRepository = otpRepository,
-        _repository = repository,
+  })  : _repository = repository,
         super(OtpState.init());
 
-  final OtpRepository _otpRepository;
   final LinksysCloudRepository _repository;
   void init() {
     emit(OtpState.init());
@@ -107,9 +103,5 @@ class OtpCubit extends Cubit<OtpState> {
       otpCode: code,
       verificationToken: token,
     );
-  }
-
-  Future<void> authChallengeVerifyAccept(String code, String token) async {
-    return await _otpRepository.authChallengeVerifyAccept(token, code);
   }
 }

@@ -13,11 +13,6 @@ class DevicesPath extends DashboardPath {
         return const DeviceDetailView();
       case EditDeviceNamePath:
         return const EditDeviceNameView();
-      case EditDeviceIconPath:
-        return EditDeviceIconView(
-          args: args,
-          next: next,
-        );
       case OfflineDeviceListPath:
         return const OfflineDeviceListView();
       default:

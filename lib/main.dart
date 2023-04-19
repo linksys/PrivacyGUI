@@ -10,19 +10,16 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:linksys_moab/bloc/account/cubit.dart';
-import 'package:linksys_moab/bloc/add_nodes/cubit.dart';
 import 'package:linksys_moab/bloc/app_lifecycle/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
-import 'package:linksys_moab/bloc/content_filter/cubit.dart';
 import 'package:linksys_moab/bloc/device/cubit.dart';
 import 'package:linksys_moab/bloc/internet_check/cubit.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
-import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/bloc/security/bloc.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -33,16 +30,13 @@ import 'package:linksys_moab/notification/notification_helper.dart';
 import 'package:linksys_moab/provider/provider_observer.dart';
 import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
 import 'package:linksys_moab/repository/authenticate/impl/cloud_auth_repository.dart';
-import 'package:linksys_moab/repository/config/environment_repository.dart';
 import 'package:linksys_moab/repository/linksys_cloud_repository.dart';
 import 'package:linksys_moab/repository/networks/cloud_networks_repository.dart';
-import 'package:linksys_moab/repository/router/providers/polling_provider.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/repository/subscription/subscription_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:linksys_moab/route/router_delegate.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -50,8 +44,6 @@ import 'bloc/setup/bloc.dart';
 import 'bloc/subscription/subscription_cubit.dart';
 import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
-import 'repository/authenticate/otp_repository.dart';
-import 'route/model/_model.dart';
 
 void main() async {
   // enableFlutterDriverExtension();
@@ -123,13 +115,11 @@ Widget _app() {
     providers: [
       RepositoryProvider(
           create: (context) => CloudAuthRepository(MoabHttpClient())),
-      RepositoryProvider(
-          create: (context) => MoabEnvironmentRepository(MoabHttpClient())),
+
       RepositoryProvider(create: (context) => CloudAccountRepository()),
       RepositoryProvider(create: (context) => routerRepository),
       RepositoryProvider(create: (context) => CloudNetworksRepository()),
-      RepositoryProvider(
-          create: (context) => OtpRepository(httpClient: MoabHttpClient())),
+
       RepositoryProvider(create: (context) => SubscriptionRepository()),
       RepositoryProvider(create: (context) => cloudRepository),
     ],
@@ -145,7 +135,6 @@ Widget _app() {
           BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
           BlocProvider(
             create: (BuildContext context) => OtpCubit(
-              otpRepository: context.read<OtpRepository>(),
               repository: context.read<LinksysCloudRepository>(),
             ),
           ),
@@ -164,7 +153,6 @@ Widget _app() {
           BlocProvider(
               create: (BuildContext context) => AccountCubit(
                   repository: context.read<LinksysCloudRepository>())),
-          BlocProvider(create: (BuildContext context) => ContentFilterCubit()),
           BlocProvider(create: (BuildContext context) => SecurityBloc()),
           BlocProvider(
               create: (BuildContext context) => SubscriptionCubit(
@@ -177,9 +165,6 @@ Widget _app() {
                   )),
           BlocProvider(
               create: (BuildContext context) => InternetCheckCubit(
-                  routerRepository: context.read<RouterRepository>())),
-          BlocProvider(
-              create: (BuildContext context) => AddNodesCubit(
                   routerRepository: context.read<RouterRepository>())),
           BlocProvider(
               create: (BuildContext context) => WifiSettingCubit(
@@ -231,7 +216,6 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
     _subscription.cancel();
     apnsStreamSubscription?.cancel();
     releaseErrorStream();
-    CloudEnvironmentManager().release();
     super.dispose();
   }
 

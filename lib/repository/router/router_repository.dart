@@ -6,10 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
-import 'package:linksys_moab/bloc/connectivity/connectivity_state.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
-import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/network/bluetooth/bluetooth.dart';
@@ -49,9 +47,8 @@ class CommandWrap {
 final routerRepositoryProvider = Provider((ref) => RouterRepository(ref));
 
 class RouterRepository with StateStreamListener {
-  RouterRepository(this.ref) {
-    CloudEnvironmentManager().register(this);
-  }
+  RouterRepository(this.ref);
+
   final Ref ref;
   bool _btSetupMode = false;
   final LinksysHttpClient _client = LinksysHttpClient();

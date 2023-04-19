@@ -6,7 +6,6 @@ import 'dart:math' as math;
 import 'package:async/async.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
-import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/network/jnap/jnap_command_executor_mixin.dart';
 import 'package:linksys_moab/network/jnap/command/base_command.dart';
@@ -94,7 +93,7 @@ class MoabHttpClient extends http.BaseClient with JNAPCommandExecutor<Response> 
         HttpHeaders.acceptHeader: ContentType.json.value
       };
 
-  String getHost() => CloudEnvironmentManager().currentConfig?.apiBase ?? '';
+  String getHost() => '';
 
   String combineUrl(String endpoint, {Map<String, String>? args}) {
     String url = '${getHost()}$endpoint';

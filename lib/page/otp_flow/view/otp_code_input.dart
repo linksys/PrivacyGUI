@@ -178,13 +178,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
     _sessionToken = await otpCubit
         .authChallengeVerify(code: code, token: token)
         .onError((error, stackTrace) => _handleError(error, stackTrace));
-    if (function == OtpFunction.add) {
-      await otpCubit
-          .authChallengeVerifyAccept(code, token)
-          .then((value) async =>
-              await context.read<AccountCubit>().fetchAccount())
-          .onError((error, stackTrace) => _handleError(error, stackTrace));
-    }
+    
     otpCubit.finish();
     _setLoading(false);
   }

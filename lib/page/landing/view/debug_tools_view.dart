@@ -12,7 +12,6 @@ import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
 import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
-import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/network/bluetooth/bluetooth.dart';
@@ -368,10 +367,6 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         ],
       ),
     ];
-  }
-
-  _registerSmartDevice() {
-    CloudEnvironmentManager().registerSmartDevice();
   }
 
   _shareToken(String token) async {

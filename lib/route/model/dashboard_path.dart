@@ -20,10 +20,6 @@ abstract class DashboardPath extends BasePath {
         return const DashboardHomeView();
       case DashboardSettingsPath:
         return const DashboardSettingsView();
-      case DashboardSecurityPath:
-        return const DashboardSecurityView();
-      case DashboardHealthPath:
-        return const DashboardHealthView();
       case NoRouterPath:
         return const NoRouterView();
       case PrepareDashboardPath:

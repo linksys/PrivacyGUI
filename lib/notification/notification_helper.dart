@@ -7,7 +7,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
-import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,7 +33,6 @@ void initCloudMessage() async {
     // Get the device token from the native
     final token = await IosPushNotificationPlugin().readApnsToken() ?? '';
     logger.i('APNS: Read device token: $token');
-    CloudEnvironmentManager().updateDeviceToken(token);
     // Start listening the push notifications
     apnsStreamSubscription = IosPushNotificationPlugin()
         .pushNotificationStream
@@ -94,5 +92,4 @@ void initCloudMessage() async {
   });
   final token = await FirebaseMessaging.instance.getToken();
   logger.i('FCM Token: $token');
-  CloudEnvironmentManager().updateDeviceToken(token ?? '');
 }

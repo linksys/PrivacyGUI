@@ -89,39 +89,13 @@ class _HomeViewState extends ConsumerState<HomeView> {
         getAppLocalizations(context).login,
         key: const Key('home_view_button_login'),
         onTap: () async {
-          // TODO local auth check
-          final pref = await SharedPreferences.getInstance();
-          if (pref.containsKey(linksysPrefEnableBiometrics)) {
-            if (await Utils.checkCertValidation()) {
-              // TODO
-              // bool canUseBiometrics = await Utils.canUseBiometrics();
-              // if cannot use, show a alert to let user open it
-              bool isPass = await Utils.doLocalAuthenticate();
-              if (isPass) {
-                final authBloc = context.read<AuthBloc>();
-                await authBloc.requestSession();
-                authBloc.add(Authorized(isCloud: true));
-              } else {
-                ref
-                    .read(navigationsProvider.notifier)
-                    .push(AuthInputAccountPath());
-              }
-            } else {
-              ref
-                  .read(navigationsProvider.notifier)
-                  .push(AuthInputAccountPath());
-            }
-          } else {
-            ref.read(navigationsProvider.notifier).push(AuthInputAccountPath());
-          }
+          ref.read(navigationsProvider.notifier).push(AuthInputAccountPath());
         },
       ),
       LinksysSecondaryButton(
         getAppLocalizations(context).setup_new_router,
         key: const Key('home_view_button_setup'),
-        onTap: () {
-          ref.read(navigationsProvider.notifier).push(AuthInputAccountPath());
-        },
+        onTap: null,
       ),
       ...showDebugButton(),
       Stack(

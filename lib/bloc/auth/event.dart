@@ -53,8 +53,6 @@ class SetEnableBiometrics extends AuthEvent {
   final bool enableBiometrics;
 }
 
-class OnRequestSession extends AuthEvent {}
-
 class CloudLogin extends AuthEvent {
   CloudLogin({
     required this.sessionToken,

@@ -22,7 +22,6 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
     on<SetAdminPasswordHint>(_onSetAdminPasswordHint);
     on<SaveRouterSettings>(_onSaveRouterSettings);
     on<FetchNetworkId>(_onFetchNetworkId);
-    on<SetRouterProperties>(_onSetRouterLocation);
     on<LocalAuthorizedCreatAccount>(_onLocalAuthorizedCreateAccount);
   }
 
@@ -138,11 +137,6 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
         await pref.setString(linksysPrefSelectedNetworkId, networkId));
     return emit(state.copyWith(
         resumePoint: SetupResumePoint.finish, networkId: networkId));
-  }
-
-  void _onSetRouterLocation(
-      SetRouterProperties event, Emitter<SetupState> emit) async {
-    emit(state.copyWith(deviceProperties: event.properties));
   }
 
   Future<void> associateNetwork(String accountId, String groupId) async {

@@ -57,43 +57,8 @@ abstract class AuthRepository {
       CreateAccountVerified verified);
 
   ///
-  /// * state = PASSWORD_REQUIRED
-  /// * state = REQUIRE_2SV
-  Future<CloudLoginState> loginPrepare(String username);
-
-  ///
   Future<List<CommunicationMethod>> getMaskedCommunicationMethods(
       String username);
 
-  ///
-  /// * state = CAN_LOGIN
-  /// * state = REQUIRE_2SV
-  ///
-  Future<CloudLoginState> loginPassword(String token, String password);
-
-  ///
-  /// * state = ACCEPTED
-  ///
-  Future<CloudLoginAcceptState> login(String token);
-
-  ///
-  ///
-  ///
-  Future<void> downloadCloudCert({required String taskId, required String secret});
-
-  Future<CertInfoData> extendCertificate({required String certId});
-  Future<CloudSessionData> requestSession({required String certId});
-  ///
-  ///
-  ///
   Future<List<RegionCode>> fetchRegionCodes();
-
-  Future<ChangeAuthenticationModeChallenge> changeAuthenticationModePrepare(
-      String accountId,
-      String? password,
-      String authenticationMode,
-      );
-
-  Future<void> changeAuthenticationMode(
-      String accountId, String token, String? password);
 }

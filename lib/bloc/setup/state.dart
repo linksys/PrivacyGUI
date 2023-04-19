@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/bloc/add_nodes/state.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 
 enum SetupResumePoint {
@@ -24,7 +23,6 @@ class SetupState extends Equatable {
   final String passwordHint;
   final String networkId;
   final AccountInfo? accountInfo;
-  final List<NodeProperties> deviceProperties;
 
   const SetupState({
     required this.resumePoint,
@@ -34,7 +32,6 @@ class SetupState extends Equatable {
     required this.networkId,
     this.passwordHint = '',
     required this.accountInfo,
-    required this.deviceProperties,
   });
 
   const SetupState.init()
@@ -44,8 +41,7 @@ class SetupState extends Equatable {
         adminPassword = '',
         networkId = '',
         passwordHint = '',
-        accountInfo = null,
-        deviceProperties = const [];
+        accountInfo = null;
 
   SetupState copyWith({
     SetupResumePoint? resumePoint,
@@ -55,7 +51,6 @@ class SetupState extends Equatable {
     String? networkId,
     String? passwordHint,
     AccountInfo? accountInfo,
-    List<NodeProperties>? deviceProperties,
   }) {
     return SetupState(
       resumePoint: resumePoint ?? this.resumePoint,
@@ -65,7 +60,6 @@ class SetupState extends Equatable {
       networkId: networkId ?? this.networkId,
       passwordHint: passwordHint ?? this.passwordHint,
       accountInfo: accountInfo ?? this.accountInfo,
-      deviceProperties: deviceProperties ?? this.deviceProperties,
     );
   }
 
@@ -78,6 +72,5 @@ class SetupState extends Equatable {
         adminPassword,
         passwordHint,
         accountInfo,
-        deviceProperties,
       ];
 }

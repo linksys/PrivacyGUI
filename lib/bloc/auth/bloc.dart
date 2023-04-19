@@ -6,14 +6,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
-import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
-import 'package:linksys_moab/network/http/http_client.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
-import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
-import 'package:linksys_moab/network/http/model/cloud_session_data.dart';
-import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
 import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
 import 'package:linksys_moab/repository/model/cloud_session_model.dart';
@@ -25,7 +20,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../network/http/linksys_http_client.dart';
 import '../../network/http/model/cloud_account_info.dart';
-import '../../network/http/model/cloud_auth_clallenge_method.dart';
 import '../../network/http/model/cloud_create_account_verified.dart';
 import '../../network/http/model/cloud_login_state.dart';
 import '../../network/http/model/cloud_preferences.dart';
@@ -58,7 +52,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
     on<CloudLogin>(_cloudLoggedin);
     on<LocalLogin>(_localLogin);
     on<Logout>(_onLogout);
-    on<OnRequestSession>(_onRequestSession);
 
     //
     _errorStreamSubscription = linksysErrorResponseStream.listen((error) {
@@ -210,57 +203,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
     emit(AuthState.cloudAuthorized(sessionToken: event.sessionToken));
   }
 
-  void _cloudLogin(CloudLogin event, Emitter<AuthState> emit) async {
-    final pref = await SharedPreferences.getInstance();
-
-    var isLogin = false;
-    if (state is AuthOnCreateAccountState) {
-      isLogin = await checkCertValidation();
-    } else {
-      isLogin = await cloudLogin();
-    }
-
-    if (isLogin) {
-      AccountInfo? accountInfo;
-      final _state = state;
-      if (_state is AuthOnCloudLoginState) {
-        accountInfo = _state.accountInfo;
-      } else if (_state is AuthOnCreateAccountState) {
-        accountInfo = _state.accountInfo;
-      } else {
-        throw Exception('Invalid cloud login state');
-      }
-
-      if (accountInfo.enableBiometrics) {
-        bool canUseBiometrics = await Utils.canUseBiometrics();
-        bool didAuthenticate = await Utils.doLocalAuthenticate();
-        if (!canUseBiometrics || !didAuthenticate) {
-          // Disable or cancel authentication, set enableBiometrics to false
-          final pref = await SharedPreferences.getInstance();
-          pref.remove(linksysPrefEnableBiometrics);
-          accountInfo = accountInfo.copyWith(enableBiometrics: false);
-        } else {
-          // Todo Cloud blocked exchange 2y certs if enrolled biometrics
-          await extendCertification();
-          await requestSession();
-        }
-      }
-
-      await CloudEnvironmentManager().checkSmartDevice();
-      emit(AuthState.cloudAuthorized(sessionToken: fakeSessionToken()));
-    } else {
-      // TODO
-      add(Unauthorized());
-    }
-  }
-
-  _onRequestSession(OnRequestSession event, Emitter<AuthState> emit) async {
-    await requestSession();
-    if (await isSessionExpired()) {
-      add(Unauthorized());
-    } else {}
-  }
-
   void _localLogin(LocalLogin event, Emitter<AuthState> emit) async {
     // Authorized
 
@@ -291,17 +233,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with StateStreamRegister {
 
   Future<List<RegionCode>> fetchRegionCodes() {
     return _repository.fetchRegionCodes();
-  }
-
-  Future<ChangeAuthenticationModeChallenge> changeAuthModePrepare(
-      String accountId, String? password, String authenticationMode) async {
-    return await _repository.changeAuthenticationModePrepare(
-        accountId, password, authenticationMode);
-  }
-
-  Future<void> changeAuthMode(
-      String accountId, String token, String? password) {
-    return _repository.changeAuthenticationMode(accountId, token, password);
   }
 
   @override
@@ -345,12 +276,6 @@ extension AuthBlocCloud on AuthBloc {
     }
   }
 
-  Future<bool> cloudLogin() async {
-    return await _repository
-        .login((state as AuthOnCloudLoginState).vToken)
-        .then((value) => _handleLogin(value));
-  }
-
   Future<void> createAccountPreparation(String email) async {
     // Reset state
     add(OnCreateAccount(accountInfo: AccountInfo.empty(), vToken: ''));
@@ -380,25 +305,6 @@ extension AuthBlocCloud on AuthBloc {
     // }
     return await _repository.createAccountPreparationUpdateMethod(
         token, method);
-  }
-
-  Future<void> createVerifiedAccount() async {
-    final _state = state as AuthOnCreateAccountState;
-    CreateAccountVerified verified = CreateAccountVerified(
-        token: _state.vToken,
-        authenticationMode:
-            _state.accountInfo.authenticationType.name.toUpperCase(),
-        password:
-            _state.accountInfo.authenticationType == AuthenticationType.password
-                ? _state.accountInfo.password
-                : null,
-        preferences: CloudPreferences(
-            isoLanguageCode: Utils.getLanguageCode(),
-            isoCountryCode: Utils.getCountryCode(),
-            timeZone: 'await Utils.getTimeZone()'));
-    return await _repository
-        .createVerifiedAccount(verified)
-        .then((value) => _handleCreateVerifiedAccount(value));
   }
 
   // Future<AccountInfo> fetchOtpInfo(String username) async {
@@ -486,15 +392,6 @@ extension AuthBlocCloud on AuthBloc {
     ));
   }
 
-  Future<bool> _handleLogin(CloudLoginAcceptState acceptState) async {
-    logger.d("handle login: $acceptState");
-    await delayDownloadCertTime(acceptState.data.downloadTime);
-
-    await _repository.downloadCloudCert(
-        taskId: acceptState.data.taskId, secret: acceptState.data.certSecret);
-    return checkCertValidation();
-  }
-
   Future<void> _handleCreateAccountPreparation(
       String email, String token) async {
     logger.d("handle create Account Preparation: $token");
@@ -514,13 +411,6 @@ extension AuthBlocCloud on AuthBloc {
         authenticationType: AuthenticationType.passwordless,
         communicationMethods: methods);
     add(OnCreateAccount(accountInfo: accountInfo, vToken: token));
-  }
-
-  Future<void> _handleCreateVerifiedAccount(CloudAccountVerifyInfo info) async {
-    logger.d("handle Create Verified Account: $info");
-    await delayDownloadCertTime(info.certInfo.downloadTime);
-    await _repository.downloadCloudCert(
-        taskId: info.certInfo.taskId, secret: info.certInfo.certSecret);
   }
 
   Future<bool> checkLocalPasswordExist() async {
@@ -567,44 +457,6 @@ extension AuthBlocCloud on AuthBloc {
     }
 
     return false;
-  }
-
-  Future<void> extendCertification() async {
-    const storage = FlutterSecureStorage();
-    String? cert = await storage.read(key: linksysPrefCloudCertDataKey);
-    if (cert == null) {
-      logger.d('extend certification: original cert data does not exist!');
-      return;
-    }
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert));
-    final newCertInfo =
-        await _repository.extendCertificate(certId: certData.id);
-    await delayDownloadCertTime(newCertInfo.downloadTime);
-    await _repository.downloadCloudCert(
-        taskId: newCertInfo.taskId, secret: newCertInfo.certSecret);
-    checkCertValidation();
-  }
-
-  Future<void> requestSession() async {
-    const storage = FlutterSecureStorage();
-    String? cert = await storage.read(key: linksysPrefCloudCertDataKey);
-    if (cert == null) {
-      logger.d('extend certification: original cert data does not exist!');
-      return;
-    }
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert));
-    final session = await _repository.requestSession(certId: certData.id);
-    final pref = await SharedPreferences.getInstance();
-    pref.setString(linksysPrefSessionDataKey, jsonEncode(session.toJson()));
-  }
-
-  Future<void> delayDownloadCertTime(int delay) async {
-    final currentTime = DateTime.now().millisecondsSinceEpoch;
-    final downloadTime = delay * 1000;
-    final delta = downloadTime - currentTime + 1000;
-    if (delta > 0) {
-      await Future.delayed(Duration(milliseconds: delta));
-    }
   }
 
   // ---------------------------------------------------------------------------
