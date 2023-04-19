@@ -1,9 +1,7 @@
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
@@ -12,7 +10,6 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
-import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -45,22 +42,15 @@ class _MacFilteringContentViewState
     extends ConsumerState<MacFilteringContentView> {
   late final MacFilteringCubit _cubit;
 
-  StreamSubscription? _subscription;
-
   @override
   void initState() {
     _cubit = context.read<MacFilteringCubit>();
-
-    _subscription = context.read<ConnectivityCubit>().stream.listen((state) {
-      logger.d('IP detail royterType: ${state.connectivityInfo.routerType}');
-    });
 
     super.initState();
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
     super.dispose();
   }
 

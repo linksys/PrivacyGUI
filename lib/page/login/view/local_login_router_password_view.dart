@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
+import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
@@ -77,7 +78,7 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
 
     final bloc = context.read<AuthBloc>();
     bool isConnected =
-        context.read<ConnectivityCubit>().state.connectivityInfo.routerType !=
+        ref.read(connectivityProvider).connectivityInfo.routerType !=
             RouterType.others;
 
     if (isConnected) {

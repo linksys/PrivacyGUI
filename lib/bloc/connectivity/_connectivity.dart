@@ -1,4 +1,5 @@
 //GENERATED BARREL FILE 
-export 'cubit.dart'; 
+export 'connectivity_provider.dart'; 
 export 'availability_info.dart'; 
 export 'connectivity_info.dart'; 
+export 'connectivity_state.dart';

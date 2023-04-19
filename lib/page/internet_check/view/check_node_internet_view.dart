@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/_auth.dart';
-import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/internet_check/cubit.dart';
 import 'package:linksys_moab/bloc/internet_check/state.dart';
-import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/setup/bloc.dart';
 import 'package:linksys_moab/bloc/setup/event.dart';
 import 'package:linksys_moab/bloc/setup/state.dart';
@@ -17,7 +14,6 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/internet_check_path.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
-import 'package:linksys_moab/util/logger.dart';
 
 class CheckNodeInternetView extends ArgumentsConsumerStatefulView {
   const CheckNodeInternetView({
@@ -34,13 +30,11 @@ class CheckNodeInternetView extends ArgumentsConsumerStatefulView {
 class _CheckNodeInternetViewState extends ConsumerState<CheckNodeInternetView> {
   late final SetupBloc _setupBloc;
   late final InternetCheckCubit _internetCheckCubit;
-  late final ConnectivityCubit _connectivityCubit;
 
   @override
   void initState() {
     _setupBloc = context.read<SetupBloc>();
     _internetCheckCubit = context.read<InternetCheckCubit>();
-    _connectivityCubit = context.read<ConnectivityCubit>();
     final isPlugModemBack = widget.args['isPlugModemBack'] ?? false;
     _internetCheckCubit.init(isPlugModemBack: isPlugModemBack);
     super.initState();

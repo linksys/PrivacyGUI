@@ -1,9 +1,7 @@
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/router/port_range_forwarding_rule.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
@@ -12,7 +10,6 @@ import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/model/administration_path.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
-import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -44,7 +41,6 @@ class _AddRuleContentViewState
     extends ConsumerState<PortRangeForwardingRuleContentView> {
   late final PortRangeForwardingRuleCubit _cubit;
 
-  StreamSubscription? _subscription;
 
   final TextEditingController _ruleNameController = TextEditingController();
   final TextEditingController _firstExternalPortController =
@@ -59,9 +55,6 @@ class _AddRuleContentViewState
   @override
   void initState() {
     _cubit = context.read<PortRangeForwardingRuleCubit>();
-    _subscription = context.read<ConnectivityCubit>().stream.listen((state) {
-      logger.d('IP detail royterType: ${state.connectivityInfo.routerType}');
-    });
     _rules = widget.args['rules'] ?? [];
     final _rule = widget.args['edit'];
     if (_rule != null) {
@@ -78,7 +71,6 @@ class _AddRuleContentViewState
 
   @override
   void dispose() {
-    _subscription?.cancel();
     super.dispose();
   }
 

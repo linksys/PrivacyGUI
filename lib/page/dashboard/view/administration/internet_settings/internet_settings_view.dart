@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
+import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
@@ -75,36 +76,27 @@ class _InternetSettingsContentViewState
   final TextEditingController _l2tpPasswordController = TextEditingController();
   final TextEditingController _l2tpServerIpController = TextEditingController();
 
-  bool _isBehindRouter = false;
   InternetSettingsViewType _selected = InternetSettingsViewType.ipv4;
-  StreamSubscription? _subscription;
+  bool _isBehindRouter = false;
 
   @override
   void initState() {
     _cubit = context.read<InternetSettingsCubit>();
     _cubit.fetch();
-    _subscription = context.read<ConnectivityCubit>().stream.listen((state) {
-      logger.d('IP detail royterType: ${state.connectivityInfo.routerType}');
-      setState(() {
-        _isBehindRouter =
-            state.connectivityInfo.routerType == RouterType.behindManaged;
-      });
-    });
-    _isBehindRouter =
-        context.read<ConnectivityCubit>().state.connectivityInfo.routerType ==
-            RouterType.behindManaged;
 
     super.initState();
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final connectivityState = ref.watch(connectivityProvider);
+    _isBehindRouter = connectivityState.connectivityInfo.routerType ==
+        RouterType.behindManaged;
     return BlocBuilder<InternetSettingsCubit, InternetSettingsState>(
         builder: (context, state) {
       return StyledLinksysPageView(

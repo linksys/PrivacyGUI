@@ -7,8 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/state.dart';
-import 'package:linksys_moab/bloc/connectivity/cubit.dart';
-import 'package:linksys_moab/bloc/connectivity/state.dart';
+import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
+import 'package:linksys_moab/bloc/connectivity/connectivity_state.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_bottom_tab_container.dart';
 import 'package:linksys_moab/repository/router/providers/side_effect_provider.dart';
 import 'package:linksys_moab/route/linksys_page.dart';
@@ -28,13 +28,16 @@ class LinksysRouterDelegate extends RouterDelegate<List<BasePath>>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<List<BasePath>> {
   LinksysRouterDelegate(Ref ref) : navigatorKey = GlobalKey() {
     _ref = ref;
-    final unListen =
+    final navigationSubscription =
         _ref.listen(navigationsProvider, (_, __) => notifyListeners());
     final sideEffectSubscription =
         _ref.listen(sideEffectProvider, _listenSideEffect);
+    final connectivitySubscription = _ref.listen(
+        connectivityProvider, (previous, next) => _listenForConnectivity);
     _ref.onDispose(() {
-      unListen.close();
+      navigationSubscription.close();
       sideEffectSubscription.close();
+      connectivitySubscription.close();
     });
     _universalLinkSubscription =
         UniversalLinkPlugin().universalLinkStream.listen(_handleUniversalLink);
@@ -53,7 +56,7 @@ class LinksysRouterDelegate extends RouterDelegate<List<BasePath>>
   Widget build(BuildContext context) {
     // logger.d("Route Delegate Rebuild! ${describeIdentity(this)}");
     return MultiBlocListener(
-      listeners: [_listenForAuth(), _listenForConnectivity()],
+      listeners: [_listenForAuth()],
       child: Overlay(
         initialEntries: [
           OverlayEntry(builder: (context) {
@@ -161,25 +164,20 @@ class LinksysRouterDelegate extends RouterDelegate<List<BasePath>>
   }
 
   // TODO refactor w/ provider
-  BlocListener _listenForConnectivity() {
-    return BlocListener<ConnectivityCubit, ConnectivityState>(
-      listenWhen: (previous, current) =>
-          !currentConfiguration.last.pageConfig.ignoreConnectivityChanged,
-      listener: (context, state) {
-        logger.d(
-            "Connectivity Listener: ${state.connectivityInfo.type}, ${state.connectivityInfo.ssid}");
-        if (state.connectivityInfo.type == ConnectivityResult.none &&
-            currentConfiguration is! NoInternetConnectionPath) {
-          _ref
-              .read(navigationsProvider.notifier)
-              .push(NoInternetConnectionPath());
-        } else {
-          if (currentConfiguration is NoInternetConnectionPath) {
-            _ref.read(navigationsProvider.notifier).pop();
-          }
-        }
-      },
-    );
+  _listenForConnectivity(ConnectivityState previous, ConnectivityState next) {
+    if (currentConfiguration.last.pageConfig.ignoreConnectivityChanged) {
+      return;
+    }
+    logger.d(
+        "Connectivity Listener: ${next.connectivityInfo.type}, ${next.connectivityInfo.ssid}");
+    if (next.connectivityInfo.type == ConnectivityResult.none &&
+        currentConfiguration is! NoInternetConnectionPath) {
+      _ref.read(navigationsProvider.notifier).push(NoInternetConnectionPath());
+    } else {
+      if (currentConfiguration is NoInternetConnectionPath) {
+        _ref.read(navigationsProvider.notifier).pop();
+      }
+    }
   }
 
   _handleUniversalLink(dynamic event) {

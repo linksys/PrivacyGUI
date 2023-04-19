@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/connectivity/cubit.dart';
-import 'package:linksys_moab/bloc/connectivity/state.dart';
+import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_moab/util/permission.dart';
-import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/base/gap.dart';
 import 'package:linksys_widgets/widgets/base/icon.dart';
 import 'package:linksys_widgets/widgets/text/app_text.dart';
@@ -45,29 +42,29 @@ class _NetworkCheckViewState extends ConsumerState<NetworkCheckView>
         openAppSettings();
         ref.read(navigationsProvider.notifier).pop();
       } else {
-        context.read<ConnectivityCubit>().forceUpdate();
+        ref.read(connectivityProvider.notifier).forceUpdate();
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ConnectivityCubit, ConnectivityState>(
-        builder: (context, state) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                LinksysText.screenName(
-                  widget.description,
-                ),
-                const LinksysGap.regular(),
-                AppIcon(icon: getCharactersIcons(context).wifiDefault),
-                const LinksysGap.semiSmall(),
-                LinksysText.descriptionMain(
-                  state.connectivityInfo.ssid ?? '',
-                ),
-                const Spacer(),
-                widget.button,
-              ],
-            ));
+    final state = ref.watch(connectivityProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LinksysText.screenName(
+          widget.description,
+        ),
+        const LinksysGap.regular(),
+        AppIcon(icon: getCharactersIcons(context).wifiDefault),
+        const LinksysGap.semiSmall(),
+        LinksysText.descriptionMain(
+          state.connectivityInfo.ssid ?? '',
+        ),
+        const Spacer(),
+        widget.button,
+      ],
+    );
   }
 }

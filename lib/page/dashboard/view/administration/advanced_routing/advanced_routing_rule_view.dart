@@ -1,8 +1,6 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/router/advanced_routing_rule.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -16,7 +14,6 @@ import 'package:linksys_moab/page/dashboard/view/administration/common_widget.da
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/model/administration_path.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
-import 'package:linksys_moab/util/logger.dart';
 
 class AdvancedRoutingRuleView extends ArgumentsConsumerStatelessView {
   const AdvancedRoutingRuleView({super.key, super.next, super.args});
@@ -46,9 +43,6 @@ class _AddRuleContentViewState
     extends ConsumerState<AdvancedRoutingRuleContentView> {
   late final AdvancedRoutingRuleCubit _cubit;
 
-  bool _isBehindRouter = false;
-  StreamSubscription? _subscription;
-
   final TextEditingController _ruleNameController = TextEditingController();
   final TextEditingController _externalPortController = TextEditingController();
   final TextEditingController _internalPortController = TextEditingController();
@@ -61,14 +55,6 @@ class _AddRuleContentViewState
   @override
   void initState() {
     _cubit = context.read<AdvancedRoutingRuleCubit>();
-    _subscription = context.read<ConnectivityCubit>().stream.listen((state) {
-      logger.d('IP detail royterType: ${state.connectivityInfo.routerType}');
-      _isBehindRouter =
-          state.connectivityInfo.routerType == RouterType.behindManaged;
-    });
-    _isBehindRouter =
-        context.read<ConnectivityCubit>().state.connectivityInfo.routerType ==
-            RouterType.behindManaged;
     _rules = widget.args['rules'] ?? [];
     final _rule = widget.args['edit'];
     if (_rule != null) {
@@ -85,7 +71,6 @@ class _AddRuleContentViewState
 
   @override
   void dispose() {
-    _subscription?.cancel();
     super.dispose();
   }
 

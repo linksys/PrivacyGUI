@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:linksys_moab/bloc/connectivity/cubit.dart';
+import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/internet_check/state.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
 import 'package:linksys_moab/model/router/network.dart';

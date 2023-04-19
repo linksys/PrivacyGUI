@@ -43,22 +43,16 @@ class _PortRangeForwardingContentViewState
     extends ConsumerState<PortRangeForwardingListContentView> {
   late final PortRangeForwardingListCubit _cubit;
 
-  StreamSubscription? _subscription;
-
   @override
   void initState() {
     _cubit = context.read<PortRangeForwardingListCubit>();
     _cubit.fetch();
-    _subscription = context.read<ConnectivityCubit>().stream.listen((state) {
-      logger.d('IP detail royterType: ${state.connectivityInfo.routerType}');
-    });
 
     super.initState();
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
     super.dispose();
   }
 

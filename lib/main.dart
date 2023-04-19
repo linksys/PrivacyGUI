@@ -14,7 +14,7 @@ import 'package:linksys_moab/bloc/add_nodes/cubit.dart';
 import 'package:linksys_moab/bloc/app_lifecycle/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
-import 'package:linksys_moab/bloc/connectivity/cubit.dart';
+import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
 import 'package:linksys_moab/bloc/content_filter/cubit.dart';
 import 'package:linksys_moab/bloc/device/cubit.dart';
 import 'package:linksys_moab/bloc/internet_check/cubit.dart';
@@ -142,10 +142,6 @@ Widget _app() {
               routerRepo: context.read<RouterRepository>(),
             ),
           ),
-          BlocProvider(
-              create: (BuildContext context) => ConnectivityCubit(
-                    routerRepository: context.read<RouterRepository>(),
-                  )),
           BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
           BlocProvider(
             create: (BuildContext context) => OtpCubit(
@@ -205,7 +201,7 @@ class MoabApp extends ConsumerStatefulWidget {
 }
 
 class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
-  late ConnectivityCubit _cubit;
+  // late ConnectivityCubit _cubit;
   late StreamSubscription<List<PurchaseDetails>> _subscription;
 
   @override
@@ -215,17 +211,23 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
     _intIAP();
 
     WidgetsBinding.instance.addObserver(this);
-    _cubit = context.read<ConnectivityCubit>();
-    _cubit.init();
-    _cubit.forceUpdate().then((value) => _initAuth());
+    // _cubit = context.read<ConnectivityCubit>();
+    // _cubit.init();
+    // _cubit.forceUpdate().then((value) => _initAuth());
     super.initState();
+
+    final connectivity = ref.read(connectivityProvider.notifier);
+    connectivity.start();
+    connectivity.forceUpdate().then((value) => _initAuth());
+
     FlutterNativeSplash.remove();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _cubit.stop();
+    // _cubit.stop();
+    ref.read(connectivityProvider.notifier).stop();
     _subscription.cancel();
     apnsStreamSubscription?.cancel();
     releaseErrorStream();

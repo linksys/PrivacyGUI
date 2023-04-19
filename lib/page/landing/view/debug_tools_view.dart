@@ -10,7 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
-import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
+import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/config/cloud_environment_manager.dart';
 import 'package:linksys_moab/constants/_constants.dart';
@@ -48,7 +48,6 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
   String? _apnsToken;
   CloudEnvironment _selectedEnv = cloudEnvTarget;
 
-  late final ConnectivityCubit _connectivityCubit;
   late final RouterRepository _routerRepository;
   late final AuthBloc _authBloc;
   late final NetworkCubit _networkCubit;
@@ -57,7 +56,6 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
 
   @override
   void initState() {
-    _connectivityCubit = context.read<ConnectivityCubit>();
     _authBloc = context.read<AuthBloc>();
     _networkCubit = context.read<NetworkCubit>();
     _routerRepository = context.read<RouterRepository>();
@@ -197,6 +195,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
   }
 
   List<Widget> _buildConnectionInfo() {
+    final connectivityState = ref.watch(connectivityProvider);
     return [
       ExpansionTile(
         expandedAlignment: Alignment.centerLeft,
@@ -205,13 +204,13 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         title: LinksysText.descriptionMain('Connection Info'),
         children: [
           LinksysText.descriptionSub(
-              'Router: ${_connectivityCubit.state.connectivityInfo.routerType.name}'),
+              'Router: ${connectivityState.connectivityInfo.routerType.name}'),
           LinksysText.descriptionSub(
-              'Connectivity: ${_connectivityCubit.state.connectivityInfo.type.name}'),
+              'Connectivity: ${connectivityState.connectivityInfo.type.name}'),
           LinksysText.descriptionSub(
-              'Gateway Ip: ${_connectivityCubit.state.connectivityInfo.gatewayIp}'),
+              'Gateway Ip: ${connectivityState.connectivityInfo.gatewayIp}'),
           LinksysText.descriptionSub(
-              'SSID: ${_connectivityCubit.state.connectivityInfo.ssid}'),
+              'SSID: ${connectivityState.connectivityInfo.ssid}'),
           box16(),
         ],
       ),

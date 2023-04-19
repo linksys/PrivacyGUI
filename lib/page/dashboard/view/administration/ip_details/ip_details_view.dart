@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
+import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
@@ -47,32 +48,25 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
   late final IpDetailsCubit _cubit;
 
   bool _isBehindRouter = false;
-  StreamSubscription? _subscription;
 
   @override
   void initState() {
     _cubit = context.read<IpDetailsCubit>();
     _cubit.fetch();
-    _subscription = context.read<ConnectivityCubit>().stream.listen((state) {
-      logger.d('IP detail royterType: ${state.connectivityInfo.routerType}');
-      _isBehindRouter =
-          state.connectivityInfo.routerType == RouterType.behindManaged;
-    });
-    _isBehindRouter =
-        context.read<ConnectivityCubit>().state.connectivityInfo.routerType ==
-            RouterType.behindManaged;
 
     super.initState();
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final connectivityState = ref.watch(connectivityProvider);
+    _isBehindRouter = connectivityState.connectivityInfo.routerType ==
+        RouterType.behindManaged;
     return BlocBuilder<IpDetailsCubit, IpDetailsState>(
         builder: (context, state) {
       return StyledLinksysPageView(
