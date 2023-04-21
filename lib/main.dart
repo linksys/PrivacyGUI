@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -8,8 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:linksys_moab/bloc/account/cubit.dart';
 import 'package:linksys_moab/bloc/app_lifecycle/cubit.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/auth/event.dart';
@@ -33,7 +30,6 @@ import 'package:linksys_moab/repository/authenticate/impl/cloud_auth_repository.
 import 'package:linksys_moab/repository/linksys_cloud_repository.dart';
 import 'package:linksys_moab/repository/networks/cloud_networks_repository.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/repository/subscription/subscription_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -41,7 +37,6 @@ import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'bloc/setup/bloc.dart';
-import 'bloc/subscription/subscription_cubit.dart';
 import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
 
@@ -115,12 +110,9 @@ Widget _app() {
     providers: [
       RepositoryProvider(
           create: (context) => CloudAuthRepository(MoabHttpClient())),
-
       RepositoryProvider(create: (context) => CloudAccountRepository()),
       RepositoryProvider(create: (context) => routerRepository),
       RepositoryProvider(create: (context) => CloudNetworksRepository()),
-
-      RepositoryProvider(create: (context) => SubscriptionRepository()),
       RepositoryProvider(create: (context) => cloudRepository),
     ],
     child: MultiBlocProvider(
@@ -150,13 +142,7 @@ Widget _app() {
           BlocProvider(
               create: (BuildContext context) =>
                   NodeCubit(context.read<RouterRepository>())),
-          BlocProvider(
-              create: (BuildContext context) => AccountCubit(
-                  repository: context.read<LinksysCloudRepository>())),
           BlocProvider(create: (BuildContext context) => SecurityBloc()),
-          BlocProvider(
-              create: (BuildContext context) => SubscriptionCubit(
-                  repository: context.read<SubscriptionRepository>())),
           BlocProvider(
               create: (BuildContext context) => NetworkCubit(
                     networksRepository: context.read<CloudNetworksRepository>(),
@@ -186,9 +172,6 @@ class MoabApp extends ConsumerStatefulWidget {
 }
 
 class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
-  // late ConnectivityCubit _cubit;
-  late StreamSubscription<List<PurchaseDetails>> _subscription;
-
   @override
   void initState() {
     // logger.d('Moab App init state: ${describeIdentity(this)}');
@@ -196,9 +179,7 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
     _intIAP();
 
     WidgetsBinding.instance.addObserver(this);
-    // _cubit = context.read<ConnectivityCubit>();
-    // _cubit.init();
-    // _cubit.forceUpdate().then((value) => _initAuth());
+
     super.initState();
 
     final connectivity = ref.read(connectivityProvider.notifier);
@@ -213,7 +194,6 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     // _cubit.stop();
     ref.read(connectivityProvider.notifier).stop();
-    _subscription.cancel();
     apnsStreamSubscription?.cancel();
     releaseErrorStream();
     super.dispose();
@@ -248,15 +228,7 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
     context.read<AuthBloc>().add(InitAuth());
   }
 
-  _intIAP() {
-    final Stream<List<PurchaseDetails>> purchaseUpdated =
-        InAppPurchase.instance.purchaseStream;
-    _subscription = purchaseUpdated.listen((purchaseList) {
-      context.read<SubscriptionCubit>().onPurchaseUpdated(purchaseList);
-    }, onDone: () {
-      _subscription.cancel();
-    }, onError: (Object error) {});
-  }
+  _intIAP() {}
 }
 
 class MyHTTPOverrides extends HttpOverrides {

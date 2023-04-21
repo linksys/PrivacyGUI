@@ -31,13 +31,11 @@ class SelectNetworkView extends ArgumentsConsumerStatefulView {
 
 class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
   late final NetworkCubit _networkCubit;
-  late final SubscriptionCubit _subscriptionCubit;
   late final NavigationNotifier _navigationNotifier;
 
   @override
   void initState() {
     _networkCubit = context.read<NetworkCubit>();
-    _subscriptionCubit = context.read<SubscriptionCubit>();
     _navigationNotifier = ref.read(navigationsProvider.notifier);
     super.initState();
   }
@@ -86,7 +84,6 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
               onTap: state.networks[index].isOnline
                   ? () async {
                       await _networkCubit.selectNetwork(state.networks[index]);
-                      await _subscriptionCubit.loadingProducts();
                       _navigationNotifier.clearAndPush(PrepareDashboardPath());
                     }
                   : null,

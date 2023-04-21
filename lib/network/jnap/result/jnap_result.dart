@@ -89,6 +89,18 @@ class JNAPTransactionSuccessWrap extends JNAPSuccess {
 
   @override
   List<Object?> get props => super.props..add(responses);
+
+  static JNAPSuccess? getResult(
+      JNAPAction action, Map<JNAPAction, JNAPResult> results) {
+    if (!results.containsKey(action)) {
+      return null;
+    }
+    final data = results[action] as JNAPSuccess?;
+    if (data == null) {
+      return null;
+    }
+    return data;
+  }
 }
 
 class JNAPTransactionSuccess extends JNAPSuccess {

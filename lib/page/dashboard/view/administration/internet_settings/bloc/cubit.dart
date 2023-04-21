@@ -19,19 +19,24 @@ class InternetSettingsCubit extends Cubit<InternetSettingsState> {
 
   fetch() async {
     final results = await _repository.fetchInternetSettings();
-    final wanSettings = results[JNAPAction.getWANSettings.actionValue]?.output;
-    final ipv6Settings =
-        results[JNAPAction.getIPv6Settings.actionValue]?.output;
-    final wanStatus = results[JNAPAction.getWANStatus.actionValue] == null
+    final wanSettings =
+        JNAPTransactionSuccessWrap.getResult(JNAPAction.getWANSettings, results)
+            ?.output;
+    final ipv6Settings = JNAPTransactionSuccessWrap.getResult(
+            JNAPAction.getIPv6Settings, results)
+        ?.output;
+    final wanStatusJson =
+        JNAPTransactionSuccessWrap.getResult(JNAPAction.getWANStatus, results);
+    final wanStatus = wanStatusJson == null
         ? null
-        : RouterWANStatus.fromJson(
-            results[JNAPAction.getWANStatus.actionValue]!.output);
+        : RouterWANStatus.fromJson(wanStatusJson.output);
     final ipv6AutomaticSettings = ipv6Settings?['ipv6AutomaticSettings'] == null
         ? null
         : IPv6AutomaticSettings.fromJson(
             ipv6Settings!['ipv6AutomaticSettings']);
-    final macAddressCloneSettings =
-        results[JNAPAction.getMACAddressCloneSettings]?.output;
+    final macAddressCloneSettings = JNAPTransactionSuccessWrap.getResult(
+            JNAPAction.getMACAddressCloneSettings, results)
+        ?.output;
     emit(state.copyWith(
       ipv4ConnectionType: wanSettings?['wanType'] ?? '',
       ipv6ConnectionType: ipv6Settings?['wanType'] ?? '',

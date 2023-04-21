@@ -3,6 +3,7 @@ import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/model/router/guest_radio_settings.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
+import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 
@@ -18,9 +19,10 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
     List<RouterRadioInfo>? _mainRadioInfo;
     GuestRadioSetting? _guestRadioInfoSetting;
     final results = await _routerRepository.fetchAllRadioInfo();
-    if (results.containsKey(JNAPAction.getRadioInfo.actionValue)) {
-      final mainRadioInfo = List.from(
-              results[JNAPAction.getRadioInfo.actionValue]!.output['radios'])
+    final radioInfo =
+        JNAPTransactionSuccessWrap.getResult(JNAPAction.getRadioInfo, results);
+    if (radioInfo != null) {
+      final mainRadioInfo = List.from(radioInfo.output['radios'])
           .map((e) => RouterRadioInfo.fromJson(e))
           .toList();
 
@@ -47,9 +49,11 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
           signal: 0));
       _mainRadioInfo = mainRadioInfo;
     }
-    if (results.containsKey(JNAPAction.getGuestRadioSettings.actionValue)) {
-      final guestRadioInfoSetting = GuestRadioSetting.fromJson(
-          results[JNAPAction.getGuestRadioSettings.actionValue]!.output);
+    final guestRadioSettings = JNAPTransactionSuccessWrap.getResult(
+        JNAPAction.getGuestRadioSettings, results);
+    if (guestRadioSettings != null) {
+      final guestRadioInfoSetting =
+          GuestRadioSetting.fromJson(guestRadioSettings.output);
       _wifiList.add(WifiListItem(
           wifiType: WifiType.guest,
           ssid: guestRadioInfoSetting.radios.first.guestSSID,
@@ -98,8 +102,8 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
         for (RouterRadioInfo radioInfo in state.mainRadioInfo ?? []) {
           RouterRadioInfoSettings settings =
               radioInfo.settings.copyWith(isEnable: enable);
-          radioSettings.add(NewRadioSettings(
-              radioID: radioInfo.radioID, settings: settings));
+          radioSettings.add(
+              NewRadioSettings(radioID: radioInfo.radioID, settings: settings));
         }
 
         await _routerRepository.send(

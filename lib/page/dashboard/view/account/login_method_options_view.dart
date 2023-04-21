@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/account/_account.dart';
+import 'package:linksys_moab/bloc/account/account_provider.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -40,14 +40,11 @@ class _LoginMethodOptionsViewState
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AccountCubit, AccountState>(
-      builder: (context, state) {
-        return _content(context, state);
-      },
-    );
+    return _content(context);
   }
 
-  Widget _content(BuildContext context, AccountState state) {
+  Widget _content(BuildContext context) {
+    final state = ref.read(accountProvider);
     return BasePageView.onDashboardSecondary(
       padding: const EdgeInsets.all(0),
       appBar: AppBar(
@@ -58,9 +55,7 @@ class _LoginMethodOptionsViewState
         title: const Text('Log in method',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
         leading: BackButton(onPressed: () {
-          if (ref
-              .read(navigationsProvider)
-              .contains(AccountDetailPath())) {
+          if (ref.read(navigationsProvider).contains(AccountDetailPath())) {
             ref.read(navigationsProvider.notifier).popTo(AccountDetailPath());
           } else {
             ref

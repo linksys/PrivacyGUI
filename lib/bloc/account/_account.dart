@@ -1,3 +1,3 @@
-//GENERATED BARREL FILE 
-export 'cubit.dart'; 
-export 'state.dart'; 
+//GENERATED BARREL FILE
+export 'account_provider.dart';
+export 'account_state.dart';

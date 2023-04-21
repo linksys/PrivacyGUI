@@ -7,6 +7,8 @@ import 'package:linksys_moab/bloc/connectivity/connectivity_state.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
+import 'package:linksys_moab/network/jnap/jnap_transaction.dart';
+import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/router/commands/batch_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/util/logger.dart';
@@ -95,10 +97,13 @@ class ConnectivityNotifier extends Notifier<ConnectivityState>
   Future<RouterConfiguredData> isRouterConfigured() async {
     final routerRepository = ref.read(routerRepositoryProvider);
     final results = await routerRepository.fetchIsConfigured();
+    
     bool isDefaultPassword =
-        results['isAdminPasswordDefault']?.output['isAdminPasswordDefault'];
+        JNAPTransactionSuccessWrap.getResult(
+        JNAPAction.isAdminPasswordDefault, results)?.output['isAdminPasswordDefault'];
     bool isSetByUser =
-        results['isAdminPasswordSetByUser']?.output['isAdminPasswordSetByUser'];
+        JNAPTransactionSuccessWrap.getResult(
+        JNAPAction.isAdminPasswordDefault, results)?.output['isAdminPasswordSetByUser'];
     return RouterConfiguredData(
         isDefaultPassword: isDefaultPassword, isSetByUser: isSetByUser);
   }

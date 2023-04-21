@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/account/cubit.dart';
-import 'package:linksys_moab/bloc/account/state.dart';
+import 'package:linksys_moab/bloc/account/account_provider.dart';
+import 'package:linksys_moab/bloc/account/account_state.dart';
 import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -34,24 +34,22 @@ class _AccountViewState extends ConsumerState<AccountView> {
     _passwordController = TextEditingController();
 
     if (context.read<AuthBloc>().isCloudLogin()) {
-      final accountCubit = context.read<AccountCubit>();
-      accountCubit.fetchAccount().then((_) {
-        _passwordController.text = accountCubit.state.password;
+      ref.read(accountProvider.notifier).fetchAccount().then((_) {
+        _passwordController.text = ref.read(accountProvider).password;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AccountCubit, AccountState>(builder: (context, state) {
-      return StyledAppPageView(
-        scrollable: true,
-        title: 'Account',
-        child: context.read<AuthBloc>().isCloudLogin()
-            ? _remote(state)
-            : _local(state),
-      );
-    });
+    final state = ref.watch(accountProvider);
+    return StyledAppPageView(
+      scrollable: true,
+      title: 'Account',
+      child: context.read<AuthBloc>().isCloudLogin()
+          ? _remote(state)
+          : _local(state),
+    );
   }
 
   Widget _local(AccountState state) {

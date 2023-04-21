@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
+import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/bloc/state.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/topology_node.dart';
 import 'package:linksys_moab/repository/router/commands/_commands.dart';
@@ -19,12 +20,11 @@ class TopologyCubit extends Cubit<TopologyState> {
 
   Future fetchTopologyData({String? selectedId}) async {
     final Map<String, Map<String, dynamic>> wirelessSignalMap = {};
-    List<RouterDevice> devices = [];
     final results = await _repository.fetchDeviceList();
-    if (results.containsKey(JNAPAction.getNetworkConnections.actionValue)) {
-      final networkConnections =
-          results[JNAPAction.getNetworkConnections.actionValue]!
-              .output['connections'];
+    final networkConnections = JNAPTransactionSuccessWrap.getResult(
+            JNAPAction.getNetworkConnections, results)
+        ?.output['connections'];
+    if (networkConnections != null) {
       for (final connection in networkConnections) {
         if (connection['wireless'] != null) {
           Map<String, dynamic> map = {
@@ -35,12 +35,14 @@ class TopologyCubit extends Cubit<TopologyState> {
         }
       }
     }
-    if (results.containsKey(JNAPAction.getDevices.actionValue)) {
-      devices = List.from(
-              results[JNAPAction.getDevices.actionValue]!.output['devices'])
-          .map((e) => RouterDevice.fromJson(e))
-          .toList();
-    }
+
+    final devices = List.from(
+            JNAPTransactionSuccessWrap.getResult(JNAPAction.getDevices, results)
+                    ?.output['devices'] ??
+                [])
+        .map((e) => RouterDevice.fromJson(e))
+        .toList();
+
     emit(state.copyWith(
         rootNode: selectedId == null
             ? _buildRouterTopology(devices, wirelessSignalMap)
@@ -62,8 +64,8 @@ class TopologyCubit extends Cubit<TopologyState> {
     Map<String, TopologyNode> nodeMap = {}; // {DeviceID : NodeObject}
 
     for (final device in nodeDevices) {
-      final deviceConnection = device.connections.first;
-      final macAddress = deviceConnection.macAddress;
+      final deviceConnection = device.connections.firstOrNull;
+      final macAddress = deviceConnection?.macAddress;
       String deviceID = device.deviceID;
       nodeMap[deviceID] =
           _createTopologyNode(device, wirelessSignalMap[macAddress] ?? {});

@@ -4,6 +4,7 @@ import 'package:linksys_moab/bloc/device/state.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
+import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/utils.dart';
@@ -23,10 +24,10 @@ class DeviceCubit extends Cubit<DeviceState> {
     List<DeviceDetailInfo> _offlineDevices = [];
     emit(state.copyWith(isLoading: true));
     final results = await _routerRepository.fetchDeviceList();
-    if (results.containsKey(JNAPAction.getNetworkConnections.actionValue)) {
-      final networkConnections =
-          results[JNAPAction.getNetworkConnections.actionValue]!
-              .output['connections'];
+    final networkConnections = JNAPTransactionSuccessWrap.getResult(
+            JNAPAction.getNetworkConnections, results)
+        ?.output['connections'];
+    if (networkConnections != null) {
       for (final connection in networkConnections) {
         if (connection['wireless'] != null) {
           Map<String, dynamic> map = {
@@ -37,12 +38,13 @@ class DeviceCubit extends Cubit<DeviceState> {
         }
       }
     }
-    if (results.containsKey(JNAPAction.getDevices.actionValue)) {
-      final devices = List.from(
-              results[JNAPAction.getDevices.actionValue]!.output['devices'])
-          .map((e) => RouterDevice.fromJson(e))
-          .toList();
-
+    final devices = List.from(
+            JNAPTransactionSuccessWrap.getResult(JNAPAction.getDevices, results)
+                    ?.output['devices'] ??
+                [])
+        .map((e) => RouterDevice.fromJson(e))
+        .toList();
+    if (devices.isNotEmpty) {
       final master = devices.firstWhereOrNull(
           (device) => device.isAuthority || device.nodeType == 'Master');
       // To make sure devices can get correct place, sort the device list with

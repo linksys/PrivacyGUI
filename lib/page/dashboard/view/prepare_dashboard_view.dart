@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/account/_account.dart';
+import 'package:linksys_moab/bloc/account/account_provider.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
@@ -48,7 +48,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
         // await context.read<AccountCubit>().fetchAccount();
         await context
             .read<NetworkCubit>()
-            .getNetworks(accountId: context.read<AccountCubit>().state.id);
+            .getNetworks(accountId: ref.read(accountProvider).id);
         ref
             .read(navigationsProvider.notifier)
             .clearAndPush(SelectNetworkPath());

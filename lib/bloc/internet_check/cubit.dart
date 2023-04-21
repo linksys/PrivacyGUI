@@ -46,10 +46,12 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
     final wanStatusResult = await _routerRepository.getWANStatus();
     final wanStatus = RouterWANStatus.fromJson(wanStatusResult.output);
     final configuredResults = await _routerRepository.fetchIsConfigured();
-    bool isDefaultPassword = configuredResults['isAdminPasswordDefault']
+    bool isDefaultPassword = JNAPTransactionSuccessWrap.getResult(
+                JNAPAction.isAdminPasswordDefault, configuredResults)
             ?.output['isAdminPasswordDefault'] ??
         false;
-    bool isSetByUser = configuredResults['isAdminPasswordSetByUser']
+    bool isSetByUser = JNAPTransactionSuccessWrap.getResult(
+                JNAPAction.isAdminPasswordSetByUser, configuredResults)
             ?.output['isAdminPasswordSetByUser'] ??
         false;
     final configuredData = RouterConfiguredData(

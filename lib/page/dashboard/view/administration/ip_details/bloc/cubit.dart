@@ -20,17 +20,22 @@ class IpDetailsCubit extends Cubit<IpDetailsState> {
 
   fetch() async {
     final result = await _repository.fetchIpDetails();
-    final wanStatus = result[JNAPAction.getWANStatus.actionValue] == null
+    final wanStatusJson =
+        JNAPTransactionSuccessWrap.getResult(JNAPAction.getWANStatus, result);
+    final wanStatus = wanStatusJson == null
         ? null
-        : RouterWANStatus.fromJson(
-            result[JNAPAction.getWANStatus.actionValue]!.output);
-    final devices = result[JNAPAction.getDevices.actionValue] == null
+        : RouterWANStatus.fromJson(wanStatusJson.output);
+    final devicesJson =
+        JNAPTransactionSuccessWrap.getResult(JNAPAction.getDevices, result);
+    final devices = devicesJson == null
         ? null
-        : List.from(result[JNAPAction.getDevices.actionValue]!.output['devices'])
+        : List.from(devicesJson.output['devices'])
             .map((e) => RouterDevice.fromJson(e))
             .toList();
-    final masterNode = devices?.firstWhereOrNull((element) => element.nodeType == 'Master');
-    final slaveNodes = devices?.where((element) => element.nodeType == 'Slave').toList();
+    final masterNode =
+        devices?.firstWhereOrNull((element) => element.nodeType == 'Master');
+    final slaveNodes =
+        devices?.where((element) => element.nodeType == 'Slave').toList();
     emit(state.copyWith(
       ipv4WANType: wanStatus?.wanConnection?.wanType ?? '',
       ipv4WANAddress: wanStatus?.wanConnection?.ipAddress ?? '',

@@ -4,6 +4,7 @@ import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/model/router/wan_status.dart';
 import 'package:linksys_moab/model/router/device.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
+import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/utils.dart';
@@ -28,18 +29,22 @@ class NodeCubit extends Cubit<NodeState> {
 
     String wanIpAddress = '';
     final getWANStatusOutput =
-        results[JNAPAction.getWANStatus.actionValue]?.output;
+        JNAPTransactionSuccessWrap.getResult(JNAPAction.getWANStatus, results)
+            ?.output;
     if (getWANStatusOutput != null) {
       final wanStatusModel = RouterWANStatus.fromJson(getWANStatusOutput);
       wanIpAddress = wanStatusModel.wanConnection?.ipAddress ?? '';
     }
 
-    final getFirmwareUpdateStatusOutput =
-        results[JNAPAction.getFirmwareUpdateStatus.actionValue]?.output;
+    final getFirmwareUpdateStatusOutput = JNAPTransactionSuccessWrap.getResult(
+            JNAPAction.getFirmwareUpdateStatus, results)
+        ?.output;
     final isLatestFW =
         (getFirmwareUpdateStatusOutput?['availableUpdate']) == null;
 
-    final getDevicesOutput = results[JNAPAction.getDevices.actionValue]?.output;
+    final getDevicesOutput =
+        JNAPTransactionSuccessWrap.getResult(JNAPAction.getDevices, results)
+            ?.output;
     var devices = List.from(getDevicesOutput?['devices'])
         .map((e) => RouterDevice.fromJson(e))
         .toList();

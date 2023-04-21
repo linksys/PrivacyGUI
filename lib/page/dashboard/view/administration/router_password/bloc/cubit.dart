@@ -20,10 +20,12 @@ class RouterPasswordCubit extends Cubit<RouterPasswordState> {
     emit(state.copyWith(isLoading: true));
 
     final results = await _repository.fetchIsConfigured();
-    final bool isAdminDefault = results[JNAPAction.isAdminPasswordDefault]
+    final bool isAdminDefault = JNAPTransactionSuccessWrap.getResult(
+                JNAPAction.isAdminPasswordDefault, results)
             ?.output['isAdminPasswordDefault'] ??
         false;
-    final bool isSetByUser = results[JNAPAction.isAdminPasswordSetByUser]
+    final bool isSetByUser = JNAPTransactionSuccessWrap.getResult(
+                JNAPAction.isAdminPasswordSetByUser, results)
             ?.output['isAdminPasswordSetByUser'] ??
         true;
     String passwordHint = '';
