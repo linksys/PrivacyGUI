@@ -8,27 +8,6 @@ import 'package:linksys_moab/repository/linksys_cloud_repository.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class CloudNetworkService {
-  WidgetRef ref;
-  CloudNetworkService(this.ref);
-
-  AsyncValue<SelectNetworkModel> watchSelectNetwork() {
-    return ref.watch(selectNetworkNotifierProvider);
-  }
-
-  Future<void> refreshNetworks() async {
-    await ref
-        .read(selectNetworkNotifierProvider.notifier)
-        .refreshCloudNetworks();
-  }
-
-  Future<void> saveNetwork(CloudNetworkModel network) async {
-    await ref
-        .read(selectNetworkNotifierProvider.notifier)
-        .saveSelectedNetwork(network);
-  }
-}
-
 final selectNetworkNotifierProvider =
     AsyncNotifierProvider<SelectNetworkNotifier, SelectNetworkModel>(() {
   return SelectNetworkNotifier();
