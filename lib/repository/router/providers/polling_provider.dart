@@ -51,9 +51,9 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     state = const AsyncValue.loading();
     final fetchFuture = repository
         .transaction(JNAPTransactionBuilder.coreTransactions())
-        .then((value) => value.responses)
-        .then((value) => CoreTransactionData(
-            lastUpdate: DateTime.now().millisecondsSinceEpoch, data: value));
+        .then((successWrap) => successWrap.data)
+        .then((data) => CoreTransactionData(
+            lastUpdate: DateTime.now().millisecondsSinceEpoch, data: data));
 
     state = await AsyncValue.guard(() => fetchFuture)
         .onError((error, stackTrace) => AsyncError(

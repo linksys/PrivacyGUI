@@ -9,7 +9,7 @@ extension MotionSensingService on RouterRepository {
         createCommand(JNAPAction.getActiveMotionSensingBots.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getMotionSensingSettings() async {
@@ -17,6 +17,6 @@ extension MotionSensingService on RouterRepository {
         createCommand(JNAPAction.getMotionSensingSettings.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

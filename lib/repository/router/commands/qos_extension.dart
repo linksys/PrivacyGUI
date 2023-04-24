@@ -8,6 +8,6 @@ extension QosService on RouterRepository {
     final command = createCommand(JNAPAction.getQoSSettings.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

@@ -10,7 +10,7 @@ extension GuestNetworkService on RouterRepository {
         createCommand(JNAPAction.getGuestNetworkClients.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getGuestNetworkSettings() async {
@@ -18,7 +18,7 @@ extension GuestNetworkService on RouterRepository {
         createCommand(JNAPAction.getGuestNetworkSettings.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getGuestRadioSettings() async {
@@ -26,7 +26,7 @@ extension GuestNetworkService on RouterRepository {
     createCommand(JNAPAction.getGuestRadioSettings.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> setGuestRadioSettings(bool enable, List<GuestRadioInfo> radios) async {
@@ -37,6 +37,6 @@ extension GuestNetworkService on RouterRepository {
     });
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

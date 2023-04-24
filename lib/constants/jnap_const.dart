@@ -15,6 +15,7 @@ const keyJnapResponses = 'responses';
 const keyJnapError = 'error';
 
 const jnapResultOk = 'OK';
+const jnapResultError = 'Error';
 
 const keyMqttHeader = 'header';
 const keyMqttBody = 'body';

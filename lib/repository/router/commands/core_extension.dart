@@ -19,7 +19,7 @@ extension CoreService on RouterRepository {
       command.spec.extraHeader['X-JNAP-Authorization'] = 'Basic ${base64Encode('admin:$password'.codeUnits)}';
     }
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> createAdminPassword(String password, String hint) async {
@@ -29,7 +29,7 @@ extension CoreService on RouterRepository {
       'passwordHint': hint,
     });
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getAdminPasswordAuthStatus() async {
@@ -37,14 +37,14 @@ extension CoreService on RouterRepository {
         createCommand(JNAPAction.getAdminPasswordAuthStatus.actionValue);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getAdminPasswordHint() async {
     final command = createCommand(JNAPAction.getAdminPasswordHint.actionValue);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getDataUploadUserConsent() async {
@@ -53,7 +53,7 @@ extension CoreService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getDeviceInfo() async {
@@ -62,7 +62,7 @@ extension CoreService on RouterRepository {
 
     // final result = await command.publish();
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> isAdminPasswordDefault() async {
@@ -71,7 +71,7 @@ extension CoreService on RouterRepository {
 
     // final result = await command.publish();
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> isServiceSupported(JNAPService service) async {
@@ -79,7 +79,7 @@ extension CoreService on RouterRepository {
         data: {'serviceName': service.value.replaceAll(kJNAPActionBase, '')});
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> reboot() async {
@@ -87,7 +87,7 @@ extension CoreService on RouterRepository {
         createCommand(JNAPAction.reboot.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getUnsecuredWiFiWarning() async {
@@ -96,7 +96,7 @@ extension CoreService on RouterRepository {
     );
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> setUnsecuredWiFiWarning(bool enabled) async {
@@ -105,6 +105,6 @@ extension CoreService on RouterRepository {
         data: {'enabled': enabled});
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

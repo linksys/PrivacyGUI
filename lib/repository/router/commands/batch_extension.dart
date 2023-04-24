@@ -10,7 +10,7 @@ extension BatchCommands on RouterRepository {
         JNAPAction.isAdminPasswordSetByUser: {},
         JNAPAction.isAdminPasswordDefault: {},
       }, auth: true),
-    ).then((value) => value.responses);
+    ).then((successWrap) => successWrap.data);
   }
 
   Future<Map<JNAPAction, JNAPResult>> fetchIpDetails() async {
@@ -19,7 +19,7 @@ extension BatchCommands on RouterRepository {
         JNAPAction.getDevices: {},
         JNAPAction.getWANStatus: {},
       }, auth: true),
-    ).then((value) => value.responses);
+    ).then((successWrap) => successWrap.data);
   }
 
   Future<Map<JNAPAction, JNAPResult>> fetchInternetSettings() async {
@@ -30,7 +30,7 @@ extension BatchCommands on RouterRepository {
         JNAPAction.getWANStatus: {},
         JNAPAction.getMACAddressCloneSettings: {},
       }, auth: true),
-    ).then((value) => value.responses);
+    ).then((successWrap) => successWrap.data);
   }
 
   Future<Map<JNAPAction, JNAPResult>> fetchNodeDetails() async {
@@ -40,7 +40,7 @@ extension BatchCommands on RouterRepository {
         JNAPAction.getDevices: {},
         JNAPAction.getFirmwareUpdateStatus: {},
       }, auth: true),
-    ).then((value) => value.responses);
+    ).then((successWrap) => successWrap.data);
   }
 
   Future<Map<JNAPAction, JNAPResult>> fetchDeviceList() async {
@@ -50,7 +50,7 @@ extension BatchCommands on RouterRepository {
         JNAPAction.getDevices: {},
       },
       auth: true,
-    )).then((value) => value.responses);
+    )).then((successWrap) => successWrap.data);
   }
 
   Future<Map<JNAPAction, JNAPResult>> deleteDevices(
@@ -69,7 +69,7 @@ extension BatchCommands on RouterRepository {
         ),
         auth: true,
       ),
-    ).then((value) => value.responses);
+    ).then((successWrap) => successWrap.data);
   }
 
   Future<Map<JNAPAction, JNAPResult>> fetchAllRadioInfo() {
@@ -78,6 +78,6 @@ extension BatchCommands on RouterRepository {
         JNAPAction.getRadioInfo: {},
         JNAPAction.getGuestRadioSettings: {},
       }, auth: true),
-    ).then((value) => value.responses);
+    ).then((successWrap) => successWrap.data);
   }
 }

@@ -9,20 +9,20 @@ extension AutoOnboardingService on RouterRepository {
         createCommand(JNAPAction.getBluetoothAutoOnboardingSettings.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
   Future<JNAPSuccess> getBlueboothAutoOnboardingStatus() async {
     final command =
     createCommand(JNAPAction.getBlueboothAutoOnboardingStatus.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
   Future<JNAPSuccess> startBlueboothAutoOnboarding() async {
     final command =
     createCommand(JNAPAction.startBlueboothAutoOnboarding.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

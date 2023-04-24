@@ -9,6 +9,6 @@ extension ParentalControlService on RouterRepository {
         createCommand(JNAPAction.getParentalControlSettings.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

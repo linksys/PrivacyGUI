@@ -8,7 +8,7 @@ extension DeviceListService on RouterRepository {
     final command = createCommand(JNAPAction.getDevices.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   // Doesn't work ???
@@ -16,7 +16,7 @@ extension DeviceListService on RouterRepository {
     final command = createCommand(JNAPAction.getLocalDevice.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> setDeviceProperties(
@@ -31,6 +31,6 @@ extension DeviceListService on RouterRepository {
     });
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

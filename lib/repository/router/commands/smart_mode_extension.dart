@@ -8,18 +8,18 @@ extension SmartModeExtension on RouterRepository {
     final command = createCommand(JNAPAction.getDeviceMode.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
   Future<JNAPSuccess> getSupportedDeviceMode() async {
     final command = createCommand(JNAPAction.getSupportedDeviceMode.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
   Future<JNAPSuccess> setDeviceMode(String mode) async {
     final command = createCommand(JNAPAction.setDeviceMode.actionValue, data: {'mode': mode}, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

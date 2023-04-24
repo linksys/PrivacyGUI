@@ -40,8 +40,8 @@ class CommandWrap {
   });
 
   final String action;
-  Map<String, dynamic> data;
   final bool needAuth;
+  Map<String, dynamic> data;
 }
 
 final routerRepositoryProvider = Provider((ref) => RouterRepository(ref));
@@ -95,11 +95,12 @@ class RouterRepository with StateStreamListener {
     final sideEffectManager = ref.read(sideEffectProvider.notifier);
     return CommandQueue()
         .enqueue(command)
-        .then((value) => handleJNAPResult(value))
-        .then((value) => sideEffectManager.handleSideEffect(value))
-        .then((value) {
+        .then((jnapResult) => handleJNAPResult(jnapResult))
+        .then((jnapResult) =>
+            sideEffectManager.handleSideEffect(jnapResult as JNAPSuccess))
+        .then((jnapSuccess) {
       sideEffectManager.finishSideEffect();
-      return value;
+      return jnapSuccess;
     });
   }
 
@@ -109,17 +110,18 @@ class RouterRepository with StateStreamListener {
         .map((entry) =>
             {'action': entry.key.actionValue, 'request': entry.value})
         .toList();
-    final command = createTransaction(payload, needAuth: builder.auth);
+    final command = _createTransaction(payload, needAuth: builder.auth);
 
     return CommandQueue()
         .enqueue(command)
-        .then((value) => handleJNAPResult(value))
-        .then((value) => JNAPTransactionSuccessWrap.convert(
-            actions: List.from(builder.commands.keys),
-            jnapSuccess: value as JNAPTransactionSuccess));
+        .then((jnapResult) => handleJNAPResult(jnapResult))
+        .then((jnapResult) => JNAPTransactionSuccessWrap.convert(
+              actions: List.from(builder.commands.keys),
+              transactionSuccess: jnapResult as JNAPTransactionSuccess,
+            ));
   }
 
-  TransactionHttpCommand createTransaction(List<Map<String, dynamic>> payload,
+  TransactionHttpCommand _createTransaction(List<Map<String, dynamic>> payload,
       {bool needAuth = false, CommandType? type}) {
     final communicateType = type ??
         (_loginType == LoginFrom.local
@@ -190,27 +192,24 @@ class RouterRepository with StateStreamListener {
     }
   }
 
-  JNAPSuccess handleJNAPResult(JNAPResult result) {
-    if (result is JNAPSuccess) {
+  JNAPResult handleJNAPResult(JNAPResult result) {
+    if (result is JNAPSuccess || result is JNAPTransactionSuccess) {
       return result;
-    } else {
-      throw (result as JNAPError);
     }
+    throw (result as JNAPError);
   }
 
   @Deprecated('No more use w/ HTTP')
   Future<Map<String, JNAPSuccess>> batchCommands(
       List<CommandWrap> commands) async {
-    Map<String, JNAPSuccess> _map = {};
+    Map<String, JNAPSuccess> map = {};
     for (CommandWrap e in commands) {
-      _map[e.action] =
-          await createCommand(e.action, needAuth: e.needAuth, data: e.data)
-              .publish()
-              .then(
-                (value) => handleJNAPResult(value),
-              );
+      map[e.action] = await createCommand(e.action,
+              needAuth: e.needAuth, data: e.data)
+          .publish()
+          .then((jnapResult) => (handleJNAPResult(jnapResult) as JNAPSuccess));
     }
-    return _map;
+    return map;
   }
 
   String _buildCommandUrl({
