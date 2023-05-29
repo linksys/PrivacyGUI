@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/utils.dart';
 
 const List<String> weeklyId = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 

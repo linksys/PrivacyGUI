@@ -1,8 +1,8 @@
 import 'package:linksys_moab/model/profile_service_data.dart';
 
 final mockInternetScheduleData = {
-  'PROFILE_ID_0001': InternetScheduleData(dateTimeLimitRule: [
-    const DateTimeLimitRule(
+  'PROFILE_ID_0001': const InternetScheduleData(dateTimeLimitRule: [
+    DateTimeLimitRule(
       isEnabled: true,
       weeklySet: [
         true,
@@ -15,7 +15,7 @@ final mockInternetScheduleData = {
       ],
       timeInSeconds: 14400,
     ),
-    const DateTimeLimitRule(
+    DateTimeLimitRule(
       isEnabled: true,
       weeklySet: [
         true,
@@ -29,7 +29,7 @@ final mockInternetScheduleData = {
       timeInSeconds: 28800,
     ),
   ], scheduledPauseRule: [
-    const ScheduledPausedRule(
+    ScheduledPausedRule(
       isEnabled: true,
       weeklySet: [
         true,
@@ -44,7 +44,7 @@ final mockInternetScheduleData = {
       pauseEndTime: 12 * 3600,
       isAllDay: false,
     ),
-    const ScheduledPausedRule(
+    ScheduledPausedRule(
       isEnabled: true,
       weeklySet: [
         true,
@@ -59,7 +59,7 @@ final mockInternetScheduleData = {
       pauseEndTime: 10 * 3600,
       isAllDay: false,
     ),
-    const ScheduledPausedRule(
+    ScheduledPausedRule(
       isEnabled: true,
       weeklySet: [
         true,

@@ -18,7 +18,6 @@ import 'package:linksys_moab/model/router/network.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/model/router/wan_status.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
-import 'package:linksys_moab/network/jnap/jnap_transaction.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/networks/cloud_networks_repository.dart';
 import 'package:linksys_moab/repository/router/commands/_commands.dart';
@@ -153,16 +152,16 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
       Timer.periodic(const Duration(seconds: 5), (timer) async {
         final speedTestResult = await getHealthCheckStatus();
         if (speedTestResult.exitCode != 'Unavailable') {
-          final _selected = state.selected!;
-          MoabNetwork _selectedCopy = MoabNetwork(
-              id: _selected.id,
-              deviceInfo: _selected.deviceInfo,
-              wanStatus: _selected.wanStatus,
-              radioInfo: _selected.radioInfo,
-              devices: _selected.devices,
-              healthCheckResults: _selected.healthCheckResults,
+          final selected = state.selected!;
+          MoabNetwork selectedCopy = MoabNetwork(
+              id: selected.id,
+              deviceInfo: selected.deviceInfo,
+              wanStatus: selected.wanStatus,
+              radioInfo: selected.radioInfo,
+              devices: selected.devices,
+              healthCheckResults: selected.healthCheckResults,
               currentSpeedTestStatus: null);
-          emit(state.copyWith(selected: _selectedCopy));
+          emit(state.copyWith(selected: selectedCopy));
           getHealthCheckResults();
           timer.cancel();
         }

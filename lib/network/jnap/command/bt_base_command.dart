@@ -1,7 +1,4 @@
-import 'dart:io';
 
-import 'package:linksys_moab/constants/jnap_const.dart';
-import 'package:linksys_moab/network/jnap/jnap_command_executor_mixin.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/network/jnap/spec/jnap_spec.dart';
 import 'package:linksys_moab/network/jnap/command/base_command.dart';

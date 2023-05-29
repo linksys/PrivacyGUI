@@ -22,9 +22,9 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
 
   @override
   void initState() {
-    int _value = widget.args['selected'] ?? 0;
-    if (_value > 0) {
-      _valueController.text = '$_value';
+    int value = widget.args['selected'] ?? 0;
+    if (value > 0) {
+      _valueController.text = '$value';
       _selected = _items[1];
     } else {
       _selected = _items[0];

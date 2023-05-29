@@ -5,7 +5,9 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 
 extension NetworkConnectionsService on RouterRepository {
   Future<JNAPSuccess> getNetworkConnections() async {
-    final command = createCommand(JNAPAction.getNetworkConnections.actionValue, needAuth: true);
+    final command = await createCommand(
+        JNAPAction.getNetworkConnections.actionValue,
+        needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);

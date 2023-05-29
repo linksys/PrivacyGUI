@@ -35,7 +35,7 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
   }
 
   List<WifiListItem> _getWifiInfo() {
-    List<WifiListItem> _items = [];
+    List<WifiListItem> items = [];
     final state = context.read<NetworkCubit>().state;
     List<RouterRadioInfo>? radioInfo = state.selected?.radioInfo;
     Map<WifiType, int> deviceCountMap =
@@ -43,7 +43,7 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
     if (radioInfo != null) {
       Map<String, RouterRadioInfo> infoMap =
           Map.fromEntries(radioInfo.map((e) => MapEntry(e.settings.ssid, e)));
-      _items = List.from(infoMap.values).map((e) {
+      items = List.from(infoMap.values).map((e) {
         RouterRadioInfo info = e as RouterRadioInfo;
         return WifiListItem(
             wifiType: WifiType.main,
@@ -59,33 +59,33 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
     }
     GuestRadioSetting? guestRadioSetting = state.selected?.guestRadioSetting;
     if (guestRadioSetting != null) {
-      _items.add(WifiListItem(
+      items.add(WifiListItem(
           wifiType: WifiType.guest,
           ssid: guestRadioSetting.radios.first.guestSSID,
           password: guestRadioSetting.radios.first.guestWPAPassphrase ?? '',
-          securityType: _items.isNotEmpty
-              ? _items.first.securityType
+          securityType: items.isNotEmpty
+              ? items.first.securityType
               : WifiSecurityType.wpa2Wpa3Mixed,
-          mode: _items.isNotEmpty ? _items.first.mode : WifiMode.mixed,
+          mode: items.isNotEmpty ? items.first.mode : WifiMode.mixed,
           isWifiEnabled: guestRadioSetting.isGuestNetworkEnabled,
           numOfDevices: deviceCountMap[WifiType.guest] ?? 0,
           signal: 0));
     }
     IoTNetworkSetting? iotNetworkSetting = state.selected?.iotNetworkSetting;
     if (iotNetworkSetting != null) {
-      _items.add(WifiListItem(
+      items.add(WifiListItem(
           wifiType: WifiType.iot,
           ssid: '',
           password: '',
-          securityType: _items.isNotEmpty
-              ? _items.first.securityType
+          securityType: items.isNotEmpty
+              ? items.first.securityType
               : WifiSecurityType.wpa2Wpa3Mixed,
-          mode: _items.isNotEmpty ? _items.first.mode : WifiMode.mixed,
+          mode: items.isNotEmpty ? items.first.mode : WifiMode.mixed,
           isWifiEnabled: iotNetworkSetting.isIoTNetworkEnabled,
           numOfDevices: deviceCountMap[WifiType.iot] ?? 0,
           signal: 0));
     }
-    return _items;
+    return items;
   }
 
   Widget _wifiList() {
@@ -163,7 +163,7 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
       scrollable: true,
       child: BasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: AppText.screenName(
+        header: const AppText.screenName(
           'Your WiFi networks',
         ),
         content: _wifiList(),

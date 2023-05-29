@@ -68,7 +68,7 @@ class _TopologyContentView extends ConsumerState<TopologyContentView> {
   Widget build(BuildContext context) {
     return BlocBuilder<TopologyCubit, TopologyState>(builder: (context, state) {
       return StyledAppPageView(
-        padding: AppEdgeInsets.only(),
+        padding: const AppEdgeInsets.only(),
         scrollable: true,
         // padding: const AppEdgeInsets.regular(),
         child: AppBasicLayout(
@@ -126,7 +126,7 @@ class _TopologyContentView extends ConsumerState<TopologyContentView> {
                 color: ConstantColors.tertiaryGreen,
               )),
               const AppGap.regular(),
-              AppText.descriptionSub(
+              const AppText.descriptionSub(
                 'Connected to Internet',
               )
             ],
@@ -157,7 +157,7 @@ class _TopologyContentView extends ConsumerState<TopologyContentView> {
                   'No internet connection',
                   style: Theme.of(context)
                       .textTheme
-                      .bodyText2
+                      .bodyMedium
                       ?.copyWith(color: Colors.red),
                 )
               ],
@@ -254,7 +254,7 @@ class _TreeViewPageState extends ConsumerState<TreeViewPage> {
   }
 
   Widget createNodeWidget(Node node) {
-    final _node = node as TopologyNode;
+    final node0 = node as TopologyNode;
     return Column(
       children: [
         Stack(
@@ -269,10 +269,10 @@ class _TreeViewPageState extends ConsumerState<TreeViewPage> {
                   borderRadius: BorderRadius.circular(100),
                   color: ConstantColors.primaryLinksysBlue.withOpacity(0.07),
                 ),
-                width: _node.isMaster
+                width: node0.isMaster
                     ? AppTheme.of(context).avatar.extraLarge
                     : AppTheme.of(context).avatar.large,
-                height: _node.isMaster
+                height: node0.isMaster
                     ? AppTheme.of(context).avatar.extraLarge
                     : AppTheme.of(context).avatar.large,
                 margin: EdgeInsets.all(AppTheme.of(context).spacing.semiSmall),
@@ -282,14 +282,14 @@ class _TreeViewPageState extends ConsumerState<TreeViewPage> {
                     image: AppTheme.of(context)
                         .images
                         .devices
-                        .getByName(_node.icon),
+                        .getByName(node0.icon),
                   ),
                 )),
             if (!widget.isChainMode)
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(100),
-                  color: _node.isOnline
+                  color: node0.isOnline
                       ? ConstantColors.primaryLinksysBlack
                       : Colors.red,
                 ),
@@ -299,7 +299,7 @@ class _TreeViewPageState extends ConsumerState<TreeViewPage> {
                   padding: const AppEdgeInsets.small(),
                   child: Center(
                     child: AppText.descriptionSub(
-                      _node.isOnline ? '${_node.connectedDeviceCount}' : '0',
+                      node0.isOnline ? '${node0.connectedDeviceCount}' : '0',
                       color: ConstantColors.primaryLinksysWhite,
                     ),
                   ),
@@ -316,7 +316,7 @@ class _TreeViewPageState extends ConsumerState<TreeViewPage> {
                 : Icon(getCharactersIcons(context).wifiDefault),
             const AppGap.regular(),
             AppText.descriptionSub(
-              _node.location,
+              node0.location,
             ),
           ],
         ),
@@ -341,7 +341,7 @@ class _TreeViewPageState extends ConsumerState<TreeViewPage> {
               ),
               Text(
                 Utils.getWifiSignalLevel(node.signalStrength).displayTitle,
-                style: Theme.of(context).textTheme.headline4,
+                style: Theme.of(context).textTheme.headlineMedium,
               ),
             ],
           ),

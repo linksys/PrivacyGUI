@@ -3,7 +3,6 @@ import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/page/linkup/view/linkup_view.dart';
 import '_model.dart';
-import 'package:linksys_moab/route/_route.dart';
 
 import 'package:linksys_moab/page/dashboard/view/_view.dart';
 import 'base_path.dart';

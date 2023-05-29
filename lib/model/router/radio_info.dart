@@ -229,7 +229,7 @@ class RouterRadioInfoSettings extends Equatable {
     return RouterRadioInfoSettings(
       broadcastSSID: broadcastSSID ?? this.broadcastSSID,
       ssid: ssid ?? this.ssid,
-      isEnabled: isEnable ?? this.isEnabled,
+      isEnabled: isEnable ?? isEnabled,
       security: security ?? this.security,
       channel: channel ?? this.channel,
       wpaPersonalSettings: wpaPersonalSettings ?? this.wpaPersonalSettings,

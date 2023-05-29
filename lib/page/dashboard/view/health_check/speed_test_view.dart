@@ -112,23 +112,23 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
           },
         );
       case "COMPLETE":
-        return Column(
+        return const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
-              children: const [
+              children: [
                 AppText.subhead('Upload'),
                 AppText.subhead('Download'),
               ],
             ),
-            const AppGap.regular(),
+            AppGap.regular(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
-              children: const [
+              children: [
                 AppText.subhead('98Mbps'),
                 AppText.subhead('24Mpbs'),
               ],

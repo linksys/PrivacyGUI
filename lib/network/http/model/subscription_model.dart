@@ -97,12 +97,7 @@ class SoftwarePackage extends Equatable {
 
   @override
   String toString() {
-    return 'SoftwarePackage{' +
-        ' id: $id,' +
-        ' identifier: $identifier,' +
-        ' name: $name,' +
-        ' active: $active,' +
-        '}';
+    return 'SoftwarePackage{ id: $id, identifier: $identifier, name: $name, active: $active,}';
   }
 
   Map<String, dynamic> toJson() {
@@ -486,25 +481,7 @@ class NetworkEntitlementResponse extends Equatable {
 
   @override
   String toString() {
-    return 'NetworkEntitlementResponse{' +
-        ' id: $id,' +
-        ' siteId: $siteId,' +
-        ' serialNumber: $serialNumber,' +
-        ' channel: ${channel.toString()},' +
-        ' product: ${product.toString()},' +
-        ' plan: ${plan.toString()},' +
-        ' provider: ${provider.toString()},' +
-        ' softwarePackage: ${softwarePackage.toString()}' +
-        ' softwarePackageStatus: $softwarePackageStatus,' +
-        ' status: $status,' +
-        ' order: ${order.toString()},' +
-        ' providerOrder: ${providerOrder?.toString()},' +
-        ' startTime: $startTime,' +
-        ' renewTime: $renewTime,' +
-        ' endTime: $endTime,' +
-        ' serviceEndTime: $serviceEndTime,' +
-        ' expireTime: $expireTime,' +
-        '}';
+    return 'NetworkEntitlementResponse{ id: $id, siteId: $siteId, serialNumber: $serialNumber, channel: ${channel.toString()}, product: ${product.toString()}, plan: ${plan.toString()}, provider: ${provider.toString()}, softwarePackage: ${softwarePackage.toString()} softwarePackageStatus: $softwarePackageStatus, status: $status, order: ${order.toString()}, providerOrder: ${providerOrder?.toString()}, startTime: $startTime, renewTime: $renewTime, endTime: $endTime, serviceEndTime: $serviceEndTime, expireTime: $expireTime,}';
   }
 
   Map<String, dynamic> toJson() {

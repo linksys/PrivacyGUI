@@ -37,12 +37,12 @@ class PortRangeTriggeringRuleCubit extends Cubit<PortRangeTriggeringRuleState> {
   }
 
   Future<bool> save(PortRangeTriggeringRule rule) async {
-    final _state = state;
-    final rules = List<PortRangeTriggeringRule>.from(_state.rules);
-    if (_state is AddPortRangeTriggeringRule) {
+    final currentState = state;
+    final rules = List<PortRangeTriggeringRule>.from(currentState.rules);
+    if (currentState is AddPortRangeTriggeringRule) {
       rules.add(rule);
-    } else if (_state is EditPortRangeTriggeringRule) {
-      int index = _state.rules.indexOf(_state.rule);
+    } else if (currentState is EditPortRangeTriggeringRule) {
+      int index = currentState.rules.indexOf(currentState.rule);
       rules.replaceRange(index, index + 1, [rule]);
     }
     final result = await _repository
@@ -53,10 +53,10 @@ class PortRangeTriggeringRuleCubit extends Cubit<PortRangeTriggeringRuleState> {
   }
 
   Future<bool> delete() async {
-    final _state = state;
-    if (_state is EditPortRangeTriggeringRule) {
-      final rules = List<PortRangeTriggeringRule>.from(_state.rules)
-        ..removeWhere((element) => element == _state.rule);
+    final currentState = state;
+    if (currentState is EditPortRangeTriggeringRule) {
+      final rules = List<PortRangeTriggeringRule>.from(currentState.rules)
+        ..removeWhere((element) => element == currentState.rule);
       final result = await _repository
           .setPortRangeTriggeringRules(rules)
           .then((value) => true)

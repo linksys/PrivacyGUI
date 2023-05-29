@@ -9,7 +9,6 @@ import 'package:linksys_moab/page/dashboard/view/nodes/node_switch_light_view.da
 import 'package:linksys_moab/page/dashboard/view/nodes/signal_strength_view.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/topology_view.dart';
 import '_model.dart';
-import 'package:linksys_moab/route/_route.dart';
 
 class NodesPath extends DashboardPath {
   @override

@@ -5,16 +5,18 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 
 extension MotionSensingService on RouterRepository {
   Future<JNAPSuccess> getActiveMotionSensingBots() async {
-    final command =
-        createCommand(JNAPAction.getActiveMotionSensingBots.actionValue, needAuth: true);
+    final command = await createCommand(
+        JNAPAction.getActiveMotionSensingBots.actionValue,
+        needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> getMotionSensingSettings() async {
-    final command =
-        createCommand(JNAPAction.getMotionSensingSettings.actionValue, needAuth: true);
+    final command = await createCommand(
+        JNAPAction.getMotionSensingSettings.actionValue,
+        needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);

@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/page/dashboard/view/devices/_devices.dart';
 import '_model.dart';
-import 'package:linksys_moab/route/_route.dart';
 
 class DevicesPath extends DashboardPath {
   @override

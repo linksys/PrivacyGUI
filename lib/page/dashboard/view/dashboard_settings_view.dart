@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
-import 'package:linksys_moab/bloc/auth/event.dart';
+import 'package:linksys_moab/bloc/auth/auth_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -27,11 +26,9 @@ class DashboardSettingsView extends ConsumerStatefulWidget {
 }
 
 class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
-  late final AuthBloc _authBloc;
 
   @override
   void initState() {
-    _authBloc = context.read<AuthBloc>();
     super.initState();
   }
 
@@ -69,7 +66,7 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
                     ),
                     const AppGap.semiBig(),
                     AppTertiaryButton.noPadding('Log out', onTap: () {
-                      context.read<AuthBloc>().add(Logout());
+                      ref.read(authProvider.notifier).logout();
                     }),
                     const AppGap.semiBig(),
                     FutureBuilder(
@@ -90,14 +87,14 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
   }
 
   Widget _title() {
-    return Column(
+    return const Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Wrap(
           alignment: WrapAlignment.start,
           crossAxisAlignment: WrapCrossAlignment.center,
-          children: const [
+          children: [
             AppText.screenName(
               'Settings',
             )

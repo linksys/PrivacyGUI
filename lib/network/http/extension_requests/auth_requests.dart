@@ -14,7 +14,7 @@ extension MoabAuthRequests on MoabHttpClient {
   /// * 400 - {"code":"INVALID_PARAMETER","parameters":[{"name":"username","value":"must be a well-formed email address"}]}
   ///
   Future<Response> createAccountPreparation(String username) async {
-    final url = await combineUrl(endpointPostAccountPreparations);
+    final url = combineUrl(endpointPostAccountPreparations);
     final header = defaultHeader;
     return this.post(Uri.parse(url),
         headers: header, body: jsonEncode({'username': username}));
@@ -26,7 +26,7 @@ extension MoabAuthRequests on MoabHttpClient {
   ///
   Future<Response> createAccountVerifyPreparation(
       String verifyToken, CommunicationMethod method) async {
-    final url = await combineUrl(endpointPutAccountPreparations,
+    final url = combineUrl(endpointPutAccountPreparations,
         args: {varVerifyToken: verifyToken});
     final header = defaultHeader;
     return this.put(Uri.parse(url),
@@ -42,7 +42,7 @@ extension MoabAuthRequests on MoabHttpClient {
   ///
   Future<Response> authChallenge(BaseAuthChallenge method,
       {required String id, required String secret}) async {
-    final url = await combineUrl(endpointPostAuthChallenges);
+    final url = combineUrl(endpointPostAuthChallenges);
 
     final appId = id;
     final appSecret = secret;
@@ -59,7 +59,7 @@ extension MoabAuthRequests on MoabHttpClient {
   ///
   Future<Response> authChallengeVerify(
       {required String token, required String code}) async {
-    final url = await combineUrl(endpointPutAuthChallenges,
+    final url = combineUrl(endpointPutAuthChallenges,
         args: {varVerifyToken: token});
     final header = defaultHeader;
     // TODO For the moment, the sequence and the type won't be changed
@@ -69,7 +69,7 @@ extension MoabAuthRequests on MoabHttpClient {
 
   Future<Response> authChallengeVerifyAccepted(
       {required String token, required String code}) async {
-    final url = await combineUrl(endpointPutVerificationAccept,
+    final url = combineUrl(endpointPutVerificationAccept,
         args: {varVerifyToken: token});
     final header = defaultHeader;
     // TODO For the moment, the sequence and the type won't be changed
@@ -81,7 +81,7 @@ extension MoabAuthRequests on MoabHttpClient {
   /// * 200 - {"id":"82248d9d-50a7-4e35-822c-e07ed02d8063","username":"austin.chang@linksys.com","usernames":["austin.chang@linksys.com"],"status":"ACTIVE","type":"NORMAL","authenticationMode":"PASSWORD","createdAt":"2022-07-13T09:37:01.665063052Z","updatedAt":"2022-07-13T09:37:01.665063052Z"}
   ///
   Future<Response> createAccount(CreateAccountVerified accountVerified) async {
-    final url = await combineUrl(endpointPostCreateAccount);
+    final url = combineUrl(endpointPostCreateAccount);
     final header = defaultHeader;
     return this.post(Uri.parse(url),
         headers: header, body: jsonEncode(accountVerified.toJson()));
@@ -89,7 +89,7 @@ extension MoabAuthRequests on MoabHttpClient {
 
   Future<Response> loginPrepare(String username,
       {required String id, required String secret}) async {
-    final url = await combineUrl(endpointPostLoginPrepare);
+    final url = combineUrl(endpointPostLoginPrepare);
     final appId = id;
     final appSecret = secret;
 
@@ -101,7 +101,7 @@ extension MoabAuthRequests on MoabHttpClient {
 
   Future<Response> loginPassword(String token, String password,
       {required String id, required String secret}) async {
-    final url = await combineUrl(endpointPostLoginPassword);
+    final url = combineUrl(endpointPostLoginPassword);
 
     final appId = id;
     final appSecret = secret;
@@ -115,7 +115,7 @@ extension MoabAuthRequests on MoabHttpClient {
 
   Future<Response> login(String token,
       {required String id, required String secret}) async {
-    final url = await combineUrl(endpointPostLogin);
+    final url = combineUrl(endpointPostLogin);
 
     final appId = id;
     final appSecret = secret;
@@ -132,7 +132,7 @@ extension MoabAuthRequests on MoabHttpClient {
   Future<Response> downloadCloudCerts(
       {required String taskId, required String secret}) async {
     final url =
-        await combineUrl(endPointGetPrimaryTasks, args: {varTaskId: taskId});
+        combineUrl(endPointGetPrimaryTasks, args: {varTaskId: taskId});
     final header = defaultHeader..addAll({moabTaskSecretKey: secret});
 
     return this.get(Uri.parse(url), headers: header);
@@ -140,7 +140,7 @@ extension MoabAuthRequests on MoabHttpClient {
 
   Future<Response> extendCertificates(
       String certId, String appId, String appSecret) async {
-    final url = await combineUrl(endpointPostCertExtensions,
+    final url = combineUrl(endpointPostCertExtensions,
         args: {varCertificateId: certId});
     final header = defaultHeader
       ..addAll({moabAppIdKey: appId, moabAppSecretKey: appSecret});
@@ -153,7 +153,7 @@ extension MoabAuthRequests on MoabHttpClient {
 
   Future<Response> requestAuthSession(
       String certId, String appId, String appSecret) async {
-    final url = await combineUrl(endpointPostCertSessions,
+    final url = combineUrl(endpointPostCertSessions,
         args: {varCertificateId: certId});
     final header = defaultHeader
       ..addAll({moabAppIdKey: appId, moabAppSecretKey: appSecret});
@@ -166,7 +166,7 @@ extension MoabAuthRequests on MoabHttpClient {
 
   Future<Response> changeAuthenticationModePrepare(
       String accountId, String? password, String authenticationMode) async {
-    final url = await combineUrl(endpointAuthenticationModePrepare,
+    final url = combineUrl(endpointAuthenticationModePrepare,
         args: {varAccountId: accountId});
     final header = defaultHeader..addAll({moabSiteIdKey: moabRetailSiteId});
     final bodyPayload = password == null
@@ -183,7 +183,7 @@ extension MoabAuthRequests on MoabHttpClient {
 
   Future<Response> changeAuthenticationMode(
       String accountId, String token, String? password) async {
-    final url = await combineUrl(endpointAuthenticationModeChange,
+    final url = combineUrl(endpointAuthenticationModeChange,
         args: {varAccountId: accountId});
     final header = defaultHeader;
     final bodyPayload = password == null

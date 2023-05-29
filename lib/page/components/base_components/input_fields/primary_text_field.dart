@@ -69,7 +69,7 @@ class _PrimaryTextFieldState extends ConsumerState<PrimaryTextField> {
       readOnly: widget.readOnly,
       obscureText: widget.secured,
       controller: widget.controller,
-      style: Theme.of(context).textTheme.bodyText1?.copyWith(
+      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: widget.isError ? widget.errorColor : primaryColor,
           ),
       cursorColor: primaryColor,
@@ -79,7 +79,7 @@ class _PrimaryTextFieldState extends ConsumerState<PrimaryTextField> {
         hintText: widget.hintText,
         hintStyle: Theme.of(context)
             .textTheme
-            .bodyText1
+            .bodyLarge
             ?.copyWith(color: Theme.of(context).colorScheme.surface),
         enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(

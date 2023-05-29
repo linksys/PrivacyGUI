@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/design/text_style.dart';
 
 class BaseText extends ConsumerWidget {
   final String text;

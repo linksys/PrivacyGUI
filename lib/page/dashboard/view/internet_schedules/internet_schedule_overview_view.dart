@@ -37,7 +37,7 @@ class _InternetScheduleOverviewViewState
           backgroundColor: Colors.transparent,
           elevation: 0,
           title: Text(profile?.name ?? '',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           leading: BackButton(onPressed: () {
             ref.read(navigationsProvider.notifier).pop();
           }),
@@ -74,10 +74,10 @@ Widget timeLimitSettingsItem(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Daily time limit',
+                  const Text('Daily time limit',
                       style:
                           TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                       data == null
                           ? 'none'
@@ -87,7 +87,7 @@ Widget timeLimitSettingsItem(
                                       .any((element) => element.isEnabled)
                                   ? 'ON'
                                   : 'OFF',
-                      style: TextStyle(
+                      style: const TextStyle(
                           color: Color.fromRGBO(102, 102, 102, 1.0),
                           fontSize: 13,
                           fontWeight: FontWeight.w500))
@@ -102,7 +102,7 @@ Widget timeLimitSettingsItem(
 
 Widget schedulePauseSettingsItem(
     BuildContext context, ValueChanged onTap, InternetScheduleData? data) {
-  return Container(
+  return SizedBox(
       height: 64,
       width: double.infinity,
       child: InkWell(
@@ -113,10 +113,10 @@ Widget schedulePauseSettingsItem(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Scheduled pauses',
+                    const Text('Scheduled pauses',
                         style: TextStyle(
                             fontSize: 15, fontWeight: FontWeight.w500)),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                         data == null
                             ? 'none'
@@ -126,7 +126,7 @@ Widget schedulePauseSettingsItem(
                                         .any((element) => element.isEnabled)
                                     ? 'ON'
                                     : 'OFF',
-                        style: TextStyle(
+                        style: const TextStyle(
                             color: Color.fromRGBO(102, 102, 102, 1.0),
                             fontSize: 13,
                             fontWeight: FontWeight.w500))

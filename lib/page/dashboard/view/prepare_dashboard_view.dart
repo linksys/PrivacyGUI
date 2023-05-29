@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/account/account_provider.dart';
-import 'package:linksys_moab/bloc/auth/_auth.dart';
+import 'package:linksys_moab/bloc/auth/auth_provider.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
@@ -42,7 +42,9 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
 
   _checkSelfNetworks() async {
     await ref.read(connectivityProvider.notifier).forceUpdate();
-    if (context.read<AuthBloc>().state is AuthCloudLoginState) {
+    final loginType =
+        ref.watch(authProvider.select((value) => value.value?.loginType));
+    if (loginType == LoginType.remote) {
       if (context.read<NetworkCubit>().state.selected == null) {
         // TODO #LINKSYS
         // await context.read<AccountCubit>().fetchAccount();

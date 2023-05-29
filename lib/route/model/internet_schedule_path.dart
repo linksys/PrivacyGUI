@@ -5,7 +5,6 @@ import 'package:linksys_moab/page/dashboard/view/internet_schedules/daily_time_l
 import 'package:linksys_moab/page/dashboard/view/internet_schedules/internet_schedule_overview_view.dart';
 import 'package:linksys_moab/page/dashboard/view/internet_schedules/schedule_pause_list_view.dart';
 import '_model.dart';
-import 'package:linksys_moab/route/_route.dart';
 
 
 class InternetSchedulePath extends DashboardPath {
@@ -32,7 +31,7 @@ class InternetSchedulePath extends DashboardPath {
       case SchedulePauseListPath:
         return const SchedulePauseListView();
       default:
-        return Center();
+        return const Center();
     }
   }
 }

@@ -9,7 +9,6 @@ import 'package:linksys_moab/network/http/model/cloud_account_info.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_create_account_verified.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
-import 'package:linksys_moab/network/http/model/cloud_login_state.dart';
 import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/repository/authenticate/auth_repository.dart';
 import 'package:linksys_moab/repository/model/dummy_model.dart';

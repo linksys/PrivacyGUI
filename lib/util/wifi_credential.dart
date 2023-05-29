@@ -1,4 +1,3 @@
-import 'package:linksys_moab/util/logger.dart';
 
 enum SecurityType { wpa, wep, none }
 

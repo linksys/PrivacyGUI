@@ -5,28 +5,30 @@ import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/jnap/jnap_command_queue.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/util/logger.dart';
 
 extension FirewallService on RouterRepository {
   Future<JNAPSuccess> getPortRangeForwardingRules() async {
-    final command =
-        createCommand(JNAPAction.getPortRangeForwardingRules.actionValue, needAuth: true);
+    final command = await createCommand(
+        JNAPAction.getPortRangeForwardingRules.actionValue,
+        needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> getPortRangeTriggeringRules() async {
-    final command =
-        createCommand(JNAPAction.getPortRangeTriggeringRules.actionValue, needAuth: true);
+    final command = await createCommand(
+        JNAPAction.getPortRangeTriggeringRules.actionValue,
+        needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> getSinglePortForwardingRules() async {
-    final command =
-        createCommand(JNAPAction.getSinglePortForwardingRules.actionValue, needAuth: true);
+    final command = await createCommand(
+        JNAPAction.getSinglePortForwardingRules.actionValue,
+        needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
@@ -34,8 +36,9 @@ extension FirewallService on RouterRepository {
 
   Future<JNAPSuccess> setPortRangeForwardingRules(
       List<PortRangeForwardingRule> rules) async {
-    final command = createCommand(
-        JNAPAction.setPortRangeForwardingRules.actionValue, needAuth: true,
+    final command = await createCommand(
+        JNAPAction.setPortRangeForwardingRules.actionValue,
+        needAuth: true,
         data: {'rules': rules.map((e) => e.toJson()).toList()});
 
     final result = await CommandQueue().enqueue(command);
@@ -44,8 +47,9 @@ extension FirewallService on RouterRepository {
 
   Future<JNAPSuccess> setPortRangeTriggeringRules(
       List<PortRangeTriggeringRule> rules) async {
-    final command = createCommand(
-        JNAPAction.setPortRangeTriggeringRules.actionValue, needAuth: true,
+    final command = await createCommand(
+        JNAPAction.setPortRangeTriggeringRules.actionValue,
+        needAuth: true,
         data: {'rules': rules.map((e) => e.toJson()).toList()});
 
     final result = await CommandQueue().enqueue(command);
@@ -54,8 +58,9 @@ extension FirewallService on RouterRepository {
 
   Future<JNAPSuccess> setSinglePortForwardingRules(
       List<SinglePortForwardingRule> rules) async {
-    final command = createCommand(
-        JNAPAction.setSinglePortForwardingRules.actionValue, needAuth: true,
+    final command = await createCommand(
+        JNAPAction.setSinglePortForwardingRules.actionValue,
+        needAuth: true,
         data: {'rules': rules.map((e) => e.toJson()).toList()});
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);

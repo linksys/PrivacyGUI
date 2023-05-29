@@ -44,14 +44,15 @@ class _ChangeAuthModePasswordViewState
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('Create a password',
+        title: const Text('Create a password',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
         leading: BackButton(onPressed: () {
           // ref.read(navigationsProvider.notifier).pop();
         }),
-        actions: [],
+        actions: const [],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           box16(),
           PasswordInputField.withValidator(
@@ -71,7 +72,6 @@ class _ChangeAuthModePasswordViewState
             onPress: _applyPassword,
           ),
         ],
-        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

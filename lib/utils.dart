@@ -125,10 +125,8 @@ class Utils {
     const suffixes = ["B", "Kb", "Mb", "Gb", "Tb", "Pb"];
     var i = (log(bytes) / log(1024)).floor();
     var number = (bytes / pow(1024, i));
-    return (number).toStringAsFixed(
-        number.truncateToDouble() == number ? 0 : decimals) +
-        ' ' +
-        suffixes[i];
+    return '${(number).toStringAsFixed(
+        number.truncateToDouble() == number ? 0 : decimals)} ${suffixes[i]}';
   }
 
   static Size getScreenSize(BuildContext context) {
@@ -668,14 +666,14 @@ class Utils {
       final modelNumber = device.model.modelNumber;
       if (manufacturer != null && modelNumber != null) {
         // e.g. 'Samsung Galaxy S8'
-        androidDeviceName = manufacturer + ' ' + modelNumber;
+        androidDeviceName = '$manufacturer $modelNumber';
       } else if (device.unit.operatingSystem != null) {
         // e.g. 'Android Oreo Mobile'
         androidDeviceName =
-            device.unit.operatingSystem! + ' ' + device.model.deviceType;
+            '${device.unit.operatingSystem!} ${device.model.deviceType}';
         if (manufacturer != null) {
           // e.g. 'Samsung Android Oreo Mobile'
-          androidDeviceName = manufacturer! + androidDeviceName!;
+          androidDeviceName = manufacturer+ androidDeviceName;
         }
       }
     }

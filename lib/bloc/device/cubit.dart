@@ -19,9 +19,9 @@ class DeviceCubit extends Cubit<DeviceState> {
 
   Future<void> fetchDeviceList() async {
     Map<String, Map<String, dynamic>> wirelessSpeedMap = {};
-    List<DeviceDetailInfo> _mainOnlineDevices = [];
-    List<DeviceDetailInfo> _guestOnlineDevices = [];
-    List<DeviceDetailInfo> _offlineDevices = [];
+    List<DeviceDetailInfo> mainOnlineDevices = [];
+    List<DeviceDetailInfo> guestOnlineDevices = [];
+    List<DeviceDetailInfo> offlineDevices = [];
     emit(state.copyWith(isLoading: true));
     final results = await _routerRepository.fetchDeviceList();
     final networkConnections = JNAPTransactionSuccessWrap.getResult(
@@ -85,7 +85,7 @@ class DeviceCubit extends Cubit<DeviceState> {
 
             if (device.connections.isEmpty) {
               // Device offline
-              _offlineDevices.add(DeviceDetailInfo(
+              offlineDevices.add(DeviceDetailInfo(
                 name: Utils.getDeviceName(device),
                 deviceID: device.deviceID,
                 icon: iconTest(device.toJson()),
@@ -107,10 +107,10 @@ class DeviceCubit extends Cubit<DeviceState> {
                   connection = knownInterfaces.first.interfaceType;
                 }
               }
-              final _wirelessSpeedMap = wirelessSpeedMap[macAddress];
-              if (_wirelessSpeedMap != null) {
-                signal = _wirelessSpeedMap['signalDecibels'];
-                connection = _wirelessSpeedMap['connection'];
+              final wirelessSpeedMap0 = wirelessSpeedMap[macAddress];
+              if (wirelessSpeedMap0 != null) {
+                signal = wirelessSpeedMap0['signalDecibels'];
+                connection = wirelessSpeedMap0['connection'];
               }
 
               final parent = devices.firstWhereOrNull(
@@ -128,7 +128,7 @@ class DeviceCubit extends Cubit<DeviceState> {
               // TODO: #REFACTOR : uploadData, downloadData, weeklyData, icon, profileId
               if (deviceConnection.isGuest != null &&
                   deviceConnection.isGuest == true) {
-                _guestOnlineDevices.add(DeviceDetailInfo(
+                guestOnlineDevices.add(DeviceDetailInfo(
                   name: Utils.getDeviceName(device),
                   deviceID: device.deviceID,
                   icon: iconTest(device.toJson()),
@@ -143,7 +143,7 @@ class DeviceCubit extends Cubit<DeviceState> {
                   isOnline: true,
                 ));
               } else {
-                _mainOnlineDevices.add(DeviceDetailInfo(
+                mainOnlineDevices.add(DeviceDetailInfo(
                   name: Utils.getDeviceName(device),
                   deviceID: device.deviceID,
                   icon: iconTest(device.toJson()),
@@ -164,18 +164,18 @@ class DeviceCubit extends Cubit<DeviceState> {
       }
     }
 
-    _offlineDevices.sort(
+    offlineDevices.sort(
         (e1, e2) => e2.lastChangeRevision.compareTo(e1.lastChangeRevision));
-    _mainOnlineDevices.sort(
+    mainOnlineDevices.sort(
         (e1, e2) => e2.lastChangeRevision.compareTo(e1.lastChangeRevision));
-    _guestOnlineDevices.sort(
+    guestOnlineDevices.sort(
         (e1, e2) => e2.lastChangeRevision.compareTo(e1.lastChangeRevision));
 
     emit(state.copyWith(
       isLoading: false,
-      offlineDeviceList: _offlineDevices,
-      mainDeviceList: _mainOnlineDevices,
-      guestDeviceList: _guestOnlineDevices,
+      offlineDeviceList: offlineDevices,
+      mainDeviceList: mainOnlineDevices,
+      guestDeviceList: guestOnlineDevices,
     ));
 
     updateDisplayedDeviceList();

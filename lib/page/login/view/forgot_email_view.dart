@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,7 +59,7 @@ class _ForgotEmailViewState extends ConsumerState<ForgotEmailView> {
           getAppLocalizations(context).cloud_forgot_email_router_connected_to,
           style: Theme.of(context)
               .textTheme
-              .headline3
+              .displaySmall
               ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
         const SizedBox(
@@ -70,7 +69,7 @@ class _ForgotEmailViewState extends ConsumerState<ForgotEmailView> {
           maskedMail,
           style: Theme.of(context)
               .textTheme
-              .headline3
+              .displaySmall
               ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
       ],

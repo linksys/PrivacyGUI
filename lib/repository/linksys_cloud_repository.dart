@@ -21,13 +21,13 @@ class LinksysCloudRepository {
   LinksysCloudRepository({required LinksysHttpClient httpClient})
       : _httpClient = httpClient;
 
-  Future login({required username, required password}) async {
+  Future<SessionToken> login({required username, required password}) async {
     return _httpClient
         .passwordLogin(username: username, password: password)
         .then((response) => SessionToken.fromJson(jsonDecode(response.body)));
   }
 
-  Future refreshToken(String refreshToken) {
+  Future<SessionToken> refreshToken(String refreshToken) {
     return _httpClient
         .refreshToken(token: refreshToken)
         .then((response) => SessionToken.fromJson(jsonDecode(response.body)));

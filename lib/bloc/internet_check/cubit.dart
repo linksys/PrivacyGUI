@@ -288,7 +288,7 @@ class InternetCheckCubit extends Cubit<InternetCheckState> {
           .then((value) {})
           .onError((error, stackTrace) {});
       // TODO #REFACTOR wireless interrupt
-      await Future.delayed(Duration(seconds: 5));
+      await Future.delayed(const Duration(seconds: 5));
       // await _routerRepository.connectToLocalWithPassword();
     }
   }

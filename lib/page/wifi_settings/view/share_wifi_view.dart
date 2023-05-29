@@ -4,7 +4,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
-import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/customs/hidden_password_widget.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -64,7 +63,7 @@ class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
         ),
         HiddenPasswordWidget(password: _currentItem.password),
         const AppGap.big(),
-        AppText.tags(
+        const AppText.tags(
           'JOIN THIS NETWORK',
         ),
         const AppGap.regular(),
@@ -75,14 +74,13 @@ class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
             height: 160,
             width: 160,
             child: AppPadding.regular(
-              child: QrImage(
+              child: QrImageView(
                 data: WiFiCredential(
                   ssid: _currentItem.ssid,
                   password: _currentItem.password,
                   type: SecurityType
                       .wpa, //TODO: The security type is fixed for now
                 ).generate(),
-                padding: EdgeInsets.zero,
               ),
             ),
           ),
@@ -134,7 +132,7 @@ class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
       'Copied to clipboard',
       style: Theme.of(context)
           .textTheme
-          .bodyText1
+          .bodyLarge
           ?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
     )));
   }

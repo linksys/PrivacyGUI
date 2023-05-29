@@ -29,15 +29,15 @@ class PasswordValidityWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    TextStyle? _textStyle = Theme.of(context)
+    TextStyle? textStyle = Theme.of(context)
         .textTheme
-        .headline4
+        .headlineMedium
         ?.copyWith(color: Theme.of(context).colorScheme.surface);
 
-    List<Widget> _columnList = [
+    List<Widget> columnList = [
       Text(
         'Password must have',
-        style: _textStyle,
+        style: textStyle,
       ),
       const SizedBox(
         height: 4,
@@ -53,7 +53,7 @@ class PasswordValidityWidget extends ConsumerWidget {
             ),
             Text(
               _validityList[index].text,
-              style: _textStyle,
+              style: textStyle,
             ),
           ],
         );
@@ -61,8 +61,8 @@ class PasswordValidityWidget extends ConsumerWidget {
     ];
 
     return Column(
-      children: _columnList,
       crossAxisAlignment: CrossAxisAlignment.start,
+      children: columnList,
     );
   }
 }

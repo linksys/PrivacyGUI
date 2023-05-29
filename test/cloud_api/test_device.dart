@@ -1,12 +1,7 @@
-import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:linksys_moab/constants/_constants.dart';
-import 'package:linksys_moab/network/http/linksys_requests/authorization_service.dart';
-import 'package:linksys_moab/network/http/linksys_requests/data/cloud_account.dart';
-import 'package:linksys_moab/network/http/linksys_requests/data/create_account_input.dart';
 import 'package:linksys_moab/network/http/linksys_requests/device_service.dart';
-import 'package:linksys_moab/network/http/linksys_requests/user_service.dart';
 
 import 'testable_client.dart';
 
@@ -23,7 +18,7 @@ void main() {
       //     .passwordLogin(username: email, password: password)
       //     .then((value) => jsonDecode(value.body)['access_token']);
 
-      final token =
+      const token =
           '6E223C641F064337B835488D0D260EBF8EB290B86ABB4BC8925C447A7EB44D71';
       final response = await client.getNetworks(
         token: token,

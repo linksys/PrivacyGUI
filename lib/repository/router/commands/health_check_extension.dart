@@ -5,7 +5,9 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 
 extension HealthCheckService on RouterRepository {
   Future<JNAPSuccess> getHealthCheckResults() async {
-    final command = createCommand(JNAPAction.getHealthCheckResults.actionValue, needAuth: true,
+    final command = await createCommand(
+        JNAPAction.getHealthCheckResults.actionValue,
+        needAuth: true,
         data: {'includeModuleResults': true});
 
     final result = await CommandQueue().enqueue(command);
@@ -13,8 +15,9 @@ extension HealthCheckService on RouterRepository {
   }
 
   Future<JNAPSuccess> getSupportedHealthCheckModules() async {
-    final command =
-        createCommand(JNAPAction.getSupportedHealthCheckModules.actionValue, needAuth: true);
+    final command = await createCommand(
+        JNAPAction.getSupportedHealthCheckModules.actionValue,
+        needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
@@ -22,15 +25,17 @@ extension HealthCheckService on RouterRepository {
 
   // TODO: #REFACTOR : Support other type health check
   Future<JNAPSuccess> runHealthCheck() async {
-    final command = createCommand(JNAPAction.runHealthCheck.actionValue, needAuth: true,
-        data: {'runHealthCheckModule': 'SpeedTest'});
+    final command = await createCommand(JNAPAction.runHealthCheck.actionValue,
+        needAuth: true, data: {'runHealthCheckModule': 'SpeedTest'});
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> getHealthCheckStatus() async {
-    final command = createCommand(JNAPAction.getHealthCheckStatus.actionValue, needAuth: true);
+    final command = await createCommand(
+        JNAPAction.getHealthCheckStatus.actionValue,
+        needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);

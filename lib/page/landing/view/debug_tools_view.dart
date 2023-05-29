@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
 import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
@@ -45,17 +44,15 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
   StreamSubscription? _streamSubscription;
   String? _fcmToken;
   String? _apnsToken;
-  CloudEnvironment _selectedEnv = cloudEnvTarget;
+  final CloudEnvironment _selectedEnv = cloudEnvTarget;
 
   late final RouterRepository _routerRepository;
-  late final AuthBloc _authBloc;
   late final NetworkCubit _networkCubit;
 
   String appInfo = '';
 
   @override
   void initState() {
-    _authBloc = context.read<AuthBloc>();
     _networkCubit = context.read<NetworkCubit>();
     _routerRepository = context.read<RouterRepository>();
     super.initState();
@@ -179,7 +176,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: AppText.descriptionMain('Basic Info'),
+        title: const AppText.descriptionMain('Basic Info'),
         children: [
           AppText.descriptionSub(appInfo),
           const AppGap.regular(),
@@ -200,7 +197,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: AppText.descriptionMain('Connection Info'),
+        title: const AppText.descriptionMain('Connection Info'),
         children: [
           AppText.descriptionSub(
               'Router: ${connectivityState.connectivityInfo.routerType.name}'),
@@ -222,7 +219,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: AppText.descriptionMain('PushNotification Info'),
+        title: const AppText.descriptionMain('PushNotification Info'),
         children: [
           Offstage(
             offstage: Platform.isIOS,
@@ -296,7 +293,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: Text('Bluetooth testing'),
+        title: const Text('Bluetooth testing'),
         children: [
           PrimaryButton(
             text: 'Scan & connect',
@@ -321,6 +318,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
                   .then<JNAPSuccess?>((value) => value)
                   .onError((error, stackTrace) {
                 logger.e('Error', error, stackTrace);
+                return null;
               });
               logger.d('result1: $result1}');
               final result2 = await repository.getVersionInfo();
@@ -347,7 +345,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: Text('MDNS testing'),
+        title: const Text('MDNS testing'),
         children: [
           PrimaryButton(
             text: 'discover',

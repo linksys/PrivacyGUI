@@ -75,8 +75,8 @@ class _WifiSettingsReviewViewState
                     const AppText.descriptionSub(
                       'Where most of your devices connect.',
                     ),
-                    AppPadding(
-                      padding: const AppEdgeInsets.only(
+                    const AppPadding(
+                      padding: AppEdgeInsets.only(
                           top: AppGapSize.small, bottom: AppGapSize.regular),
                       child: AppText.descriptionSub(
                         '6 GHz, 5 GHz, 2.4 GHz',

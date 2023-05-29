@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
@@ -80,10 +79,10 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
                 return;
               }
               final password = widget.args['password'] ?? '';
-              context.read<AuthBloc>().add(CloudLogin(
-                    sessionToken: token,
-                    password: password,
-                  ));
+              // context.read<AuthBloc>().add(CloudLogin(
+              //       sessionToken: token,
+              //       password: password,
+              //     ));
               // ref.read(navigationsProvider.notifier)
               //     .clearAndPush(next..args.addAll(widget.args));
             }

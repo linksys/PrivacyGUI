@@ -29,7 +29,7 @@ class SchedulePauseListView extends ConsumerWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           title: Text(getAppLocalizations(context).schedule_pauses,
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           leading: BackButton(onPressed: () {
             ref.read(navigationsProvider.notifier).pop();
           }),
@@ -42,15 +42,15 @@ class SchedulePauseListView extends ConsumerWidget {
                         ..args = {'profileId': profile.name});
                 },
                 child: Text(getAppLocalizations(context).add,
-                    style: TextStyle(
+                    style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                         color: MoabColor.textButtonBlue))),
           ],
         ),
         child: rules.isEmpty
-            ? Center(
-                child: const Text('No data!'),
+            ? const Center(
+                child: Text('No data!'),
               )
             : Column(children: [
                 for (ScheduledPausedRule item in rules) ...[

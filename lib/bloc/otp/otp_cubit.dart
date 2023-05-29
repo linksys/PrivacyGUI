@@ -1,11 +1,15 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 
 import '../../repository/linksys_cloud_repository.dart';
 import '../../repository/model/cloud_session_model.dart';
 import 'otp_state.dart';
+
+enum CommunicationMethodType {
+  sms,
+  email;
+}
 
 class OtpCubit extends Cubit<OtpState> {
   OtpCubit({

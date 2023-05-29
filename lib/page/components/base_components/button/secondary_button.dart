@@ -13,8 +13,7 @@ class SecondaryButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final buttonTitle = Text(text ?? '');
     final buttonStyle = ElevatedButton.styleFrom(
-      primary: Theme.of(context).colorScheme.secondary,
-      onPrimary: Theme.of(context).colorScheme.onSecondary,
+      foregroundColor: Theme.of(context).colorScheme.onSecondary, backgroundColor: Theme.of(context).colorScheme.secondary,
       minimumSize: const Size.fromHeight(56),
       elevation: 0,
     );
@@ -27,9 +26,9 @@ class SecondaryButton extends ConsumerWidget {
             onPressed: onPress,
           )
         : ElevatedButton(
-            child: buttonTitle,
             style: buttonStyle,
             onPressed: onPress,
+            child: buttonTitle,
           );
   }
 }

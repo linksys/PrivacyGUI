@@ -2,12 +2,10 @@ import 'dart:convert';
 
 import 'package:linksys_moab/network/http/extension_requests/extension_requests.dart';
 import 'package:linksys_moab/network/http/model/cloud_auth_clallenge_method.dart';
-import 'package:linksys_moab/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
 import 'package:linksys_moab/network/http/model/cloud_login_state.dart';
 import 'package:linksys_moab/network/http/model/cloud_task_model.dart';
-import 'package:linksys_moab/util/logger.dart';
 import 'package:test/test.dart';
 
 import '../dev_testable_client.dart';
@@ -102,7 +100,7 @@ void main() {
       final nowTime = DateTime.now().millisecondsSinceEpoch;
       final downloadTime = (acceptState?.data.downloadTime ?? 0) * 1000;
       print('now time: $nowTime, download time: $downloadTime, diff: ${downloadTime-nowTime}');
-      await Future.delayed(Duration(seconds: 3));
+      await Future.delayed(const Duration(seconds: 3));
       final client = DevTestableClient();
       final response = await client.downloadCloudCerts(
           taskId: acceptState?.data.taskId ?? '',

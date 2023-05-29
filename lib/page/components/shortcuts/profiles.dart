@@ -19,7 +19,7 @@ Widget profileTileShort(BuildContext context, UserProfile profile) {
           box8(),
           Text(
             profile.name,
-            style: Theme.of(context).textTheme.bodyText1,
+            style: Theme.of(context).textTheme.bodyLarge,
           )
         ],
       ),

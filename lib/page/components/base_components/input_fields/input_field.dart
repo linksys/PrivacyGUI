@@ -46,14 +46,14 @@ class InputField extends ConsumerWidget {
         titleText.isEmpty
             ? const Center()
             : Padding(
+                padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
                   titleText,
                   style: Theme.of(context)
                       .textTheme
-                      .headline4
+                      .headlineMedium
                       ?.copyWith(color: isError ? errorColor : primaryColor),
                 ),
-                padding: const EdgeInsets.only(bottom: 8),
               ),
         PrimaryTextField(
           controller: controller,
@@ -79,7 +79,7 @@ class InputField extends ConsumerWidget {
                   errorText,
                   style: Theme.of(context)
                       .textTheme
-                      .bodyText1
+                      .bodyLarge
                       ?.copyWith(color: errorColor),
                 )
               ],

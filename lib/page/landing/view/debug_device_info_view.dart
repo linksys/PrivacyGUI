@@ -41,10 +41,11 @@ class _DebugDeviceInfoViewState extends ConsumerState<DebugDeviceInfoView> {
 
   Widget _information(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           _appInfoFromLogger,
-          style: Theme.of(context).textTheme.headline3?.copyWith(
+          style: Theme.of(context).textTheme.displaySmall?.copyWith(
                 color: Theme.of(context).primaryColor,
               ),
         ),
@@ -53,12 +54,11 @@ class _DebugDeviceInfoViewState extends ConsumerState<DebugDeviceInfoView> {
         ),
         Text(
           getScreenInfo(context),
-          style: Theme.of(context).textTheme.headline3?.copyWith(
+          style: Theme.of(context).textTheme.displaySmall?.copyWith(
                 color: Theme.of(context).primaryColor,
               ),
         ),
       ],
-      crossAxisAlignment: CrossAxisAlignment.start,
     );
   }
 }

@@ -5,7 +5,8 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 
 extension DeviceListService on RouterRepository {
   Future<JNAPSuccess> getDevices() async {
-    final command = createCommand(JNAPAction.getDevices.actionValue, needAuth: true);
+    final command =
+        await createCommand(JNAPAction.getDevices.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
@@ -13,7 +14,8 @@ extension DeviceListService on RouterRepository {
 
   // Doesn't work ???
   Future<JNAPSuccess> getLocalDevice() async {
-    final command = createCommand(JNAPAction.getLocalDevice.actionValue, needAuth: true);
+    final command = await createCommand(JNAPAction.getLocalDevice.actionValue,
+        needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
@@ -23,12 +25,14 @@ extension DeviceListService on RouterRepository {
       {required String deviceId,
       List<Map<String, String>> propertiesToModify = const [],
       List<String> propertiesToRemove = const []}) async {
-    final command =
-        createCommand(JNAPAction.setDeviceProperties.actionValue, needAuth: true, data: {
-      'deviceID': deviceId,
-      'propertiesToModify': propertiesToModify,
-      'propertiesToRemove': propertiesToRemove,
-    });
+    final command = await createCommand(
+        JNAPAction.setDeviceProperties.actionValue,
+        needAuth: true,
+        data: {
+          'deviceID': deviceId,
+          'propertiesToModify': propertiesToModify,
+          'propertiesToRemove': propertiesToRemove,
+        });
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);

@@ -109,9 +109,9 @@ class CFSecureCategory extends Equatable with CFStatus {
       description: '',
       webFilters: CFWebFilters(
         status: FilterStatus.notAllowed,
-        webFilters: [],
+        webFilters: const [],
       ),
-      apps: [],
+      apps: const [],
     );
   }
 

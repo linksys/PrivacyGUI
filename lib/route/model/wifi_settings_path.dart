@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:linksys_moab/page/wifi_settings/view/_view.dart';
 import '_model.dart';
-import 'package:linksys_moab/route/_route.dart';
 
 
 class WifiSettingsPath extends DashboardPath {
@@ -33,7 +32,7 @@ class WifiSettingsPath extends DashboardPath {
           args: args,
         );
       default:
-        return Center();
+        return const Center();
     }
   }
 }

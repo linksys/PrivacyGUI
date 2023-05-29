@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/_auth.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
-import 'package:linksys_moab/bloc/setup/bloc.dart';
-import 'package:linksys_moab/bloc/setup/event.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/base_components/button/primary_button.dart';
@@ -21,7 +17,6 @@ import 'package:linksys_moab/route/_route.dart';
 
 import 'package:linksys_moab/util/in_app_browser.dart';
 
-import '../../../bloc/setup/state.dart';
 import '../../../route/navigations_notifier.dart';
 import '../../components/base_components/input_fields/password_input_field.dart';
 
@@ -57,9 +52,6 @@ class _CreateAdminPasswordViewState
     if (widget.args.containsKey('type')) {
       _type = widget.args['type'];
     }
-    context
-        .read<SetupBloc>()
-        .add(const ResumePointChanged(status: SetupResumePoint.routerPassword));
   }
 
   @override
@@ -83,7 +75,7 @@ class _CreateAdminPasswordViewState
         ),
         content: Column(
           children: [
-            SizedBox(
+            const SizedBox(
               height: 64,
             ),
             PrimaryButton(
@@ -147,10 +139,7 @@ class _CreateAdminPasswordViewState
             text: getAppLocalizations(context).next,
             onPress: () {
               if (_type == AdminPasswordType.create) {
-                context.read<SetupBloc>().add(SetAdminPasswordHint(
-                    password: passwordController.text,
-                    hint: hintController.text));
-                ref.read(navigationsProvider.notifier).push(SaveSettingsPath());
+                
               } else {
                 _createPassword(passwordController.text, hintController.text);
               }

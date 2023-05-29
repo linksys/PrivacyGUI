@@ -456,7 +456,7 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
             Offset(offset.dy - node.y - globalPadding, node.x - offset.dx);
         break;
       default:
-        finalOffset = Offset(0, 0);
+        finalOffset = const Offset(0, 0);
         break;
     }
     return finalOffset;
@@ -483,20 +483,22 @@ class CustomBuchheimWalkerAlgorithm extends Algorithm {
   final double viewWidth;
   final double viewHeight;
   double _shiftX;
-  double _shiftY;
+  final double _shiftY;
 
   void initData(Graph? graph) {
-    graph?.nodes.forEach((node) {
+    final nodes = graph?.nodes ?? [];
+    for (var node in nodes) {
       var nodeDatab = BuchheimWalkerNodeData();
       nodeDatab.ancestor = node;
 
       nodeData[node] = nodeDatab;
-    });
+    }
 
-    graph?.edges.forEach((element) {
+    final edges = graph?.edges ?? [];
+    for (var element in edges) {
       nodeData[element.source]?.successorNodes.add(element.destination);
       nodeData[element.destination]?.predecessorNodes.add(element.source);
-    });
+    }
   }
 
   BuchheimWalkerNodeData? getNodeData(Node? node) {

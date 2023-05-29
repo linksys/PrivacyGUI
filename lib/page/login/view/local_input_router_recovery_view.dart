@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
-import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
-import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/create_account/view/_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 import 'package:pin_code_fields/pin_code_fields.dart';
 
@@ -25,7 +22,7 @@ class LocalRecoveryKeyView extends ArgumentsConsumerStatefulView {
 
 class _LocalResetRouterPasswordState
     extends ConsumerState<LocalRecoveryKeyView> {
-  bool _isLoading = false;
+  final bool _isLoading = false;
   final TextEditingController _otpController = TextEditingController();
   String _errorReason = '';
 
@@ -36,10 +33,8 @@ class _LocalResetRouterPasswordState
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) => _isLoading
-          ? FullScreenSpinner(text: getAppLocalizations(context).processing)
-          : _contentView(),
+    return const Center(
+      child: AppText.descriptionMain('TBD'),
     );
   }
 
@@ -82,7 +77,7 @@ class _LocalResetRouterPasswordState
                   _errorReason,
                   style: Theme.of(context)
                       .textTheme
-                      .bodyText1
+                      .bodyLarge
                       ?.copyWith(color: Colors.red),
                 ),
               ),

@@ -1,4 +1,3 @@
-import 'dart:math';
 
 import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/model/group_profile.dart';

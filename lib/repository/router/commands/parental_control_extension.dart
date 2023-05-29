@@ -5,8 +5,9 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 
 extension ParentalControlService on RouterRepository {
   Future<JNAPSuccess> getParentalControlSettings() async {
-    final command =
-        createCommand(JNAPAction.getParentalControlSettings.actionValue, needAuth: true);
+    final command = await createCommand(
+        JNAPAction.getParentalControlSettings.actionValue,
+        needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);

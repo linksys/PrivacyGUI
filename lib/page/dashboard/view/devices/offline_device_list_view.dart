@@ -106,7 +106,7 @@ class _OfflineDeviceListViewState extends ConsumerState<OfflineDeviceListView> {
   }
 
   _offlineDeviceInfoCell(DeviceDetailInfo deviceInfo) {
-    Widget _deviceIcon = ImageWithBadge(
+    Widget deviceIcon = ImageWithBadge(
       imagePath: deviceInfo.icon,
       badgePath: deviceInfo.profileId != null
           ? context
@@ -123,7 +123,7 @@ class _OfflineDeviceListViewState extends ConsumerState<OfflineDeviceListView> {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         children: [
-          _deviceIcon,
+          deviceIcon,
           box16(),
           Expanded(
             child: Text(

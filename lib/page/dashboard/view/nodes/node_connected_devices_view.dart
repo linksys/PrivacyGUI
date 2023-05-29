@@ -57,7 +57,7 @@ class _NodeConnectedDevicesViewState
               ),
               title: Text(
                 Utils.getDeviceName_(device),
-                style: Theme.of(context).textTheme.headline4,
+                style: Theme.of(context).textTheme.headlineMedium,
               ),
               trailing: const Icon(Icons.arrow_forward_ios),
             );

@@ -12,7 +12,7 @@ class DescriptionText extends ConsumerWidget {
       text,
       style: Theme.of(context)
           .textTheme
-          .headline3
+          .displaySmall
           ?.copyWith(color: Theme.of(context).colorScheme.tertiary)
           .copyWith(height: 1.5),
     );

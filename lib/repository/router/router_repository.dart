@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/auth/_auth.dart';
+import 'package:linksys_moab/bloc/auth/auth_provider.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/mixin/stream_mixin.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
@@ -52,20 +53,11 @@ class RouterRepository with StateStreamListener {
   final Ref ref;
   bool _btSetupMode = false;
   final LinksysHttpClient _client = LinksysHttpClient();
-  String _cloudToken = '';
-  String _localIp = '';
-  String _localPassword = '';
-  LoginFrom _loginType = LoginFrom.none;
   String? _networkId;
-  RouterType _routerType = RouterType.others;
 
   @override
   consume(event) {
-    if (event is ConnectivityState) {
-      _handleConnectivityChanged(event);
-    } else if (event is AuthState) {
-      _handleAuthChanged(event);
-    } else if (event is NetworkState) {
+    if (event is NetworkState) {
       _handleNetworkChanged(event);
     }
   }
@@ -90,7 +82,7 @@ class RouterRepository with StateStreamListener {
     bool auth = false,
     CommandType? type,
   }) async {
-    final command = createCommand(action.actionValue,
+    final command = await createCommand(action.actionValue,
         data: data, extraHeaders: extraHeaders, needAuth: auth, type: type);
     final sideEffectManager = ref.read(sideEffectProvider.notifier);
     return CommandQueue()
@@ -109,7 +101,7 @@ class RouterRepository with StateStreamListener {
         .map((entry) =>
             {'action': entry.key.actionValue, 'request': entry.value})
         .toList();
-    final command = createTransaction(payload, needAuth: builder.auth);
+    final command = await createTransaction(payload, needAuth: builder.auth);
 
     return CommandQueue()
         .enqueue(command)
@@ -119,20 +111,22 @@ class RouterRepository with StateStreamListener {
             jnapSuccess: value as JNAPTransactionSuccess));
   }
 
-  TransactionHttpCommand createTransaction(List<Map<String, dynamic>> payload,
-      {bool needAuth = false, CommandType? type}) {
+  Future<TransactionHttpCommand> createTransaction(
+      List<Map<String, dynamic>> payload,
+      {bool needAuth = false,
+      CommandType? type}) async {
+    final loginType = getLoginType();
+    final routerType = getRouterType();
     final communicateType = type ??
-        (_loginType == LoginFrom.local
-            ? CommandType.local
-            : CommandType.remote);
+        (loginType == LoginType.local ? CommandType.local : CommandType.remote);
     logger.d('create transaction');
     String url = _buildCommandUrl(
-      routerType: _routerType,
+      routerType: routerType,
       type: communicateType,
     );
-    Map<String, String> header = _buildCommandHeader(
+    Map<String, String> header = await _buildCommandHeader(
       needAuth: needAuth,
-      routerType: _routerType,
+      routerType: routerType,
       type: communicateType,
     );
 
@@ -144,13 +138,13 @@ class RouterRepository with StateStreamListener {
     }
   }
 
-  BaseCommand<JNAPResult, JNAPCommandSpec> createCommand(
+  Future<BaseCommand<JNAPResult, JNAPCommandSpec>> createCommand(
     String action, {
     Map<String, dynamic> data = const {},
     Map<String, String> extraHeaders = const {},
     bool needAuth = false,
     CommandType? type,
-  }) {
+  }) async {
     if (isEnableBTSetup) {
       return _createBTCommand(
         action,
@@ -177,7 +171,7 @@ class RouterRepository with StateStreamListener {
   }) async* {
     int retry = 0;
     while (++retry <= maxRetry) {
-      final command = createCommand(action.actionValue, data: data);
+      final command = await createCommand(action.actionValue, data: data);
       logger.d('publish command {$action: $retry times');
       // TODO #ERRORHANDLING handle other errors - timeout error, etc...
       yield await CommandQueue()
@@ -198,26 +192,12 @@ class RouterRepository with StateStreamListener {
     }
   }
 
-  @Deprecated('No more use w/ HTTP')
-  Future<Map<String, JNAPSuccess>> batchCommands(
-      List<CommandWrap> commands) async {
-    Map<String, JNAPSuccess> _map = {};
-    for (CommandWrap e in commands) {
-      _map[e.action] =
-          await createCommand(e.action, needAuth: e.needAuth, data: e.data)
-              .publish()
-              .then(
-                (value) => handleJNAPResult(value),
-              );
-    }
-    return _map;
-  }
-
   String _buildCommandUrl({
     required RouterType routerType,
     required CommandType? type,
   }) {
     String url;
+    final localIP = getLocalIP();
     final newRouterType = () {
       if (type == CommandType.local) {
         return RouterType.behindManaged;
@@ -229,27 +209,30 @@ class RouterRepository with StateStreamListener {
     }();
     switch (newRouterType) {
       case RouterType.others:
-        url = _loginType == LoginFrom.remote
+        url = isCloudLogin()
             ? cloudEnvironmentConfig[kCloudJNAP]
-            : 'https://$_localIp/JNAP/';
+            : 'https://$localIP/JNAP/';
         break;
       case RouterType.behind:
-        url = _loginType == LoginFrom.remote
-            ? 'https://$_localIp/cloud/JNAP/'
-            : 'https://$_localIp/JNAP/';
+        url = isCloudLogin()
+            ? 'https://$localIP/cloud/JNAP/'
+            : 'https://$localIP/JNAP/';
         break;
       case RouterType.behindManaged:
-        url = 'https://$_localIp/JNAP/';
+        url = 'https://$localIP/JNAP/';
         break;
     }
     return url;
   }
 
-  Map<String, String> _buildCommandHeader({
+  Future<Map<String, String>> _buildCommandHeader({
     bool needAuth = false,
     required RouterType routerType,
     required CommandType? type,
-  }) {
+  }) async {
+    final cloudToken = await getCloudToken();
+    final cloudLogin = isCloudLogin();
+    final loginType = getLoginType();
     Map<String, String> header = {};
     final newRouterType = () {
       if (type == CommandType.local) {
@@ -268,7 +251,7 @@ class RouterRepository with StateStreamListener {
         /// NetworkId: {NetworkId}
         header = {
           HttpHeaders.authorizationHeader:
-              'LinksysUserAuth session_token=$_cloudToken',
+              'LinksysUserAuth session_token=$cloudToken',
           kJNAPNetworkId: _networkId ?? '',
           kHeaderClientTypeId: kClientTypeId,
         };
@@ -281,7 +264,7 @@ class RouterRepository with StateStreamListener {
         ///
         header = {
           HttpHeaders.authorizationHeader:
-              'LinksysUserAuth session_token=$_cloudToken',
+              'LinksysUserAuth session_token=$cloudToken',
           kJNAPNetworkId: _networkId ?? '',
           kHeaderClientTypeId: kClientTypeId,
         };
@@ -294,14 +277,12 @@ class RouterRepository with StateStreamListener {
         /// Remote:
         /// X-JNAP-Session : Token
         ///
-        final authKey =
-            _loginType == LoginFrom.remote ? kJNAPSession : kJNAPAuthorization;
-        final authValue = _loginType == LoginFrom.remote
-            ? _cloudToken
-            : 'Basic ${Utils.stringBase64Encode('admin:${_loginType == LoginFrom.none ? 'admin' : _localPassword}')}';
+        final authKey = cloudLogin ? kJNAPSession : kJNAPAuthorization;
+        final authValue = cloudLogin
+            ? await getCloudToken()
+            : 'Basic ${Utils.stringBase64Encode('admin:${loginType == LoginType.none ? 'admin' : getLocalPassword()}')}';
         header = {
-          authKey:
-              (needAuth | (_loginType == LoginFrom.remote)) ? authValue : '',
+          authKey: (needAuth | isCloudLogin()) ? authValue : '',
         };
         break;
     }
@@ -314,24 +295,23 @@ class RouterRepository with StateStreamListener {
     return JNAPBTCommand(executor: executor, action: action, data: data);
   }
 
-  BaseCommand<JNAPResult, HttpJNAPSpec> _createHttpCommand(
+  Future<BaseCommand<JNAPResult, HttpJNAPSpec>> _createHttpCommand(
     String action, {
     Map<String, dynamic> data = const {},
     Map<String, String> extraHeaders = const {},
     bool needAuth = false,
     CommandType? type,
-  }) {
-    final communicateType = type ??
-        (_loginType == LoginFrom.local
-            ? CommandType.local
-            : CommandType.remote);
+  }) async {
+    final routerType = getRouterType();
+    final communicateType =
+        type ?? (!isCloudLogin() ? CommandType.local : CommandType.remote);
     String url = _buildCommandUrl(
-      routerType: _routerType,
+      routerType: routerType,
       type: communicateType,
     );
-    Map<String, String> header = _buildCommandHeader(
+    Map<String, String> header = await _buildCommandHeader(
       needAuth: needAuth,
-      routerType: _routerType,
+      routerType: routerType,
       type: communicateType,
     );
     header.addEntries(extraHeaders.entries);
@@ -352,32 +332,38 @@ class RouterRepository with StateStreamListener {
   _handleNetworkChanged(NetworkState state) async {
     _networkId = state.selected?.id ?? '';
   }
+}
 
-  _handleConnectivityChanged(ConnectivityState state) async {
-    logger.d('Router repository:: handleConnectivityChanged: $state');
-    _localIp = state.connectivityInfo.gatewayIp ?? '';
-    _routerType = state.connectivityInfo.routerType;
+extension RouterRepositoryUtil on RouterRepository {
+  String getLocalIP() {
+    return ref.read(connectivityProvider).connectivityInfo.gatewayIp ?? '';
   }
 
-  _handleAuthChanged(AuthState state) async {
-    logger.d(
-        'Router repository:: _handleAuthChanged: $state, ${state.runtimeType}');
-    if (state is AuthLocalLoginState) {
-      _localPassword = await const FlutterSecureStorage()
-              .read(key: linksysPrefLocalPassword) ??
-          '';
-      _loginType = LoginFrom.local;
-    } else if (state is AuthCloudLoginState) {
-      _cloudToken = (await const FlutterSecureStorage()
-                  .read(key: pSessionToken)
-                  .then((value) => value != null
-                      ? SessionToken.fromJson(jsonDecode(value))
-                      : null))
-              ?.accessToken ??
-          '';
-      _loginType = LoginFrom.remote;
-    } else {
-      _loginType = LoginFrom.none;
-    }
+  Future<String> getCloudToken() async {
+    return (await const FlutterSecureStorage().read(key: pSessionToken).then(
+                (value) => value != null
+                    ? SessionToken.fromJson(jsonDecode(value))
+                    : null))
+            ?.accessToken ??
+        '';
   }
+
+  Future<String> getLocalPassword() async {
+    return await const FlutterSecureStorage()
+            .read(key: linksysPrefLocalPassword) ??
+        '';
+  }
+
+  RouterType getRouterType() =>
+      ref.read(connectivityProvider).connectivityInfo.routerType;
+
+  LoginType getLoginType() =>
+      ref.read(authProvider).value?.loginType ?? LoginType.none;
+
+  bool isLogin() =>
+      (ref.read(authProvider).value?.loginType ?? LoginType.none) !=
+      LoginType.none;
+
+  bool isCloudLogin() =>
+      ref.read(authProvider).value?.loginType == LoginType.remote;
 }

@@ -13,7 +13,7 @@ class PopupButton extends ConsumerStatefulWidget {
     required this.icon,
     required this.content,
     this.borderRadius,
-    this.backgroundColor = const Color(0xFFF67C0B9),
+    this.backgroundColor = const Color(0xfff67c0b9),
   }) : super(key: key);
 
   @override
@@ -34,7 +34,7 @@ class _PopupButtonState extends ConsumerState<PopupButton>
   void initState() {
     _animationController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 250),
+      duration: const Duration(milliseconds: 250),
     );
     _borderRadius = widget.borderRadius ?? BorderRadius.circular(4);
     _key = LabeledGlobalKey("button_icon");
@@ -63,7 +63,7 @@ class _PopupButtonState extends ConsumerState<PopupButton>
     findButton();
     _animationController.forward();
     _overlayEntry = _overlayEntryBuilder();
-    Overlay.of(context)?.insert(_overlayEntry);
+    Overlay.of(context).insert(_overlayEntry);
     isMenuOpen = !isMenuOpen;
   }
 
@@ -72,7 +72,7 @@ class _PopupButtonState extends ConsumerState<PopupButton>
     return Container(
       key: _key,
       decoration: BoxDecoration(
-        color: Color(0x00000000),
+        color: const Color(0x00000000),
         borderRadius: _borderRadius,
       ),
       child: IconButton(
@@ -117,7 +117,7 @@ class _PopupButtonState extends ConsumerState<PopupButton>
                   color: Colors.transparent,
                   child: Stack(
                     children: <Widget>[
-                      Align(
+                      const Align(
                         alignment: Alignment.topCenter,
                         // child: ClipPath(
                         //   clipper: ArrowClipper(),

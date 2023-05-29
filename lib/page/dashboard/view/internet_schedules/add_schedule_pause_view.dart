@@ -123,7 +123,7 @@ class _AddSchedulePauseViewState extends ConsumerState<AddSchedulePauseView> {
                     });
                   },
                 ),
-                Spacer(),
+                const Spacer(),
                 TextButton(
                     onPressed: () {
                       setState(() {
@@ -163,14 +163,14 @@ class _AddSchedulePauseViewState extends ConsumerState<AddSchedulePauseView> {
                       .then((value) =>
                           ref.read(navigationsProvider.notifier).pop());
                 },
+                style: TextButton.styleFrom(
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.only(left: 0)),
                 child: const Text('Delete',
                     style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
-                        color: Color.fromRGBO(207, 26, 26, 1.0))),
-                style: TextButton.styleFrom(
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.only(left: 0))),
+                        color: Color.fromRGBO(207, 26, 26, 1.0)))),
             const SizedBox(height: 25),
             const Text('Router time: 5:05pm',
                 style: TextStyle(

@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
-import 'package:linksys_moab/bloc/auth/event.dart';
-import 'package:linksys_moab/bloc/auth/state.dart';
-import 'package:linksys_moab/bloc/otp/otp.dart';
+import 'package:linksys_moab/bloc/auth/auth_provider.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
@@ -34,11 +29,12 @@ class _CreateAccountPasswordViewState
     if (hasError) {
       setState(() {});
     } else {
-      // Remove old value
-      context.read<AuthBloc>().add(SetCloudPassword(password: ''));
-      context
-          .read<AuthBloc>()
-          .add(SetCloudPassword(password: passwordController.text));
+      // // Remove old value
+      // context.read<AuthBloc>().add(SetCloudPassword(password: ''));
+      // context
+      //     .read<AuthBloc>()
+      //     .add(SetCloudPassword(password: passwordController.text));
+      // TODO set passwod?
     }
   }
 
@@ -49,30 +45,33 @@ class _CreateAccountPasswordViewState
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<AuthBloc, AuthState>(
-        listenWhen: (previous, current) {
-          if (previous is AuthOnCreateAccountState &&
-              current is AuthOnCreateAccountState) {
-            return previous.accountInfo.password !=
-                current.accountInfo.password;
-          }
-          return false;
-        },
-        listener: (context, state) {
-          if (state is AuthOnCreateAccountState) {
-            if (state.accountInfo.password.isNotEmpty) {
-              final username = state.accountInfo.username;
-              ref.read(navigationsProvider.notifier).push(CreateAccount2SVPath()
-                ..args = {
-                  'username': username,
-                  'function': OtpFunction.setting2sv,
-                  'commMethods': state.accountInfo.communicationMethods,
-                  'token': state.vToken,
-                });
-            }
-          }
-        },
-        builder: (context, state) => _contentView());
+    // TODO
+    final data = ref.watch(authProvider);
+    return _contentView();
+    // return BlocConsumer<AuthBloc, AuthState>(
+    //     listenWhen: (previous, current) {
+    //       if (previous is AuthOnCreateAccountState &&
+    //           current is AuthOnCreateAccountState) {
+    //         return previous.accountInfo.password !=
+    //             current.accountInfo.password;
+    //       }
+    //       return false;
+    //     },
+    //     listener: (context, state) {
+    //       if (state is AuthOnCreateAccountState) {
+    //         if (state.accountInfo.password.isNotEmpty) {
+    //           final username = state.accountInfo.username;
+    //           ref.read(navigationsProvider.notifier).push(CreateAccount2SVPath()
+    //             ..args = {
+    //               'username': username,
+    //               'function': OtpFunction.setting2sv,
+    //               'commMethods': state.accountInfo.communicationMethods,
+    //               'token': state.vToken,
+    //             });
+    //         }
+    //       }
+    //     },
+    //     builder: (context, state) => _contentView());
   }
 
   Widget _contentView() {

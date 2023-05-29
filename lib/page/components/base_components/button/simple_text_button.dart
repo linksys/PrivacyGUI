@@ -49,7 +49,7 @@ class SimpleTextButton extends ConsumerWidget {
       child: Text(
         text,
         style: style ??
-            Theme.of(context).textTheme.button?.copyWith(
+            Theme.of(context).textTheme.labelLarge?.copyWith(
                   color: onPressed != null
                       ? Theme.of(context).colorScheme.onTertiary
                       : const Color.fromRGBO(8, 112, 234, 0.5),

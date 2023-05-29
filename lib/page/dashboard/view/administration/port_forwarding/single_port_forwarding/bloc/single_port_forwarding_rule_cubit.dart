@@ -39,12 +39,12 @@ class SinglePortForwardingRuleCubit
   }
 
   Future<bool> save(SinglePortForwardingRule rule) async {
-    final _state = state;
-    final rules = List<SinglePortForwardingRule>.from(_state.rules);
-    if (_state is AddSinglePortForwardingRule) {
+    final currentState = state;
+    final rules = List<SinglePortForwardingRule>.from(state.rules);
+    if (currentState is AddSinglePortForwardingRule) {
       rules.add(rule);
-    } else if (_state is EditSinglePortForwardingRule) {
-      int index = _state.rules.indexOf(_state.rule);
+    } else if (currentState is EditSinglePortForwardingRule) {
+      int index = currentState.rules.indexOf(currentState.rule);
       rules.replaceRange(index, index + 1, [rule]);
     }
     final result = await _repository
@@ -55,10 +55,10 @@ class SinglePortForwardingRuleCubit
   }
 
   Future<bool> delete() async {
-    final _state = state;
-    if (_state is EditSinglePortForwardingRule) {
-      final rules = List<SinglePortForwardingRule>.from(_state.rules)
-        ..removeWhere((element) => element == _state.rule);
+    final currentState = state;
+    if (currentState is EditSinglePortForwardingRule) {
+      final rules = List<SinglePortForwardingRule>.from(currentState.rules)
+        ..removeWhere((element) => element == currentState.rule);
       final result = await _repository
           .setSinglePortForwardingRules(rules)
           .then((value) => true)

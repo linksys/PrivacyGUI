@@ -24,9 +24,9 @@ class PrimaryButton extends ConsumerWidget {
             onPressed: onPress,
           )
         : ElevatedButton(
-            child: buttonTitle,
             style: buttonStyle,
             onPressed: onPress,
+            child: buttonTitle,
           );
   }
 }

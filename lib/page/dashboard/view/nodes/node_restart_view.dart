@@ -25,8 +25,8 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
         context, ref,
         child: Visibility(
           visible: !state.isSystemRestarting,
-          child: restartConfirmation(),
           replacement: restartingIndicator(),
+          child: restartConfirmation(),
         ),
       );
     });
@@ -42,14 +42,14 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
         box36(),
         Text(
           'Restarting will temporarily disconnect devices',
-          style: Theme.of(context).textTheme.headline2?.copyWith(
+          style: Theme.of(context).textTheme.displayMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onPrimary,
               ),
         ),
         box16(),
         Text(
           'They will reconnect when your network is ready.',
-          style: Theme.of(context).textTheme.headline3,
+          style: Theme.of(context).textTheme.displaySmall,
         ),
         box36(),
         PrimaryButton(
@@ -74,7 +74,7 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
         box48(),
         Text(
           'Restarting your network...',
-          style: Theme.of(context).textTheme.headline1?.copyWith(
+          style: Theme.of(context).textTheme.displayLarge?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: Theme.of(context).colorScheme.onPrimary,
               ),

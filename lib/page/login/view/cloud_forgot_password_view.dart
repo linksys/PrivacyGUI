@@ -1,9 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
-import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/auth/auth_provider.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
@@ -11,6 +9,7 @@ import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 
@@ -27,34 +26,36 @@ class CloudForgotPasswordView extends ArgumentsConsumerStatefulView {
 class _CloudForgotPasswordViewState
     extends ConsumerState<CloudForgotPasswordView> {
   bool _isLoading = false;
-  bool _isLinkSent = false;
+  final bool _isLinkSent = false;
 
   // TODO: need modify
-  bool _hasPhoneNumber = false;
+  final bool _hasPhoneNumber = false;
   bool _sendLinkViaEmail = false;
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) => _isLoading
-          ? FullScreenSpinner(text: getAppLocalizations(context).processing)
-          : _contentView(state),
-    );
+    final data = ref.watch(authProvider);
+    return data.when(
+        data: _contentView,
+        error: (_, __) => const Center(child: AppText.descriptionMain('Something wrong here'),),
+        loading: () =>
+            FullScreenSpinner(text: getAppLocalizations(context).processing));
   }
 
   Widget _contentView(AuthState state) {
     // TODO: need modify
-    _hasPhoneNumber = (state as AuthOnCloudLoginState)
-            .accountInfo
-            .communicationMethods
-            .length >
-        1;
+    // _hasPhoneNumber = (state as AuthOnCloudLoginState)
+    //         .accountInfo
+    //         .communicationMethods
+    //         .length >
+    //     1;
     return _isLinkSent ? _linkSentView(state) : _sendLinkView(state);
   }
 
   Widget _sendLinkView(AuthState state) {
     return BasePageView.withCloseButton(
-      context, ref,
+      context,
+      ref,
       child: BasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
@@ -75,14 +76,14 @@ class _CloudForgotPasswordViewState
                 setState(() {
                   _isLoading = true;
                 });
-                await context
-                    .read<AuthBloc>()
-                    .forgotPassword()
-                    .then((value) => {
-                          setState(() {
-                            _isLinkSent = true;
-                          })
-                        });
+                // await context
+                //     .read<AuthBloc>()
+                //     .forgotPassword()
+                //     .then((value) => {
+                //           setState(() {
+                //             _isLinkSent = true;
+                //           })
+                //         });
                 setState(() {
                   _isLoading = false;
                 });
@@ -117,7 +118,7 @@ class _CloudForgotPasswordViewState
         ),
         GestureDetector(
           child: SelectableItem(
-            text: (state as AuthOnCloudLoginState).accountInfo.username,
+            text: state.username ?? '',
             height: 66,
             isSelected: _sendLinkViaEmail,
           ),

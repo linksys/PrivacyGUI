@@ -87,7 +87,7 @@ class FCNResponse extends Equatable {
     String? status,
     String? httpMethod,
     String? serial,
-    dynamic? results,
+    dynamic results,
   }) {
     return FCNResponse(
       path: path ?? this.path,

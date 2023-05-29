@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/account/_account.dart';
-import 'package:linksys_moab/bloc/account/account_provider.dart';
 import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -63,10 +62,11 @@ class _LoginMethodOptionsViewState
                 .clearAndPush(AccountDetailPath());
           }
         }),
-        actions: [],
+        actions: const [],
       ),
       scrollable: true,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
             title: const Text('One-time passcode (OTP)',
@@ -154,7 +154,6 @@ class _LoginMethodOptionsViewState
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400)),
           )
         ],
-        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

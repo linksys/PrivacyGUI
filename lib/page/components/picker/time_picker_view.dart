@@ -101,24 +101,24 @@ class _TimePickerViewState extends ConsumerState<TimePickerView> {
                   _iosSelectTime(context);
                 }
               },
+              style: TextButton.styleFrom(
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.only(left: 0)),
               child: Text(Utils.formatTimeAmPm(_current.inSeconds),
                   style: const TextStyle(
                       color: Colors.black,
                       fontSize: 25,
-                      fontWeight: FontWeight.w500)),
-              style: TextButton.styleFrom(
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.only(left: 0))),
+                      fontWeight: FontWeight.w500))),
           const SizedBox(height: 6),
           Image.asset('assets/images/line.png'),
           const SizedBox(height: 6),
           Visibility(
-            child: const Text('next day',
-                style: TextStyle(fontSize: 13, color: Colors.grey)),
             visible: widget.isNextDay,
             maintainSize: true,
             maintainAnimation: true,
             maintainState: true,
+            child: const Text('next day',
+                style: TextStyle(fontSize: 13, color: Colors.grey)),
           )
         ]);
   }

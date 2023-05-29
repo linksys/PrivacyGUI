@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:collection/collection.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/jnap/result/fcn_result.dart';

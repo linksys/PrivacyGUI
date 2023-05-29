@@ -71,7 +71,7 @@ class _DashboardViewState
                     child: Padding(
                       padding: EdgeInsets.only(
                           top: Utils.getTopSafeAreaPadding(context)),
-                      child: OverlayInfoView(),
+                      child: const OverlayInfoView(),
                     ),
                   ),
                 ),

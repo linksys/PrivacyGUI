@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:crypto/crypto.dart';
 import 'package:http/http.dart';
 import 'package:linksys_moab/constants/cloud_const.dart';
 import 'package:linksys_moab/network/http/linksys_http_client.dart';

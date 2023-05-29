@@ -106,8 +106,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           ],
         ),
         const AppGap.big(),
-        Row(
-          children: const [
+        const Row(
+          children: [
             AppText.screenName(
               'Internet ',
             ),
@@ -222,10 +222,10 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     assert(!(image != null && svgPicture != null));
 
     Widget child = Container();
-    final _image = image;
-    if (_image != null) {
+    final image0 = image;
+    if (image0 != null) {
       child = Image(
-        image: _image,
+        image: image0,
         width: 30,
         height: 30,
       );

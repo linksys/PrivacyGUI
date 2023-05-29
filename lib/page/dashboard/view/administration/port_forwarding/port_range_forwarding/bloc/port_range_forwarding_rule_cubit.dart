@@ -38,12 +38,12 @@ class PortRangeForwardingRuleCubit extends Cubit<PortRangeForwardingRuleState> {
   }
 
   Future<bool> save(PortRangeForwardingRule rule) async {
-    final _state = state;
-    final rules = List<PortRangeForwardingRule>.from(_state.rules);
-    if (_state is AddPortRangeForwardingRule) {
+    final currentState = state;
+    final rules = List<PortRangeForwardingRule>.from(currentState.rules);
+    if (currentState is AddPortRangeForwardingRule) {
       rules.add(rule);
-    } else if (_state is EditPortRangeForwardingRule) {
-      int index = _state.rules.indexOf(_state.rule);
+    } else if (currentState is EditPortRangeForwardingRule) {
+      int index = currentState.rules.indexOf(currentState.rule);
       rules.replaceRange(index, index + 1, [rule]);
     }
     final result = await _repository
@@ -54,10 +54,10 @@ class PortRangeForwardingRuleCubit extends Cubit<PortRangeForwardingRuleState> {
   }
 
   Future<bool> delete() async {
-    final _state = state;
-    if (_state is EditPortRangeForwardingRule) {
-      final rules = List<PortRangeForwardingRule>.from(_state.rules)
-        ..removeWhere((element) => element == _state.rule);
+    final currentState = state;
+    if (currentState is EditPortRangeForwardingRule) {
+      final rules = List<PortRangeForwardingRule>.from(currentState.rules)
+        ..removeWhere((element) => element == currentState.rule);
       final result = await _repository
           .setPortRangeForwardingRules(rules)
           .then((value) => true)

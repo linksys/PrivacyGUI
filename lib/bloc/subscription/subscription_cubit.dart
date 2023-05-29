@@ -13,11 +13,11 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   final SubscriptionRepository _repo;
 
   Future<void> loadingProducts() async {
-    final Set<String> _kIds = Platform.isIOS
+    final Set<String> kIds = Platform.isIOS
         ? <String>{ios_linksysSecurity}
         : <String>{linksysSecurity};
     final ProductDetailsResponse response =
-        await InAppPurchase.instance.queryProductDetails(_kIds);
+        await InAppPurchase.instance.queryProductDetails(kIds);
     if (response.notFoundIDs.isNotEmpty) {
       logger.e('subscription doesn\'t found any product');
       return;

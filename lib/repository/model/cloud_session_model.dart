@@ -4,17 +4,17 @@ class SessionToken extends Equatable {
   final String accessToken;
   final String tokenType;
   final int expiresIn;
-  final String refreshToken;
+  final String? refreshToken;
 
   const SessionToken({
     required this.accessToken,
     required this.tokenType,
     required this.expiresIn,
-    required this.refreshToken,
+    this.refreshToken,
   });
 
   @override
-  List<Object> get props => [accessToken, tokenType, expiresIn, refreshToken];
+  List<Object?> get props => [accessToken, tokenType, expiresIn, refreshToken];
 
   factory SessionToken.fromJson(Map<String, dynamic> json) {
     return SessionToken(

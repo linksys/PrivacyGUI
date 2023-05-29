@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -42,13 +41,13 @@ class _SignalStrengthViewState extends ConsumerState<SignalStrengthView> {
           Text(getAppLocalizations(context).signal_strength_description,
               style:
                   const TextStyle(fontSize: 12, fontWeight: FontWeight.w400)),
-          SizedBox(
+          const SizedBox(
             height: 16,
           ),
           Text(getAppLocalizations(context).signal_strength_how_to_measured,
               style:
                   const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-          SizedBox(
+          const SizedBox(
             height: 16,
           ),
           Text(
@@ -56,7 +55,7 @@ class _SignalStrengthViewState extends ConsumerState<SignalStrengthView> {
                   .signal_strength_how_to_measured_answer,
               style:
                   const TextStyle(fontSize: 12, fontWeight: FontWeight.w400)),
-          SizedBox(
+          const SizedBox(
             height: 32,
           ),
           Table(
@@ -64,16 +63,16 @@ class _SignalStrengthViewState extends ConsumerState<SignalStrengthView> {
             defaultVerticalAlignment: TableCellVerticalAlignment.middle,
             children: [
               TableRow(children: [
-                Center(),
+                const Center(),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 32),
                   child: Text(
                     getAppLocalizations(context).rssi_with_unit,
-                    style: Theme.of(context).textTheme.headline3?.copyWith(
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         color: Colors.black, fontWeight: FontWeight.w700),
                   ),
                 ),
-                Center()
+                const Center()
               ]),
               TableRow(children: [
                 Image.asset(

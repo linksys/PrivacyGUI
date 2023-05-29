@@ -9,14 +9,15 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 
 extension CoreService on RouterRepository {
   Future<JNAPSuccess> checkAdminPassword(String password) async {
-    final command = createCommand(
+    final command = await createCommand(
       JNAPAction.checkAdminPassword.actionValue,
       data: {
         'adminPassword': password,
       },
     );
     if (command is JNAPHttpCommand) {
-      command.spec.extraHeader['X-JNAP-Authorization'] = 'Basic ${base64Encode('admin:$password'.codeUnits)}';
+      command.spec.extraHeader['X-JNAP-Authorization'] =
+          'Basic ${base64Encode('admin:$password'.codeUnits)}';
     }
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
@@ -24,7 +25,7 @@ extension CoreService on RouterRepository {
 
   Future<JNAPSuccess> createAdminPassword(String password, String hint) async {
     final command =
-        createCommand(JNAPAction.coreSetAdminPassword.actionValue, data: {
+        await createCommand(JNAPAction.coreSetAdminPassword.actionValue, data: {
       'adminPassword': password,
       'passwordHint': hint,
     });
@@ -34,21 +35,22 @@ extension CoreService on RouterRepository {
 
   Future<JNAPSuccess> getAdminPasswordAuthStatus() async {
     final command =
-        createCommand(JNAPAction.getAdminPasswordAuthStatus.actionValue);
+        await createCommand(JNAPAction.getAdminPasswordAuthStatus.actionValue);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> getAdminPasswordHint() async {
-    final command = createCommand(JNAPAction.getAdminPasswordHint.actionValue);
+    final command =
+        await createCommand(JNAPAction.getAdminPasswordHint.actionValue);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> getDataUploadUserConsent() async {
-    final command = createCommand(
+    final command = await createCommand(
         JNAPAction.getDataUploadUserConsent.actionValue,
         needAuth: true);
 
@@ -57,8 +59,8 @@ extension CoreService on RouterRepository {
   }
 
   Future<JNAPSuccess> getDeviceInfo() async {
-    final command =
-        createCommand(JNAPAction.getDeviceInfo.actionValue, needAuth: true);
+    final command = await createCommand(JNAPAction.getDeviceInfo.actionValue,
+        needAuth: true);
 
     // final result = await command.publish();
     final result = await CommandQueue().enqueue(command);
@@ -67,7 +69,7 @@ extension CoreService on RouterRepository {
 
   Future<JNAPSuccess> isAdminPasswordDefault() async {
     final command =
-        createCommand(JNAPAction.isAdminPasswordDefault.actionValue);
+        await createCommand(JNAPAction.isAdminPasswordDefault.actionValue);
 
     // final result = await command.publish();
     final result = await CommandQueue().enqueue(command);
@@ -75,7 +77,8 @@ extension CoreService on RouterRepository {
   }
 
   Future<JNAPSuccess> isServiceSupported(JNAPService service) async {
-    final command = createCommand(JNAPAction.isServiceSupported.actionValue,
+    final command = await createCommand(
+        JNAPAction.isServiceSupported.actionValue,
         data: {'serviceName': service.value.replaceAll(kJNAPActionBase, '')});
 
     final result = await CommandQueue().enqueue(command);
@@ -84,14 +87,14 @@ extension CoreService on RouterRepository {
 
   Future<JNAPSuccess> reboot() async {
     final command =
-        createCommand(JNAPAction.reboot.actionValue, needAuth: true);
+        await createCommand(JNAPAction.reboot.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> getUnsecuredWiFiWarning() async {
-    final command = createCommand(
+    final command = await createCommand(
       JNAPAction.getUnsecuredWiFiWarning.actionValue,
     );
 
@@ -100,7 +103,7 @@ extension CoreService on RouterRepository {
   }
 
   Future<JNAPSuccess> setUnsecuredWiFiWarning(bool enabled) async {
-    final command = createCommand(
+    final command = await createCommand(
         JNAPAction.setUnsecuredWiFiWarning.actionValue,
         data: {'enabled': enabled});
 

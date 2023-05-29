@@ -94,24 +94,24 @@ mixin ConnectivityListener {
   }
 
   Future<ConnectivityInfo> _updateNetworkInfo(ConnectivityResult result) async {
-    final _networkInfo = NetworkInfo();
+    final networkInfo = NetworkInfo();
 
     String? wifiName, wifiGatewayIP;
 
     try {
       if (!kIsWeb && Platform.isIOS) {
-        var status = await _networkInfo.getLocationServiceAuthorization();
+        var status = await networkInfo.getLocationServiceAuthorization();
         if (status == LocationAuthorizationStatus.notDetermined) {
-          status = await _networkInfo.requestLocationServiceAuthorization();
+          status = await networkInfo.requestLocationServiceAuthorization();
         }
         if (status == LocationAuthorizationStatus.authorizedAlways ||
             status == LocationAuthorizationStatus.authorizedWhenInUse) {
-          wifiName = await _networkInfo.getWifiName();
+          wifiName = await networkInfo.getWifiName();
         } else {
-          wifiName = await _networkInfo.getWifiName();
+          wifiName = await networkInfo.getWifiName();
         }
       } else {
-        wifiName = await _networkInfo.getWifiName();
+        wifiName = await networkInfo.getWifiName();
       }
     } on PlatformException catch (e) {
       logger.e('Failed to get Wifi Name', e);
@@ -119,7 +119,7 @@ mixin ConnectivityListener {
     }
 
     try {
-      wifiGatewayIP = await _networkInfo.getWifiGatewayIP();
+      wifiGatewayIP = await networkInfo.getWifiGatewayIP();
     } on PlatformException catch (e) {
       logger.e('Failed to get Wifi gateway address', e);
       wifiGatewayIP = 'Unknown Gateway IP';
@@ -127,7 +127,7 @@ mixin ConnectivityListener {
 
     if ((wifiGatewayIP?.isNotEmpty ?? false) && (wifiName?.isEmpty ?? true)) {
       // get wifi name again if there has gateway ip but no wifi name
-      wifiName = await _networkInfo.getWifiName();
+      wifiName = await networkInfo.getWifiName();
     }
     final info = ConnectivityInfo(
         type: result, gatewayIp: wifiGatewayIP ?? "", ssid: wifiName ?? "");

@@ -13,7 +13,7 @@ class FullScreenSpinner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       decoration:
-          BoxDecoration(color: background ?? Theme.of(context).backgroundColor),
+          BoxDecoration(color: background ?? Theme.of(context).colorScheme.background),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

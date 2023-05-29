@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
-import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/auth/_auth.dart';
+import 'package:linksys_moab/bloc/auth/auth_provider.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
-import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
@@ -20,7 +19,6 @@ import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/input_field/app_password_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -76,14 +74,14 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
       _isLoading = true;
     });
 
-    final bloc = context.read<AuthBloc>();
     bool isConnected =
         ref.read(connectivityProvider).connectivityInfo.routerType !=
             RouterType.others;
 
     if (isConnected) {
       _deviceInfo = await context.read<NetworkCubit>().getDeviceInfo();
-      await bloc
+      await ref
+          .read(authProvider.notifier)
           .getAdminPasswordInfo()
           .then((value) => _handleAdminPasswordInfo(value))
           .onError((error, stackTrace) {
@@ -156,29 +154,17 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
   }
 
   _localLogin() async {
-    setState(() {
-      _isLoading = true;
-    });
-    await context
-        .read<AuthBloc>()
+    await ref
+        .read(authProvider.notifier)
         .localLogin(_passwordController.text)
         .then<void>((_) {})
         .onError((error, stackTrace) => _handleError(error, stackTrace));
-    setState(() {
-      _isLoading = false;
-    });
   }
 
-  _handleAdminPasswordInfo(AdminPasswordInfo info) {
-    if (!info.hasAdminPassword) {
-      ref
-          .read(navigationsProvider.notifier)
-          .replace(CreateAdminPasswordPath()..args = {});
-    } else {
-      setState(() {
-        _hint = info.hint;
-      });
-    }
+  _handleAdminPasswordInfo(String info) {
+    setState(() {
+      _hint = info;
+    });
   }
 
   _handleError(Object? e, StackTrace trace) {

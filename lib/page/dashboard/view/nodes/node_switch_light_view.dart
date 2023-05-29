@@ -28,7 +28,7 @@ class NodeSwitchLightView extends ConsumerWidget {
             SettingTile(
                 title: Text(
                   'Node light',
-                  style: Theme.of(context).textTheme.bodyText1,
+                  style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 value: Switch.adaptive(
                     value: state.isLightTurnedOn,

@@ -110,14 +110,14 @@ class _NumberPickerViewState extends ConsumerState<NumberPickerView> {
               _showIOSDialog();
             }
           },
+          style: TextButton.styleFrom(
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.only(left: 0)),
           child: Text(pickerNumber.toString(),
               style: const TextStyle(
                   fontSize: 25,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black)),
-          style: TextButton.styleFrom(
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.only(left: 0))),
+                  color: Colors.black))),
       const SizedBox(height: 6),
       Image.asset('assets/images/line.png')
     ]);
@@ -149,7 +149,7 @@ class AndroidPickerState extends ConsumerState<AndroidPicker> {
   @override
   void initState() {
     super.initState();
-    if (widget.current != null && widget.current != _currentValue) {
+    if (widget.current != _currentValue) {
       _currentValue = widget.current;
     }
   }

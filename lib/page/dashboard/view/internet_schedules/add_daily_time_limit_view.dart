@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/model/group_profile.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -54,7 +53,7 @@ class _AddDailyTimeLimitViewState extends ConsumerState<AddDailyTimeLimitView> {
             backgroundColor: Colors.transparent,
             elevation: 0,
             title: Text(getAppLocalizations(context).daily_time_limit,
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
             leading: BackButton(onPressed: () {
               ref.read(navigationsProvider.notifier).pop();
             }),

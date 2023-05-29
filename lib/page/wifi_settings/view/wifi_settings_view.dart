@@ -99,12 +99,12 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                       )
                     : AppPadding(
                         padding:
-                            AppEdgeInsets.symmetric(vertical: AppGapSize.big),
+                            const AppEdgeInsets.symmetric(vertical: AppGapSize.big),
                         child: InkWell(
                           onTap: () {
                             //TODO: Go to next
                           },
-                          child: AppText.textLinkSmall(
+                          child: const AppText.textLinkSmall(
                             'Learn more about WiFi networks and settings',
                           ),
                         ),

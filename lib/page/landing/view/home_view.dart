@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
-import 'package:linksys_moab/bloc/auth/event.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/consts.dart';
@@ -13,7 +10,6 @@ import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
-import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/animation/hover.dart';
@@ -34,7 +30,7 @@ class HomeView extends ArgumentsConsumerStatefulView {
 
 class _HomeViewState extends ConsumerState<HomeView> {
   bool _isOpenDebug = false;
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   @override
   void initState() {
@@ -146,9 +142,9 @@ class _HomeViewState extends ConsumerState<HomeView> {
   _initialize() async {}
 
   Widget _createEnvPicker() {
-    bool _isLoading = false;
+    bool isLoading = false;
     return StatefulBuilder(builder: (context, setState) {
-      return _isLoading
+      return isLoading
           ? AppFullScreenSpinner(text: getAppLocalizations(context).processing)
           : AppPadding.regular(
               child: Column(
@@ -179,14 +175,14 @@ class _HomeViewState extends ConsumerState<HomeView> {
                     'Save',
                     onTap: () async {
                       setState(() {
-                        _isLoading = true;
+                        isLoading = true;
                       });
 
                       final pref = await SharedPreferences.getInstance();
                       pref.setString(pCloudEnv, cloudEnvTarget.name);
                       BuildConfig.load();
                       setState(() {
-                        _isLoading = false;
+                        isLoading = false;
                       });
                       Navigator.pop(context, cloudEnvTarget);
                     },

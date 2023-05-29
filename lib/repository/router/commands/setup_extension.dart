@@ -7,7 +7,7 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 extension SetupService on RouterRepository {
   Future<JNAPSuccess> isAdminPasswordSetByUser() async {
     final command =
-        createCommand(JNAPAction.isAdminPasswordSetByUser.actionValue);
+        await createCommand(JNAPAction.isAdminPasswordSetByUser.actionValue);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
@@ -15,22 +15,24 @@ extension SetupService on RouterRepository {
 
   Future<JNAPSuccess> resetAdminPassword(
       String resetCode, String password, String hint) async {
-    final command =
-        createCommand(JNAPAction.setupSetAdminPassword.actionValue, data: {
-      'resetCode': resetCode,
-      'adminPassword': password,
-      'passwordHint': hint,
-    });
+    final command = await createCommand(
+        JNAPAction.setupSetAdminPassword.actionValue,
+        data: {
+          'resetCode': resetCode,
+          'adminPassword': password,
+          'passwordHint': hint,
+        });
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
   }
 
   Future<JNAPSuccess> verifyRouterResetCode(String resetCode) async {
-    final command =
-        createCommand(JNAPAction.verifyRouterResetCode.actionValue, data: {
-      'resetCode': resetCode,
-    });
+    final command = await createCommand(
+        JNAPAction.verifyRouterResetCode.actionValue,
+        data: {
+          'resetCode': resetCode,
+        });
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
@@ -45,7 +47,7 @@ extension SetupService on RouterRepository {
   ///
   Future<JNAPSuccess> getInternetConnectionStatus() async {
     final command =
-        createCommand(JNAPAction.getInternetConnectionStatus.actionValue);
+        await createCommand(JNAPAction.getInternetConnectionStatus.actionValue);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
@@ -53,7 +55,8 @@ extension SetupService on RouterRepository {
 
   Future<JNAPSuccess> setSimpleWiFiSettings(
       {required SimpleWiFiSettings settings}) async {
-    final command = createCommand(JNAPAction.setSimpleWiFiSettings.actionValue,
+    final command = await createCommand(
+        JNAPAction.setSimpleWiFiSettings.actionValue,
         data: settings.toJson());
 
     final result = await CommandQueue().enqueue(command);
@@ -61,7 +64,7 @@ extension SetupService on RouterRepository {
   }
 
   Future<JNAPSuccess> getMACAddress() async {
-    final command = createCommand(JNAPAction.getMACAddress.actionValue);
+    final command = await createCommand(JNAPAction.getMACAddress.actionValue);
 
     // final result = await command.publish();
     final result = await CommandQueue().enqueue(command);
@@ -70,7 +73,7 @@ extension SetupService on RouterRepository {
   }
 
   Future<JNAPSuccess> getVersionInfo() async {
-    final command = createCommand(JNAPAction.getVersionInfo.actionValue);
+    final command = await createCommand(JNAPAction.getVersionInfo.actionValue);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);

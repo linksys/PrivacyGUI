@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_moab/bloc/auth/auth_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -18,9 +19,6 @@ import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-import '../../../bloc/auth/bloc.dart';
-import '../../../bloc/auth/event.dart';
-import '../../../bloc/subscription/subscription_cubit.dart';
 import '../../components/styled/styled_page_view.dart';
 
 class SelectNetworkView extends ArgumentsConsumerStatefulView {
@@ -50,7 +48,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
         scrollable: true,
         isCloseStyle: true,
         onBackTap: () {
-          context.read<AuthBloc>().add(Logout());
+          ref.read(authProvider.notifier).logout();
         },
         child: AppBasicLayout(
           crossAxisAlignment: CrossAxisAlignment.start,

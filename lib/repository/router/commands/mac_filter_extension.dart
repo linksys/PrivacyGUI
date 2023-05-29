@@ -5,7 +5,9 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 
 extension MacFilterService on RouterRepository {
   Future<JNAPSuccess> getMACFilterSettings() async {
-    final command = createCommand(JNAPAction.getMACFilterSettings.actionValue, needAuth: true);
+    final command = await createCommand(
+        JNAPAction.getMACFilterSettings.actionValue,
+        needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);

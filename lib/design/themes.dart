@@ -113,37 +113,37 @@ class MoabTheme {
   );
 
   static final _blackTextTheme = Typography().black.copyWith(
-    headline1: const TextStyle(
+    displayLarge: const TextStyle(
       fontFamily: 'NeueHaasGrotTextRound',
       fontSize: 22,
       fontStyle: FontStyle.normal,
       fontWeight: FontWeight.w400,
     ),
-    headline2: const TextStyle(
+    displayMedium: const TextStyle(
       fontFamily: 'NeueHaasGrotTextRound',
       fontSize: 18,
       fontStyle: FontStyle.normal,
       fontWeight: FontWeight.w400,
     ),
-    headline3: const TextStyle(
+    displaySmall: const TextStyle(
       fontFamily: 'NeueHaasGrotTextRound',
       fontSize: 15,
       fontStyle: FontStyle.normal,
       fontWeight: FontWeight.w400,
     ),
-    headline4: const TextStyle(
+    headlineMedium: const TextStyle(
       fontFamily: 'NeueHaasGrotTextRound',
       fontSize: 13,
       fontStyle: FontStyle.normal,
       fontWeight: FontWeight.w400,
     ),
-    button: const TextStyle(
+    labelLarge: const TextStyle(
       fontFamily: 'NeueHaasGrotTextRound',
       fontSize: 16,
       fontStyle: FontStyle.normal,
       fontWeight: FontWeight.w400,
     ),
-    bodyText1: const TextStyle(
+    bodyLarge: const TextStyle(
       fontFamily: 'NeueHaasGrotTextRound',
       fontSize: 14,
       fontStyle: FontStyle.normal,
@@ -151,37 +151,37 @@ class MoabTheme {
     ),
   );
   static final _textTheme = Typography().white.copyWith(
-        headline1: const TextStyle(
+        displayLarge: const TextStyle(
           fontFamily: 'NeueHaasGrotTextRound',
           fontSize: 22,
           fontStyle: FontStyle.normal,
           fontWeight: FontWeight.w400,
         ),
-        headline2: const TextStyle(
+        displayMedium: const TextStyle(
           fontFamily: 'NeueHaasGrotTextRound',
           fontSize: 18,
           fontStyle: FontStyle.normal,
           fontWeight: FontWeight.w400,
         ),
-        headline3: const TextStyle(
+        displaySmall: const TextStyle(
           fontFamily: 'NeueHaasGrotTextRound',
           fontSize: 15,
           fontStyle: FontStyle.normal,
           fontWeight: FontWeight.w400,
         ),
-        headline4: const TextStyle(
+        headlineMedium: const TextStyle(
           fontFamily: 'NeueHaasGrotTextRound',
           fontSize: 13,
           fontStyle: FontStyle.normal,
           fontWeight: FontWeight.w400,
         ),
-        button: const TextStyle(
+        labelLarge: const TextStyle(
           fontFamily: 'NeueHaasGrotTextRound',
           fontSize: 16,
           fontStyle: FontStyle.normal,
           fontWeight: FontWeight.w400,
         ),
-        bodyText1: const TextStyle(
+        bodyLarge: const TextStyle(
           fontFamily: 'NeueHaasGrotTextRound',
           fontSize: 14,
           fontStyle: FontStyle.normal,

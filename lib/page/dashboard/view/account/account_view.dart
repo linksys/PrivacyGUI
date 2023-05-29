@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/account/account_provider.dart';
 import 'package:linksys_moab/bloc/account/account_state.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
+import 'package:linksys_moab/bloc/auth/auth_provider.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
@@ -27,13 +27,13 @@ class AccountView extends ConsumerStatefulWidget {
 
 class _AccountViewState extends ConsumerState<AccountView> {
   late final TextEditingController _passwordController;
-  String _displayPhoneNumber = '';
+  final String _displayPhoneNumber = '';
   @override
   void initState() {
     super.initState();
     _passwordController = TextEditingController();
 
-    if (context.read<AuthBloc>().isCloudLogin()) {
+    if (ref.read(authProvider.notifier).isCloudLogin()) {
       ref.read(accountProvider.notifier).fetchAccount().then((_) {
         _passwordController.text = ref.read(accountProvider).password;
       });
@@ -43,10 +43,12 @@ class _AccountViewState extends ConsumerState<AccountView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(accountProvider);
+    final loginType =
+        ref.watch(authProvider.select((value) => value.value?.loginType));
     return StyledAppPageView(
       scrollable: true,
       title: 'Account',
-      child: context.read<AuthBloc>().isCloudLogin()
+      child: loginType == LoginType.remote
           ? _remote(state)
           : _local(state),
     );
@@ -137,9 +139,9 @@ class _AccountViewState extends ConsumerState<AccountView> {
             title: Text(method.method == 'EMAIL' ? 'Email' : 'Phone number'),
             value: Text(
               method.target,
-              style: Theme.of(context).textTheme.headline4,
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
-            icon: Icon(Icons.delete),
+            icon: const Icon(Icons.delete),
             onPress: showDelete
                 ? () {
                     _showDeleteCommunicationMethodDialog(
@@ -194,7 +196,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
     return SectionTile(
       header: Text(
         'No Linksys account',
-        style: Theme.of(context).textTheme.headline4,
+        style: Theme.of(context).textTheme.headlineMedium,
       ),
       child: Column(
         children: [
@@ -203,7 +205,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
                   'Unlock app features with a Linksys account  <link href="https://flutter.dev">Learn more</link>',
               style: Theme.of(context)
                   .textTheme
-                  .headline2
+                  .displayMedium
                   ?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
               tags: {
                 'link': StyledTextActionTag(
@@ -215,29 +217,29 @@ class _AccountViewState extends ConsumerState<AccountView> {
           box16(),
           Row(children: [
             box4(),
-            Text('\u2022'),
+            const Text('\u2022'),
             box4(),
             Text(
               'Benefit 1',
-              style: Theme.of(context).textTheme.headline4,
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
           ]),
           Row(children: [
             box4(),
-            Text('\u2022'),
+            const Text('\u2022'),
             box4(),
             Text(
               'Benefit 2',
-              style: Theme.of(context).textTheme.headline4,
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
           ]),
           Row(children: [
             box4(),
-            Text('\u2022'),
+            const Text('\u2022'),
             box4(),
             Text(
               'Benefit X',
-              style: Theme.of(context).textTheme.headline4,
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
           ]),
           const SizedBox(
@@ -263,8 +265,8 @@ class _AccountViewState extends ConsumerState<AccountView> {
   _showConfirmBiometricDialog(bool value) {
     showAdaptiveDialog(
         context: context,
-        title: Text('Warning'),
-        content: Text(
+        title: const Text('Warning'),
+        content: const Text(
             'You\'ll need to login again after turning off biometric login'),
         actions: [
           SimpleTextButton(
@@ -282,7 +284,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
   _showDeleteCommunicationMethodDialog(String method, String value) {
     showAdaptiveDialog(
       context: context,
-      title: Text('Warning'),
+      title: const Text('Warning'),
       content: Text('Do you want to delete $method: $value'),
       actions: [
         SimpleTextButton(

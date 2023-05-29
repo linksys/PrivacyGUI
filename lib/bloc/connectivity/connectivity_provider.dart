@@ -7,7 +7,6 @@ import 'package:linksys_moab/bloc/connectivity/connectivity_state.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/model/router/device_info.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
-import 'package:linksys_moab/network/jnap/jnap_transaction.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/router/commands/batch_extension.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';

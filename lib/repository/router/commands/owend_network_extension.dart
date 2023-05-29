@@ -4,9 +4,10 @@ import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
 
 extension OwnedNetworkService on RouterRepository {
-
   Future<JNAPSuccess> getOwnedNetworkID() async {
-    final command = createCommand(JNAPAction.getOwnedNetworkID.actionValue, needAuth: true);
+    final command = await createCommand(
+        JNAPAction.getOwnedNetworkID.actionValue,
+        needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);
@@ -14,7 +15,8 @@ extension OwnedNetworkService on RouterRepository {
 
   Future<JNAPSuccess> setNetworkOwner(
       {required String ownerToken, String? friendlyName}) async {
-    final command = createCommand(JNAPAction.setNetworkOwner.actionValue, needAuth: true,
+    final command = await createCommand(JNAPAction.setNetworkOwner.actionValue,
+        needAuth: true,
         data: friendlyName != null
             ? {
                 'ownerSessionToken': ownerToken,

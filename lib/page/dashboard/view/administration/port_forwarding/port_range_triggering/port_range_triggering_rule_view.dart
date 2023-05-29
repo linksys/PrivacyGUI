@@ -57,14 +57,14 @@ class _AddRuleContentViewState
   void initState() {
     _cubit = context.read<PortRangeTriggeringRuleCubit>();
     _rules = widget.args['rules'] ?? [];
-    final PortRangeTriggeringRule? _rule = widget.args['edit'];
-    if (_rule != null) {
-      _ruleNameController.text = _rule.description;
-      _firstTriggerPortController.text = '${_rule.firstTriggerPort}';
-      _lastTriggerPortController.text = '${_rule.lastTriggerPort}';
-      _firstForwardedPortController.text = '${_rule.firstForwardedPort}';
-      _lastForwardedPortController.text = '${_rule.lastForwardedPort}';
-      _cubit.goEdit(_rules, _rule);
+    final PortRangeTriggeringRule? rule = widget.args['edit'];
+    if (rule != null) {
+      _ruleNameController.text = rule.description;
+      _firstTriggerPortController.text = '${rule.firstTriggerPort}';
+      _lastTriggerPortController.text = '${rule.lastTriggerPort}';
+      _firstForwardedPortController.text = '${rule.firstForwardedPort}';
+      _lastForwardedPortController.text = '${rule.lastForwardedPort}';
+      _cubit.goEdit(_rules, rule);
     } else {
       _cubit.goAdd(_rules);
     }

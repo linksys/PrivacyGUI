@@ -8,7 +8,7 @@ import '../../../constants/cloud_const.dart';
 extension MoabSubscriptionRequests on MoabHttpClient {
   Future<Response> queryProductListings(
       String channelIdentifier, String productIdentifier) async {
-    final url = await combineUrl(endpointSubscriptionQueryProductListings);
+    final url = combineUrl(endpointSubscriptionQueryProductListings);
     final header = defaultHeader
       ..addAll({
         moabSiteIdKey: moabRetailSiteId,
@@ -24,7 +24,7 @@ extension MoabSubscriptionRequests on MoabHttpClient {
       String productIdentifier,
       String productListingId,
       String purchaseToken) async {
-    final url = await combineUrl(endpointSubscriptionCreateCloudOrders);
+    final url = combineUrl(endpointSubscriptionCreateCloudOrders);
     final header = defaultHeader..addAll({moabSiteIdKey: moabRetailSiteId});
     return this.post(Uri.parse(url),
         headers: header,
@@ -38,7 +38,7 @@ extension MoabSubscriptionRequests on MoabHttpClient {
   }
 
   Future<Response> getNetworkEntitlement(String serialNumber) async {
-    final url = await combineUrl(endpointSubscriptionGetNetworkEntitlement, args: {varSerialNumber: serialNumber});
+    final url = combineUrl(endpointSubscriptionGetNetworkEntitlement, args: {varSerialNumber: serialNumber});
     final header = defaultHeader
       ..addAll({
         moabSiteIdKey: moabRetailSiteId,

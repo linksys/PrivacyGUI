@@ -1,9 +1,7 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
-import 'package:linksys_moab/bloc/connectivity/connectivity_state.dart';
 import 'package:linksys_moab/util/permission.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -31,10 +29,10 @@ class _OverlayInfoViewState extends ConsumerState<OverlayInfoView>
   Widget build(BuildContext context) {
     final state = ref.watch(connectivityProvider);
     return Container(
-      padding: EdgeInsets.all(12),
+      padding: const EdgeInsets.all(12),
       width: Utils.getScreenWidth(context) / 2,
       height: 130,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Color(0x33000000),
       ),
       child: SingleChildScrollView(

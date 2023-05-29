@@ -3,7 +3,6 @@ import 'package:linksys_moab/page/components/picker/region_picker_view.dart';
 import 'package:linksys_moab/page/create_account/view/_view.dart';
 import 'package:linksys_moab/page/login/view/_view.dart';
 import 'package:linksys_moab/page/otp_flow/view/_view.dart';
-import 'package:linksys_moab/route/_route.dart';
 
 import '_model.dart';
 
@@ -41,11 +40,11 @@ abstract class AuthenticatePath extends BasePath {
           next: next,
         );
       case AuthCloudForgotPasswordPath:
-        return CloudForgotPasswordView();
+        return const CloudForgotPasswordView();
       case AuthCloudResetPasswordPath:
-        return CloudResetPasswordView();
+        return const CloudResetPasswordView();
       case AuthLocalRecoveryKeyPath:
-        return LocalRecoveryKeyView();
+        return const LocalRecoveryKeyView();
       case AuthResetLocalOtpPath:
         return OtpFlowView(
           args: args,

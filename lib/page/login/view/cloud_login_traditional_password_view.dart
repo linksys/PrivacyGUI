@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/_auth.dart';
-import 'package:linksys_moab/bloc/otp/otp.dart';
+import 'package:linksys_moab/bloc/auth/auth_provider.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
@@ -29,18 +27,18 @@ class CloudLoginPasswordView extends ArgumentsConsumerStatefulView {
 class _LoginTraditionalPasswordViewState
     extends ConsumerState<CloudLoginPasswordView> {
   final TextEditingController passwordController = TextEditingController();
-  bool _isLoading = false;
+  final bool _isLoading = false;
   String _errorCode = '';
   String _username = '';
 
-  late AuthBloc _authBloc;
-  late OtpCubit _optCubit;
+  // late AuthBloc _authBloc;
+  // late OtpCubit _optCubit;
 
   @override
   initState() {
     super.initState();
-    _authBloc = context.read<AuthBloc>();
-    _optCubit = context.read<OtpCubit>();
+    // _authBloc = context.read<AuthBloc>();
+    // _optCubit = context.read<OtpCubit>();
   }
 
   @override
@@ -51,30 +49,39 @@ class _LoginTraditionalPasswordViewState
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<AuthBloc, AuthState>(
-        listenWhen: (previous, current) {
-          if (current is AuthCloudLoginState) {
-            return true;
-          }
-          return false;
-        },
-        listener: (context, state) {
-          if (state is AuthCloudLoginState) {
-            // ref.read(navigationsProvider.notifier).push(PrepareDashboardPath());
-          } else {
-            logger.d('ERROR: Wrong state type on LoginTraditionalPasswordView');
-          }
-        },
-        builder: (context, state) => _isLoading
-            ? AppFullScreenSpinner(
-                text: getAppLocalizations(context).processing)
-            : _contentView(state));
+    ref.listen(authProvider, (previous, next) {
+      logger.d('Auth provider changed!!!! $next');
+    });
+    final data = ref.watch(authProvider);
+    return data.when(
+        data: _contentView,
+        error: (_, __) => const Center(
+              child: AppText.descriptionMain('Something wrong here!'),
+            ),
+        loading: () => AppFullScreenSpinner(
+            text: getAppLocalizations(context).processing));
+    // return BlocConsumer<AuthBloc, AuthState>(
+    //     listenWhen: (previous, current) {
+    //       if (current is AuthCloudLoginState) {
+    //         return true;
+    //       }
+    //       return false;
+    //     },
+    //     listener: (context, state) {
+    //       if (state is AuthCloudLoginState) {
+    //         // ref.read(navigationsProvider.notifier).push(PrepareDashboardPath());
+    //       } else {
+    //         logger.d('ERROR: Wrong state type on LoginTraditionalPasswordView');
+    //       }
+    //     },
+    //     builder: (context, state) => _isLoading
+    //         ? AppFullScreenSpinner(
+    //             text: getAppLocalizations(context).processing)
+    //         : _contentView(state));
   }
 
   Widget _contentView(AuthState state) {
-    // TODO HERE
-    _username =
-        state is AuthOnCloudLoginState ? state.accountInfo.username : '';
+    _username = widget.args['username'] ?? '';
     return StyledAppPageView(
       scrollable: true,
       child: AppBasicLayout(
@@ -118,17 +125,11 @@ class _LoginTraditionalPasswordViewState
               onTap: passwordController.text.isEmpty
                   ? null
                   : () async {
-                      setState(() {
-                        _isLoading = true;
-                      });
-                      await context
-                          .read<AuthBloc>()
-                          .loginPassword(password: passwordController.text)
+                      await ref
+                          .read(authProvider.notifier)
+                          .cloudLogin(_username, passwordController.text)
                           .onError((error, stackTrace) =>
                               _handleError(error, stackTrace));
-                      setState(() {
-                        _isLoading = false;
-                      });
                     },
             ),
           ],

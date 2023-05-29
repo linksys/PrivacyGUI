@@ -5,8 +5,9 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 
 extension NetworkSecurityService on RouterRepository {
   Future<JNAPSuccess> getNetworkSecuritySettings() async {
-    final command =
-        createCommand(JNAPAction.getNetworkSecuritySettings.actionValue, needAuth: true);
+    final command = await createCommand(
+        JNAPAction.getNetworkSecuritySettings.actionValue,
+        needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
     return handleJNAPResult(result);

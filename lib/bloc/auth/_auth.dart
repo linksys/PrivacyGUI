@@ -1,4 +1,2 @@
 //GENERATED BARREL FILE 
-export 'bloc.dart'; 
-export 'event.dart'; 
-export 'state.dart'; 
+export 'auth_provider.dart'; 

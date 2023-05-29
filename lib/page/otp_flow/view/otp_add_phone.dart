@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/state.dart';
 import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -179,7 +178,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
                           '+${currentRegion.countryCallingCode}',
                           style: Theme.of(context)
                               .textTheme
-                              .bodyText1
+                              .bodyLarge
                               ?.copyWith(
                                   color: isInputInvalid
                                       ? Colors.red
@@ -218,7 +217,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
                   generalErrorCodeHandler(context, errorInvalidPhone),
                   style: Theme.of(context)
                       .textTheme
-                      .headline3
+                      .displaySmall
                       ?.copyWith(color: Colors.red),
                 ),
               ),

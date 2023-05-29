@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
+import 'package:linksys_moab/bloc/auth/auth_provider.dart';
 import 'package:linksys_moab/network/http/model/region_code.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
@@ -29,7 +28,7 @@ class _RegionPickerViewState extends ConsumerState<RegionPickerView> {
               'If your region is not listed, we can’t send text messages in your region yet.',
         ),
         content: FutureBuilder<List<RegionCode>>(
-            future: context.read<AuthBloc>().fetchRegionCodes(),
+            future: ref.read(authProvider.notifier).fetchRegionCodes(),
             initialData: null,
             builder: (context, snapshot) {
               return snapshot.hasData
@@ -37,13 +36,14 @@ class _RegionPickerViewState extends ConsumerState<RegionPickerView> {
                       itemCount: snapshot.data?.length,
                       itemBuilder: (context, index) => InkWell(
                             child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 15),
                               child: Row(
                                 children: [
                                   Text(
                                     '${snapshot.data?[index].flagCode}',
                                     style: Theme.of(context)
                                         .textTheme
-                                        .headline1
+                                        .displayLarge
                                         ?.copyWith(
                                           color: Theme.of(context).primaryColor,
                                         ),
@@ -55,14 +55,13 @@ class _RegionPickerViewState extends ConsumerState<RegionPickerView> {
                                     '${snapshot.data?[index].countryName} +${snapshot.data?[index].countryCallingCode}',
                                     style: Theme.of(context)
                                         .textTheme
-                                        .bodyText1
+                                        .bodyLarge
                                         ?.copyWith(
                                             color:
                                                 Theme.of(context).primaryColor),
                                   ),
                                 ],
                               ),
-                              padding: const EdgeInsets.symmetric(vertical: 15),
                             ),
                             onTap: () {
                               ref

@@ -27,3 +27,5 @@ const pCloudEnv = 'CloudEnvironment';
 const pSessionToken = 'SessionToken';
 const pSessionTokenTs = 'SessionTokenTimeStamp';
 const pUserPassword = 'UserPassword';
+const pUsername = 'Username';
+const pLocalPassword = 'LocalPassword';

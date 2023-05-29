@@ -72,7 +72,7 @@ class CircleProgressBarPainter extends CustomPainter {
       ..color = foregroundColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth;
-    final startAngle = -math.pi / 2;
+    const startAngle = -math.pi / 2;
     final sweepAngle = math.pi * 2 * progress;
     canvas.drawArc(
         Rect.fromCircle(center: Offset(centerX, centerY), radius: radius),

@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/model/router/device.dart';
 
 class DHCPReservationsState extends Equatable {
   final String ipAddress;

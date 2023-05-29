@@ -3,8 +3,6 @@ import 'dart:io';
 
 import 'package:http/http.dart';
 import 'package:linksys_moab/network/http/linksys_http_client.dart';
-import 'package:linksys_moab/network/http/linksys_requests/data/cloud_account.dart';
-import 'package:linksys_moab/network/http/linksys_requests/data/create_account_input.dart';
 
 import '../../../constants/_constants.dart';
 

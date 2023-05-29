@@ -30,8 +30,8 @@ const _mfcSpecs = [
 ];
 
 class BluetoothManager with JNAPCommandExecutor<JNAPResult> {
-  int _maxRetry = 3;
-  int _retryTimeInSec = 5;
+  final int _maxRetry = 3;
+  final int _retryTimeInSec = 5;
   Future Function(int retry, Object? error)? _onRetry;
 
   set maxRetry(int maxRetry) => _maxRetry;

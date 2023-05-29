@@ -1,5 +1,4 @@
 import 'package:linksys_moab/utils.dart';
-import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 
 abstract class ValidationRule {
   String get name => runtimeType.toString();

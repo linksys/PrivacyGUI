@@ -56,7 +56,7 @@ class IpDetailsCubit extends Cubit<IpDetailsState> {
       await _repository.renewDHCPWANLease();
     }
     // TODO #SIDEEFFECT WANInterruption
-    await Future.delayed(Duration(seconds: 20));
+    await Future.delayed(const Duration(seconds: 20));
     // await _repository.connectToBroker();
     await fetch();
     if (isIPv6) {

@@ -8,8 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/app_lifecycle/cubit.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
-import 'package:linksys_moab/bloc/auth/event.dart';
+import 'package:linksys_moab/bloc/auth/auth_provider.dart';
 import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
 import 'package:linksys_moab/bloc/device/cubit.dart';
 import 'package:linksys_moab/bloc/internet_check/cubit.dart';
@@ -36,7 +35,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
-import 'bloc/setup/bloc.dart';
 import 'firebase_options.dart';
 import 'bloc/otp/otp_cubit.dart';
 
@@ -117,22 +115,19 @@ Widget _app() {
     ],
     child: MultiBlocProvider(
         providers: [
-          BlocProvider(
-            create: (BuildContext context) => AuthBloc(
-              repo: context.read<CloudAuthRepository>(),
-              cloudRepo: context.read<LinksysCloudRepository>(),
-              routerRepo: context.read<RouterRepository>(),
-            ),
-          ),
+          // BlocProvider(
+          //   create: (BuildContext context) => AuthBloc(
+          //     repo: context.read<CloudAuthRepository>(),
+          //     cloudRepo: context.read<LinksysCloudRepository>(),
+          //     routerRepo: context.read<RouterRepository>(),
+          //   ),
+          // ),
           BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
           BlocProvider(
             create: (BuildContext context) => OtpCubit(
               repository: context.read<LinksysCloudRepository>(),
             ),
           ),
-          BlocProvider(
-              create: (BuildContext context) => SetupBloc(
-                  routerRepository: context.read<RouterRepository>())),
           BlocProvider(
               create: (BuildContext context) =>
                   ProfilesCubit(context.read<RouterRepository>())),
@@ -205,11 +200,13 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
     return MaterialApp.router(
       onGenerateTitle: (context) => getAppLocalizations(context).app_title,
       theme: ThemeData.light().copyWith(
-          backgroundColor: ConstantColors.gray98,
-          scaffoldBackgroundColor: ConstantColors.gray98),
+          scaffoldBackgroundColor: ConstantColors.gray98,
+          colorScheme:
+              const ColorScheme.light(background: ConstantColors.gray98)),
       darkTheme: ThemeData.dark().copyWith(
-        backgroundColor: ConstantColors.raisinBlock,
         scaffoldBackgroundColor: ConstantColors.raisinBlock,
+        colorScheme:
+            const ColorScheme.dark(background: ConstantColors.raisinBlock),
       ),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -225,7 +222,8 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
   }
 
   _initAuth() {
-    context.read<AuthBloc>().add(InitAuth());
+    // context.read<AuthBloc>().add(InitAuth());
+    ref.read(authProvider.notifier).init();
   }
 
   _intIAP() {}

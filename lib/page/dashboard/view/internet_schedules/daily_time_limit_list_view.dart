@@ -32,7 +32,7 @@ class DailyTimeLimitListView extends ConsumerWidget {
             backgroundColor: Colors.transparent,
             elevation: 0,
             title: Text(getAppLocalizations(context).daily_time_limit,
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
             leading: BackButton(onPressed: () {
               ref.read(navigationsProvider.notifier).pop();
             }),
@@ -45,7 +45,7 @@ class DailyTimeLimitListView extends ConsumerWidget {
                           ..args = {'profileId': profile.name});
                   },
                   child: Text(getAppLocalizations(context).add,
-                      style: TextStyle(
+                      style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                           color: MoabColor.textButtonBlue))),
@@ -66,8 +66,8 @@ class DailyTimeLimitListView extends ConsumerWidget {
     final rules = data?.dateTimeLimitRule ?? [];
     if (rules.isEmpty) {
       return [
-        Center(
-          child: const Text('No data!'),
+        const Center(
+          child: Text('No data!'),
         )
       ];
     } else {

@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
-import 'package:linksys_moab/bloc/auth/event.dart';
-import 'package:linksys_moab/bloc/auth/state.dart';
+import 'package:linksys_moab/bloc/auth/auth_provider.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -18,7 +14,6 @@ import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/input_field/app_text_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -31,8 +26,6 @@ class CloudLoginAccountView extends ArgumentsConsumerStatefulView {
 }
 
 class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
-  bool _isLoading = false;
-  bool _fromSetup = false;
   bool _enableBiometrics = false;
   String _errorCode = '';
 
@@ -42,7 +35,6 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
   @override
   void initState() {
     super.initState();
-    _fromSetup = widget.next is SaveSettingsPath ? true : false;
   }
 
   @override
@@ -53,58 +45,67 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<AuthBloc, AuthState>(
-        listenWhen: (previous, current) {
-          if (previous is AuthOnCloudLoginState &&
-              current is AuthOnCloudLoginState) {
-            return (previous.accountInfo.authenticationType ==
-                    AuthenticationType.none) &&
-                (current.accountInfo.authenticationType !=
-                    AuthenticationType.none);
-          } else {
-            return false;
-          }
-        },
-        listener: (context, state) async {
-          if (state is AuthOnCloudLoginState) {
-            // final accInfo = await context
-            //     .read<AuthBloc>()
-            //     .getMaskedCommunicationMethods(state.accountInfo.username);
+    final state = ref.watch(authProvider);
+    return state.when(
+        data: (state) => _contentView(state),
+        error: (_, __) => const Center(
+              child: AppText.descriptionMain('Something wrong here'),
+            ),
+        loading: () => AppFullScreenSpinner(
+            text: getAppLocalizations(context).processing));
 
-            if (state.accountInfo.authenticationType ==
-                AuthenticationType.password) {
-              logger.d('Go Password');
-              ref
-                  .read(navigationsProvider.notifier)
-                  .push(AuthCloudLoginWithPasswordPath()
-                    ..args = {
-                      // 'commMethods': accInfo.communicationMethods,
-                      // 'token': state.vToken,
-                      ...widget.args
-                    }
-                    ..next = widget.next);
-            } else if (state.accountInfo.authenticationType ==
-                AuthenticationType.passwordless) {
-              logger.d('Go Password-less');
-              ref
-                  .read(navigationsProvider.notifier)
-                  .push(AuthCloudLoginOtpPath()
-                    ..args = {
-                      'username': state.accountInfo.username,
-                      // 'commMethods': accInfo.communicationMethods,
-                      'token': state.vToken,
-                      ...widget.args
-                    }
-                    ..next = widget.next);
-            }
-          } else {
-            logger.d('ERROR: Wrong state type on LoginCloudAccountView');
-          }
-        },
-        builder: (context, state) => _isLoading
-            ? AppFullScreenSpinner(
-                text: getAppLocalizations(context).processing)
-            : _contentView(state));
+    // return BlocConsumer<AuthBloc, AuthState>(
+    //     listenWhen: (previous, current) {
+    //       if (previous is AuthOnCloudLoginState &&
+    //           current is AuthOnCloudLoginState) {
+    //         return (previous.accountInfo.authenticationType ==
+    //                 AuthenticationType.none) &&
+    //             (current.accountInfo.authenticationType !=
+    //                 AuthenticationType.none);
+    //       } else {
+    //         return false;
+    //       }
+    //     },
+    //     listener: (context, state) async {
+    //       if (state is AuthOnCloudLoginState) {
+    //         // final accInfo = await context
+    //         //     .read<AuthBloc>()
+    //         //     .getMaskedCommunicationMethods(state.accountInfo.username);
+
+    //         if (state.accountInfo.authenticationType ==
+    //             AuthenticationType.password) {
+    //           logger.d('Go Password');
+    //           ref
+    //               .read(navigationsProvider.notifier)
+    //               .push(AuthCloudLoginWithPasswordPath()
+    //                 ..args = {
+    //                   // 'commMethods': accInfo.communicationMethods,
+    //                   // 'token': state.vToken,
+    //                   ...widget.args
+    //                 }
+    //                 ..next = widget.next);
+    //         } else if (state.accountInfo.authenticationType ==
+    //             AuthenticationType.passwordless) {
+    //           logger.d('Go Password-less');
+    //           ref
+    //               .read(navigationsProvider.notifier)
+    //               .push(AuthCloudLoginOtpPath()
+    //                 ..args = {
+    //                   'username': state.accountInfo.username,
+    //                   // 'commMethods': accInfo.communicationMethods,
+    //                   'token': state.vToken,
+    //                   ...widget.args
+    //                 }
+    //                 ..next = widget.next);
+    //         }
+    //       } else {
+    //         logger.d('ERROR: Wrong state type on LoginCloudAccountView');
+    //       }
+    //     },
+    //     builder: (context, state) => _isLoading
+    //         ? AppFullScreenSpinner(
+    //             text: getAppLocalizations(context).processing)
+    //         : _contentView(state));
   }
 
   Widget _contentView(AuthState state) {
@@ -191,34 +192,20 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
   _prepareLogin() async {
     final isValid = _emailValidator.validate(_accountController.text);
     setState(() {
-      if (isValid) {
-        _isLoading = true;
-      } else {
+      if (!isValid) {
         _errorCode = errorEmptyEmail;
       }
     });
     if (_errorCode.isEmpty) {
-      await context
-          .read<AuthBloc>()
-          .loginPrepare(_accountController.text)
-          .onError((error, stackTrace) => _handleError(error, stackTrace));
-      context
-          .read<AuthBloc>()
-          .add(SetEnableBiometrics(enableBiometrics: _enableBiometrics));
-    }
-    setState(() {
-      _isLoading = false;
-    });
-  }
-
-  _handleError(Object? e, StackTrace trace) {
-    if (e is ErrorResponse) {
-      setState(() {
-        _errorCode = e.code;
-      });
-    } else {
-      // Unknown error or error parsing
-      logger.d('Unknown error: $e');
+      logger.d('Go Password');
+      ref
+          .read(navigationsProvider.notifier)
+          .push(AuthCloudLoginWithPasswordPath()
+            ..args = {
+              'username': _accountController.text,
+              ...widget.args,
+            }
+            ..next = widget.next);
     }
   }
 }

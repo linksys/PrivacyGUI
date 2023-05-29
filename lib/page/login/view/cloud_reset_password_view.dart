@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
@@ -11,11 +10,8 @@ import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
-import 'package:linksys_widgets/widgets/input_field/app_password_field.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
-import '../../../bloc/auth/bloc.dart';
-import '../../../bloc/auth/state.dart';
-import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 
 class CloudResetPasswordView extends ArgumentsConsumerStatefulView {
   const CloudResetPasswordView({Key? key}) : super(key: key);
@@ -29,26 +25,21 @@ class _CloudForgotPasswordViewState
     extends ConsumerState<CloudResetPasswordView> {
   final TextEditingController _passwordController = TextEditingController();
   String _errorReason = '';
-  bool _isLoading = false;
+  final bool _isLoading = false;
   bool _isNewPasswordSet = false;
-  bool _isLinkExpired = false;
+  final bool _isLinkExpired = false;
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) => _isLoading
-          ? FullScreenSpinner(text: getAppLocalizations(context).processing)
-          : _isLinkExpired
-              ? _linkExpiredView()
-              : (_isNewPasswordSet
-                  ? _newPasswordSetView()
-                  : _setNewPasswordView()),
+    return const Center(
+      child: AppText.descriptionMain('TBD'),
     );
   }
 
   Widget _setNewPasswordView() {
     return BasePageView.withCloseButton(
-      context, ref,
+      context,
+      ref,
       scrollable: true,
       child: BasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,18 +69,18 @@ class _CloudForgotPasswordViewState
               text: getAppLocalizations(context).text_continue,
               onPress: _localValidatePassword(_passwordController.text)
                   ? () async {
-                      setState(() {
-                        _isLoading = true;
-                      });
-                      await context
-                          .read<AuthBloc>()
-                          .resetPassword(_passwordController.text)
-                          .then((value) => _handleResult())
-                          .onError((error, stackTrace) =>
-                              _handleError(error, stackTrace));
-                      setState(() {
-                        _isLoading = false;
-                      });
+                      // setState(() {
+                      //   _isLoading = true;
+                      // });
+                      // await context
+                      //     .read<AuthBloc>()
+                      //     .resetPassword(_passwordController.text)
+                      //     .then((value) => _handleResult())
+                      //     .onError((error, stackTrace) =>
+                      //         _handleError(error, stackTrace));
+                      // setState(() {
+                      //   _isLoading = false;
+                      // });
                     }
                   : null,
             ),
@@ -126,7 +117,8 @@ class _CloudForgotPasswordViewState
 
   Widget _linkExpiredView() {
     return BasePageView.withCloseButton(
-      context, ref,
+      context,
+      ref,
       child: BasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(

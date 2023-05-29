@@ -110,7 +110,7 @@ const moabAppClientId = '991490F1-AD1D-47E0-81AD-190B11757252'; // TODO fake
 const moabCloudConfigHost = 'https://config.linksys.cloud/';
 // TODO #1 update resource url
 String get moabCloudResourceHost =>
-    'https://${cloudEnvTarget == CloudEnvironment.prod ? '' : (cloudEnvTarget.name + '-')}resource.linksys.cloud';
+    'https://${cloudEnvTarget == CloudEnvironment.prod ? '' : ('${cloudEnvTarget.name}-')}resource.linksys.cloud';
 
 const configFileName = 'environment.json';
 const allConfigFileName = 'all-environments.json';

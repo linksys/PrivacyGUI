@@ -1,13 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/bloc.dart';
-import 'package:linksys_moab/bloc/auth/event.dart';
-import 'package:linksys_moab/bloc/auth/state.dart';
-import 'package:linksys_moab/bloc/otp/otp.dart';
-import 'package:linksys_moab/bloc/setup/bloc.dart';
-import 'package:linksys_moab/bloc/setup/event.dart';
-import 'package:linksys_moab/bloc/setup/state.dart';
+import 'package:linksys_moab/bloc/auth/auth_provider.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/base_components/base_components.dart';
@@ -22,6 +15,7 @@ import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 import '../../components/base_components/progress_bars/full_screen_spinner.dart';
 
@@ -33,7 +27,7 @@ class AddAccountView extends ArgumentsConsumerStatefulView {
 }
 
 class _AddAccountState extends ConsumerState<AddAccountView> {
-  bool _isLoading = false;
+  final bool _isLoading = false;
   final TextEditingController _emailController = TextEditingController();
   var isEmailInvalid = false;
   var _errorCode = '';
@@ -42,19 +36,19 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
   void _onNextAction() async {
     isEmailInvalid = !EmailValidator().validate(_emailController.text);
     if (!isEmailInvalid) {
-      setState(() {
-        _isLoading = true;
-      });
-      await context
-          .read<AuthBloc>()
-          .createAccountPreparation(_emailController.text)
-          .onError((error, stackTrace) => _handleError(error, stackTrace));
-      context
-          .read<AuthBloc>()
-          .add(SetEnableBiometrics(enableBiometrics: _enableBiometrics));
-      setState(() {
-        _isLoading = false;
-      });
+      // setState(() {
+      //   _isLoading = true;
+      // });
+      // await context
+      //     .read<AuthBloc>()
+      //     .createAccountPreparation(_emailController.text)
+      //     .onError((error, stackTrace) => _handleError(error, stackTrace));
+      // context
+      //     .read<AuthBloc>()
+      //     .add(SetEnableBiometrics(enableBiometrics: _enableBiometrics));
+      // setState(() {
+      //   _isLoading = false;
+      // });
     } else {
       setState(() {});
     }
@@ -63,8 +57,6 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
   @override
   void initState() {
     super.initState();
-    context.read<SetupBloc>().add(
-        const ResumePointChanged(status: SetupResumePoint.createCloudAccount));
   }
 
   Widget _buildAccountTipsWidget() {
@@ -88,7 +80,7 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
               ),
               Text(
                 tips[index],
-                style: Theme.of(context).textTheme.headline4?.copyWith(
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: Theme.of(context).primaryColor,
                     ),
               ),
@@ -101,34 +93,42 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<AuthBloc, AuthState>(
-        listenWhen: (previous, current) {
-          if (previous is AuthOnCreateAccountState &&
-              current is AuthOnCreateAccountState) {
-            return previous.vToken != current.vToken;
-          }
-          return false;
-        },
-        listener: (context, state) {
-          if (state is AuthOnCreateAccountState) {
-            if (state.vToken.isNotEmpty) {
-              context.read<AuthBloc>().add(SetCloudPassword(password: ''));
-              context.read<AuthBloc>().add(
-                  SetLoginType(loginType: AuthenticationType.passwordless));
-              ref.read(navigationsProvider.notifier).push(CreateAccountOtpPath()
-                ..args = {
-                  'username': _emailController.text,
-                  'function': OtpFunction.setting,
-                  'commMethods': state.accountInfo.communicationMethods,
-                  'token': state.vToken,
-                  ...widget.args
-                });
-            }
-          }
-        },
-        builder: (context, state) => _isLoading
-            ? FullScreenSpinner(text: getAppLocalizations(context).processing)
-            : _contentView());
+    final state = ref.watch(authProvider);
+    return state.when(
+        data: (state) => _contentView(),
+        error: (_, __) => const Center(
+              child: AppText.descriptionMain('Something happen here'),
+            ),
+        loading: () =>
+            FullScreenSpinner(text: getAppLocalizations(context).processing));
+    // return BlocConsumer<AuthBloc, AuthState>(
+    //     listenWhen: (previous, current) {
+    //       if (previous is AuthOnCreateAccountState &&
+    //           current is AuthOnCreateAccountState) {
+    //         return previous.vToken != current.vToken;
+    //       }
+    //       return false;
+    //     },
+    //     listener: (context, state) {
+    //       if (state is AuthOnCreateAccountState) {
+    //         if (state.vToken.isNotEmpty) {
+    //           context.read<AuthBloc>().add(SetCloudPassword(password: ''));
+    //           context.read<AuthBloc>().add(
+    //               SetLoginType(loginType: AuthenticationType.passwordless));
+    //           ref.read(navigationsProvider.notifier).push(CreateAccountOtpPath()
+    //             ..args = {
+    //               'username': _emailController.text,
+    //               'function': OtpFunction.setting,
+    //               'commMethods': state.accountInfo.communicationMethods,
+    //               'token': state.vToken,
+    //               ...widget.args
+    //             });
+    //         }
+    //       }
+    //     },
+    //     builder: (context, state) => _isLoading
+    //         ? FullScreenSpinner(text: getAppLocalizations(context).processing)
+    //         : _contentView());
   }
 
   Widget _contentView() {
@@ -140,6 +140,7 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
             title: getAppLocalizations(context).add_cloud_account_header_title,
           ),
           content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               InputField(
                 titleText:
@@ -162,7 +163,7 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
                       generalErrorCodeHandler(context, _errorCode),
                       style: Theme.of(context)
                           .textTheme
-                          .headline3
+                          .displaySmall
                           ?.copyWith(color: Colors.red),
                     ),
                     SimpleTextButton.onPaddingWithStyle(
@@ -205,7 +206,6 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
               ),
               _buildAccountTipsWidget(),
             ],
-            crossAxisAlignment: CrossAxisAlignment.start,
           ),
           footer: Column(
             children: [

@@ -79,7 +79,7 @@ class SettingTile extends ConsumerWidget {
       child: Container(
         height: tileHeight,
         decoration:
-            BoxDecoration(color: Colors.lightBlueAccent ?? Colors.transparent),
+            const BoxDecoration(color: Colors.lightBlueAccent ?? Colors.transparent),
         padding: padding ?? EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,7 +92,7 @@ class SettingTile extends ConsumerWidget {
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   description!,
-                  style: Theme.of(context).textTheme.bodyText1?.copyWith(
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: const Color.fromRGBO(102, 102, 102, 1.0),
                       ),
                 ),

@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/model/router/device.dart';
 
 class LANState extends Equatable {
   final String ipAddress;

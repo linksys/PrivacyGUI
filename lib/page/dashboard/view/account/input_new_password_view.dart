@@ -39,14 +39,15 @@ class _InputNewPasswordViewState extends ConsumerState<InputNewPasswordView> {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('Input new password',
+        title: const Text('Input new password',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
         leading: BackButton(onPressed: () {
           ref.read(navigationsProvider.notifier).pop();
         }),
-        actions: [],
+        actions: const [],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           box16(),
           PasswordInputField.withValidator(
@@ -66,7 +67,6 @@ class _InputNewPasswordViewState extends ConsumerState<InputNewPasswordView> {
             onPress: _applyPassword,
           ),
         ],
-        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

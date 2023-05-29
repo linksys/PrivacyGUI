@@ -68,7 +68,7 @@ class _CountdownTimerProgressBarState
             builder: (context, child) {
               return Text(
                 remainingTimeText,
-                style: Theme.of(context).textTheme.headline1?.copyWith(
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
                       color: Colors.black,
                       fontWeight: FontWeight.w700,
                     ),

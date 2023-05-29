@@ -40,15 +40,16 @@ class _CloudPasswordValidationViewState
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('Verify your password',
+        title: const Text('Verify your password',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
         leading: BackButton(onPressed: () {
           ref.read(navigationsProvider.notifier).pop();
         }),
-        actions: [],
+        actions: const [],
       ),
       scrollable: true,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           box36(),
           PasswordInputField(
@@ -69,7 +70,6 @@ class _CloudPasswordValidationViewState
             onPress: _verifyPassword,
           ),
         ],
-        crossAxisAlignment: CrossAxisAlignment.start,
       ),
     );
   }

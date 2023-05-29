@@ -14,7 +14,7 @@ class TitleText extends ConsumerWidget {
       style: style ??
           Theme.of(context)
               .textTheme
-              .headline1
+              .displayLarge
               ?.copyWith(color: Theme.of(context).colorScheme.primary),
     );
   }

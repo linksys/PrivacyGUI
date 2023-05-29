@@ -15,9 +15,9 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
   final RouterRepository _routerRepository;
 
   Future<void> fetchAllRadioInfo() async {
-    List<WifiListItem> _wifiList = [];
-    List<RouterRadioInfo>? _mainRadioInfo;
-    GuestRadioSetting? _guestRadioInfoSetting;
+    List<WifiListItem> wifiList = [];
+    List<RouterRadioInfo>? mainRadioInfo0;
+    GuestRadioSetting? guestRadioInfoSetting0;
     final results = await _routerRepository.fetchAllRadioInfo();
     final radioInfo =
         JNAPTransactionSuccessWrap.getResult(JNAPAction.getRadioInfo, results);
@@ -35,7 +35,7 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
           securityType = radioInfo.settings.security;
         }
       }
-      _wifiList.add(WifiListItem(
+      wifiList.add(WifiListItem(
           wifiType: WifiType.main,
           ssid: mainRadioInfo.first.settings.ssid,
           password: mainRadioInfo.first.settings.wpaPersonalSettings.passphrase,
@@ -47,25 +47,25 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
           isWifiEnabled: mainRadioInfo.first.settings.isEnabled,
           numOfDevices: 0,
           signal: 0));
-      _mainRadioInfo = mainRadioInfo;
+      mainRadioInfo0 = mainRadioInfo;
     }
     final guestRadioSettings = JNAPTransactionSuccessWrap.getResult(
         JNAPAction.getGuestRadioSettings, results);
     if (guestRadioSettings != null) {
       final guestRadioInfoSetting =
           GuestRadioSetting.fromJson(guestRadioSettings.output);
-      _wifiList.add(WifiListItem(
+      wifiList.add(WifiListItem(
           wifiType: WifiType.guest,
           ssid: guestRadioInfoSetting.radios.first.guestSSID,
           password: guestRadioInfoSetting.radios.first.guestWPAPassphrase ?? '',
-          securityType: _wifiList.isNotEmpty
-              ? _wifiList.first.securityType
+          securityType: wifiList.isNotEmpty
+              ? wifiList.first.securityType
               : WifiSecurityType.wpa2Wpa3Mixed,
-          mode: _wifiList.isNotEmpty ? _wifiList.first.mode : WifiMode.mixed,
+          mode: wifiList.isNotEmpty ? wifiList.first.mode : WifiMode.mixed,
           isWifiEnabled: guestRadioInfoSetting.radios.first.isEnabled,
           numOfDevices: 0,
           signal: 0));
-      _guestRadioInfoSetting = guestRadioInfoSetting;
+      guestRadioInfoSetting0 = guestRadioInfoSetting;
     }
     // if (results.containsKey(JNAPAction.getIoTNetworkSettings.actionValue)) {
     //   final isIoTNetworkEnabled =
@@ -85,9 +85,9 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
     // }
 
     emit(state.copyWith(
-      wifiList: _wifiList,
-      mainRadioInfo: _mainRadioInfo,
-      guestRadioInfo: _guestRadioInfoSetting,
+      wifiList: wifiList,
+      mainRadioInfo: mainRadioInfo0,
+      guestRadioInfo: guestRadioInfoSetting0,
     ));
   }
 

@@ -23,10 +23,12 @@ class PortRangeTriggeringListCubit
           final int maxRules = value.output['maxRules'] ?? 50;
           final int maxDesc = value.output['maxDescriptionLength'] ?? 32;
           emit(state.copyWith(rules: rules, maxRules: maxRules, maxDescriptionLength: maxDesc));
+          return null;
     })
         .onError(
       (error, stackTrace) {
         addError(error as JNAPError, stackTrace);
+        return null;
       },
     );
   }

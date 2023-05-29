@@ -17,7 +17,6 @@ import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/
 import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/select_online_device_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/select_protocol_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/single_port_forwarding/single_port_forwarding_list_view.dart';
-import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 
 class AdministrationPath extends DashboardPath {
