@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/auth_provider.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -9,6 +8,7 @@ import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class CreateAccountPasswordView extends ArgumentsConsumerStatefulView {
@@ -84,32 +84,44 @@ class _CreateAccountPasswordViewState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(
-              height: 15,
-            ),
-            PasswordInputField.withValidator(
-              titleText: 'Password',
+            const AppGap.regular(),
+            AppPasswordField.withValidator(
+              headerText: 'Password',
               controller: passwordController,
-              isError: hasError,
               onChanged: (value) {
                 setState(() {
                   hasError = false;
                 });
               },
+              validations: [
+                Validation(
+                  description: 'At least 10 characters',
+                  validator: (text) => LengthRule().validate(text),
+                ),
+                Validation(
+                  description: 'Upper and lowercase letters',
+                  validator: (text) => HybridCaseRule().validate(text),
+                ),
+                Validation(
+                  description: '1 number',
+                  validator: (text) => DigitalCheckRule().validate(text),
+                ),
+                Validation(
+                  description: '1 special character',
+                  validator: (text) => SpecialCharCheckRule().validate(text),
+                ),
+              ],
             ),
-            SimpleTextButton(
-                text: 'I already have a Linksys account password',
-                onPressed: () {
-                  ref
-                      .read(navigationsProvider.notifier)
-                      .push(SameAccountPromptPath());
-                }),
-            const SizedBox(
-              height: 30,
-            ),
-            PrimaryButton(
-              text: 'Next',
-              onPress: _onNextAction,
+            AppTertiaryButton('I already have a Linksys account password',
+                onTap: () {
+              ref
+                  .read(navigationsProvider.notifier)
+                  .push(SameAccountPromptPath());
+            }),
+            const AppGap.big(),
+            AppPrimaryButton(
+              'Next',
+              onTap: _onNextAction,
             ),
           ],
         ),

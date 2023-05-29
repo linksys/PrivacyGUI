@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class OptionCard extends ConsumerWidget {
   const OptionCard({
@@ -36,24 +36,17 @@ class OptionCard extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  AppText.descriptionMain(
                     title,
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).primaryColor),
                   ),
-                  box16(),
-                  Text(
+                  const AppGap.regular(),
+                  AppText.descriptionSub(
                     description,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: Theme.of(context).primaryColor,
-                        ),
                   ),
                 ],
               ),
             ),
-            box36(),
+            const AppGap.big(),
             Image.asset(
               'assets/images/arrow_point_to_right.png',
               width: 10,

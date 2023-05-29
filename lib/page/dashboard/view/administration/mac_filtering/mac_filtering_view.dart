@@ -59,7 +59,7 @@ class _MacFilteringContentViewState
       builder: (context, state) {
         return StyledAppPageView(
           scrollable: true,
-          title: getAppLocalizations(context).ip_details,
+          title: getAppLocalizations(context).mac_filtering,
           child: AppBasicLayout(
             content: Column(
               children: [

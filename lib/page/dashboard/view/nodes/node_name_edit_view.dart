@@ -3,19 +3,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
-import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class NodeNameEditView extends ArgumentsConsumerStatefulView {
   const NodeNameEditView({Key? key, super.args, super.next}) : super(key: key);
 
   @override
-  ConsumerState<NodeNameEditView> createState() =>
-      _NodeNameEditViewState();
+  ConsumerState<NodeNameEditView> createState() => _NodeNameEditViewState();
 }
 
 class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
@@ -30,41 +27,27 @@ class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
-      return BasePageView.onDashboardSecondary(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: Text(getAppLocalizations(context).node_detail_label_node_name,
-              style:
-                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-          leading: BackButton(onPressed: () {
-            ref.read(navigationsProvider.notifier).pop();
-          }),
-          actions: [
-            TextButton(
-                onPressed: () {
-                  final newLocation = _controller.text;
-                  if (newLocation.isNotEmpty) {
-                    context.read<NodeCubit>().updateNodeLocation(newLocation);
-                  }
-                },
-                child: Text(getAppLocalizations(context).save,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: MoabColor.textButtonBlue))),
-          ],
-        ),
+      return StyledAppPageView(
+        title: getAppLocalizations(context).node_detail_label_node_name,
+        actions: [
+          AppTertiaryButton(
+            getAppLocalizations(context).save,
+            onTap: () {
+              final newLocation = _controller.text;
+              if (newLocation.isNotEmpty) {
+                context.read<NodeCubit>().updateNodeLocation(newLocation);
+              }
+            },
+          ),
+        ],
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            InputField(
-              titleText:
+            AppTextField(
+              headerText:
                   getAppLocalizations(context).node_detail_label_node_name,
               controller: _controller,
-              customPrimaryColor: Colors.black,
             )
           ],
         ),

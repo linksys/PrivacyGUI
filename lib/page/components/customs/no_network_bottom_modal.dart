@@ -1,9 +1,9 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
@@ -25,8 +25,8 @@ class NoInternetConnectionModal extends ConsumerWidget {
           padding: const EdgeInsets.all(24),
           child: Stack(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(24),
+              AppPadding(
+                padding: const AppEdgeInsets.semiBig(),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,10 +45,9 @@ class NoInternetConnectionModal extends ConsumerWidget {
               ),
               Container(
                 alignment: Alignment.topRight,
-                child: IconButton(
-                  iconSize: 36,
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
+                child: AppIconButton(
+                  icon: getCharactersIcons(context).crossDefault,
+                  onTap: () {
                     ref.read(navigationsProvider.notifier).pop();
                   },
                 ),

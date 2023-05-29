@@ -4,21 +4,20 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
-import 'package:linksys_moab/page/components/base_components/button/primary_button.dart';
-import 'package:linksys_moab/page/components/base_components/button/simple_text_button.dart';
-import 'package:linksys_moab/page/components/base_components/input_fields/input_field.dart';
-import 'package:linksys_moab/page/components/base_components/progress_bars/full_screen_spinner.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 
 import 'package:linksys_moab/util/in_app_browser.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/page/base_page_view.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 import '../../../route/navigations_notifier.dart';
-import '../../components/base_components/input_fields/password_input_field.dart';
 
 enum AdminPasswordType { create, reset }
 
@@ -57,30 +56,27 @@ class _CreateAdminPasswordViewState
   @override
   Widget build(BuildContext context) {
     return _isLoading
-        ? BasePageView.noNavigationBar(
-            child: const FullScreenSpinner(
+        ? const AppFullScreenSpinner(
             text: 'Processing',
-          ))
+          )
         : _isSuccess
             ? _successView()
             : _contentView();
   }
 
   Widget _successView() {
-    return BasePageView.noNavigationBar(
-      child: BasicLayout(
+    return AppPageView.noNavigationBar(
+      child: AppBasicLayout(
         header: BasicHeader(
           title:
               getAppLocalizations(context).create_router_password_reset_success,
         ),
         content: Column(
           children: [
-            const SizedBox(
-              height: 64,
-            ),
-            PrimaryButton(
-              text: getAppLocalizations(context).go_to_dashboard,
-              onPress: () {
+            const AppGap.extraBig(),
+            AppPrimaryButton(
+              getAppLocalizations(context).go_to_dashboard,
+              onTap: () {
                 ref
                     .read(navigationsProvider.notifier)
                     .clearAndPush(DashboardHomePath());
@@ -93,9 +89,9 @@ class _CreateAdminPasswordViewState
   }
 
   Widget _contentView() {
-    return BasePageView(
+    return StyledAppPageView(
       scrollable: true,
-      child: BasicLayout(
+      child: AppBasicLayout(
         header: BasicHeader(
           title: _type == AdminPasswordType.reset
               ? getAppLocalizations(context).create_router_password_reset_title
@@ -105,39 +101,37 @@ class _CreateAdminPasswordViewState
         ),
         content: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 36, bottom: 37),
-              child: PasswordInputField(
-                titleText: getAppLocalizations(context).password,
+            AppPadding(
+              padding: const AppEdgeInsets.symmetric(vertical: AppGapSize.big),
+              child: AppPasswordField(
+                headerText: getAppLocalizations(context).password,
                 hintText: 'Enter Password',
                 controller: passwordController,
                 onChanged: _checkInputData,
               ),
             ),
-            InputField(
-              titleText: getAppLocalizations(context).password_hint,
+            AppTextField(
+              headerText: getAppLocalizations(context).password_hint,
               hintText: 'Add a hint',
               controller: hintController,
               onChanged: _checkInputData,
             ),
-            const SizedBox(
-              height: 100,
-            ),
-            SimpleTextButton(
-                text: getAppLocalizations(context)
-                    .create_router_password_how_to_access,
-                onPressed: () {
-                  MoabInAppBrowser.withDefaultOption().openUrlRequest(
-                      urlRequest: URLRequest(
-                          url: Uri.parse('https://www.linksys.com/us/')));
-                })
+            const AppGap.extraBig(),
+            const AppGap.extraBig(),
+            AppTertiaryButton(
+                getAppLocalizations(context)
+                    .create_router_password_how_to_access, onTap: () {
+              MoabInAppBrowser.withDefaultOption().openUrlRequest(
+                  urlRequest: URLRequest(
+                      url: Uri.parse('https://www.linksys.com/us/')));
+            })
           ],
         ),
         footer: Visibility(
           visible: _isValidData,
-          child: PrimaryButton(
-            text: getAppLocalizations(context).next,
-            onPress: () {
+          child: AppPrimaryButton(
+            getAppLocalizations(context).next,
+            onTap: () {
               if (_type == AdminPasswordType.create) {
                 
               } else {

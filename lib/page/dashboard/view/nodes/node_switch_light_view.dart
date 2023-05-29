@@ -3,9 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class NodeSwitchLightView extends ConsumerWidget {
   const NodeSwitchLightView({super.key});
@@ -13,28 +13,17 @@ class NodeSwitchLightView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
-      return BasePageView(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: const Text('Node light',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-          leading: BackButton(
-              onPressed: () => ref.read(navigationsProvider.notifier).pop()),
-        ),
+      return StyledAppPageView(
+        title: 'Node light',
         child: Column(
           children: [
-            SettingTile(
-                title: Text(
-                  'Node light',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                value: Switch.adaptive(
-                    value: state.isLightTurnedOn,
-                    onChanged: (bool newValue) {
-                      context.read<NodeCubit>().updateNodeLightSwitch(newValue);
-                    })),
+            AppPanelWithSwitch(
+              value: state.isLightTurnedOn,
+              title: 'Node light',
+              onChangedEvent: (bool newValue) {
+                context.read<NodeCubit>().updateNodeLightSwitch(newValue);
+              },
+            ),
           ],
         ),
       );

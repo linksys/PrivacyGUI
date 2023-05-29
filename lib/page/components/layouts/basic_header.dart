@@ -1,8 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/page/components/base_components/text/description_text.dart';
-import 'package:linksys_moab/page/components/base_components/text/title_text.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class BasicHeader extends ConsumerWidget {
   const BasicHeader(
@@ -25,14 +24,11 @@ class BasicHeader extends ConsumerWidget {
     return Column(
       crossAxisAlignment: alignment ?? CrossAxisAlignment.start,
       children: [
-        TitleText(
-          text: title ?? '',
-          style: titleTextStyle,
+        AppText.mainTitle(
+          title ?? '',
         ),
-        SizedBox(
-          height: spacing ?? 15,
-        ),
-        DescriptionText(text: description ?? ''),
+        const AppGap.regular(),
+        AppText.descriptionSub(description ?? ''),
       ],
     );
   }

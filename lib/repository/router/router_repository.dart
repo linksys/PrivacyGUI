@@ -45,11 +45,12 @@ class CommandWrap {
   Map<String, dynamic> data;
 }
 
-final routerRepositoryProvider = Provider((ref) => RouterRepository(ref));
+final routerRepositoryProvider = Provider((ref) {
+  return RouterRepository(ref);
+});
 
 class RouterRepository with StateStreamListener {
   RouterRepository(this.ref);
-
   final Ref ref;
   bool _btSetupMode = false;
   final LinksysHttpClient _client = LinksysHttpClient();

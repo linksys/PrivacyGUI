@@ -8,13 +8,14 @@ import 'package:linksys_moab/model/router/guest_radio_settings.dart';
 import 'package:linksys_moab/model/router/iot_network_settings.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/page/components/customs/hidden_password_widget.dart';
-import 'package:linksys_moab/page/components/layouts/layout.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/model/wifi_settings_path.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class WifiListView extends ConsumerStatefulWidget {
   const WifiListView({Key? key}) : super(key: key);
@@ -97,8 +98,9 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
+              AppPadding(
+                padding:
+                    const AppEdgeInsets.symmetric(vertical: AppGapSize.regular),
                 child: _information(index),
               ),
               const Spacer(),
@@ -161,7 +163,7 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
   Widget build(BuildContext context) {
     return StyledAppPageView(
       scrollable: true,
-      child: BasicLayout(
+      child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: const AppText.screenName(
           'Your WiFi networks',

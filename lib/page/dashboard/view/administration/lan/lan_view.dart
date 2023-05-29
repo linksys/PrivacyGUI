@@ -69,7 +69,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
     return BlocBuilder<LANCubit, LANState>(builder: (context, state) {
       return StyledAppPageView(
         scrollable: true,
-        title: getAppLocalizations(context).ip_details,
+        title: getAppLocalizations(context).lan,
         actions: [
           AppTertiaryButton(
             getAppLocalizations(context).save,

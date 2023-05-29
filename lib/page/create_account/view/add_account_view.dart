@@ -3,21 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/auth/auth_provider.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
-
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-
-import '../../components/base_components/progress_bars/full_screen_spinner.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class AddAccountView extends ArgumentsConsumerStatefulView {
   const AddAccountView({Key? key, super.args}) : super(key: key);
@@ -68,21 +68,17 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
       getAppLocalizations(context).add_cloud_account_bullet_5,
     ];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 26),
+    return AppPadding(
+      padding: const AppEdgeInsets.symmetric(vertical: AppGapSize.semiBig),
       child: Column(
         children: List.generate(tips.length, (index) {
           return Row(
             children: [
-              Image.asset('assets/images/icon_check_green.png'),
-              const SizedBox(
-                width: 8,
-              ),
-              Text(
+              AppIcon.regular(
+                  icon: AppTheme.of(context).icons.characters.checkDefault),
+              const AppGap.semiSmall(),
+              AppText.descriptionMain(
                 tips[index],
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: Theme.of(context).primaryColor,
-                    ),
               ),
             ],
           );
@@ -100,7 +96,7 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
               child: AppText.descriptionMain('Something happen here'),
             ),
         loading: () =>
-            FullScreenSpinner(text: getAppLocalizations(context).processing));
+            AppFullScreenSpinner(text: getAppLocalizations(context).processing));
     // return BlocConsumer<AuthBloc, AuthState>(
     //     listenWhen: (previous, current) {
     //       if (previous is AuthOnCreateAccountState &&
@@ -132,21 +128,19 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
   }
 
   Widget _contentView() {
-    return BasePageView(
+    return StyledAppPageView(
       scrollable: true,
-      child: BasicLayout(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: AppBasicLayout(
           header: BasicHeader(
             title: getAppLocalizations(context).add_cloud_account_header_title,
           ),
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              InputField(
-                titleText:
+              AppTextField(
+                headerText:
                     getAppLocalizations(context).add_cloud_account_input_title,
                 controller: _emailController,
-                isError: isEmailInvalid,
                 errorText: 'Enter a valid email format',
                 inputType: TextInputType.emailAddress,
                 onChanged: (value) {
@@ -159,21 +153,18 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
                 offstage: _errorCode.isEmpty,
                 child: Wrap(
                   children: [
-                    Text(
+                    AppText.descriptionSub(
                       generalErrorCodeHandler(context, _errorCode),
-                      style: Theme.of(context)
-                          .textTheme
-                          .displaySmall
-                          ?.copyWith(color: Colors.red),
+                      color: ConstantColors.tertiaryRed,
                     ),
-                    SimpleTextButton.onPaddingWithStyle(
-                        text: getAppLocalizations(context).login_to_continue,
-                        onPressed: _goLogin,
-                        textStyle: const TextStyle(color: Colors.blue))
+                    AppTertiaryButton(
+                      getAppLocalizations(context).login_to_continue,
+                      onTap: _goLogin,
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              const AppGap.semiSmall(),
               FutureBuilder<bool>(
                 future: Utils.canUseBiometrics(),
                 initialData: false,
@@ -186,40 +177,38 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
                           _enableBiometrics = !_enableBiometrics;
                         });
                       },
-                      child: CheckboxSelectableItem(
+                      child: AppPanelWithValueCheck(
                         title: getAppLocalizations(context).enable_biometrics,
-                        isSelected: _enableBiometrics,
+                        valueText: '',
+                        isChecked: _enableBiometrics,
                       ),
                     ),
                   );
                 },
               ),
-              SimpleTextButton(
-                  text: getAppLocalizations(context).already_have_an_account,
-                  onPressed: _goLogin),
-              const SizedBox(height: 32),
-              DescriptionText(
-                  text: getAppLocalizations(context)
-                      .add_cloud_account_input_description),
-              const SizedBox(
-                height: 8,
-              ),
+              AppTertiaryButton(
+                  getAppLocalizations(context).already_have_an_account,
+                  onTap: _goLogin),
+              const AppGap.big(),
+              AppText.descriptionMain(getAppLocalizations(context)
+                  .add_cloud_account_input_description),
+              const AppGap.semiSmall(),
               _buildAccountTipsWidget(),
             ],
           ),
           footer: Column(
             children: [
-              PrimaryButton(
-                text: getAppLocalizations(context).next,
-                onPress: _onNextAction,
+              AppPrimaryButton(
+                getAppLocalizations(context).next,
+                onTap: _onNextAction,
               ),
-              const SizedBox(height: 8),
+              const AppGap.semiSmall(),
               widget.args['config'] != null &&
                       widget.args['config'] == 'LOCALAUTHCREATEACCOUNT'
                   ? Container()
-                  : SimpleTextButton(
-                      text: getAppLocalizations(context).use_router_password,
-                      onPressed: () {
+                  : AppTertiaryButton(
+                      getAppLocalizations(context).use_router_password,
+                      onTap: () {
                         ref
                             .read(navigationsProvider.notifier)
                             .push(NoUseCloudAccountPath());

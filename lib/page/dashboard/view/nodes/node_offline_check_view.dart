@@ -4,10 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/layouts/layout.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/page/components/layouts/basic_header.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class NodeOfflineCheckView extends ArgumentsConsumerStatefulView {
   const NodeOfflineCheckView({Key? key, super.args, super.next})
@@ -26,9 +27,9 @@ class _NodeOfflineCheckViewState extends ConsumerState<NodeOfflineCheckView> {
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView.withCloseButton(
-      context, ref,
-      child: BasicLayout(
+    return StyledAppPageView(
+      isCloseStyle: true,
+      child: AppBasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).node_offline_check_title,
         ),
@@ -45,57 +46,50 @@ class _NodeOfflineCheckViewState extends ConsumerState<NodeOfflineCheckView> {
                   width: 74,
                   height: 74,
                 ),
-                box16(),
+                const AppGap.regular(),
                 Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     BlocBuilder<NodeCubit, NodeState>(
                         builder: (context, state) {
-                      return Text(
+                      return AppText.descriptionMain(
                         state.location,
-                        style: const TextStyle(
-                            fontSize: 15.0, fontWeight: FontWeight.bold),
                       );
                     }),
-                    Text(
+                    AppText.descriptionSub(
                       getAppLocalizations(context).offline,
-                      style: Theme.of(context).textTheme.headlineMedium,
                     )
                   ],
                 )
               ],
             ),
-            box36(),
-            Text(getAppLocalizations(context).node_offline_power_is_on,
-                style:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w400)),
-            box8(),
-            Text(
-                getAppLocalizations(context)
-                    .node_offline_power_is_on_description,
-                style:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w400)),
-            box16(),
-            Text(getAppLocalizations(context).node_offline_within_range,
-                style:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w400)),
-            box8(),
-            Text(
-                getAppLocalizations(context)
-                    .node_offline_within_range_description,
-                style:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w400)),
-            box16(),
-            Text(getAppLocalizations(context).node_offline_still_offline,
-                style:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w400)),
-            box8(),
-            Text(
-                getAppLocalizations(context)
-                    .node_offline_still_offline_description,
-                style:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w400)),
+            const AppGap.big(),
+            AppText.descriptionSub(
+              getAppLocalizations(context).node_offline_power_is_on,
+            ),
+            const AppGap.semiSmall(),
+            AppText.descriptionSub(
+              getAppLocalizations(context).node_offline_power_is_on_description,
+            ),
+            const AppGap.regular(),
+            AppText.descriptionSub(
+              getAppLocalizations(context).node_offline_within_range,
+            ),
+            const AppGap.semiSmall(),
+            AppText.descriptionSub(
+              getAppLocalizations(context)
+                  .node_offline_within_range_description,
+            ),
+            const AppGap.regular(),
+            AppText.descriptionSub(
+              getAppLocalizations(context).node_offline_still_offline,
+            ),
+            const AppGap.semiSmall(),
+            AppText.descriptionSub(
+              getAppLocalizations(context)
+                  .node_offline_still_offline_description,
+            ),
           ],
         ),
       ),

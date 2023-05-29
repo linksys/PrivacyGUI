@@ -4,10 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
-import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/internet_schedule_path.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class InternetScheduleOverviewView extends ArgumentsConsumerStatefulView {
   const InternetScheduleOverviewView({Key? key, super.args, super.next})
@@ -31,20 +32,11 @@ class _InternetScheduleOverviewViewState
       final profile = state.selectedProfile;
       final data = profile?.serviceDetails[PService.internetSchedule]
           as InternetScheduleData?;
-      return BasePageView.onDashboardSecondary(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: Text(profile?.name ?? '',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-          leading: BackButton(onPressed: () {
-            ref.read(navigationsProvider.notifier).pop();
-          }),
-        ),
+      return StyledAppPageView(
+        title: profile?.name ?? '',
         child: Column(
           children: [
-            const SizedBox(height: 16),
+            const AppGap.regular(),
             timeLimitSettingsItem(context, (context) {
               ref
                   .read(navigationsProvider.notifier)
@@ -71,29 +63,28 @@ Widget timeLimitSettingsItem(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Daily time limit',
-                      style:
-                          TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 4),
-                  Text(
-                      data == null
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const AppText.descriptionMain(
+                  'Daily time limit',
+                ),
+                const AppGap.small(),
+                AppText.descriptionSub(
+                  data == null
+                      ? 'none'
+                      : data.dateTimeLimitRule.isEmpty
                           ? 'none'
-                          : data.dateTimeLimitRule.isEmpty
-                              ? 'none'
-                              : data.dateTimeLimitRule
-                                      .any((element) => element.isEnabled)
-                                  ? 'ON'
-                                  : 'OFF',
-                      style: const TextStyle(
-                          color: Color.fromRGBO(102, 102, 102, 1.0),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500))
-                ]),
-            Expanded(child: Container()),
-            Image.asset('assets/images/right_compact_wire.png')
+                          : data.dateTimeLimitRule
+                                  .any((element) => element.isEnabled)
+                              ? 'ON'
+                              : 'OFF',
+                  color: const Color.fromRGBO(102, 102, 102, 1.0),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Image.asset('assets/images/right_compact_wire.png'),
           ],
         ),
       ),
@@ -103,36 +94,36 @@ Widget timeLimitSettingsItem(
 Widget schedulePauseSettingsItem(
     BuildContext context, ValueChanged onTap, InternetScheduleData? data) {
   return SizedBox(
-      height: 64,
-      width: double.infinity,
-      child: InkWell(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Scheduled pauses',
-                        style: TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 4),
-                    Text(
-                        data == null
-                            ? 'none'
-                            : data.scheduledPauseRule.isEmpty
-                                ? 'none'
-                                : data.scheduledPauseRule
-                                        .any((element) => element.isEnabled)
-                                    ? 'ON'
-                                    : 'OFF',
-                        style: const TextStyle(
-                            color: Color.fromRGBO(102, 102, 102, 1.0),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500))
-                  ]),
-              Image.asset('assets/images/right_compact_wire.png')
-            ],
-          ),
-          onTap: () => onTap(context)));
+    height: 64,
+    width: double.infinity,
+    child: InkWell(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const AppText.descriptionMain(
+                  'Scheduled pauses',
+                ),
+                const AppGap.small(),
+                AppText.descriptionSub(
+                  data == null
+                      ? 'none'
+                      : data.scheduledPauseRule.isEmpty
+                          ? 'none'
+                          : data.scheduledPauseRule
+                                  .any((element) => element.isEnabled)
+                              ? 'ON'
+                              : 'OFF',
+                  color: const Color.fromRGBO(102, 102, 102, 1.0),
+                ),
+              ]),
+          Image.asset('assets/images/right_compact_wire.png')
+        ],
+      ),
+      onTap: () => onTap(context),
+    ),
+  );
 }

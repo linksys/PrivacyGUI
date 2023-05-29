@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
-
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class CloudPasswordValidationView extends ArgumentsConsumerStatefulView {
   const CloudPasswordValidationView({Key? key, super.args, super.next})
@@ -35,39 +32,27 @@ class _CloudPasswordValidationViewState
   }
 
   Widget _contentView() {
-    return BasePageView.onDashboardSecondary(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text('Verify your password',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-        leading: BackButton(onPressed: () {
-          ref.read(navigationsProvider.notifier).pop();
-        }),
-        actions: const [],
-      ),
+    return StyledAppPageView(
+      title: 'Verify your password',
       scrollable: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          box36(),
-          PasswordInputField(
-            titleText: 'Password',
+          const AppGap.big(),
+          AppPasswordField(
+            headerText: 'Password',
             controller: passwordController,
-            isError: _errorMessage.isNotEmpty,
             errorText: _errorMessage,
-            color: Colors.black,
             onChanged: (value) {
               setState(() {
                 _errorMessage = '';
               });
             },
           ),
-          box(72),
-          PrimaryButton(
-            text: 'Next',
-            onPress: _verifyPassword,
+          const AppGap.extraBig(),
+          AppPrimaryButton(
+            'Next',
+            onTap: _verifyPassword,
           ),
         ],
       ),

@@ -4,25 +4,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/page/components/base_components/progress_bars/indeterminate_progress_bar.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class NodeRestartView extends ConsumerStatefulWidget {
   const NodeRestartView({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<NodeRestartView> createState() =>
-      _NodeRestartViewState();
+  ConsumerState<NodeRestartView> createState() => _NodeRestartViewState();
 }
 
 class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
-      return BasePageView.withCloseButton(
-        context, ref,
+      return StyledAppPageView(
+        isCloseStyle: true,
         child: Visibility(
           visible: !state.isSystemRestarting,
           replacement: restartingIndicator(),
@@ -39,29 +39,25 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
         Image.asset(
           'assets/images/image_restart_disconnect.png',
         ),
-        box36(),
-        Text(
+        const AppGap.big(),
+        const AppText.descriptionMain(
           'Restarting will temporarily disconnect devices',
-          style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onPrimary,
-              ),
         ),
-        box16(),
-        Text(
+        const AppGap.regular(),
+        const AppText.descriptionMain(
           'They will reconnect when your network is ready.',
-          style: Theme.of(context).textTheme.displaySmall,
         ),
-        box36(),
-        PrimaryButton(
-          text: 'Restart',
-          onPress: () {
+        const AppGap.big(),
+        AppPrimaryButton(
+          'Restart',
+          onTap: () {
             context.read<NodeCubit>().rebootMeshSystem();
           },
         ),
-        box16(),
-        SecondaryButton(
-          text: getAppLocalizations(context).cancel,
-          onPress: () => ref.read(navigationsProvider.notifier).pop(),
+        const AppGap.regular(),
+        AppSecondaryButton(
+          getAppLocalizations(context).cancel,
+          onTap: () => ref.read(navigationsProvider.notifier).pop(),
         ),
       ],
     );
@@ -70,17 +66,13 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
   Widget restartingIndicator() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        box48(),
-        Text(
+      children: const [
+        AppGap.extraBig(),
+        AppText.mainTitle(
           'Restarting your network...',
-          style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onPrimary,
-              ),
         ),
-        box48(),
-        const IndeterminateProgressBar(),
+        AppGap.extraBig(),
+        IndeterminateProgressBar(),
       ],
     );
   }

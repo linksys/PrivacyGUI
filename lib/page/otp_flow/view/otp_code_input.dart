@@ -14,7 +14,6 @@ import 'package:linksys_moab/repository/model/cloud_session_model.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
-
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -175,7 +174,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
     _sessionToken = await otpCubit
         .authChallengeVerify(code: code, token: token)
         .onError((error, stackTrace) => _handleError(error, stackTrace));
-    
+
     otpCubit.finish();
     _setLoading(false);
   }

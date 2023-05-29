@@ -1,12 +1,11 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
-import 'package:linksys_moab/page/components/base_components/button/primary_button.dart';
 import 'package:linksys_moab/page/components/customs/network_check_view.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class ForgotEmailView extends ConsumerStatefulWidget {
   const ForgotEmailView({Key? key}) : super(key: key);
@@ -26,9 +25,9 @@ class _ForgotEmailViewState extends ConsumerState<ForgotEmailView> {
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView.withCloseButton(
-      context, ref,
-      child: BasicLayout(
+    return StyledAppPageView(
+      isCloseStyle: true,
+      child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: getAppLocalizations(context).forgot_email,
@@ -38,9 +37,9 @@ class _ForgotEmailViewState extends ConsumerState<ForgotEmailView> {
             : NetworkCheckView(
                 description: getAppLocalizations(context)
                     .cloud_forgot_email_connect_to_your_router,
-                button: PrimaryButton(
-                  text: getAppLocalizations(context).am_connected,
-                  onPress: () {
+                button: AppPrimaryButton(
+                  getAppLocalizations(context).am_connected,
+                  onTap: () {
                     // TODO router API
                     setState(() {
                       _isBehindRouter = !_isBehindRouter;
@@ -55,22 +54,12 @@ class _ForgotEmailViewState extends ConsumerState<ForgotEmailView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        AppText.descriptionMain(
           getAppLocalizations(context).cloud_forgot_email_router_connected_to,
-          style: Theme.of(context)
-              .textTheme
-              .displaySmall
-              ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
-        const SizedBox(
-          height: 32,
-        ),
-        Text(
+        const AppGap.big(),
+        AppText.descriptionMain(
           maskedMail,
-          style: Theme.of(context)
-              .textTheme
-              .displaySmall
-              ?.copyWith(color: Theme.of(context).colorScheme.primary),
         ),
       ],
     );

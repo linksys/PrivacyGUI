@@ -1,8 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../design/colors.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
 
 class LineChartSample extends ConsumerStatefulWidget {
   const LineChartSample({Key? key}) : super(key: key);
@@ -13,8 +12,8 @@ class LineChartSample extends ConsumerStatefulWidget {
 
 class _LineChartSampleState extends ConsumerState<LineChartSample> {
   List<Color> gradientColors = [
-    MoabColor.cardBackground,
-    MoabColor.cardBackground,
+    ConstantColors.baseTertiaryGray,
+    ConstantColors.baseTertiaryGray,
   ];
 
   @override
@@ -25,10 +24,11 @@ class _LineChartSampleState extends ConsumerState<LineChartSample> {
           aspectRatio: 1.70,
           child: Container(
             decoration: const BoxDecoration(
-                borderRadius: BorderRadius.all(
-                  Radius.circular(18),
-                ),
-                color: MoabColor.dashboardTileBackground),
+              borderRadius: BorderRadius.all(
+                Radius.circular(18),
+              ),
+              color: ConstantColors.baseTertiaryGray,
+            ),
             child: LineChart(
               mainData(),
             ),

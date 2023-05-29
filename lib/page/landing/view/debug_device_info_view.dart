@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import '../../../util/logger.dart';
 
 class DebugDeviceInfoView extends ConsumerStatefulWidget {
@@ -26,10 +27,10 @@ class _DebugDeviceInfoViewState extends ConsumerState<DebugDeviceInfoView> {
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView.withCloseButton(
-      context, ref,
+    return StyledAppPageView(
+      isCloseStyle: true,
       scrollable: true,
-      child: BasicLayout(
+      child: AppBasicLayout(
         header: const BasicHeader(
           title: 'Device Information',
         ),
@@ -43,20 +44,12 @@ class _DebugDeviceInfoViewState extends ConsumerState<DebugDeviceInfoView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        AppText.descriptionMain(
           _appInfoFromLogger,
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                color: Theme.of(context).primaryColor,
-              ),
         ),
-        const SizedBox(
-          height: 20,
-        ),
-        Text(
+        const AppGap.regular(),
+        AppText.descriptionMain(
           getScreenInfo(context),
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                color: Theme.of(context).primaryColor,
-              ),
         ),
       ],
     );

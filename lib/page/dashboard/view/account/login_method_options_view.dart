@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/bloc/account/_account.dart';
-import 'package:linksys_moab/design/colors.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/bloc/account/account_provider.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/route/model/account_path.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 
 import '../../../../constants/pref_key.dart';
-import '../../../../route/model/account_path.dart';
-import '../../../components/base_components/base_page_view.dart';
 
 enum LoginMethod { otp, password }
 
@@ -25,7 +25,7 @@ class _LoginMethodOptionsViewState
     extends ConsumerState<LoginMethodOptionsView> {
   LoginMethod? _choose = LoginMethod.otp;
   String? password;
-  bool isShowPainText = false;
+  bool isShowPlainText = false;
 
   @override
   void initState() {
@@ -43,17 +43,11 @@ class _LoginMethodOptionsViewState
   }
 
   Widget _content(BuildContext context) {
-    final state = ref.read(accountProvider);
-    return BasePageView.onDashboardSecondary(
-      padding: const EdgeInsets.all(0),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        centerTitle: true,
-        elevation: 0,
-        title: const Text('Log in method',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-        leading: BackButton(onPressed: () {
+    return AppPageView(
+      appBar: LinksysAppBar.withBack(
+        context: context,
+        title: const AppText.screenName('Log in method'),
+        onBackTap: () {
           if (ref.read(navigationsProvider).contains(AccountDetailPath())) {
             ref.read(navigationsProvider.notifier).popTo(AccountDetailPath());
           } else {
@@ -61,16 +55,16 @@ class _LoginMethodOptionsViewState
                 .read(navigationsProvider.notifier)
                 .clearAndPush(AccountDetailPath());
           }
-        }),
-        actions: const [],
+        },
       ),
       scrollable: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
-            title: const Text('One-time passcode (OTP)',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w400)),
+            title: const AppText.descriptionMain(
+              'One-time passcode (OTP)',
+            ),
             leading: Radio<LoginMethod>(
               value: LoginMethod.otp,
               groupValue: _choose,
@@ -84,56 +78,55 @@ class _LoginMethodOptionsViewState
               },
               activeColor: Colors.black,
             ),
-            subtitle: const Text(
-                'A one-time passcode verification is required to log in',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400)),
+            subtitle: const AppText.descriptionSub(
+              'A one-time passcode verification is required to log in',
+            ),
           ),
-          box24(),
+          const AppGap.semiBig(),
           ListTile(
             title: password == null
-                ? const Text('Password',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w400))
+                ? const AppText.descriptionMain(
+                    'Password',
+                  )
                 : Column(
                     children: [
-                      Row(children: [
-                        const Text('Password',
-                            style: TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.w400)),
-                        const Expanded(child: Center()),
-                        TextButton(
-                            onPressed: () {},
-                            child: const Text('Edit',
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w400,
-                                    color: MoabColor.primaryBlue)))
-                      ]),
                       Row(
                         children: [
-                          isShowPainText
-                              ? Text(password!,
-                                  style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w400))
-                              : const Text(
-                                  '\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf',
-                                  style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w400)),
-                          box8(),
-                          GestureDetector(
-                              child: Image.asset(
-                                'assets/images/eye_closed.png',
-                                width: 26,
-                                height: 26,
-                              ),
-                              onTap: () {
-                                setState(() {
-                                  isShowPainText = !isShowPainText;
-                                });
-                              })
+                          const Expanded(
+                            child: AppText.descriptionMain(
+                              'Password',
+                            ),
+                          ),
+                          AppTertiaryButton(
+                            'Edit',
+                            onTap: () {},
+                          )
                         ],
-                      )
+                      ),
+                      Row(
+                        children: [
+                          isShowPlainText
+                              ? AppText.descriptionMain(
+                                  password!,
+                                )
+                              : const AppText.descriptionSub(
+                                  '\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf\u25cf',
+                                ),
+                          const AppGap.semiSmall(),
+                          GestureDetector(
+                            child: Image.asset(
+                              'assets/images/eye_closed.png',
+                              width: 26,
+                              height: 26,
+                            ),
+                            onTap: () {
+                              setState(() {
+                                isShowPlainText = !isShowPlainText;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
                     ],
                   ),
             leading: Radio<LoginMethod>(
@@ -143,15 +136,15 @@ class _LoginMethodOptionsViewState
                 setState(() {
                   _choose = value;
                   if (password == null) {
-                    changeAuthModePrepare(context, state);
+                    // changeAuthModePrepare(context, state);
                   }
                 });
               },
               activeColor: Colors.black,
             ),
-            subtitle: const Text(
-                'A traditional password and a one-time passcode verification are required to log in',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400)),
+            subtitle: const AppText.descriptionSub(
+              'A traditional password and a one-time passcode verification are required to log in',
+            ),
           )
         ],
       ),

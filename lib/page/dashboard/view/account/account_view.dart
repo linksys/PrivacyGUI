@@ -3,16 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/account/account_provider.dart';
 import 'package:linksys_moab/bloc/account/account_state.dart';
-import 'package:linksys_moab/bloc/auth/auth_provider.dart';
-import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/bloc/auth/_auth.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
-import 'package:linksys_moab/page/components/shortcuts/dialogs.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:styled_text/styled_text.dart';
 
 import '../../../../bloc/internet_check/cubit.dart';
@@ -60,7 +58,12 @@ class _AccountViewState extends ConsumerState<AccountView> {
       children: [
         const AppGap.regular(),
         _localLoginInformationSection(context),
-        dividerWithPadding(),
+        const AppPadding(
+          padding: AppEdgeInsets.symmetric(vertical: AppGapSize.regular),
+          child: Divider(
+            color: ConstantColors.primaryLinksysBlack,
+          ),
+        ),
         // _biometricsTile(state),
         const Spacer(),
       ],
@@ -72,7 +75,12 @@ class _AccountViewState extends ConsumerState<AccountView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _informationSection(state),
-        dividerWithPadding(),
+        const AppPadding(
+          padding: AppEdgeInsets.symmetric(vertical: AppGapSize.regular),
+          child: Divider(
+            color: ConstantColors.primaryLinksysBlack,
+          ),
+        ),
         _securitySection(state),
         const Spacer(),
       ],
@@ -130,178 +138,60 @@ class _AccountViewState extends ConsumerState<AccountView> {
     ];
   }
 
-  Widget _createCommunicationTile(CommunicationMethod method, bool showDelete) {
-    return Row(
-      children: [
-        Expanded(
-          child: SettingTile(
-            axis: SettingTileAxis.vertical,
-            title: Text(method.method == 'EMAIL' ? 'Email' : 'Phone number'),
-            value: Text(
-              method.target,
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            icon: const Icon(Icons.delete),
-            onPress: showDelete
-                ? () {
-                    _showDeleteCommunicationMethodDialog(
-                        method.method, method.target);
-                  }
-                : null,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Widget _passwordLessTile(AccountState state) {
-  //   return SettingTile(
-  //     title: const Text('Log in method'),
-  //     value: Text(
-  //         state.authMode.toLowerCase() == AuthenticationType.passwordless.name
-  //             ? "One-time passcode"
-  //             : "Password",
-  //         style: TextStyle(color: Colors.black.withOpacity(0.5))),
-  //     onPress: () {
-  //       ref.read(navigationsProvider.notifier).push(LoginMethodOptionsPath());
-  //     },
-  //   );
-  // }
-
-  // Widget _biometricsTile(AccountState state) {
-  //   return SettingTile(
-  //     title: Text('Biometric login'),
-  //     description:
-  //         'At vero eos et accusamus et iusto odio dignissimos. At vero eos et accusamus et iusto odio dignissimos.',
-  //     value: Switch.adaptive(
-  //       value: state.isBiometricEnabled,
-  //       onChanged: (value) async {
-  //         // if (!value) {
-  //         //   _showConfirmBiometricDialog(value);
-  //         // } else {
-  //         //   final isValidate = await Utils.doLocalAuthenticate();
-  //         //   if (isValidate) {
-  //         //     final authBloc = context.read<AuthBloc>();
-  //         //     await authBloc.extendCertification();
-  //         //     await authBloc.requestSession();
-  //         //     await context.read<AccountCubit>().toggleBiometrics(value);
-  //         //   }
-  //         // }
-  //       },
-  //     ),
-  //   );
-  // }
-
   Widget _localLoginInformationSection(BuildContext context) {
     return SectionTile(
-      header: Text(
+      header: const AppText.tags(
         'No Linksys account',
-        style: Theme.of(context).textTheme.headlineMedium,
       ),
       child: Column(
         children: [
           StyledText(
-              text:
-                  'Unlock app features with a Linksys account  <link href="https://flutter.dev">Learn more</link>',
-              style: Theme.of(context)
-                  .textTheme
-                  .displayMedium
-                  ?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
-              tags: {
-                'link': StyledTextActionTag(
-                    (String? text, Map<String?, String?> attrs) {
-                  String? link = attrs['href'];
-                  print('The "$link" link is tapped.');
-                }, style: const TextStyle(color: Colors.blue)),
-              }),
-          box16(),
-          Row(children: [
-            box4(),
-            const Text('\u2022'),
-            box4(),
-            Text(
-              'Benefit 1',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ]),
-          Row(children: [
-            box4(),
-            const Text('\u2022'),
-            box4(),
-            Text(
-              'Benefit 2',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ]),
-          Row(children: [
-            box4(),
-            const Text('\u2022'),
-            box4(),
-            Text(
-              'Benefit X',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ]),
-          const SizedBox(
-            height: 28,
+            text:
+                'Unlock app features with a Linksys account  <link href="https://flutter.dev">Learn more</link>',
+            style: AppTheme.of(context)
+                .typography
+                .textLinkSmall
+                .copyWith(color: AppTheme.of(context).colors.ctaSecondary),
+            tags: {
+              'link': StyledTextActionTag(
+                  (String? text, Map<String?, String?> attrs) {
+                String? link = attrs['href'];
+                print('The "$link" link is tapped.');
+              }, style: const TextStyle(color: Colors.blue)),
+            },
           ),
-          PrimaryButton(
-            text: 'Create an account',
-            onPress: () {
+          const AppGap.regular(),
+          Row(children: const [
+            AppGap.small(),
+            AppText.descriptionMain('\u2022'),
+            AppGap.small(),
+            AppText.descriptionMain('Benefit 1'),
+          ]),
+          Row(children: const [
+            AppGap.small(),
+            AppText.descriptionMain('\u2022'),
+            AppGap.small(),
+            AppText.descriptionMain('Benefit 2'),
+          ]),
+          Row(children: const [
+            AppGap.small(),
+            AppText.descriptionMain('\u2022'),
+            AppGap.small(),
+            AppText.descriptionMain('Benefit X'),
+          ]),
+          const AppGap.semiBig(),
+          AppPrimaryButton(
+            'Create an account',
+            onTap: () {
               context.read<InternetCheckCubit>().getInternetConnectionStatus();
               ref.read(navigationsProvider.notifier).push(
                   CreateCloudAccountPath()
                     ..args = {'config': 'LOCALAUTHCREATEACCOUNT'});
             },
           ),
-          const SizedBox(
-            height: 46,
-          ),
+          const AppGap.extraBig(),
         ],
       ),
-    );
-  }
-
-  _showConfirmBiometricDialog(bool value) {
-    showAdaptiveDialog(
-        context: context,
-        title: const Text('Warning'),
-        content: const Text(
-            'You\'ll need to login again after turning off biometric login'),
-        actions: [
-          SimpleTextButton(
-              text: 'Turn off',
-              onPressed: () async {
-                // await context.read<AccountCubit>().toggleBiometrics(value);
-                // context.read<AuthBloc>().add(Logout());
-                // Navigator.pop(context);
-              }),
-          SimpleTextButton(
-              text: 'Cancel', onPressed: () => Navigator.pop(context))
-        ]);
-  }
-
-  _showDeleteCommunicationMethodDialog(String method, String value) {
-    showAdaptiveDialog(
-      context: context,
-      title: const Text('Warning'),
-      content: Text('Do you want to delete $method: $value'),
-      actions: [
-        SimpleTextButton(
-            text: 'Yes',
-            onPressed: () {
-              // final _cubit = context.read<AccountCubit>();
-              // _cubit
-              //     .deleteCommunicationMethod(method, value)
-              //     .then((value) => _cubit.fetchAccount())
-              //     .then((value) => Navigator.pop(context));
-            }),
-        SimpleTextButton(
-            text: 'No',
-            onPressed: () {
-              Navigator.pop(context);
-            }),
-      ],
     );
   }
 }

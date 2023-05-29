@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class BarChartSample2 extends ConsumerStatefulWidget {
   const BarChartSample2({Key? key}) : super(key: key);
@@ -32,9 +33,7 @@ class BarChartSample2State extends ConsumerState<BarChartSample2> {
                     mainBarData(),
                   ),
                 ),
-                const SizedBox(
-                  height: 12,
-                ),
+                const AppGap.regular(),
               ],
             ),
           ),

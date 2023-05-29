@@ -47,6 +47,7 @@ class RouterPasswordCubit extends Cubit<RouterPasswordState> {
   }
 
   Future save(String password, String hint) async {
+    emit(state.copyWith(isLoading: true));
     return _repository
         .createAdminPassword(password, hint)
         .then<void>((value) async {

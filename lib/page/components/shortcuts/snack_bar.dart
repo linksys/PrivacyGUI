@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'sized_box.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 showSuccessSnackBar(BuildContext context, String message) {
   showSimpleSnackBar(
@@ -17,7 +17,7 @@ showSimpleSnackBar(BuildContext context, Image? image, String message) {
       child: Row(
         children: [
           image ?? const Center(),
-          box16(),
+          const AppGap.regular(),
           Text(message),
         ],
       ),

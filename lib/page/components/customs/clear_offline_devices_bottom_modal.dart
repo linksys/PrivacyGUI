@@ -1,21 +1,19 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/route/_route.dart';
-
 import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 
 class ClearDevicesModal extends ConsumerWidget {
   const ClearDevicesModal({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return BasePageView.bottomSheetModal(
+    return AppPageView.bottomSheetModal(
       bottomSheet: Container(
         // color: Colors.white,
         height: 350,
@@ -23,22 +21,17 @@ class ClearDevicesModal extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            AppText.subhead(
               getAppLocalizations(context).clear_all_offline_devices,
-              style: const TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.w700,
-              ),
             ),
-            box16(),
-            Text(
+            const AppGap.semiBig(),
+            AppText.label(
               getAppLocalizations(context).clear_all_offline_devices_desc,
-              style: const TextStyle(fontSize: 15),
             ),
-            box24(),
-            PrimaryButton(
-              text: getAppLocalizations(context).clear,
-              onPress: () {
+            const AppGap.semiBig(),
+            AppPrimaryButton(
+              getAppLocalizations(context).clear,
+              onTap: () {
                 context
                     .read<DeviceCubit>()
                     .deleteDeviceList(
@@ -47,10 +40,10 @@ class ClearDevicesModal extends ConsumerWidget {
                         ref.read(navigationsProvider.notifier).pop());
               },
             ),
-            box16(),
-            SecondaryButton(
-              text: getAppLocalizations(context).cancel,
-              onPress: () {
+            const AppGap.regular(),
+            AppSecondaryButton(
+              getAppLocalizations(context).cancel,
+              onTap: () {
                 ref.read(navigationsProvider.notifier).pop();
               },
             ),

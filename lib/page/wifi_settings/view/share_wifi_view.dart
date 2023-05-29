@@ -128,12 +128,8 @@ class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
   void _shareByClipboard() async {
     await Clipboard.setData(ClipboardData(text: sharingContent));
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
+        content: AppText.descriptionMain(
       'Copied to clipboard',
-      style: Theme.of(context)
-          .textTheme
-          .bodyLarge
-          ?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
     )));
   }
 

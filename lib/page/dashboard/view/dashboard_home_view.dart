@@ -273,7 +273,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         const AppGap.semiSmall(),
         Row(
           children: [
-            // const SizedBox(width: 3),
             AppIcon(
               //TODO: XXXXXX Check for what??
               icon: getCharactersIcons(context).checkRound,

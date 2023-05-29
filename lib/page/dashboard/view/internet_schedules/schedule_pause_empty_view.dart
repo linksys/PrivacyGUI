@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class SchedulePauseEmptyView extends ConsumerWidget {
   const SchedulePauseEmptyView({Key? key}) : super(key: key);
@@ -11,13 +11,17 @@ class SchedulePauseEmptyView extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const SizedBox(height: 114),
+        const AppGap.extraBig(),
         Image.asset('assets/images/schedule_pause_empty.png'),
-        const SizedBox(height: 23),
-        const Text('There are no schedules for Timmy yet',
-            style: TextStyle(fontSize: 15)),
-        const SizedBox(height: 75),
-        PrimaryButton(text: 'Add a schedule', onPress: () {})
+        const AppGap.semiBig(),
+        const AppText.descriptionMain(
+          'There are no schedules for Timmy yet',
+        ),
+        const AppGap.extraBig(),
+        AppPrimaryButton(
+          'Add a schedule',
+          onTap: () {},
+        ),
       ],
     );
   }

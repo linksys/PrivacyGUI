@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/auth/auth_provider.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
@@ -14,6 +14,7 @@ import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -132,14 +133,15 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
                 ctaText: getAppLocalizations(context).forgot_question,
               ),
               if (_errorCode == "RESOURCE_NOT_FOUND")
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: SimpleTextButton(
+                AppPadding(
+                  padding: const AppEdgeInsets.symmetric(
+                      vertical: AppGapSize.semiSmall),
+                  child: AppTertiaryButton(
                       key: const Key(
                           'login_view_button_email_with_another_linksys_app'),
-                      text: getAppLocalizations(context)
+                      getAppLocalizations(context)
                           .cloud_account_login_email_with_linksys_app,
-                      onPressed: () => ref
+                      onTap: () => ref
                           .read(navigationsProvider.notifier)
                           .push(AlreadyHaveOldAccountPath())),
                 ),
@@ -157,9 +159,10 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
                           _enableBiometrics = !_enableBiometrics;
                         });
                       },
-                      child: CheckboxSelectableItem(
+                      child: AppPanelWithValueCheck(
                         title: getAppLocalizations(context).enable_biometrics,
-                        isSelected: _enableBiometrics,
+                        valueText: ' ',
+                        isChecked: _enableBiometrics,
                       ),
                     ),
                   );

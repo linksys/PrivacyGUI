@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
-import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/model/wifi_settings_path.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -65,10 +65,7 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                             Row(
                               children: [
                                 AppIcon.regular(
-                                  icon: AppTheme.of(context)
-                                      .icons
-                                      .characters
-                                      .wifiDefault,
+                                  icon: getCharactersIcons(context).wifiDefault,
                                 ),
                                 const AppGap.semiSmall(),
                                 AppText.descriptionSub(
@@ -86,10 +83,8 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                                 ),
                                 const AppGap.regular(),
                                 AppIcon(
-                                  icon: AppTheme.of(context)
-                                      .icons
-                                      .characters
-                                      .chevronRight,
+                                  icon:
+                                      getCharactersIcons(context).chevronRight,
                                 ),
                               ],
                             ),
@@ -98,8 +93,8 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                         ),
                       )
                     : AppPadding(
-                        padding:
-                            const AppEdgeInsets.symmetric(vertical: AppGapSize.big),
+                        padding: const AppEdgeInsets.symmetric(
+                            vertical: AppGapSize.big),
                         child: InkWell(
                           onTap: () {
                             //TODO: Go to next
@@ -112,7 +107,10 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
               },
               separatorBuilder: (context, index) {
                 return const Divider(
-                    thickness: 1, height: 1, color: MoabColor.dividerGrey);
+                  thickness: 1,
+                  height: 1,
+                  color: ConstantColors.basePrimaryGray,
+                );
               },
             ),
           ),

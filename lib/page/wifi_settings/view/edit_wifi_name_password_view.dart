@@ -123,9 +123,7 @@ class _EditWifiNamePasswordViewState
                     controller: nameController,
                     onChanged: _onSSIDChanged,
                   ),
-                  const SizedBox(
-                    height: 26,
-                  ),
+                  const AppGap.semiBig(),
                   AppPasswordField(
                     headerText: getAppLocalizations(context).wifi_password,
                     controller: passwordController,

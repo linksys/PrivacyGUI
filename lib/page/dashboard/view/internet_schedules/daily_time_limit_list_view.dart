@@ -5,10 +5,11 @@ import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
-import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/model/internet_schedule_path.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/utils.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 import '../../../../design/colors.dart';
 
@@ -25,36 +26,23 @@ class DailyTimeLimitListView extends ConsumerWidget {
       final profile = state.selectedProfile!;
       final data = profile.serviceDetails[PService.internetSchedule]
           as InternetScheduleData?;
-      return BasePageView.onDashboardSecondary(
-          padding: EdgeInsets.zero,
-          appBar: AppBar(
-            automaticallyImplyLeading: false,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            title: Text(getAppLocalizations(context).daily_time_limit,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-            leading: BackButton(onPressed: () {
-              ref.read(navigationsProvider.notifier).pop();
-            }),
-            actions: [
-              TextButton(
-                  onPressed: () {
-                    //TODO: There's no longer profileId!!
-                    ref.read(navigationsProvider.notifier).push(
-                        AddDailyTimeLimitPath()
-                          ..args = {'profileId': profile.name});
-                  },
-                  child: Text(getAppLocalizations(context).add,
-                      style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: MoabColor.textButtonBlue))),
-            ],
-          ),
+      return StyledAppPageView(
+          title: getAppLocalizations(context).daily_time_limit,
+          actions: [
+            AppTertiaryButton(
+              getAppLocalizations(context).add,
+              onTap: () {
+                //TODO: There's no longer profileId!!
+                ref.read(navigationsProvider.notifier).push(
+                    AddDailyTimeLimitPath()
+                      ..args = {'profileId': profile.name});
+              },
+            ),
+          ],
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 19),
+              const AppGap.regular(),
               ..._buildTimeLimitItems(context, ref, data),
             ],
           ));
@@ -67,7 +55,7 @@ class DailyTimeLimitListView extends ConsumerWidget {
     if (rules.isEmpty) {
       return [
         const Center(
-          child: Text('No data!'),
+          child: AppText.descriptionMain('No data!'),
         )
       ];
     } else {
@@ -88,7 +76,7 @@ class DailyTimeLimitListView extends ConsumerWidget {
                         'profileId': data?.profileId
                       });
               }),
-          const SizedBox(height: 8)
+          const AppGap.semiSmall(),
         }
       ];
       return items;
@@ -128,38 +116,32 @@ class _dailyTimeLimitItemState extends ConsumerState<DailyTimeLimitItem> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text(
-                  Utils.toWeeklyStringList(context, widget.item.weeklySet)
-                      .join(' ,'),
-                  style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black)),
-              Switch.adaptive(
-                  value: widget.item.isEnabled,
-                  onChanged: (value) {
-                    setState(() {
-                      isOn = value;
-                    });
-                    widget.onStatusChanged(value);
-                  })
-            ]),
-            const SizedBox(height: 25),
+            AppPanelWithSwitch(
+              value: widget.item.isEnabled,
+              title: Utils.toWeeklyStringList(context, widget.item.weeklySet)
+                  .join(' ,'),
+              onChangedEvent: (value) {
+                setState(() {
+                  isOn = value;
+                });
+                widget.onStatusChanged(value);
+              },
+            ),
+            const AppGap.semiBig(),
             InkWell(
-                child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(Utils.formatTimeHM(widget.item.timeInSeconds),
-                          style: const TextStyle(
-                              fontSize: 25,
-                              fontWeight: FontWeight.w500,
-                              color: Color.fromRGBO(0, 0, 0, 0.5))),
-                      Image.asset('assets/images/right_compact_wire.png')
-                    ]),
-                onTap: () {
-                  widget.onPress();
-                })
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    AppText.mainTitle(
+                      Utils.formatTimeHM(widget.item.timeInSeconds),
+                      color: const Color.fromRGBO(0, 0, 0, 0.5),
+                    ),
+                    Image.asset('assets/images/right_compact_wire.png')
+                  ]),
+              onTap: () {
+                widget.onPress();
+              },
+            )
           ],
         ));
   }

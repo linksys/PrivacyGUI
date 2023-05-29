@@ -3,12 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class EditDeviceNameView extends ArgumentsConsumerStatefulView {
   const EditDeviceNameView({Key? key, super.args, super.next})
@@ -31,52 +31,33 @@ class _EditDeviceNameViewState extends ConsumerState<EditDeviceNameView> {
 
   @override
   Widget build(BuildContext context) {
-    return BasePageView(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        // iconTheme:
-        // IconThemeData(color: Theme.of(context).colorScheme.primary),
-        elevation: 0,
-        title: Text(
-          getAppLocalizations(context).device_name,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-          ),
+    return StyledAppPageView(
+      title: getAppLocalizations(context).device_name,
+      actions: [
+        AppTertiaryButton(
+          getAppLocalizations(context).save,
+          onTap: () {
+            context
+                .read<DeviceCubit>()
+                .updateDeviceInfoName(
+                    context.read<DeviceCubit>().state.selectedDeviceInfo!,
+                    _textController.text)
+                .then((value) => ref.read(navigationsProvider.notifier).pop());
+          },
         ),
-        actions: [
-          SimpleTextButton(
-            text: getAppLocalizations(context).save,
-            onPressed: () {
-              context
-                  .read<DeviceCubit>()
-                  .updateDeviceInfoName(
-                      context.read<DeviceCubit>().state.selectedDeviceInfo!,
-                      _textController.text)
-                  .then(
-                      (value) => ref.read(navigationsProvider.notifier).pop());
-            },
-          ),
-        ],
-      ),
-      child: BasicLayout(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      ],
+      child: AppBasicLayout(
         content: Column(
           children: [
             Row(
               children: [
-                Text(
+                AppText.descriptionMain(
                   getAppLocalizations(context).device_name,
-                  style: const TextStyle(fontSize: 14),
                 ),
-                box16(),
+                const AppGap.regular(),
                 Expanded(
-                  child: TextField(
-                    cursorColor: Colors.black,
+                  child: AppTextField(
                     controller: _textController,
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                    ),
                   ),
                 ),
               ],

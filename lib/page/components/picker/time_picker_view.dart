@@ -1,9 +1,9 @@
 import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/utils.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class TimePickerView extends ConsumerStatefulWidget {
   const TimePickerView({
@@ -89,36 +89,38 @@ class _TimePickerViewState extends ConsumerState<TimePickerView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(widget.title,
-              style: const TextStyle(
-                  fontSize: 15, color: Color.fromRGBO(0, 0, 0, 0.4))),
-          const SizedBox(height: 11),
+          AppText.descriptionMain(
+            widget.title,
+            color: const Color.fromRGBO(0, 0, 0, 0.4),
+          ),
+          const AppGap.semiSmall(),
           TextButton(
-              onPressed: () {
-                if (Platform.isAndroid) {
-                  _androidSelectTime(context);
-                } else if (Platform.isIOS) {
-                  _iosSelectTime(context);
-                }
-              },
-              style: TextButton.styleFrom(
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.only(left: 0)),
-              child: Text(Utils.formatTimeAmPm(_current.inSeconds),
-                  style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 25,
-                      fontWeight: FontWeight.w500))),
-          const SizedBox(height: 6),
+            onPressed: () {
+              if (Platform.isAndroid) {
+                _androidSelectTime(context);
+              } else if (Platform.isIOS) {
+                _iosSelectTime(context);
+              }
+            },
+            style: TextButton.styleFrom(
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.only(left: 0)),
+            child: AppText.screenName(
+              Utils.formatTimeAmPm(_current.inSeconds),
+            ),
+          ),
+          const AppGap.small(),
           Image.asset('assets/images/line.png'),
-          const SizedBox(height: 6),
+          const AppGap.small(),
           Visibility(
             visible: widget.isNextDay,
             maintainSize: true,
             maintainAnimation: true,
             maintainState: true,
-            child: const Text('next day',
-                style: TextStyle(fontSize: 13, color: Colors.grey)),
+            child: const AppText.descriptionSub(
+              'next day',
+              color: Colors.grey,
+            ),
           )
         ]);
   }

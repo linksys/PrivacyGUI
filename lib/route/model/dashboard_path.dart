@@ -19,8 +19,6 @@ abstract class DashboardPath extends BasePath {
         return const DashboardHomeView();
       case DashboardSettingsPath:
         return const DashboardSettingsView();
-      case NoRouterPath:
-        return const NoRouterView();
       case PrepareDashboardPath:
         return const PrepareDashboardView();
       case SelectNetworkPath:
@@ -52,8 +50,6 @@ class DashboardHealthPath extends DashboardPath {
   @override
   PageConfig get pageConfig => super.pageConfig..isHideBottomNavBar = false;
 }
-
-class NoRouterPath extends DashboardPath {}
 
 class PrepareDashboardPath extends DashboardPath {}
 

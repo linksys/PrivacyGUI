@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_page_view.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/create_account/view/_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 import 'package:pin_code_fields/pin_code_fields.dart';
 
@@ -39,8 +42,9 @@ class _LocalResetRouterPasswordState
   }
 
   Widget _contentView() {
-    return BasePageView(
-      child: BasicLayout(
+    final theme = AppTheme.of(context);
+    return StyledAppPageView(
+      child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(
           title: getAppLocalizations(context).reset_router_password,
@@ -59,26 +63,20 @@ class _LocalResetRouterPasswordState
               controller: _otpController,
               keyboardType: TextInputType.number,
               pinTheme: PinTheme(
-                  shape: PinCodeFieldShape.underline,
-                  fieldHeight: 46,
-                  fieldWidth: 48,
-                  activeFillColor: Colors.transparent,
-                  inactiveFillColor: Colors.transparent,
-                  selectedFillColor: Colors.transparent,
-                  inactiveColor: Colors.white),
+                shape: PinCodeFieldShape.underline,
+                fieldHeight: 46,
+                fieldWidth: 48,
+                inactiveColor: theme.colors.tertiaryText,
+              ),
             ),
-            const SizedBox(
-              height: 16,
-            ),
+            const AppGap.regular(),
             if (_errorReason.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Text(
+              AppPadding(
+                padding:
+                    const AppEdgeInsets.symmetric(vertical: AppGapSize.small),
+                child: AppText.descriptionSub(
                   _errorReason,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.copyWith(color: Colors.red),
+                  color: ConstantColors.tertiaryRed,
                 ),
               ),
           ],

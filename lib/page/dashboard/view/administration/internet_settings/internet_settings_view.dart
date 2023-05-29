@@ -99,7 +99,7 @@ class _InternetSettingsContentViewState
       return StyledAppPageView(
         padding: const AppEdgeInsets.zero(),
         scrollable: true,
-        title: getAppLocalizations(context).ip_details,
+        title: getAppLocalizations(context).internet_settings,
         actions: [
           AppTertiaryButton(
             getAppLocalizations(context).save,

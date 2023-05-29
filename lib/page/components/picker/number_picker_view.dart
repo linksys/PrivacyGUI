@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:numberpicker/numberpicker.dart';
 
 const double _kItemExtent = 32.0;
@@ -96,12 +97,11 @@ class _NumberPickerViewState extends ConsumerState<NumberPickerView> {
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(widget.title,
-          style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Color.fromRGBO(0, 0, 0, 0.2))),
-      const SizedBox(height: 11),
+      AppText.descriptionSub(
+        widget.title,
+        color: const Color.fromRGBO(0, 0, 0, 0.2),
+      ),
+      const AppGap.semiSmall(),
       TextButton(
           onPressed: () {
             if (Platform.isAndroid) {
@@ -118,7 +118,7 @@ class _NumberPickerViewState extends ConsumerState<NumberPickerView> {
                   fontSize: 25,
                   fontWeight: FontWeight.w500,
                   color: Colors.black))),
-      const SizedBox(height: 6),
+      const AppGap.small(),
       Image.asset('assets/images/line.png')
     ]);
   }

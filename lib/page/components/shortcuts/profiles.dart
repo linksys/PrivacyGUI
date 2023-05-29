@@ -1,7 +1,6 @@
-
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/model/group_profile.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 Widget profileTileShort(BuildContext context, UserProfile profile) {
   return Hero(
@@ -16,7 +15,7 @@ Widget profileTileShort(BuildContext context, UserProfile profile) {
             width: 32,
             height: 32,
           ),
-          box8(),
+          const AppGap.semiSmall(),
           Text(
             profile.name,
             style: Theme.of(context).textTheme.bodyLarge,

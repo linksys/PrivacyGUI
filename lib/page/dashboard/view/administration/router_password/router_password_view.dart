@@ -97,6 +97,8 @@ class _RouterPasswordContentViewState
   }
 
   _editRouterPasswordView(RouterPasswordState state) {
+    _passwordController.text = state.adminPassword;
+    _hintController.text = state.hint;
     return AppBasicLayout(
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

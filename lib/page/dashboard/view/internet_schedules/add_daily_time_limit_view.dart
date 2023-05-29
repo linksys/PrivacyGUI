@@ -5,14 +5,14 @@ import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/profiles/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/components/picker/number_picker_view.dart';
 import 'package:linksys_moab/route/model/internet_schedule_path.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
-import '../../../../design/colors.dart';
 import '../../../components/picker/day_picker_view.dart';
 
 class AddDailyTimeLimitView extends ArgumentsConsumerStatefulView {
@@ -47,46 +47,34 @@ class _AddDailyTimeLimitViewState extends ConsumerState<AddDailyTimeLimitView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProfilesCubit, ProfilesState>(builder: (context, state) {
-      return BasePageView.onDashboardSecondary(
-          appBar: AppBar(
-            automaticallyImplyLeading: false,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            title: Text(getAppLocalizations(context).daily_time_limit,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-            leading: BackButton(onPressed: () {
-              ref.read(navigationsProvider.notifier).pop();
-            }),
-            actions: [
-              TextButton(
-                  onPressed: () {
-                    final timeInSeconds = hour * 3600 + minutes * 60;
-                    context
-                        .read<ProfilesCubit>()
-                        .updateDetailTimeLimitDetail(
-                            _profileId, _rule, weeklySet, timeInSeconds)
-                        .then((value) => ref
-                            .read(navigationsProvider.notifier)
-                            .popTo(DailyTimeLimitListPath()));
-                  },
-                  child: const Text('Save',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: MoabColor.textButtonBlue))),
-            ],
-          ),
+      return StyledAppPageView(
+          title: getAppLocalizations(context).daily_time_limit,
+          actions: [
+            AppTertiaryButton(
+              'Save',
+              onTap: () {
+                final timeInSeconds = hour * 3600 + minutes * 60;
+                context
+                    .read<ProfilesCubit>()
+                    .updateDetailTimeLimitDetail(
+                        _profileId, _rule, weeklySet, timeInSeconds)
+                    .then((value) => ref
+                        .read(navigationsProvider.notifier)
+                        .popTo(DailyTimeLimitListPath()));
+              },
+            ),
+          ],
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 33),
+              const AppGap.big(),
               DayPickerView(
                 weeklyBool: weeklySet,
                 onChanged: (changed) {
                   weeklySet = changed;
                 },
               ),
-              const SizedBox(height: 36),
+              const AppGap.big(),
               timePicker(hour, minutes, (value) {
                 setState(() {
                   hour = value;
@@ -96,22 +84,19 @@ class _AddDailyTimeLimitViewState extends ConsumerState<AddDailyTimeLimitView> {
                   minutes = value;
                 });
               }),
-              const SizedBox(height: 66),
+              const AppGap.extraBig(),
               Offstage(
                 offstage: !_isEdit,
-                child: TextButton(
-                    onPressed: () {
-                      context
-                          .read<ProfilesCubit>()
-                          .deleteTimeLimitRule(_profileId, _rule)
-                          .then((value) =>
-                              ref.read(navigationsProvider.notifier).pop());
-                    },
-                    child: const Text('Delete',
-                        style: TextStyle(
-                            color: Color.fromRGBO(207, 26, 26, 1.0),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500))),
+                child: AppTertiaryButton(
+                  'Delete',
+                  onTap: () {
+                    context
+                        .read<ProfilesCubit>()
+                        .deleteTimeLimitRule(_profileId, _rule)
+                        .then((value) =>
+                            ref.read(navigationsProvider.notifier).pop());
+                  },
+                ),
               )
             ],
           ));
@@ -128,7 +113,7 @@ class _AddDailyTimeLimitViewState extends ConsumerState<AddDailyTimeLimitView> {
           max: 24,
           step: 1,
           callback: onHourChanged),
-      const SizedBox(width: 22),
+      const AppGap.semiBig(),
       NumberPickerView(
           title: 'Minutes',
           value: minutes,

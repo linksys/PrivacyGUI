@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/page/base_page_view.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 
 class CloudResetPasswordView extends ArgumentsConsumerStatefulView {
@@ -37,21 +39,16 @@ class _CloudForgotPasswordViewState
   }
 
   Widget _setNewPasswordView() {
-    return BasePageView.withCloseButton(
-      context,
-      ref,
-      scrollable: true,
-      child: BasicLayout(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return StyledAppPageView(
+      isCloseStyle: true,
+      child: AppBasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).enter_your_new_password,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(
-              height: 37,
-            ),
+            const AppGap.big(),
             AppPasswordField.withValidator(
               headerText: getAppLocalizations(context).enter_password,
               controller: _passwordController,
@@ -61,13 +58,29 @@ class _CloudForgotPasswordViewState
                   _errorReason = '';
                 });
               },
+              validations: [
+                Validation(
+                  description: 'At least 10 characters',
+                  validator: (text) => LengthRule().validate(text),
+                ),
+                Validation(
+                  description: 'Upper and lowercase letters',
+                  validator: (text) => HybridCaseRule().validate(text),
+                ),
+                Validation(
+                  description: '1 number',
+                  validator: (text) => DigitalCheckRule().validate(text),
+                ),
+                Validation(
+                  description: '1 special character',
+                  validator: (text) => SpecialCharCheckRule().validate(text),
+                ),
+              ],
             ),
-            const SizedBox(
-              height: 23,
-            ),
-            PrimaryButton(
-              text: getAppLocalizations(context).text_continue,
-              onPress: _localValidatePassword(_passwordController.text)
+            const AppGap.semiBig(),
+            AppPrimaryButton(
+              getAppLocalizations(context).text_continue,
+              onTap: _localValidatePassword(_passwordController.text)
                   ? () async {
                       // setState(() {
                       //   _isLoading = true;
@@ -91,9 +104,8 @@ class _CloudForgotPasswordViewState
   }
 
   Widget _newPasswordSetView() {
-    return BasePageView.noNavigationBar(
-      child: BasicLayout(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return AppPageView(
+      child: AppBasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).new_password_set,
         ),
@@ -116,22 +128,18 @@ class _CloudForgotPasswordViewState
   }
 
   Widget _linkExpiredView() {
-    return BasePageView.withCloseButton(
-      context,
-      ref,
-      child: BasicLayout(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return StyledAppPageView(
+      isCloseStyle: true,
+      child: AppBasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).error_reset_password_link_expired,
         ),
         content: Column(
           children: [
-            const SizedBox(
-              height: 67,
-            ),
-            PrimaryButton(
-              text: getAppLocalizations(context).back_to_login,
-              onPress: () {
+            const AppGap.extraBig(),
+            AppPrimaryButton(
+              getAppLocalizations(context).back_to_login,
+              onTap: () {
                 ref.read(navigationsProvider.notifier).clearAndPush(HomePath());
               },
             )

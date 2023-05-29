@@ -3,8 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:graphview/GraphView.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
-import 'package:linksys_moab/design/colors.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/bloc/cubit.dart';
@@ -14,7 +12,6 @@ import 'package:linksys_moab/repository/router/router_repository.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
-import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
 import 'package:linksys_widgets/theme/theme.dart';
@@ -68,9 +65,7 @@ class _TopologyContentView extends ConsumerState<TopologyContentView> {
   Widget build(BuildContext context) {
     return BlocBuilder<TopologyCubit, TopologyState>(builder: (context, state) {
       return StyledAppPageView(
-        padding: const AppEdgeInsets.only(),
         scrollable: true,
-        // padding: const AppEdgeInsets.regular(),
         child: AppBasicLayout(
           content: Visibility(
             visible: state.rootNode.deviceID.isNotEmpty,
@@ -94,11 +89,9 @@ class _TopologyContentView extends ConsumerState<TopologyContentView> {
           // footer: Row(
           //   mainAxisAlignment: MainAxisAlignment.center,
           //   children: [
-          //     SimpleTextButton(
-          //         text: 'Restart mesh system',
-          //         onPressed: () {
-          //           ref.read(navigationsProvider.notifier).push(NodeRestartPath());
-          //         })
+          //     AppTertiaryButton('Restart mesh system', onTap: () {
+          //       ref.read(navigationsProvider.notifier).push(NodeRestartPath());
+          //     })
           //   ],
           // ),
         ),
@@ -121,10 +114,11 @@ class _TopologyContentView extends ConsumerState<TopologyContentView> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Blink(
-                  child: Icon(
-                getCharactersIcons(context).statusOn,
-                color: ConstantColors.tertiaryGreen,
-              )),
+                child: AppIcon(
+                  icon: getCharactersIcons(context).statusOn,
+                  color: ConstantColors.tertiaryGreen,
+                ),
+              ),
               const AppGap.regular(),
               const AppText.descriptionSub(
                 'Connected to Internet',
@@ -138,7 +132,7 @@ class _TopologyContentView extends ConsumerState<TopologyContentView> {
 
   Widget _noInternetConnectionWidget() {
     return Container(
-        decoration: const BoxDecoration(color: MoabColor.topologyNoInternet),
+        decoration: const BoxDecoration(color: ConstantColors.baseTextBoxWhite),
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,22 +144,16 @@ class _TopologyContentView extends ConsumerState<TopologyContentView> {
                   width: 12,
                   height: 12,
                 ),
-                const SizedBox(
-                  width: 8,
-                ),
-                Text(
+                const AppGap.semiSmall(),
+                const AppText.descriptionMain(
                   'No internet connection',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(color: Colors.red),
+                  color: ConstantColors.tertiaryRed,
                 )
               ],
             ),
-            SimpleTextButton(
-              text: 'See what I can do',
-              onPressed: () {},
-              padding: const EdgeInsets.all(4),
+            AppTertiaryButton(
+              'See what I can do',
+              onTap: () {},
             ),
           ],
         ));
@@ -319,32 +307,6 @@ class _TreeViewPageState extends ConsumerState<TreeViewPage> {
               node0.location,
             ),
           ],
-        ),
-      ],
-    );
-  }
-
-  Widget _getConnectionImage(TopologyNode node) {
-    return Wrap(
-      children: [
-        AppIcon.small(
-          icon: node.isWiredConnection
-              ? AppTheme.of(context).icons.characters.ethernetDefault
-              : Utils.getWifiSignalIconData(context, node.signalStrength),
-        ),
-        Offstage(
-          offstage: node.isWiredConnection,
-          child: Wrap(
-            children: [
-              const SizedBox(
-                width: 4,
-              ),
-              Text(
-                Utils.getWifiSignalLevel(node.signalStrength).displayTitle,
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-            ],
-          ),
         ),
       ],
     );

@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
-
-import '../../../../route/navigations_notifier.dart';
+import 'package:linksys_moab/validator_rules/_validator_rules.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class InputNewPasswordView extends ArgumentsConsumerStatefulView {
   const InputNewPasswordView({Key? key, super.args, super.next})
@@ -33,38 +31,45 @@ class _InputNewPasswordViewState extends ConsumerState<InputNewPasswordView> {
   }
 
   Widget _contentView() {
-    return BasePageView.onDashboardSecondary(
+    return StyledAppPageView(
       scrollable: true,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text('Input new password',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-        leading: BackButton(onPressed: () {
-          ref.read(navigationsProvider.notifier).pop();
-        }),
-        actions: const [],
-      ),
+      title: 'Input new password',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          box16(),
-          PasswordInputField.withValidator(
-            titleText: 'Password',
+          const AppGap.regular(),
+          AppPasswordField.withValidator(
+            headerText: 'Password',
             controller: passwordController,
-            isError: _errorMessage.isNotEmpty,
-            color: Colors.black,
+            errorText: _errorMessage,
             onChanged: (value) {
               setState(() {
                 _errorMessage = '';
               });
             },
+            validations: [
+              Validation(
+                description: 'At least 10 characters',
+                validator: (text) => LengthRule().validate(text),
+              ),
+              Validation(
+                description: 'Upper and lowercase letters',
+                validator: (text) => HybridCaseRule().validate(text),
+              ),
+              Validation(
+                description: '1 number',
+                validator: (text) => DigitalCheckRule().validate(text),
+              ),
+              Validation(
+                description: '1 special character',
+                validator: (text) => SpecialCharCheckRule().validate(text),
+              ),
+            ],
           ),
-          box(72),
-          PrimaryButton(
-            text: 'Next',
-            onPress: _applyPassword,
+          const AppGap.extraBig(),
+          AppPrimaryButton(
+            'Next',
+            onTap: _applyPassword,
           ),
         ],
       ),

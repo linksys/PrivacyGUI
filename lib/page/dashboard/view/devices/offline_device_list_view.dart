@@ -4,14 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/bloc/profiles/_profiles.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/customs/_customs.dart';
-import 'package:linksys_moab/page/components/layouts/basic_layout.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
 
 class OfflineDeviceListView extends ArgumentsConsumerStatefulView {
   const OfflineDeviceListView({Key? key, super.args, super.next})
@@ -31,49 +32,31 @@ class _OfflineDeviceListViewState extends ConsumerState<OfflineDeviceListView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DeviceCubit, DeviceState>(
-      builder: (context, state) => BasePageView(
+      builder: (context, state) => StyledAppPageView(
         // scrollable: true,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          // iconTheme:
-          // IconThemeData(color: Theme.of(context).colorScheme.primary),
-          elevation: 0,
-          title: Text(
-            getAppLocalizations(context).offline_devices,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
+        title: getAppLocalizations(context).offline_devices,
+        actions: [
+          AppTertiaryButton(
+            getAppLocalizations(context).clear_all,
+            onTap: context.read<DeviceCubit>().state.offlineDeviceList.isEmpty
+                ? null
+                : () {
+                    ref
+                        .read(navigationsProvider.notifier)
+                        .push(ClearOfflineDevicesPath());
+                  },
           ),
-          actions: [
-            SimpleTextButton(
-              text: getAppLocalizations(context).clear_all,
-              onPressed:
-                  context.read<DeviceCubit>().state.offlineDeviceList.isEmpty
-                      ? null
-                      : () {
-                          ref
-                              .read(navigationsProvider.notifier)
-                              .push(ClearOfflineDevicesPath());
-                        },
-            ),
-          ],
-        ),
-        child: BasicLayout(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+        child: AppBasicLayout(
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              AppText.mainTitle(
                 state.offlineDeviceList.length.toString() +
                     ' '.toLowerCase() +
                     getAppLocalizations(context).offline.toLowerCase(),
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
               ),
-              box16(),
+              const AppGap.regular(),
               _offlineDeviceList(state),
             ],
           ),
@@ -87,8 +70,10 @@ class _OfflineDeviceListViewState extends ConsumerState<OfflineDeviceListView> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          box36(),
-          Text(getAppLocalizations(context).there_are_no_offline_devices),
+          const AppGap.big(),
+          AppText.descriptionMain(
+            getAppLocalizations(context).there_are_no_offline_devices,
+          ),
         ],
       );
     } else {
@@ -119,19 +104,15 @@ class _OfflineDeviceListViewState extends ConsumerState<OfflineDeviceListView> {
       badgeSize: 19,
       offset: deviceInfo.profileId != null ? 5 : 0,
     );
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+    return AppPadding(
+      padding: const AppEdgeInsets.symmetric(vertical: AppGapSize.regular),
       child: Row(
         children: [
           deviceIcon,
-          box16(),
+          const AppGap.regular(),
           Expanded(
-            child: Text(
+            child: AppText.navLabel(
               deviceInfo.name,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-              ),
             ),
           ),
         ],

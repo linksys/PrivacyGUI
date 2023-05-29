@@ -8,15 +8,18 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_phone.dart';
 import 'package:linksys_moab/network/http/model/region_code.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/layouts/layout.dart';
+import 'package:linksys_moab/page/components/layouts/basic_header.dart';
+import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
-
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'dart:convert';
 import 'package:phone_number/phone_number.dart';
 
@@ -138,18 +141,22 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<OtpCubit, OtpState>(
-      builder: (context, state) => BasePageView(
+      builder: (context, state) => StyledAppPageView(
         scrollable: true,
-        child: BasicLayout(
+        child: AppBasicLayout(
           header: BasicHeader(
             title: getAppLocalizations(context).otp_add_phone_number,
           ),
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 63, bottom: 7),
-                child: Text(getAppLocalizations(context).phone),
+              AppPadding(
+                padding: const AppEdgeInsets.only(
+                  top: AppGapSize.extraBig,
+                  bottom: AppGapSize.semiSmall,
+                ),
+                child:
+                    AppText.descriptionMain(getAppLocalizations(context).phone),
               ),
               IntrinsicHeight(
                 child: Row(
@@ -158,8 +165,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
                     GestureDetector(
                       onTap: () async {
                         final selectedRegion = await showPopup(
-                            ref: ref,
-                            config: SelectPhoneRegionCodePath());
+                            ref: ref, config: SelectPhoneRegionCodePath());
                         if (selectedRegion != null) {
                           updateRegion(selectedRegion);
                         }
@@ -174,70 +180,57 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
                           width: 1,
                         )),
                         alignment: Alignment.center,
-                        child: Text(
+                        child: AppText.descriptionMain(
                           '+${currentRegion.countryCallingCode}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(
-                                  color: isInputInvalid
-                                      ? Colors.red
-                                      : Theme.of(context).colorScheme.primary),
+                          color: isInputInvalid
+                              ? ConstantColors.tertiaryRed
+                              : AppTheme.of(context).colors.tertiaryText,
                         ),
                       ),
                     ),
-                    const SizedBox(
-                      width: 4,
-                    ),
+                    const AppGap.small(),
                     Expanded(
                       child: FutureBuilder<String>(
                           future: _getPhoneHint(currentRegion.countryCode),
                           initialData: getAppLocalizations(context).phone,
                           builder: (context, data) {
-                            return PrimaryTextField(
+                            return AppTextField(
                               controller: phoneController,
                               hintText: data.data ??
                                   getAppLocalizations(context).phone,
                               onChanged: _onInputChanged,
                               inputType: TextInputType.number,
-                              errorColor: Colors.red,
-                              isError: isInputInvalid,
                             );
                           }),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(
-                height: 10,
-              ),
+              const AppGap.semiSmall(),
               Offstage(
                 offstage: !isInputInvalid,
-                child: Text(
+                child: AppText.descriptionMain(
                   generalErrorCodeHandler(context, errorInvalidPhone),
-                  style: Theme.of(context)
-                      .textTheme
-                      .displaySmall
-                      ?.copyWith(color: Colors.red),
+                  color: ConstantColors.tertiaryRed,
                 ),
               ),
             ],
           ),
           footer: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Visibility(
                 maintainState: true,
                 maintainAnimation: true,
                 maintainSize: true,
                 visible: hasInput,
-                child: PrimaryButton(
-                  text: getAppLocalizations(context).otp_send_code,
-                  onPress: _checkPhoneNumber,
+                child: AppPrimaryButton(
+                  getAppLocalizations(context).otp_send_code,
+                  onTap: _checkPhoneNumber,
                 ),
               ),
             ],
           ),
-          crossAxisAlignment: CrossAxisAlignment.start,
         ),
       ),
     );

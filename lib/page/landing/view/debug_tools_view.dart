@@ -18,8 +18,6 @@ import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/jnap/jnap_transaction.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/network/mdns/mdns_helper.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
-import 'package:linksys_moab/page/components/shortcuts/sized_box.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
@@ -207,7 +205,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               'Gateway Ip: ${connectivityState.connectivityInfo.gatewayIp}'),
           AppText.descriptionSub(
               'SSID: ${connectivityState.connectivityInfo.ssid}'),
-          box16(),
+          const AppGap.regular(),
         ],
       ),
     ];
@@ -241,7 +239,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
                       Icons.share,
                       color: Colors.white,
                     )),
-                Text(_fcmToken ?? 'No FCM Token'),
+                AppText.descriptionSub(_fcmToken ?? 'No FCM Token'),
               ],
             ),
           ),
@@ -263,13 +261,11 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
                       Icons.share,
                       color: Colors.white,
                     )),
-                Text(_apnsToken ?? 'No APNS Token'),
+                AppText.descriptionSub(_apnsToken ?? 'No APNS Token'),
               ],
             ),
           ),
-          const SizedBox(
-            height: 16,
-          ),
+          const AppGap.regular(),
           Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
@@ -281,7 +277,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
                   })
             ],
           ),
-          box16(),
+          const AppGap.regular(),
         ],
       ),
     ];
@@ -293,11 +289,11 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: const Text('Bluetooth testing'),
+        title: const AppText.descriptionMain('Bluetooth testing'),
         children: [
-          PrimaryButton(
-            text: 'Scan & connect',
-            onPress: () async {
+          AppPrimaryButton(
+            'Scan & connect',
+            onTap: () async {
               await BluetoothManager().scan();
               final results = BluetoothManager().results;
               if (results.isNotEmpty) {
@@ -308,9 +304,9 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               }
             },
           ),
-          PrimaryButton(
-            text: 'Test get Mac address',
-            onPress: () async {
+          AppPrimaryButton(
+            'Test get Mac address',
+            onTap: () async {
               final repository = context.read<RouterRepository>()
                 ..enableBTSetup = true;
               final result1 = await repository
@@ -327,13 +323,13 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               repository.enableBTSetup = false;
             },
           ),
-          PrimaryButton(
-            text: 'Disconnect',
-            onPress: () {
+          AppPrimaryButton(
+            'Disconnect',
+            onTap: () {
               BluetoothManager().disconnect();
             },
           ),
-          box16(),
+          const AppGap.regular(),
         ],
       ),
     ];
@@ -345,11 +341,11 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: const Text('MDNS testing'),
+        title: const AppText.descriptionMain('MDNS testing'),
         children: [
-          PrimaryButton(
-            text: 'discover',
-            onPress: () async {
+          AppPrimaryButton(
+            'discover',
+            onTap: () async {
               const String name = '_dartobservatory._tcp.local';
               String httpType = "_http._tcp";
               String omsgType = "_omsg._tcp";
@@ -361,7 +357,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               logger.d('Result: $result');
             },
           ),
-          box16(),
+          const AppGap.regular(),
         ],
       ),
     ];

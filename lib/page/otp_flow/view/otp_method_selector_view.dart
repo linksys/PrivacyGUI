@@ -1,16 +1,16 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
-import 'package:linksys_moab/page/components/base_components/base_components.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class OTPMethodSelectorView extends ArgumentsConsumerStatefulView {
@@ -33,7 +33,6 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
   Widget _contentView(OtpState state) {
     return StyledAppPageView(
       child: AppBasicLayout(
-        crossAxisAlignment: CrossAxisAlignment.start,
         header: AppText.screenName(
           _createTitle(state),
           // description: _createDescription(state),
@@ -45,22 +44,23 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: state.methods.length,
-                itemBuilder: (context, index) => GestureDetector(
+                itemBuilder: (context, index) => InkWell(
                       key: Key(state.methods[index].method ==
                               CommunicationMethodType.email.name.toUpperCase()
                           ? 'otp_method_selector_view_button_email'
                           : 'otp_method_selector_view_button_sms'),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: SelectableItem(
-                          text: state.methods[index].method ==
+                      child: AppPadding(
+                        padding: const AppEdgeInsets.symmetric(
+                            vertical: AppGapSize.small),
+                        child: AppPanelWithValueCheck(
+                          title: state.methods[index].method ==
                                   CommunicationMethodType.email.name
                                       .toUpperCase()
                               ? state.methods[index].target
                               : state.methods[index].method,
-                          isSelected:
+                          valueText: ' ',
+                          isChecked:
                               state.selectedMethod == state.methods[index],
-                          height: 66,
                         ),
                       ),
                       onTap: () {
@@ -69,37 +69,32 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
                             .selectOtpMethod(state.methods[index]);
                       },
                     )),
-            const SizedBox(
-              height: 60,
-            ),
-            PrimaryButton(
+            const AppGap.extraBig(),
+            AppPrimaryButton(
               key: const Key('otp_method_selector_view_button_continue'),
-              text: !state.isSendFunction() &&
+              !state.isSendFunction() &&
                       state.selectedMethod?.method ==
                           CommunicationMethodType.sms.name.toUpperCase()
                   ? getAppLocalizations(context).add_phone_number
                   : getAppLocalizations(context).text_continue,
-              onPress: () {
+              onTap: () {
                 !state.isSendFunction()
                     ? _checkPhoneExist(state.selectedMethod!, state.token)
                     : _onSend(state.selectedMethod!);
               },
             ),
-            const SizedBox(
-              height: 60,
-            ),
+            const AppGap.extraBig(),
             if (state.isSettingFunction())
-              SimpleTextButton(
-                  key: const Key(
-                      'otp_method_selector_view_button_create_password'),
-                  text:
-                      getAppLocalizations(context).otp_create_password_instead,
-                  onPressed: () {
-                    final username = widget.args['username'];
-                    ref.read(navigationsProvider.notifier).push(
-                        CreateCloudPasswordPath()
-                          ..args = {'username': username});
-                  }),
+              AppTertiaryButton(
+                key: const Key(
+                    'otp_method_selector_view_button_create_password'),
+                getAppLocalizations(context).otp_create_password_instead,
+                onTap: () {
+                  final username = widget.args['username'];
+                  ref.read(navigationsProvider.notifier).push(
+                      CreateCloudPasswordPath()..args = {'username': username});
+                },
+              ),
           ],
         ),
       ),
