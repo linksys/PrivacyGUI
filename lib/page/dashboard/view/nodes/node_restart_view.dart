@@ -64,9 +64,9 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
   }
 
   Widget restartingIndicator() {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         AppGap.extraBig(),
         AppText.mainTitle(
           'Restarting your network...',

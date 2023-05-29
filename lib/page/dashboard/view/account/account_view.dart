@@ -161,19 +161,19 @@ class _AccountViewState extends ConsumerState<AccountView> {
             },
           ),
           const AppGap.regular(),
-          Row(children: const [
+          const Row(children: [
             AppGap.small(),
             AppText.descriptionMain('\u2022'),
             AppGap.small(),
             AppText.descriptionMain('Benefit 1'),
           ]),
-          Row(children: const [
+          const Row(children: [
             AppGap.small(),
             AppText.descriptionMain('\u2022'),
             AppGap.small(),
             AppText.descriptionMain('Benefit 2'),
           ]),
-          Row(children: const [
+          const Row(children: [
             AppGap.small(),
             AppText.descriptionMain('\u2022'),
             AppGap.small(),

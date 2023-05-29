@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/profiles/cubit.dart';
-import 'package:linksys_moab/design/colors.dart';
 import 'package:linksys_moab/model/profile_service_data.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 

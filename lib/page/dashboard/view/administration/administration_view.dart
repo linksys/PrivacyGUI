@@ -11,7 +11,6 @@ import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_widgets/widgets/panel/panel_bases.dart';
 
 import 'common_widget.dart';
 

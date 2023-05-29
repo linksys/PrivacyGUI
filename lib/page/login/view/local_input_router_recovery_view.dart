@@ -11,7 +11,6 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/create_account/view/_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 import 'package:pin_code_fields/pin_code_fields.dart';
 

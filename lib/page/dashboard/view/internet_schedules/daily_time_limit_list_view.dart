@@ -11,7 +11,6 @@ import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
-import '../../../../design/colors.dart';
 
 class DailyTimeLimitListView extends ConsumerWidget {
   const DailyTimeLimitListView({Key? key}) : super(key: key);

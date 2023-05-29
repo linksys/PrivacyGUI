@@ -12,7 +12,6 @@ import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 
 class CloudResetPasswordView extends ArgumentsConsumerStatefulView {
