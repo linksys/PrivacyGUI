@@ -41,8 +41,8 @@ class CommandWrap {
   });
 
   final String action;
-  Map<String, dynamic> data;
   final bool needAuth;
+  Map<String, dynamic> data;
 }
 
 final routerRepositoryProvider = Provider((ref) => RouterRepository(ref));
@@ -87,11 +87,12 @@ class RouterRepository with StateStreamListener {
     final sideEffectManager = ref.read(sideEffectProvider.notifier);
     return CommandQueue()
         .enqueue(command)
-        .then((value) => handleJNAPResult(value))
-        .then((value) => sideEffectManager.handleSideEffect(value))
-        .then((value) {
+        .then((jnapResult) => handleJNAPResult(jnapResult))
+        .then((jnapResult) =>
+            sideEffectManager.handleSideEffect(jnapResult as JNAPSuccess))
+        .then((jnapSuccess) {
       sideEffectManager.finishSideEffect();
-      return value;
+      return jnapSuccess;
     });
   }
 
@@ -105,10 +106,11 @@ class RouterRepository with StateStreamListener {
 
     return CommandQueue()
         .enqueue(command)
-        .then((value) => handleJNAPResult(value))
-        .then((value) => JNAPTransactionSuccessWrap.convert(
-            actions: List.from(builder.commands.keys),
-            jnapSuccess: value as JNAPTransactionSuccess));
+        .then((jnapResult) => handleJNAPResult(jnapResult))
+        .then((jnapResult) => JNAPTransactionSuccessWrap.convert(
+              actions: List.from(builder.commands.keys),
+              transactionSuccess: jnapResult as JNAPTransactionSuccess,
+            ));
   }
 
   Future<TransactionHttpCommand> createTransaction(
@@ -184,12 +186,11 @@ class RouterRepository with StateStreamListener {
     }
   }
 
-  JNAPSuccess handleJNAPResult(JNAPResult result) {
-    if (result is JNAPSuccess) {
+  JNAPResult handleJNAPResult(JNAPResult result) {
+    if (result is JNAPSuccess || result is JNAPTransactionSuccess) {
       return result;
-    } else {
-      throw (result as JNAPError);
     }
+    throw (result as JNAPError);
   }
 
   String _buildCommandUrl({

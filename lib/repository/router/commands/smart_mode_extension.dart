@@ -9,7 +9,7 @@ extension SmartModeExtension on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getSupportedDeviceMode() async {
@@ -18,7 +18,7 @@ extension SmartModeExtension on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> setDeviceMode(String mode) async {
@@ -26,6 +26,6 @@ extension SmartModeExtension on RouterRepository {
         data: {'mode': mode}, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

@@ -10,7 +10,7 @@ extension BluetoothService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> btRequestScanUnconfigured({int duration = 20}) async {
@@ -20,6 +20,6 @@ extension BluetoothService on RouterRepository {
         data: {'duration': duration});
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

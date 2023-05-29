@@ -13,7 +13,7 @@ extension FirewallService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getPortRangeTriggeringRules() async {
@@ -22,7 +22,7 @@ extension FirewallService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getSinglePortForwardingRules() async {
@@ -31,7 +31,7 @@ extension FirewallService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> setPortRangeForwardingRules(
@@ -42,7 +42,7 @@ extension FirewallService on RouterRepository {
         data: {'rules': rules.map((e) => e.toJson()).toList()});
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> setPortRangeTriggeringRules(
@@ -53,7 +53,7 @@ extension FirewallService on RouterRepository {
         data: {'rules': rules.map((e) => e.toJson()).toList()});
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> setSinglePortForwardingRules(
@@ -63,6 +63,6 @@ extension FirewallService on RouterRepository {
         needAuth: true,
         data: {'rules': rules.map((e) => e.toJson()).toList()});
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

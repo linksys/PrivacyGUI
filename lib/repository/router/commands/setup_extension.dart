@@ -10,7 +10,7 @@ extension SetupService on RouterRepository {
         await createCommand(JNAPAction.isAdminPasswordSetByUser.actionValue);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> resetAdminPassword(
@@ -24,7 +24,7 @@ extension SetupService on RouterRepository {
         });
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> verifyRouterResetCode(String resetCode) async {
@@ -35,7 +35,7 @@ extension SetupService on RouterRepository {
         });
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   ///
@@ -50,7 +50,7 @@ extension SetupService on RouterRepository {
         await createCommand(JNAPAction.getInternetConnectionStatus.actionValue);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> setSimpleWiFiSettings(
@@ -60,7 +60,7 @@ extension SetupService on RouterRepository {
         data: settings.toJson());
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getMACAddress() async {
@@ -69,13 +69,13 @@ extension SetupService on RouterRepository {
     // final result = await command.publish();
     final result = await CommandQueue().enqueue(command);
 
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getVersionInfo() async {
     final command = await createCommand(JNAPAction.getVersionInfo.actionValue);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

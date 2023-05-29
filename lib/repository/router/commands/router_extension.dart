@@ -11,7 +11,7 @@ extension RouterService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getIPv6Settings() async {
@@ -19,7 +19,7 @@ extension RouterService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getLANSettings() async {
@@ -27,7 +27,7 @@ extension RouterService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getMACAddressCloneSettings() async {
@@ -36,7 +36,7 @@ extension RouterService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getWANSettings() async {
@@ -44,7 +44,7 @@ extension RouterService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> setWANSettings(RouterWANSettings newWANSettings) async {
@@ -52,14 +52,14 @@ extension RouterService on RouterRepository {
         needAuth: true, data: newWANSettings.toJson());
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getWANStatus() async {
     final command = await createCommand(JNAPAction.getWANStatus.actionValue);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getWANDetectionStatus() async {
@@ -68,7 +68,7 @@ extension RouterService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> renewDHCPWANLease() async {
@@ -77,7 +77,7 @@ extension RouterService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> renewDHCPIPv6WANLease() async {
@@ -86,7 +86,7 @@ extension RouterService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> setMACAddressCloneSettings() async {
@@ -95,6 +95,6 @@ extension RouterService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

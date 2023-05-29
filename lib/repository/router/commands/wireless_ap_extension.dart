@@ -10,7 +10,7 @@ extension WirelessApService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getWPSServerSessionStatus() async {
@@ -19,7 +19,7 @@ extension WirelessApService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> setRadioSettings(
@@ -29,6 +29,6 @@ extension WirelessApService on RouterRepository {
         data: {'radios': radioSettings.map((e) => e.toJson()).toList()});
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

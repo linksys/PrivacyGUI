@@ -11,7 +11,7 @@ extension HealthCheckService on RouterRepository {
         data: {'includeModuleResults': true});
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getSupportedHealthCheckModules() async {
@@ -20,7 +20,7 @@ extension HealthCheckService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   // TODO: #REFACTOR : Support other type health check
@@ -29,7 +29,7 @@ extension HealthCheckService on RouterRepository {
         needAuth: true, data: {'runHealthCheckModule': 'SpeedTest'});
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getHealthCheckStatus() async {
@@ -38,6 +38,6 @@ extension HealthCheckService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

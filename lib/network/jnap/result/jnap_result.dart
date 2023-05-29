@@ -4,9 +4,20 @@ import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/jnap/result/fcn_result.dart';
 
 abstract class JNAPResult extends Equatable {
-  const JNAPResult({required this.result});
-
   final String result;
+
+  const JNAPResult({
+    required this.result,
+  });
+
+  factory JNAPResult.fromJson(Map<String, dynamic> json) {
+    if (json[keyJnapResult] == jnapResultOk) {
+      return json.containsKey(keyJnapResponses)
+          ? JNAPTransactionSuccess.fromJson(json)
+          : JNAPSuccess.fromJson(json);
+    }
+    return JNAPError.fromJson(json);
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -14,19 +25,14 @@ abstract class JNAPResult extends Equatable {
     };
   }
 
-  factory JNAPResult.fromJson(Map<String, dynamic> json) {
-    if (json[keyJnapResult] == jnapResultOk) {
-      return JNAPSuccess.fromJson(json);
-    } else {
-      return JNAPError.fromJson(json);
-    }
-  }
-
   @override
   List<Object?> get props => [result];
 }
 
 class JNAPSuccess extends JNAPResult {
+  final Map<String, dynamic> output;
+  final List<String>? sideEffects;
+
   const JNAPSuccess({
     required super.result,
     this.output = const {},
@@ -34,19 +40,14 @@ class JNAPSuccess extends JNAPResult {
   });
 
   factory JNAPSuccess.fromJson(Map<String, dynamic> json) {
-    return json.containsKey(keyJnapResponses)
-        ? JNAPTransactionSuccess.fromJson(json)
-        : JNAPSuccess(
-            result: json[keyJnapResult],
-            output: json[keyJnapOutput] ?? {},
-            sideEffects: json[keyJnapSideEffects] != null
-                ? List.from(json[keyJnapSideEffects])
-                : null,
-          );
+    return JNAPSuccess(
+      result: json[keyJnapResult],
+      output: json[keyJnapOutput] ?? {},
+      sideEffects: json.containsKey(keyJnapSideEffects)
+          ? List.from(json[keyJnapSideEffects])
+          : null,
+    );
   }
-
-  final Map<String, dynamic> output;
-  final List<String>? sideEffects;
 
   @override
   Map<String, dynamic> toJson() {
@@ -69,40 +70,9 @@ class JNAPSuccess extends JNAPResult {
   List<Object?> get props => super.props..add(output);
 }
 
-class JNAPTransactionSuccessWrap extends JNAPSuccess {
-  final Map<JNAPAction, JNAPResult> responses;
+class JNAPTransactionSuccess extends JNAPResult {
+  final List<JNAPSuccess> responses;
 
-  const JNAPTransactionSuccessWrap({
-    required super.result,
-    this.responses = const {},
-  });
-
-  factory JNAPTransactionSuccessWrap.convert(
-      {required List<JNAPAction> actions,
-      required JNAPTransactionSuccess jnapSuccess}) {
-    return JNAPTransactionSuccessWrap(
-      result: jnapSuccess.result,
-      responses: Map.fromIterables(actions, jnapSuccess.responses),
-    );
-  }
-
-  @override
-  List<Object?> get props => super.props..add(responses);
-
-  static JNAPSuccess? getResult(
-      JNAPAction action, Map<JNAPAction, JNAPResult> results) {
-    if (!results.containsKey(action)) {
-      return null;
-    }
-    final data = results[action] as JNAPSuccess?;
-    if (data == null) {
-      return null;
-    }
-    return data;
-  }
-}
-
-class JNAPTransactionSuccess extends JNAPSuccess {
   const JNAPTransactionSuccess({
     required super.result,
     required this.responses,
@@ -112,12 +82,10 @@ class JNAPTransactionSuccess extends JNAPSuccess {
     return JNAPTransactionSuccess(
       result: json[keyJnapResult],
       responses: List.from(json[keyJnapResponses])
-          .map((e) => JNAPResult.fromJson(e))
+          .map((e) => JNAPSuccess.fromJson(e))
           .toList(),
     );
   }
-
-  final List<JNAPResult> responses;
 
   @override
   Map<String, dynamic> toJson() {
@@ -131,21 +99,68 @@ class JNAPTransactionSuccess extends JNAPSuccess {
   List<Object?> get props => super.props..add(responses);
 }
 
-// TODO check Authenticate error
+class JNAPTransactionSuccessWrap extends JNAPResult {
+  final Map<JNAPAction, JNAPResult> data;
+
+  const JNAPTransactionSuccessWrap({
+    required super.result,
+    this.data = const {},
+  });
+
+  factory JNAPTransactionSuccessWrap.convert({
+    required List<JNAPAction> actions,
+    required JNAPTransactionSuccess transactionSuccess,
+  }) {
+    return JNAPTransactionSuccessWrap(
+      result: transactionSuccess.result,
+      data: Map.fromIterables(actions, transactionSuccess.responses),
+    );
+  }
+
+  static JNAPSuccess? getResult(
+      JNAPAction action, Map<JNAPAction, JNAPResult> results) {
+    if (!results.containsKey(action)) {
+      return null;
+    }
+    return results[action] as JNAPSuccess?;
+  }
+
+  @override
+  List<Object?> get props => super.props..add(data);
+}
+
 class JNAPError extends JNAPResult {
+  final String? error;
+
   const JNAPError({
     required super.result,
     this.error,
   });
 
   factory JNAPError.fromJson(Map<String, dynamic> json) {
+    // Check if it's a transaction jnap
+    if (json.containsKey(keyJnapResponses)) {
+      final responses = json[keyJnapResponses] as List<Map<String, dynamic>>;
+      // Get the first error result that occurs in the transaction
+      for (final response in responses) {
+        if (response[keyJnapResult] != jnapResultOk) {
+          return JNAPError(
+            result: response[keyJnapResult],
+            error: response[keyJnapError],
+          );
+        }
+      }
+      return const JNAPError(
+        result: jnapResultError,
+        error: jnapResultError,
+      );
+    }
+    // Otherwise, it's a general jnap
     return JNAPError(
       result: json[keyJnapResult],
       error: json[keyJnapError],
     );
   }
-
-  final String? error;
 
   @override
   Map<String, dynamic> toJson() {

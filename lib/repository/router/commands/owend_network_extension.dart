@@ -10,7 +10,7 @@ extension OwnedNetworkService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> setNetworkOwner(
@@ -26,6 +26,6 @@ extension OwnedNetworkService on RouterRepository {
                 'ownerSessionToken': ownerToken,
               });
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }

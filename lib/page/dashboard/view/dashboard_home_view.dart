@@ -112,7 +112,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               'Internet ',
             ),
             AppText.screenName(
-              'online',
+              'online',    //TODO: XXXXXX Get online status
               color: ConstantColors.primaryLinksysBlue,
             ),
           ],
@@ -144,15 +144,16 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       );
     }
 
-    int wifiCount = getWifiCount(state.selected);
+    int wifiCount = _getWifiCount(state.selected);
     List<Widget> icons = [];
     for (int i = 0; i < wifiCount; i++) {
       icons.add(_circleIcon(
+        //TODO: XXXXXX Get wifi signal
           image: const AssetImage('assets/images/wifi_signal_3.png')));
     }
     return _infoTile(
       count: wifiCount,
-      descripition: 'WiFi networks active',
+      descripition: 'WiFi networks active',  //TODO: XXXXXX Get active status??
       icons: icons,
       onTap: () {
         ref.read(navigationsProvider.notifier).push(WifiListPath());
@@ -167,7 +168,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       );
     }
 
-    final nodes = getRouters(state.selected?.devices);
+    final nodes = _getRouters(state.selected?.devices);
     List<Widget> icons = [];
     for (int i = 0; i < nodes.length; i++) {
       final image =
@@ -181,7 +182,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     }
     return _infoTile(
       count: nodes.length,
-      descripition: 'Nodes online',
+      descripition: 'Nodes online',  //TODO: XXXXXX Get Node online status
       icons: icons,
       onTap: () {
         ref.read(navigationsProvider.notifier).push(TopologyPath());
@@ -197,7 +198,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     }
 
     List<RouterDevice> connectedDevices =
-        getConnectedDevice(state.selected?.devices);
+        _getConnectedDevice(state.selected?.devices);
     List<Widget> icons = [];
     for (RouterDevice device in connectedDevices) {
       icons.add(_circleIcon(
@@ -208,7 +209,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     }
     return _infoTile(
       count: connectedDevices.length,
-      descripition: 'Devices online',
+      descripition: 'Devices online',  //TODO: XXXXXX which online deivce??
       icons: icons,
       onTap: () {
         ref.read(navigationsProvider.notifier).push(DeviceListPath());
@@ -274,6 +275,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           children: [
             // const SizedBox(width: 3),
             AppIcon(
+              //TODO: XXXXXX Check for what??
               icon: getCharactersIcons(context).checkRound,
               color: ConstantColors.secondaryElectricGreen,
             ),
@@ -380,7 +382,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  int getWifiCount(MoabNetwork? network) {
+  int _getWifiCount(MoabNetwork? network) {
     if (network == null) return 0;
 
     int count = 0;
@@ -403,7 +405,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     return count;
   }
 
-  List<RouterDevice> getRouters(List<RouterDevice>? devices) {
+  List<RouterDevice> _getRouters(List<RouterDevice>? devices) {
     List<RouterDevice> list = [];
     if (devices != null && devices.isNotEmpty) {
       for (RouterDevice device in devices) {
@@ -415,7 +417,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     return list;
   }
 
-  List<RouterDevice> getConnectedDevice(List<RouterDevice>? devices) {
+  List<RouterDevice> _getConnectedDevice(List<RouterDevice>? devices) {
     List<RouterDevice> connectedDevices = [];
     if (devices != null && devices.isNotEmpty) {
       for (RouterDevice device in devices) {

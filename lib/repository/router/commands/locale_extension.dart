@@ -9,7 +9,7 @@ extension LocaleService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getTimeSettings() async {
@@ -17,7 +17,7 @@ extension LocaleService on RouterRepository {
         needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> getLocale() async {
@@ -25,7 +25,7 @@ extension LocaleService on RouterRepository {
         await createCommand(JNAPAction.getLocale.actionValue, needAuth: true);
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> setLocale(String locale) async {
@@ -36,7 +36,7 @@ extension LocaleService on RouterRepository {
         });
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 
   Future<JNAPSuccess> setTimeSettings(
@@ -49,6 +49,6 @@ extension LocaleService on RouterRepository {
         });
 
     final result = await CommandQueue().enqueue(command);
-    return handleJNAPResult(result);
+    return handleJNAPResult(result) as JNAPSuccess;
   }
 }
