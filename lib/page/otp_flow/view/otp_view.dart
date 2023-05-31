@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
@@ -18,14 +17,9 @@ class OtpFlowView extends ArgumentsConsumerStatefulView {
 }
 
 class OtpFlowViewState extends ConsumerState<OtpFlowView> {
-  late final OtpCubit _cubit;
-  late String _username;
-  late OtpFunction _function;
-
   @override
   initState() {
-    _cubit = context.read<OtpCubit>();
-    _cubit.init();
+    final otp = ref.read(otpProvider.notifier);
     OtpFunction function = OtpFunction.send;
     if (widget.args.containsKey('function')) {
       function = widget.args['function'] as OtpFunction;
@@ -36,12 +30,12 @@ class OtpFlowViewState extends ConsumerState<OtpFlowView> {
     final String username = widget.args['username'] ?? '';
     final future = username.isEmpty
         ? Future.delayed(const Duration(milliseconds: 100))
-        : _cubit.fetchMaskedMethods(username: username);
+        : otp.fetchMaskedMethods(username: username);
     future.then((_) {
-      _cubit.updateToken(vToken);
-      _cubit.updateOtpMethods(methods, function);
+      otp.updateToken(vToken);
+      otp.updateOtpMethods(methods, function);
       if (selected != null) {
-        _cubit.onInputOtp(method: selected);
+        otp.onInputOtp(method: selected);
       }
     });
 
@@ -55,53 +49,50 @@ class OtpFlowViewState extends ConsumerState<OtpFlowView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<OtpCubit, OtpState>(
-      listenWhen: (previous, next) {
-        return previous.step != next.step;
-      },
-      listener: (context, state) {
-        if (state.step == OtpStep.inputOtp) {
-          final next = widget.next ?? UnknownPath();
-
-          ref.read(navigationsProvider.notifier).replace(OtpInputCodePath()
-            ..args.addAll(widget.args)
-            ..next = next);
-        } else if (state.step == OtpStep.chooseOtpMethod) {
-          final next = widget.next ?? UnknownPath();
-          ref.read(navigationsProvider.notifier).replace(OtpMethodChoosesPath()
-            ..next = next
-            ..args.addAll(widget.args));
-        }
-      },
-      builder: (context, state) => Stack(children: [
-        WillPopScope(
-            onWillPop: () async {
-              if (state.isLoading) {
-                return false;
-              } else if (state.step != OtpStep.chooseOtpMethod) {
-                context.read<OtpCubit>().processBack();
-                return false;
-              } else {
-                return true;
-              }
-            },
-            child: _contentView(state)),
-        if (state.isLoading)
-          const AppFullScreenSpinner(
-            text: '',
-            background: Colors.transparent,
-          )
-      ]),
-    );
+    ref.listen(otpProvider, (previous, next) {
+      final previousStep = previous?.step;
+      final nextStep = next.step;
+      if (nextStep == previousStep) {
+        return;
+      }
+      if (nextStep == OtpStep.inputOtp) {
+        final next = widget.next ?? UnknownPath();
+        ref.read(navigationsProvider.notifier).replace(OtpInputCodePath()
+          ..args.addAll(widget.args)
+          ..next = next);
+      } else if (nextStep == OtpStep.chooseOtpMethod) {
+        final next = widget.next ?? UnknownPath();
+        ref.read(navigationsProvider.notifier).replace(OtpMethodChoosesPath()
+          ..next = next
+          ..args.addAll(widget.args));
+      }
+    });
+    final state = ref.watch(otpProvider);
+    return Stack(children: [
+      WillPopScope(
+          onWillPop: () async {
+            if (state.isLoading) {
+              return false;
+            } else if (state.step != OtpStep.chooseOtpMethod) {
+              ref.watch(otpProvider.notifier).processBack();
+              return false;
+            } else {
+              return true;
+            }
+          },
+          child: _contentView(state)),
+      if (state.isLoading)
+        const AppFullScreenSpinner(
+          text: '',
+          background: Colors.transparent,
+        )
+    ]);
   }
 
   Widget _contentView(OtpState state) {
     return const AppPageView();
   }
 
-  _setLoading(bool isLoading) {
-    context.read<OtpCubit>().setLoading(isLoading);
-  }
 
   // _fetchToken() {
   //   String vToken = '';

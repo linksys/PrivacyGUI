@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -52,7 +51,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
     super.initState();
     _otpController = TextEditingController();
     _startListenOtp();
-    final state = context.read<OtpCubit>().state;
+    final state = ref.read(otpProvider);
     _onInit(state);
   }
 
@@ -65,31 +64,8 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<OtpCubit, OtpState>(
-        listener: (context, state) {
-          if (state.step == OtpStep.finish) {
-            final function = widget.args['function'] ?? OtpFunction.send;
-            final next = widget.next ?? UnknownPath();
-            if (function == OtpFunction.add) {
-              ref.read(navigationsProvider.notifier).popTo(next);
-            } else {
-              final token = _sessionToken;
-              if (token == null) {
-                return;
-              }
-              final password = widget.args['password'] ?? '';
-              // context.read<AuthBloc>().add(CloudLogin(
-              //       sessionToken: token,
-              //       password: password,
-              //     ));
-              // ref.read(navigationsProvider.notifier)
-              //     .clearAndPush(next..args.addAll(widget.args));
-            }
-          }
-        },
-        builder: (context, state) => state.isLoading
-            ? const AppFullScreenSpinner()
-            : _contentView(state));
+    final state = ref.watch(otpProvider);
+    return state.isLoading ? const AppFullScreenSpinner() : _contentView(state);
   }
 
   Widget _contentView(OtpState state) {
@@ -168,14 +144,15 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
       return;
     }
     _setLoading(true);
-    final otpCubit = context.read<OtpCubit>();
     final function = widget.args['function'] ?? OtpFunction.send;
-
-    _sessionToken = await otpCubit
+    logger.d('YOUR OTP Code is $value');
+    await ref
+        .read(otpProvider.notifier)
         .authChallengeVerify(code: code, token: token)
-        .onError((error, stackTrace) => _handleError(error, stackTrace));
-
-    otpCubit.finish();
+        .onError((error, stackTrace) => _handleError(error, stackTrace))
+        .whenComplete(() {
+      _setLoading(false);
+    });
     _setLoading(false);
   }
 
@@ -204,15 +181,16 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
   }
 
   _setLoading(bool isLoading) {
-    context.read<OtpCubit>().setLoading(isLoading);
+    ref.read(otpProvider.notifier).setLoading(isLoading);
   }
 
   Future<void> _onSend(CommunicationMethod method, String token) async {
-    await context.read<OtpCubit>().authChallenge(method: method, token: token);
+    await ref
+        .read(otpProvider.notifier)
+        .authChallenge(method: method, token: token);
   }
 
   void _onInit(OtpState state) async {
-    final otpCubit = context.read<OtpCubit>();
     // // setting2sv, setting means create account????
     // if (state.function == OtpFunction.setting ||
     //     state.function == OtpFunction.setting2sv) {
@@ -222,6 +200,8 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
     // // Require otp code
     // // authBloc.add(RequireOtpCode(communicationMethod: state.selectedMethod!));
     // // TODO if is create account, do create account preparation first
-    otpCubit.authChallenge(method: state.selectedMethod!, token: state.token);
+    ref
+        .read(otpProvider.notifier)
+        .authChallenge(method: state.selectedMethod!, token: state.token);
   }
 }

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/auth/auth_provider.dart';
+import 'package:linksys_moab/bloc/otp/otp.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/network/http/model/base_response.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/repository/model/cloud_session_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
@@ -27,9 +29,9 @@ class CloudLoginPasswordView extends ArgumentsConsumerStatefulView {
 class _LoginTraditionalPasswordViewState
     extends ConsumerState<CloudLoginPasswordView> {
   final TextEditingController passwordController = TextEditingController();
-  final bool _isLoading = false;
   String _errorCode = '';
   String _username = '';
+  bool _needOtp = false;
 
   // late AuthBloc _authBloc;
   // late OtpCubit _optCubit;
@@ -50,10 +52,28 @@ class _LoginTraditionalPasswordViewState
   @override
   Widget build(BuildContext context) {
     ref.listen(authProvider, (previous, next) {
-      logger.d('Auth provider changed!!!! $next');
+      logger.d('Auth provider changed!!!! \n$previous\n$next');
+      if (!next.isLoading && next.hasError) {
+        _handleError(next.error, next.stackTrace!);
+      }
+    });
+    ref.listen(otpProvider, (previous, next) {
+      if (!_needOtp || next.step == previous?.step) {
+        return;
+      }
+      if (next.step == OtpStep.finish) {
+        logger.d('Login password: Otp pass! $next');
+        _needOtp = false;
+        ref.read(authProvider.notifier).cloudLogin(
+              username: _username,
+              password: passwordController.text,
+              sessionToken: SessionToken.fromJson(next.extras),
+            );
+      }
     });
     final data = ref.watch(authProvider);
     return data.when(
+        skipError: true,
         data: _contentView,
         error: (_, __) => const Center(
               child: AppText.descriptionMain('Something wrong here!'),
@@ -125,11 +145,10 @@ class _LoginTraditionalPasswordViewState
               onTap: passwordController.text.isEmpty
                   ? null
                   : () async {
-                      await ref
-                          .read(authProvider.notifier)
-                          .cloudLogin(_username, passwordController.text)
-                          .onError((error, stackTrace) =>
-                              _handleError(error, stackTrace));
+                      await ref.read(authProvider.notifier).cloudLogin(
+                            username: _username,
+                            password: passwordController.text,
+                          );
                     },
             ),
           ],
@@ -147,8 +166,9 @@ class _LoginTraditionalPasswordViewState
     }
 
     if (error.code == errorMfaRequired) {
+      _needOtp = true;
       final mfaError = ErrorMfaRequired.fromResponse(error);
-      ref.read(navigationsProvider.notifier).pushAndWait(OTPViewPath()
+      ref.read(navigationsProvider.notifier).push(OTPViewPath()
         ..args = {
           'username': _username,
           'token': mfaError.verificationToken,

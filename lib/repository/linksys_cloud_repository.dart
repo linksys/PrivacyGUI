@@ -61,7 +61,8 @@ class LinksysCloudRepository {
     );
   }
 
-  Future mfaValidate({
+  // TODO is there any other response??
+  Future<SessionToken> mfaValidate({
     required String otpCode,
     required String verificationToken,
     bool rememberUserAgent = false,
@@ -93,6 +94,14 @@ class LinksysCloudRepository {
               .map((e) => CommunicationMethod.fromJson(e))
               .toList(),
         );
+  }
+
+  Future<void> updateFriendlyName(String friendlyName, String networkId) async {
+    return loadSessionToken().then((token) => _httpClient.updateNetwork(
+          token: token,
+          networkId: networkId,
+          friendlyName: friendlyName,
+        ));
   }
 
   Future<String> loadSessionToken() async {

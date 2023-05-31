@@ -25,9 +25,8 @@ class OTPMethodSelectorView extends ArgumentsConsumerStatefulView {
 class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<OtpCubit, OtpState>(
-      builder: (context, state) => _contentView(state),
-    );
+    final state = ref.watch(otpProvider);
+    return _contentView(state);
   }
 
   Widget _contentView(OtpState state) {
@@ -64,8 +63,8 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
                         ),
                       ),
                       onTap: () {
-                        context
-                            .read<OtpCubit>()
+                        ref
+                            .read(otpProvider.notifier)
                             .selectOtpMethod(state.methods[index]);
                       },
                     )),
@@ -127,7 +126,7 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
 
   _checkPhoneExist(CommunicationMethod method, String token) {
     if (method.method == CommunicationMethodType.sms.name.toUpperCase()) {
-      context.read<OtpCubit>().addPhone();
+      ref.read(otpProvider.notifier).addPhone();
       ref.read(navigationsProvider.notifier).push(OtpAddPhonePath()
         ..next = widget.next
         ..args.addAll(widget.args));
@@ -138,7 +137,7 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
 
   _onSend(CommunicationMethod method) {
     _setLoading(true);
-    context.read<OtpCubit>().onInputOtp();
+    ref.read(otpProvider.notifier).onInputOtp();
     ref.read(navigationsProvider.notifier).push(OtpInputCodePath()
       ..next = widget.next
       ..args.addAll(widget.args));
@@ -146,6 +145,6 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
   }
 
   _setLoading(bool isLoading) {
-    context.read<OtpCubit>().setLoading(isLoading);
+    ref.read(otpProvider.notifier).setLoading(isLoading);
   }
 }

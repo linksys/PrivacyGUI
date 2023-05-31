@@ -156,36 +156,51 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
   }
 
-  Future cloudLogin(String username, String password) async {
-    final previousState = state.value ?? AuthState.empty();
+  Future cloudLogin({
+    required String username,
+    required String password,
+    SessionToken? sessionToken,
+  }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final cloud = ref.read(cloudRepositoryProvider);
-      final sessionToken =
+      final newToken = sessionToken ??
           await cloud.login(username: username, password: password);
-      const storage = FlutterSecureStorage();
-      await storage.write(
-        key: pSessionToken,
-        value: jsonEncode(
-          sessionToken.toJson(),
-        ),
-      );
-      await storage.write(
-        key: pSessionTokenTs,
-        value: '${DateTime.now().millisecondsSinceEpoch}',
-      );
-      await storage.write(
-        key: pUserPassword,
-        value: password,
-      );
-      return previousState.copyWith(
-        sessionToken: sessionToken,
+      return await updateCredientials(
+        sessionToken: newToken,
         username: username,
         password: password,
-        loginType: LoginType.remote,
       );
     });
     logger.d('after cloud login: $state');
+  }
+
+  Future updateCredientials({
+    required SessionToken sessionToken,
+    required String username,
+    required String password,
+  }) async {
+    const storage = FlutterSecureStorage();
+    await storage.write(
+      key: pSessionToken,
+      value: jsonEncode(
+        sessionToken.toJson(),
+      ),
+    );
+    await storage.write(
+      key: pSessionTokenTs,
+      value: '${DateTime.now().millisecondsSinceEpoch}',
+    );
+    await storage.write(
+      key: pUserPassword,
+      value: password,
+    );
+    return (state.value ?? AuthState.empty()).copyWith(
+      sessionToken: sessionToken,
+      username: username,
+      password: password,
+      loginType: LoginType.remote,
+    );
   }
 
   Future localLogin(String password) async {
@@ -220,6 +235,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
     state = await AsyncValue.guard(() async {
       final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(linksysPrefSelectedNetworkId);
       const storage = FlutterSecureStorage();
 
       await storage.delete(key: pSessionToken);

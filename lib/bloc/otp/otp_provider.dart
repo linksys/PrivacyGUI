@@ -1,4 +1,6 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/network/http/model/cloud_auth_clallenge_method.dart';
 import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
 
@@ -11,20 +13,24 @@ enum CommunicationMethodType {
   email;
 }
 
-class OtpCubit extends Cubit<OtpState> {
-  OtpCubit({
-    required LinksysCloudRepository repository,
-  })  : _repository = repository,
-        super(OtpState.init());
+final otpProvider = NotifierProvider<OtpNotifier, OtpState>(
+  () => OtpNotifier(),
+);
 
-  final LinksysCloudRepository _repository;
+class OtpNotifier extends Notifier<OtpState> {
+  OtpNotifier();
+
+  @override
+  OtpState build() => OtpState.init();
+
   void init() {
-    emit(OtpState.init());
+    state = OtpState.init();
   }
 
   Future<void> fetchMaskedMethods({required String username}) async {
-    final methods = await _repository.getMfaMaskedMethods(username: username);
-    emit(state.copyWith(methods: methods));
+    final repository = ref.read(cloudRepositoryProvider);
+    final methods = await repository.getMfaMaskedMethods(username: username);
+    state = state.copyWith(methods: methods);
   }
 
   void updateOtpMethods(
@@ -37,48 +43,47 @@ class OtpCubit extends Cubit<OtpState> {
     final step = (function == OtpFunction.send && targetMethods.length == 1)
         ? OtpStep.inputOtp
         : OtpStep.chooseOtpMethod;
-    emit(state.copyWith(
+    state = state.copyWith(
         step: step,
         methods: targetMethods,
         selectedMethod: selected,
-        function: function));
+        function: function);
   }
 
   void selectOtpMethod(CommunicationMethod method) {
-    emit(state.copyWith(selectedMethod: method));
+    state = state.copyWith(selectedMethod: method);
   }
 
   void addPhone() {
-    emit(state.copyWith(step: OtpStep.addPhone));
+    state = state.copyWith(step: OtpStep.addPhone);
   }
 
   void finish() {
-    emit(state.copyWith(step: OtpStep.finish));
+    state = state.copyWith(step: OtpStep.finish);
   }
 
   void updateToken(String token) {
-    emit(state.copyWith(token: token));
+    state = state.copyWith(token: token);
   }
 
   void onInputOtp({CommunicationMethod? method}) {
-    emit(state.copyWith(
-        step: OtpStep.inputOtp,
-        selectedMethod: method ?? state.selectedMethod));
+    state = state.copyWith(step: OtpStep.inputOtp, selectedMethod: method);
   }
 
-  void setLoading(bool isLoading) {
-    emit(state.copyWith(isLoading: isLoading));
+  void setLoading(bool value) {
+    state = state.copyWith(isLoading: value);
   }
 
   void processBack() {
     if (state.step == OtpStep.inputOtp) {
-      emit(state.copyWith(
+      state = state.copyWith(
           step: !state.isSendFunction()
               ? OtpStep.addPhone
               : OtpStep.chooseOtpMethod,
-          selectedMethod: null));
+          selectedMethod: null);
     } else if (state.step == OtpStep.addPhone) {
-      emit(state.copyWith(step: OtpStep.chooseOtpMethod, selectedMethod: null));
+      state =
+          state.copyWith(step: OtpStep.chooseOtpMethod, selectedMethod: null);
     }
   }
 
@@ -95,7 +100,8 @@ class OtpCubit extends Cubit<OtpState> {
         target: method.target,
       );
     }
-    return await _repository.mfaChallenge(
+    final repository = ref.read(cloudRepositoryProvider);
+    return await repository.mfaChallenge(
       verificationToken: token,
       method: method.method,
     );
@@ -103,9 +109,12 @@ class OtpCubit extends Cubit<OtpState> {
 
   Future<SessionToken> authChallengeVerify(
       {required String code, required String token}) async {
-    return await _repository.mfaValidate(
+    final repository = ref.read(cloudRepositoryProvider);
+    final result = await repository.mfaValidate(
       otpCode: code,
       verificationToken: token,
     );
+    state = state.copyWith(step: OtpStep.finish, extras: result.toJson());
+    return result;
   }
 }

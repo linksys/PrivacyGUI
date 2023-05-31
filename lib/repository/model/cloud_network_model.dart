@@ -157,7 +157,7 @@ class NetworkOwner extends Equatable {
 }
 
 class Preferences extends Equatable {
-  final Locale locale;
+  final Locale? locale;
   final bool newsletterOptIn;
   final bool mfaEnabled;
   final Mobile? mobile;
@@ -174,7 +174,7 @@ class Preferences extends Equatable {
 
   factory Preferences.fromJson(Map<String, dynamic> json) {
     return Preferences(
-      locale: Locale.fromJson(json['locale']),
+      locale: json['locale'] != null ? Locale.fromJson(json['locale']) : null,
       newsletterOptIn: json['newsletterOptIn'] == "true",
       mfaEnabled: json['mfaEnabled'],
       mobile: json['mobile'] != null ? Mobile.fromJson(json['mobile']) : null,
@@ -183,7 +183,7 @@ class Preferences extends Equatable {
 
   Map<String, dynamic> toJson() {
     return {
-      'locale': locale.toJson(),
+      'locale': locale?.toJson(),
       'newsletterOptIn': newsletterOptIn,
       'mfaEnabled': mfaEnabled,
       'mobile': mobile?.toJson(),
@@ -192,8 +192,8 @@ class Preferences extends Equatable {
 }
 
 class Locale extends Equatable {
-  final String language;
-  final String country;
+  final String? language;
+  final String? country;
 
   const Locale({
     required this.language,

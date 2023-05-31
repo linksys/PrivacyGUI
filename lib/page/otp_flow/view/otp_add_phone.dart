@@ -77,7 +77,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
             phoneNumber: phoneNumber.nationalNumber,
           ));
 
-      context.read<OtpCubit>().onInputOtp(method: phoneMethod);
+      ref.read(otpProvider.notifier).onInputOtp(method: phoneMethod);
       final OtpFunction function = widget.args['function'] ?? OtpFunction.send;
       if (function == OtpFunction.add) {
         // String token = await context
@@ -113,7 +113,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
   }
 
   _setLoading(bool isLoading) {
-    context.read<OtpCubit>().setLoading(isLoading);
+    ref.read(otpProvider.notifier).setLoading(isLoading);
   }
 
   Future<void> updateRegion(RegionCode region) async {
@@ -140,97 +140,96 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<OtpCubit, OtpState>(
-      builder: (context, state) => StyledAppPageView(
-        scrollable: true,
-        child: AppBasicLayout(
-          header: BasicHeader(
-            title: getAppLocalizations(context).otp_add_phone_number,
-          ),
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppPadding(
-                padding: const AppEdgeInsets.only(
-                  top: AppGapSize.extraBig,
-                  bottom: AppGapSize.semiSmall,
-                ),
-                child:
-                    AppText.descriptionMain(getAppLocalizations(context).phone),
+    final state = ref.watch(otpProvider);
+    return StyledAppPageView(
+      scrollable: true,
+      child: AppBasicLayout(
+        header: BasicHeader(
+          title: getAppLocalizations(context).otp_add_phone_number,
+        ),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppPadding(
+              padding: const AppEdgeInsets.only(
+                top: AppGapSize.extraBig,
+                bottom: AppGapSize.semiSmall,
               ),
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    GestureDetector(
-                      onTap: () async {
-                        final selectedRegion = await showPopup(
-                            ref: ref, config: SelectPhoneRegionCodePath());
-                        if (selectedRegion != null) {
-                          updateRegion(selectedRegion);
-                        }
-                      },
-                      child: Container(
-                        width: 60,
-                        decoration: BoxDecoration(
-                            border: Border.all(
-                          color: isInputInvalid
-                              ? Colors.red
-                              : Theme.of(context).colorScheme.primary,
-                          width: 1,
-                        )),
-                        alignment: Alignment.center,
-                        child: AppText.descriptionMain(
-                          '+${currentRegion.countryCallingCode}',
-                          color: isInputInvalid
-                              ? ConstantColors.tertiaryRed
-                              : AppTheme.of(context).colors.tertiaryText,
-                        ),
+              child:
+                  AppText.descriptionMain(getAppLocalizations(context).phone),
+            ),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  GestureDetector(
+                    onTap: () async {
+                      final selectedRegion = await showPopup(
+                          ref: ref, config: SelectPhoneRegionCodePath());
+                      if (selectedRegion != null) {
+                        updateRegion(selectedRegion);
+                      }
+                    },
+                    child: Container(
+                      width: 60,
+                      decoration: BoxDecoration(
+                          border: Border.all(
+                        color: isInputInvalid
+                            ? Colors.red
+                            : Theme.of(context).colorScheme.primary,
+                        width: 1,
+                      )),
+                      alignment: Alignment.center,
+                      child: AppText.descriptionMain(
+                        '+${currentRegion.countryCallingCode}',
+                        color: isInputInvalid
+                            ? ConstantColors.tertiaryRed
+                            : AppTheme.of(context).colors.tertiaryText,
                       ),
                     ),
-                    const AppGap.small(),
-                    Expanded(
-                      child: FutureBuilder<String>(
-                          future: _getPhoneHint(currentRegion.countryCode),
-                          initialData: getAppLocalizations(context).phone,
-                          builder: (context, data) {
-                            return AppTextField(
-                              controller: phoneController,
-                              hintText: data.data ??
-                                  getAppLocalizations(context).phone,
-                              onChanged: _onInputChanged,
-                              inputType: TextInputType.number,
-                            );
-                          }),
-                    ),
-                  ],
-                ),
+                  ),
+                  const AppGap.small(),
+                  Expanded(
+                    child: FutureBuilder<String>(
+                        future: _getPhoneHint(currentRegion.countryCode),
+                        initialData: getAppLocalizations(context).phone,
+                        builder: (context, data) {
+                          return AppTextField(
+                            controller: phoneController,
+                            hintText:
+                                data.data ?? getAppLocalizations(context).phone,
+                            onChanged: _onInputChanged,
+                            inputType: TextInputType.number,
+                          );
+                        }),
+                  ),
+                ],
               ),
-              const AppGap.semiSmall(),
-              Offstage(
-                offstage: !isInputInvalid,
-                child: AppText.descriptionMain(
-                  generalErrorCodeHandler(context, errorInvalidPhone),
-                  color: ConstantColors.tertiaryRed,
-                ),
+            ),
+            const AppGap.semiSmall(),
+            Offstage(
+              offstage: !isInputInvalid,
+              child: AppText.descriptionMain(
+                generalErrorCodeHandler(context, errorInvalidPhone),
+                color: ConstantColors.tertiaryRed,
               ),
-            ],
-          ),
-          footer: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Visibility(
-                maintainState: true,
-                maintainAnimation: true,
-                maintainSize: true,
-                visible: hasInput,
-                child: AppPrimaryButton(
-                  getAppLocalizations(context).otp_send_code,
-                  onTap: _checkPhoneNumber,
-                ),
+            ),
+          ],
+        ),
+        footer: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Visibility(
+              maintainState: true,
+              maintainAnimation: true,
+              maintainSize: true,
+              visible: hasInput,
+              child: AppPrimaryButton(
+                getAppLocalizations(context).otp_send_code,
+                onTap: _checkPhoneNumber,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

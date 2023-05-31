@@ -1,5 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:equatable/equatable.dart';
 
@@ -19,7 +20,7 @@ class BaseResponse<T> {
   }
 }
 
-class ErrorResponse {
+class ErrorResponse extends Equatable {
   const ErrorResponse(
       {required this.status,
       required this.code,
@@ -71,6 +72,14 @@ class ErrorResponse {
   final String code;
   final String? errorMessage;
   final List<Map<String, dynamic>>? parameters;
+
+  @override
+  List<Object?> get props => [
+        status,
+        code,
+        errorMessage,
+        parameters,
+      ];
 }
 
 class ErrorMfaRequired extends Equatable {

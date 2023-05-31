@@ -45,6 +45,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
     final loginType =
         ref.watch(authProvider.select((value) => value.value?.loginType));
     if (loginType == LoginType.remote) {
+      logger.i('PREPARE LOGIN:: remote');
       if (context.read<NetworkCubit>().state.selected == null) {
         // TODO #LINKSYS
         // await context.read<AccountCubit>().fetchAccount();

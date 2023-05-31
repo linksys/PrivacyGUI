@@ -47,6 +47,7 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
   Widget build(BuildContext context) {
     final state = ref.watch(authProvider);
     return state.when(
+      skipError: true,
         data: (state) => _contentView(state),
         error: (_, __) => const Center(
               child: AppText.descriptionMain('Something wrong here'),

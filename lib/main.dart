@@ -36,7 +36,6 @@ import 'package:linksys_moab/util/logger.dart';
 import 'package:linksys_moab/util/storage.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'firebase_options.dart';
-import 'bloc/otp/otp_cubit.dart';
 
 void main() async {
   // enableFlutterDriverExtension();
@@ -115,19 +114,7 @@ Widget _app() {
     ],
     child: MultiBlocProvider(
         providers: [
-          // BlocProvider(
-          //   create: (BuildContext context) => AuthBloc(
-          //     repo: context.read<CloudAuthRepository>(),
-          //     cloudRepo: context.read<LinksysCloudRepository>(),
-          //     routerRepo: context.read<RouterRepository>(),
-          //   ),
-          // ),
           BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
-          BlocProvider(
-            create: (BuildContext context) => OtpCubit(
-              repository: context.read<LinksysCloudRepository>(),
-            ),
-          ),
           BlocProvider(
               create: (BuildContext context) =>
                   ProfilesCubit(context.read<RouterRepository>())),
@@ -146,10 +133,13 @@ Widget _app() {
                   )),
           BlocProvider(
               create: (BuildContext context) => InternetCheckCubit(
-                  routerRepository: context.read<RouterRepository>())),
+                    routerRepository: context.read<RouterRepository>(),
+                  )),
           BlocProvider(
               create: (BuildContext context) => WifiSettingCubit(
-                  routerRepository: context.read<RouterRepository>())),
+                    cloudRepository: context.read<LinksysCloudRepository>(),
+                    routerRepository: context.read<RouterRepository>(),
+                  )),
         ],
         child: ProviderScope(
           observers: [Logger()],
@@ -170,7 +160,7 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
   @override
   void initState() {
     // logger.d('Moab App init state: ${describeIdentity(this)}');
-    _initAuth();
+    // _initAuth();
     _intIAP();
 
     WidgetsBinding.instance.addObserver(this);

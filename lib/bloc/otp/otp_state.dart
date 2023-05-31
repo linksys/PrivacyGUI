@@ -14,6 +14,7 @@ class OtpState extends Equatable {
     required this.selectedMethod,
     required this.function,
     required this.isLoading,
+    this.extras = const {},
   });
 
   OtpState.init()
@@ -22,7 +23,8 @@ class OtpState extends Equatable {
         token = '',
         selectedMethod = null,
         function = OtpFunction.send,
-        isLoading = false;
+        isLoading = false,
+        extras = {};
 
   OtpState copyWith({
     OtpStep? step,
@@ -31,6 +33,7 @@ class OtpState extends Equatable {
     CommunicationMethod? selectedMethod,
     OtpFunction? function,
     bool? isLoading,
+    Map<String, dynamic>? extras,
   }) {
     return OtpState(
       step: step ?? this.step,
@@ -39,6 +42,7 @@ class OtpState extends Equatable {
       selectedMethod: selectedMethod ?? this.selectedMethod,
       function: function ?? this.function,
       isLoading: isLoading ?? this.isLoading,
+      extras: extras ?? this.extras,
     );
   }
 
@@ -48,6 +52,7 @@ class OtpState extends Equatable {
   final CommunicationMethod? selectedMethod;
   final OtpFunction function;
   final bool isLoading;
+  final Map<String, dynamic> extras;
 
   @override
   List<Object?> get props => [
@@ -57,6 +62,7 @@ class OtpState extends Equatable {
         selectedMethod,
         function,
         isLoading,
+        extras,
       ];
 
   bool isSendFunction() => function == OtpFunction.send;

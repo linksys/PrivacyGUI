@@ -1,2 +1,2 @@
-export 'otp_cubit.dart';
+export 'otp_provider.dart';
 export 'otp_state.dart';

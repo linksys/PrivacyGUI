@@ -1,18 +1,26 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
+import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/model/router/guest_radio_settings.dart';
 import 'package:linksys_moab/model/router/radio_info.dart';
 import 'package:linksys_moab/network/jnap/better_action.dart';
 import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
+import 'package:linksys_moab/repository/linksys_cloud_repository.dart';
 import 'package:linksys_moab/repository/router/commands/_commands.dart';
 import 'package:linksys_moab/repository/router/router_repository.dart';
+import 'package:linksys_moab/util/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WifiSettingCubit extends Cubit<WifiSettingState> {
-  WifiSettingCubit({required RouterRepository routerRepository})
+  WifiSettingCubit(
+      {required LinksysCloudRepository cloudRepository,
+      required RouterRepository routerRepository})
       : _routerRepository = routerRepository,
+        _cloudRepository = cloudRepository,
         super(const WifiSettingState());
 
   final RouterRepository _routerRepository;
+  final LinksysCloudRepository _cloudRepository;
 
   Future<void> fetchAllRadioInfo() async {
     List<WifiListItem> wifiList = [];
@@ -218,6 +226,19 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
               ssid: name, wpaPersonalSettings: routerWPAPersonalSettings);
           radioSettings.add(
               NewRadioSettings(radioID: radioInfo.radioID, settings: settings));
+        }
+        final pref = await SharedPreferences.getInstance();
+        final networkId = pref.getString(linksysPrefSelectedNetworkId) ?? '';
+        final cloudUpdateSuccess = await _cloudRepository
+            .updateFriendlyName(name, networkId)
+            .then((value) => true)
+            .onError((error, stackTrace) {
+          logger.i('update friendly name error: $error');
+          return false;
+        });
+        if (!cloudUpdateSuccess) {
+          // Error handling and do not continue update router settings
+          break;
         }
         await _routerRepository.send(
           JNAPAction.setRadioSettings,

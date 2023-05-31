@@ -34,7 +34,9 @@ extension DeviceService on LinksysHttpClient {
     final header = defaultHeader
       ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
 
-    final body = {'friendlyName': friendlyName};
+    final body = {
+      'network': {'friendlyName': friendlyName}
+    };
     return this
         .put(Uri.parse(endpoint), headers: header, body: jsonEncode(body));
   }
