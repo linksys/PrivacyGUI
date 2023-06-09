@@ -23,6 +23,7 @@ inHouseBuildNumber=$1
 appStoreBuildNumber=$2
 inHouseBuild=$3
 appStoreBuild=$4
+flutter pub get
 cd ios
 pod install --repo-update
 cd ..
