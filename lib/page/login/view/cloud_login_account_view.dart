@@ -47,7 +47,7 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
   Widget build(BuildContext context) {
     final state = ref.watch(authProvider);
     return state.when(
-      skipError: true,
+        skipError: true,
         data: (state) => _contentView(state),
         error: (_, __) => const Center(
               child: AppText.descriptionMain('Something wrong here'),
@@ -146,28 +146,6 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
                           .push(AlreadyHaveOldAccountPath())),
                 ),
               const Spacer(),
-              FutureBuilder<bool>(
-                future: Utils.canUseBiometrics(),
-                initialData: false,
-                builder: (context, canUseBiometrics) {
-                  return Offstage(
-                    offstage: !(canUseBiometrics.data ?? false),
-                    child: InkWell(
-                      key: const Key('login_view_button_enable_biometrics'),
-                      onTap: () {
-                        setState(() {
-                          _enableBiometrics = !_enableBiometrics;
-                        });
-                      },
-                      child: AppPanelWithValueCheck(
-                        title: getAppLocalizations(context).enable_biometrics,
-                        valueText: ' ',
-                        isChecked: _enableBiometrics,
-                      ),
-                    ),
-                  );
-                },
-              ),
               AppPrimaryButton(
                 getAppLocalizations(context).login,
                 key: const Key('login_view_button_continue'),
@@ -193,10 +171,12 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
   }
 
   _prepareLogin() async {
+    logger.d('prepare login');
     final isValid = _emailValidator.validate(_accountController.text);
     setState(() {
       if (!isValid) {
         _errorCode = errorEmptyEmail;
+        logger.d('invalid input account');
       }
     });
     if (_errorCode.isEmpty) {

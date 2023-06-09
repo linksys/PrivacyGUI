@@ -63,19 +63,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
               _isOpenDebug = !_isOpenDebug;
             });
           },
-          child: Scale(
-            begin: 1,
-            end: 1.2,
-            reverse: true,
-            child: Rotation(
-              begin: -0.1,
-              end: 0.1,
-              reverse: true,
-              child: Hover(
-                  child:
-                      SvgPicture(AppTheme.of(context).images.linksysBlackLogo)),
-            ),
-          )),
+          child: SvgPicture(AppTheme.of(context).images.linksysBlackLogo)),
     );
   }
 

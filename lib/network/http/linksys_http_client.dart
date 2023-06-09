@@ -271,6 +271,7 @@ class LinksysHttpClient extends http.BaseClient
   /// 400 -
   /// 500 -
   ///
+  ///
   Response _handleResponse(Response response) {
     // TODO Revisit - needs to considering about 500 internal server error, 502/503 bad requests
     if (response.statusCode >= 400 && response.body.isJsonFormat()) {
