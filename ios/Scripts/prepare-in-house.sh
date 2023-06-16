@@ -17,9 +17,10 @@ function updateLinks() {
   htmlFilePath=./artifacts/install.html.template
   sed -i '' "s/{version}/$version/g" "$htmlFilePath"
   mv "$htmlFilePath" "./artifacts/install.html"
-  manifestPath=./artifacts/manifest.plist
+  manifestPath=./build/ios/ipa/manifest.plist
   sed -i '' "s/{version}/$version/g" "$manifestPath"
   sed -i '' "s/Runner/Moab App $version/g" "$manifestPath"
+  mv "$manifestPath" "./artifacts/manifest.plist"
 }
 version=$1
 
