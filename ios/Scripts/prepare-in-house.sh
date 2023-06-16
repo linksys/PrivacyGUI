@@ -1,7 +1,7 @@
 
 function copyInHouseAssets() {
   iosAssetsPath=./ios/Scripts/InHouse
-  targetOutputPath=./build/ios/ipa/
+  targetOutputPath=./artifacts/
   assetFiles=$(ls "$iosAssetsPath"/*)
   for path in $assetFiles
   do
@@ -14,10 +14,10 @@ function copyInHouseAssets() {
 function updateLinks() {
   echo "Update links"
   version=$1
-  htmlFilePath=./build/ios/ipa/install.html.template
+  htmlFilePath=./artifacts/install.html.template
   sed -i '' "s/{version}/$version/g" "$htmlFilePath"
-  mv "$htmlFilePath" "./build/ios/ipa/install.html"
-  manifestPath=./build/ios/ipa/manifest.plist
+  mv "$htmlFilePath" "./artifacts/install.html"
+  manifestPath=./artifacts/manifest.plist
   sed -i '' "s/{version}/$version/g" "$manifestPath"
   sed -i '' "s/Runner/Moab App $version/g" "$manifestPath"
 }
@@ -25,4 +25,4 @@ version=$1
 
 copyInHouseAssets
 updateLinks "$version"
-echo "https://linksys-moab.s3.us-west-1.amazonaws.com/${version}/install.html"
+echo "https://linksys-mobile.s3.us-west-1.amazonaws.com/${version}/install.html"

@@ -1,7 +1,4 @@
 
-import 'dart:io';
-
-import 'package:image/image.dart';
 import 'package:linksys_moab/validator_rules/validators.dart';
 import 'package:test/test.dart';
 
@@ -46,11 +43,6 @@ void main() {
       expect(validator.validate(input), false);
       final detail = validator.validateDetail(input, onlyFailed: true);
       expect(detail.length, 3);
-    });
-    test('decode image', () async {
-      final image = decodeImage(File('assets/test/sprite-map.png').readAsBytesSync());
-      print('image size: ${image?.width}, ${image?.height}');
-      expect(image != null, true);
     });
   });
 }
