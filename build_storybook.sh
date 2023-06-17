@@ -1,7 +1,7 @@
 
 function buildStorybook() {
   echo "start building storybook #${buildNumber}"
-  flutter build web --target=lib/storybook/storybook.dart --base-href=/storybook/ --build-number="${buildNumber}"
+  flutter build web --target=lib/storybook/storybook.dart --base-href=/storybook/ --build-number="${buildNumber}" --no-tree-shake-icons
   mkdir -p "./build/ios/ipa"
   cp -r "./build/web" "./build/ios/ipa/web"
 }
