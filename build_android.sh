@@ -3,7 +3,7 @@ function build() {
   conf=$1
   type=$2
   echo start building "$conf" "$type" process...
-  if ! flutter build "$type" --"$conf" --obfuscate --split-debug-info=moab/build/app/outputs/temp/ --dart-define=cloud_env=qa --no-tree-shake-icons; then
+  if ! flutter build "$type" --"$conf" --obfuscate --split-debug-info=moab/build/app/outputs/temp/ --build-number="${AppBuildNumber}" --dart-define=cloud_env=qa --no-tree-shake-icons; then
       echo build "$conf" failed
       exit 1
   fi
@@ -16,7 +16,7 @@ function build() {
 }
 
 function copyFiles() {
-  targetFlutterApkPath=./build/app/outputs/flutter-apk
+  targetFlutterApkPath=./artifacts
   mkdir -p "$targetFlutterApkPath"
 
   type=$1
@@ -27,14 +27,12 @@ function copyFiles() {
     path="bundle"
     confFilePath=$(ls ./build/app/outputs/"$path"/"$conf"/*."$type")
     confFilename=$(basename "$confFilePath" ."$type")
-    cp "$confFilePath" "$targetFlutterApkPath"/"$confFilename"."$type"
+    cp "$confFilePath" "$targetFlutterApkPath"/"$confFilename-$BranchName-$AppBuildNumber"."$type"
   else
     echo "process apk..."
     confFilePath=$(ls ./build/app/outputs/"$path"/"$conf"/*."$type")
     confFilename=$(basename "$confFilePath" ."$type")
-    # rename file
-    targetConfFilePath=$(ls "$targetFlutterApkPath"/*-"$conf"."$type")
-    mv "$targetConfFilePath" "$targetFlutterApkPath"/"$confFilename"."$type"
+    cp "$confFilePath" "$targetFlutterApkPath"/"$confFilename-$BranchName-$AppBuildNumber"."$type"
   fi
 }
 
@@ -44,4 +42,5 @@ flutter pub deps
 flutter clean
 flutter pub cache repairbuild debug apk
 build release apk
+build debug apk
 build release appbundle
