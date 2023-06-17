@@ -119,15 +119,15 @@ android {
             } else {
                 signingConfig signingConfigs.debug
             }
-            applicationVariants.all { variant ->
-                variant.outputs.all {
-                    def appName = "moab"
-                    def buildType = variant.buildType.name
-                    def newName
-                    newName = "${appName}-${defaultConfig.versionName}-${buildType}.apk"
-                    outputFileName = newName
-                }
-            }
+            // applicationVariants.all { variant ->
+            //     variant.outputs.all {
+            //         def appName = "moab"
+            //         def buildType = variant.buildType.name
+            //         def newName
+            //         newName = "${appName}-${defaultConfig.versionName}-${buildType}.apk"
+            //         outputFileName = newName
+            //     }
+            // }
         }
     }
 
