@@ -35,7 +35,8 @@ function copyFiles() {
     cp "$confFilePath" "$targetFlutterApkPath"/"$confFilename-$BranchName-$AppBuildNumber"."$type"
   fi
 }
-
+BranchName=$1
+AppBuildNumber=$2
 flutter --version
 flutter pub get
 flutter pub deps
