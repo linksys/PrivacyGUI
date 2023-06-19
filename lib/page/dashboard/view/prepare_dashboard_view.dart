@@ -68,6 +68,8 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
           linkstyPrefCurrentSN, routerDeviceInfo.serialNumber);
+      await ref.read(connectivityProvider.notifier).forceUpdate();
+
       ref.watch(navigationsProvider.notifier).clearAndPush(DashboardHomePath());
       ref.watch(pollingProvider.notifier).startPolling();
     } else {

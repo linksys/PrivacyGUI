@@ -120,8 +120,9 @@ class RouterRepository with StateStreamListener {
       CommandType? type}) async {
     final loginType = getLoginType();
     final routerType = getRouterType();
-    final communicateType = type ??
-        (loginType == LoginType.local ? CommandType.local : CommandType.remote);
+    // final communicateType = type ??
+    //     (loginType == LoginType.local ? CommandType.local : CommandType.remote);
+    final communicateType = type;
     logger.d('create transaction');
     String url = _buildCommandUrl(
       routerType: routerType,
@@ -305,8 +306,9 @@ class RouterRepository with StateStreamListener {
     CommandType? type,
   }) async {
     final routerType = getRouterType();
-    final communicateType =
-        type ?? (!isCloudLogin() ? CommandType.local : CommandType.remote);
+    // final communicateType =
+    //     type ?? (!isCloudLogin() ? CommandType.local : CommandType.remote);
+    final communicateType = type;
     String url = _buildCommandUrl(
       routerType: routerType,
       type: communicateType,

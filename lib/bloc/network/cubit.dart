@@ -93,7 +93,7 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   ///
 
   Future<RouterDeviceInfo> getDeviceInfo() async {
-    final result = await _routerRepository.getDeviceInfo();
+    final result = await _routerRepository.send(JNAPAction.getDeviceInfo);
     final routerDeviceInfo = RouterDeviceInfo.fromJson(result.output);
     _handleDeviceInfoResult(routerDeviceInfo);
     return routerDeviceInfo;
@@ -270,6 +270,7 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
 
   Future selectNetwork(CloudNetworkModel network) async {
     final pref = await SharedPreferences.getInstance();
+    await pref.remove(linkstyPrefCurrentSN);
     await pref.setString(
         linksysPrefSelectedNetworkId, network.network.networkId);
     // CloudEnvironmentManager().applyNewConfig(network.region);

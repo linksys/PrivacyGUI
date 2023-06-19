@@ -15,7 +15,6 @@ import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/icons/icon_rules.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/animation/hover.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/container/stacked_listview.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
@@ -47,15 +46,9 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         ),
         child: Stack(
           children: [
-            Hover(
-              reverse: false,
-              begin: const Offset(1, 0),
-              end: const Offset(-1.5, 0),
-              duration: const Duration(milliseconds: 5000),
-              child: Image(
-                image: AppTheme.of(context).images.dashboardBg,
-                fit: BoxFit.cover, // to cover the entire screen
-              ),
+            Image(
+              image: AppTheme.of(context).images.dashboardBg,
+              fit: BoxFit.cover, // to cover the entire screen
             ),
             EnabledOpacityWidget(
               enabled: state.selected?.deviceInfo != null,
@@ -79,6 +72,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   }
 
   Widget _homeTitle(NetworkState state) {
+    final hasMultiNetworks = state.networks.length > 1;
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,8 +87,25 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             ),
             const AppGap.semiSmall(),
             Expanded(
-              child: AppText.subhead(
-                state.selected?.radioInfo?.first.settings.ssid ?? 'Home',
+              child: InkWell(
+                onTap: hasMultiNetworks
+                    ? () {
+                        ref
+                            .read(navigationsProvider.notifier)
+                            .push(SelectNetworkPath());
+                      }
+                    : null,
+                child: Row(
+                  children: [
+                    AppText.subhead(
+                      state.selected?.radioInfo?.first.settings.ssid ?? 'Home',
+                    ),
+                    if (hasMultiNetworks)
+                      AppIcon.regular(
+                        icon: getCharactersIcons(context).chevronDown,
+                      ),
+                  ],
+                ),
               ),
             ),
             AppIconButton(
@@ -112,7 +123,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               'Internet ',
             ),
             AppText.screenName(
-              'online',    //TODO: XXXXXX Get online status
+              'online', //TODO: XXXXXX Get online status
               color: ConstantColors.primaryLinksysBlue,
             ),
           ],
@@ -148,12 +159,12 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     List<Widget> icons = [];
     for (int i = 0; i < wifiCount; i++) {
       icons.add(_circleIcon(
-        //TODO: XXXXXX Get wifi signal
+          //TODO: XXXXXX Get wifi signal
           image: const AssetImage('assets/images/wifi_signal_3.png')));
     }
     return _infoTile(
       count: wifiCount,
-      descripition: 'WiFi networks active',  //TODO: XXXXXX Get active status??
+      descripition: 'WiFi networks active', //TODO: XXXXXX Get active status??
       icons: icons,
       onTap: () {
         ref.read(navigationsProvider.notifier).push(WifiListPath());
@@ -182,7 +193,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     }
     return _infoTile(
       count: nodes.length,
-      descripition: 'Nodes online',  //TODO: XXXXXX Get Node online status
+      descripition: 'Nodes online', //TODO: XXXXXX Get Node online status
       icons: icons,
       onTap: () {
         ref.read(navigationsProvider.notifier).push(TopologyPath());
@@ -209,7 +220,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     }
     return _infoTile(
       count: connectedDevices.length,
-      descripition: 'Devices online',  //TODO: XXXXXX which online deivce??
+      descripition: 'Devices online', //TODO: XXXXXX which online deivce??
       icons: icons,
       onTap: () {
         ref.read(navigationsProvider.notifier).push(DeviceListPath());
