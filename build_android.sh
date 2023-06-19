@@ -4,7 +4,7 @@ function build() {
   type=$2
   env=$3
   hasPicker=true
-  if ["type" = "appbundle" ]; then
+  if [ "type" = "appbundle" ]; then
     hasPicker=false
   fi
   echo start building "$conf" "$type" "$env" process...
@@ -27,7 +27,7 @@ function copyFiles() {
   type=$1
   conf=$2
   env=$3
-  if ["$env" = "prod"]; then
+  if [ "$env" = "prod" ]; then
     env=""
   else
     env="-$env"
