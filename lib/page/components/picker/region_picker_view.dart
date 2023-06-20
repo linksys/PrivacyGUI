@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/auth_provider.dart';
-import 'package:linksys_moab/network/http/model/region_code.dart';
+import 'package:linksys_moab/provider/auth/auth_provider.dart';
+import 'package:linksys_moab/core/cloud/model/region_code.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';

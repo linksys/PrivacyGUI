@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/model/router/device.dart';
+import 'package:linksys_moab/core/jnap/models/device.dart';
 
 class IpDetailsState extends Equatable {
   final String ipv4WANType;

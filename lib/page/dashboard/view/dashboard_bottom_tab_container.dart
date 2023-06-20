@@ -9,7 +9,7 @@ import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import 'package:linksys_moab/util/debug_mixin.dart';
-import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/theme.dart';

@@ -12,8 +12,6 @@ class DevicesPath extends DashboardPath {
         return const DeviceDetailView();
       case EditDeviceNamePath:
         return const EditDeviceNameView();
-      case OfflineDeviceListPath:
-        return const OfflineDeviceListView();
       default:
         return const Center();
     }
@@ -31,8 +29,6 @@ class DeviceDetailPath extends DevicesPath {
 }
 
 class EditDeviceNamePath extends DevicesPath {}
-
-class OfflineDeviceListPath extends DevicesPath {}
 
 class EditDeviceIconPath extends DevicesPath with ReturnablePath {
   @override

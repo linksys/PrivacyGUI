@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/core/utils/logger.dart';
 
 class LinksysRouteInformationParser
     extends RouteInformationParser<List<BasePath>> {

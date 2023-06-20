@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/page/linkup/view/linkup_view.dart';
 import '_model.dart';
 
@@ -8,9 +7,6 @@ import 'package:linksys_moab/page/dashboard/view/_view.dart';
 import 'base_path.dart';
 
 abstract class DashboardPath extends BasePath {
-  @override
-  PageConfig get pageConfig =>
-      super.pageConfig..themeData = MoabTheme.dashboardLightModeData;
 
   @override
   Widget buildPage() {

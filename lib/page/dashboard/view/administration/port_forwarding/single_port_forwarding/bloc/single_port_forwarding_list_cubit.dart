@@ -1,9 +1,9 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/model/router/single_port_forwarding_rule.dart';
-import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
-import 'package:linksys_moab/repository/router/commands/_commands.dart';
-import 'package:linksys_moab/repository/router/router_repository.dart';
+import 'package:linksys_moab/core/jnap/models/single_port_forwarding_rule.dart';
+import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
+import 'package:linksys_moab/core/jnap/extensions/_extensions.dart';
+import 'package:linksys_moab/core/jnap/router_repository.dart';
 
 part 'single_port_forwarding_list_state.dart';
 
@@ -16,16 +16,16 @@ class SinglePortForwardingListCubit
   final RouterRepository _repository;
 
   fetch() async {
-    _repository
-        .getSinglePortForwardingRules()
-        .then<JNAPSuccess?>((value) {
-          final rules = List.from(value.output['rules']).map((e) => SinglePortForwardingRule.fromJson(e)).toList();
-          final int maxRules = value.output['maxRules'] ?? 50;
-          final int maxDesc = value.output['maxDescriptionLength'] ?? 32;
-          emit(state.copyWith(rules: rules, maxRules: maxRules, maxDescriptionLength: maxDesc));
-          return null;
-    })
-        .onError(
+    _repository.getSinglePortForwardingRules().then<JNAPSuccess?>((value) {
+      final rules = List.from(value.output['rules'])
+          .map((e) => SinglePortForwardingRule.fromJson(e))
+          .toList();
+      final int maxRules = value.output['maxRules'] ?? 50;
+      final int maxDesc = value.output['maxDescriptionLength'] ?? 32;
+      emit(state.copyWith(
+          rules: rules, maxRules: maxRules, maxDescriptionLength: maxDesc));
+      return null;
+    }).onError(
       (error, stackTrace) {
         addError(error as JNAPError, stackTrace);
         return null;
@@ -33,7 +33,7 @@ class SinglePortForwardingListCubit
     );
   }
 
-  bool isExceedMax(){
+  bool isExceedMax() {
     return state.maxRules == state.rules.length;
   }
 }

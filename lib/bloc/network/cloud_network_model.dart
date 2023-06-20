@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/repository/model/cloud_network_model.dart';
+import 'package:linksys_moab/core/cloud/model/cloud_network_model.dart';
 
 class CloudNetworkModel extends Equatable {
   final Network network;
@@ -10,7 +10,7 @@ class CloudNetworkModel extends Equatable {
     required this.isOnline,
   });
 
-Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'network': network.toJson(),
       'isOnline': isOnline,

@@ -1,0 +1,34 @@
+import 'package:linksys_moab/core/jnap/models/radio_info.dart';
+import 'package:linksys_moab/core/jnap/actions/better_action.dart';
+import 'package:linksys_moab/core/jnap/jnap_command_queue.dart';
+import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
+import 'package:linksys_moab/core/jnap/router_repository.dart';
+
+extension WirelessApService on RouterRepository {
+  Future<JNAPSuccess> getRadioInfo() async {
+    final command = await createCommand(JNAPAction.getRadioInfo.actionValue,
+        needAuth: true);
+
+    final result = await CommandQueue().enqueue(command);
+    return handleJNAPResult(result) as JNAPSuccess;
+  }
+
+  Future<JNAPSuccess> getWPSServerSessionStatus() async {
+    final command = await createCommand(
+        JNAPAction.getWPSServerSessionStatus.actionValue,
+        needAuth: true);
+
+    final result = await CommandQueue().enqueue(command);
+    return handleJNAPResult(result) as JNAPSuccess;
+  }
+
+  Future<JNAPSuccess> setRadioSettings(
+      List<NewRadioSettings> radioSettings) async {
+    final command = await createCommand(JNAPAction.setRadioSettings.actionValue,
+        needAuth: true,
+        data: {'radios': radioSettings.map((e) => e.toJson()).toList()});
+
+    final result = await CommandQueue().enqueue(command);
+    return handleJNAPResult(result) as JNAPSuccess;
+  }
+}

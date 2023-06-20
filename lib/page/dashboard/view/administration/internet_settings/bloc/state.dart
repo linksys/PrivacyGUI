@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/model/router/wan_status.dart';
+import 'package:linksys_moab/core/jnap/models/wan_status.dart';
 
 class InternetSettingsState extends Equatable {
   final String ipv4ConnectionType;

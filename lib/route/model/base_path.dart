@@ -3,11 +3,10 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/design/themes.dart';
 import 'package:linksys_moab/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_moab/page/landing/view/_view.dart';
 
-import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/core/utils/logger.dart';
 
 enum PageNavigationType { back, close, none }
 
@@ -18,7 +17,6 @@ class PathConfig {
 
 class PageConfig {
   PageNavigationType navType = PageNavigationType.back;
-  ThemeData themeData = MoabTheme.mainLightModeData;
   bool isFullScreenDialog = false;
   bool ignoreAuthChanged = false;
   bool ignoreConnectivityChanged = false;

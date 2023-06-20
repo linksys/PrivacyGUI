@@ -8,7 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
-import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../firebase_options.dart';

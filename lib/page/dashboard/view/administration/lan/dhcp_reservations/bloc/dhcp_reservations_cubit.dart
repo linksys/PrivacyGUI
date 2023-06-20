@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
-import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
+import 'package:linksys_moab/core/jnap/router_repository.dart';
+import 'package:linksys_moab/core/utils/logger.dart';
 
 import 'dhcp_reservations_state.dart';
 

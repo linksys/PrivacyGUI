@@ -2,21 +2,21 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/account/account_provider.dart';
-import 'package:linksys_moab/bloc/auth/auth_provider.dart';
-import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
-import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
+import 'package:linksys_moab/provider/account/account_provider.dart';
+import 'package:linksys_moab/provider/auth/auth_provider.dart';
+import 'package:linksys_moab/provider/connectivity/_connectivity.dart';
+import 'package:linksys_moab/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/constants/_constants.dart';
-import 'package:linksys_moab/model/router/device_info.dart';
-import 'package:linksys_moab/repository/router/providers/polling_provider.dart';
+import 'package:linksys_moab/core/jnap/models/device_info.dart';
+import 'package:linksys_moab/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../localization/localization_hook.dart';
 import '../../../route/model/dashboard_path.dart';
-import '../../../util/logger.dart';
+import '../../../core/utils/logger.dart';
 import '../../components/views/arguments_view.dart';
 
 class PrepareDashboardView extends ArgumentsConsumerStatefulView {

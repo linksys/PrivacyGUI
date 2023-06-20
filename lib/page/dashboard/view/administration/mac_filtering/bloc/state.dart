@@ -8,7 +8,7 @@ enum MacFilterStatus {
 
 class MacFilteringState extends Equatable {
   final MacFilterStatus status;
-  final List<ProfileDevice> selectedDevices;
+  final List<DeviceDetailInfo> selectedDevices;
 
   @override
   List<Object> get props => [status, selectedDevices];
@@ -27,7 +27,7 @@ class MacFilteringState extends Equatable {
 
   MacFilteringState copyWith({
     MacFilterStatus? status,
-    List<ProfileDevice>? selectedDevices,
+    List<DeviceDetailInfo>? selectedDevices,
   }) {
     return MacFilteringState(
       status: status ?? this.status,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/auth_provider.dart';
+import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -36,10 +36,11 @@ class _CloudForgotPasswordViewState
     final data = ref.watch(authProvider);
     return data.when(
         data: _contentView,
-        error: (_, __) => const Center(child: AppText.descriptionMain('Something wrong here'),),
-        loading: () =>
-            AppFullScreenSpinner(text: getAppLocalizations(context).processing));
-
+        error: (_, __) => const Center(
+              child: AppText.descriptionMain('Something wrong here'),
+            ),
+        loading: () => AppFullScreenSpinner(
+            text: getAppLocalizations(context).processing));
   }
 
   Widget _contentView(AuthState state) {

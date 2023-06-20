@@ -7,26 +7,23 @@ import 'dart:typed_data';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:intl/intl.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/model/router/device.dart';
-import 'package:linksys_moab/network/http/model/cloud_app.dart';
-import 'package:linksys_moab/network/http/model/cloud_login_certs.dart';
+import 'package:linksys_moab/core/jnap/models/device.dart';
 import 'package:linksys_moab/util/uuid.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'bloc/device/state.dart';
-import 'util/logger.dart';
+import 'core/utils/logger.dart';
 import 'validator_rules/_validator_rules.dart';
 
 class Utils {
   static const String NoSpeedCalculationText = "-----";
   static const bool ReleaseMode =
-  bool.fromEnvironment('dart.vm.product', defaultValue: false);
+      bool.fromEnvironment('dart.vm.product', defaultValue: false);
 
   static String formatDuration(Duration d) {
     var seconds = d.inSeconds;
@@ -56,22 +53,21 @@ class Utils {
     final Duration timeAmount = Duration(seconds: timeInSecond);
     final String m = timeAmount.inMinutes.remainder(60).toString();
     final String s =
-    timeAmount.inSeconds.remainder(60).toString().padLeft(2, '0');
+        timeAmount.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$m:$s';
   }
 
   static String formatTimeInterval(int startTimeInSecond, int endTimeInSecond) {
     bool isNextDay = startTimeInSecond > endTimeInSecond;
-    return '${formatTimeAmPm(startTimeInSecond)} - ${formatTimeAmPm(
-        endTimeInSecond)} ${isNextDay ? 'next day' : ''}';
+    return '${formatTimeAmPm(startTimeInSecond)} - ${formatTimeAmPm(endTimeInSecond)} ${isNextDay ? 'next day' : ''}';
   }
 
   static String formatTimeAmPm(int timeInSecond) {
     final Duration timeAmount = Duration(seconds: timeInSecond);
     final String h =
-    timeAmount.inHours.remainder(12).toString().padLeft(2, '0');
+        timeAmount.inHours.remainder(12).toString().padLeft(2, '0');
     final String m =
-    timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
+        timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
     final String ampm = timeAmount.inHours.remainder(24) >= 12 ? 'pm' : 'am';
     return '$h:$m $ampm';
   }
@@ -79,14 +75,14 @@ class Utils {
   static String formatTimeHM(int timeInSecond) {
     final Duration timeAmount = Duration(seconds: timeInSecond);
     final String h =
-    timeAmount.inHours.remainder(24).toString().padLeft(2, '0');
+        timeAmount.inHours.remainder(24).toString().padLeft(2, '0');
     final String m =
-    timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
+        timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
     return '$h hr,$m min';
   }
 
-  static Map<String, bool> weeklyTransform(BuildContext context,
-      List<bool> weeklyBool) {
+  static Map<String, bool> weeklyTransform(
+      BuildContext context, List<bool> weeklyBool) {
     final weeklyStr = [
       getAppLocalizations(context).weekly_sunday,
       getAppLocalizations(context).weekly_monday,
@@ -101,8 +97,8 @@ class Utils {
         .map((key, value) => MapEntry(weeklyStr[key], value));
   }
 
-  static List<String> toWeeklyStringList(BuildContext context,
-      List<bool> weeklyBool) {
+  static List<String> toWeeklyStringList(
+      BuildContext context, List<bool> weeklyBool) {
     final weeklyStr = [
       getAppLocalizations(context).weekly_sunday,
       getAppLocalizations(context).weekly_monday,
@@ -125,34 +121,23 @@ class Utils {
     const suffixes = ["B", "Kb", "Mb", "Gb", "Tb", "Pb"];
     var i = (log(bytes) / log(1024)).floor();
     var number = (bytes / pow(1024, i));
-    return '${(number).toStringAsFixed(
-        number.truncateToDouble() == number ? 0 : decimals)} ${suffixes[i]}';
+    return '${(number).toStringAsFixed(number.truncateToDouble() == number ? 0 : decimals)} ${suffixes[i]}';
   }
 
   static Size getScreenSize(BuildContext context) {
-    return MediaQuery
-        .of(context)
-        .size;
+    return MediaQuery.of(context).size;
   }
 
   static double getScreenWidth(BuildContext context) {
-    return MediaQuery
-        .of(context)
-        .size
-        .width;
+    return MediaQuery.of(context).size.width;
   }
 
   static double getScreenHeight(BuildContext context) {
-    return MediaQuery
-        .of(context)
-        .size
-        .height;
+    return MediaQuery.of(context).size.height;
   }
 
   static double getScreenRatio(BuildContext context) {
-    return MediaQuery
-        .of(context)
-        .devicePixelRatio;
+    return MediaQuery.of(context).devicePixelRatio;
   }
 
   static Size getPhysicalScreenSize(BuildContext context) {
@@ -168,38 +153,21 @@ class Utils {
   }
 
   static double getTextScaleFactor(BuildContext context) {
-    return MediaQuery
-        .of(context)
-        .textScaleFactor;
+    return MediaQuery.of(context).textScaleFactor;
   }
 
   static double getTopSafeAreaPadding(BuildContext context) {
-    return MediaQuery
-        .of(context)
-        .padding
-        .top;
+    return MediaQuery.of(context).padding.top;
   }
 
   static double getBottomSafeAreaPadding(BuildContext context) {
-    return MediaQuery
-        .of(context)
-        .padding
-        .bottom;
+    return MediaQuery.of(context).padding.bottom;
   }
 
   static double getSafeAreaHeight(BuildContext context) {
     return getScreenHeight(context) -
         getTopSafeAreaPadding(context) -
         getBottomSafeAreaPadding(context);
-  }
-
-  static Future<DeviceInfo> fetchDeviceInfo() async {
-    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-    final os = Platform.operatingSystem;
-    final infoMap = await _deviceInfoMap(deviceInfo);
-    infoMap['os'] = os;
-    infoMap['systemLocale'] = Intl.systemLocale.replaceFirst('_', '-');
-    return DeviceInfo.fromJson(infoMap);
   }
 
   static Future<Map<String, dynamic>> _deviceInfoMap(
@@ -291,7 +259,7 @@ class Utils {
   static Future<bool> canUseBiometrics() async {
     final LocalAuthentication auth = LocalAuthentication();
     final List<BiometricType> availableBiometrics =
-    await auth.getAvailableBiometrics();
+        await auth.getAvailableBiometrics();
     return await auth.canCheckBiometrics && availableBiometrics.isNotEmpty;
   }
 
@@ -301,30 +269,6 @@ class Utils {
     final bool didAuthenticate = await auth.authenticate(
         localizedReason: "Please authenticate to go to next step");
     return didAuthenticate;
-  }
-
-  static Future<bool> checkCertValidation() async {
-    const storage = FlutterSecureStorage();
-    String? privateKey = await storage.read(key: linksysPrefCloudPrivateKey);
-    String? cert = await storage.read(key: linksysPrefCloudCertDataKey);
-
-    final prefs = await SharedPreferences.getInstance();
-    bool isKeyExist = prefs.containsKey(linksysPrefCloudPublicKey) &
-    (privateKey != null) &
-    (cert != null);
-    if (!isKeyExist) {
-      return false;
-    }
-    final certData = CloudDownloadCertData.fromJson(jsonDecode(cert ?? ''));
-    final expiredDate = DateTime.parse(certData.expiration);
-    if (expiredDate.millisecondsSinceEpoch -
-        DateTime
-            .now()
-            .millisecondsSinceEpoch <
-        0) {
-      return false;
-    }
-    return true;
   }
 
   static String stringBase64Encode(String value) {
@@ -346,8 +290,8 @@ class Utils {
       return 0;
     }
     return (((((int.parse(octets[0]) * 256) + int.parse(octets[1])) * 256) +
-        int.parse(octets[2])) *
-        256) +
+                int.parse(octets[2])) *
+            256) +
         int.parse(octets[3]);
   }
 
@@ -390,7 +334,7 @@ class Utils {
       return false;
     }
     final subnetMaskTestBits =
-    List.filled(prefixLength, '1').join().padRight(32, '0');
+        List.filled(prefixLength, '1').join().padRight(32, '0');
     if (subnetMaskBits != subnetMaskTestBits ||
         prefixLength < minNetworkPrefixLength ||
         prefixLength > maxNetworkPrefixLength) {
@@ -402,18 +346,19 @@ class Utils {
 
   static String prefixLengthToSubnetMask(int prefixLength) {
     final subnetMaskTestBits =
-    List.filled(prefixLength, '1').join().padRight(32, '0');
+        List.filled(prefixLength, '1').join().padRight(32, '0');
     return RegExp(r'.{1,8}')
         .allMatches(subnetMaskTestBits)
         .map((e) => int.parse(e.group(0)!, radix: 2))
-        .toList().join('.');
+        .toList()
+        .join('.');
   }
 
   static int subnetMaskToPrefixLength(String subnetMask) {
     final prefixLength = ipToNum(subnetMask).toRadixString(2).indexOf('0');
 
-    if (!isValidSubnetMask(
-        subnetMask, minNetworkPrefixLength: 1, maxNetworkPrefixLength: 31)) {
+    if (!isValidSubnetMask(subnetMask,
+        minNetworkPrefixLength: 1, maxNetworkPrefixLength: 31)) {
       throw Exception('Invalid subnet mask passed');
     }
 
@@ -428,11 +373,16 @@ class Utils {
      * @params {Integer} maxUsers [optional] - An integer containing the current # of users the DHCP Range should allow; used if lastClientIPAddress is not passed in
      * @return {Boolean}
   */
-  static bool isRouterIPInDHCPRange(String routerIPAddress, String firstClientIPAddress, [String? lastClientIPAddress, int? maxUsers]) {
+  static bool isRouterIPInDHCPRange(
+      String routerIPAddress, String firstClientIPAddress,
+      [String? lastClientIPAddress, int? maxUsers]) {
     final ipAddressNum = ipToNum(routerIPAddress);
     final firstClientIPAddressNum = ipToNum(firstClientIPAddress);
-    final lastClientIPAddressNum = lastClientIPAddress != null ? ipToNum(lastClientIPAddress) : firstClientIPAddressNum + maxUsers! - 1;
-    return ipAddressNum >= firstClientIPAddressNum && ipAddressNum <= lastClientIPAddressNum;
+    final lastClientIPAddressNum = lastClientIPAddress != null
+        ? ipToNum(lastClientIPAddress)
+        : firstClientIPAddressNum + maxUsers! - 1;
+    return ipAddressNum >= firstClientIPAddressNum &&
+        ipAddressNum <= lastClientIPAddressNum;
   }
 
   /*
@@ -442,12 +392,14 @@ class Utils {
      * @params {String} lastClientIPAddress - A string representing the end IP of the DHCP Range
      * @return {Integer}
   */
-  static int getMaxUserForDHCPRange(String routerIPAddress, String firstClientIPAddress, String lastClientIPAddress) {
+  static int getMaxUserForDHCPRange(String routerIPAddress,
+      String firstClientIPAddress, String lastClientIPAddress) {
     final firstClientIPAddressNum = ipToNum(firstClientIPAddress);
     final lastClientIPAddressNum = ipToNum(lastClientIPAddress);
     var maxUsers = lastClientIPAddressNum - firstClientIPAddressNum;
 
-    if (!isRouterIPInDHCPRange(routerIPAddress, firstClientIPAddress, lastClientIPAddress)) {
+    if (!isRouterIPInDHCPRange(
+        routerIPAddress, firstClientIPAddress, lastClientIPAddress)) {
       maxUsers++;
     }
     return maxUsers;
@@ -459,13 +411,13 @@ class Utils {
      * @params {Integer} maxUsers - An integer containing the current # of users the DHCP Range should allow
      * @return {String}
   */
-  static String getEndDHCPRangeForMaxUsers(String firstClientIPAddress, int maxUsers) {
+  static String getEndDHCPRangeForMaxUsers(
+      String firstClientIPAddress, int maxUsers) {
     final firstClientIPAddressNum = ipToNum(firstClientIPAddress);
     final lastClientIPAddressNum = firstClientIPAddressNum + maxUsers - 1;
 
     return numToIp(lastClientIPAddressNum);
   }
-
 
   /*
      * @description returns an Integer for the max # of users that could be set, based on the 1st DHCP Client IP Address and the SubnetMask of the Router
@@ -484,9 +436,15 @@ class Utils {
     final firstClientIPAddressBinary = firstClientIPAddressNum.toRadixString(2);
 
     final startingIPAddress = int.parse(
-        subnetMaskNum.toRadixString(2).substring(0, currentPrefixLength) +
-            firstClientIPAddressBinary.substring(firstClientIPAddressBinary.length - (32 -currentPrefixLength), firstClientIPAddressBinary.length), radix: 2) - subnetMaskNum;
-    if (isRouterIPInDHCPRange(routerIPAddress, firstClientIPAddress, null, maxUsers)) {
+            subnetMaskNum.toRadixString(2).substring(0, currentPrefixLength) +
+                firstClientIPAddressBinary.substring(
+                    firstClientIPAddressBinary.length -
+                        (32 - currentPrefixLength),
+                    firstClientIPAddressBinary.length),
+            radix: 2) -
+        subnetMaskNum;
+    if (isRouterIPInDHCPRange(
+        routerIPAddress, firstClientIPAddress, null, maxUsers)) {
       maxUserLimit--;
     }
 
@@ -608,7 +566,8 @@ class Utils {
     }
   }
 
-  static IconData getWifiSignalIconData(BuildContext context, int signalStrength) {
+  static IconData getWifiSignalIconData(
+      BuildContext context, int signalStrength) {
     switch (getWifiSignalLevel(signalStrength)) {
       case NodeSignalLevel.excellent:
         return AppTheme.of(context).icons.characters.signalstrength4;
@@ -619,7 +578,7 @@ class Utils {
       case NodeSignalLevel.weak:
         return AppTheme.of(context).icons.characters.signalstrength1;
       case NodeSignalLevel.none:
-        return AppTheme.of(context).icons.characters.signalstrength0;  // Default
+        return AppTheme.of(context).icons.characters.signalstrength0; // Default
     }
   }
 
@@ -655,7 +614,8 @@ class Utils {
 
     bool isAndroidDevice = false;
     if (device.friendlyName != null) {
-      final regExp = RegExp(r'^Android$|^android-[a-fA-F0-9]{16}.*|^Android-[0-9]+');
+      final regExp =
+          RegExp(r'^Android$|^android-[a-fA-F0-9]{16}.*|^Android-[0-9]+');
       isAndroidDevice = regExp.hasMatch(device.friendlyName!);
     }
 
@@ -673,7 +633,7 @@ class Utils {
             '${device.unit.operatingSystem!} ${device.model.deviceType}';
         if (manufacturer != null) {
           // e.g. 'Samsung Android Oreo Mobile'
-          androidDeviceName = manufacturer+ androidDeviceName;
+          androidDeviceName = manufacturer + androidDeviceName;
         }
       }
     }
@@ -696,13 +656,14 @@ class Utils {
 
   // String converter
   static String fullStringEncoded(String value) {
-    final utf8Encoded = String.fromCharCodes(Uint8List.fromList(utf8.encode(value)));
+    final utf8Encoded =
+        String.fromCharCodes(Uint8List.fromList(utf8.encode(value)));
     final b64 = base64Encode(utf8Encoded.codeUnits);
     final uriFull = Uri.encodeQueryComponent(b64);
     logger.d('u: $utf8Encoded, b: $b64, i: $uriFull');
     return uriFull;
-
   }
+
   static String fullStringDecoded(String encoded) {
     final uriBack = Uri.decodeComponent(encoded);
     final b64Back = String.fromCharCodes(base64Decode(uriBack));

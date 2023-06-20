@@ -7,7 +7,7 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
-import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';

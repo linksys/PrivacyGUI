@@ -4,7 +4,7 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import '../../../util/logger.dart';
+import '../../../core/utils/logger.dart';
 
 class DebugDeviceInfoView extends ConsumerStatefulWidget {
   const DebugDeviceInfoView({Key? key}) : super(key: key);

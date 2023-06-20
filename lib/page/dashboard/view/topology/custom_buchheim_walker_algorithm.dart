@@ -4,7 +4,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:graphview/GraphView.dart';
 
-import '../../../../util/logger.dart';
+import '../../../../core/utils/logger.dart';
 
 class CustomBuchheimWalkerAlgorithm extends Algorithm {
   Map<Node, BuchheimWalkerNodeData> nodeData = {};

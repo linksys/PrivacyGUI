@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:linksys_moab/network/http/linksys_http_client.dart';
-import 'package:linksys_moab/network/http/model/base_response.dart';
-import 'package:linksys_moab/repository/linksys_cloud_repository.dart';
-import 'package:linksys_moab/repository/model/cloud_session_model.dart';
+import 'package:linksys_moab/core/http/linksys_http_client.dart';
+import 'package:linksys_moab/core/cloud/model/cloud_session_model.dart';
+import 'package:linksys_moab/core/cloud/model/error_response.dart';
+import 'package:linksys_moab/core/cloud/linksys_cloud_repository.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:riverpod/riverpod.dart';
@@ -61,7 +61,6 @@ void main() {
         });
       } catch (error) {
         expect(error, isA<ErrorResponse>());
-        
       }
     });
   });

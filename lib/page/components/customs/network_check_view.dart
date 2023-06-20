@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
+import 'package:linksys_moab/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_moab/util/permission.dart';
 import 'package:linksys_widgets/widgets/base/gap.dart';

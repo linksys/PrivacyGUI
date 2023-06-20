@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/account/account_provider.dart';
-import 'package:linksys_moab/bloc/account/account_state.dart';
-import 'package:linksys_moab/bloc/auth/_auth.dart';
+import 'package:linksys_moab/provider/account/account_provider.dart';
+import 'package:linksys_moab/provider/account/account_state.dart';
+import 'package:linksys_moab/provider/auth/_auth.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/route/_route.dart';
@@ -13,7 +13,6 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:styled_text/styled_text.dart';
 
-import '../../../../bloc/internet_check/cubit.dart';
 import '../../../../route/model/create_account_path.dart';
 
 class AccountView extends ConsumerStatefulWidget {
@@ -46,9 +45,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
     return StyledAppPageView(
       scrollable: true,
       title: 'Account',
-      child: loginType == LoginType.remote
-          ? _remote(state)
-          : _local(state),
+      child: loginType == LoginType.remote ? _remote(state) : _local(state),
     );
   }
 
@@ -183,7 +180,6 @@ class _AccountViewState extends ConsumerState<AccountView> {
           AppPrimaryButton(
             'Create an account',
             onTap: () {
-              context.read<InternetCheckCubit>().getInternetConnectionStatus();
               ref.read(navigationsProvider.notifier).push(
                   CreateCloudAccountPath()
                     ..args = {'config': 'LOCALAUTHCREATEACCOUNT'});

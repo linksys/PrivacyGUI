@@ -8,7 +8,7 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/bloc/cubit.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/bloc/state.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/topology_node.dart';
-import 'package:linksys_moab/repository/router/router_repository.dart';
+import 'package:linksys_moab/core/jnap/router_repository.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
@@ -20,7 +20,7 @@ import 'package:linksys_widgets/widgets/animation/blink.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
-import '../../../../util/logger.dart';
+import '../../../../core/utils/logger.dart';
 import 'custom_buchheim_walker_algorithm.dart';
 import 'custom_tree_edge_renderer.dart';
 

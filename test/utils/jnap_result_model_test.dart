@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:linksys_moab/network/jnap/result/jnap_result.dart';
+import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -68,7 +68,8 @@ void main() {
       final actual = JNAPResult.fromJson(jsonDecode(sample));
       expect(actual.runtimeType, JNAPSuccess);
       expect(actual.result, 'OK');
-      expect((actual as JNAPSuccess).output['isWirelessSchedulerEnabled'], false);
+      expect(
+          (actual as JNAPSuccess).output['isWirelessSchedulerEnabled'], false);
     });
 
     test('test error result', () async {
@@ -83,7 +84,8 @@ void main() {
 
       expect(actual.runtimeType, JNAPError);
       expect(actual.result, '_ErrorInvalidInput');
-      expect((actual as JNAPError).error, 'Validation of element "SetSimpleWiFiSettings" failed due to unexpected count (0) of child element "simpleWiFiSettings"');
+      expect((actual as JNAPError).error,
+          'Validation of element "SetSimpleWiFiSettings" failed due to unexpected count (0) of child element "simpleWiFiSettings"');
     });
   });
 }

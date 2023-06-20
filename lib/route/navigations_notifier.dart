@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/core/utils/logger.dart';
 
 Future<dynamic> showPopup({required WidgetRef ref, required BasePath config}) {
   return ref.read(navigationsProvider.notifier).pushAndWait(config);

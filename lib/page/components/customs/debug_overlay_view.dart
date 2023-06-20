@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
-import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
+import 'package:linksys_moab/provider/connectivity/_connectivity.dart';
+import 'package:linksys_moab/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_moab/util/permission.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';

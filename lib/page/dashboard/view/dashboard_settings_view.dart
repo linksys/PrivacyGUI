@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/auth_provider.dart';
+import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -9,7 +9,7 @@ import 'package:linksys_moab/page/components/customs/enabled_with_opacity_widget
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 
-import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
@@ -26,7 +26,6 @@ class DashboardSettingsView extends ConsumerStatefulWidget {
 }
 
 class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
-
   @override
   void initState() {
     super.initState();

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/auth_provider.dart';
+import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/network/http/model/base_response.dart';
+import 'package:linksys_moab/core/cloud/model/error_response.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -10,7 +10,7 @@ import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
-import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -95,8 +95,8 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
         error: (_, __) => const Center(
               child: AppText.descriptionMain('Something happen here'),
             ),
-        loading: () =>
-            AppFullScreenSpinner(text: getAppLocalizations(context).processing));
+        loading: () => AppFullScreenSpinner(
+            text: getAppLocalizations(context).processing));
     // return BlocConsumer<AuthBloc, AuthState>(
     //     listenWhen: (previous, current) {
     //       if (previous is AuthOnCreateAccountState &&

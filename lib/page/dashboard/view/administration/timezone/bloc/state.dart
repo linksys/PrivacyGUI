@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/model/router/timezone.dart';
+import 'package:linksys_moab/core/jnap/models/timezone.dart';
 
 class TimezoneState extends Equatable {
   final bool isDaylightSaving;
@@ -8,8 +8,7 @@ class TimezoneState extends Equatable {
   final String? error;
 
   @override
-  List<Object?> get props =>
-      [isDaylightSaving, timezoneId, error];
+  List<Object?> get props => [isDaylightSaving, timezoneId, error];
 
   const TimezoneState({
     required this.isDaylightSaving,
@@ -39,5 +38,4 @@ class TimezoneState extends Equatable {
       error: error ?? this.error,
     );
   }
-
 }

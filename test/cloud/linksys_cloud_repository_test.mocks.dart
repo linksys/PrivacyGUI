@@ -8,9 +8,9 @@ import 'dart:convert' as _i5;
 import 'dart:typed_data' as _i8;
 
 import 'package:http/http.dart' as _i2;
-import 'package:linksys_moab/network/http/linksys_http_client.dart' as _i3;
-import 'package:linksys_moab/network/jnap/command/base_command.dart' as _i6;
-import 'package:linksys_moab/network/jnap/spec/jnap_spec.dart' as _i7;
+import 'package:linksys_moab/core/http/linksys_http_client.dart' as _i3;
+import 'package:linksys_moab/core/jnap/command/base_command.dart' as _i6;
+import 'package:linksys_moab/core/jnap/spec/jnap_spec.dart' as _i7;
 import 'package:mockito/mockito.dart' as _i1;
 
 // ignore_for_file: type=lint

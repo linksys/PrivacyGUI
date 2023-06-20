@@ -8,32 +8,25 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/app_lifecycle/cubit.dart';
-import 'package:linksys_moab/bloc/auth/auth_provider.dart';
-import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
+import 'package:linksys_moab/provider/auth/auth_provider.dart';
+import 'package:linksys_moab/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_moab/bloc/device/cubit.dart';
-import 'package:linksys_moab/bloc/internet_check/cubit.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
-import 'package:linksys_moab/bloc/profiles/cubit.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
-import 'package:linksys_moab/bloc/security/bloc.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/network/http/linksys_http_client.dart';
-import 'package:linksys_moab/network/jnap/better_action.dart';
-import 'package:linksys_moab/network/http/http_client.dart';
+import 'package:linksys_moab/core/http/linksys_http_client.dart';
+import 'package:linksys_moab/core/jnap/actions/better_action.dart';
 import 'package:linksys_moab/notification/notification_helper.dart';
-import 'package:linksys_moab/provider/provider_observer.dart';
-import 'package:linksys_moab/repository/account/cloud_account_repository.dart';
-import 'package:linksys_moab/repository/authenticate/impl/cloud_auth_repository.dart';
-import 'package:linksys_moab/repository/linksys_cloud_repository.dart';
-import 'package:linksys_moab/repository/networks/cloud_networks_repository.dart';
-import 'package:linksys_moab/repository/router/router_repository.dart';
+import 'package:linksys_moab/provider/logger_observer.dart';
+import 'package:linksys_moab/core/cloud/linksys_cloud_repository.dart';
+import 'package:linksys_moab/core/jnap/router_repository.dart';
 import 'package:linksys_moab/route/_route.dart';
 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:linksys_moab/util/logger.dart';
-import 'package:linksys_moab/util/storage.dart';
+import 'package:linksys_moab/core/utils/logger.dart';
+import 'package:linksys_moab/core/utils/storage.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'firebase_options.dart';
 
@@ -105,34 +98,21 @@ Widget _app() {
 
   return MultiRepositoryProvider(
     providers: [
-      RepositoryProvider(
-          create: (context) => CloudAuthRepository(MoabHttpClient())),
-      RepositoryProvider(create: (context) => CloudAccountRepository()),
       RepositoryProvider(create: (context) => routerRepository),
-      RepositoryProvider(create: (context) => CloudNetworksRepository()),
       RepositoryProvider(create: (context) => cloudRepository),
     ],
     child: MultiBlocProvider(
         providers: [
           BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
           BlocProvider(
-              create: (BuildContext context) =>
-                  ProfilesCubit(context.read<RouterRepository>())),
-          BlocProvider(
               create: (BuildContext context) => DeviceCubit(
                   routerRepository: context.read<RouterRepository>())),
           BlocProvider(
               create: (BuildContext context) =>
                   NodeCubit(context.read<RouterRepository>())),
-          BlocProvider(create: (BuildContext context) => SecurityBloc()),
           BlocProvider(
               create: (BuildContext context) => NetworkCubit(
-                    networksRepository: context.read<CloudNetworksRepository>(),
                     cloudRepository: context.read<LinksysCloudRepository>(),
-                    routerRepository: context.read<RouterRepository>(),
-                  )),
-          BlocProvider(
-              create: (BuildContext context) => InternetCheckCubit(
                     routerRepository: context.read<RouterRepository>(),
                   )),
           BlocProvider(

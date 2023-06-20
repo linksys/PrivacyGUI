@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/otp/otp.dart';
-import 'package:linksys_moab/network/http/model/cloud_communication_method.dart';
+import 'package:linksys_moab/provider/otp/otp.dart';
+import 'package:linksys_moab/core/cloud/model/cloud_communication_method.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
@@ -92,7 +92,6 @@ class OtpFlowViewState extends ConsumerState<OtpFlowView> {
   Widget _contentView(OtpState state) {
     return const AppPageView();
   }
-
 
   // _fetchToken() {
   //   String vToken = '';

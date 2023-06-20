@@ -4,19 +4,19 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/auth/auth_provider.dart';
-import 'package:linksys_moab/bloc/connectivity/connectivity_provider.dart';
-import 'package:linksys_moab/bloc/connectivity/connectivity_state.dart';
+import 'package:linksys_moab/provider/auth/auth_provider.dart';
+import 'package:linksys_moab/provider/connectivity/connectivity_provider.dart';
+import 'package:linksys_moab/provider/connectivity/connectivity_state.dart';
 import 'package:linksys_moab/constants/_constants.dart';
-import 'package:linksys_moab/network/http/linksys_http_client.dart';
-import 'package:linksys_moab/network/http/model/base_response.dart';
+import 'package:linksys_moab/core/http/linksys_http_client.dart';
+import 'package:linksys_moab/core/cloud/model/error_response.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_bottom_tab_container.dart';
-import 'package:linksys_moab/repository/router/providers/side_effect_provider.dart';
+import 'package:linksys_moab/core/jnap/providers/side_effect_provider.dart';
 import 'package:linksys_moab/route/linksys_page.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 
 import 'package:linksys_moab/util/analytics.dart';
-import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_widgets/theme/responsive_theme.dart';
 import 'package:universal_link_plugin/universal_link_plugin.dart';
 

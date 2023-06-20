@@ -5,7 +5,7 @@ import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
-import 'package:linksys_moab/repository/router/router_repository.dart';
+import 'package:linksys_moab/core/jnap/router_repository.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 

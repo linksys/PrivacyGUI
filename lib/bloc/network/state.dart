@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:linksys_moab/bloc/network/cloud_network_model.dart';
-import 'package:linksys_moab/model/router/network.dart';
+import 'package:linksys_moab/core/jnap/models/network.dart';
 
 class NetworkState extends Equatable {
   const NetworkState({
