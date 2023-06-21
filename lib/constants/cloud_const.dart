@@ -11,7 +11,7 @@ const kCloudAwareKey = 'CLOUD_AWARE_KEY';
 const kCloudAwareScheme = 'CLOUD_AWARE_SCHEME';
 
 const linksysCloudBaseUrl = 'linksyssmartwifi.com';
-const linksysCloudStatusBaseUrl = 'cloudhealth.lswf.net/cloud-availability/';
+const linksysCloudStatusBaseUrl = 'cloudhealth.lswf.net/cloud-availability';
 
 // Linksys PROD
 const kCloudEnvironmentConfigProd = {

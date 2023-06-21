@@ -66,7 +66,7 @@ mixin AvailabilityChecker {
 
   Future<AvailabilityInfo> testCloudAvailability() async {
     return _client
-        .get(Uri.parse(cloudEnvironmentConfig['kCloudStatus']))
+        .get(Uri.parse(cloudEnvironmentConfig[kCloudStatus]))
         .then((response) {
       final isCloudOk = json.decode(response.body)['cloudStatus'] == 'OK';
       return AvailabilityInfo(isCloudOk: isCloudOk);
