@@ -11,7 +11,7 @@ final navigationsProvider =
         (ref) => NavigationNotifier());
 
 class NavigationNotifier extends StateNotifier<List<BasePath>> {
-  NavigationNotifier() : super([HomePath()]);
+  NavigationNotifier({List<BasePath>? path}) : super(path ?? [HomePath()]);
 
   int get length => state.length;
 
