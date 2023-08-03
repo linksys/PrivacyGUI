@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/consts.dart';
@@ -73,7 +74,8 @@ class _HomeViewState extends ConsumerState<HomeView> {
         getAppLocalizations(context).login,
         key: const Key('home_view_button_login'),
         onTap: () async {
-          ref.read(navigationsProvider.notifier).push(AuthInputAccountPath());
+          // ref.read(navigationsProvider.notifier).push(AuthInputAccountPath());
+          context.go('/cloudLogin');
         },
       ),
       AppSecondaryButton(
