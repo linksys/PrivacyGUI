@@ -7,7 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/app_lifecycle/cubit.dart';
+import 'package:linksys_moab/page/dashboard/view/_view.dart';
+import 'package:linksys_moab/page/landing/view/home_view.dart';
+import 'package:linksys_moab/page/login/view/cloud_login_account_view.dart';
+import 'package:linksys_moab/page/login/view/cloud_login_traditional_password_view.dart';
 import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_moab/bloc/device/cubit.dart';
@@ -180,8 +185,11 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
       ),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      routerDelegate: ref.read(routerDelegateProvider),
-      routeInformationParser: LinksysRouteInformationParser(),
+      // routerDelegate: ref.read(routerDelegateProvider),
+      // routeInformationParser: LinksysRouteInformationParser(),
+      builder: (context, child) =>
+          AppResponsiveTheme(child: child ?? const Center()),
+      routerConfig: mainRouter,
     );
   }
 
@@ -225,3 +233,37 @@ class Logger extends ProviderObserver {
 }''');
   }
 }
+
+final mainRouter = GoRouter(
+  initialLocation: '/',
+  routes: [
+    homeRoute,
+    GoRoute(
+      path: '/dashboard',
+      builder: (context, state) => DashboardHomeView(),
+    ),
+  ],
+  debugLogDiagnostics: true,
+);
+
+final homeRoute = GoRoute(
+  path: '/',
+  builder: (context, state) => const HomeView(),
+  routes: [
+    loginRoute
+    //setupRoute
+  ],
+);
+final loginRoute = GoRoute(
+  path: 'cloudLogin',
+  builder: (context, state) => const CloudLoginAccountView(),
+  routes: [
+    GoRoute(
+      path: 'cloudLoginPassword',
+      builder: (context, state) => CloudLoginPasswordView(
+        args: state.queryParameters,
+      ),
+    ),
+  ],
+);
+final dashboardRoute = ShellRoute(routes: []);
