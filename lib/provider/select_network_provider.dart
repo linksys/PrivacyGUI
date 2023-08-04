@@ -6,6 +6,7 @@ import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/core/jnap/actions/better_action.dart';
 import 'package:linksys_moab/core/cloud/linksys_cloud_repository.dart';
 import 'package:linksys_moab/core/jnap/router_repository.dart';
+import 'package:linksys_moab/core/utils/nodes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final selectNetworkNotifierProvider =
@@ -22,8 +23,13 @@ class SelectNetworkNotifier extends AsyncNotifier<SelectNetworkModel> {
   Future<SelectNetworkModel> _getModel() async {
     final cloudRepository = ref.read(cloudRepositoryProvider);
     final routerRepository = ref.read(routerRepositoryProvider);
-    final networkModels =
-        await Future.wait((await cloudRepository.getNetworks()).map((e) async {
+    // For now, we only care about node routers
+    final networkModels = await Future.wait(
+        (await cloudRepository.getNetworks())
+            .where((element) => isNodeModel(
+                modelNumber: element.network.routerModelNumber,
+                hardwareVersion: element.network.routerHardwareVersion))
+            .map((e) async {
       bool isOnline = await routerRepository
           .send(
             JNAPAction.isAdminPasswordDefault,

@@ -233,6 +233,30 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'pattern': '^mx62'
   },
   {
+    'model': 'MBE7000',
+    'baseModel': 'MBE7000',
+    'seriesModel': 'MBE7000',
+    'isMeshRouter': false,
+    'isCognitiveMesh': true,
+    'pattern': '/^mbe70/i',
+  },
+  {
+    'model': 'LN11',
+    'baseModel': 'LN11',
+    'seriesModel': 'LN11',
+    'isMeshRouter': false,
+    'isCognitiveMesh': true,
+    'pattern': '/ln11/i',
+  },
+  {
+    'model': 'LN12',
+    'baseModel': 'LN12',
+    'seriesModel': 'LN12',
+    'isMeshRouter': false,
+    'isCognitiveMesh': true,
+    'pattern': '/ln12/i',
+  },
+  {
     'model': 'EA9350',
     'hardwareVersions': ['3'],
     'baseModel': 'EA9350',
@@ -253,6 +277,38 @@ const List<Map<String, dynamic>> _velopModelMap = [
   }
 ];
 
+// array describing the Children that are compatible with a given Parent Cognitive Mesh Node
+const List<Map<String, dynamic>> _cognitiveMeshCompatibilityMap = [
+  {
+    'parentModel': 'MX6200',
+    'compatibleChildren': [
+      {'model': 'MX6200'},
+      {'model': 'MBE7000'}
+    ]
+  },
+  {
+    'parentModel': 'MBE7000',
+    'compatibleChildren': [
+      {'model': 'MBE7000'},
+      {'model': 'MX6200'}
+    ]
+  },
+  {
+    'parentModel': 'LN11',
+    'compatibleChildren': [
+      {'model': 'LN11'},
+      {'model': 'LN12'}
+    ]
+  },
+  {
+    'parentModel': 'LN12',
+    'compatibleChildren': [
+      {'model': 'LN12'},
+      {'model': 'LN11'}
+    ]
+  }
+];
+
 dynamic doVelopModelTests({
   required String modelNumber,
   required String hardwareVersion,
@@ -261,8 +317,8 @@ dynamic doVelopModelTests({
 }) {
   var out = _velopModelMap.firstWhereOrNull((rule) {
     final List<String>? hwVersions = rule['hardwareVersions'];
-    return RegExp(rule['pattern']).hasMatch(modelNumber) &&
-        ((hwVersions?.indexOf(hardwareVersion) ?? -1) > -1);
+    return RegExp(rule['pattern'], caseSensitive: false).hasMatch(modelNumber) &&
+        ((hwVersions?.indexOf(hardwareVersion) ?? 0) > -1);
   })?[paramName];
 
   if (paramAlt != null && out == null) {

@@ -29,6 +29,7 @@ class _NodeOfflineCheckViewState extends ConsumerState<NodeOfflineCheckView> {
   Widget build(BuildContext context) {
     return StyledAppPageView(
       isCloseStyle: true,
+      scrollable: true,
       child: AppBasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).node_offline_check_title,

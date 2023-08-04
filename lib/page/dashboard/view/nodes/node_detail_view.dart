@@ -117,9 +117,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               ),
             ],
           ),
-          const AppGap.extraBig(),
+          // const AppGap.extraBig(),
           _nodeStatus(state),
-          const AppGap.big(),
+          // const AppGap.big(),
         ],
       ),
     );
