@@ -3,13 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
+import 'package:linksys_moab/core/utils/icon_rules.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/icons/icon_rules.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
@@ -119,7 +119,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           ),
           // const AppGap.extraBig(),
           _nodeStatus(state),
-          // const AppGap.big(),
+          const AppGap.semiSmall(),
         ],
       ),
     );

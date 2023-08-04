@@ -96,9 +96,9 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
               ),
             ],
           ),
-          const AppGap.extraBig(),
+          // const AppGap.extraBig(),
           _deviceStatus(state),
-          const AppGap.big(),
+          const AppGap.semiSmall(),
         ],
       ),
     );
@@ -165,22 +165,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             ],
           ),
         ),
-        Column(
-          children: [
-            Container(
-              height: AppTheme.of(context).spacing.extraBig,
-              width: AppTheme.of(context).spacing.extraBig,
-              alignment: Alignment.center,
-              child: AppIcon.big(
-                icon: AppTheme.of(context).icons.characters.profileDefault,
-              ),
-            ),
-            AppText.label(
-              'Timmy',
-              color: textColor,
-            ),
-          ],
-        ),
+        const Center(),
       ],
     );
   }

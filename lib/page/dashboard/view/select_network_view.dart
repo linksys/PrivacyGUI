@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_moab/core/utils/icon_rules.dart';
 import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -11,7 +12,6 @@ import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/service/cloud_network_service.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/icons/icon_rules.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -86,38 +86,41 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                       _navigationNotifier.clearAndPush(PrepareDashboardPath());
                     }
                   : null,
-              child: AppPadding(
-                padding: const AppEdgeInsets.symmetric(
-                  vertical: AppGapSize.regular,
-                ),
-                child: Row(
-                  children: [
-                    Image(
-                      image: AppTheme.of(context).images.devices.getByName(
-                            routerIconTest(
-                              modelNumber: state
-                                  .networks[index].network.routerModelNumber,
-                              hardwareVersion: state.networks[index].network
-                                  .routerHardwareVersion,
+              child: Opacity(
+                opacity: state.networks[index].isOnline ? 1 : 0.4,
+                child: AppPadding(
+                  padding: const AppEdgeInsets.symmetric(
+                    vertical: AppGapSize.regular,
+                  ),
+                  child: Row(
+                    children: [
+                      Image(
+                        image: AppTheme.of(context).images.devices.getByName(
+                              routerIconTest(
+                                modelNumber: state
+                                    .networks[index].network.routerModelNumber,
+                                hardwareVersion: state.networks[index].network
+                                    .routerHardwareVersion,
+                              ),
                             ),
+                        width: 60,
+                        height: 60,
+                      ),
+                      const AppGap.semiBig(),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AppText.descriptionMain(
+                            state.networks[index].network.friendlyName,
+                            color: state.networks[index].isOnline
+                                ? null
+                                : ConstantColors.textBoxTextGray,
                           ),
-                      width: 60,
-                      height: 60,
-                    ),
-                    const AppGap.semiBig(),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText.descriptionMain(
-                          state.networks[index].network.friendlyName,
-                          color: state.networks[index].isOnline
-                              ? null
-                              : ConstantColors.textBoxTextGray,
-                        ),
-                        const AppGap.small(),
-                      ],
-                    ),
-                  ],
+                          const AppGap.small(),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
