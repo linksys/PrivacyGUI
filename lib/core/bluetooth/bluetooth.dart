@@ -57,10 +57,9 @@ class BluetoothManager with JNAPCommandExecutor<JNAPResult> {
   BluetoothDevice? _connectedDevice;
 
   scan({int durationInSec = 10}) async {
-    FlutterBluePlus instance = FlutterBluePlus.instance;
     _subscription?.cancel();
     _results.clear();
-    _subscription = instance.scanResults.listen((results) {
+    _subscription = FlutterBluePlus.scanResults.listen((results) {
       final filtered = results
           .where((result) => _checkAdvertisementData(result.advertisementData));
       for (ScanResult result in filtered) {
@@ -79,7 +78,7 @@ class BluetoothManager with JNAPCommandExecutor<JNAPResult> {
     });
 
     logger.d('BT scan start');
-    await instance.startScan(
+    await FlutterBluePlus.startScan(
         timeout: Duration(seconds: durationInSec),
         withServices: [Guid(_jnapService)]);
     logger.d('BT scan done');

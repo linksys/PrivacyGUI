@@ -109,37 +109,6 @@ class _AdministrationViewState extends ConsumerState<AdministrationView> {
               ),
             ),
             administrationSection(
-              title: getAppLocalizations(context).administration_access,
-              content: Column(
-                children: [
-                  AppPanelWithInfo(
-                    title: getAppLocalizations(context).local_management_access,
-                    infoText: 'ON',
-                    infoTextColor: ConstantColors.secondaryElectricGreen,
-                    onTap: () => ref
-                        .read(navigationsProvider.notifier)
-                        .push(UnknownPath()),
-                  ),
-                  AppPanelWithInfo(
-                    title: getAppLocalizations(context).remote_access,
-                    infoText: 'ON',
-                    infoTextColor: ConstantColors.secondaryElectricGreen,
-                    onTap: () => ref
-                        .read(navigationsProvider.notifier)
-                        .push(UnknownPath()),
-                  ),
-                  AppPanelWithInfo(
-                    title: getAppLocalizations(context).web_ui,
-                    infoText: 'ON',
-                    infoTextColor: ConstantColors.secondaryElectricGreen,
-                    onTap: () => ref
-                        .read(navigationsProvider.notifier)
-                        .push(UnknownPath()),
-                  ),
-                ],
-              ),
-            ),
-            administrationSection(
               title: getAppLocalizations(context).firmware.toUpperCase(),
               content: Column(
                 children: [

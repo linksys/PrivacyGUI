@@ -17,7 +17,7 @@ const linksysCloudStatusBaseUrl = 'cloudhealth.lswf.net/cloud-availability';
 const kCloudEnvironmentConfigProd = {
   kCloudBase: 'cloud1.$linksysCloudBaseUrl',
   kCloudJNAP: 'https://cloud1.$linksysCloudBaseUrl/cloud/JNAP/',
-  kCloudStatus: 'https://cloud1.$linksysCloudStatusBaseUrl/cloud.json',
+  kCloudStatus: 'https://$linksysCloudStatusBaseUrl/cloud.json',
   kCloudAware: 'aware.lswf.net',
   kCloudAwarePort: 3000,
   kCloudAwareKey: '339ec1249258dfd7e689',

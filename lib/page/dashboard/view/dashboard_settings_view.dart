@@ -152,11 +152,6 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             iconId: 'filterDefault',
             path: UnknownPath(),
           ),
-          DashboardSettingsItem(
-            title: 'Profiles',
-            iconId: 'profileDefault',
-            path: UnknownPath(),
-          ),
         ],
       );
 
