@@ -149,7 +149,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     if (error is NeedToRefreshTokenException) {
       logger.d('refresh token...');
       final cloud = ref.read(cloudRepositoryProvider);
-      return cloud.refreshToken(error.refreshToken);
+      return cloud.refreshToken(error.refreshToken).then((value) async {
+        await updateCredientials(sessionToken: value);
+        return value;
+      });
     } else {
       // not handling at this moment
       throw error;
@@ -176,25 +179,31 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future updateCredientials({
-    required SessionToken sessionToken,
-    required String username,
-    required String password,
+    SessionToken? sessionToken,
+    String? username,
+    String? password,
   }) async {
     const storage = FlutterSecureStorage();
-    await storage.write(
-      key: pSessionToken,
-      value: jsonEncode(
-        sessionToken.toJson(),
-      ),
-    );
-    await storage.write(
-      key: pSessionTokenTs,
-      value: '${DateTime.now().millisecondsSinceEpoch}',
-    );
-    await storage.write(
-      key: pUserPassword,
-      value: password,
-    );
+    if (sessionToken != null) {
+      await storage.write(
+        key: pSessionToken,
+        value: jsonEncode(
+          sessionToken.toJson(),
+        ),
+      );
+      await storage.write(
+        key: pSessionTokenTs,
+        value: '${DateTime.now().millisecondsSinceEpoch}',
+      );
+    }
+    if (username != null) {}
+    if (password != null) {
+      await storage.write(
+        key: pUserPassword,
+        value: password,
+      );
+    }
+
     return (state.value ?? AuthState.empty()).copyWith(
       sessionToken: sessionToken,
       username: username,
