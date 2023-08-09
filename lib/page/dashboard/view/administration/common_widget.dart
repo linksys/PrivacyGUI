@@ -3,6 +3,7 @@ import 'package:linksys_moab/page/components/base_components/tile/setting_tile.d
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 
+@Deprecated('Use #package:linksys_widgets/panel/AppSection instead')
 Widget administrationSection({
   required String title,
   required Widget content,

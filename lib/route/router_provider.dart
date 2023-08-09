@@ -4,12 +4,15 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/page/dashboard/view/_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/_administration.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/internet_settings/internet_settings_view.dart';
+import 'package:linksys_moab/page/dashboard/view/dashboard_menu_view.dart';
 import 'package:linksys_moab/page/dashboard/view/dashboard_shell.dart';
+import 'package:linksys_moab/page/dashboard/view/devices/_devices.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/_topology.dart';
 import 'package:linksys_moab/page/landing/view/_view.dart';
 import 'package:linksys_moab/page/login/view/_view.dart';
 import 'package:linksys_moab/page/wifi_settings/view/_view.dart';
 import 'package:linksys_moab/provider/auth/_auth.dart';
+import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/model/administration_path.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 

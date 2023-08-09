@@ -5,6 +5,11 @@ final dashboardRoute = ShellRoute(
       DashboardShell(child: child),
   routes: [
     GoRoute(
+      name: 'dashboardMenu',
+      path: '/dashboardMenu',
+      builder: (context, state) => DashboardMenuView(),
+    ),
+    GoRoute(
       name: 'dashboardHome',
       path: '/dashboardHome',
       builder: (context, state) => DashboardHomeView(),
@@ -15,6 +20,11 @@ final dashboardRoute = ShellRoute(
           builder: (context, state) => TopologyView(),
         ),
       ],
+    ),
+    GoRoute(
+      name: 'dashboardDevices',
+      path: '/dashboardDevices',
+      builder: (context, state) => DeviceListView(),
     ),
     GoRoute(
         name: 'dashboardSettings',

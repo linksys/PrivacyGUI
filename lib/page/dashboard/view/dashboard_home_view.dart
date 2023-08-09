@@ -78,45 +78,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            AppIcon(
-              icon: getCharactersIcons(context).homeDefault,
-              size: AppIconSize.big,
-            ),
-            const AppGap.semiSmall(),
-            Expanded(
-              child: InkWell(
-                onTap: hasMultiNetworks
-                    ? () {
-                        ref
-                            .read(navigationsProvider.notifier)
-                            .push(SelectNetworkPath());
-                      }
-                    : null,
-                child: Row(
-                  children: [
-                    AppText.subhead(
-                      state.selected?.radioInfo?.first.settings.ssid ?? 'Home',
-                    ),
-                    if (hasMultiNetworks)
-                      AppIcon.regular(
-                        icon: getCharactersIcons(context).chevronDown,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            AppIconButton(
-              icon: getCharactersIcons(context).bellDefault,
-              onTap: () {
-                ref.read(navigationsProvider.notifier).push(LinkupPath());
-              },
-            ),
-          ],
-        ),
         const AppGap.big(),
         const Row(
           children: [

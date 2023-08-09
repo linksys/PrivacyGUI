@@ -148,7 +148,7 @@ navigationBottomItems() => [
         iconId: 'moreHorizontal',
         title: 'more',
         type: DashboardBottomItemType.more,
-        rootPath: 'dashboardSecurity',
+        rootPath: 'dashboardMenu',
       ),
       const DashboardBottomItem(
         iconId: 'homeDefault',
