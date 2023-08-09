@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/page/components/customs/debug_overlay_view.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
@@ -13,27 +14,26 @@ import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/theme.dart';
+import 'package:linksys_widgets/utils/named.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
-enum DashboardBottomItemType { home, security, health, settings }
+enum DashboardBottomItemType { more, home, devices, settings }
 
-class DashboardBottomTabContainer extends ArgumentsConsumerStatefulView {
-  const DashboardBottomTabContainer({
+class DashboardShell extends ArgumentsConsumerStatefulView {
+  const DashboardShell({
     Key? key,
-    required this.navigator,
+    required this.child,
   }) : super(key: key);
 
-  final Navigator navigator;
+  final Widget child;
 
   @override
-  ConsumerState<DashboardBottomTabContainer> createState() =>
-      _DashboardViewState();
+  ConsumerState<DashboardShell> createState() => _DashboardShellState();
 }
 
-class _DashboardViewState
-    extends ConsumerState<DashboardBottomTabContainer>
+class _DashboardShellState extends ConsumerState<DashboardShell>
     with DebugObserver {
-  int _selectedIndex = 0;
+  int _selectedIndex = 1;
   final List<DashboardBottomItem> _bottomTabItems = [];
 
   @override
@@ -60,7 +60,7 @@ class _DashboardViewState
                       .push(DebugToolsMainPath());
                 }
               },
-              child: widget.navigator),
+              child: widget.child),
           !showDebugPanel
               ? const Center()
               : Positioned(
@@ -79,8 +79,7 @@ class _DashboardViewState
         ],
       ),
       bottomNavigationBar: Offstage(
-        offstage:
-            ref.read(navigationsProvider).last.pageConfig.isHideBottomNavBar,
+        offstage: false,
         child: BottomNavigationBar(
             type: BottomNavigationBarType.shifting,
             iconSize:
@@ -111,13 +110,7 @@ class _DashboardViewState
   }
 
   void _onItemTapped(int index) {
-    if (index == 1 || index == 2) {
-      showSimpleSnackBar(context, null, "Not Implemented!");
-      return;
-    }
-    ref
-        .read(navigationsProvider.notifier)
-        .clearAndPush(_bottomTabItems[index].rootPath);
+    context.goNamed(_bottomTabItems[index].rootPath);
     setState(() {
       _selectedIndex = index;
     });
@@ -151,29 +144,29 @@ class _DashboardViewState
 }
 
 navigationBottomItems() => [
-      DashboardBottomItem(
+      const DashboardBottomItem(
+        iconId: 'moreHorizontal',
+        title: 'more',
+        type: DashboardBottomItemType.more,
+        rootPath: 'dashboardSecurity',
+      ),
+      const DashboardBottomItem(
         iconId: 'homeDefault',
         title: 'Home',
         type: DashboardBottomItemType.home,
-        rootPath: DashboardHomePath(),
+        rootPath: 'dashboardHome',
       ),
-      DashboardBottomItem(
-        iconId: 'securityDefault',
-        title: 'Security',
-        type: DashboardBottomItemType.security,
-        rootPath: DashboardSecurityPath(),
+      const DashboardBottomItem(
+        iconId: 'devicesDefault',
+        title: 'Devices',
+        type: DashboardBottomItemType.devices,
+        rootPath: 'dashboardDevices',
       ),
-      DashboardBottomItem(
-        iconId: 'healthDefault',
-        title: 'Health',
-        type: DashboardBottomItemType.health,
-        rootPath: DashboardHealthPath(),
-      ),
-      DashboardBottomItem(
-        iconId: 'settingsDefault',
+      const DashboardBottomItem(
+        iconId: 'optionsDefault',
         title: 'Settings',
         type: DashboardBottomItemType.settings,
-        rootPath: DashboardSettingsPath(),
+        rootPath: 'dashboardSettings',
       ),
     ];
 
@@ -188,5 +181,5 @@ class DashboardBottomItem {
   final String iconId;
   final String title;
   final DashboardBottomItemType type;
-  final BasePath rootPath;
+  final String rootPath;
 }

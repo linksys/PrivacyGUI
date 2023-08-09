@@ -87,7 +87,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   @override
   Future<AuthState> build() => Future.value(AuthState.empty());
 
-  init() async {
+  Future init() async {
     state = const AsyncValue.loading();
     // check session token exist and is session token expored
 

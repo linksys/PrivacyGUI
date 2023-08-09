@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/core/utils/icon_rules.dart';
 import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
@@ -83,7 +84,8 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
               onTap: state.networks[index].isOnline
                   ? () async {
                       await _networkCubit.selectNetwork(state.networks[index]);
-                      _navigationNotifier.clearAndPush(PrepareDashboardPath());
+                      // _navigationNotifier.clearAndPush(PrepareDashboardPath());
+                      context.goNamed('prepareDashboard');
                     }
                   : null,
               child: Opacity(

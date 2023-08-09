@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/core/jnap/models/device.dart';
@@ -196,7 +197,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       descripition: 'Nodes online', //TODO: XXXXXX Get Node online status
       icons: icons,
       onTap: () {
-        ref.read(navigationsProvider.notifier).push(TopologyPath());
+        // ref.read(navigationsProvider.notifier).push(TopologyPath());
+        context.goNamed('nodes1');
       },
     );
   }

@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/customs/enabled_with_opacity_widget.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 
-import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
@@ -49,18 +46,16 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
                     _title(),
                     const AppGap.semiBig(),
                     _section(
-                      _networkSettingsSection(context),
+                      _generalSettingsSection(context),
                       (index, item) {
-                        logger.d('MenuItem click $index');
-                        ref.read(navigationsProvider.notifier).push(item.path);
+                        context.goNamed(item.path);
                       },
                     ),
                     const AppGap.semiBig(),
                     _section(
-                      _youSettingsSection(),
+                      _advancedSettingsSection(),
                       (index, item) {
-                        logger.d('MenuItem click $index');
-                        ref.read(navigationsProvider.notifier).push(item.path);
+                        context.goNamed(item.path);
                       },
                     ),
                     const AppGap.semiBig(),
@@ -117,62 +112,62 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
               onTap: () => onItemClick(sectionItem.items.indexOf(e), e),
               child: AppSimplePanel(
                 title: e.title,
-                icon: getCharactersIcons(context).getByName(e.iconId),
+                // icon: getCharactersIcons(context).getByName(e.iconId),
               ),
             )),
       ],
     );
   }
 
-  _networkSettingsSection(BuildContext context) => DashboardSettingsSection(
-        title: 'NETWORK',
+  _generalSettingsSection(BuildContext context) => DashboardSettingsSection(
+        title: 'GENERAL',
         items: [
+          DashboardSettingsItem(
+            title: 'Notifications',
+            iconId: 'notificationsDefault',
+            path: 'notifications',
+          ),
           DashboardSettingsItem(
             title: 'WiFi',
             iconId: 'wifiDefault',
-            path: WifiSettingsOverviewPath(),
+            path: 'wifiSettings',
           ),
           DashboardSettingsItem(
-            title: getAppLocalizations(context).administration,
+            title: 'Nodes',
             iconId: 'administrationDefault',
-            path: AdministrationViewPath(),
+            path: 'nodes',
           ),
           DashboardSettingsItem(
-            title: 'Priority',
+            title: 'Router Password and Hint',
             iconId: 'priorityDefault',
-            path: UnknownPath(),
+            path: 'routerPassword',
           ),
           DashboardSettingsItem(
-            title: 'Internet schedule',
+            title: 'Time Zone',
             iconId: 'clockRound',
-            path: UnknownPath(),
-          ),
-          DashboardSettingsItem(
-            title: 'Safe browsing',
-            iconId: 'filterDefault',
-            path: UnknownPath(),
+            path: 'timeZone',
           ),
         ],
       );
 
 //
-  _youSettingsSection() => DashboardSettingsSection(
-        title: 'YOU',
+  _advancedSettingsSection() => DashboardSettingsSection(
+        title: 'ADVANCED',
         items: [
           DashboardSettingsItem(
-            title: 'Account',
+            title: 'Internet Settings',
             iconId: 'profileDefault',
-            path: AccountDetailPath(),
+            path: 'Unknown',
           ),
           DashboardSettingsItem(
-            title: 'Privacy and legal',
+            title: 'IP Details',
             iconId: 'infoRound',
-            path: UnknownPath(),
+            path: 'Unknown',
           ),
           DashboardSettingsItem(
-            title: 'Support',
+            title: 'Local Network Settings',
             iconId: 'helpRound',
-            path: UnknownPath(),
+            path: 'Unknown',
           ),
         ],
       );
@@ -194,5 +189,5 @@ class DashboardSettingsItem {
 
   final String title;
   final String iconId;
-  final BasePath path;
+  final String path;
 }

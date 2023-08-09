@@ -190,8 +190,9 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
       //         ...widget.args,
       //       }
       //       ..next = widget.next);
-      context.go(
-        '/cloudLoginPassword?username=${_accountController.text}',
+      context.goNamed(
+        'cloudLoginPassword',
+        queryParameters: {'username': _accountController.text},
       );
     }
   }
