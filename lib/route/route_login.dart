@@ -9,7 +9,7 @@ final loginRoute = GoRoute(
       name: 'cloudLoginPassword',
       path: 'cloudLoginPassword',
       builder: (context, state) => CloudLoginPasswordView(
-        args: state.queryParameters,
+        args: state.uri.queryParametersAll,
       ),
     ),
   ],
