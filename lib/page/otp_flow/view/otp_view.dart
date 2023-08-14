@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/provider/otp/otp.dart';
 import 'package:linksys_moab/core/cloud/model/cloud_communication_method.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
@@ -20,6 +22,7 @@ class OtpFlowViewState extends ConsumerState<OtpFlowView> {
   @override
   initState() {
     final otp = ref.read(otpProvider.notifier);
+
     OtpFunction function = OtpFunction.send;
     if (widget.args.containsKey('function')) {
       function = widget.args['function'] as OtpFunction;
@@ -49,38 +52,29 @@ class OtpFlowViewState extends ConsumerState<OtpFlowView> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(otpProvider, (previous, next) {
-      final previousStep = previous?.step;
-      final nextStep = next.step;
-      if (nextStep == previousStep) {
-        return;
-      }
-      if (nextStep == OtpStep.inputOtp) {
-        final next = widget.next ?? UnknownPath();
-        ref.read(navigationsProvider.notifier).replace(OtpInputCodePath()
-          ..args.addAll(widget.args)
-          ..next = next);
-      } else if (nextStep == OtpStep.chooseOtpMethod) {
-        final next = widget.next ?? UnknownPath();
-        ref.read(navigationsProvider.notifier).replace(OtpMethodChoosesPath()
-          ..next = next
-          ..args.addAll(widget.args));
+    ref.listen(otpProvider.select((value) => value.step), (previous, next) {
+      if (next == OtpStep.inputOtp) {
+        context.goNamed(RouteNamed.otpInputCode, queryParameters: widget.args);
+      } else if (next == OtpStep.chooseOtpMethod) {
+        context.goNamed(RouteNamed.otpSelectMethods,
+            queryParameters: widget.args);
       }
     });
     final state = ref.watch(otpProvider);
     return Stack(children: [
-      WillPopScope(
-          onWillPop: () async {
-            if (state.isLoading) {
-              return false;
-            } else if (state.step != OtpStep.chooseOtpMethod) {
-              ref.watch(otpProvider.notifier).processBack();
-              return false;
-            } else {
-              return true;
-            }
-          },
-          child: _contentView(state)),
+      // WillPopScope(
+      //     onWillPop: () async {
+      //       if (state.isLoading) {
+      //         return false;
+      //       } else if (state.step != OtpStep.chooseOtpMethod) {
+      //         ref.watch(otpProvider.notifier).processBack();
+      //         return false;
+      //       } else {
+      //         return true;
+      //       }
+      //     },
+      //     child: _contentView(state)),
+      _contentView(state),
       if (state.isLoading)
         const AppFullScreenSpinner(
           text: '',

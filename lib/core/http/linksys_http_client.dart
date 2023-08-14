@@ -28,11 +28,15 @@ void releaseErrorStream() {
   _errorResponseStreamController.close();
 }
 
+typedef HttpErrorResponseHandler = void Function(ErrorResponse error);
+
 ///
 /// timeout - will throw Timeout exception on ${timeout} seconds
 ///
 class LinksysHttpClient extends http.BaseClient
     with JNAPCommandExecutor<Response> {
+  static HttpErrorResponseHandler? onError;
+
   LinksysHttpClient({
     IOClient? client,
     int timeoutMs = 10000,
@@ -278,7 +282,7 @@ class LinksysHttpClient extends http.BaseClient
       logger.i('Cloud Error: ${response.statusCode}, ${response.body}');
       final error = ErrorResponse.fromJson(
           response.statusCode, json.decode(response.body));
-      _errorResponseStreamController.add(error);
+      onError?.call(error);
       throw error;
     }
     return response;

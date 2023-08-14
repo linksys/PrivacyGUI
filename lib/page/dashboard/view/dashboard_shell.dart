@@ -5,6 +5,7 @@ import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/page/components/customs/debug_overlay_view.dart';
 import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
@@ -148,25 +149,25 @@ navigationBottomItems() => [
         iconId: 'moreHorizontal',
         title: 'more',
         type: DashboardBottomItemType.more,
-        rootPath: 'dashboardMenu',
+        rootPath: RouteNamed.dashboardMenu,
       ),
       const DashboardBottomItem(
         iconId: 'homeDefault',
         title: 'Home',
         type: DashboardBottomItemType.home,
-        rootPath: 'dashboardHome',
+        rootPath: RouteNamed.dashboardHome,
       ),
       const DashboardBottomItem(
         iconId: 'devicesDefault',
         title: 'Devices',
         type: DashboardBottomItemType.devices,
-        rootPath: 'dashboardDevices',
+        rootPath: RouteNamed.dashboardDevices,
       ),
       const DashboardBottomItem(
         iconId: 'optionsDefault',
         title: 'Settings',
         type: DashboardBottomItemType.settings,
-        rootPath: 'dashboardSettings',
+        rootPath: RouteNamed.dashboardSettings,
       ),
     ];
 

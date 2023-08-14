@@ -5,67 +5,24 @@ final dashboardRoute = ShellRoute(
       DashboardShell(child: child),
   routes: [
     GoRoute(
-      name: 'dashboardMenu',
-      path: '/dashboardMenu',
+      name: RouteNamed.dashboardMenu,
+      path: RoutePath.dashboardMenu,
       builder: (context, state) => DashboardMenuView(),
     ),
     GoRoute(
-      name: 'dashboardHome',
-      path: '/dashboardHome',
+      name: RouteNamed.dashboardHome,
+      path: RoutePath.dashboardHome,
       builder: (context, state) => DashboardHomeView(),
-      routes: [
-        GoRoute(
-          name: 'nodes1',
-          path: 'nodes',
-          builder: (context, state) => TopologyView(),
-        ),
-      ],
     ),
     GoRoute(
-      name: 'dashboardDevices',
-      path: '/dashboardDevices',
-      builder: (context, state) => DeviceListView(),
+      name: RouteNamed.dashboardDevices,
+      path: RoutePath.dashboardDevices,
+      builder: (context, state) => DashboardDevices(),
     ),
     GoRoute(
-        name: 'dashboardSettings',
-        path: '/dashboardSettings',
+        name: RouteNamed.dashboardSettings,
+        path: RoutePath.dashboardSettings,
         builder: (context, state) => DashboardSettingsView(),
-        routes: [
-          GoRoute(
-            name: 'wifiSettings',
-            path: 'wifiSettings',
-            builder: (context, state) => WifiSettingsView(),
-          ),
-          GoRoute(
-            name: 'nodes',
-            path: 'nodes',
-            builder: (context, state) => TopologyView(),
-          ),
-          GoRoute(
-            name: 'routerPassword',
-            path: 'routerPassword',
-            builder: (context, state) => RouterPasswordView(),
-          ),
-          GoRoute(
-            name: 'timeZone',
-            path: 'timeZone',
-            builder: (context, state) => TimezoneView(),
-          ),
-          GoRoute(
-            name: 'internetSettings',
-            path: 'internetSettings',
-            builder: (context, state) => InternetSettingsView(),
-          ),
-          GoRoute(
-            name: 'ipDetails',
-            path: 'ipDetails',
-            builder: (context, state) => IpDetailsView(),
-          ),
-          GoRoute(
-            name: 'localNetworkSettings',
-            path: 'localNetworkSettings',
-            builder: (context, state) => LANView(),
-          ),
-        ])
+        routes: settings)
   ],
 );

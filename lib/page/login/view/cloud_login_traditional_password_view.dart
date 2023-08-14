@@ -145,11 +145,16 @@ class _LoginTraditionalPasswordViewState
               key: const Key('login_password_view_button_continue'),
               onTap: passwordController.text.isEmpty
                   ? null
-                  : () {
-                      ref.read(authProvider.notifier).cloudLogin(
+                  : () async {
+                      await ref
+                          .read(authProvider.notifier)
+                          .cloudLogin(
                             username: _username,
                             password: passwordController.text,
-                          ).then((value) => context.goNamed('prepareDashboard'));
+                          )
+                          .onError((error, stackTrace) {
+                        logger.d('XXXXXXXXXXXXXXXXX');
+                      });
                     },
             ),
           ],
@@ -169,13 +174,15 @@ class _LoginTraditionalPasswordViewState
     if (error.code == errorMfaRequired) {
       _needOtp = true;
       final mfaError = ErrorMfaRequired.fromResponse(error);
-      ref.read(navigationsProvider.notifier).push(OTPViewPath()
-        ..args = {
+      context.goNamed(
+        'otp',
+        queryParameters: {
           'username': _username,
           'token': mfaError.verificationToken,
           'password': passwordController.text,
-        }
-        ..next = PrepareDashboardPath());
+          // 'backPath': GoRouter.of(context).routerDelegate.currentConfiguration.fullPath,
+        },
+      );
     } else {
       setState(() {
         _errorCode = error.code;

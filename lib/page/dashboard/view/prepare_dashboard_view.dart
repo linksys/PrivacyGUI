@@ -11,6 +11,7 @@ import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/core/jnap/models/device_info.dart';
 import 'package:linksys_moab/core/jnap/providers/polling_provider.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -55,7 +56,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
             .read<NetworkCubit>()
             .getNetworks(accountId: ref.read(accountProvider).id);
 
-        context.goNamed('selectNetwork');
+        context.goNamed(RouteNamed.selectNetwork);
         return;
       }
     }
@@ -72,7 +73,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
       await ref.read(connectivityProvider.notifier).forceUpdate();
 
       // ref.watch(navigationsProvider.notifier).clearAndPush(DashboardHomePath());
-      context.goNamed('dashboardHome');
+      context.goNamed(RouteNamed.dashboardHome);
       ref.watch(pollingProvider.notifier).startPolling();
     } else {
       // TODO #LINKSYS Error handling for unable to get deviceinfo

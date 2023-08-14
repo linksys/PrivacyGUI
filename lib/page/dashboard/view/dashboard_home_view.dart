@@ -10,6 +10,7 @@ import 'package:linksys_moab/core/jnap/models/network.dart';
 import 'package:linksys_moab/core/jnap/models/radio_info.dart';
 import 'package:linksys_moab/core/utils/icon_rules.dart';
 import 'package:linksys_moab/page/components/customs/enabled_with_opacity_widget.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_moab/route/model/_model.dart';
@@ -73,7 +74,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   }
 
   Widget _homeTitle(NetworkState state) {
-    final hasMultiNetworks = state.networks.length > 1;
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,8 +158,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       descripition: 'Nodes online', //TODO: XXXXXX Get Node online status
       icons: icons,
       onTap: () {
-        // ref.read(navigationsProvider.notifier).push(TopologyPath());
-        context.goNamed('nodes1');
+        context.pushNamed(RouteNamed.settingsNodes);
       },
     );
   }

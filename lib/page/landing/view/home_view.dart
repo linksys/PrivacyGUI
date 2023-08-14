@@ -8,6 +8,7 @@ import 'package:linksys_moab/page/components/styled/consts.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/core/utils/logger.dart';
@@ -74,8 +75,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
         getAppLocalizations(context).login,
         key: const Key('home_view_button_login'),
         onTap: () async {
-          // ref.read(navigationsProvider.notifier).push(AuthInputAccountPath());
-          context.go('/cloudLogin');
+          context.pushNamed(RoutePath.cloudLoginAccount);
         },
       ),
       AppSecondaryButton(

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/provider/otp/otp.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/core/cloud/model/cloud_session_model.dart';
@@ -62,12 +63,22 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(otpProvider);
+    ref.listen(otpProvider.select((value) => value.step), (previous, next) {
+      final backPath = widget.args['backPath'];
+      if (next == OtpStep.finish && backPath != null) {
+        context.go(widget.args['backPath']);
+      }
+    });
     return state.isLoading ? const AppFullScreenSpinner() : _contentView(state);
   }
 
   Widget _contentView(OtpState state) {
     return StyledAppPageView(
       scrollable: true,
+      onBackTap: () {
+        ref.read(otpProvider.notifier).processBack();
+        context.pop();
+      },
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: AppText.screenName(
@@ -197,6 +208,9 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
     // // Require otp code
     // // authBloc.add(RequireOtpCode(communicationMethod: state.selectedMethod!));
     // // TODO if is create account, do create account preparation first
+
+    // TODO WHY need delay here????
+    await Future.delayed(Duration(seconds: 1));
     ref
         .read(otpProvider.notifier)
         .authChallenge(method: state.selectedMethod!, token: state.token);

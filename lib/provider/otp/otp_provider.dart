@@ -29,7 +29,7 @@ class OtpNotifier extends Notifier<OtpState> {
   Future<void> fetchMaskedMethods({required String username}) async {
     final repository = ref.read(cloudRepositoryProvider);
     final methods = await repository.getMfaMaskedMethods(username: username);
-    state = state.copyWith(methods: methods);
+    state = state.copyWith(step: OtpStep.init, methods: methods);
   }
 
   void updateOtpMethods(

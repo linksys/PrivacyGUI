@@ -6,6 +6,7 @@ import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/page/components/customs/enabled_with_opacity_widget.dart';
+import 'package:linksys_moab/route/constants.dart';
 
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -119,7 +120,7 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
           AppSectionItemData(
             title: 'Nodes',
             iconData: getCharactersIcons(context).nodesDefault,
-            onTap: () => context.goNamed('nodes'),
+            onTap: () => context.pushNamed(RouteNamed.settingsNodes),
           ),
           AppSectionItemData(
             title: 'Router Password and Hint',
