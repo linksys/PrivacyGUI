@@ -6,10 +6,6 @@ import 'package:linksys_moab/provider/otp/otp.dart';
 import 'package:linksys_moab/core/cloud/model/cloud_communication_method.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/constants.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
-import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class OtpFlowView extends ArgumentsConsumerStatefulView {
@@ -42,12 +38,6 @@ class OtpFlowViewState extends ConsumerState<OtpFlowView> {
         otp.onInputOtp(method: selected);
       }
     });
-
-    ///////////
-    // _username = widget.args['username'] as String;
-    // _fetchToken();
-    // _fetchOtpInfo(_function);
-    //////////
     super.initState();
   }
 
@@ -62,55 +52,6 @@ class OtpFlowViewState extends ConsumerState<OtpFlowView> {
             queryParameters: widget.args);
       }
     });
-    final state = ref.watch(otpProvider);
-    return Stack(children: [
-      // WillPopScope(
-      //     onWillPop: () async {
-      //       if (state.isLoading) {
-      //         return false;
-      //       } else if (state.step != OtpStep.chooseOtpMethod) {
-      //         ref.watch(otpProvider.notifier).processBack();
-      //         return false;
-      //       } else {
-      //         return true;
-      //       }
-      //     },
-      //     child: _contentView(state)),
-      _contentView(state),
-      if (state.isLoading)
-        const AppFullScreenSpinner(
-          text: '',
-          background: Colors.transparent,
-        )
-    ]);
+    return const AppFullScreenSpinner();
   }
-
-  Widget _contentView(OtpState state) {
-    return const AppPageView();
-  }
-
-  // _fetchToken() {
-  //   String vToken = '';
-  //   if (context.read<AuthBloc>().state is AuthOnCloudLoginState) {
-  //     vToken = (context.read<AuthBloc>().state as AuthOnCloudLoginState).vToken;
-  //   } else if (context.read<AuthBloc>().state is AuthOnCreateAccountState) {
-  //     vToken = (context.read<AuthBloc>().state as AuthOnCreateAccountState).vToken;
-  //   } else {
-  //     logger.d('ERROR: OtpFlowView: _fetchToken: Unexpected state type');
-  //   }
-  //   context.read<OtpCubit>().updateToken(vToken);
-  // }
-
-  // _fetchOtpInfo(OtpFunction function) async {
-  //   _setLoading(true);
-  //   await context
-  //       .read<AuthBloc>()
-  //       .fetchOtpInfo(_username)
-  //       .then((value) => _handleAccountInfo(value, function));
-  //   _setLoading(false);
-  // }
-  //
-  // _handleAccountInfo(AccountInfo info, OtpFunction function) {
-  //   context.read<OtpCubit>().updateOtpMethods(info.otpInfo, function);
-  // }
 }

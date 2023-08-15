@@ -174,6 +174,7 @@ class _LoginTraditionalPasswordViewState
     if (error.code == errorMfaRequired) {
       _needOtp = true;
       final mfaError = ErrorMfaRequired.fromResponse(error);
+      logger.d('handle mfa error');
       context.goNamed(
         'otp',
         queryParameters: {
