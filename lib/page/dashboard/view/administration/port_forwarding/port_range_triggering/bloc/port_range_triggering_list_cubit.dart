@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:linksys_moab/core/jnap/actions/better_action.dart';
 import 'package:linksys_moab/core/jnap/models/port_range_triggering_rule.dart';
 import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/core/jnap/extensions/_extensions.dart';
@@ -15,7 +16,12 @@ class PortRangeTriggeringListCubit extends Cubit<PortRangeTriggeringListState> {
   final RouterRepository _repository;
 
   fetch() async {
-    _repository.getPortRangeTriggeringRules().then<JNAPSuccess?>((value) {
+    _repository
+        .send(
+      JNAPAction.getPortRangeTriggeringRules,
+      auth: true,
+    )
+        .then<JNAPSuccess?>((value) {
       final rules = List.from(value.output['rules'])
           .map((e) => PortRangeTriggeringRule.fromJson(e))
           .toList();

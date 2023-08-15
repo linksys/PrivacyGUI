@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:linksys_moab/core/jnap/actions/better_action.dart';
 import 'package:linksys_moab/core/jnap/models/port_range_forwarding_rule.dart';
 import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/core/jnap/extensions/_extensions.dart';
@@ -15,7 +16,9 @@ class PortRangeForwardingListCubit extends Cubit<PortRangeForwardingListState> {
   final RouterRepository _repository;
 
   fetch() async {
-    _repository.getPortRangeForwardingRules().then<JNAPSuccess?>((value) {
+    _repository
+        .send(JNAPAction.getPortRangeForwardingRules, auth: true,)
+        .then<JNAPSuccess?>((value) {
       final rules = List.from(value.output['rules'])
           .map((e) => PortRangeForwardingRule.fromJson(e))
           .toList();

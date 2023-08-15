@@ -310,14 +310,17 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               final repository = context.read<RouterRepository>()
                 ..enableBTSetup = true;
               final result1 = await repository
-                  .getMACAddress()
+                  .send(
+                    JNAPAction.getMACAddress,
+                    auth: true,
+                  )
                   .then<JNAPSuccess?>((value) => value)
                   .onError((error, stackTrace) {
                 logger.e('Error', error, stackTrace);
                 return null;
               });
               logger.d('result1: $result1}');
-              final result2 = await repository.getVersionInfo();
+              final result2 = await repository.send(JNAPAction.getVersionInfo);
               logger.d('result2: $result2}');
               // repository.setDeviceMode('Master');
               repository.enableBTSetup = false;

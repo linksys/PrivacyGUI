@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_moab/core/jnap/actions/better_action.dart';
 import 'package:linksys_moab/core/jnap/models/timezone.dart';
 import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/core/jnap/extensions/_extensions.dart';
@@ -17,7 +18,10 @@ class TimezoneCubit extends Cubit<TimezoneState> {
   final RouterRepository _repository;
 
   fetch() async {
-    final result = await _repository.getTimeSettings();
+    final result = await _repository.send(
+      JNAPAction.getTimeSettings,
+      auth: true,
+    );
     final timezoneId = result.output['timeZoneID'] ?? 'PST8';
     final supportedTimezones = List.from(result.output['supportedTimeZones'])
         .map((e) => SupportedTimezone.fromJson(e))
@@ -31,7 +35,14 @@ class TimezoneCubit extends Cubit<TimezoneState> {
 
   Future save() async {
     return _repository
-        .setTimeSettings(state.timezoneId, state.isDaylightSaving)
+        .send(
+      JNAPAction.setTimeSettings,
+      data: {
+        'timeZoneID': state.timezoneId,
+        'autoAdjustForDST': state.isDaylightSaving,
+      },
+      auth: true,
+    )
         .then<void>((value) async {
       await fetch();
     }).onError((error, stackTrace) => onError(error ?? Object(), stackTrace));

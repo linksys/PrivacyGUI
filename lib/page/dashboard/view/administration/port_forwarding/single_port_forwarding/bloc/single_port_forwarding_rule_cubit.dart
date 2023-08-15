@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:linksys_moab/core/jnap/actions/better_action.dart';
 import 'package:linksys_moab/core/jnap/models/lan_settings.dart';
 import 'package:linksys_moab/core/jnap/models/single_port_forwarding_rule.dart';
 import 'package:linksys_moab/core/jnap/extensions/_extensions.dart';
@@ -30,7 +31,10 @@ class SinglePortForwardingRuleCubit
 
   Future fetch() async {
     final lanSettings = await _repository
-        .getLANSettings()
+        .send(
+          JNAPAction.getLANSettings,
+          auth: true,
+        )
         .then((value) => RouterLANSettings.fromJson(value.output));
     final ipAddress = lanSettings.ipAddress;
     final subnetMask =
@@ -48,7 +52,11 @@ class SinglePortForwardingRuleCubit
       rules.replaceRange(index, index + 1, [rule]);
     }
     final result = await _repository
-        .setSinglePortForwardingRules(rules)
+        .send(
+          JNAPAction.setSinglePortForwardingRules,
+          data: {'rules': rules.map((e) => e.toJson()).toList()},
+          auth: true,
+        )
         .then((value) => true)
         .onError((error, stackTrace) => false);
     return result;
@@ -60,7 +68,11 @@ class SinglePortForwardingRuleCubit
       final rules = List<SinglePortForwardingRule>.from(currentState.rules)
         ..removeWhere((element) => element == currentState.rule);
       final result = await _repository
-          .setSinglePortForwardingRules(rules)
+          .send(
+            JNAPAction.setSinglePortForwardingRules,
+            data: {'rules': rules.map((e) => e.toJson()).toList()},
+            auth: true,
+          )
           .then((value) => true)
           .onError((error, stackTrace) => false);
       return result;
