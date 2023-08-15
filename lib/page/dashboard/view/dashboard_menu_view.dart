@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/core/utils/icon_rules.dart';
 import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/page/components/customs/enabled_with_opacity_widget.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 
@@ -106,7 +108,10 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                         AppSectionItemData(
                             title: 'Account',
                             iconData: getCharactersIcons(context)
-                                .administrationDefault),
+                                .administrationDefault,
+                            onTap: () {
+                              context.pushNamed(RouteNamed.accountInfo);
+                            }),
                         AppSectionItemData(
                             title: 'Help',
                             iconData: getCharactersIcons(context).helpRound),

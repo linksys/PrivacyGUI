@@ -2,15 +2,29 @@ part of 'router_provider.dart';
 
 final settings = [
   GoRoute(
-    name: RouteNamed.settingsWifi,
-    path: RoutePath.settingsWifi,
-    builder: (context, state) => WifiSettingsView(),
-  ),
+      name: RouteNamed.settingsWifi,
+      path: RoutePath.settingsWifi,
+      builder: (context, state) => WifiSettingsView(),
+      routes: [
+        GoRoute(
+            name: RouteNamed.wifiSettingsReview,
+            path: RoutePath.wifiSettingsReview,
+            builder: (context, state) => WifiSettingsReviewView()),
+      ]),
   GoRoute(
-    name: RouteNamed.settingsNodes,
-    path: RoutePath.settingsNodes,
-    builder: (context, state) => TopologyView(),
-  ),
+      name: RouteNamed.settingsNodes,
+      path: RoutePath.settingsNodes,
+      builder: (context, state) => TopologyView(),
+      routes: [
+        GoRoute(
+            name: RouteNamed.nodeDetails,
+            path: RoutePath.nodeDetails,
+            builder: (context, state) => NodeDetailView()),
+        GoRoute(
+            name: RouteNamed.nodeOffline,
+            path: RoutePath.nodeOffline,
+            builder: (context, state) => NodeOfflineCheckView()),
+      ]),
   GoRoute(
     name: RouteNamed.settingsRouterPassword,
     path: RoutePath.settingsRouterPassword,

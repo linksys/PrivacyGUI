@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/page/components/customs/hidden_password_widget.dart';
@@ -48,9 +49,7 @@ class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
   @override
   initState() {
     super.initState();
-    if (widget.args.containsKey('info')) {
-      _currentItem = widget.args['info'];
-    }
+    _currentItem = context.read<WifiSettingCubit>().state.selectedWifiItem;
   }
 
   Widget _wifiInfoSection() {

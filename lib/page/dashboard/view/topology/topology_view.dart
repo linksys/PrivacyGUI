@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:graphview/GraphView.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
@@ -9,6 +10,7 @@ import 'package:linksys_moab/page/dashboard/view/topology/bloc/cubit.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/bloc/state.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/topology_node.dart';
 import 'package:linksys_moab/core/jnap/router_repository.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
@@ -231,9 +233,9 @@ class _TreeViewPageState extends ConsumerState<TreeViewPage> {
           if (nodeDevice.isOnline) {
             // Update the current target Id for node state
             context.read<NodeCubit>().setDetailNodeID(nodeDevice.deviceID);
-            ref.read(navigationsProvider.notifier).push(NodeDetailPath());
+            context.pushNamed(RouteNamed.nodeDetails);
           } else {
-            ref.read(navigationsProvider.notifier).push(NodeOfflineCheckPath());
+            context.pushNamed(RouteNamed.nodeOffline);
           }
         } else {}
       },

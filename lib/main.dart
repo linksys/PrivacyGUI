@@ -173,7 +173,6 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
     // _cubit.stop();
     ref.read(connectivityProvider.notifier).stop();
     apnsStreamSubscription?.cancel();
-    releaseErrorStream();
     super.dispose();
   }
 

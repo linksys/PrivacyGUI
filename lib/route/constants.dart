@@ -27,6 +27,21 @@ class RoutePath {
   static const otpStart = 'otp';
   static const otpSelectMethods = 'otpSelectMethod';
   static const otpInputCode = 'optInputCode';
+
+  /// wifi
+  static const wifiSettingsReview = 'wifiSettingsReview';
+  static const wifiShare = 'wifiShare';
+  static const wifiShareDetails = 'wifiShareDetails';
+
+  /// node
+  static const nodeDetails = 'nodeDetails';
+  static const nodeOffline = 'nodeOffline';
+
+  /// device
+  static const deviceDetails = 'deviceDetails';
+
+  /// account
+  static const accountInfo = 'accountInfo';
 }
 
 class RouteNamed {
@@ -58,4 +73,19 @@ class RouteNamed {
   static const otpStart = 'otp';
   static const otpSelectMethods = 'otpSelectMethod';
   static const otpInputCode = 'optInputCode';
+
+  /// wifi
+  static const wifiSettingsReview = 'wifiSettingsReview';
+  static const wifiShare = 'wifiShare';
+  static const wifiShareDetails = 'wifiShareDetails';
+
+  /// node
+  static const nodeDetails = 'nodeDetails';
+  static const nodeOffline = 'nodeOffline';
+
+  ///device
+  static const deviceDetails = 'deviceDetails';
+
+  /// account
+  static const accountInfo = 'accountInfo';
 }

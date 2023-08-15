@@ -16,18 +16,6 @@ import 'package:http/io_client.dart';
 import 'package:linksys_moab/core/utils/storage.dart';
 import '../cloud/model/error_response.dart';
 
-/// A error response stream
-/// Everytime occurs error response the stream will emit #ErrorResponse
-StreamController<ErrorResponse> _errorResponseStreamController =
-    StreamController();
-
-Stream<ErrorResponse> get linksysErrorResponseStream =>
-    _errorResponseStreamController.stream;
-
-void releaseErrorStream() {
-  _errorResponseStreamController.close();
-}
-
 typedef HttpErrorResponseHandler = void Function(ErrorResponse error);
 
 ///
@@ -138,7 +126,11 @@ class LinksysHttpClient extends http.BaseClient
             .timeout(Duration(milliseconds: _timeoutMs));
       } catch (error, stackTrace) {
         logger.e('Http Request Error: $error');
-        if (i == _retries || !await _whenError(error, stackTrace)) rethrow;
+        if (i == _retries || !await _whenError(error, stackTrace)) {
+          //
+          onError?.call(ErrorResponse.convert(error));
+          rethrow;
+        }
       }
 
       if (response != null) {

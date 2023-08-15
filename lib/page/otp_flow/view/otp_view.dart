@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_moab/provider/otp/otp.dart';
 import 'package:linksys_moab/core/cloud/model/cloud_communication_method.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
@@ -52,6 +53,7 @@ class OtpFlowViewState extends ConsumerState<OtpFlowView> {
 
   @override
   Widget build(BuildContext context) {
+    logger.d('otp view build!!!');
     ref.listen(otpProvider.select((value) => value.step), (previous, next) {
       if (next == OtpStep.inputOtp) {
         context.goNamed(RouteNamed.otpInputCode, queryParameters: widget.args);

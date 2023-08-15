@@ -12,6 +12,7 @@ import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/service/cloud_network_service.dart';
+import 'package:linksys_moab/util/analytics.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
 import 'package:linksys_widgets/theme/theme.dart';
@@ -85,6 +86,12 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                   ? () async {
                       await _networkCubit.selectNetwork(state.networks[index]);
                       // _navigationNotifier.clearAndPush(PrepareDashboardPath());
+                      logEvent(
+                        eventName: 'ActionSelectNetwork',
+                        parameters: {
+                          'networkId': state.networks[index].network.networkId,
+                        },
+                      );
                       context.goNamed('prepareDashboard');
                     }
                   : null,

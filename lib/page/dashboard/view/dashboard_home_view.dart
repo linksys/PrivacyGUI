@@ -129,7 +129,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       descripition: 'WiFi networks active', //TODO: XXXXXX Get active status??
       icons: icons,
       onTap: () {
-        ref.read(navigationsProvider.notifier).push(WifiListPath());
+        context.pushNamed(RouteNamed.wifiShare);
       },
     );
   }
