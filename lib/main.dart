@@ -4,10 +4,20 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/app_lifecycle/cubit.dart';
+import 'package:linksys_moab/page/dashboard/view/_view.dart';
+import 'package:linksys_moab/page/dashboard/view/dashboard_shell.dart';
+import 'package:linksys_moab/page/dashboard/view/topology/_topology.dart';
+import 'package:linksys_moab/page/dashboard/view/topology/topology_node.dart';
+import 'package:linksys_moab/page/landing/view/home_view.dart';
+import 'package:linksys_moab/page/login/view/cloud_login_account_view.dart';
+import 'package:linksys_moab/page/login/view/cloud_login_traditional_password_view.dart';
+import 'package:linksys_moab/page/wifi_settings/view/wifi_settings_view.dart';
 import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_moab/bloc/device/cubit.dart';
@@ -28,7 +38,10 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_moab/core/utils/storage.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'firebase_options.dart';
+import 'page/dashboard/view/administration/_administration.dart';
+import 'route/router_provider.dart';
 
 void main() async {
   // enableFlutterDriverExtension();
@@ -160,13 +173,13 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
     // _cubit.stop();
     ref.read(connectivityProvider.notifier).stop();
     apnsStreamSubscription?.cancel();
-    releaseErrorStream();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     // logger.d('Moab App build: ${describeIdentity(this)}');
+    final router = ref.watch(routerProvider);
     return MaterialApp.router(
       onGenerateTitle: (context) => getAppLocalizations(context).app_title,
       theme: ThemeData.light().copyWith(
@@ -180,8 +193,13 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
       ),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      routerDelegate: ref.read(routerDelegateProvider),
-      routeInformationParser: LinksysRouteInformationParser(),
+      // routerDelegate: ref.read(routerDelegateProvider),
+      // routeInformationParser: LinksysRouteInformationParser(),
+      builder: (context, child) =>
+          AppResponsiveTheme(child: child ?? const Center()),
+      routeInformationProvider: router.routeInformationProvider,
+      routeInformationParser: router.routeInformationParser,
+      routerDelegate: router.routerDelegate,
     );
   }
 

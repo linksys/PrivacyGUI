@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/provider/otp/otp.dart';
 import 'package:linksys_moab/constants/_constants.dart';
@@ -145,10 +146,15 @@ class _LoginTraditionalPasswordViewState
               onTap: passwordController.text.isEmpty
                   ? null
                   : () async {
-                      await ref.read(authProvider.notifier).cloudLogin(
+                      await ref
+                          .read(authProvider.notifier)
+                          .cloudLogin(
                             username: _username,
                             password: passwordController.text,
-                          );
+                          )
+                          .onError((error, stackTrace) {
+                        logger.d('XXXXXXXXXXXXXXXXX');
+                      });
                     },
             ),
           ],
@@ -168,13 +174,16 @@ class _LoginTraditionalPasswordViewState
     if (error.code == errorMfaRequired) {
       _needOtp = true;
       final mfaError = ErrorMfaRequired.fromResponse(error);
-      ref.read(navigationsProvider.notifier).push(OTPViewPath()
-        ..args = {
+      logger.d('handle mfa error');
+      context.goNamed(
+        'otp',
+        queryParameters: {
           'username': _username,
           'token': mfaError.verificationToken,
           'password': passwordController.text,
-        }
-        ..next = PrepareDashboardPath());
+          // 'backPath': GoRouter.of(context).routerDelegate.currentConfiguration.fullPath,
+        },
+      );
     } else {
       setState(() {
         _errorCode = error.code;

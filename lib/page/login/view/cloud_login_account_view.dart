@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/core/utils/logger.dart';
@@ -181,14 +183,10 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
     });
     if (_errorCode.isEmpty) {
       logger.d('Go Password');
-      ref
-          .read(navigationsProvider.notifier)
-          .push(AuthCloudLoginWithPasswordPath()
-            ..args = {
-              'username': _accountController.text,
-              ...widget.args,
-            }
-            ..next = widget.next);
+      context.goNamed(
+        RouteNamed.cloudLoginPassword,
+        queryParameters: {'username': _accountController.text},
+      );
     }
   }
 }

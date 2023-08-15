@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/core/utils/icon_rules.dart';
 import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
@@ -11,6 +12,7 @@ import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/service/cloud_network_service.dart';
+import 'package:linksys_moab/util/analytics.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
 import 'package:linksys_widgets/theme/theme.dart';
@@ -83,7 +85,14 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
               onTap: state.networks[index].isOnline
                   ? () async {
                       await _networkCubit.selectNetwork(state.networks[index]);
-                      _navigationNotifier.clearAndPush(PrepareDashboardPath());
+                      // _navigationNotifier.clearAndPush(PrepareDashboardPath());
+                      logEvent(
+                        eventName: 'ActionSelectNetwork',
+                        parameters: {
+                          'networkId': state.networks[index].network.networkId,
+                        },
+                      );
+                      context.goNamed('prepareDashboard');
                     }
                   : null,
               child: Opacity(

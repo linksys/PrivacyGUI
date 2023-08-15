@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/core/utils/icon_rules.dart';
@@ -51,7 +52,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 expandedHeight: constraint.maxHeight / 2,
                 collaspeTitle: state.location,
                 onCollaspeBackTap: () {
-                  ref.read(navigationsProvider.notifier).pop();
+                  context.pop();
                 },
                 actions: actions,
                 header: Column(
@@ -62,7 +63,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                       leading: AppIconButton(
                         icon: getCharactersIcons(context).arrowLeft,
                         onTap: () {
-                          ref.read(navigationsProvider.notifier).pop();
+                          context.pop();
                         },
                       ),
                       trailing: actions,

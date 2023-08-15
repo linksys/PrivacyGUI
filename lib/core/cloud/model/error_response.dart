@@ -1,8 +1,8 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
-
 
 class ErrorResponse extends Equatable {
   const ErrorResponse(
@@ -11,6 +11,12 @@ class ErrorResponse extends Equatable {
       this.errorMessage,
       this.parameters});
 
+  factory ErrorResponse.convert(Object error) {
+    if (error is TimeoutException) {
+      return const ErrorResponse(status: 1000, code: 'REQUEST_TIMEOUT');
+    }
+    return const ErrorResponse(status: -1, code: 'UNKNOWN_ERROR');
+  }
   factory ErrorResponse.fromJson(int status, Map<String, dynamic> json) {
     final errorsJson = json['errors'];
     if (errorsJson != null) {

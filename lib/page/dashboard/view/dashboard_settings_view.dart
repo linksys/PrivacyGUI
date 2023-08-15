@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/customs/enabled_with_opacity_widget.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_moab/route/constants.dart';
 
-import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
+import 'package:linksys_widgets/widgets/panel/general_section.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-typedef OnMenuItemClick = void Function(int index, DashboardSettingsItem item);
+typedef OnMenuItemClick = void Function(int index, AppSectionItemData item);
 
 class DashboardSettingsView extends ConsumerStatefulWidget {
   const DashboardSettingsView({Key? key}) : super(key: key);
@@ -49,19 +48,11 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
                     _title(),
                     const AppGap.semiBig(),
                     _section(
-                      _networkSettingsSection(context),
-                      (index, item) {
-                        logger.d('MenuItem click $index');
-                        ref.read(navigationsProvider.notifier).push(item.path);
-                      },
+                      _generalSettingsSection(context),
                     ),
                     const AppGap.semiBig(),
                     _section(
-                      _youSettingsSection(),
-                      (index, item) {
-                        logger.d('MenuItem click $index');
-                        ref.read(navigationsProvider.notifier).push(item.path);
-                      },
+                      _advancedSettingsSection(),
                     ),
                     const AppGap.semiBig(),
                     AppTertiaryButton.noPadding('Log out', onTap: () {
@@ -103,76 +94,65 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
     );
   }
 
-  Widget _section(
-      DashboardSettingsSection sectionItem, OnMenuItemClick onItemClick) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppText.tags(
-          sectionItem.title,
-        ),
-        const AppGap.small(),
-        ...sectionItem.items.map((e) => InkWell(
-              onTap: () => onItemClick(sectionItem.items.indexOf(e), e),
-              child: AppSimplePanel(
-                title: e.title,
-                icon: getCharactersIcons(context).getByName(e.iconId),
-              ),
-            )),
-      ],
+  Widget _section(DashboardSettingsSection sectionItem) {
+    return AppSection.withList(
+      header: AppSectionLabel(label: sectionItem.title),
+      items: sectionItem.items,
     );
   }
 
-  _networkSettingsSection(BuildContext context) => DashboardSettingsSection(
-        title: 'NETWORK',
+  _generalSettingsSection(
+    BuildContext context,
+  ) =>
+      DashboardSettingsSection(
+        title: 'GENERAL',
         items: [
-          DashboardSettingsItem(
+          AppSectionItemData(
+            title: 'Notifications',
+            iconData: getCharactersIcons(context).smsDefault,
+            onTap: () => context.goNamed('notifications'),
+          ),
+          AppSectionItemData(
             title: 'WiFi',
-            iconId: 'wifiDefault',
-            path: WifiSettingsOverviewPath(),
+            iconData: getCharactersIcons(context).wifiDefault,
+            onTap: () => context.goNamed('wifiSettings'),
           ),
-          DashboardSettingsItem(
-            title: getAppLocalizations(context).administration,
-            iconId: 'administrationDefault',
-            path: AdministrationViewPath(),
+          AppSectionItemData(
+            title: 'Nodes',
+            iconData: getCharactersIcons(context).nodesDefault,
+            onTap: () => context.pushNamed(RouteNamed.settingsNodes),
           ),
-          DashboardSettingsItem(
-            title: 'Priority',
-            iconId: 'priorityDefault',
-            path: UnknownPath(),
+          AppSectionItemData(
+            title: 'Router Password and Hint',
+            // iconData: getCharactersIcons(context).smsDefault,
+            onTap: () => context.goNamed('routerPassword'),
           ),
-          DashboardSettingsItem(
-            title: 'Internet schedule',
-            iconId: 'clockRound',
-            path: UnknownPath(),
-          ),
-          DashboardSettingsItem(
-            title: 'Safe browsing',
-            iconId: 'filterDefault',
-            path: UnknownPath(),
+          AppSectionItemData(
+            title: 'Time Zone',
+            // iconData: getCharactersIcons(context).smsDefault,
+            onTap: () => context.goNamed('timeZone'),
           ),
         ],
       );
 
 //
-  _youSettingsSection() => DashboardSettingsSection(
-        title: 'YOU',
+  _advancedSettingsSection() => DashboardSettingsSection(
+        title: 'ADVANCED',
         items: [
-          DashboardSettingsItem(
-            title: 'Account',
-            iconId: 'profileDefault',
-            path: AccountDetailPath(),
+          AppSectionItemData(
+            title: 'Internet Settings',
+            // iconData: getCharactersIcons(context).profileDefault,
+            onTap: () => context.goNamed('internetSettings'),
           ),
-          DashboardSettingsItem(
-            title: 'Privacy and legal',
-            iconId: 'infoRound',
-            path: UnknownPath(),
+          AppSectionItemData(
+            title: 'IP Details',
+            // iconData: getCharactersIcons(context).infoRound,
+            onTap: () => context.goNamed('ipDetails'),
           ),
-          DashboardSettingsItem(
-            title: 'Support',
-            iconId: 'helpRound',
-            path: UnknownPath(),
+          AppSectionItemData(
+            title: 'Local Network Settings',
+            // iconData: getCharactersIcons(context).nodesDefault,
+            onTap: () => context.goNamed('localNetworkSettings'),
           ),
         ],
       );
@@ -182,17 +162,5 @@ class DashboardSettingsSection {
   DashboardSettingsSection({required this.title, required this.items});
 
   final String title;
-  final List<DashboardSettingsItem> items;
-}
-
-class DashboardSettingsItem {
-  DashboardSettingsItem({
-    required this.title,
-    required this.iconId,
-    required this.path,
-  });
-
-  final String title;
-  final String iconId;
-  final BasePath path;
+  final List<AppSectionItemData> items;
 }

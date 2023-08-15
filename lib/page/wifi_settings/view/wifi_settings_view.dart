@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/route/model/wifi_settings_path.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -48,9 +50,10 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                           context
                               .read<WifiSettingCubit>()
                               .selectWifi(state.wifiList[index]);
-                          ref
-                              .read(navigationsProvider.notifier)
-                              .push(WifiSettingsReviewPath());
+                          // ref
+                          //     .read(navigationsProvider.notifier)
+                          //     .push(WifiSettingsReviewPath());
+                          context.pushNamed(RouteNamed.wifiSettingsReview);
                         },
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

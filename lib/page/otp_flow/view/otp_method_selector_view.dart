@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/provider/otp/otp.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/core/cloud/model/cloud_communication_method.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_widgets/utils/named.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -31,6 +33,10 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
 
   Widget _contentView(OtpState state) {
     return StyledAppPageView(
+      onBackTap: () {
+        ref.read(otpProvider.notifier).processBack();
+        context.pop();
+      },
       child: AppBasicLayout(
         header: AppText.screenName(
           _createTitle(state),
@@ -78,22 +84,11 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
                   : getAppLocalizations(context).text_continue,
               onTap: () {
                 !state.isSendFunction()
-                    ? _checkPhoneExist(state.selectedMethod!, state.token)
+                    ? _checkPhoneExist(
+                        context, state.selectedMethod!, state.token)
                     : _onSend(state.selectedMethod!);
               },
             ),
-            const AppGap.extraBig(),
-            if (state.isSettingFunction())
-              AppTertiaryButton(
-                key: const Key(
-                    'otp_method_selector_view_button_create_password'),
-                getAppLocalizations(context).otp_create_password_instead,
-                onTap: () {
-                  final username = widget.args['username'];
-                  ref.read(navigationsProvider.notifier).push(
-                      CreateCloudPasswordPath()..args = {'username': username});
-                },
-              ),
           ],
         ),
       ),
@@ -124,7 +119,8 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
     }
   }
 
-  _checkPhoneExist(CommunicationMethod method, String token) {
+  _checkPhoneExist(
+      BuildContext context, CommunicationMethod method, String token) {
     if (method.method == CommunicationMethodType.sms.name.toUpperCase()) {
       ref.read(otpProvider.notifier).addPhone();
       ref.read(navigationsProvider.notifier).push(OtpAddPhonePath()
@@ -138,9 +134,11 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
   _onSend(CommunicationMethod method) {
     _setLoading(true);
     ref.read(otpProvider.notifier).onInputOtp();
-    ref.read(navigationsProvider.notifier).push(OtpInputCodePath()
-      ..next = widget.next
-      ..args.addAll(widget.args));
+    // ref.read(navigationsProvider.notifier).push(OtpInputCodePath()
+    //   ..next = widget.next
+    //   ..args.addAll(widget.args));
+    context.pushNamed(RouteNamed.otpInputCode, queryParameters: widget.args);
+
     _setLoading(false);
   }
 

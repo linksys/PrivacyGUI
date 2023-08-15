@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -31,7 +32,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           expandedHeight: constraint.maxHeight / 2,
           collaspeTitle: state.selectedDeviceInfo?.name,
           onCollaspeBackTap: () {
-            ref.read(navigationsProvider.notifier).pop();
+            context.pop();
           },
           header: Column(
             children: [
@@ -41,7 +42,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                 leading: AppIconButton(
                   icon: getCharactersIcons(context).arrowLeft,
                   onTap: () {
-                    ref.read(navigationsProvider.notifier).pop();
+                    context.pop();
                   },
                 ),
               ),

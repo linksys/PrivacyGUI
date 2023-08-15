@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_moab/page/components/styled/consts.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -48,6 +49,7 @@ class _DeviceListViewState extends ConsumerState<DeviceListView> {
           ? const AppFullScreenSpinner()
           : StyledAppTabPageView(
               title: 'Devices',
+              backState: StyledBackState.none,
               tabs: [
                 AppTab(
                   title: 'Main',

@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/provider/account/account_provider.dart';
 import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/provider/connectivity/_connectivity.dart';
@@ -10,6 +11,7 @@ import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/core/jnap/models/device_info.dart';
 import 'package:linksys_moab/core/jnap/providers/polling_provider.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -42,6 +44,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
 
   _checkSelfNetworks() async {
     await ref.read(connectivityProvider.notifier).forceUpdate();
+    if (!context.mounted) return;
     final loginType =
         ref.watch(authProvider.select((value) => value.value?.loginType));
     if (loginType == LoginType.remote) {
@@ -52,9 +55,8 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
         await context
             .read<NetworkCubit>()
             .getNetworks(accountId: ref.read(accountProvider).id);
-        ref
-            .read(navigationsProvider.notifier)
-            .clearAndPush(SelectNetworkPath());
+
+        context.goNamed(RouteNamed.selectNetwork);
         return;
       }
     }
@@ -70,7 +72,8 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
           linkstyPrefCurrentSN, routerDeviceInfo.serialNumber);
       await ref.read(connectivityProvider.notifier).forceUpdate();
 
-      ref.watch(navigationsProvider.notifier).clearAndPush(DashboardHomePath());
+      // ref.watch(navigationsProvider.notifier).clearAndPush(DashboardHomePath());
+      context.goNamed(RouteNamed.dashboardHome);
       ref.watch(pollingProvider.notifier).startPolling();
     } else {
       // TODO #LINKSYS Error handling for unable to get deviceinfo

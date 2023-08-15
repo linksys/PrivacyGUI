@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/core/jnap/models/device.dart';
@@ -9,9 +10,7 @@ import 'package:linksys_moab/core/jnap/models/iot_network_settings.dart';
 import 'package:linksys_moab/core/jnap/models/radio_info.dart';
 import 'package:linksys_moab/page/components/customs/hidden_password_widget.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
-import 'package:linksys_moab/route/model/wifi_settings_path.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -106,9 +105,8 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
               const Spacer(),
               GestureDetector(
                 onTap: () {
-                  ref
-                      .read(navigationsProvider.notifier)
-                      .push(ShareWifiPath()..args = {'info': items[index]});
+                  context.read<WifiSettingCubit>().selectWifi(items[index]);
+                  context.pushNamed(RouteNamed.wifiShareDetails);
                 },
                 child: AppIcon.regular(
                   icon: getCharactersIcons(context).shareiOS,

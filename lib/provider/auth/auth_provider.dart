@@ -3,12 +3,14 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_moab/constants/jnap_const.dart';
 import 'package:linksys_moab/constants/pref_key.dart';
 import 'package:linksys_moab/core/cloud/model/cloud_session_model.dart';
 import 'package:linksys_moab/core/cloud/model/region_code.dart';
+import 'package:linksys_moab/core/http/linksys_http_client.dart';
 import 'package:linksys_moab/core/jnap/actions/better_action.dart';
 import 'package:linksys_moab/core/cloud/linksys_cloud_repository.dart';
 import 'package:linksys_moab/core/jnap/router_repository.dart';
@@ -84,10 +86,24 @@ final authProvider =
     AsyncNotifierProvider<AuthNotifier, AuthState>(() => AuthNotifier());
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
+  AuthNotifier() : super() {
+    LinksysHttpClient.onError = (error) async {
+      logger.d('Http Response Error: $error');
+      if (error.code == 'INVALID_SESSION_TOKEN') {
+        final sessionToken =
+            await checkSessionToken().onError(handleSessionTokenError);
+        final invalidToken = error.errorMessage?.split(':')[1].trim() ?? '';
+        if (sessionToken == null || sessionToken.accessToken == invalidToken) {
+          logout();
+        }
+      }
+    };
+  }
+
   @override
   Future<AuthState> build() => Future.value(AuthState.empty());
 
-  init() async {
+  Future init() async {
     state = const AsyncValue.loading();
     // check session token exist and is session token expored
 
@@ -148,12 +164,19 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       Object error, StackTrace trace) {
     if (error is NeedToRefreshTokenException) {
       logger.d('refresh token...');
-      final cloud = ref.read(cloudRepositoryProvider);
-      return cloud.refreshToken(error.refreshToken);
+      return refreshToken(error.refreshToken);
     } else {
       // not handling at this moment
       throw error;
     }
+  }
+
+  Future<SessionToken?> refreshToken(String refreshToken) {
+    final cloud = ref.read(cloudRepositoryProvider);
+    return cloud.refreshToken(refreshToken).then((value) async {
+      await updateCredientials(sessionToken: value);
+      return value;
+    });
   }
 
   Future cloudLogin({
@@ -176,25 +199,31 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future updateCredientials({
-    required SessionToken sessionToken,
-    required String username,
-    required String password,
+    SessionToken? sessionToken,
+    String? username,
+    String? password,
   }) async {
     const storage = FlutterSecureStorage();
-    await storage.write(
-      key: pSessionToken,
-      value: jsonEncode(
-        sessionToken.toJson(),
-      ),
-    );
-    await storage.write(
-      key: pSessionTokenTs,
-      value: '${DateTime.now().millisecondsSinceEpoch}',
-    );
-    await storage.write(
-      key: pUserPassword,
-      value: password,
-    );
+    if (sessionToken != null) {
+      await storage.write(
+        key: pSessionToken,
+        value: jsonEncode(
+          sessionToken.toJson(),
+        ),
+      );
+      await storage.write(
+        key: pSessionTokenTs,
+        value: '${DateTime.now().millisecondsSinceEpoch}',
+      );
+    }
+    if (username != null) {}
+    if (password != null) {
+      await storage.write(
+        key: pUserPassword,
+        value: password,
+      );
+    }
+
     return (state.value ?? AuthState.empty()).copyWith(
       sessionToken: sessionToken,
       username: username,

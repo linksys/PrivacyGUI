@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/bloc/network/state.dart';
 import 'package:linksys_moab/core/jnap/models/device.dart';
@@ -9,6 +10,7 @@ import 'package:linksys_moab/core/jnap/models/network.dart';
 import 'package:linksys_moab/core/jnap/models/radio_info.dart';
 import 'package:linksys_moab/core/utils/icon_rules.dart';
 import 'package:linksys_moab/page/components/customs/enabled_with_opacity_widget.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_moab/route/model/_model.dart';
@@ -72,50 +74,10 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   }
 
   Widget _homeTitle(NetworkState state) {
-    final hasMultiNetworks = state.networks.length > 1;
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            AppIcon(
-              icon: getCharactersIcons(context).homeDefault,
-              size: AppIconSize.big,
-            ),
-            const AppGap.semiSmall(),
-            Expanded(
-              child: InkWell(
-                onTap: hasMultiNetworks
-                    ? () {
-                        ref
-                            .read(navigationsProvider.notifier)
-                            .push(SelectNetworkPath());
-                      }
-                    : null,
-                child: Row(
-                  children: [
-                    AppText.subhead(
-                      state.selected?.radioInfo?.first.settings.ssid ?? 'Home',
-                    ),
-                    if (hasMultiNetworks)
-                      AppIcon.regular(
-                        icon: getCharactersIcons(context).chevronDown,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            AppIconButton(
-              icon: getCharactersIcons(context).bellDefault,
-              onTap: () {
-                ref.read(navigationsProvider.notifier).push(LinkupPath());
-              },
-            ),
-          ],
-        ),
         const AppGap.big(),
         const Row(
           children: [
@@ -167,7 +129,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       descripition: 'WiFi networks active', //TODO: XXXXXX Get active status??
       icons: icons,
       onTap: () {
-        ref.read(navigationsProvider.notifier).push(WifiListPath());
+        context.pushNamed(RouteNamed.wifiShare);
       },
     );
   }
@@ -196,7 +158,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       descripition: 'Nodes online', //TODO: XXXXXX Get Node online status
       icons: icons,
       onTap: () {
-        ref.read(navigationsProvider.notifier).push(TopologyPath());
+        context.pushNamed(RouteNamed.settingsNodes);
       },
     );
   }
