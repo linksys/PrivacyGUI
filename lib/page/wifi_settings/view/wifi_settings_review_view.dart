@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/wifi_settings_path.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -155,17 +155,24 @@ class _WifiSettingsReviewViewState
     final currentOption = wifiItem.wifiType.settingOptions[index];
     switch (currentOption) {
       case WifiSettingOption.nameAndPassword:
-        ref.read(navigationsProvider.notifier).push(EditWifiNamePasswordPath());
+        // ref.read(navigationsProvider.notifier).push(EditWifiNamePasswordPath());
+        context.pushNamed(RouteNamed.wifiEditSSID);
         break;
       case WifiSettingOption.securityType6G:
       case WifiSettingOption.securityTypeBelow6G:
       case WifiSettingOption.securityType:
-        ref.read(navigationsProvider.notifier).pushAndWait(
-            EditWifiSecurityPath()
-              ..args = {'wifiSettingOption': currentOption});
+        // ref.read(navigationsProvider.notifier).pushAndWait(
+        //     EditWifiSecurityPath()
+        //       ..args = {'wifiSettingOption': currentOption});
+        context.pushNamed(RouteNamed.wifiEditSecurity, queryParameters: {
+          'wifiSettingOption': currentOption.name,
+        });
+
         break;
       case WifiSettingOption.mode:
-        ref.read(navigationsProvider.notifier).push(EditWifiModePath());
+        // ref.read(navigationsProvider.notifier).push(EditWifiModePath());
+        context.pushNamed(RouteNamed.wifiEditMode);
+
         break;
     }
   }

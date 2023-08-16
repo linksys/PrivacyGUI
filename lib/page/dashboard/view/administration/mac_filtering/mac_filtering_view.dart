@@ -1,28 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/core/jnap/router_repository.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_moab/route/constants.dart';
+
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'bloc/cubit.dart';
 
 class MacFilteringView extends ArgumentsConsumerStatelessView {
-  const MacFilteringView({super.key, super.next, super.args});
+  const MacFilteringView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
       create: (context) => MacFilteringCubit(context.read<RouterRepository>()),
       child: MacFilteringContentView(
-        next: super.next,
         args: super.args,
       ),
     );
@@ -30,7 +29,7 @@ class MacFilteringView extends ArgumentsConsumerStatelessView {
 }
 
 class MacFilteringContentView extends ArgumentsConsumerStatefulView {
-  const MacFilteringContentView({super.key, super.next, super.args});
+  const MacFilteringContentView({super.key, super.args});
 
   @override
   ConsumerState<MacFilteringContentView> createState() =>
@@ -88,26 +87,26 @@ class _MacFilteringContentViewState
               title: getAppLocalizations(context).access,
               infoText: state.status.name,
               onTap: () async {
-                final String? selected = await ref
-                    .read(navigationsProvider.notifier)
-                    .pushAndWait(SimpleItemPickerPath()
-                      ..args = {
-                        'items': [
-                          Item(
-                            title: getAppLocalizations(context).allow_access,
-                            description: getAppLocalizations(context)
-                                .allow_access_description,
-                            id: MacFilterStatus.allow.name,
-                          ),
-                          Item(
-                            title: getAppLocalizations(context).deny_access,
-                            description: getAppLocalizations(context)
-                                .deny_access_description,
-                            id: MacFilterStatus.deny.name,
-                          ),
-                        ],
-                        'selected': state.status.name,
-                      });
+                final String? selected = await context.pushNamed(
+                  RouteNamed.itemPicker,
+                  queryParameters: {
+                    'items': [
+                      Item(
+                        title: getAppLocalizations(context).allow_access,
+                        description: getAppLocalizations(context)
+                            .allow_access_description,
+                        id: MacFilterStatus.allow.name,
+                      ),
+                      Item(
+                        title: getAppLocalizations(context).deny_access,
+                        description: getAppLocalizations(context)
+                            .deny_access_description,
+                        id: MacFilterStatus.deny.name,
+                      ),
+                    ],
+                    'selected': state.status.name,
+                  },
+                );
                 if (selected != null) {
                   _cubit.setAccess(selected);
                 }
@@ -126,9 +125,8 @@ class _MacFilteringContentViewState
             AppSimplePanel(
               title: getAppLocalizations(context).enter_mac_address,
               onTap: () async {
-                String? macAddress = await ref
-                    .read(navigationsProvider.notifier)
-                    .pushAndWait(MacFilteringInputPath());
+                String? macAddress =
+                    await context.pushNamed(RouteNamed.macFilteringInput);
                 if (macAddress != null) {
                   // TODO query devices name and save device
                   // showSuccessSnackBar(context, 'message');

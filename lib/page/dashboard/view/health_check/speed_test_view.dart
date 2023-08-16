@@ -12,7 +12,10 @@ import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'speed_test_button.dart';
 
 class SpeedTestView extends ArgumentsConsumerStatefulView {
-  const SpeedTestView({Key? key, super.args, super.next}) : super(key: key);
+  const SpeedTestView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<SpeedTestView> createState() => _SpeedTestViewState();

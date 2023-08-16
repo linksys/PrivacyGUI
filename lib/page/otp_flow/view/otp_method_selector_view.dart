@@ -7,17 +7,15 @@ import 'package:linksys_moab/core/cloud/model/cloud_communication_method.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/constants.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
-import 'package:linksys_widgets/utils/named.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class OTPMethodSelectorView extends ArgumentsConsumerStatefulView {
-  const OTPMethodSelectorView({Key? key, super.args, super.next})
-      : super(key: key);
+  const OTPMethodSelectorView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<OTPMethodSelectorView> createState() =>
@@ -122,10 +120,7 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
   _checkPhoneExist(
       BuildContext context, CommunicationMethod method, String token) {
     if (method.method == CommunicationMethodType.sms.name.toUpperCase()) {
-      ref.read(otpProvider.notifier).addPhone();
-      ref.read(navigationsProvider.notifier).push(OtpAddPhonePath()
-        ..next = widget.next
-        ..args.addAll(widget.args));
+      // Add phone number
     } else {
       _onSend(method);
     }

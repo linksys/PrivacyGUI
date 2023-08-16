@@ -11,9 +11,7 @@ import 'package:linksys_moab/core/jnap/models/radio_info.dart';
 import 'package:linksys_moab/core/utils/icon_rules.dart';
 import 'package:linksys_moab/page/components/customs/enabled_with_opacity_widget.dart';
 import 'package:linksys_moab/route/constants.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_moab/route/model/_model.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -185,7 +183,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       descripition: 'Devices online', //TODO: XXXXXX which online deivce??
       icons: icons,
       onTap: () {
-        ref.read(navigationsProvider.notifier).push(DeviceListPath());
+        // TODO dashboard shell
       },
     );
   }
@@ -312,7 +310,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                       ))),
               GestureDetector(
                 onTap: () {
-                  ref.read(navigationsProvider.notifier).push(SpeedCheckPath());
+                  // GoRouter helath check
                 },
                 child: const CircleAvatar(
                   radius: 21,

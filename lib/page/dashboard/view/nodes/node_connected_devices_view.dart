@@ -10,8 +10,10 @@ import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class NodeConnectedDevicesView extends ArgumentsConsumerStatefulView {
-  const NodeConnectedDevicesView({Key? key, super.args, super.next})
-      : super(key: key);
+  const NodeConnectedDevicesView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<NodeConnectedDevicesView> createState() =>

@@ -18,14 +18,13 @@ import '../common_widget.dart';
 import 'bloc/cubit.dart';
 
 class IpDetailsView extends ArgumentsConsumerStatelessView {
-  const IpDetailsView({super.key, super.next, super.args});
+  const IpDetailsView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
       create: (context) => IpDetailsCubit(context.read<RouterRepository>()),
       child: IpDetailsContentView(
-        next: super.next,
         args: super.args,
       ),
     );
@@ -33,7 +32,7 @@ class IpDetailsView extends ArgumentsConsumerStatelessView {
 }
 
 class IpDetailsContentView extends ArgumentsConsumerStatefulView {
-  const IpDetailsContentView({super.key, super.next, super.args});
+  const IpDetailsContentView({super.key, super.args});
 
   @override
   ConsumerState<IpDetailsContentView> createState() =>

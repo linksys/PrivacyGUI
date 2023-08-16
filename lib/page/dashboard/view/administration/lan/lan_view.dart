@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/input_fields/ip_form_field.dart';
 import 'package:linksys_moab/page/components/picker/simple_item_picker.dart';
@@ -8,24 +9,22 @@ import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/core/jnap/router_repository.dart';
-import 'package:linksys_moab/route/model/_model.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import 'bloc/cubit.dart';
 import 'bloc/state.dart';
 
 class LANView extends ArgumentsConsumerStatelessView {
-  const LANView({super.key, super.next, super.args});
+  const LANView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
       create: (context) => LANCubit(context.read<RouterRepository>()),
       child: LANContentView(
-        next: super.next,
         args: super.args,
       ),
     );
@@ -33,7 +32,7 @@ class LANView extends ArgumentsConsumerStatelessView {
 }
 
 class LANContentView extends ArgumentsConsumerStatefulView {
-  const LANContentView({super.key, super.next, super.args});
+  const LANContentView({super.key, super.args});
 
   @override
   ConsumerState<LANContentView> createState() => _LANContentViewState();
@@ -185,16 +184,16 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                           ? getAppLocalizations(context).auto
                           : getAppLocalizations(context).manual,
                       onTap: () async {
-                        String? result = await ref
-                            .read(navigationsProvider.notifier)
-                            .pushAndWait(SimpleItemPickerPath()
-                              ..args = {
-                                'items': [
-                                  const Item(title: 'Auto', id: 'Auto'),
-                                  const Item(title: 'Manual', id: 'Manual'),
-                                ],
-                                'selected': state.isAutoDNS ? 'Auto' : 'Manual',
-                              });
+                        String? result = await context.pushNamed(
+                          RouteNamed.itemPicker,
+                          queryParameters: {
+                            'items': [
+                              const Item(title: 'Auto', id: 'Auto'),
+                              const Item(title: 'Manual', id: 'Manual'),
+                            ],
+                            'selected': state.isAutoDNS ? 'Auto' : 'Manual',
+                          },
+                        );
                         if (result != null) {
                           _cubit.setAutoDNS(result == 'Auto');
                         }
@@ -205,9 +204,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                       title: getAppLocalizations(context).dhcp_reservations,
                       infoText: ' ',
                       onTap: () {
-                        ref
-                            .read(navigationsProvider.notifier)
-                            .push(DHCPReservationsPath());
+                        context.pushNamed(RouteNamed.dhcpReservation);
                       },
                     ),
                   ],

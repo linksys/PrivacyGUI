@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class EditDeviceNameView extends ArgumentsConsumerStatefulView {
-  const EditDeviceNameView({Key? key, super.args, super.next})
-      : super(key: key);
+  const EditDeviceNameView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<EditDeviceNameView> createState() => _EditDeviceNameViewState();
@@ -42,7 +43,7 @@ class _EditDeviceNameViewState extends ConsumerState<EditDeviceNameView> {
                 .updateDeviceInfoName(
                     context.read<DeviceCubit>().state.selectedDeviceInfo!,
                     _textController.text)
-                .then((value) => ref.read(navigationsProvider.notifier).pop());
+                .then((value) => context.pop());
           },
         ),
       ],

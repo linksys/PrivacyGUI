@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class Item {
@@ -33,7 +32,7 @@ class Item {
 }
 
 class SimpleItemPickerView extends ArgumentsConsumerStatefulView {
-  const SimpleItemPickerView({super.key, super.next, super.args});
+  const SimpleItemPickerView({super.key, super.args});
 
   @override
   ConsumerState<SimpleItemPickerView> createState() =>
@@ -69,9 +68,7 @@ class _SimpleItemPickerViewState extends ConsumerState<SimpleItemPickerView> {
                         setState(() {
                           _selected = item.id;
                         });
-                        ref
-                            .read(navigationsProvider.notifier)
-                            .popWithResult(_selected);
+                        context.pop(_selected);
                       },
                 child: AppPanelWithValueCheck(
                   title: item.title,

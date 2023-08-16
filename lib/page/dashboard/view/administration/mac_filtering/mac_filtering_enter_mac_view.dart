@@ -8,7 +8,7 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class MacFilteringEnterDeviceView extends ArgumentsConsumerStatefulView {
-  const MacFilteringEnterDeviceView({super.key, super.next, super.args});
+  const MacFilteringEnterDeviceView({super.key, super.args});
 
   @override
   ConsumerState<MacFilteringEnterDeviceView> createState() =>

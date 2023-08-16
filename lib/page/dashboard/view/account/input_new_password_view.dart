@@ -9,8 +9,10 @@ import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class InputNewPasswordView extends ArgumentsConsumerStatefulView {
-  const InputNewPasswordView({Key? key, super.args, super.next})
-      : super(key: key);
+  const InputNewPasswordView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   _InputNewPasswordViewState createState() => _InputNewPasswordViewState();

@@ -1,5 +1,4 @@
 //GENERATED BARREL FILE 
-export 'administration_view.dart';
 export 'router_password/router_password_view.dart';
 export 'firmware_update_view.dart';
 export 'timezone/timezone_view.dart';

@@ -9,18 +9,18 @@ import 'package:linksys_moab/core/cloud/model/cloud_session_model.dart';
 import 'package:linksys_moab/core/cloud/model/error_response.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
-import 'package:linksys_moab/route/model/_model.dart';
 
 class CloudLoginPasswordView extends ArgumentsConsumerStatefulView {
-  const CloudLoginPasswordView({Key? key, super.args, super.next})
-      : super(key: key);
+  const CloudLoginPasswordView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<CloudLoginPasswordView> createState() =>
@@ -134,9 +134,7 @@ class _LoginTraditionalPasswordViewState
               getAppLocalizations(context).forgot_password,
               key: const Key('login_password_view_button_forgot_password'),
               onTap: () {
-                ref
-                    .read(navigationsProvider.notifier)
-                    .push(AuthCloudForgotPasswordPath());
+                context.pushNamed(RouteNamed.cloudForgotPassword);
               },
             ),
             const Spacer(),

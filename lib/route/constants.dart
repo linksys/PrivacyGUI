@@ -7,6 +7,8 @@ class RoutePath {
   /// cloud login
   static const cloudLoginAccount = 'cloudLoginAccount';
   static const cloudLoginPassword = 'cloudLoginPassword';
+  static const cloudForgotPassword = 'cloudForgotPassword';
+  static const phoneRegionCode = 'phoneRegionCode';
 
   /// dashboard
   static const dashboardHome = '/dashboardHome';
@@ -22,6 +24,9 @@ class RoutePath {
   static const settingsInternet = 'internetSettings';
   static const settingsIpDetails = 'ipDetails';
   static const settingsLocalNetwork = 'localNetworkSettings';
+  static const settingsMacFiltering = 'macFilteringSettings';
+  static const settingsPort = 'portSettings';
+  static const itemPicker = 'itemPicker';
 
   /// otp
   static const otpStart = 'otp';
@@ -32,16 +37,44 @@ class RoutePath {
   static const wifiSettingsReview = 'wifiSettingsReview';
   static const wifiShare = 'wifiShare';
   static const wifiShareDetails = 'wifiShareDetails';
+  static const wifiEditSecurity = 'wifiEditSecurity';
+  static const wifiEditMode = 'wifiEditMode';
+  static const wifiEditSSID = 'wifiEditSSID';
 
   /// node
   static const nodeDetails = 'nodeDetails';
   static const nodeOffline = 'nodeOffline';
+  static const nodeLight = 'nodeLight';
 
   /// device
   static const deviceDetails = 'deviceDetails';
 
   /// account
   static const accountInfo = 'accountInfo';
+
+  /// internet
+  static const mtuPicker = 'mtuPicker';
+  static const macClone = 'macClone';
+  static const connectionType = 'connectionType';
+
+  /// lan
+  static const dhcpReservation = 'dhcpReservation';
+
+  /// mac filtering
+  static const macFilteringInput = 'macFilteringInput';
+
+  /// port forwarding
+  static const singlePortForwardingList = 'singlePortForwardingList';
+  static const singlePortForwardingRule = 'singlePortForwardingRule';
+  static const portRangeForwardingList = 'portRangeForwardingList';
+  static const portRangeForwardingRule = 'portRangeForwardingRule';
+  static const portRangeTriggeringList = 'portRangeTriggeringList';
+  static const protRangeTriggeringRule = 'portRangeTriggeringRule';
+  static const selectDevice = 'selectDevice';
+  static const selectProtocol = 'selectProtocol';
+
+  /// debug
+  static const debug = 'debug';
 }
 
 class RouteNamed {
@@ -53,6 +86,8 @@ class RouteNamed {
   /// login
   static const cloudLoginAccount = 'cloudLoginAccount';
   static const cloudLoginPassword = 'cloudLoginPassword';
+  static const cloudForgotPassword = 'cloudForgotPassword';
+  static const phoneRegionCode = 'phoneRegionCode';
 
   /// dashboard
   static const dashboardMenu = 'dashboardMenu';
@@ -68,6 +103,9 @@ class RouteNamed {
   static const settingsInternet = 'internetSettings';
   static const settingsIpDetails = 'ipDetails';
   static const settingsLocalNetwork = 'localNetworkSettings';
+  static const settingsMacFiltering = 'macFilteringSettings';
+  static const settingsPort = 'portSettings';
+  static const itemPicker = 'itemPicker';
 
   /// otp
   static const otpStart = 'otp';
@@ -78,14 +116,42 @@ class RouteNamed {
   static const wifiSettingsReview = 'wifiSettingsReview';
   static const wifiShare = 'wifiShare';
   static const wifiShareDetails = 'wifiShareDetails';
+  static const wifiEditSecurity = 'wifiEditSecurity';
+  static const wifiEditMode = 'wifiEditMode';
+  static const wifiEditSSID = 'wifiEditSSID';
 
   /// node
   static const nodeDetails = 'nodeDetails';
   static const nodeOffline = 'nodeOffline';
+  static const nodeLight = 'nodeLight';
 
   ///device
   static const deviceDetails = 'deviceDetails';
 
   /// account
   static const accountInfo = 'accountInfo';
+
+  /// internet
+  static const mtuPicker = 'mtuPicker';
+  static const macClone = 'macClone';
+  static const connectionType = 'connectionType';
+
+  /// lan
+  static const dhcpReservation = 'dhcpReservation';
+
+  /// mac filtering
+  static const macFilteringInput = 'macFilteringInput';
+
+  /// port forwarding
+  static const singlePortForwardingList = 'singlePortForwardingList';
+  static const singlePortForwardingRule = 'singlePortForwardingRule';
+  static const portRangeForwardingList = 'portRangeForwardingList';
+  static const portRangeForwardingRule = 'portRangeForwardingRule';
+  static const portRangeTriggeringList = 'portRangeTriggeringList';
+  static const protRangeTriggeringRule = 'portRangeTriggeringRule';
+  static const selectDevice = 'selectDevice';
+  static const selectProtocol = 'selectProtocol';
+
+  /// debug
+  static const debug = 'debug';
 }

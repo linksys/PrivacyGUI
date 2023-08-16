@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/consts.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-import '../../../../route/model/devices_path.dart';
 import '../../../components/styled/styled_tab_page_view.dart';
 
 class DeviceListView extends ArgumentsConsumerStatefulView {
-  const DeviceListView({Key? key, super.args, super.next}) : super(key: key);
+  const DeviceListView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<DeviceListView> createState() => _DeviceListViewState();
@@ -119,7 +122,8 @@ class _DeviceListViewState extends ConsumerState<DeviceListView> {
           rssi: device.signal,
           onTap: () {
             context.read<DeviceCubit>().updateSelectedDeviceInfo(device);
-            ref.read(navigationsProvider.notifier).push(DeviceDetailPath());
+
+            context.pushNamed(RouteNamed.deviceDetails);
           },
         ));
   }

@@ -5,6 +5,11 @@ final homeRoute = GoRoute(
   path: RoutePath.home,
   builder: (context, state) => const HomeView(),
   routes: [
+    GoRoute(
+      name: RouteNamed.debug,
+      path: RoutePath.debug,
+      builder: (context, state) => const HomeView(),
+    ),
     loginRoute
     //setupRoute
   ],

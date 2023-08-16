@@ -7,8 +7,7 @@ import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/core/utils/icon_rules.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -19,7 +18,10 @@ import 'package:linksys_widgets/widgets/page/layout/profile_header_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class NodeDetailView extends ArgumentsConsumerStatefulView {
-  const NodeDetailView({Key? key, super.args, super.next}) : super(key: key);
+  const NodeDetailView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<NodeDetailView> createState() => _NodeDetailViewState();
@@ -40,7 +42,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       AppIconButton.noPadding(
         icon: getCharactersIcons(context).infoRound,
         onTap: () {
-          ref.read(navigationsProvider.notifier).push(NodeLightGuidePath());
+          context.pushNamed(RouteNamed.nodeLight);
         },
       )
     ];

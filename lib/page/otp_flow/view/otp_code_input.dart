@@ -19,7 +19,10 @@ import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:sms_receiver_plugin/sms_receiver_plugin.dart';
 
 class OtpCodeInputView extends ArgumentsConsumerStatefulView {
-  const OtpCodeInputView({Key? key, super.args, super.next}) : super(key: key);
+  const OtpCodeInputView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<OtpCodeInputView> createState() => _OtpCodeInputViewState();

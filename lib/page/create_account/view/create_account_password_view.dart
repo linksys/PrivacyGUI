@@ -4,9 +4,6 @@ import 'package:linksys_moab/provider/auth/_auth.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -114,9 +111,7 @@ class _CreateAccountPasswordViewState
             ),
             AppTertiaryButton('I already have a Linksys account password',
                 onTap: () {
-              ref
-                  .read(navigationsProvider.notifier)
-                  .push(SameAccountPromptPath());
+              
             }),
             const AppGap.big(),
             AppPrimaryButton(

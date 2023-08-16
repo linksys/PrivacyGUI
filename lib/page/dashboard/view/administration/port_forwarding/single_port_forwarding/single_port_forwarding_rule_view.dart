@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/core/jnap/models/single_port_forwarding_rule.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/single_port_forwarding/bloc/single_port_forwarding_rule_cubit.dart';
 import 'package:linksys_moab/core/jnap/router_repository.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/model/administration_path.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class SinglePortForwardingRuleView extends ArgumentsConsumerStatelessView {
-  const SinglePortForwardingRuleView({super.key, super.next, super.args});
+  const SinglePortForwardingRuleView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,7 +21,6 @@ class SinglePortForwardingRuleView extends ArgumentsConsumerStatelessView {
       create: (context) => SinglePortForwardingRuleCubit(
           repository: context.read<RouterRepository>()),
       child: SinglePortForwardingRuleContentView(
-        next: super.next,
         args: super.args,
       ),
     );
@@ -31,8 +29,7 @@ class SinglePortForwardingRuleView extends ArgumentsConsumerStatelessView {
 
 class SinglePortForwardingRuleContentView
     extends ArgumentsConsumerStatefulView {
-  const SinglePortForwardingRuleContentView(
-      {super.key, super.next, super.args});
+  const SinglePortForwardingRuleContentView({super.key, super.args});
 
   @override
   ConsumerState<SinglePortForwardingRuleContentView> createState() =>
@@ -104,7 +101,7 @@ class _AddRuleContentViewState
                     );
                   }
 
-                  ref.read(navigationsProvider.notifier).popWithResult(true);
+                  context.pop(true);
                 }
               });
             },
@@ -146,7 +143,7 @@ class _AddRuleContentViewState
                 AppToastHelp.positiveToast(context,
                     text: getAppLocalizations(context).rule_deleted),
               );
-              ref.read(navigationsProvider.notifier).popWithResult(true);
+              context.pop(true);
             }
           });
         },
@@ -182,9 +179,7 @@ class _AddRuleContentViewState
         textValidator: () =>
             _cubit.isDeviceIpValidate(_deviceIpAddressController.text),
         onCtaTap: () async {
-          String? deviceIp = await ref
-              .read(navigationsProvider.notifier)
-              .pushAndWait(SelectDevicePtah());
+          String? deviceIp = await context.pushNamed(RouteNamed.selectDevice);
         },
       ),
       const AppGap.semiSmall(),
@@ -192,10 +187,10 @@ class _AddRuleContentViewState
         title: getAppLocalizations(context).protocol,
         infoText: getProtocolTitle(_protocol),
         onTap: () async {
-          String? protocol = await ref
-              .read(navigationsProvider.notifier)
-              .pushAndWait(
-                  SelectProtocolPath()..args = {'selected': _protocol});
+          String? protocol = await context.pushNamed(
+            RouteNamed.selectProtocol,
+            queryParameters: {'selected': _protocol},
+          );
           if (protocol != null) {
             setState(() {
               _protocol = protocol;

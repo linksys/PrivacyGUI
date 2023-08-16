@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/route/model/_model.dart';
 
 // abstract class ArgumentsBaseStatefulView<T> extends ConsumerStatefulWidget {
 //   final Map<String, T> args;
@@ -37,8 +36,7 @@ abstract class ArgumentsBaseConsumerStatefulView<T>
 
 abstract class ArgumentsConsumerStatefulView
     extends ArgumentsBaseConsumerStatefulView<dynamic> {
-  final BasePath? next;
-  const ArgumentsConsumerStatefulView({Key? key, super.args, this.next})
+  const ArgumentsConsumerStatefulView({Key? key, super.args,})
       : super(key: key);
 }
 
@@ -50,7 +48,6 @@ abstract class ArgumentsBaseConsumerStatelessView<T> extends ConsumerWidget {
 
 abstract class ArgumentsConsumerStatelessView
     extends ArgumentsBaseConsumerStatelessView<dynamic> {
-  final BasePath? next;
-  const ArgumentsConsumerStatelessView({Key? key, super.args, this.next})
+  const ArgumentsConsumerStatelessView({Key? key, super.args,})
       : super(key: key);
 }

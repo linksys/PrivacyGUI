@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/string_mapping.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class ConnectionTypeSelectionView extends ArgumentsConsumerStatefulView {
-  const ConnectionTypeSelectionView({super.key, super.next, super.args});
+  const ConnectionTypeSelectionView({super.key, super.args});
 
   @override
   ConsumerState<ConnectionTypeSelectionView> createState() =>
@@ -50,9 +49,7 @@ class _ConnectionTypeSelectionViewState
                         setState(() {
                           _selected = connectionType.type;
                         });
-                        ref
-                            .read(navigationsProvider.notifier)
-                            .popWithResult(_selected);
+                        context.pop(_selected);
                       },
                 child: AppPanelWithValueCheck(
                   title: connectionType.title,

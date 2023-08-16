@@ -8,8 +8,10 @@ import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class CloudPasswordValidationView extends ArgumentsConsumerStatefulView {
-  const CloudPasswordValidationView({Key? key, super.args, super.next})
-      : super(key: key);
+  const CloudPasswordValidationView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   _CloudPasswordValidationViewState createState() =>

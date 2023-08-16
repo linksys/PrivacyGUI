@@ -10,8 +10,8 @@ import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 
-class LightGuideView extends ConsumerWidget {
-  const LightGuideView({super.key});
+class NodeLightGuideView extends ConsumerWidget {
+  const NodeLightGuideView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_moab/provider/account/account_provider.dart';
 import 'package:linksys_moab/provider/account/account_state.dart';
 import 'package:linksys_moab/provider/auth/_auth.dart';
 import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:styled_text/styled_text.dart';
-
-import '../../../../route/model/create_account_path.dart';
 
 class AccountView extends ConsumerStatefulWidget {
   const AccountView({super.key});
@@ -180,9 +175,9 @@ class _AccountViewState extends ConsumerState<AccountView> {
           AppPrimaryButton(
             'Create an account',
             onTap: () {
-              ref.read(navigationsProvider.notifier).push(
-                  CreateCloudAccountPath()
-                    ..args = {'config': 'LOCALAUTHCREATEACCOUNT'});
+              // ref.read(navigationsProvider.notifier).push(
+              //     CreateCloudAccountPath()
+              //       ..args = {'config': 'LOCALAUTHCREATEACCOUNT'});
             },
           ),
           const AppGap.extraBig(),

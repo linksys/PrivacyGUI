@@ -9,7 +9,10 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class NodeNameEditView extends ArgumentsConsumerStatefulView {
-  const NodeNameEditView({Key? key, super.args, super.next}) : super(key: key);
+  const NodeNameEditView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<NodeNameEditView> createState() => _NodeNameEditViewState();

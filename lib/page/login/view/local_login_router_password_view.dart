@@ -10,9 +10,6 @@ import 'package:linksys_moab/core/jnap/models/device_info.dart';
 import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
 import 'package:linksys_moab/page/components/customs/network_check_view.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -132,9 +129,7 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
             ),
           AppTertiaryButton(getAppLocalizations(context).forgot_router_password,
               onTap: () {
-            ref
-                .read(navigationsProvider.notifier)
-                .push(AuthLocalRecoveryKeyPath());
+            // Go Router
           }),
           const Spacer(),
           AppPrimaryButton(

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -48,7 +47,7 @@ class NoInternetConnectionModal extends ConsumerWidget {
                 child: AppIconButton(
                   icon: getCharactersIcons(context).crossDefault,
                   onTap: () {
-                    ref.read(navigationsProvider.notifier).pop();
+                    context.pop();
                   },
                 ),
               ),

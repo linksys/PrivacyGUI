@@ -3,19 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/constants/build_config.dart';
 import 'package:linksys_moab/page/components/customs/debug_overlay_view.dart';
-import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/route/constants.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import 'package:linksys_moab/util/debug_mixin.dart';
 import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/theme.dart';
-import 'package:linksys_widgets/utils/named.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 enum DashboardBottomItemType { more, home, devices, settings }
@@ -56,9 +51,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
               onTap: () {
                 if (increase()) {
                   logger.d('Triggered!');
-                  ref
-                      .read(navigationsProvider.notifier)
-                      .push(DebugToolsMainPath());
+                  context.pushNamed(RouteNamed.debug);
                 }
               },
               child: widget.child),

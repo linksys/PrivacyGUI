@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/core/jnap/models/port_range_triggering_rule.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
@@ -8,13 +9,11 @@ import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/port_range_triggering/bloc/port_range_triggering_rule_cubit.dart';
 import 'package:linksys_moab/core/jnap/router_repository.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class PortRangeTriggeringRuleView extends ArgumentsConsumerStatelessView {
-  const PortRangeTriggeringRuleView({super.key, super.next, super.args});
+  const PortRangeTriggeringRuleView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,7 +21,6 @@ class PortRangeTriggeringRuleView extends ArgumentsConsumerStatelessView {
       create: (context) => PortRangeTriggeringRuleCubit(
           repository: context.read<RouterRepository>()),
       child: PortRangeTriggeringRuleContentView(
-        next: super.next,
         args: super.args,
       ),
     );
@@ -30,7 +28,7 @@ class PortRangeTriggeringRuleView extends ArgumentsConsumerStatelessView {
 }
 
 class PortRangeTriggeringRuleContentView extends ArgumentsConsumerStatefulView {
-  const PortRangeTriggeringRuleContentView({super.key, super.next, super.args});
+  const PortRangeTriggeringRuleContentView({super.key, super.args});
 
   @override
   ConsumerState<PortRangeTriggeringRuleContentView> createState() =>
@@ -110,7 +108,7 @@ class _AddRuleContentViewState
                     );
                   }
 
-                  ref.read(navigationsProvider.notifier).popWithResult(true);
+                  context.pop(true);
                 }
               });
             },
@@ -153,7 +151,7 @@ class _AddRuleContentViewState
                 AppToastHelp.positiveToast(context,
                     text: getAppLocalizations(context).rule_deleted),
               );
-              ref.read(navigationsProvider.notifier).popWithResult(true);
+              context.pop(true);
             }
           });
         },

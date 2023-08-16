@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/node/cubit.dart';
 import 'package:linksys_moab/bloc/node/state.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/base_components/progress_bars/indeterminate_progress_bar.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class NodeRestartView extends ConsumerStatefulWidget {
@@ -57,7 +56,7 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
         const AppGap.regular(),
         AppSecondaryButton(
           getAppLocalizations(context).cancel,
-          onTap: () => ref.read(navigationsProvider.notifier).pop(),
+          onTap: () => context.pop(),
         ),
       ],
     );

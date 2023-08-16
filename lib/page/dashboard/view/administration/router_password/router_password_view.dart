@@ -17,7 +17,6 @@ import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 class RouterPasswordView extends ArgumentsConsumerStatelessView {
   const RouterPasswordView({
     Key? key,
-    super.next,
     super.args,
   }) : super(key: key);
 
@@ -28,15 +27,16 @@ class RouterPasswordView extends ArgumentsConsumerStatelessView {
           RouterPasswordCubit(context.read<RouterRepository>()),
       child: RouterPasswordContentView(
         args: super.args,
-        next: super.next,
       ),
     );
   }
 }
 
 class RouterPasswordContentView extends ArgumentsConsumerStatefulView {
-  const RouterPasswordContentView({Key? key, super.args, super.next})
-      : super(key: key);
+  const RouterPasswordContentView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<RouterPasswordContentView> createState() =>

@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/_route.dart';
+import 'package:linksys_moab/route/constants.dart';
 
 import 'package:linksys_moab/util/in_app_browser.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -17,7 +17,6 @@ import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-import '../../../route/navigations_notifier.dart';
 
 enum AdminPasswordType { create, reset }
 
@@ -77,9 +76,7 @@ class _CreateAdminPasswordViewState
             AppPrimaryButton(
               getAppLocalizations(context).go_to_dashboard,
               onTap: () {
-                ref
-                    .read(navigationsProvider.notifier)
-                    .clearAndPush(DashboardHomePath());
+                context.goNamed(RouteNamed.dashboardHome);
               },
             )
           ],
@@ -133,7 +130,6 @@ class _CreateAdminPasswordViewState
             getAppLocalizations(context).next,
             onTap: () {
               if (_type == AdminPasswordType.create) {
-                
               } else {
                 _createPassword(passwordController.text, hintController.text);
               }

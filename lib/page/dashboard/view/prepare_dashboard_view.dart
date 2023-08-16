@@ -12,12 +12,10 @@ import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/core/jnap/models/device_info.dart';
 import 'package:linksys_moab/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_moab/route/constants.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../localization/localization_hook.dart';
-import '../../../route/model/dashboard_path.dart';
 import '../../../core/utils/logger.dart';
 import '../../components/views/arguments_view.dart';
 

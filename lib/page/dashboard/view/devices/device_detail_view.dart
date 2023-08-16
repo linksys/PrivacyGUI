@@ -5,9 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/device/_device.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/model/nodes_path.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -17,7 +15,10 @@ import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/profile_header_layout.dart';
 
 class DeviceDetailView extends ArgumentsConsumerStatefulView {
-  const DeviceDetailView({Key? key, super.args, super.next}) : super(key: key);
+  const DeviceDetailView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<DeviceDetailView> createState() => _DeviceDetailViewState();
@@ -141,10 +142,12 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         ),
         InkWell(
           onTap: () {
-            ref.read(navigationsProvider.notifier).push(TopologyPath()
-              ..args = {
+            context.pushNamed(
+              RouteNamed.settingsNodes,
+              queryParameters: {
                 'selectedDeviceId': device.deviceID,
-              });
+              },
+            );
           },
           child: Column(
             children: [

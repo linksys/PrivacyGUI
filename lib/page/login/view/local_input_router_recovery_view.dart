@@ -8,9 +8,6 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/create_account/view/_view.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 
 import 'package:pin_code_fields/pin_code_fields.dart';
 
@@ -85,11 +82,6 @@ class _LocalResetRouterPasswordState
   }
 
   _onNext(String? value) {
-    ref.read(navigationsProvider.notifier).push(
-        AuthLocalResetPasswordPath()..args = {'type': AdminPasswordType.reset});
-    // ref.read(navigationsProvider.notifier).push(AuthResetLocalOtpPath()
-    //   ..args = {
-    //     'username': 'austin.chang@linksys.com', // TODO
-    //   });
+    // Go Router
   }
 }

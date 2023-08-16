@@ -2,11 +2,11 @@ import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -84,7 +84,7 @@ class _EditWifiNamePasswordViewState
                   nameController.text, passwordController.text, wifiType)
               .then((value) {
             setState(() => isLoading = false);
-            ref.read(navigationsProvider.notifier).pop();
+            context.pop();
           }).onError((error, stackTrace) {
             setState(() => isLoading = false);
             showOkCancelAlertDialog(

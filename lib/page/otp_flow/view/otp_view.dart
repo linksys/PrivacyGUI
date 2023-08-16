@@ -9,7 +9,10 @@ import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class OtpFlowView extends ArgumentsConsumerStatefulView {
-  const OtpFlowView({Key? key, super.args, super.next}) : super(key: key);
+  const OtpFlowView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<OtpFlowView> createState() => OtpFlowViewState();

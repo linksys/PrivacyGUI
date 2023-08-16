@@ -6,8 +6,6 @@ import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -15,6 +13,7 @@ import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 class CloudForgotPasswordView extends ArgumentsConsumerStatefulView {
   const CloudForgotPasswordView({
     Key? key,
+    super.args,
   }) : super(key: key);
 
   @override
@@ -142,10 +141,7 @@ class _CloudForgotPasswordViewState
             AppPrimaryButton(
               getAppLocalizations(context).back_to_login,
               onTap: () {
-                // TODO: need universal link after sending link, keep go on next page for now
-                ref
-                    .read(navigationsProvider.notifier)
-                    .push(AuthCloudResetPasswordPath());
+                // Go Router
               },
             ),
           ],

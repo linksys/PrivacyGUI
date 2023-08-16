@@ -13,7 +13,7 @@ import 'bloc/dhcp_reservations_cubit.dart';
 import 'bloc/dhcp_reservations_state.dart';
 
 class DHCPReservationsView extends ArgumentsConsumerStatelessView {
-  const DHCPReservationsView({super.key, super.next, super.args});
+  const DHCPReservationsView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,7 +21,6 @@ class DHCPReservationsView extends ArgumentsConsumerStatelessView {
       create: (context) =>
           DHCPReservationsCubit(repository: context.read<RouterRepository>()),
       child: DHCPReservationsContentView(
-        next: super.next,
         args: super.args,
       ),
     );
@@ -29,7 +28,7 @@ class DHCPReservationsView extends ArgumentsConsumerStatelessView {
 }
 
 class DHCPReservationsContentView extends ArgumentsConsumerStatefulView {
-  const DHCPReservationsContentView({super.key, super.next, super.args});
+  const DHCPReservationsContentView({super.key, super.args});
 
   @override
   ConsumerState<DHCPReservationsContentView> createState() =>

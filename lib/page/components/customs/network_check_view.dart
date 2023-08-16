@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_moab/util/permission.dart';
@@ -7,8 +8,6 @@ import 'package:linksys_widgets/widgets/base/gap.dart';
 import 'package:linksys_widgets/widgets/base/icon.dart';
 import 'package:linksys_widgets/widgets/text/app_text.dart';
 import 'package:permission_handler/permission_handler.dart';
-
-import '../../../route/navigations_notifier.dart';
 
 class NetworkCheckView extends ConsumerStatefulWidget {
   const NetworkCheckView(
@@ -40,7 +39,7 @@ class _NetworkCheckViewState extends ConsumerState<NetworkCheckView>
     await checkLocationPermissions().then((value) {
       if (!value) {
         openAppSettings();
-        ref.read(navigationsProvider.notifier).pop();
+        context.pop();
       } else {
         ref.read(connectivityProvider.notifier).forceUpdate();
       }

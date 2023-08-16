@@ -10,8 +10,10 @@ import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class FirmwareUpdateView extends ArgumentsConsumerStatefulView {
-  const FirmwareUpdateView({Key? key, super.args, super.next})
-      : super(key: key);
+  const FirmwareUpdateView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<FirmwareUpdateView> createState() => _FirmwareUpdateViewState();

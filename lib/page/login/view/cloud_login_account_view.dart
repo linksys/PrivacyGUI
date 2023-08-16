@@ -6,13 +6,9 @@ import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/_route.dart';
 import 'package:linksys_moab/route/constants.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/core/utils/logger.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/utils.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -20,8 +16,10 @@ import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class CloudLoginAccountView extends ArgumentsConsumerStatefulView {
-  const CloudLoginAccountView({Key? key, super.args, super.next})
-      : super(key: key);
+  const CloudLoginAccountView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   LoginCloudAccountState createState() => LoginCloudAccountState();
@@ -143,9 +141,7 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
                           'login_view_button_email_with_another_linksys_app'),
                       getAppLocalizations(context)
                           .cloud_account_login_email_with_linksys_app,
-                      onTap: () => ref
-                          .read(navigationsProvider.notifier)
-                          .push(AlreadyHaveOldAccountPath())),
+                      onTap: () {}),
                 ),
               const Spacer(),
               AppPrimaryButton(
@@ -158,9 +154,9 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
                   getAppLocalizations(context)
                       .cloud_account_login_with_router_password,
                   key: const Key('login_view_button_login_router_password'),
-                  onTap: () => ref
-                      .read(navigationsProvider.notifier)
-                      .push(AuthLocalLoginPath())),
+                  onTap: () {
+                // Go Router
+              }),
             ],
           ),
         ));

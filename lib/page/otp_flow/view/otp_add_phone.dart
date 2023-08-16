@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/provider/otp/otp.dart';
 import 'package:linksys_moab/constants/_constants.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -11,9 +12,7 @@ import 'package:linksys_moab/core/cloud/model/region_code.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -24,7 +23,10 @@ import 'dart:convert';
 import 'package:phone_number/phone_number.dart';
 
 class OtpAddPhoneView extends ArgumentsConsumerStatefulView {
-  const OtpAddPhoneView({Key? key, super.args, super.next}) : super(key: key);
+  const OtpAddPhoneView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   _OtpAddPhoneViewState createState() => _OtpAddPhoneViewState();
@@ -98,9 +100,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
         //     .read<OtpCubit>()
         //     .authChallenge(method: phoneMethod, token: token);
       }
-      ref.read(navigationsProvider.notifier).push(OtpInputCodePath()
-        ..next = widget.next
-        ..args.addAll(widget.args));
+      context.pushNamed(RouteNamed.otpInputCode, queryParameters: widget.args);
     } catch (e) {
       logger.e(
           'AddPhone: Special error: [$userInputPhoneNumber] is valid but cannot be parsed');
@@ -164,8 +164,8 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
                 children: [
                   GestureDetector(
                     onTap: () async {
-                      final selectedRegion = await showPopup(
-                          ref: ref, config: SelectPhoneRegionCodePath());
+                      final selectedRegion = await context
+                          .pushNamed<RegionCode?>(RouteNamed.phoneRegionCode);
                       if (selectedRegion != null) {
                         updateRegion(selectedRegion);
                       }

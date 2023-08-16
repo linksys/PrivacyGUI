@@ -11,9 +11,6 @@ import 'package:linksys_moab/page/dashboard/view/topology/bloc/state.dart';
 import 'package:linksys_moab/page/dashboard/view/topology/topology_node.dart';
 import 'package:linksys_moab/core/jnap/router_repository.dart';
 import 'package:linksys_moab/route/constants.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
 import 'package:linksys_widgets/theme/theme.dart';
@@ -29,7 +26,6 @@ import 'custom_tree_edge_renderer.dart';
 class TopologyView extends ArgumentsConsumerStatelessView {
   const TopologyView({
     Key? key,
-    super.next,
     super.args,
   }) : super(key: key);
 

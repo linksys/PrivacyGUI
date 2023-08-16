@@ -1,13 +1,13 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:adaptive_dialog/adaptive_dialog.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -43,7 +43,9 @@ class _EditWifiSecurityViewState extends ConsumerState<EditWifiSecurityView> {
     _typeList = WifiSecurityType.allTypes;
     _wifiSettingOption = WifiSettingOption.securityTypeBelow6G;
     if (widget.args.containsKey('wifiSettingOption')) {
-      _wifiSettingOption = widget.args['wifiSettingOption'];
+      _wifiSettingOption = WifiSettingOption.values.firstWhereOrNull(
+              (element) => element.name == widget.args['wifiSettingOption']) ??
+          WifiSettingOption.securityType;
     }
     if (_wifiSettingOption == WifiSettingOption.securityType6G) {
       _typeList = [
@@ -138,7 +140,7 @@ class _EditWifiSecurityViewState extends ConsumerState<EditWifiSecurityView> {
         isLoading = false;
         _currentType = _selectedType;
       });
-      ref.read(navigationsProvider.notifier).pop();
+      context.pop();
     }).onError((error, stackTrace) {
       setState(() => isLoading = false);
       showOkCancelAlertDialog(

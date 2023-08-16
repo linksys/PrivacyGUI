@@ -9,8 +9,10 @@ import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class ChangeAuthModePasswordView extends ArgumentsConsumerStatefulView {
-  const ChangeAuthModePasswordView({Key? key, super.args, super.next})
-      : super(key: key);
+  const ChangeAuthModePasswordView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<ChangeAuthModePasswordView> createState() =>

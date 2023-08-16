@@ -7,8 +7,10 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 
 class SignalStrengthView extends ArgumentsConsumerStatefulView {
-  const SignalStrengthView({Key? key, super.args, super.next})
-      : super(key: key);
+  const SignalStrengthView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<SignalStrengthView> createState() => _SignalStrengthViewState();

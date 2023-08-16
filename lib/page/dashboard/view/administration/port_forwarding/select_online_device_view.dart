@@ -7,19 +7,18 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class SelectOnlineDeviceView extends ArgumentsConsumerStatelessView {
-  const SelectOnlineDeviceView({super.key, super.next, super.args});
+  const SelectOnlineDeviceView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return SelectOnlineDeviceContentView(
-      next: super.next,
       args: super.args,
     );
   }
 }
 
 class SelectOnlineDeviceContentView extends ArgumentsConsumerStatefulView {
-  const SelectOnlineDeviceContentView({super.key, super.next, super.args});
+  const SelectOnlineDeviceContentView({super.key, super.args});
 
   @override
   ConsumerState<SelectOnlineDeviceContentView> createState() =>

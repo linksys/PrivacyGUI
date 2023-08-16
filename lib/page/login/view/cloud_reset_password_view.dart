@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
 import 'package:linksys_moab/core/cloud/model/error_response.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_moab/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -116,7 +116,7 @@ class _CloudForgotPasswordViewState
                 color: Colors.white,
               ),
               onPressed: () {
-                ref.read(navigationsProvider.notifier).clearAndPush(HomePath());
+                context.goNamed(RouteNamed.home);
               },
             ),
           ],
@@ -138,7 +138,7 @@ class _CloudForgotPasswordViewState
             AppPrimaryButton(
               getAppLocalizations(context).back_to_login,
               onTap: () {
-                ref.read(navigationsProvider.notifier).clearAndPush(HomePath());
+                context.goNamed(RouteNamed.home);
               },
             )
           ],

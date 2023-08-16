@@ -13,14 +13,13 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class TimezoneView extends ArgumentsConsumerStatelessView {
-  const TimezoneView({super.key, super.next, super.args});
+  const TimezoneView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
       create: (context) => TimezoneCubit(context.read<RouterRepository>()),
       child: TimezoneContentView(
-        next: super.next,
         args: super.args,
       ),
     );
@@ -28,8 +27,10 @@ class TimezoneView extends ArgumentsConsumerStatelessView {
 }
 
 class TimezoneContentView extends ArgumentsConsumerStatefulView {
-  const TimezoneContentView({Key? key, super.args, super.next})
-      : super(key: key);
+  const TimezoneContentView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<TimezoneContentView> createState() =>

@@ -14,7 +14,10 @@ import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class DashboardDevices extends ArgumentsConsumerStatefulView {
-  const DashboardDevices({Key? key, super.args, super.next}) : super(key: key);
+  const DashboardDevices({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<DashboardDevices> createState() => _DashboardDevicesState();

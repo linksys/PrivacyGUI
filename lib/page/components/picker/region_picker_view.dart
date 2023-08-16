@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/provider/auth/auth_provider.dart';
 import 'package:linksys_moab/core/cloud/model/region_code.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
@@ -9,10 +11,11 @@ import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-import '../../../route/navigations_notifier.dart';
-
-class RegionPickerView extends ConsumerStatefulWidget {
-  const RegionPickerView({Key? key}) : super(key: key);
+class RegionPickerView extends ArgumentsConsumerStatefulView {
+  const RegionPickerView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   _RegionPickerViewState createState() => _RegionPickerViewState();
@@ -53,9 +56,7 @@ class _RegionPickerViewState extends ConsumerState<RegionPickerView> {
                               ),
                             ),
                             onTap: () {
-                              ref
-                                  .read(navigationsProvider.notifier)
-                                  .popWithResult(snapshot.data?[index]);
+                              context.pop(snapshot.data?[index]);
                             },
                           ))
                   : const AppFullScreenSpinner();

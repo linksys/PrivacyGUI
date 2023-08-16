@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_moab/provider/connectivity/_connectivity.dart';
 import 'package:linksys_moab/bloc/network/cubit.dart';
 import 'package:linksys_moab/localization/localization_hook.dart';
@@ -8,10 +9,7 @@ import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
 import 'package:linksys_moab/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_moab/core/jnap/router_repository.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/model/administration_path.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:linksys_moab/route/constants.dart';
 import 'package:linksys_moab/util/string_mapping.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -27,7 +25,7 @@ enum InternetSettingsViewType {
 }
 
 class InternetSettingsView extends ArgumentsConsumerStatelessView {
-  const InternetSettingsView({super.key, super.next, super.args});
+  const InternetSettingsView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -35,7 +33,6 @@ class InternetSettingsView extends ArgumentsConsumerStatelessView {
       create: (context) =>
           InternetSettingsCubit(context.read<RouterRepository>()),
       child: InternetSettingsContentView(
-        next: super.next,
         args: super.args,
       ),
     );
@@ -43,7 +40,7 @@ class InternetSettingsView extends ArgumentsConsumerStatelessView {
 }
 
 class InternetSettingsContentView extends ArgumentsConsumerStatefulView {
-  const InternetSettingsContentView({super.key, super.next, super.args});
+  const InternetSettingsContentView({super.key, super.args});
 
   @override
   ConsumerState<InternetSettingsContentView> createState() =>
@@ -199,12 +196,12 @@ class _InternetSettingsContentViewState
                 : getAppLocalizations(context).manual,
             infoText: ' ',
             onTap: () async {
-              int? value = await ref
-                  .read(navigationsProvider.notifier)
-                  .pushAndWait(MTUPickerPath()
-                    ..args = {
-                      'selected': state.mtu,
-                    });
+              int? value = await context.pushNamed(
+                RouteNamed.mtuPicker,
+                queryParameters: {
+                  'selected': state.mtu,
+                },
+              );
               if (value != null) {
                 _cubit.setMtu(value);
               }
@@ -217,13 +214,11 @@ class _InternetSettingsContentViewState
                 : getAppLocalizations(context).off,
             infoText: ' ',
             onTap: () async {
-              String? mac = await ref
-                  .read(navigationsProvider.notifier)
-                  .pushAndWait(MACClonePath()
-                    ..args = {
-                      'enabled': state.macClone,
-                      'macAddress': state.macCloneAddress
-                    });
+              String? mac = await context.pushNamed(RouteNamed.macClone,
+                  queryParameters: {
+                    'enabled': state.macClone,
+                    'macAddress': state.macCloneAddress
+                  });
               if (mac != null) {
                 final enabled = mac.isEmpty;
                 final macAddress = mac;
@@ -244,13 +239,11 @@ class _InternetSettingsContentViewState
               toConnectionTypeData(context, state.ipv4ConnectionType).title,
           infoText: ' ',
           onTap: () async {
-            String? select = await ref
-                .read(navigationsProvider.notifier)
-                .pushAndWait(ConnectionTypeSelectionPath()
-                  ..args = {
-                    'supportedList': state.supportedIPv4ConnectionType,
-                    'selected': state.ipv4ConnectionType,
-                  });
+            String? select = await context
+                .pushNamed(RouteNamed.connectionType, queryParameters: {
+              'supportedList': state.supportedIPv4ConnectionType,
+              'selected': state.ipv4ConnectionType,
+            });
             if (select != null) {
               _cubit.setIPv4ConnectionType(select);
             }
@@ -408,14 +401,12 @@ class _InternetSettingsContentViewState
                         combine.wanType == state.ipv4ConnectionType &&
                         combine.wanIPv6Type == ipv6))
                 .toList();
-            String? select = await ref
-                .read(navigationsProvider.notifier)
-                .pushAndWait(ConnectionTypeSelectionPath()
-                  ..args = {
-                    'supportedList': state.supportedIPv6ConnectionType,
-                    'selected': state.ipv6ConnectionType,
-                    'disabled': disabled
-                  });
+            String? select = await context
+                .pushNamed(RouteNamed.connectionType, queryParameters: {
+              'supportedList': state.supportedIPv6ConnectionType,
+              'selected': state.ipv6ConnectionType,
+              'disabled': disabled
+            });
             if (select != null) {
               _cubit.setIPv6ConnectionType(select);
             }

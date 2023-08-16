@@ -6,9 +6,6 @@ import 'package:linksys_moab/core/cloud/model/error_response.dart';
 import 'package:linksys_moab/page/components/layouts/basic_header.dart';
 import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
 import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/model/_model.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
 import 'package:linksys_moab/util/error_code_handler.dart';
 import 'package:linksys_moab/core/utils/logger.dart';
 import 'package:linksys_moab/utils.dart';
@@ -209,9 +206,7 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
                   : AppTertiaryButton(
                       getAppLocalizations(context).use_router_password,
                       onTap: () {
-                        ref
-                            .read(navigationsProvider.notifier)
-                            .push(NoUseCloudAccountPath());
+                        
                       },
                     )
             ],
@@ -231,8 +226,6 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
   }
 
   _goLogin() {
-    ref
-        .read(navigationsProvider.notifier)
-        .push(AuthSetupLoginPath()..args.addAll(widget.args));
+    // Go Router
   }
 }

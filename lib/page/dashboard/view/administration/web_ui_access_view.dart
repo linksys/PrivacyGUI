@@ -10,7 +10,10 @@ import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class WebUiAccessView extends ArgumentsConsumerStatefulView {
-  const WebUiAccessView({Key? key, super.args, super.next}) : super(key: key);
+  const WebUiAccessView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 
   @override
   ConsumerState<WebUiAccessView> createState() => _WebUiAccessViewState();

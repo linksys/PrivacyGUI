@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/route/_route.dart';
-import 'package:linksys_moab/route/navigations_notifier.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
@@ -79,7 +78,7 @@ class StyledAppTabPageView extends ConsumerWidget {
             onBackTap: isBackEnabled()
                 ? (onBackTap ??
                     () {
-                      ref.read(navigationsProvider.notifier).pop();
+                      context.pop();
                     })
                 : null,
             showBack: backState != StyledBackState.none,
@@ -91,7 +90,7 @@ class StyledAppTabPageView extends ConsumerWidget {
             onBackTap: isBackEnabled()
                 ? (onBackTap ??
                     () {
-                      ref.read(navigationsProvider.notifier).pop();
+                      context.pop();
                     })
                 : null,
             showBack: backState != StyledBackState.none,
