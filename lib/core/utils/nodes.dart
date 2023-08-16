@@ -238,7 +238,7 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'seriesModel': 'MBE7000',
     'isMeshRouter': false,
     'isCognitiveMesh': true,
-    'pattern': '/^mbe70/i',
+    'pattern': '^mbe70',
   },
   {
     'model': 'LN11',
@@ -246,7 +246,7 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'seriesModel': 'LN11',
     'isMeshRouter': false,
     'isCognitiveMesh': true,
-    'pattern': '/ln11/i',
+    'pattern': 'ln11',
   },
   {
     'model': 'LN12',
@@ -254,7 +254,7 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'seriesModel': 'LN12',
     'isMeshRouter': false,
     'isCognitiveMesh': true,
-    'pattern': '/ln12/i',
+    'pattern': 'ln12',
   },
   {
     'model': 'EA9350',
