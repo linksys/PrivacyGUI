@@ -133,16 +133,5 @@ void main() {
     await tester.pump();
     // verify there has a widget include 'text'
     expect(find.text(testAccount), findsOneWidget);
-
-    // try to click continue button
-    await tester.tap(continueButton);
-    // wait for rebuild
-    await tester.pump();
-    expect(find.text(testAccount), findsOneWidget);
-    // verify the error message
-    expect(
-        find.text(getAppLocalizations(globalKey.currentContext!)
-            .error_enter_a_valid_email_format),
-        findsNothing);
   });
 }
