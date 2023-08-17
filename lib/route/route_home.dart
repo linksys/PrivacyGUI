@@ -8,7 +8,7 @@ final homeRoute = GoRoute(
     GoRoute(
       name: RouteNamed.debug,
       path: RoutePath.debug,
-      builder: (context, state) => const HomeView(),
+      builder: (context, state) => const DebugToolsView(),
     ),
     loginRoute
     //setupRoute
