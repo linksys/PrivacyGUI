@@ -1,8 +1,8 @@
-import 'package:linksys_moab/core/jnap/models/radio_info.dart';
-import 'package:linksys_moab/core/jnap/actions/better_action.dart';
-import 'package:linksys_moab/core/jnap/jnap_command_queue.dart';
-import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
-import 'package:linksys_moab/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/jnap/models/radio_info.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/jnap_command_queue.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
 
 extension SetupService on RouterRepository {
   Future<JNAPSuccess> isAdminPasswordSetByUser() async {

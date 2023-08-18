@@ -1,13 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:collection/collection.dart';
-import 'package:linksys_moab/core/jnap/models/device.dart';
-import 'package:linksys_moab/core/jnap/models/wan_status.dart';
-import 'package:linksys_moab/core/jnap/actions/better_action.dart';
-import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
-import 'package:linksys_moab/core/jnap/extensions/_extensions.dart';
-import 'package:linksys_moab/core/jnap/router_repository.dart';
-import 'package:linksys_moab/core/utils/logger.dart';
+import 'package:linksys_app/core/jnap/models/device.dart';
+import 'package:linksys_app/core/jnap/models/wan_status.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 
 import 'state.dart';
 

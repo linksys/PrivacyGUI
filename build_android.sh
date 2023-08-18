@@ -8,7 +8,7 @@ function build() {
     hasPicker=false
   fi
   echo start building "$conf" "$type" "$env" process...
-  if ! flutter build "$type" --"$conf" --obfuscate --split-debug-info=moab/build/app/outputs/temp/ --build-number="${AppBuildNumber}" --dart-define=cloud_env="${env}" --dart-define=enable_env_picker="${hasPicker}" --no-tree-shake-icons; then
+  if ! flutter build "$type" --"$conf" --obfuscate --split-debug-info=./build/app/outputs/temp/ --build-number="${AppBuildNumber}" --dart-define=cloud_env="${env}" --dart-define=enable_env_picker="${hasPicker}" --no-tree-shake-icons; then
       echo build "$conf" failed
       exit 1
   fi

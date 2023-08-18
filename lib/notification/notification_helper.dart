@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:io';
 
@@ -7,8 +6,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
-import 'package:linksys_moab/constants/pref_key.dart';
-import 'package:linksys_moab/core/utils/logger.dart';
+import 'package:linksys_app/constants/pref_key.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../firebase_options.dart';
@@ -34,18 +33,18 @@ void initCloudMessage() async {
     final token = await IosPushNotificationPlugin().readApnsToken() ?? '';
     logger.i('APNS: Read device token: $token');
     // Start listening the push notifications
-    apnsStreamSubscription = IosPushNotificationPlugin()
-        .pushNotificationStream
-        .listen((data) {
-          Map<String, dynamic> transfer = Map.from(data);
-          logger.d('APNS: Receive push notification, data: $transfer');
-          pushNotificationHandler(transfer);
+    apnsStreamSubscription =
+        IosPushNotificationPlugin().pushNotificationStream.listen((data) {
+      Map<String, dynamic> transfer = Map.from(data);
+      logger.d('APNS: Receive push notification, data: $transfer');
+      pushNotificationHandler(transfer);
     });
     // Ask users notification authorization
     IosPushNotificationPlugin().requestAuthorization().then((grant) {
       logger.i('APNS: User authorization result: $grant');
     });
-    logger.i('APNS token back: ${(await SharedPreferences.getInstance()).getString(linksysPrefDeviceToken)}');
+    logger.i(
+        'APNS token back: ${(await SharedPreferences.getInstance()).getString(linksysPrefDeviceToken)}');
     return;
   }
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -58,10 +57,9 @@ void initCloudMessage() async {
   flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
-      AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(channel);
-  await FirebaseMessaging.instance
-      .setForegroundNotificationPresentationOptions(
+  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
       alert: true, badge: true, sound: true);
   FirebaseMessaging messaging = FirebaseMessaging.instance;
   NotificationSettings settings = await messaging.requestPermission(
@@ -86,7 +84,8 @@ void initCloudMessage() async {
               android: AndroidNotificationDetails(channel.id, channel.name,
                   channelDescription: channel.description,
                   icon: 'launch_foreground')));
-    } else if (notification == null) { // Silent message
+    } else if (notification == null) {
+      // Silent message
       pushNotificationHandler(message.data);
     }
   });

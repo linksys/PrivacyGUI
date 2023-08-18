@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:linksys_moab/provider/account/account_state.dart';
-import 'package:linksys_moab/constants/_constants.dart';
-import 'package:linksys_moab/core/cloud/linksys_cloud_repository.dart';
+import 'package:linksys_app/provider/account/account_state.dart';
+import 'package:linksys_app/constants/_constants.dart';
+import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
 
 final accountProvider =
     NotifierProvider<AccountNotifier, AccountState>(() => AccountNotifier());

@@ -1,4 +1,4 @@
-import 'package:linksys_moab/core/jnap/command/base_command.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
 
 mixin JNAPCommandExecutor<R> {
   Future<R> execute(BaseCommand command);

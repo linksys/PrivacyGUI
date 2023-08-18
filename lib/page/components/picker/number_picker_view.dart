@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/core/utils/logger.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:numberpicker/numberpicker.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/network/cloud_network_model.dart';
-import 'package:linksys_moab/provider/select_network_provider.dart';
+import 'package:linksys_app/bloc/network/cloud_network_model.dart';
+import 'package:linksys_app/provider/select_network_provider.dart';
 
 class CloudNetworkService {
   WidgetRef ref;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/utils.dart';
+import 'package:linksys_app/utils.dart';
 
 class PopupButton extends ConsumerStatefulWidget {
   final Icon icon;

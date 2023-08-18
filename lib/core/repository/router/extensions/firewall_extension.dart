@@ -1,10 +1,10 @@
-import 'package:linksys_moab/core/jnap/models/port_range_forwarding_rule.dart';
-import 'package:linksys_moab/core/jnap/models/port_range_triggering_rule.dart';
-import 'package:linksys_moab/core/jnap/models/single_port_forwarding_rule.dart';
-import 'package:linksys_moab/core/jnap/actions/better_action.dart';
-import 'package:linksys_moab/core/jnap/jnap_command_queue.dart';
-import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
-import 'package:linksys_moab/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/jnap/models/port_range_forwarding_rule.dart';
+import 'package:linksys_app/core/jnap/models/port_range_triggering_rule.dart';
+import 'package:linksys_app/core/jnap/models/single_port_forwarding_rule.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/jnap_command_queue.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
 
 extension FirewallService on RouterRepository {
   Future<JNAPSuccess> getPortRangeForwardingRules() async {

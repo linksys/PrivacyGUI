@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/core/jnap/models/device.dart';
+import 'package:linksys_app/core/jnap/models/device.dart';
 
 enum NodeSignalLevel {
   none(displayTitle: 'No signal'),

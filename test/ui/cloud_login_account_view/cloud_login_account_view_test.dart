@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/login/view/_view.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/login/view/_view.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';

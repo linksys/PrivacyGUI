@@ -1,8 +1,8 @@
 import 'package:bloc/bloc.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/bloc/device/_device.dart';
-import 'package:linksys_moab/core/jnap/router_repository.dart';
+import 'package:linksys_app/bloc/device/_device.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
 
 part 'state.dart';
 

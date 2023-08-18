@@ -1,5 +1,5 @@
 import 'package:collection/collection.dart';
-import 'package:linksys_moab/core/utils/extension.dart';
+import 'package:linksys_app/core/utils/extension.dart';
 
 const List<Map<String, dynamic>> iconRules = [
   {

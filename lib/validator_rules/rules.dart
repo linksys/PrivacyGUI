@@ -1,4 +1,4 @@
-import 'package:linksys_moab/utils.dart';
+import 'package:linksys_app/utils.dart';
 
 abstract class ValidationRule {
   String get name => runtimeType.toString();
@@ -225,8 +225,9 @@ class IntegerRule extends ValidationRule {
     return false;
   }
 }
+
 class MACAddressRule extends RegExValidationRule {
-    @override
+  @override
   RegExp get _rule => RegExp(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$");
 }
 

@@ -9,22 +9,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
-import 'package:linksys_moab/provider/connectivity/connectivity_provider.dart';
-import 'package:linksys_moab/bloc/network/cubit.dart';
-import 'package:linksys_moab/constants/_constants.dart';
-import 'package:linksys_moab/constants/build_config.dart';
-import 'package:linksys_moab/core/bluetooth/bluetooth.dart';
-import 'package:linksys_moab/core/jnap/actions/better_action.dart';
-import 'package:linksys_moab/core/jnap/actions/jnap_transaction.dart';
-import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
-import 'package:linksys_moab/core/mdns/mdns_helper.dart';
-import 'package:linksys_moab/page/components/shortcuts/snack_bar.dart';
-import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
-import 'package:linksys_moab/page/landing/view/debug_device_info_view.dart';
-import 'package:linksys_moab/core/jnap/extensions/_extensions.dart';
-import 'package:linksys_moab/core/jnap/router_repository.dart';
-import 'package:linksys_moab/core/utils/logger.dart';
-import 'package:linksys_moab/core/utils/storage.dart';
+import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
+import 'package:linksys_app/bloc/network/cubit.dart';
+import 'package:linksys_app/constants/_constants.dart';
+import 'package:linksys_app/constants/build_config.dart';
+import 'package:linksys_app/core/bluetooth/bluetooth.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/actions/jnap_transaction.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/mdns/mdns_helper.dart';
+import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/page/landing/view/debug_device_info_view.dart';
+import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:share_plus/share_plus.dart';
@@ -148,20 +148,9 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
       AppPrimaryButton(
         'Raise an Exception!',
         onTap: () async {
-          // ScaffoldMessenger.of(context).showSnackBar(
-          //     const SnackBar(content: Text('Throw a test exception!!')));
-          // throw Exception('Throw a test exception!!');
-          final repo = context.read<RouterRepository>();
-          // final result = await repo.isAdminPasswordDefault();
-          // logger.d('Result: $result');
-          // final result1 = await repo.getMACAddress();
-          // logger.d('Result1: $result1');
-
-          final builder = JNAPTransactionBuilder()
-              .add(JNAPAction.isAdminPasswordDefault)
-              .add(JNAPAction.isAdminPasswordSetByUser);
-          final result = await repo.transaction(builder);
-          logger.d('Result: $result');
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Throw a test exception!!')));
+          throw Exception('Throw a test exception!!');
         },
       ),
       const AppGap.regular(),

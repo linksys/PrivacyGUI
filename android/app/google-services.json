@@ -1,77 +1,34 @@
 {
   "project_info": {
-    "project_number": "1088152750789",
-    "project_id": "moab-poc",
-    "storage_bucket": "moab-poc.appspot.com"
+    "project_number": "110788105434",
+    "project_id": "linksys-app-flutter",
+    "storage_bucket": "linksys-app-flutter.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1088152750789:android:9eb10fb1c1448c2a94beac",
+        "mobilesdk_app_id": "1:110788105434:android:a243d83e7adcc6bb7281e3",
         "android_client_info": {
-          "package_name": "com.linksys.moab.app"
+          "package_name": "com.linksys.app.android"
         }
       },
       "oauth_client": [
         {
-          "client_id": "1088152750789-0ju2qesnjg5q7t5o1s7k4p0m46djovsn.apps.googleusercontent.com",
+          "client_id": "110788105434-ude351a631r8bhr18p23cn8i07hl3776.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBbmdFleHRNLNCjTrEvno_x2gVsMprhBMg"
+          "current_key": "AIzaSyATn7lXHrJ2_e8BEclZB7J3T9ETegRx9f4"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "1088152750789-0ju2qesnjg5q7t5o1s7k4p0m46djovsn.apps.googleusercontent.com",
+              "client_id": "110788105434-ude351a631r8bhr18p23cn8i07hl3776.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "1088152750789-ussp34ea7l49u7crdps34p9g1loqp31m.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.linksys.moab.poc"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:1088152750789:android:709a0cc71267bad594beac",
-        "android_client_info": {
-          "package_name": "com.linksys.moab.poc.linksys_moab"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "1088152750789-0ju2qesnjg5q7t5o1s7k4p0m46djovsn.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBbmdFleHRNLNCjTrEvno_x2gVsMprhBMg"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "1088152750789-0ju2qesnjg5q7t5o1s7k4p0m46djovsn.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "1088152750789-ussp34ea7l49u7crdps34p9g1loqp31m.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.linksys.moab.poc"
-              }
             }
           ]
         }

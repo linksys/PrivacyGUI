@@ -1,11 +1,11 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/core/jnap/models/lan_settings.dart';
-import 'package:linksys_moab/core/jnap/models/single_port_forwarding_rule.dart';
-import 'package:linksys_moab/core/jnap/extensions/_extensions.dart';
-import 'package:linksys_moab/core/jnap/router_repository.dart';
-import 'package:linksys_moab/utils.dart';
-import 'package:linksys_moab/validator_rules/_validator_rules.dart';
+import 'package:linksys_app/core/jnap/models/lan_settings.dart';
+import 'package:linksys_app/core/jnap/models/single_port_forwarding_rule.dart';
+import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/utils.dart';
+import 'package:linksys_app/validator_rules/_validator_rules.dart';
 
 part 'single_port_forwarding_rule_state.dart';
 

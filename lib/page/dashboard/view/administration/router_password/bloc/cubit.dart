@@ -1,13 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:linksys_moab/constants/pref_key.dart';
-import 'package:linksys_moab/core/jnap/actions/better_action.dart';
-import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
-import 'package:linksys_moab/page/dashboard/view/administration/router_password/bloc/state.dart';
-import 'package:linksys_moab/core/jnap/extensions/_extensions.dart';
-import 'package:linksys_moab/core/jnap/router_repository.dart';
-import 'package:linksys_moab/core/utils/logger.dart';
+import 'package:linksys_app/constants/pref_key.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/page/dashboard/view/administration/router_password/bloc/state.dart';
+import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 
 class RouterPasswordCubit extends Cubit<RouterPasswordState> {
   RouterPasswordCubit(RouterRepository repository)

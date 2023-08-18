@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/constants/error_code.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/core/utils/logger.dart';
+import 'package:linksys_app/constants/error_code.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 
 String generalErrorCodeHandler(BuildContext context, String code) {
   switch (code) {

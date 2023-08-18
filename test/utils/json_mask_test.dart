@@ -1,5 +1,4 @@
-
-import 'package:linksys_moab/utils.dart';
+import 'package:linksys_app/utils.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -45,7 +44,6 @@ void main() {
       final actual = Utils.maskJsonValue(str, ['publicKey', 'privateKey']);
       expect(actual.indexOf('-----BEGIN CERTIFICATE-----'), -1);
       expect(actual.indexOf('-----BEGIN PRIVATE KEY-----'), -1);
-
     });
 
     test('Moab App Secret case', () async {
@@ -58,7 +56,10 @@ void main() {
         ---------------------------------------------------REQUEST END
       ''';
       final actual = Utils.maskJsonValue(str, ['X-Linksys-Moab-App-Secret']);
-      expect(actual.indexOf('X-Linksys-Moab-App-Secret: gmq2wvqzTK/voG5TauzLqemPt4TTtAvPGFS22c85bn/6GyzlrzYpV5xOoQ2Na/VBO9zrjnMJhe3Cegd9X3zSsyeS/BZhH3lx39Ti/AUujj13nkew3gIDz2alUx3x2N+WOVLC8YW07YJtP4LddXlMR9/SgZP30jieovFkhL6houE='), -1);
+      expect(
+          actual.indexOf(
+              'X-Linksys-Moab-App-Secret: gmq2wvqzTK/voG5TauzLqemPt4TTtAvPGFS22c85bn/6GyzlrzYpV5xOoQ2Na/VBO9zrjnMJhe3Cegd9X3zSsyeS/BZhH3lx39Ti/AUujj13nkew3gIDz2alUx3x2N+WOVLC8YW07YJtP4LddXlMR9/SgZP30jieovFkhL6houE='),
+          -1);
     });
   });
 }

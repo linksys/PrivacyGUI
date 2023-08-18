@@ -9,8 +9,8 @@
 /* Begin PBXBuildFile section */
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		3E10F4A72A8F106200D1E92A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3E10F4A62A8F106200D1E92A /* GoogleService-Info.plist */; };
 		3EC57263280F83B50064A1AF /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3EC57262280F83B50064A1AF /* NetworkExtension.framework */; };
-		3EE07DB228503AEB0084BCAA /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3EE07DB128503AEB0084BCAA /* GoogleService-Info.plist */; };
 		43D4179F0C974D474B7DFA6C /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DE7EF906FB8A3EA41FB54AE /* Pods_Runner.framework */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
@@ -38,9 +38,9 @@
 		2C3681DB35278306C55D0E33 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		353906530F2220F4B9C6352E /* Pods-Runner.release-moab.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release-moab.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release-moab.xcconfig"; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		3E10F4A62A8F106200D1E92A /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		3EC57260280F83B40064A1AF /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		3EC57262280F83B50064A1AF /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
-		3EE07DB128503AEB0084BCAA /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		4A3F9313FF9681DC7A905546 /* Pods-Runner.profile-enterprise.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile-enterprise.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile-enterprise.xcconfig"; sourceTree = "<group>"; };
 		5DE7EF906FB8A3EA41FB54AE /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		600E74743515BC03F93CA7EB /* Pods-Runner.debug-moab.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug-moab.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug-moab.xcconfig"; sourceTree = "<group>"; };
@@ -131,7 +131,7 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
-				3EE07DB128503AEB0084BCAA /* GoogleService-Info.plist */,
+				3E10F4A62A8F106200D1E92A /* GoogleService-Info.plist */,
 				3EC57260280F83B40064A1AF /* Runner.entitlements */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
@@ -177,7 +177,7 @@
 		97C146E61CF9000F007C117D /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 1300;
+				LastUpgradeCheck = 1430;
 				ORGANIZATIONNAME = "";
 				TargetAttributes = {
 					97C146ED1CF9000F007C117D = {
@@ -211,7 +211,7 @@
 			files = (
 				97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */,
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
-				3EE07DB228503AEB0084BCAA /* GoogleService-Info.plist in Resources */,
+				3E10F4A72A8F106200D1E92A /* GoogleService-Info.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
 			);
@@ -413,7 +413,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.linksys.moab.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.linksys.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "Moab Development";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Moab (App Store)";
@@ -548,7 +548,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.linksys.moab.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.linksys.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "Moab Development";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Moab (Development)";
@@ -577,7 +577,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.linksys.moab.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.linksys.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "Moab In House";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Moab (App Store)";
@@ -660,10 +660,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.linksys.moab.app.ee;
+				PRODUCT_BUNDLE_IDENTIFIER = com.linksys.app.ios.ee;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "Moab Development";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Moab EE (Development)";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Linksys Flutter App (EE-Development)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -734,15 +734,17 @@
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = RP6FWVVM7B;
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = RP6FWVVM7B;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.linksys.moab.app.ee;
+				PRODUCT_BUNDLE_IDENTIFIER = com.linksys.app.ios.ee;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "Moab In House";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Linksys Flutter App (In House)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -817,10 +819,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.linksys.moab.app.ee;
+				PRODUCT_BUNDLE_IDENTIFIER = com.linksys.app.ios.ee;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "Moab Development";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Moab EE (Development)";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Linksys Flutter App (EE-Development)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";

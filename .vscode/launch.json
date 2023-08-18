@@ -5,13 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "moab - Android",
+            "name": "linksys - Android",
             "request": "launch",
             "type": "dart",
             "program": "lib/main.dart"
         },
         {
-            "name": "moab - Android (profile mode)",
+            "name": "linksys - Android (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile",
@@ -19,7 +19,7 @@
 
         },
         {
-            "name": "moab - Android (release mode)",
+            "name": "linksys - Android (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release",
@@ -27,32 +27,32 @@
 
         },
         {
-            "name": "moab - iOS ",
+            "name": "linksys - iOS ",
             "request": "launch",
             "type": "dart",
-            "args": ["--flavor", "Moab"],
+            "args": ["--flavor", "Linksys"],
             "program": "lib/main.dart"
         },
         {
-            "name": "moab - iOS (profile mode)",
+            "name": "linksys - iOS (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile",
-            "args": ["--flavor", "Moab"],
+            "args": ["--flavor", "Linksys"],
             "program": "lib/main.dart"
 
         },
         {
-            "name": "moab - iOS (release mode)",
+            "name": "linksys - iOS (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release",
-            "args": ["--flavor", "Moab"],
+            "args": ["--flavor", "Linksys"],
             "program": "lib/main.dart"
 
         },
         {
-            "name": "moab - iOS - Enterprise ",
+            "name": "linksys - iOS - Enterprise ",
             "request": "launch",
             "type": "dart",
             "args": ["--flavor", "Enterprise"],
@@ -60,7 +60,7 @@
 
         },
         {
-            "name": "moab - iOS - Enterprise (profile mode)",
+            "name": "linksys - iOS - Enterprise (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile",
@@ -69,7 +69,7 @@
 
         },
         {
-            "name": "moab - iOS - Enterprise (release mode)",
+            "name": "linksys - iOS - Enterprise (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release",

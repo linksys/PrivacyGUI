@@ -1,9 +1,9 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/core/jnap/models/port_range_triggering_rule.dart';
-import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
-import 'package:linksys_moab/core/jnap/extensions/_extensions.dart';
-import 'package:linksys_moab/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/jnap/models/port_range_triggering_rule.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
 
 part 'port_range_triggering_list_state.dart';
 

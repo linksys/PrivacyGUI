@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart';
-import 'package:linksys_moab/constants/cloud_const.dart';
-import 'package:linksys_moab/core/http/linksys_http_client.dart';
-import 'package:linksys_moab/util/extensions.dart';
+import 'package:linksys_app/constants/cloud_const.dart';
+import 'package:linksys_app/core/http/linksys_http_client.dart';
+import 'package:linksys_app/util/extensions.dart';
 
 extension AuthorizationService on LinksysHttpClient {
   Future<Response> passwordLogin({

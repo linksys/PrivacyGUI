@@ -2,13 +2,13 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/constants/_constants.dart';
-import 'package:linksys_moab/core/jnap/models/device_info.dart';
-import 'package:linksys_moab/core/jnap/models/wan_status.dart';
-import 'package:linksys_moab/core/jnap/actions/better_action.dart';
-import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
-import 'package:linksys_moab/core/jnap/router_repository.dart';
-import 'package:linksys_moab/core/utils/logger.dart';
+import 'package:linksys_app/constants/_constants.dart';
+import 'package:linksys_app/core/jnap/models/device_info.dart';
+import 'package:linksys_app/core/jnap/models/wan_status.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class JNAPSideEffect extends Equatable {

@@ -1,11 +1,11 @@
 import 'dart:convert';
 
-import 'package:linksys_moab/constants/jnap_const.dart';
-import 'package:linksys_moab/core/jnap/actions/better_action.dart';
-import 'package:linksys_moab/core/jnap/command/http_base_command.dart';
-import 'package:linksys_moab/core/jnap/jnap_command_queue.dart';
-import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
-import 'package:linksys_moab/core/jnap/router_repository.dart';
+import 'package:linksys_app/constants/jnap_const.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/command/http_base_command.dart';
+import 'package:linksys_app/core/jnap/jnap_command_queue.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
 
 extension CoreService on RouterRepository {
   Future<JNAPSuccess> checkAdminPassword(String password) async {

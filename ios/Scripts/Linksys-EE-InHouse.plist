@@ -10,8 +10,8 @@
 	<string>enterprise</string>
 	<key>provisioningProfiles</key>
 	<dict>
-		<key>com.linksys.moab.app.ee</key>
-		<string>Moab In House</string>
+		<key>com.linksys.app.ios.ee</key>
+		<string>Linksys Flutter App (In House)</string>
 	</dict>
 	<key>signingCertificate</key>
 	<string>Apple Distribution</string>
@@ -26,7 +26,7 @@
 	<key>manifest</key>
 	<dict>
         <key>appURL</key>
-        <string>https://linksys-mobile.s3.us-west-1.amazonaws.com/{version}/moab_app_ee_distribution_{version}.ipa</string>
+        <string>https://linksys-mobile.s3.us-west-1.amazonaws.com/{version}/linksys_app_ee_distribution_{version}.ipa</string>
         <key>displayImageURL</key>
         <string>https://linksys-mobile.s3.us-west-1.amazonaws.com/{version}/ic_launcher.png</string>
         <key>fullSizeImageURL</key>

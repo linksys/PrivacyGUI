@@ -2,15 +2,15 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/provider/connectivity/connectivity_info.dart';
-import 'package:linksys_moab/provider/connectivity/connectivity_state.dart';
-import 'package:linksys_moab/constants/pref_key.dart';
-import 'package:linksys_moab/core/jnap/extensions/_extensions.dart';
-import 'package:linksys_moab/core/jnap/models/device_info.dart';
-import 'package:linksys_moab/core/jnap/actions/better_action.dart';
-import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
-import 'package:linksys_moab/core/jnap/router_repository.dart';
-import 'package:linksys_moab/core/utils/logger.dart';
+import 'package:linksys_app/provider/connectivity/connectivity_info.dart';
+import 'package:linksys_app/provider/connectivity/connectivity_state.dart';
+import 'package:linksys_app/constants/pref_key.dart';
+import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
+import 'package:linksys_app/core/jnap/models/device_info.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'availability_info.dart';

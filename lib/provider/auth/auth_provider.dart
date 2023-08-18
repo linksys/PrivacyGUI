@@ -6,16 +6,16 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:linksys_moab/constants/jnap_const.dart';
-import 'package:linksys_moab/constants/pref_key.dart';
-import 'package:linksys_moab/core/cloud/model/cloud_session_model.dart';
-import 'package:linksys_moab/core/cloud/model/region_code.dart';
-import 'package:linksys_moab/core/http/linksys_http_client.dart';
-import 'package:linksys_moab/core/jnap/actions/better_action.dart';
-import 'package:linksys_moab/core/cloud/linksys_cloud_repository.dart';
-import 'package:linksys_moab/core/jnap/router_repository.dart';
+import 'package:linksys_app/constants/jnap_const.dart';
+import 'package:linksys_app/constants/pref_key.dart';
+import 'package:linksys_app/core/cloud/model/cloud_session_model.dart';
+import 'package:linksys_app/core/cloud/model/region_code.dart';
+import 'package:linksys_app/core/http/linksys_http_client.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
 
-import 'package:linksys_moab/core/utils/logger.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants/default_country_codes.dart';

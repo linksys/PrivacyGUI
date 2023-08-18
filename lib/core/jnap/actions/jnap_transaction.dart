@@ -1,5 +1,4 @@
-
-import 'package:linksys_moab/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
 
 class JNAPTransactionBuilder {
   final Map<JNAPAction, Map<String, dynamic>> _commands;

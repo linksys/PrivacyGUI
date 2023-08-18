@@ -1,8 +1,8 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/core/cloud/model/cloud_account.dart';
+import 'package:linksys_app/core/cloud/model/cloud_account.dart';
 
-import 'package:linksys_moab/core/cloud/model/cloud_communication_method.dart';
+import 'package:linksys_app/core/cloud/model/cloud_communication_method.dart';
 
 class AccountState extends Equatable {
   final String id;

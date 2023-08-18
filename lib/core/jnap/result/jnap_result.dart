@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/constants/jnap_const.dart';
-import 'package:linksys_moab/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/constants/jnap_const.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
 
 abstract class JNAPResult extends Equatable {
   final String result;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
+import 'package:linksys_app/page/components/base_components/tile/setting_tile.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 

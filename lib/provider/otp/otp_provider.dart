@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/core/cloud/model/cloud_communication_method.dart';
-import 'package:linksys_moab/core/cloud/model/cloud_session_model.dart';
-import 'package:linksys_moab/core/cloud/linksys_cloud_repository.dart';
+import 'package:linksys_app/core/cloud/model/cloud_communication_method.dart';
+import 'package:linksys_app/core/cloud/model/cloud_session_model.dart';
+import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
 
 import 'otp_state.dart';
 

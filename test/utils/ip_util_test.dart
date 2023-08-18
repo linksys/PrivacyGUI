@@ -1,5 +1,4 @@
-
-import 'package:linksys_moab/utils.dart';
+import 'package:linksys_app/utils.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -21,7 +20,6 @@ void main() {
       expect(Utils.isValidSubnetMask(ipAddress), true);
     });
     test('test prefix length to subnet mask and convert back #1', () async {
-
       final actual = Utils.prefixLengthToSubnetMask(30);
       expect(actual, '255.255.255.252');
       expect(Utils.subnetMaskToPrefixLength(actual), 30);

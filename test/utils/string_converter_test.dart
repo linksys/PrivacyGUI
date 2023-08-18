@@ -1,6 +1,4 @@
-
-
-import 'package:linksys_moab/utils.dart';
+import 'package:linksys_app/utils.dart';
 import 'package:test/test.dart';
 
 // TODO test supported languages

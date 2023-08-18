@@ -1,4 +1,4 @@
-import 'package:linksys_moab/validator_rules/_validator_rules.dart';
+import 'package:linksys_app/validator_rules/_validator_rules.dart';
 
 import 'rules.dart';
 

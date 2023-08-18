@@ -4,12 +4,14 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
-import 'package:linksys_moab/core/utils/storage.dart';
-import 'package:linksys_moab/utils.dart';
+import 'package:linksys_app/core/utils/storage.dart';
+import 'package:linksys_app/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-final logger =
-    Logger(filter: ProductionFilter(),printer: SimplePrinter(printTime: true, colors: false), output: CustomOutput());
+final logger = Logger(
+    filter: ProductionFilter(),
+    printer: SimplePrinter(printTime: true, colors: false),
+    output: CustomOutput());
 
 class CustomOutput extends LogOutput {
   final File _file = File.fromUri(Storage.logFileUri);
@@ -24,7 +26,9 @@ class CustomOutput extends LogOutput {
       }
     }
     if (output.isNotEmpty && _file.existsSync()) {
-      await _file.writeAsBytes("${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(output.toString()))}\n".codeUnits,
+      await _file.writeAsBytes(
+          "${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(output.toString()))}\n"
+              .codeUnits,
           mode: FileMode.writeOnlyAppend);
     }
   }

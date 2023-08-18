@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/provider/account/account_provider.dart';
-import 'package:linksys_moab/provider/account/account_state.dart';
-import 'package:linksys_moab/provider/auth/_auth.dart';
-import 'package:linksys_moab/page/components/base_components/tile/setting_tile.dart';
-import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/provider/account/account_provider.dart';
+import 'package:linksys_app/provider/account/account_state.dart';
+import 'package:linksys_app/provider/auth/_auth.dart';
+import 'package:linksys_app/page/components/base_components/tile/setting_tile.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';

@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/core/cloud/model/cloud_network_model.dart';
+import 'package:linksys_app/core/cloud/model/cloud_network_model.dart';
 
 class CloudNetworkModel extends Equatable {
   final Network network;

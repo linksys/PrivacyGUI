@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/provider/auth/_auth.dart';
-import 'package:linksys_moab/page/components/layouts/basic_header.dart';
-import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
-import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/validator_rules/_validator_rules.dart';
+import 'package:linksys_app/provider/auth/_auth.dart';
+import 'package:linksys_app/page/components/layouts/basic_header.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -110,9 +110,7 @@ class _CreateAccountPasswordViewState
               ],
             ),
             AppTertiaryButton('I already have a Linksys account password',
-                onTap: () {
-              
-            }),
+                onTap: () {}),
             const AppGap.big(),
             AppPrimaryButton(
               'Next',

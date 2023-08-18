@@ -3,21 +3,21 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>1088152750789-sk8if1311qdcia4s6ov5ji5a6a53nehc.apps.googleusercontent.com</string>
+	<string>110788105434-h12ns2uc9nirulib0jmv84bv1ap8ev0k.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.1088152750789-sk8if1311qdcia4s6ov5ji5a6a53nehc</string>
+	<string>com.googleusercontent.apps.110788105434-h12ns2uc9nirulib0jmv84bv1ap8ev0k</string>
 	<key>API_KEY</key>
-	<string>AIzaSyC7JYg9RkPvYTMiabF8Gdao4eMoyBa0OHs</string>
+	<string>AIzaSyAEG6J_AFleZcp06s5lUINsLmdoVwA90kI</string>
 	<key>GCM_SENDER_ID</key>
-	<string>1088152750789</string>
+	<string>110788105434</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.linksys.moab.app.ee</string>
+	<string>com.linksys.app.ios.ee</string>
 	<key>PROJECT_ID</key>
-	<string>moab-poc</string>
+	<string>linksys-app-flutter</string>
 	<key>STORAGE_BUCKET</key>
-	<string>moab-poc.appspot.com</string>
+	<string>linksys-app-flutter.appspot.com</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:1088152750789:ios:24067fa3a2f03fbb94beac</string>
+	<string>1:110788105434:ios:c10401c8fde9b7c37281e3</string>
 </dict>
 </plist>

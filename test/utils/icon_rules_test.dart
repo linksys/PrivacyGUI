@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:linksys_moab/core/utils/icon_rules.dart';
+import 'package:linksys_app/core/utils/icon_rules.dart';
 
 void main() {
   test('test isPlainJsonObj', () {
@@ -25,6 +25,5 @@ void main() {
     // print('$list');
     final result = iconTest(jsonDecode(deviceJson));
     print(result);
-
   });
 }

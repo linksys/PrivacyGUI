@@ -5,11 +5,11 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:linksys_moab/provider/connectivity/connectivity_state.dart';
-import 'package:linksys_moab/constants/_constants.dart';
-import 'package:linksys_moab/constants/cloud_const.dart';
-import 'package:linksys_moab/core/http/linksys_http_client.dart';
-import 'package:linksys_moab/core/utils/logger.dart';
+import 'package:linksys_app/provider/connectivity/connectivity_state.dart';
+import 'package:linksys_app/constants/_constants.dart';
+import 'package:linksys_app/constants/cloud_const.dart';
+import 'package:linksys_app/core/http/linksys_http_client.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
 import 'availability_info.dart';

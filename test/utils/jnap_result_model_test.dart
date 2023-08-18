@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/customs/network_check_view.dart';
-import 'package:linksys_moab/page/components/layouts/basic_header.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/components/customs/network_check_view.dart';
+import 'package:linksys_app/page/components/layouts/basic_header.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class ForgotEmailView extends ConsumerStatefulWidget {

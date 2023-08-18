@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
-import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/page/dashboard/view/administration/port_forwarding/port_range_triggering/bloc/port_range_triggering_list_cubit.dart';
-import 'package:linksys_moab/core/jnap/router_repository.dart';
-import 'package:linksys_moab/route/constants.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/page/dashboard/view/administration/port_forwarding/port_range_triggering/bloc/port_range_triggering_list_cubit.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 

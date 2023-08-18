@@ -1,11 +1,11 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/core/jnap/models/device.dart';
-import 'package:linksys_moab/core/jnap/models/device_info.dart';
-import 'package:linksys_moab/core/jnap/models/guest_radio_settings.dart';
-import 'package:linksys_moab/core/jnap/models/iot_network_settings.dart';
-import 'package:linksys_moab/core/jnap/models/radio_info.dart';
-import 'package:linksys_moab/core/jnap/models/wan_status.dart';
-import 'package:linksys_moab/core/jnap/models/health_check_result.dart';
+import 'package:linksys_app/core/jnap/models/device.dart';
+import 'package:linksys_app/core/jnap/models/device_info.dart';
+import 'package:linksys_app/core/jnap/models/guest_radio_settings.dart';
+import 'package:linksys_app/core/jnap/models/iot_network_settings.dart';
+import 'package:linksys_app/core/jnap/models/radio_info.dart';
+import 'package:linksys_app/core/jnap/models/wan_status.dart';
+import 'package:linksys_app/core/jnap/models/health_check_result.dart';
 
 class MoabNetwork extends Equatable {
   const MoabNetwork({

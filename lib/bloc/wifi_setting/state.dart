@@ -1,8 +1,8 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/core/jnap/models/guest_radio_settings.dart';
-import 'package:linksys_moab/core/jnap/models/iot_network_settings.dart';
-import 'package:linksys_moab/core/jnap/models/radio_info.dart';
-import 'package:linksys_moab/core/utils/logger.dart';
+import 'package:linksys_app/core/jnap/models/guest_radio_settings.dart';
+import 'package:linksys_app/core/jnap/models/iot_network_settings.dart';
+import 'package:linksys_app/core/jnap/models/radio_info.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 
 class WifiSettingState extends Equatable {
   final List<WifiListItem> wifiList;

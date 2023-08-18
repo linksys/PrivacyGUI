@@ -48,7 +48,7 @@ if (flutterCompileSdkVersion == null) {
 
 def projectApplicationId = projectProperties.getProperty('project.applicationId')
 if (projectApplicationId == null) {
-    projectApplicationId = 'com.moab.linksys.app'
+    projectApplicationId = 'com.linksys.app.android'
 }
 
 apply plugin: 'com.android.application'
@@ -121,7 +121,7 @@ android {
             }
             // applicationVariants.all { variant ->
             //     variant.outputs.all {
-            //         def appName = "moab"
+            //         def appName = "linksys"
             //         def buildType = variant.buildType.name
             //         def newName
             //         newName = "${appName}-${defaultConfig.versionName}-${buildType}.apk"

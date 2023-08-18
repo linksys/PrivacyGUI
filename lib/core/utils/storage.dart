@@ -1,10 +1,9 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:linksys_moab/core/utils/logger.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:path_provider/path_provider.dart';
 
 class Storage {
-
   static Directory? _tempDirectory;
   static Directory? get tempDirectory => _tempDirectory;
   static Directory? _docDirectory;
@@ -14,21 +13,30 @@ class Storage {
   static const String iconKeysFilename = 'icon-keys.json';
   static const String appSignaturesFilename = 'app-signatures.json';
   static const String webFiltersFilename = 'web-filters.json';
-  static const String categoryPresetsFilename = 'security-category-presets.json';
+  static const String categoryPresetsFilename =
+      'security-category-presets.json';
   static const String secureProfilePresets = 'profile-presets.json';
   static const String countryCodesFilename = 'country-codes.json';
 
-  static Uri get logFileUri => Uri.parse('${_tempDirectory?.path}/$loggerFilename');
-  static Uri get shareLogFileUri => Uri.parse('${_tempDirectory?.path}/$loggerFilename');
+  static Uri get logFileUri =>
+      Uri.parse('${_tempDirectory?.path}/$loggerFilename');
+  static Uri get shareLogFileUri =>
+      Uri.parse('${_tempDirectory?.path}/$loggerFilename');
 
-  static Uri get iconsFileUri => Uri.parse('${Storage.tempDirectory?.path}/$iconMapFilename');
-  static Uri get iconKeysFileUri => Uri.parse('${Storage.tempDirectory?.path}/$iconKeysFilename');
-  static Uri get countryCodesFileUri => Uri.parse('${Storage.tempDirectory?.path}/$countryCodesFilename');
-  static Uri get appSignaturesFileUri => Uri.parse('${Storage.tempDirectory?.path}/$appSignaturesFilename');
-  static Uri get webFiltersFileUri => Uri.parse('${Storage.tempDirectory?.path}/$webFiltersFilename');
-  static Uri get categoryPresetsFileUri => Uri.parse('${Storage.tempDirectory?.path}/$categoryPresetsFilename');
-  static Uri get secureProfilePresetsFileUri => Uri.parse('${Storage.tempDirectory?.path}/$secureProfilePresets');
-
+  static Uri get iconsFileUri =>
+      Uri.parse('${Storage.tempDirectory?.path}/$iconMapFilename');
+  static Uri get iconKeysFileUri =>
+      Uri.parse('${Storage.tempDirectory?.path}/$iconKeysFilename');
+  static Uri get countryCodesFileUri =>
+      Uri.parse('${Storage.tempDirectory?.path}/$countryCodesFilename');
+  static Uri get appSignaturesFileUri =>
+      Uri.parse('${Storage.tempDirectory?.path}/$appSignaturesFilename');
+  static Uri get webFiltersFileUri =>
+      Uri.parse('${Storage.tempDirectory?.path}/$webFiltersFilename');
+  static Uri get categoryPresetsFileUri =>
+      Uri.parse('${Storage.tempDirectory?.path}/$categoryPresetsFilename');
+  static Uri get secureProfilePresetsFileUri =>
+      Uri.parse('${Storage.tempDirectory?.path}/$secureProfilePresets');
 
   static init() async {
     _tempDirectory = (await getTemporaryDirectory());
@@ -40,7 +48,7 @@ class Storage {
     }
   }
 
-  static createLoggerFile () {
+  static createLoggerFile() {
     final logFile = File.fromUri(logFileUri);
     if (!logFile.existsSync()) {
       logFile.createSync();

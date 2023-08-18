@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/page/components/views/arguments_view.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 

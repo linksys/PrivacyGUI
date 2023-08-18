@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_moab/constants/build_config.dart';
-import 'package:linksys_moab/page/components/customs/debug_overlay_view.dart';
-import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/route/constants.dart';
+import 'package:linksys_app/constants/build_config.dart';
+import 'package:linksys_app/page/components/customs/debug_overlay_view.dart';
+import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/route/constants.dart';
 
-import 'package:linksys_moab/util/debug_mixin.dart';
-import 'package:linksys_moab/core/utils/logger.dart';
-import 'package:linksys_moab/utils.dart';
+import 'package:linksys_app/util/debug_mixin.dart';
+import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';

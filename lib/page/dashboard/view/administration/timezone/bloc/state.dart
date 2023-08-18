@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/core/jnap/models/timezone.dart';
+import 'package:linksys_app/core/jnap/models/timezone.dart';
 
 class TimezoneState extends Equatable {
   final bool isDaylightSaving;

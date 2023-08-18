@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:linksys_moab/core/jnap/jnap_command_executor_mixin.dart';
-import 'package:linksys_moab/core/jnap/spec/jnap_spec.dart';
+import 'package:linksys_app/core/jnap/jnap_command_executor_mixin.dart';
+import 'package:linksys_app/core/jnap/spec/jnap_spec.dart';
 
 abstract class BaseCommand<R, S extends JNAPSpec> {
   BaseCommand({required this.spec, required this.executor});

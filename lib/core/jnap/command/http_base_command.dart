@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:linksys_moab/constants/jnap_const.dart';
-import 'package:linksys_moab/core/jnap/result/jnap_result.dart';
-import 'package:linksys_moab/core/jnap/spec/jnap_spec.dart';
-import 'package:linksys_moab/core/jnap/command/base_command.dart';
+import 'package:linksys_app/constants/jnap_const.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/jnap/spec/jnap_spec.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
 
 abstract class BaseHttpCommand<R, S extends JNAPSpec>
     extends BaseCommand<R, S> {

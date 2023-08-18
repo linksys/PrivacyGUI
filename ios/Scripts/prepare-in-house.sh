@@ -19,7 +19,7 @@ function updateLinks() {
   mv "$htmlFilePath" "./artifacts/install.html"
   manifestPath=./build/ios/ipa/manifest.plist
   sed -i '' "s/{version}/$version/g" "$manifestPath"
-  sed -i '' "s/Runner/Moab App $version/g" "$manifestPath"
+  sed -i '' "s/Runner/Linksys Flutter $version/g" "$manifestPath"
   mv "$manifestPath" "./artifacts/manifest.plist"
 }
 version=$1

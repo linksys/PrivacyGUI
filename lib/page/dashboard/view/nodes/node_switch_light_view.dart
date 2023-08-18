@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/bloc/node/cubit.dart';
-import 'package:linksys_moab/bloc/node/state.dart';
-import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/bloc/node/cubit.dart';
+import 'package:linksys_app/bloc/node/state.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class NodeSwitchLightView extends ConsumerWidget {

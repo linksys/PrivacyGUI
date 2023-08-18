@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_moab/bloc/device/_device.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
+import 'package:linksys_app/bloc/device/_device.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 

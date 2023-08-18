@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_moab/core/cloud/model/error_response.dart';
-import 'package:linksys_moab/page/components/styled/styled_page_view.dart';
-import 'package:linksys_moab/page/components/views/arguments_view.dart';
-import 'package:linksys_moab/util/error_code_handler.dart';
-import 'package:linksys_moab/core/utils/logger.dart';
+import 'package:linksys_app/core/cloud/model/error_response.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/util/error_code_handler.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class CloudPasswordValidationView extends ArgumentsConsumerStatefulView {

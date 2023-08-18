@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:linksys_moab/core/utils/logger.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 
 import 'command/base_command.dart';
 
@@ -17,10 +17,9 @@ class CommandQueue {
   }
 
   Timer? _timer;
-  
+
   int _emptyRetry = 0;
-  
-  
+
   factory CommandQueue() {
     _singleton ??= CommandQueue._();
     return _singleton!;
@@ -38,11 +37,12 @@ class CommandQueue {
       _stopConsume();
       return;
     }
-    
+
     final command = _queue.removeFirst();
-    logger.d('Command Queue <${_queue.length}>:: handle command: ${command.runtimeType}, ${command.spec.action}');
+    logger.d(
+        'Command Queue <${_queue.length}>:: handle command: ${command.runtimeType}, ${command.spec.action}');
     command.publish().then((value) => command.complete(value)).onError(
-            (error, stackTrace) => command.completeError(error, stackTrace));
+        (error, stackTrace) => command.completeError(error, stackTrace));
     _emptyRetry = 0;
   }
 
@@ -51,7 +51,8 @@ class CommandQueue {
       _startConsume();
     }
     _queue.add(command);
-    logger.d('Command Queue:: enqueue command ${command.runtimeType}, ${command.spec.action}');
+    logger.d(
+        'Command Queue:: enqueue command ${command.runtimeType}, ${command.spec.action}');
     return command.wait();
   }
 
@@ -63,6 +64,7 @@ class CommandQueue {
     _timer = Timer.periodic(const Duration(milliseconds: 50), _consumeCommand);
     logger.d('Command Queue:: start to consume commands!');
   }
+
   _stopConsume() {
     if ((_timer?.isActive ?? false) && _emptyRetry >= _maxEmptyRetry) {
       logger.d('Command Queue:: exceed to empty retry, stop!');

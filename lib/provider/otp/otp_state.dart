@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_moab/core/cloud/model/cloud_communication_method.dart';
+import 'package:linksys_app/core/cloud/model/cloud_communication_method.dart';
 
 enum OtpStep { init, chooseOtpMethod, inputOtp, addPhone, finish }
 
