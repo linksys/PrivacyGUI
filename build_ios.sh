@@ -1,22 +1,24 @@
 
 function buildInHouse() {
   echo "start building in house #${inHouseBuildNumber}"
-  flutter build ipa --export-options-plist=ios/Scripts/Moab-EE-InHouse.plist --flavor=Enterprise --build-number="${inHouseBuildNumber}" --dart-define=cloud_env=qa --no-tree-shake-icons
-  mv "./build/ios/ipa/Moab.ipa" "./artifacts/moab_app_ee_distribution_${inHouseBuildNumber}.ipa"
+  flutter build ipa --export-options-plist=ios/Scripts/Linksys-EE-InHouse.plist --flavor=Enterprise --build-number="${inHouseBuildNumber}" --dart-define=cloud_env=qa --no-tree-shake-icons
+  mkdir -p "./artifacts"
+  mv "./build/ios/ipa/Linksys.ipa" "./artifacts/linksys_app_ee_distribution_${inHouseBuildNumber}.ipa"
 }
 
 function buildAppStore() {
   echo "start building app store #${appStoreBuildNumber}"
-  flutter build ipa --export-options-plist=ios/Scripts/Moab-Distribution-app-store.plist --flavor=Moab --build-number="${appStoreBuildNumber}" --dart-define=cloud_env=qa --no-tree-shake-icons
-  mv "./build/ios/ipa/Moab.ipa" "./artifacts/moab_app_distribution_app_store_${appStoreBuildNumber}.ipa"
+  flutter build ipa --export-options-plist=ios/Scripts/Linksys-Distribution-app-store.plist --flavor=Linksys --build-number="${appStoreBuildNumber}" --dart-define=cloud_env=qa --no-tree-shake-icons
+  mkdir -p "./artifacts"
+  mv "./build/ios/ipa/Linksys.ipa" "./artifacts/linksys_app_distribution_app_store_${appStoreBuildNumber}.ipa"
 }
 
 function buildSimulatorApp() {
     echo "start building simulator app"
     flutter build ios --simulator;
-    mv "./build/ios/iphonesimulator/Runner.app" "./artifacts/moab_app_simulator.app"
-    zip -r "./build/ios/iphonesimulator/moab_app_simulator.app.zip" ./*
-    mv "./build/ios/iphonesimulator/moab_app_simulator.app.zip" "./artifacts/moab_app_simulator.app.zip"
+    mv "./build/ios/iphonesimulator/Runner.app" "./artifacts/linksys_app_simulator.app"
+    zip -r "./build/ios/iphonesimulator/linksys_app_simulator.app.zip" ./*
+    mv "./build/ios/iphonesimulator/linksys_app_simulator.app.zip" "./artifacts/linksys_app_simulator.app.zip"
 }
 
 inHouseBuildNumber=$1

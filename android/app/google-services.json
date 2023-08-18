@@ -29,6 +29,13 @@
             {
               "client_id": "110788105434-ude351a631r8bhr18p23cn8i07hl3776.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "110788105434-h12ns2uc9nirulib0jmv84bv1ap8ev0k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.linksys.app.ios.ee"
+              }
             }
           ]
         }
