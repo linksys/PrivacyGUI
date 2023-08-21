@@ -18,7 +18,7 @@
     </queries>
 
     <application
-        android:label="Hummingbird"
+        android:label="Linksys Flutter"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

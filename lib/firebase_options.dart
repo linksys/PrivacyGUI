@@ -57,13 +57,25 @@ class DefaultFirebaseOptions {
     storageBucket: 'linksys-app-flutter.appspot.com',
   );
 
+  static const FirebaseOptions iosEE = FirebaseOptions(
+    apiKey: 'AIzaSyAEG6J_AFleZcp06s5lUINsLmdoVwA90kI',
+    appId: '1:110788105434:ios:c10401c8fde9b7c37281e3',
+    messagingSenderId: '110788105434',
+    projectId: 'linksys-app-flutter',
+    storageBucket: 'linksys-app-flutter.appspot.com',
+    iosClientId:
+        '110788105434-h12ns2uc9nirulib0jmv84bv1ap8ev0k.apps.googleusercontent.com',
+    iosBundleId: 'com.linksys.app.ios.ee',
+  );
+
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAEG6J_AFleZcp06s5lUINsLmdoVwA90kI',
     appId: '1:110788105434:ios:bac9ae53b469127f7281e3',
     messagingSenderId: '110788105434',
     projectId: 'linksys-app-flutter',
     storageBucket: 'linksys-app-flutter.appspot.com',
-    iosClientId: '110788105434-2jp7p5sdmi448a623ur2hj77ljfe3tjt.apps.googleusercontent.com',
+    iosClientId:
+        '110788105434-2jp7p5sdmi448a623ur2hj77ljfe3tjt.apps.googleusercontent.com',
     iosBundleId: 'com.linksys.app.ios',
   );
 }

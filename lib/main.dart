@@ -26,8 +26,10 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'firebase_options.dart';
 import 'route/router_provider.dart';
+import 'util/analytics.dart';
 
 void main() async {
   // enableFlutterDriverExtension();
@@ -50,9 +52,13 @@ void main() async {
   logger.v('App Start');
   await initLog();
   logger.d('Start to init Firebase Core');
+  final appConst = await PackageInfo.fromPlatform();
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+    options: appConst.appName.endsWith('ee')
+        ? DefaultFirebaseOptions.iosEE
+        : DefaultFirebaseOptions.currentPlatform,
   );
+  await initAnalyticsDefault();
   // if (!kReleaseMode) {
   //   MqttLogger.loggingOn = true;
   // }

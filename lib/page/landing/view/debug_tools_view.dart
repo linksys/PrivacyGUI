@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -25,6 +26,7 @@ import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
+import 'package:linksys_app/util/analytics.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:share_plus/share_plus.dart';
@@ -150,7 +152,20 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         onTap: () async {
           ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Throw a test exception!!')));
-          throw Exception('Throw a test exception!!');
+          // FirebaseCrashlytics.instance.crash();
+          logEvent(eventName: 'testEvent');
+          throw Exception('Test Exception!!!');
+        },
+      ),
+      AppPrimaryButton(
+        'Log a test event',
+        onTap: () async {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('Event logged!')));
+          // FirebaseCrashlytics.instance.crash();
+          logEvent(eventName: 'event_hello_world', parameters: {
+            'time': DateTime.now().millisecondsSinceEpoch,
+          });
         },
       ),
       const AppGap.regular(),

@@ -6,15 +6,12 @@ import 'dart:typed_data';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_app/bloc/node/state.dart';
-import 'package:linksys_app/constants/pref_key.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/util/uuid.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'bloc/device/state.dart';
 import 'core/utils/logger.dart';
