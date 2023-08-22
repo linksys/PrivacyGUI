@@ -31,7 +31,7 @@ class RouterPasswordCubit extends Cubit<RouterPasswordState> {
     String passwordHint = '';
     if (isSetByUser) {
       passwordHint = await _repository
-          .getAdminPasswordHint()
+          .send(JNAPAction.getAdminPasswordHint)
           .then((result) => result.output['passwordHint'] ?? '')
           .onError((error, stackTrace) => '');
     }
@@ -49,7 +49,14 @@ class RouterPasswordCubit extends Cubit<RouterPasswordState> {
   Future save(String password, String hint) async {
     emit(state.copyWith(isLoading: true));
     return _repository
-        .createAdminPassword(password, hint)
+        .send(
+      JNAPAction.coreSetAdminPassword,
+      data: {
+        'adminPassword': password,
+        'passwordHint': hint,
+      },
+      auth: true,
+    )
         .then<void>((value) async {
       const storage = FlutterSecureStorage();
       await storage.write(key: pLocalPassword, value: password);

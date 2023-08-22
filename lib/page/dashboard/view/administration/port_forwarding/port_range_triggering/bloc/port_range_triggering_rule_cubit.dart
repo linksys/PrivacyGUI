@@ -1,8 +1,8 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/models/lan_settings.dart';
 import 'package:linksys_app/core/jnap/models/port_range_triggering_rule.dart';
-import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:linksys_app/validator_rules/_validator_rules.dart';
@@ -29,7 +29,10 @@ class PortRangeTriggeringRuleCubit extends Cubit<PortRangeTriggeringRuleState> {
 
   Future fetch() async {
     final lanSettings = await _repository
-        .getLANSettings()
+        .send(
+          JNAPAction.getLANSettings,
+          auth: true,
+        )
         .then((value) => RouterLANSettings.fromJson(value.output));
     final ipAddress = lanSettings.ipAddress;
     final subnetMask =
@@ -47,7 +50,11 @@ class PortRangeTriggeringRuleCubit extends Cubit<PortRangeTriggeringRuleState> {
       rules.replaceRange(index, index + 1, [rule]);
     }
     final result = await _repository
-        .setPortRangeTriggeringRules(rules)
+        .send(
+          JNAPAction.setPortRangeTriggeringRules,
+          data: {'rules': rules.map((e) => e.toJson()).toList()},
+          auth: true,
+        )
         .then((value) => true)
         .onError((error, stackTrace) => false);
     return result;
@@ -59,7 +66,11 @@ class PortRangeTriggeringRuleCubit extends Cubit<PortRangeTriggeringRuleState> {
       final rules = List<PortRangeTriggeringRule>.from(currentState.rules)
         ..removeWhere((element) => element == currentState.rule);
       final result = await _repository
-          .setPortRangeTriggeringRules(rules)
+          .send(
+            JNAPAction.setPortRangeTriggeringRules,
+            data: {'rules': rules.map((e) => e.toJson()).toList()},
+            auth: true,
+          )
           .then((value) => true)
           .onError((error, stackTrace) => false);
       return result;

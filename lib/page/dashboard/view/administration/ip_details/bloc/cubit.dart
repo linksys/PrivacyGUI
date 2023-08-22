@@ -50,10 +50,16 @@ class IpDetailsCubit extends Cubit<IpDetailsState> {
   Future renewIp(bool isIPv6) async {
     if (isIPv6) {
       emit(state.copyWith(ipv6Renewing: true));
-      await _repository.renewDHCPIPv6WANLease();
+      await _repository.send(
+        JNAPAction.renewDHCPIPv6WANLease,
+        auth: true,
+      );
     } else {
       emit(state.copyWith(ipv4Renewing: true));
-      await _repository.renewDHCPWANLease();
+      await _repository.send(
+        JNAPAction.renewDHCPWANLease,
+        auth: true,
+      );
     }
     // TODO #SIDEEFFECT WANInterruption
     await Future.delayed(const Duration(seconds: 20));

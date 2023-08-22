@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/models/lan_settings.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/utils.dart';
@@ -26,7 +26,10 @@ class LANCubit extends Cubit<LANState> {
 
   Future<LANState> fetch() async {
     final lanSettings = await _repository
-        .getLANSettings()
+        .send(
+          JNAPAction.getLANSettings,
+          auth: true,
+        )
         .then((value) => RouterLANSettings.fromJson(value.output));
     emit(state.copyWith(
       ipAddress: lanSettings.ipAddress,

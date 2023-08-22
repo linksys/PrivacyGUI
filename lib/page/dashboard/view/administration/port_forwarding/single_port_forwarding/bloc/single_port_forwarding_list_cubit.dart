@@ -1,8 +1,8 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/models/single_port_forwarding_rule.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 
 part 'single_port_forwarding_list_state.dart';
@@ -16,7 +16,9 @@ class SinglePortForwardingListCubit
   final RouterRepository _repository;
 
   fetch() async {
-    _repository.getSinglePortForwardingRules().then<JNAPSuccess?>((value) {
+    _repository
+        .send(JNAPAction.getSinglePortForwardingRules,auth: true,)
+        .then<JNAPSuccess?>((value) {
       final rules = List.from(value.output['rules'])
           .map((e) => SinglePortForwardingRule.fromJson(e))
           .toList();

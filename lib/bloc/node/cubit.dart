@@ -54,14 +54,18 @@ class NodeCubit extends Cubit<NodeState> {
   }
 
   Future updateNodeLocation(String newLocation) async {
-    final results = await _repository.setDeviceProperties(
-      deviceId: state.deviceID,
-      propertiesToModify: [
-        {
-          'name': 'userDeviceName',
-          'value': newLocation,
-        }
-      ],
+    final results = await _repository.send(
+      JNAPAction.setDeviceProperties,
+      data: {
+        'deviceID': state.deviceID,
+        'propertiesToModify': [
+          {
+            'name': 'userDeviceName',
+            'value': newLocation,
+          }
+        ],
+      },
+      auth: true,
     );
 
     if (results.result == 'OK') {
@@ -82,7 +86,10 @@ class NodeCubit extends Cubit<NodeState> {
     emit(state.copyWith(
       isSystemRestarting: true,
     ));
-    final results = await _repository.reboot();
+    final results = await _repository.send(
+      JNAPAction.reboot,
+      auth: true,
+    );
     if (results.result == 'OK') {
       Future.delayed(const Duration(seconds: 130), () {
         emit(state.copyWith(

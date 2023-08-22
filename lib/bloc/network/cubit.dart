@@ -96,14 +96,19 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   }
 
   Future<RouterWANStatus> getWANStatus() async {
-    final result = await _routerRepository.getWANStatus();
+    final result = await _routerRepository.send(
+      JNAPAction.getWANStatus,
+    );
     final wanStatus = RouterWANStatus.fromJson(result.output);
     _handleWANStatusResult(wanStatus);
     return wanStatus;
   }
 
   Future<List<RouterRadioInfo>> getRadioInfo() async {
-    final result = await _routerRepository.getRadioInfo();
+    final result = await _routerRepository.send(
+      JNAPAction.getRadioInfo,
+      auth: true,
+    );
     final radioInfo = List.from(result.output['radios'])
         .map((e) => RouterRadioInfo.fromJson(e))
         .toList();
@@ -112,7 +117,7 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   }
 
   Future<List<RouterDevice>> getDevices() async {
-    final result = await _routerRepository.getDevices();
+    final result = await _routerRepository.send(JNAPAction.getDevices);
     final devices = List.from(result.output['devices'])
         .map((e) => RouterDevice.fromJson(e))
         .toList();
@@ -121,7 +126,11 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   }
 
   Future<void> getHealthCheckResults() async {
-    final result = await _routerRepository.getHealthCheckResults();
+    final result = await _routerRepository.send(
+      JNAPAction.getHealthCheckResults,
+      data: {'includeModuleResults': true},
+      auth: true,
+    );
     final healthCheckResults = List.from(result.output['healthCheckResults'])
         .map((e) => HealthCheckResult.fromJson(e))
         .toList();
@@ -131,7 +140,10 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   Future<SpeedTestResult> getHealthCheckStatus() async {
     SpeedTestResult speedTestResult =
         const SpeedTestResult(resultID: 0, exitCode: '');
-    final result = await _routerRepository.getHealthCheckStatus();
+    final result = await _routerRepository.send(
+      JNAPAction.getHealthCheckStatus,
+      auth: true,
+    );
     if (result.output['healthCheckModuleCurrentlyRunning'] == 'SpeedTest') {
       speedTestResult =
           SpeedTestResult.fromJson(result.output['speedTestResult']);
@@ -143,7 +155,11 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   }
 
   Future<void> runHealthCheck() async {
-    final result = await _routerRepository.runHealthCheck();
+    final result = await _routerRepository.send(
+      JNAPAction.runHealthCheck,
+      data: {'runHealthCheckModule': 'SpeedTest'},
+      auth: true,
+    );
     if (result.output['resultID'] != null) {
       Timer.periodic(const Duration(seconds: 5), (timer) async {
         final speedTestResult = await getHealthCheckStatus();
@@ -166,7 +182,14 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   }
 
   createAdminPassword(String password, String hint) async {
-    await _routerRepository.createAdminPassword('admin', hint);
+    await _routerRepository.send(
+      JNAPAction.coreSetAdminPassword,
+      data: {
+        'adminPassword': 'admin',
+        'passwordHint': hint,
+      },
+      auth: true,
+    );
   }
 
   ///

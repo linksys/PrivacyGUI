@@ -10,6 +10,7 @@ import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/utils.dart';
 
+
 class DeviceCubit extends Cubit<DeviceState> {
   DeviceCubit({required RouterRepository routerRepository})
       : _routerRepository = routerRepository,
@@ -240,14 +241,13 @@ class DeviceCubit extends Cubit<DeviceState> {
 
   Future<void> updateDeviceInfoName(
       DeviceDetailInfo deviceInfo, String name) async {
-    await _routerRepository.setDeviceProperties(
-        deviceId: deviceInfo.deviceID,
-        propertiesToModify: [
-          {
-            'name': userDefinedDeviceName,
-            'value': name,
-          }
-        ]).then((value) {
+    await _routerRepository.send(JNAPAction.setDeviceProperties, data: {
+      'deviceID': deviceInfo.deviceID,
+      'propertiesToModify': {
+        'name': userDefinedDeviceName,
+        'value': name,
+      },
+    }).then((value) {
       emit(state.copyWith(
           selectedDeviceInfo: state.selectedDeviceInfo!.copyWith(name: name)));
       fetchDeviceList();
