@@ -44,7 +44,7 @@ void initCloudMessage() async {
       logger.i('APNS: User authorization result: $grant');
     });
     logger.i(
-        'APNS token back: ${(await SharedPreferences.getInstance()).getString(linksysPrefDeviceToken)}');
+        'APNS token back: ${(await SharedPreferences.getInstance()).getString(pDeviceToken)}');
     return;
   }
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);

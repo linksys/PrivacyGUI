@@ -144,7 +144,6 @@ class MoabApp extends ConsumerStatefulWidget {
 class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
   @override
   void initState() {
-    // logger.d('Moab App init state: ${describeIdentity(this)}');
     // _initAuth();
     _intIAP();
 
@@ -170,7 +169,6 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    // logger.d('Moab App build: ${describeIdentity(this)}');
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
       onGenerateTitle: (context) => getAppLocalizations(context).app_title,

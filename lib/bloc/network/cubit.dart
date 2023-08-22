@@ -266,9 +266,8 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
 
   Future selectNetwork(CloudNetworkModel network) async {
     final pref = await SharedPreferences.getInstance();
-    await pref.remove(linkstyPrefCurrentSN);
-    await pref.setString(
-        linksysPrefSelectedNetworkId, network.network.networkId);
+    await pref.remove(pCurrentSN);
+    await pref.setString(prefSelectedNetworkId, network.network.networkId);
     // CloudEnvironmentManager().applyNewConfig(network.region);
     emit(state.copyWith(selected: MoabNetwork(id: network.network.networkId)));
   }

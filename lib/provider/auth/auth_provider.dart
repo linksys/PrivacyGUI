@@ -264,7 +264,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
     state = await AsyncValue.guard(() async {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(linksysPrefSelectedNetworkId);
+      await prefs.remove(prefSelectedNetworkId);
       const storage = FlutterSecureStorage();
 
       await storage.delete(key: pSessionToken);

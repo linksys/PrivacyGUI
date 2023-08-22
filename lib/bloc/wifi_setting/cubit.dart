@@ -228,7 +228,7 @@ class WifiSettingCubit extends Cubit<WifiSettingState> {
               NewRadioSettings(radioID: radioInfo.radioID, settings: settings));
         }
         final pref = await SharedPreferences.getInstance();
-        final networkId = pref.getString(linksysPrefSelectedNetworkId) ?? '';
+        final networkId = pref.getString(prefSelectedNetworkId) ?? '';
         final cloudUpdateSuccess = await _cloudRepository
             .updateFriendlyName(name, networkId)
             .then((value) => true)

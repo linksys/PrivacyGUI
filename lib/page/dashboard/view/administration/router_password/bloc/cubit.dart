@@ -36,7 +36,7 @@ class RouterPasswordCubit extends Cubit<RouterPasswordState> {
           .onError((error, stackTrace) => '');
     }
     const storage = FlutterSecureStorage();
-    final password = await storage.read(key: linksysPrefLocalPassword);
+    final password = await storage.read(key: pLocalPassword);
 
     emit(state.copyWith(
         isLoading: false,
@@ -52,7 +52,7 @@ class RouterPasswordCubit extends Cubit<RouterPasswordState> {
         .createAdminPassword(password, hint)
         .then<void>((value) async {
       const storage = FlutterSecureStorage();
-      await storage.write(key: linksysPrefLocalPassword, value: password);
+      await storage.write(key: pLocalPassword, value: password);
       await fetch();
     }).onError((error, stackTrace) => onError(error ?? Object(), stackTrace));
   }

@@ -92,7 +92,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
             final appInfo = await getAppInfoLogs();
             final screenInfo = getScreenInfo(context);
             final String shareLogFilename =
-                'moab-log-${DateFormat("yyyy-MM-dd_HH_mm_ss").format(DateTime.now())}.txt';
+                'log-${DateFormat("yyyy-MM-dd_HH_mm_ss").format(DateTime.now())}.txt';
             final String shareLogPath =
                 '${Storage.tempDirectory?.path}/$shareLogFilename';
             final value = await file.readAsBytes();
@@ -104,7 +104,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
             Size size = MediaQuery.of(context).size;
             final result = await Share.shareFilesWithResult(
               [shareLogPath],
-              text: 'Moab Log',
+              text: 'Linksys Log',
               subject: 'Log file',
               sharePositionOrigin:
                   Rect.fromLTWH(0, 0, size.width, size.height / 2),

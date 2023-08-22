@@ -162,7 +162,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
 
   Future<bool> testRouterReconnected() async {
     final pref = await SharedPreferences.getInstance();
-    final cachedSerialNumber = pref.getString(linkstyPrefCurrentSN);
+    final cachedSerialNumber = pref.getString(pCurrentSN);
 
     final routerRepository = ref.read(routerRepositoryProvider);
     return routerRepository

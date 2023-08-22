@@ -86,7 +86,7 @@ class ConnectivityNotifier extends Notifier<ConnectivityState>
             (value) => RouterDeviceInfo.fromJson(value.output).serialNumber)
         .onError((error, stackTrace) => '');
     final prefs = await SharedPreferences.getInstance();
-    final currentSN = prefs.get(linkstyPrefCurrentSN);
+    final currentSN = prefs.get(pCurrentSN);
     if (routerSN.isNotEmpty && routerSN == currentSN) {
       return RouterType.behindManaged;
     }

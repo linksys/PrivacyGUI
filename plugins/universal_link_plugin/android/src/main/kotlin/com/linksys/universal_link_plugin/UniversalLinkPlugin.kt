@@ -15,7 +15,7 @@ import io.flutter.plugin.common.PluginRegistry
 /** UniversalLinkPlugin */
 class UniversalLinkPlugin : FlutterPlugin, EventChannel.StreamHandler, ActivityAware,
     PluginRegistry.NewIntentListener {
-    private val EVENTS_CHANNEL = "com.linksys.moab/universal_link"
+    private val EVENTS_CHANNEL = "com.linksys.app.ios/universal_link"
 
     private var changeReceiver: BroadcastReceiver? = null
     private lateinit var context: Context

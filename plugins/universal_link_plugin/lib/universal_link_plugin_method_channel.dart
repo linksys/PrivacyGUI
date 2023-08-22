@@ -11,7 +11,7 @@ class MethodChannelUniversalLinkPlugin extends UniversalLinkPluginPlatform {
   @visibleForTesting
   final methodChannel = const MethodChannel('universal_link_plugin');
 
-  final eventChannel = const EventChannel('com.linksys.moab/universal_link');
+  final eventChannel = const EventChannel('com.linksys.app.ios/universal_link');
 
   @override
   Future<String?> getPlatformVersion() async {

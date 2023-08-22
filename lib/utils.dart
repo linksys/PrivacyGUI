@@ -233,7 +233,6 @@ class Utils {
       'username',
       'password',
       'privateKey',
-      'X-Linksys-Moab-App-Secret',
       'adminPassword',
       'passphrase',
     ];

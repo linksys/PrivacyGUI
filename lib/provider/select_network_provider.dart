@@ -59,8 +59,7 @@ class SelectNetworkNotifier extends AsyncNotifier<SelectNetworkModel> {
 
   Future<void> saveSelectedNetwork(CloudNetworkModel network) async {
     final pref = await SharedPreferences.getInstance();
-    await pref.setString(
-        linksysPrefSelectedNetworkId, network.network.networkId);
+    await pref.setString(prefSelectedNetworkId, network.network.networkId);
   }
 
   Future<void> deleteNetworks() async {
@@ -73,7 +72,7 @@ class SelectNetworkModel {
   final List<CloudNetworkModel> networks;
   Future<String?> get selectedNetworkId async {
     final pref = await SharedPreferences.getInstance();
-    return pref.getString(linksysPrefSelectedNetworkId);
+    return pref.getString(prefSelectedNetworkId);
   }
 
   const SelectNetworkModel({

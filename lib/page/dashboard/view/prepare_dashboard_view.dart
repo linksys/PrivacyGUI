@@ -66,8 +66,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
         .onError((error, stackTrace) => null);
     if (routerDeviceInfo != null) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-          linkstyPrefCurrentSN, routerDeviceInfo.serialNumber);
+      await prefs.setString(pCurrentSN, routerDeviceInfo.serialNumber);
       await ref.read(connectivityProvider.notifier).forceUpdate();
 
       // ref.watch(navigationsProvider.notifier).clearAndPush(DashboardHomePath());

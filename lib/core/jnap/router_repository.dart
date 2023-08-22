@@ -353,7 +353,7 @@ extension RouterRepositoryUtil on RouterRepository {
 
   Future<String> getLocalPassword() async {
     return await const FlutterSecureStorage()
-            .read(key: linksysPrefLocalPassword) ??
+            .read(key: pLocalPassword) ??
         '';
   }
 
