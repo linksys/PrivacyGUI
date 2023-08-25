@@ -55,6 +55,10 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
   /// Cloud API
   ///
 
+  reset() {
+    emit(const NetworkState());
+  }
+
   Future<List<CloudNetworkModel>> getNetworks(
       {required String accountId}) async {
     final networks = await Future.wait(

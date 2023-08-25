@@ -17,7 +17,7 @@ final selectNetworkNotifierProvider =
 class SelectNetworkNotifier extends AsyncNotifier<SelectNetworkModel> {
   @override
   Future<SelectNetworkModel> build() async {
-    return _getModel();
+    return Future.value(const SelectNetworkModel());
   }
 
   Future<SelectNetworkModel> _getModel() async {

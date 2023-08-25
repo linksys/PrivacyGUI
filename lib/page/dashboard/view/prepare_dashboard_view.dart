@@ -12,6 +12,7 @@ import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/models/device_info.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_app/service/cloud_network_service.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -50,6 +51,8 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
       if (context.read<NetworkCubit>().state.selected == null) {
         // TODO #LINKSYS
         // await context.read<AccountCubit>().fetchAccount();
+        CloudNetworkService(ref).refreshNetworks();
+
         await context
             .read<NetworkCubit>()
             .getNetworks(accountId: ref.read(accountProvider).id);

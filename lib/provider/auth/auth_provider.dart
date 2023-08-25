@@ -13,6 +13,7 @@ import 'package:linksys_app/core/cloud/model/region_code.dart';
 import 'package:linksys_app/core/http/linksys_http_client.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
+import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 
 import 'package:linksys_app/core/utils/logger.dart';
@@ -265,8 +266,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     state = await AsyncValue.guard(() async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(prefSelectedNetworkId);
+      await prefs.remove(pCurrentSN);
+      await prefs.remove(pDeviceToken);
       const storage = FlutterSecureStorage();
-
       await storage.delete(key: pSessionToken);
       await storage.delete(key: pSessionTokenTs);
       await storage.delete(key: pLocalPassword);
@@ -274,6 +276,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await storage.delete(key: pUserPassword);
       return AuthState.empty();
     });
+    ref.read(pollingProvider.notifier).stopPolling();
   }
 
   bool isCloudLogin() => state.value?.loginType == LoginType.remote;

@@ -4,9 +4,9 @@ const pCloudEnv = 'CloudEnvironment';
 const pCurrentSN = 'LinksysCurrentSN';
 const pDeviceToken = 'LinksysDeviceToken';
 const prefSelectedNetworkId = 'LinksysSelectedNetworkId';
+// secured
 const pSessionToken = 'SessionToken';
 const pSessionTokenTs = 'SessionTokenTimeStamp';
-// secured
 const pUserPassword = 'UserPassword';
 const pUsername = 'Username';
 const pLocalPassword = 'LocalPassword';

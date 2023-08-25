@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
-import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/bloc/network/cubit.dart';
 import 'package:linksys_app/bloc/network/state.dart';
 import 'package:linksys_app/page/components/customs/enabled_with_opacity_widget.dart';
@@ -52,7 +51,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        AppDeviceAvatar.extraLarge(
+                        AppDeviceAvatar.large(
                           image: AppTheme.of(context).images.devices.getByName(
                                 routerIconTest(
                                     modelNumber: state.selected?.deviceInfo
@@ -65,9 +64,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                           child: InkWell(
                             onTap: hasMultiNetworks
                                 ? () {
-                                    // ref
-                                    //     .read(navigationsProvider.notifier)
-                                    //     .push(SelectNetworkPath());
+                                    context.pushNamed(RouteNamed.selectNetwork);
                                   }
                                 : null,
                             child: Row(
