@@ -78,21 +78,21 @@ final settings = [
           name: RouteNamed.mtuPicker,
           path: RoutePath.mtuPicker,
           builder: (context, state) => MTUPickerView(
-            args: state.uri.queryParameters,
+            args: state.extra as Map<String, dynamic>? ?? {},
           ),
         ),
         GoRoute(
           name: RouteNamed.macClone,
           path: RoutePath.macClone,
           builder: (context, state) => MACCloneView(
-            args: state.uri.queryParameters,
+            args: state.extra as Map<String, dynamic>? ?? {},
           ),
         ),
         GoRoute(
           name: RouteNamed.connectionType,
           path: RoutePath.connectionType,
           builder: (context, state) => ConnectionTypeSelectionView(
-            args: state.uri.queryParameters,
+            args: state.extra as Map<String, dynamic>? ?? {},
           ),
         ),
       ]),

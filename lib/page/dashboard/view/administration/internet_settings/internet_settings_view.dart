@@ -198,7 +198,7 @@ class _InternetSettingsContentViewState
             onTap: () async {
               int? value = await context.pushNamed(
                 RouteNamed.mtuPicker,
-                queryParameters: {
+                extra: {
                   'selected': state.mtu,
                 },
               );
@@ -215,7 +215,7 @@ class _InternetSettingsContentViewState
             infoText: ' ',
             onTap: () async {
               String? mac = await context.pushNamed(RouteNamed.macClone,
-                  queryParameters: {
+                  extra: {
                     'enabled': state.macClone,
                     'macAddress': state.macCloneAddress
                   });
@@ -239,8 +239,8 @@ class _InternetSettingsContentViewState
               toConnectionTypeData(context, state.ipv4ConnectionType).title,
           infoText: ' ',
           onTap: () async {
-            String? select = await context
-                .pushNamed(RouteNamed.connectionType, queryParameters: {
+            String? select =
+                await context.pushNamed(RouteNamed.connectionType, extra: {
               'supportedList': state.supportedIPv4ConnectionType,
               'selected': state.ipv4ConnectionType,
             });
@@ -401,8 +401,8 @@ class _InternetSettingsContentViewState
                         combine.wanType == state.ipv4ConnectionType &&
                         combine.wanIPv6Type == ipv6))
                 .toList();
-            String? select = await context
-                .pushNamed(RouteNamed.connectionType, queryParameters: {
+            String? select =
+                await context.pushNamed(RouteNamed.connectionType, extra: {
               'supportedList': state.supportedIPv6ConnectionType,
               'selected': state.ipv6ConnectionType,
               'disabled': disabled
