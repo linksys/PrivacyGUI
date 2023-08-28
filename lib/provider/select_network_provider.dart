@@ -5,6 +5,7 @@ import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/constants/jnap_const.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/nodes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,13 +32,13 @@ class SelectNetworkNotifier extends AsyncNotifier<SelectNetworkModel> {
                 hardwareVersion: element.network.routerHardwareVersion))
             .map((e) async {
       bool isOnline = await routerRepository
-          .send(
-            JNAPAction.isAdminPasswordDefault,
-            extraHeaders: {
-              kJNAPNetworkId: e.network.networkId,
-            },
-            type: CommandType.remote,
-          )
+          .send(JNAPAction.isAdminPasswordDefault,
+              extraHeaders: {
+                kJNAPNetworkId: e.network.networkId,
+              },
+              type: CommandType.remote,
+              force: true,
+              cacheLevel: CacheLevel.noCache)
           .then((value) => value.result == 'OK')
           .onError((error, stackTrace) => false);
       return CloudNetworkModel(

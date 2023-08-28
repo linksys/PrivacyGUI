@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/_connectivity.dart';
@@ -26,6 +27,7 @@ import 'package:linksys_app/core/jnap/spec/jnap_spec.dart';
 import 'package:linksys_app/core/jnap/providers/side_effect_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum CommandType {
   remote,
@@ -75,24 +77,33 @@ class RouterRepository with StateStreamListener {
 
   bool get isEnableBTSetup => _btSetupMode;
 
-  Future<JNAPSuccess> send(
-    JNAPAction action, {
-    Map<String, dynamic> data = const {},
-    Map<String, String> extraHeaders = const {},
-    bool auth = false,
-    CommandType? type,
-  }) async {
+  Future<JNAPSuccess> send(JNAPAction action,
+      {Map<String, dynamic> data = const {},
+      Map<String, String> extraHeaders = const {},
+      bool auth = false,
+      CommandType? type,
+      bool force = false,
+      CacheLevel cacheLevel = CacheLevel.localCached}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final sn = prefs.get(pCurrentSN) as String?;
     final command = await createCommand(action.actionValue,
-        data: data, extraHeaders: extraHeaders, needAuth: auth, type: type);
+        data: data,
+        extraHeaders: extraHeaders,
+        needAuth: auth,
+        type: type,
+        force: force,
+        cacheLevel: cacheLevel);
     final sideEffectManager = ref.read(sideEffectProvider.notifier);
+    final linksysCacheManager = ref.read(linksysCacheManagerProvider);
     return CommandQueue()
         .enqueue(command)
-        .then((jnapResult) => handleJNAPResult(jnapResult))
-        .then((jnapResult) =>
-            sideEffectManager.handleSideEffect(jnapResult as JNAPSuccess))
-        .then((jnapSuccess) {
+        .then((record) => handleJNAPResult(record))
+        .then((record) => sideEffectManager.handleSideEffect(record))
+        .then((record) {
+      _handleCacheProcess(
+          record, action.actionValue, linksysCacheManager, sn, cacheLevel);
       sideEffectManager.finishSideEffect();
-      return jnapSuccess;
+      return record.$1;
     });
   }
 
@@ -102,15 +113,26 @@ class RouterRepository with StateStreamListener {
         .map((entry) =>
             {'action': entry.key.actionValue, 'request': entry.value})
         .toList();
+    final prefs = await SharedPreferences.getInstance();
+    final sn = prefs.get(pCurrentSN) as String?;
+    final linksysCacheManager = ref.read(linksysCacheManagerProvider);
     final command = await createTransaction(payload, needAuth: builder.auth);
 
     return CommandQueue()
         .enqueue(command)
-        .then((jnapResult) => handleJNAPResult(jnapResult))
-        .then((jnapResult) => JNAPTransactionSuccessWrap.convert(
-              actions: List.from(builder.commands.keys),
-              transactionSuccess: jnapResult as JNAPTransactionSuccess,
-            ));
+        .then((record) => handleJNAPResult(record))
+        .then((record) {
+      return (
+        JNAPTransactionSuccessWrap.convert(
+          actions: List.from(builder.commands.keys),
+          transactionSuccess: record.$1 as JNAPTransactionSuccess,
+        ),
+        record.$2
+      );
+    }).then((record) {
+      _handleTransactionCacheProcess(record, linksysCacheManager, sn);
+      return record.$1;
+    });
   }
 
   Future<TransactionHttpCommand> createTransaction(
@@ -141,27 +163,24 @@ class RouterRepository with StateStreamListener {
     }
   }
 
-  Future<BaseCommand<JNAPResult, JNAPCommandSpec>> createCommand(
-    String action, {
-    Map<String, dynamic> data = const {},
-    Map<String, String> extraHeaders = const {},
-    bool needAuth = false,
-    CommandType? type,
-  }) async {
+  Future<BaseCommand<JNAPResult, JNAPCommandSpec>> createCommand(String action,
+      {Map<String, dynamic> data = const {},
+      Map<String, String> extraHeaders = const {},
+      bool needAuth = false,
+      CommandType? type,
+      bool force = false,
+      CacheLevel cacheLevel = CacheLevel.localCached}) async {
     if (isEnableBTSetup) {
-      return _createBTCommand(
-        action,
-        data: data,
-        needAuth: needAuth,
-      );
+      return _createBTCommand(action,
+          data: data, needAuth: needAuth, force: force, cacheLevel: cacheLevel);
     } else {
-      return _createHttpCommand(
-        action,
-        data: data,
-        extraHeaders: extraHeaders,
-        needAuth: needAuth,
-        type: type,
-      );
+      return _createHttpCommand(action,
+          data: data,
+          extraHeaders: extraHeaders,
+          needAuth: needAuth,
+          type: type,
+          force: force,
+          cacheLevel: cacheLevel);
     }
   }
 
@@ -179,7 +198,8 @@ class RouterRepository with StateStreamListener {
       // TODO #ERRORHANDLING handle other errors - timeout error, etc...
       yield await CommandQueue()
           .enqueue(command)
-          .then((value) => handleJNAPResult(value));
+          .then((record) => handleJNAPResult(record))
+          .then((record) => record.$1);
       if (condition?.call() ?? false) {
         break;
       }
@@ -187,11 +207,56 @@ class RouterRepository with StateStreamListener {
     }
   }
 
-  JNAPResult handleJNAPResult(JNAPResult result) {
-    if (result is JNAPSuccess || result is JNAPTransactionSuccess) {
-      return result;
+  (JNAPResult result, DataSource ds) handleJNAPResult(
+      (JNAPResult result, DataSource ds) record) {
+    if (record.$1 is JNAPSuccess || record.$1 is JNAPTransactionSuccess) {
+      return record;
     }
-    throw (result as JNAPError);
+    throw (record.$1 as JNAPError);
+  }
+
+  (JNAPResult result, DataSource ds) _handleCacheProcess(
+      (JNAPResult result, DataSource ds) record,
+      String action,
+      LinksysCacheManager linksysCacheManager,
+      String? serialNumber,
+      CacheLevel cacheLevel) {
+    if (record.$2 == DataSource.fromRemote) {
+      if (cacheLevel == CacheLevel.localCached) {
+        final dataResult = {
+          "target": action,
+          "cachedAt": DateTime.now().millisecondsSinceEpoch.toString(),
+        };
+        dataResult["data"] = jsonEncode(record.$1.toJson());
+        linksysCacheManager.data[action] = jsonEncode(dataResult);
+        if (serialNumber != null) {
+          linksysCacheManager.saveCache(serialNumber);
+        }
+      }
+    }
+    return record;
+  }
+
+  (JNAPTransactionSuccessWrap result, DataSource ds)
+      _handleTransactionCacheProcess(
+    (JNAPTransactionSuccessWrap result, DataSource ds) record,
+    LinksysCacheManager linksysCacheManager,
+    String? serialNumber,
+  ) {
+    if (record.$2 == DataSource.fromRemote) {
+      record.$1.data.forEach((key, value) {
+        final dataResult = {
+          "target": key.actionValue,
+          "cachedAt": DateTime.now().millisecondsSinceEpoch.toString(),
+        };
+        dataResult["data"] = jsonEncode((value as JNAPSuccess).toJson());
+        linksysCacheManager.data[key.actionValue] = jsonEncode(dataResult);
+      });
+      if (serialNumber != null) {
+        linksysCacheManager.saveCache(serialNumber);
+      }
+    }
+    return record;
   }
 
   String _buildCommandUrl({
@@ -293,17 +358,26 @@ class RouterRepository with StateStreamListener {
   }
 
   BaseCommand<JNAPResult, BTJNAPSpec> _createBTCommand(String action,
-      {Map<String, dynamic> data = const {}, bool needAuth = false}) {
-    return JNAPBTCommand(executor: executor, action: action, data: data);
+      {Map<String, dynamic> data = const {},
+      bool needAuth = false,
+      bool force = false,
+      CacheLevel cacheLevel = CacheLevel.localCached}) {
+    return JNAPBTCommand(
+        executor: executor,
+        action: action,
+        data: data,
+        force: force,
+        cacheLevel: cacheLevel);
   }
 
   Future<BaseCommand<JNAPResult, HttpJNAPSpec>> _createHttpCommand(
-    String action, {
-    Map<String, dynamic> data = const {},
-    Map<String, String> extraHeaders = const {},
-    bool needAuth = false,
-    CommandType? type,
-  }) async {
+      String action,
+      {Map<String, dynamic> data = const {},
+      Map<String, String> extraHeaders = const {},
+      bool needAuth = false,
+      CommandType? type,
+      bool force = false,
+      CacheLevel cacheLevel = CacheLevel.localCached}) async {
     final routerType = getRouterType();
     // final communicateType =
     //     type ?? (!isCloudLogin() ? CommandType.local : CommandType.remote);
@@ -321,12 +395,13 @@ class RouterRepository with StateStreamListener {
 
     if (url.isNotEmpty) {
       return JNAPHttpCommand(
-        url: url,
-        executor: executor,
-        action: action,
-        data: data,
-        extraHeader: header,
-      );
+          url: url,
+          executor: executor,
+          action: action,
+          data: data,
+          extraHeader: header,
+          force: force,
+          cacheLevel: cacheLevel);
     } else {
       throw Exception();
     }
@@ -352,9 +427,7 @@ extension RouterRepositoryUtil on RouterRepository {
   }
 
   Future<String> getLocalPassword() async {
-    return await const FlutterSecureStorage()
-            .read(key: pLocalPassword) ??
-        '';
+    return await const FlutterSecureStorage().read(key: pLocalPassword) ?? '';
   }
 
   RouterType getRouterType() =>

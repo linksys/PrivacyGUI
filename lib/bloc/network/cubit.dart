@@ -19,6 +19,7 @@ import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/jnap/models/wan_status.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
@@ -64,13 +65,13 @@ class NetworkCubit extends Cubit<NetworkState> with StateStreamRegister {
     final networks = await Future.wait(
         (await _cloudRepository.getNetworks()).map((network) async {
       bool isOnline = await _routerRepository
-          .send(
-            JNAPAction.isAdminPasswordDefault,
-            extraHeaders: {
-              kJNAPNetworkId: network.network.networkId,
-            },
-            type: CommandType.remote,
-          )
+          .send(JNAPAction.isAdminPasswordDefault,
+              extraHeaders: {
+                kJNAPNetworkId: network.network.networkId,
+              },
+              type: CommandType.remote,
+              force: true,
+              cacheLevel: CacheLevel.noCache)
           .then((value) => value.result == 'OK')
           .onError((error, stackTrace) => false);
       return CloudNetworkModel(network: network.network, isOnline: isOnline);
