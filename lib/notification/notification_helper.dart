@@ -28,6 +28,9 @@ late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
 /// Push notification initialize
 void initCloudMessage() async {
+  if (kIsWeb) {
+    return;
+  }
   if (Platform.isIOS) {
     // Get the device token from the native
     final token = await IosPushNotificationPlugin().readApnsToken() ?? '';

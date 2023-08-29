@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_info.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_state.dart';
@@ -60,7 +61,7 @@ class ConnectivityNotifier extends Notifier<ConnectivityState>
     logger.d('_internetCheckCallback: $hasConnection, $connectivityInfo');
 
     var routerType = RouterType.others;
-    if (hasConnection) {
+    if (!kIsWeb && hasConnection) {
       routerType = await _testRouterType(connectivityInfo.gatewayIp);
     }
     logger.d('_internetCheckCallback: $routerType');

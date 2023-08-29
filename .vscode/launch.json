@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "linksys - Web",
+            "request": "launch",
+            "type": "dart",
+            "args": ["--web-browser-flag", "--disable-web-security"],
+            "program": "lib/main.dart"
+        },
+        {
             "name": "linksys - Android",
             "request": "launch",
             "type": "dart",

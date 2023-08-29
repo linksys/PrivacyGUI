@@ -45,7 +45,9 @@ void main() async {
   //   // }
   //   exit(1);
   // });
-  HttpOverrides.global = MyHTTPOverrides();
+  if (!kIsWeb) {
+    HttpOverrides.global = MyHTTPOverrides();
+  }
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await Storage.init();

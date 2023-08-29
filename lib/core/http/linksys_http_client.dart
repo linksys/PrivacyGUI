@@ -4,6 +4,8 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:async/async.dart';
+import 'package:flutter/foundation.dart';
+import 'package:http/browser_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:linksys_app/constants/_constants.dart';
@@ -34,7 +36,7 @@ class LinksysHttpClient extends http.BaseClient
     Duration Function(int retryCount) delay = _defaultDelay,
     FutureOr<void> Function(BaseRequest, http.BaseResponse?, int retryCount)?
         onRetry,
-  })  : _inner = client ?? IOClient(),
+  })  : _inner = client ?? (kIsWeb ? BrowserClient() : IOClient()),
         _timeoutMs = timeoutMs,
         _retries = retries,
         _when = when,
@@ -64,7 +66,7 @@ class LinksysHttpClient extends http.BaseClient
         );
 
   final int _timeoutMs;
-  final IOClient _inner;
+  final BaseClient _inner;
 
   /// The number of times a request should be retried.
   final int _retries;
@@ -84,7 +86,13 @@ class LinksysHttpClient extends http.BaseClient
   Map<String, String> get defaultHeader => {
         kHeaderClientTypeId: kClientTypeId,
         HttpHeaders.contentTypeHeader: ContentType.json.value,
-        HttpHeaders.acceptHeader: ContentType.json.value
+        HttpHeaders.acceptHeader: ContentType.json.value,
+        if (kIsWeb) "Access-Control-Allow-Origin": "*",
+        // "Access-Control-Allow-Credentials":
+        //     'true', // Required for cookies, authorization headers with HTTPS
+        if (kIsWeb) "Access-Control-Allow-Headers":
+            "Origin,Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,locale",
+        if (kIsWeb) "Access-Control-Allow-Methods": "POST, OPTIONS, DELETE, PUT, GET"
       };
 
   // String getHost() => CloudEnvironmentManager().currentConfig?.apiBase ?? '';

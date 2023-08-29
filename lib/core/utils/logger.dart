@@ -25,7 +25,7 @@ class CustomOutput extends LogOutput {
         output += line;
       }
     }
-    if (output.isNotEmpty && _file.existsSync()) {
+    if (!kIsWeb && output.isNotEmpty && _file.existsSync()) {
       await _file.writeAsBytes(
           "${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(output.toString()))}\n"
               .codeUnits,
@@ -41,7 +41,7 @@ class CustomOutput extends LogOutput {
 }
 
 initLog() async {
-  if (kDebugMode) {
+  if (kDebugMode && !kIsWeb) {
     print(await getAppInfoLogs());
   }
 }

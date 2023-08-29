@@ -91,6 +91,9 @@ mixin ConnectivityListener {
   }
 
   updateConnectivity(ConnectivityResult result) async {
+    if (kIsWeb) {
+      return;
+    }
     logger.d('Connectivity Result: $result');
     final connectivityInfo = await _updateNetworkInfo(result);
     await onConnectivityChanged(connectivityInfo);

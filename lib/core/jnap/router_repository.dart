@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
@@ -200,6 +201,9 @@ class RouterRepository with StateStreamListener {
   }) {
     String url;
     final localIP = getLocalIP();
+    if (kIsWeb) {
+      type = CommandType.remote;
+    }
     final newRouterType = () {
       if (type == CommandType.local) {
         return RouterType.behindManaged;
@@ -235,6 +239,9 @@ class RouterRepository with StateStreamListener {
     final cloudToken = await getCloudToken();
     final cloudLogin = isCloudLogin();
     final loginType = getLoginType();
+    if (kIsWeb) {
+      type = CommandType.remote;
+    }
     Map<String, String> header = {};
     final newRouterType = () {
       if (type == CommandType.local) {
@@ -352,9 +359,7 @@ extension RouterRepositoryUtil on RouterRepository {
   }
 
   Future<String> getLocalPassword() async {
-    return await const FlutterSecureStorage()
-            .read(key: pLocalPassword) ??
-        '';
+    return await const FlutterSecureStorage().read(key: pLocalPassword) ?? '';
   }
 
   RouterType getRouterType() =>
