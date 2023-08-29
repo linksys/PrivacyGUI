@@ -7,8 +7,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/_connectivity.dart';
-import 'package:linksys_app/bloc/mixin/stream_mixin.dart';
-import 'package:linksys_app/bloc/network/state.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/constants/jnap_const.dart';
 import 'package:linksys_app/core/bluetooth/bluetooth.dart';
@@ -25,6 +23,7 @@ import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/spec/jnap_spec.dart';
 import 'package:linksys_app/core/jnap/providers/side_effect_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/utils.dart';
 
 enum CommandType {
@@ -48,19 +47,11 @@ final routerRepositoryProvider = Provider((ref) {
   return RouterRepository(ref);
 });
 
-class RouterRepository with StateStreamListener {
+class RouterRepository {
   RouterRepository(this.ref);
   final Ref ref;
   bool _btSetupMode = false;
   final LinksysHttpClient _client = LinksysHttpClient();
-  String? _networkId;
-
-  @override
-  consume(event) {
-    if (event is NetworkState) {
-      _handleNetworkChanged(event);
-    }
-  }
 
   // To expose interface
   JNAPCommandExecutor get executor {
@@ -254,7 +245,7 @@ class RouterRepository with StateStreamListener {
         header = {
           HttpHeaders.authorizationHeader:
               'LinksysUserAuth session_token=$cloudToken',
-          kJNAPNetworkId: _networkId ?? '',
+          kJNAPNetworkId: getNetworkId(),
           kHeaderClientTypeId: kClientTypeId,
         };
         break;
@@ -267,7 +258,7 @@ class RouterRepository with StateStreamListener {
         header = {
           HttpHeaders.authorizationHeader:
               'LinksysUserAuth session_token=$cloudToken',
-          kJNAPNetworkId: _networkId ?? '',
+          kJNAPNetworkId: getNetworkId(),
           kHeaderClientTypeId: kClientTypeId,
         };
         break;
@@ -331,15 +322,15 @@ class RouterRepository with StateStreamListener {
       throw Exception();
     }
   }
-
-  _handleNetworkChanged(NetworkState state) async {
-    _networkId = state.selected?.id ?? '';
-  }
 }
 
 extension RouterRepositoryUtil on RouterRepository {
   String getLocalIP() {
     return ref.read(connectivityProvider).connectivityInfo.gatewayIp ?? '';
+  }
+
+  String getNetworkId() {
+    return ref.read(networkProvider).selected?.id ?? '';
   }
 
   Future<String> getCloudToken() async {
@@ -352,9 +343,7 @@ extension RouterRepositoryUtil on RouterRepository {
   }
 
   Future<String> getLocalPassword() async {
-    return await const FlutterSecureStorage()
-            .read(key: pLocalPassword) ??
-        '';
+    return await const FlutterSecureStorage().read(key: pLocalPassword) ?? '';
   }
 
   RouterType getRouterType() =>

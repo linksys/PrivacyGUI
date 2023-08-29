@@ -1,32 +1,24 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_app/provider/connectivity/_connectivity.dart';
-import 'package:linksys_app/bloc/network/cubit.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/dashboard/view/administration/ip_details/bloc/state.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/provider/ip_details/_ip_details.dart';
+import 'package:linksys_app/provider/network/network_provider.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-
-import '../common_widget.dart';
-import 'bloc/cubit.dart';
 
 class IpDetailsView extends ArgumentsConsumerStatelessView {
   const IpDetailsView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return BlocProvider(
-      create: (context) => IpDetailsCubit(context.read<RouterRepository>()),
-      child: IpDetailsContentView(
-        args: super.args,
-      ),
+    return IpDetailsContentView(
+      args: super.args,
     );
   }
 }
@@ -40,14 +32,14 @@ class IpDetailsContentView extends ArgumentsConsumerStatefulView {
 }
 
 class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
-  late final IpDetailsCubit _cubit;
+  late final IpDetailsNotifier _notifier;
 
   bool _isBehindRouter = false;
 
   @override
   void initState() {
-    _cubit = context.read<IpDetailsCubit>();
-    _cubit.fetch();
+    _notifier = ref.read(ipDetailsProvider.notifier);
+    _notifier.fetch();
 
     super.initState();
   }
@@ -59,26 +51,24 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(ipDetailsProvider);
     final connectivityState = ref.watch(connectivityProvider);
     _isBehindRouter = connectivityState.connectivityInfo.routerType ==
         RouterType.behindManaged;
-    return BlocBuilder<IpDetailsCubit, IpDetailsState>(
-        builder: (context, state) {
-      return StyledAppPageView(
-        scrollable: true,
-        title: getAppLocalizations(context).ip_details,
-        child: AppBasicLayout(
-          content: Column(
-            children: [
-              const AppGap.semiBig(),
-              _wanSection(state),
-              const AppGap.semiBig(),
-              _lanSection(state),
-            ],
-          ),
+    return StyledAppPageView(
+      scrollable: true,
+      title: getAppLocalizations(context).ip_details,
+      child: AppBasicLayout(
+        content: Column(
+          children: [
+            const AppGap.semiBig(),
+            _wanSection(state),
+            const AppGap.semiBig(),
+            _lanSection(state),
+          ],
         ),
-      );
-    });
+      ),
+    );
   }
 
   Widget _wanSection(IpDetailsState state) {
@@ -132,7 +122,7 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
       getAppLocalizations(context).release_and_renew,
       onTap: _isBehindRouter
           ? () {
-              _cubit.renewIp(isIPv6).then((value) => showSuccessSnackBar(
+              _notifier.renewIp(isIPv6).then((value) => showSuccessSnackBar(
                   context, getAppLocalizations(context).ip_address_renewed));
             }
           : null,
@@ -156,8 +146,8 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
 
   Widget _checkRenewAvailable() {
     if (!_isBehindRouter) {
-      final ssid = context
-              .read<NetworkCubit>()
+      final ssid = ref
+              .read(networkProvider.notifier)
               .state
               .selected
               ?.radioInfo

@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/bloc/network/cubit.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/layouts/basic_header.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/route/constants.dart';
 
 import 'package:linksys_app/util/in_app_browser.dart';
@@ -142,8 +141,8 @@ class _CreateAdminPasswordViewState
 
   _createPassword(String password, String hint) async {
     _setLoading(true);
-    await context
-        .read<NetworkCubit>()
+    await ref
+        .read(networkProvider.notifier)
         .createAdminPassword(password, hint)
         .then((value) {
       setState(() {

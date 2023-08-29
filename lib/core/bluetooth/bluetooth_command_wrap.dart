@@ -45,7 +45,7 @@ class BluetoothCommandWrap {
   }
 
   Future execute(BluetoothDevice device) async {
-    final services = await device.discoverServices() ?? [];
+    final services = await device.discoverServices();
     if (services.isEmpty) {
       // No service found
       throw BTNoServicesFoundError(device.id.id);

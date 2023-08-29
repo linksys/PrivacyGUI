@@ -24,7 +24,7 @@ class AddAccountView extends ArgumentsConsumerStatefulView {
 }
 
 class _AddAccountState extends ConsumerState<AddAccountView> {
-  final bool _isLoading = false;
+  // final bool _isLoading = false;
   final TextEditingController _emailController = TextEditingController();
   var isEmailInvalid = false;
   var _errorCode = '';

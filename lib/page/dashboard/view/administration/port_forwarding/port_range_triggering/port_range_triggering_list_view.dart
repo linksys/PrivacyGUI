@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/dashboard/view/administration/port_forwarding/port_range_triggering/bloc/port_range_triggering_list_cubit.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/provider/port_forwarding/port_range_triggering_list/port_range_triggering_list_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -16,12 +14,8 @@ class PortRangeTriggeringListView extends ArgumentsConsumerStatelessView {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return BlocProvider<PortRangeTriggeringListCubit>(
-      create: (context) => PortRangeTriggeringListCubit(
-          repository: context.read<RouterRepository>()),
-      child: PortRangeTriggeringListContentView(
-        args: super.args,
-      ),
+    return PortRangeTriggeringListContentView(
+      args: super.args,
     );
   }
 }
@@ -36,12 +30,12 @@ class PortRangeTriggeringListContentView extends ArgumentsConsumerStatefulView {
 
 class _PortRangeTriggeringContentViewState
     extends ConsumerState<PortRangeTriggeringListContentView> {
-  late final PortRangeTriggeringListCubit _cubit;
+  late final PortRangeTriggeringListNotifier _notifier;
 
   @override
   void initState() {
-    _cubit = context.read<PortRangeTriggeringListCubit>();
-    _cubit.fetch();
+    _notifier = ref.read(portRangeTriggeringListProvider.notifier);
+    _notifier.fetch();
 
     super.initState();
   }
@@ -53,64 +47,62 @@ class _PortRangeTriggeringContentViewState
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PortRangeTriggeringListCubit,
-        PortRangeTriggeringListState>(builder: (context, state) {
-      return StyledAppPageView(
-        scrollable: true,
-        title: getAppLocalizations(context).port_range_triggering,
-        actions: [
-          AppTertiaryButton(
-            getAppLocalizations(context).edit,
-            onTap: () {
-              // TODO
-            },
-          ),
-        ],
-        child: AppBasicLayout(
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const AppGap.semiBig(),
-              AppText.descriptionMain(getAppLocalizations(context)
-                  .port_range_triggering_description),
-              if (!_cubit.isExceedMax())
-                AppTertiaryButton(
-                  getAppLocalizations(context).add_rule,
-                  onTap: () {
-                    context.pushNamed<bool?>(
-                      RouteNamed.portRangeForwardingRule,
-                      queryParameters: {'rules': state.rules},
-                    ).then((value) {
-                      if (value ?? false) {
-                        _cubit.fetch();
-                      }
-                    });
-                  },
-                ),
-              const AppGap.semiBig(),
-              ...state.rules.map(
-                (e) => AppPanelWithInfo(
-                  title: e.description,
-                  infoText: e.isEnabled
-                      ? getAppLocalizations(context).on
-                      : getAppLocalizations(context).off,
-                  forcedHidingAccessory: true,
-                  onTap: () {
-                    context.pushNamed<bool?>(
-                      RouteNamed.singlePortForwardingRule,
-                      queryParameters: {'rules': state.rules, 'edit': e},
-                    ).then((value) {
-                      if (value ?? false) {
-                        _cubit.fetch();
-                      }
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
+    final state = ref.watch(portRangeTriggeringListProvider);
+    return StyledAppPageView(
+      scrollable: true,
+      title: getAppLocalizations(context).port_range_triggering,
+      actions: [
+        AppTertiaryButton(
+          getAppLocalizations(context).edit,
+          onTap: () {
+            // TODO
+          },
         ),
-      );
-    });
+      ],
+      child: AppBasicLayout(
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AppGap.semiBig(),
+            AppText.descriptionMain(
+                getAppLocalizations(context).port_range_triggering_description),
+            if (!_notifier.isExceedMax())
+              AppTertiaryButton(
+                getAppLocalizations(context).add_rule,
+                onTap: () {
+                  context.pushNamed<bool?>(
+                    RouteNamed.portRangeForwardingRule,
+                    queryParameters: {'rules': state.rules},
+                  ).then((value) {
+                    if (value ?? false) {
+                      _notifier.fetch();
+                    }
+                  });
+                },
+              ),
+            const AppGap.semiBig(),
+            ...state.rules.map(
+              (e) => AppPanelWithInfo(
+                title: e.description,
+                infoText: e.isEnabled
+                    ? getAppLocalizations(context).on
+                    : getAppLocalizations(context).off,
+                forcedHidingAccessory: true,
+                onTap: () {
+                  context.pushNamed<bool?>(
+                    RouteNamed.singlePortForwardingRule,
+                    queryParameters: {'rules': state.rules, 'edit': e},
+                  ).then((value) {
+                    if (value ?? false) {
+                      _notifier.fetch();
+                    }
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

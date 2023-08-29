@@ -7,13 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/bloc/app_lifecycle/cubit.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/bloc/device/cubit.dart';
-import 'package:linksys_app/bloc/network/cubit.dart';
 import 'package:linksys_app/bloc/node/cubit.dart';
-import 'package:linksys_app/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
@@ -108,23 +105,12 @@ Widget _app() {
     ],
     child: MultiBlocProvider(
         providers: [
-          BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
           BlocProvider(
               create: (BuildContext context) => DeviceCubit(
                   routerRepository: context.read<RouterRepository>())),
           BlocProvider(
               create: (BuildContext context) =>
                   NodeCubit(context.read<RouterRepository>())),
-          BlocProvider(
-              create: (BuildContext context) => NetworkCubit(
-                    cloudRepository: context.read<LinksysCloudRepository>(),
-                    routerRepository: context.read<RouterRepository>(),
-                  )),
-          BlocProvider(
-              create: (BuildContext context) => WifiSettingCubit(
-                    cloudRepository: context.read<LinksysCloudRepository>(),
-                    routerRepository: context.read<RouterRepository>(),
-                  )),
         ],
         child: ProviderScope(
           observers: [Logger()],
@@ -196,7 +182,6 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     logger.v('didChangeAppLifecycleState: ${state.name}');
-    context.read<AppLifecycleCubit>().update(state);
   }
 
   _initAuth() {

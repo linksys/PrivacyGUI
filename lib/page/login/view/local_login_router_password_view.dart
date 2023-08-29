@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/_connectivity.dart';
-import 'package:linksys_app/bloc/network/cubit.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/jnap/models/device_info.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/page/components/customs/network_check_view.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/util/error_code_handler.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -75,7 +74,7 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
             RouterType.others;
 
     if (isConnected) {
-      _deviceInfo = await context.read<NetworkCubit>().getDeviceInfo();
+      _deviceInfo = await ref.read(networkProvider.notifier).getDeviceInfo();
       await ref
           .read(authProvider.notifier)
           .getAdminPasswordInfo()

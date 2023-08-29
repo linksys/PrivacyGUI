@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
-import 'package:linksys_app/bloc/network/cubit.dart';
-import 'package:linksys_app/bloc/network/state.dart';
 import 'package:linksys_app/page/components/customs/enabled_with_opacity_widget.dart';
+import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/route/constants.dart';
 
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -32,48 +30,45 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<NetworkCubit, NetworkState>(
-      builder: (context, state) {
-        return AppPageView.noNavigationBar(
-            scrollable: true,
-            child: EnabledOpacityWidget(
-              enabled: state.selected?.deviceInfo != null,
-              child: SizedBox(
-                width: double.infinity,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const AppGap.semiBig(),
-                    _title(),
-                    const AppGap.semiBig(),
-                    _section(
-                      _generalSettingsSection(context),
-                    ),
-                    const AppGap.semiBig(),
-                    _section(
-                      _advancedSettingsSection(),
-                    ),
-                    const AppGap.semiBig(),
-                    AppTertiaryButton.noPadding('Log out', onTap: () {
-                      ref.read(authProvider.notifier).logout();
-                    }),
-                    const AppGap.semiBig(),
-                    FutureBuilder(
-                        future: PackageInfo.fromPlatform()
-                            .then((value) => value.version),
-                        initialData: '-',
-                        builder: (context, data) {
-                          return AppText.label(
-                            'version ${data.data}',
-                          );
-                        }),
-                  ],
+    final state = ref.watch(networkProvider);
+    return AppPageView.noNavigationBar(
+        scrollable: true,
+        child: EnabledOpacityWidget(
+          enabled: state.selected?.deviceInfo != null,
+          child: SizedBox(
+            width: double.infinity,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const AppGap.semiBig(),
+                _title(),
+                const AppGap.semiBig(),
+                _section(
+                  _generalSettingsSection(context),
                 ),
-              ),
-            ));
-      },
-    );
+                const AppGap.semiBig(),
+                _section(
+                  _advancedSettingsSection(),
+                ),
+                const AppGap.semiBig(),
+                AppTertiaryButton.noPadding('Log out', onTap: () {
+                  ref.read(authProvider.notifier).logout();
+                }),
+                const AppGap.semiBig(),
+                FutureBuilder(
+                    future: PackageInfo.fromPlatform()
+                        .then((value) => value.version),
+                    initialData: '-',
+                    builder: (context, data) {
+                      return AppText.label(
+                        'version ${data.data}',
+                      );
+                    }),
+              ],
+            ),
+          ),
+        ));
   }
 
   Widget _title() {

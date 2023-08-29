@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/bloc/network/cubit.dart';
-import 'package:linksys_app/bloc/network/state.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/models/network.dart';
 import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/page/components/customs/enabled_with_opacity_widget.dart';
+import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_app/utils.dart';
@@ -35,38 +33,37 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<NetworkCubit, NetworkState>(
-      builder: (context, state) => AppPageView.noNavigationBar(
-        scrollable: true,
-        padding: const AppEdgeInsets.only(
-          top: AppGapSize.big,
-          left: AppGapSize.regular,
-          right: AppGapSize.regular,
-          bottom: AppGapSize.regular,
-        ),
-        child: Stack(
-          children: [
-            Image(
-              image: AppTheme.of(context).images.dashboardBg,
-              fit: BoxFit.cover, // to cover the entire screen
+    final state = ref.watch(networkProvider);
+    return AppPageView.noNavigationBar(
+      scrollable: true,
+      padding: const AppEdgeInsets.only(
+        top: AppGapSize.big,
+        left: AppGapSize.regular,
+        right: AppGapSize.regular,
+        bottom: AppGapSize.regular,
+      ),
+      child: Stack(
+        children: [
+          Image(
+            image: AppTheme.of(context).images.dashboardBg,
+            fit: BoxFit.cover, // to cover the entire screen
+          ),
+          EnabledOpacityWidget(
+            enabled: state.selected?.deviceInfo != null,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _homeTitle(state),
+                const AppGap.big(),
+                _networkInfoTiles(state),
+                const AppGap.extraBig(),
+                _speedTestTile(state),
+              ],
             ),
-            EnabledOpacityWidget(
-              enabled: state.selected?.deviceInfo != null,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _homeTitle(state),
-                  const AppGap.big(),
-                  _networkInfoTiles(state),
-                  const AppGap.extraBig(),
-                  _speedTestTile(state),
-                ],
-              ),
-            ),
-            if (state.selected?.devices == null) const AppFullScreenSpinner(),
-          ],
-        ),
+          ),
+          if (state.selected?.devices == null) const AppFullScreenSpinner(),
+        ],
       ),
     );
   }
@@ -280,8 +277,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     int uploadBandwidth = 0;
     int downloadBandwidth = 0;
     if (healthCheckResults != null && healthCheckResults.isNotEmpty) {
-      final result = context
-          .read<NetworkCubit>()
+      final result = ref
+          .read(networkProvider.notifier)
           .getLatestHealthCheckResult(healthCheckResults);
       uploadBandwidth = result.speedTestResult?.uploadBandwidth ?? 0;
       downloadBandwidth = result.speedTestResult?.downloadBandwidth ?? 0;

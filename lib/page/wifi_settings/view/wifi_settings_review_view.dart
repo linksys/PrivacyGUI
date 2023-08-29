@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -35,65 +34,60 @@ class _WifiSettingsReviewViewState
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(wifiSettingProvider);
     return isLoading
         ? AppFullScreenSpinner(text: getAppLocalizations(context).processing)
-        : BlocBuilder<WifiSettingCubit, WifiSettingState>(
-            builder: (context, state) => StyledAppPageView(
-              title: state.selectedWifiItem.ssid,
-              child: AppBasicLayout(
-                content: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        AppText.descriptionMain(
-                          state.selectedWifiItem.wifiType.displayTitle,
-                        ),
-                        const Spacer(),
-                        AppSwitch(
-                            value: state.selectedWifiItem.isWifiEnabled,
-                            onChanged: (enabled) {
+        : StyledAppPageView(
+            title: state.selectedWifiItem.ssid,
+            child: AppBasicLayout(
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      AppText.descriptionMain(
+                        state.selectedWifiItem.wifiType.displayTitle,
+                      ),
+                      const Spacer(),
+                      AppSwitch(
+                          value: state.selectedWifiItem.isWifiEnabled,
+                          onChanged: (enabled) {
+                            setState(() {
+                              isLoading = true;
+                            });
+                            final wifiType = state.selectedWifiItem.wifiType;
+                            ref
+                                .read(wifiSettingProvider.notifier)
+                                .enableWifi(enabled, wifiType)
+                                .then((value) {
                               setState(() {
-                                isLoading = true;
+                                isLoading = false;
                               });
-                              final wifiType = context
-                                  .read<WifiSettingCubit>()
-                                  .state
-                                  .selectedWifiItem
-                                  .wifiType;
-                              context
-                                  .read<WifiSettingCubit>()
-                                  .enableWifi(enabled, wifiType)
-                                  .then((value) {
-                                setState(() {
-                                  isLoading = false;
-                                });
-                              });
-                            })
-                      ],
+                            });
+                          })
+                    ],
+                  ),
+                  const AppText.descriptionSub(
+                    'Where most of your devices connect.',
+                  ),
+                  const AppPadding(
+                    padding: AppEdgeInsets.only(
+                        top: AppGapSize.small, bottom: AppGapSize.regular),
+                    child: AppText.descriptionSub(
+                      '6 GHz, 5 GHz, 2.4 GHz',
+                      //TODO: Remove the dummy recent bands
                     ),
-                    const AppText.descriptionSub(
-                      'Where most of your devices connect.',
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      physics: const ClampingScrollPhysics(),
+                      itemCount:
+                          state.selectedWifiItem.wifiType.settingOptions.length,
+                      itemBuilder: (context, index) =>
+                          _buildListCell(index, state.selectedWifiItem),
                     ),
-                    const AppPadding(
-                      padding: AppEdgeInsets.only(
-                          top: AppGapSize.small, bottom: AppGapSize.regular),
-                      child: AppText.descriptionSub(
-                        '6 GHz, 5 GHz, 2.4 GHz',
-                        //TODO: Remove the dummy recent bands
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        physics: const ClampingScrollPhysics(),
-                        itemCount: state
-                            .selectedWifiItem.wifiType.settingOptions.length,
-                        itemBuilder: (context, index) =>
-                            _buildListCell(index, state.selectedWifiItem),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );

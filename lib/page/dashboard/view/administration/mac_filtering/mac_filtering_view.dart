@@ -1,29 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/provider/mac_filtering/_mac_filtering.dart';
 import 'package:linksys_app/route/constants.dart';
 
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-
-import 'bloc/cubit.dart';
 
 class MacFilteringView extends ArgumentsConsumerStatelessView {
   const MacFilteringView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return BlocProvider(
-      create: (context) => MacFilteringCubit(context.read<RouterRepository>()),
-      child: MacFilteringContentView(
-        args: super.args,
-      ),
+    return MacFilteringContentView(
+      args: super.args,
     );
   }
 }
@@ -38,11 +32,11 @@ class MacFilteringContentView extends ArgumentsConsumerStatefulView {
 
 class _MacFilteringContentViewState
     extends ConsumerState<MacFilteringContentView> {
-  late final MacFilteringCubit _cubit;
+  late final MacFilteringNotifier _notifier;
 
   @override
   void initState() {
-    _cubit = context.read<MacFilteringCubit>();
+    _notifier = ref.read(macFilteringProvider.notifier);
 
     super.initState();
   }
@@ -54,29 +48,26 @@ class _MacFilteringContentViewState
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<MacFilteringCubit, MacFilteringState>(
-      builder: (context, state) {
-        return StyledAppPageView(
-          scrollable: true,
-          title: getAppLocalizations(context).mac_filtering,
-          child: AppBasicLayout(
-            content: Column(
-              children: [
-                const AppGap.semiBig(),
-                AppPanelWithSwitch(
-                  value: state.status != MacFilterStatus.off,
-                  title: getAppLocalizations(context).wifi_mac_filters,
-                  onChangedEvent: (value) {
-                    _cubit.setEnable(value);
-                  },
-                ),
-                const AppGap.semiBig(),
-                ..._buildEnabledContent(state)
-              ],
+    final state = ref.watch(macFilteringProvider);
+    return StyledAppPageView(
+      scrollable: true,
+      title: getAppLocalizations(context).mac_filtering,
+      child: AppBasicLayout(
+        content: Column(
+          children: [
+            const AppGap.semiBig(),
+            AppPanelWithSwitch(
+              value: state.status != MacFilterStatus.off,
+              title: getAppLocalizations(context).wifi_mac_filters,
+              onChangedEvent: (value) {
+                _notifier.setEnable(value);
+              },
             ),
-          ),
-        );
-      },
+            const AppGap.semiBig(),
+            ..._buildEnabledContent(state)
+          ],
+        ),
+      ),
     );
   }
 
@@ -108,7 +99,7 @@ class _MacFilteringContentViewState
                   },
                 );
                 if (selected != null) {
-                  _cubit.setAccess(selected);
+                  _notifier.setAccess(selected);
                 }
               },
             ),

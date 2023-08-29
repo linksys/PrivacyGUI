@@ -2,14 +2,13 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/page/components/customs/hidden_password_widget.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
+import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/util/wifi_credential.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
@@ -49,7 +48,8 @@ class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
   @override
   initState() {
     super.initState();
-    _currentItem = context.read<WifiSettingCubit>().state.selectedWifiItem;
+    _currentItem =
+        ref.read(wifiSettingProvider).selectedWifiItem;
   }
 
   Widget _wifiInfoSection() {

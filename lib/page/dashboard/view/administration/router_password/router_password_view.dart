@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/dashboard/view/administration/router_password/bloc/cubit.dart';
-import 'package:linksys_app/page/dashboard/view/administration/router_password/bloc/state.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_app/provider/router_password/_router_password.dart';
 import 'package:linksys_app/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -22,12 +19,8 @@ class RouterPasswordView extends ArgumentsConsumerStatelessView {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return BlocProvider(
-      create: (context) =>
-          RouterPasswordCubit(context.read<RouterRepository>()),
-      child: RouterPasswordContentView(
-        args: super.args,
-      ),
+    return RouterPasswordContentView(
+      args: super.args,
     );
   }
 }
@@ -45,13 +38,14 @@ class RouterPasswordContentView extends ArgumentsConsumerStatefulView {
 
 class _RouterPasswordContentViewState
     extends ConsumerState<RouterPasswordContentView> {
-  late final RouterPasswordCubit _cubit;
+  late final RouterPasswordNotifier _notifier;
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _hintController = TextEditingController();
   late List<Validation> validations;
 
   @override
   void initState() {
+    super.initState();
     // localize here
     validations = [
       Validation(
@@ -67,38 +61,36 @@ class _RouterPasswordContentViewState
           description: '1 special character',
           validator: ((text) => SpecialCharCheckRule().validate(text))),
     ];
-    _cubit = context.read<RouterPasswordCubit>();
-    _cubit.fetch();
-    super.initState();
+    _notifier = ref.read(routerPasswordProvider.notifier);
+    _notifier.fetch();
+    final provider = ref.read(routerPasswordProvider);
+    _passwordController.text = provider.adminPassword;
+    _hintController.text = provider.hint;
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RouterPasswordCubit, RouterPasswordState>(
-        builder: (context, state) {
-      return state.isLoading
-          ? const AppFullScreenSpinner()
-          : StyledAppPageView(
-              scrollable: true,
-              title: state.isSetByUser
-                  ? getAppLocalizations(context).router_password
-                  : ' ',
-              actions: [
-                AppTertiaryButton(
-                  getAppLocalizations(context).save,
-                  onTap: (state.hasEdited && state.isValid) ? _save : null,
-                ),
-              ],
-              child: state.isSetByUser
-                  ? _editRouterPasswordView(state)
-                  : _createRouterPasswordView(state),
-            );
-    });
+    final state = ref.watch(routerPasswordProvider);
+    return state.isLoading
+        ? const AppFullScreenSpinner()
+        : StyledAppPageView(
+            scrollable: true,
+            title: state.isSetByUser
+                ? getAppLocalizations(context).router_password
+                : ' ',
+            actions: [
+              AppTertiaryButton(
+                getAppLocalizations(context).save,
+                onTap: (state.hasEdited && state.isValid) ? _save : null,
+              ),
+            ],
+            child: state.isSetByUser
+                ? _editRouterPasswordView(state)
+                : _createRouterPasswordView(state),
+          );
   }
 
   _editRouterPasswordView(RouterPasswordState state) {
-    _passwordController.text = state.adminPassword;
-    _hintController.text = state.hint;
     return AppBasicLayout(
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,13 +107,13 @@ class _RouterPasswordContentViewState
                 setState(() {
                   _passwordController.text = '';
                 });
-                _cubit.setEdited(true);
-                _cubit.setValidate(false);
+                _notifier.setEdited(true);
+                _notifier.setValidate(false);
               }
             },
             onValidationChanged: (isValid) {
               // check validate
-              _cubit.setValidate(isValid);
+              _notifier.setValidate(isValid);
             },
           ),
           const AppGap.big(),
@@ -162,12 +154,12 @@ class _RouterPasswordContentViewState
                 setState(() {
                   _passwordController.text = '';
                 });
-                _cubit.setEdited(true);
-                _cubit.setValidate(false);
+                _notifier.setEdited(true);
+                _notifier.setValidate(false);
               }
             },
             onValidationChanged: (isValid) {
-              _cubit.setValidate(isValid);
+              _notifier.setValidate(isValid);
             },
           ),
           const AppGap.big(),
@@ -196,14 +188,16 @@ class _RouterPasswordContentViewState
 
   void _save() {
     FocusManager.instance.primaryFocus?.unfocus();
-    _cubit.save(_passwordController.text, _hintController.text).then<void>((_) {
+    _notifier
+        .save(_passwordController.text, _hintController.text)
+        .then<void>((_) {
       _success();
     });
   }
 
   void _success() {
     logger.d('success save');
-    _cubit.setEdited(false);
+    _notifier.setEdited(false);
     showSuccessSnackBar(context, getAppLocalizations(context).password_updated);
   }
 }
