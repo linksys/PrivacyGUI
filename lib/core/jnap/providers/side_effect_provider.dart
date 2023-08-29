@@ -11,6 +11,8 @@ import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../cache/linksys_cache_manager.dart';
+
 class JNAPSideEffect extends Equatable {
   final bool hasSideEffect;
   final String? reason;
@@ -72,13 +74,15 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     );
   }
 
-  Future<JNAPSuccess> handleSideEffect(JNAPSuccess result) async {
-    final sideEffects = result.sideEffects ?? [];
+  Future<(JNAPSuccess, DataSource)> handleSideEffect(
+      (JNAPResult result, DataSource ds) record) async {
+    final sideEffects = (record.$1 as JNAPSuccess).sideEffects ?? [];
     if (sideEffects.isEmpty) {
       state = state.copyWith(hasSideEffect: false);
-      return result;
+      return (record.$1 as JNAPSuccess, record.$2);
     }
-    logger.d('SideEffectManager: handleSideEffect: $result');
+    logger.d(
+        'SideEffectManager: handleSideEffect: ${(record.$1 as JNAPSuccess)}');
 
     state = state.copyWith(hasSideEffect: true, reason: sideEffects[0]);
     if (sideEffects.contains('WirelessInterruption')) {
@@ -87,14 +91,14 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
         timeDelayStartInSec: 10,
         retryDelayInSec: 10,
         maxPollTimeInSec: 120,
-      ).then((value) => result);
+      ).then((value) => (record.$1 as JNAPSuccess, record.$2));
     } else {
       return poll(
         pollFunc: testRouterFullyBootedUp,
         maxRetry: 5,
         timeDelayStartInSec: 5,
         retryDelayInSec: 15,
-      ).then((value) => result);
+      ).then((value) => (record.$1 as JNAPSuccess, record.$2));
     }
   }
 

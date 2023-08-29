@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
@@ -61,6 +62,9 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(pCurrentSN, routerDeviceInfo.serialNumber);
       await ref.read(connectivityProvider.notifier).forceUpdate();
+      ProviderContainer()
+          .read(linksysCacheManagerProvider)
+          .loadCache(serialNumber: routerDeviceInfo.serialNumber);
 
       // ref.watch(navigationsProvider.notifier).clearAndPush(DashboardHomePath());
       context.goNamed(RouteNamed.dashboardHome);

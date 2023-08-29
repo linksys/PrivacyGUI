@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/bloc/device/cubit.dart';
@@ -82,6 +83,7 @@ void main() async {
     // exit(1);
     return true;
   };
+  container.read(linksysCacheManagerProvider);
   BuildConfig.load();
   initBetterActions();
   runApp(

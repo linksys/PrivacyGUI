@@ -1,4 +1,3 @@
-
 import 'package:uuid/uuid.dart';
 
 abstract class CommandSpec<R> {
@@ -8,4 +7,3 @@ abstract class CommandSpec<R> {
 
   R response(String raw);
 }
-

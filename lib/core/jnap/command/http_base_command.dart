@@ -8,7 +8,11 @@ import 'package:linksys_app/core/jnap/command/base_command.dart';
 abstract class BaseHttpCommand<R, S extends JNAPSpec>
     extends BaseCommand<R, S> {
   BaseHttpCommand(
-      {required this.url, required super.spec, required super.executor});
+      {required this.url,
+      required super.spec,
+      required super.executor,
+      super.force,
+      super.cacheLevel});
 
   final String url;
 
@@ -19,14 +23,14 @@ abstract class BaseHttpCommand<R, S extends JNAPSpec>
   Map<String, String> _header = {};
 
   Map<String, String> get header => _header;
-
-  R createResponse(String payload) => spec.response(payload);
 }
 
 class JNAPHttpCommand extends BaseHttpCommand<JNAPResult, HttpJNAPSpec> {
   JNAPHttpCommand({
     required super.url,
     required super.executor,
+    super.force,
+    super.cacheLevel,
     required String action,
     Map<String, dynamic> data = const {},
     Map<String, String> extraHeader = const {},
