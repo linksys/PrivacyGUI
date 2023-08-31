@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/models/network.dart';
 import 'package:linksys_app/core/jnap/models/radio_info.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/page/components/customs/enabled_with_opacity_widget.dart';
 import 'package:linksys_app/provider/network/_network.dart';
@@ -33,6 +34,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   @override
   Widget build(BuildContext context) {
+    final _ = ref.watch(deviceManagerProvider);
+    //TODO: Replace the data source with the one from device manager
     final state = ref.watch(networkProvider);
     return AppPageView.noNavigationBar(
       scrollable: true,

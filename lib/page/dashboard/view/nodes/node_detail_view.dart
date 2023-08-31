@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/bloc/node/cubit.dart';
-import 'package:linksys_app/bloc/node/state.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/provider/devices/device_detail_provider.dart';
+import 'package:linksys_app/provider/devices/device_detail_state.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -15,7 +15,6 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/profile_header_layout.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class NodeDetailView extends ArgumentsConsumerStatefulView {
   const NodeDetailView({
@@ -28,16 +27,9 @@ class NodeDetailView extends ArgumentsConsumerStatefulView {
 }
 
 class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
-  var isLightEnabled = true; //TODO: Move it to state
-
-  @override
-  void initState() {
-    super.initState();
-    context.read<NodeCubit>().fetchNodeDetailData();
-  }
-
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(deviceDetailProvider);
     final actions = [
       AppIconButton.noPadding(
         icon: getCharactersIcons(context).infoRound,
@@ -46,45 +38,44 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         },
       )
     ];
-    return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
-      return state.isLoading
-          ? const AppFullScreenSpinner()
-          : LayoutBuilder(builder: (context, constraint) {
-              return AppProfileHeaderLayout(
-                expandedHeight: constraint.maxHeight / 2,
-                collaspeTitle: state.location,
-                onCollaspeBackTap: () {
-                  context.pop();
-                },
-                actions: actions,
-                header: Column(
-                  children: [
-                    LinksysAppBar(
-                      backgroundColor:
-                          AppTheme.of(context).colors.headerBackgroundEnd,
-                      leading: AppIconButton(
-                        icon: getCharactersIcons(context).arrowLeft,
-                        onTap: () {
-                          context.pop();
-                        },
-                      ),
-                      trailing: actions,
-                    ),
-                    const Spacer(),
-                    _header(state),
-                  ],
+
+    return LayoutBuilder(
+      builder: (context, constraint) {
+        return AppProfileHeaderLayout(
+          expandedHeight: constraint.maxHeight / 2,
+          collaspeTitle: state.location,
+          onCollaspeBackTap: () {
+            context.pop();
+          },
+          actions: actions,
+          header: Column(
+            children: [
+              LinksysAppBar(
+                backgroundColor:
+                    AppTheme.of(context).colors.headerBackgroundEnd,
+                leading: AppIconButton(
+                  icon: getCharactersIcons(context).arrowLeft,
+                  onTap: () {
+                    context.pop();
+                  },
                 ),
-                body: Column(
-                  children: [
-                    _content(state),
-                  ],
-                ),
-              );
-            });
-    });
+                trailing: actions,
+              ),
+              const Spacer(),
+              _header(state),
+            ],
+          ),
+          body: Column(
+            children: [
+              _content(state),
+            ],
+          ),
+        );
+      },
+    );
   }
 
-  Widget _header(NodeState state) {
+  Widget _header(DeviceDetailState state) {
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
@@ -128,7 +119,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _nodeAvatar(NodeState state) {
+  Widget _nodeAvatar(DeviceDetailState state) {
     return AppDeviceAvatar.extraLarge(
       image: AppTheme.of(context).images.devices.getByName(
             routerIconTest(modelNumber: state.modelNumber),
@@ -136,7 +127,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _nodeStatus(NodeState state) {
+  Widget _nodeStatus(DeviceDetailState state) {
     final textColor = AppTheme.of(context).colors.textBoxText;
 
     return Row(
@@ -182,10 +173,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               width: AppTheme.of(context).spacing.extraBig,
               alignment: Alignment.center,
               child: AppSwitch.full(
-                value: isLightEnabled,
+                value: state.isLightTurnedOn,
                 onChanged: (value) {
                   setState(() {
-                    isLightEnabled = value;
+                    ref
+                        .read(deviceDetailProvider.notifier)
+                        .updateNodeLightSwitch(value);
                     //ref.read(navigationsProvider.notifier).push(NodeSwitchLightPath());
                   });
                 },
@@ -201,7 +194,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _getConnectionImage(NodeState state) {
+  Widget _getConnectionImage(DeviceDetailState state) {
     return AppIcon.big(
       icon: state.isWiredConnection
           ? AppTheme.of(context).icons.characters.ethernetDefault
@@ -212,7 +205,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _content(NodeState state) {
+  Widget _content(DeviceDetailState state) {
     return Expanded(
       child: LayoutBuilder(
         builder: (context, viewportConstraints) {
@@ -247,7 +240,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _detailSection(NodeState state) {
+  Widget _detailSection(DeviceDetailState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -268,7 +261,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         ),
         const AppGap.semiSmall(),
         Visibility(
-          visible: state.isLatestFw,
+          visible: ref.watch(deviceManagerProvider).isFirmwareUpToDate,
           replacement: AppSimplePanel(
             title:
                 getAppLocalizations(context).node_detail_label_firmware_version,
@@ -286,7 +279,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _lanSection(NodeState state) {
+  Widget _lanSection(DeviceDetailState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -304,7 +297,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _wanSection(NodeState state) {
+  Widget _wanSection(DeviceDetailState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

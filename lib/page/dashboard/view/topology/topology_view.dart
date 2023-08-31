@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:graphview/GraphView.dart';
-import 'package:linksys_app/bloc/node/cubit.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/dashboard/view/topology/bloc/cubit.dart';
-import 'package:linksys_app/page/dashboard/view/topology/bloc/state.dart';
 import 'package:linksys_app/page/dashboard/view/topology/topology_node.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/provider/devices/device_detail_id_provider.dart';
+import 'package:linksys_app/provider/devices/topology_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
@@ -18,86 +15,48 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/animation/blink.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import '../../../../core/utils/logger.dart';
 import 'custom_buchheim_walker_algorithm.dart';
 import 'custom_tree_edge_renderer.dart';
 
 class TopologyView extends ArgumentsConsumerStatelessView {
-  const TopologyView({
-    Key? key,
-    super.args,
-  }) : super(key: key);
+  const TopologyView({Key? key, super.args}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedId = args['selectedDeviceId'];
-    return BlocProvider(
-      create: (context) => TopologyCubit(context.read<RouterRepository>()),
-      child: TopologyContentView(
-        selectedDeviceId: selectedId,
+    final topologyState = ref.watch(topologyProvider);
+    final isShowingDeviceChain = topologyState.selectedDeviceId != null;
+    return StyledAppPageView(
+      scrollable: true,
+      child: AppBasicLayout(
+        content: Column(
+          children: [
+            !isShowingDeviceChain
+                ? (topologyState.root.isOnline
+                    ? _connectionStatus(context)
+                    : _noInternetConnectionWidget())
+                : Container(),
+            Expanded(
+              child: TreeViewPage(
+                root: topologyState.root,
+                isChainMode: isShowingDeviceChain,
+              ),
+            ),
+          ],
+        ),
+        // footer: Row(
+        //   mainAxisAlignment: MainAxisAlignment.center,
+        //   children: [
+        //     AppTertiaryButton('Restart mesh system', onTap: () {
+        //       ref.read(navigationsProvider.notifier).push(NodeRestartPath());
+        //     })
+        //   ],
+        // ),
       ),
     );
   }
-}
 
-class TopologyContentView extends ConsumerStatefulWidget {
-  final String? selectedDeviceId;
-  const TopologyContentView({Key? key, this.selectedDeviceId})
-      : super(key: key);
-
-  @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _TopologyContentView();
-}
-
-class _TopologyContentView extends ConsumerState<TopologyContentView> {
-  @override
-  void initState() {
-    super.initState();
-    context.read<TopologyCubit>().fetchTopologyData(
-          selectedId: widget.selectedDeviceId,
-        );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<TopologyCubit, TopologyState>(builder: (context, state) {
-      return StyledAppPageView(
-        scrollable: true,
-        child: AppBasicLayout(
-          content: Visibility(
-            visible: state.rootNode.deviceID.isNotEmpty,
-            replacement: const AppFullScreenSpinner(),
-            child: Column(
-              children: [
-                widget.selectedDeviceId == null
-                    ? (state.rootNode.isOnline
-                        ? _connectionStatus()
-                        : _noInternetConnectionWidget())
-                    : Container(),
-                Expanded(
-                  child: TreeViewPage(
-                    root: state.rootNode,
-                    isChainMode: widget.selectedDeviceId != null,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // footer: Row(
-          //   mainAxisAlignment: MainAxisAlignment.center,
-          //   children: [
-          //     AppTertiaryButton('Restart mesh system', onTap: () {
-          //       ref.read(navigationsProvider.notifier).push(NodeRestartPath());
-          //     })
-          //   ],
-          // ),
-        ),
-      );
-    });
-  }
-
-  Widget _connectionStatus() {
+  Widget _connectionStatus(BuildContext context) {
     return Center(
       child: Container(
         decoration: BoxDecoration(
@@ -228,7 +187,8 @@ class _TreeViewPageState extends ConsumerState<TreeViewPage> {
         if (nodeDevice.isRouter) {
           if (nodeDevice.isOnline) {
             // Update the current target Id for node state
-            context.read<NodeCubit>().setDetailNodeID(nodeDevice.deviceID);
+            ref.read(deviceDetailIdProvider.notifier).state =
+                nodeDevice.deviceId;
             context.pushNamed(RouteNamed.nodeDetails);
           } else {
             context.pushNamed(RouteNamed.nodeOffline);

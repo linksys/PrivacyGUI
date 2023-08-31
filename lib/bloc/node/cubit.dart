@@ -102,7 +102,7 @@ class NodeCubit extends Cubit<NodeState> {
       ));
     }
   }
-
+  //TODO: XXXXXX To be removed
   NodeState _getNodeDetailState(String targetID, String wanIpAddress,
       bool isLatestFW, List<RouterDevice> devices) {
     // The detail data of the current node
@@ -138,6 +138,7 @@ class NodeCubit extends Cubit<NodeState> {
       } else if (device.nodeType == 'Slave') {
         locationMap[device.deviceID] = Utils.getDeviceLocation(device);
       } else {
+        //TODO: XXXXXX 這塊要拆解出去
         // Make sure the external device is online
         if (device.connections.isNotEmpty) {
           // There usually be at most one connection item
@@ -152,7 +153,7 @@ class NodeCubit extends Cubit<NodeState> {
       }
     }
 
-    for (final device in devices) {
+    for (final device in devices) {//TODO: XXXXXX 這塊要拆解出去
       if (device.deviceID == targetID) {
         location = locationMap[targetID] ?? '';
         isMaster = (targetID == masterDeviceID);
@@ -182,7 +183,7 @@ class NodeCubit extends Cubit<NodeState> {
       wanIpAddress: wanIpAddress,
     );
   }
-
+  //TODO: XXXXXX 這塊要拆解出去
   String _getUpstreamOfSlave(RouterDevice device, String masterID) {
     final slaveParentID = device.connections.firstOrNull?.parentDeviceID;
     final upstreamNodeLocation = locationMap[slaveParentID];

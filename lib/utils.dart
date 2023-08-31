@@ -446,7 +446,8 @@ class Utils {
 
     return maxUserLimit - startingIPAddress - 1;
   }
-
+  
+  //TODO: XXXXXX Peter's: To be removed
   static String getDevicePlace(RouterDevice device) {
     String place = '';
     for (PropertyDevice property in device.properties) {
@@ -461,7 +462,7 @@ class Utils {
     }
     return place;
   }
-
+  //TODO: XXXXXX Peter's: To be removed
   static String getDeviceName(RouterDevice device) {
     for (PropertyDevice property in device.properties) {
       if (property.name == 'userDeviceName') {
@@ -516,6 +517,7 @@ class Utils {
     }
   }
 
+  //TODO: XXXXXX Peter's: To be removed, 合併至 device manager
   static String getDeviceSignalImageString(DeviceDetailInfo deviceInfo) {
     String icon = 'icon_signal_wired';
     if (deviceInfo.connection == 'Wired') {
@@ -548,6 +550,7 @@ class Utils {
     return icon;
   }
 
+  //TODO: XXXXXX To be removed, 合併至 device manager
   static NodeSignalLevel getWifiSignalLevel(int signalStrength) {
     if (signalStrength <= -70) {
       return NodeSignalLevel.weak;
@@ -561,7 +564,7 @@ class Utils {
       return NodeSignalLevel.none;
     }
   }
-
+  //TODO: XXXXXX To be removed, 合併至 device manager
   static IconData getWifiSignalIconData(
       BuildContext context, int signalStrength) {
     switch (getWifiSignalLevel(signalStrength)) {
@@ -578,6 +581,7 @@ class Utils {
     }
   }
 
+  //TODO: XXXXXX To be removed
   static bool checkIfWiredConnection(RouterDevice device) {
     bool isWired = false;
     final interfaces = device.knownInterfaces;
@@ -591,7 +595,7 @@ class Utils {
     return isWired;
   }
 
-  //TODO: Check duplicate functions
+  //TODO: XXXXXX To be removed
   static String getDeviceLocation(RouterDevice device) {
     for (final property in device.properties) {
       if (property.name == 'userDeviceLocation' && property.value.isNotEmpty) {
@@ -600,7 +604,7 @@ class Utils {
     }
     return getDeviceName_(device);
   }
-
+  //TODO: XXXXXX To be removed
   static String getDeviceName_(RouterDevice device) {
     for (final property in device.properties) {
       if (property.name == 'userDeviceName' && property.value.isNotEmpty) {

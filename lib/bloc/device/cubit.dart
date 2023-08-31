@@ -25,6 +25,7 @@ class DeviceCubit extends Cubit<DeviceState> {
     List<DeviceDetailInfo> offlineDevices = [];
     emit(state.copyWith(isLoading: true));
     final results = await _routerRepository.fetchDeviceList();
+    //TODO: XXXXXX To be removed 取 networkConnections logic
     final networkConnections = JNAPTransactionSuccessWrap.getResult(
             JNAPAction.getNetworkConnections, results)
         ?.output['connections'];
@@ -33,7 +34,7 @@ class DeviceCubit extends Cubit<DeviceState> {
         if (connection['wireless'] != null) {
           Map<String, dynamic> map = {
             'signalDecibels': connection['wireless']['signalDecibels'],
-            'connection': connection['wireless']['band'],
+            'band': connection['wireless']['band'],
           };
           wirelessSpeedMap[connection['macAddress']] = map;
         }
@@ -111,7 +112,7 @@ class DeviceCubit extends Cubit<DeviceState> {
               final wirelessSpeedMap0 = wirelessSpeedMap[macAddress];
               if (wirelessSpeedMap0 != null) {
                 signal = wirelessSpeedMap0['signalDecibels'];
-                connection = wirelessSpeedMap0['connection'];
+                connection = wirelessSpeedMap0['band'];
               }
 
               final parent = devices.firstWhereOrNull(

@@ -13,6 +13,7 @@ extension BatchCommands on RouterRepository {
     ).then((successWrap) => successWrap.data);
   }
 
+  //TODO: XXXXXX Replace and remove this
   Future<Map<JNAPAction, JNAPResult>> fetchIpDetails() async {
     return transaction(
       JNAPTransactionBuilder(commands: {
@@ -33,6 +34,7 @@ extension BatchCommands on RouterRepository {
     ).then((successWrap) => successWrap.data);
   }
 
+  //TODO: XXXXXX Remove this
   Future<Map<JNAPAction, JNAPResult>> fetchNodeDetails() async {
     return transaction(
       JNAPTransactionBuilder(commands: {
@@ -43,6 +45,21 @@ extension BatchCommands on RouterRepository {
     ).then((successWrap) => successWrap.data);
   }
 
+  Future<Map<JNAPAction, JNAPResult>> fetchRouterDetails() async {
+    return transaction(
+      JNAPTransactionBuilder(
+        commands: {
+          JNAPAction.getDevices: {},
+          JNAPAction.getWANStatus: {},
+          JNAPAction.getNetworkConnections: {},
+          JNAPAction.getFirmwareUpdateStatus: {},
+        },
+        auth: true,
+      ),
+    ).then((successWrap) => successWrap.data);
+  }
+
+  //TODO: XXXXXX Remove this
   Future<Map<JNAPAction, JNAPResult>> fetchDeviceList() async {
     return transaction(JNAPTransactionBuilder(
       commands: {

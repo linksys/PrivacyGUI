@@ -21,6 +21,7 @@ class TopologyCubit extends Cubit<TopologyState> {
   Future fetchTopologyData({String? selectedId}) async {
     final Map<String, Map<String, dynamic>> wirelessSignalMap = {};
     final results = await _repository.fetchDeviceList();
+    //TODO: XXXXXX To be removed 取 networkConnections logic
     final networkConnections = JNAPTransactionSuccessWrap.getResult(
             JNAPAction.getNetworkConnections, results)
         ?.output['connections'];
@@ -29,7 +30,7 @@ class TopologyCubit extends Cubit<TopologyState> {
         if (connection['wireless'] != null) {
           Map<String, dynamic> map = {
             'signalDecibels': connection['wireless']['signalDecibels'],
-            'connection': connection['wireless']['band'],
+            'band': connection['wireless']['band'],
           };
           wirelessSignalMap[connection['macAddress']] = map;
         }
@@ -131,7 +132,7 @@ class TopologyCubit extends Cubit<TopologyState> {
     bool isNode = device.isAuthority || device.nodeType != null;
 
     return TopologyNode(
-      deviceID: deviceID,
+      deviceId: deviceID,
       location: location,
       isMaster: isMaster,
       isOnline: isOnline,

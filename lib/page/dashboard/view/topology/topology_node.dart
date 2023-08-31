@@ -1,27 +1,27 @@
 import 'package:graphview/GraphView.dart';
 
 class TopologyNode extends Node {
-  final String deviceID;
+  final String deviceId;
   final String location;
   final bool isMaster;
   final bool isOnline;
   final bool isWiredConnection;
   final int signalStrength;
+  final bool isRouter;
+  String icon;  
   int connectedDeviceCount;
-  String icon;
-  final isRouter;
   final List<TopologyNode> children;
 
   TopologyNode({
-    this.deviceID = '',
+    this.deviceId = '',
     this.location = '',
     this.isMaster = false,
     this.isOnline = false,
     this.isWiredConnection = false,
     this.signalStrength = 0,
-    this.connectedDeviceCount = 0,
-    this.icon = 'genericDevice',
     this.isRouter = false,
+    this.icon = 'genericDevice',
+    this.connectedDeviceCount = 0,
     this.children = const [],
-  }) : super.Id(deviceID);
+  }) : super.Id(deviceId);
 }
