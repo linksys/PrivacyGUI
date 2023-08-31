@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/bloc/node/cubit.dart';
-import 'package:linksys_app/bloc/node/state.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
@@ -24,13 +22,13 @@ class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
   @override
   void initState() {
     super.initState();
-    _controller.text = widget.args['location'] as String;
+    // TODO: Use device manager to get the location
+    //_controller.text = widget.args['location'] as String;
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
-      return StyledAppPageView(
+    return StyledAppPageView(
         title: getAppLocalizations(context).node_detail_label_node_name,
         actions: [
           AppTertiaryButton(
@@ -38,7 +36,9 @@ class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
             onTap: () {
               final newLocation = _controller.text;
               if (newLocation.isNotEmpty) {
-                context.read<NodeCubit>().updateNodeLocation(newLocation);
+                ref
+                    .read(deviceManagerProvider.notifier)
+                    .updateLocation(newLocation);
               }
             },
           ),
@@ -55,6 +55,5 @@ class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
           ],
         ),
       );
-    });
   }
 }

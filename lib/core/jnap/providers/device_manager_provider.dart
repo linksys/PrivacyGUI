@@ -5,6 +5,13 @@ import 'package:linksys_app/core/jnap/models/wan_status.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/provider/devices/device_detail_id_provider.dart';
+
+final deviceManagerProvider =
+    NotifierProvider<DeviceManagerNotifier, DeviceManagerState>(
+  () => DeviceManagerNotifier(),
+);
 
 class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   @override
@@ -210,9 +217,34 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     final signalDecibels = wirelessData?['signalDecibels'] as int?;
     return signalDecibels ?? 0;
   }
-}
 
-final deviceManagerProvider =
-    NotifierProvider<DeviceManagerNotifier, DeviceManagerState>(
-  () => DeviceManagerNotifier(),
-);
+  Future<void> updateLocation(String newLocation) async {
+    // Get the current target device Id
+    final targetId = ref.read(deviceDetailIdProvider);
+    final routerRepository = ref.read(routerRepositoryProvider);
+    final result = await routerRepository.send(
+      JNAPAction.setDeviceProperties,
+      data: {
+        'deviceID': targetId,
+        'propertiesToModify': [
+          {
+            'name': 'userDeviceLocation',
+            'value': newLocation,
+          },
+          {
+            'name': 'userDeviceName',
+            'value': newLocation,
+          }
+        ],
+      },
+      auth: true,
+    );
+    if (result.result == 'OK') {
+      final newLocationMap = state.locationMap;
+      newLocationMap[targetId] = newLocation;
+      state = state.copyWith(
+        locationMap: newLocationMap,
+      );
+    }
+  }
+}

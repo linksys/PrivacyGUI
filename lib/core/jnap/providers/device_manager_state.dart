@@ -42,3 +42,17 @@ class DeviceManagerState {
   // Used in cases where the watched DeviceManager is still empty at very beginning stage
   bool isEmptyState() => deviceList.isEmpty;
 }
+
+enum NodeSignalLevel {
+  none(displayTitle: 'No signal'),
+  weak(displayTitle: 'Weak'),
+  good(displayTitle: 'Good'),
+  fair(displayTitle: 'Fair'),
+  excellent(displayTitle: 'Excellent');
+
+  const NodeSignalLevel({
+    required this.displayTitle,
+  });
+
+  final String displayTitle;
+}

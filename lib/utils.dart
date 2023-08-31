@@ -6,7 +6,7 @@ import 'dart:typed_data';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
-import 'package:linksys_app/bloc/node/state.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/util/uuid.dart';
@@ -578,79 +578,6 @@ class Utils {
         return AppTheme.of(context).icons.characters.signalstrength1;
       case NodeSignalLevel.none:
         return AppTheme.of(context).icons.characters.signalstrength0; // Default
-    }
-  }
-
-  //TODO: XXXXXX To be removed
-  static bool checkIfWiredConnection(RouterDevice device) {
-    bool isWired = false;
-    final interfaces = device.knownInterfaces;
-    if (interfaces != null) {
-      for (final interface in interfaces) {
-        if (interface.interfaceType == 'Wired') {
-          isWired = true;
-        }
-      }
-    }
-    return isWired;
-  }
-
-  //TODO: XXXXXX To be removed
-  static String getDeviceLocation(RouterDevice device) {
-    for (final property in device.properties) {
-      if (property.name == 'userDeviceLocation' && property.value.isNotEmpty) {
-        return property.value;
-      }
-    }
-    return getDeviceName_(device);
-  }
-  //TODO: XXXXXX To be removed
-  static String getDeviceName_(RouterDevice device) {
-    for (final property in device.properties) {
-      if (property.name == 'userDeviceName' && property.value.isNotEmpty) {
-        return property.value;
-      }
-    }
-
-    bool isAndroidDevice = false;
-    if (device.friendlyName != null) {
-      final regExp =
-          RegExp(r'^Android$|^android-[a-fA-F0-9]{16}.*|^Android-[0-9]+');
-      isAndroidDevice = regExp.hasMatch(device.friendlyName!);
-    }
-
-    String? androidDeviceName;
-    if (isAndroidDevice &&
-        ['Mobile', 'Phone', 'Tablet'].contains(device.model.deviceType)) {
-      final manufacturer = device.model.manufacturer;
-      final modelNumber = device.model.modelNumber;
-      if (manufacturer != null && modelNumber != null) {
-        // e.g. 'Samsung Galaxy S8'
-        androidDeviceName = '$manufacturer $modelNumber';
-      } else if (device.unit.operatingSystem != null) {
-        // e.g. 'Android Oreo Mobile'
-        androidDeviceName =
-            '${device.unit.operatingSystem!} ${device.model.deviceType}';
-        if (manufacturer != null) {
-          // e.g. 'Samsung Android Oreo Mobile'
-          androidDeviceName = manufacturer + androidDeviceName;
-        }
-      }
-    }
-
-    if (androidDeviceName != null) {
-      return androidDeviceName;
-    } else if (device.friendlyName != null) {
-      return device.friendlyName!;
-    } else if (device.model.modelNumber != null) {
-      return device.model.modelNumber!;
-    } else {
-      // Check if it's a guest device
-      bool isGuest = false;
-      for (final connectionDevice in device.connections) {
-        isGuest = connectionDevice.isGuest ?? false;
-      }
-      return isGuest ? 'Guest Network Device' : 'Network Device';
     }
   }
 

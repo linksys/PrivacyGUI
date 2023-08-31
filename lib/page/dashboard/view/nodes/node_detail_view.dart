@@ -178,7 +178,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                   setState(() {
                     ref
                         .read(deviceDetailProvider.notifier)
-                        .updateNodeLightSwitch(value);
+                        .toggleNodeLight(value);
                     //ref.read(navigationsProvider.notifier).push(NodeSwitchLightPath());
                   });
                 },

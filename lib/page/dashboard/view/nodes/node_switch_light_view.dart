@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/bloc/node/cubit.dart';
-import 'package:linksys_app/bloc/node/state.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/provider/devices/device_detail_provider.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class NodeSwitchLightView extends ConsumerWidget {
@@ -11,21 +9,19 @@ class NodeSwitchLightView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
-      return StyledAppPageView(
-        title: 'Node light',
-        child: Column(
-          children: [
-            AppPanelWithSwitch(
-              value: state.isLightTurnedOn,
-              title: 'Node light',
-              onChangedEvent: (bool newValue) {
-                context.read<NodeCubit>().updateNodeLightSwitch(newValue);
-              },
-            ),
-          ],
-        ),
-      );
-    });
+    return StyledAppPageView(
+      title: 'Node light',
+      child: Column(
+        children: [
+          AppPanelWithSwitch(
+            value: ref.watch(deviceDetailProvider).isLightTurnedOn,
+            title: 'Node light',
+            onChangedEvent: (bool newValue) {
+              ref.read(deviceDetailProvider.notifier).toggleNodeLight(newValue);
+            },
+          ),
+        ],
+      ),
+    );
   }
 }

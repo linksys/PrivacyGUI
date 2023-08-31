@@ -11,7 +11,6 @@ import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/bloc/device/cubit.dart';
-import 'package:linksys_app/bloc/node/cubit.dart';
 import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
@@ -110,9 +109,6 @@ Widget _app() {
           BlocProvider(
               create: (BuildContext context) => DeviceCubit(
                   routerRepository: context.read<RouterRepository>())),
-          BlocProvider(
-              create: (BuildContext context) =>
-                  NodeCubit(context.read<RouterRepository>())),
         ],
         child: ProviderScope(
           observers: [Logger()],

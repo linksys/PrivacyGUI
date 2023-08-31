@@ -18,7 +18,7 @@ class DeviceDetailNotifier extends Notifier<DeviceDetailState> {
     // Get the current target device Id
     final targetId = ref.read(deviceDetailIdProvider);
     // The target Id should never be empty
-    if (targetId.isEmpty) {      
+    if (targetId.isEmpty) {
       return newState;
     }
     // Details of the specific device
@@ -104,12 +104,34 @@ class DeviceDetailNotifier extends Notifier<DeviceDetailState> {
     return upstreamLocation ?? (masterLocation ?? '');
   }
 
-  Future<void> updateNodeLightSwitch(bool isOn) async {
+  Future<void> toggleNodeLight(bool isOn) async {
     //TODO: Implement real commands for switching the light
     state = state.copyWith(
       isLightTurnedOn: isOn,
     );
   }
+
+//TODO: Implement reboot 
+  // Future rebootMeshSystem() async {
+    // emit(state.copyWith(
+    //   isSystemRestarting: true,
+    // ));
+    // final results = await _repository.send(
+    //   JNAPAction.reboot,
+    //   auth: true,
+    // );
+    // if (results.result == 'OK') {
+    //   Future.delayed(const Duration(seconds: 130), () {
+    //     emit(state.copyWith(
+    //       isSystemRestarting: false,
+    //     ));
+    //   });
+    // } else {
+    //   emit(state.copyWith(
+    //     isSystemRestarting: false,
+    //   ));
+    // }
+  // }
 }
 
 final deviceDetailProvider =

@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/bloc/node/cubit.dart';
-import 'package:linksys_app/bloc/node/state.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/base_components/progress_bars/indeterminate_progress_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
@@ -19,16 +16,14 @@ class NodeRestartView extends ConsumerStatefulWidget {
 class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
-      return StyledAppPageView(
+    return StyledAppPageView(
         isCloseStyle: true,
         child: Visibility(
-          visible: !state.isSystemRestarting,
+          visible: true,//TODO: Refactor the build with AsyncValue
           replacement: restartingIndicator(),
           child: restartConfirmation(),
         ),
       );
-    });
   }
 
   Widget restartConfirmation() {
@@ -50,7 +45,7 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
         AppPrimaryButton(
           'Restart',
           onTap: () {
-            context.read<NodeCubit>().rebootMeshSystem();
+            //TODO: Reboot request
           },
         ),
         const AppGap.regular(),
