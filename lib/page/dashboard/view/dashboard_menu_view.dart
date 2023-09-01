@@ -6,6 +6,7 @@ import 'package:linksys_app/page/components/customs/enabled_with_opacity_widget.
 import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/provider/select_network_provider.dart';
 import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -73,7 +74,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                           : null,
                       child: Row(
                         children: [
-                          AppText.titleLarge(
+                          AppText.titleMedium(
                             state.selected?.radioInfo?.first.settings.ssid ??
                                 'Home',
                           ),
@@ -97,14 +98,17 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                       title: 'Settings',
                       iconData: getCharactersIcons(context).settingsDefault,
                       onTap: () {
-                        context.pushNamed(RouteNamed.dashboardSettings);
+                        shellNavigatorKey.currentContext!
+                            .pushNamed(RouteNamed.dashboardSettings);
                       }),
                   AppSectionItemData(
                       title: 'Account',
                       iconData:
                           getCharactersIcons(context).administrationDefault,
                       onTap: () {
-                        context.pushNamed(RouteNamed.accountInfo);
+                        shellNavigatorKey.currentContext!
+                            .pushNamed(RouteNamed.accountInfo);
+                        // context.pushNamed(RouteNamed.accountInfo);
                       }),
                   AppSectionItemData(
                       title: 'Help',

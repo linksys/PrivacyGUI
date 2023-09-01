@@ -5,7 +5,6 @@ import 'dart:math' as math;
 
 import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/browser_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:linksys_app/constants/_constants.dart';
@@ -17,6 +16,9 @@ import 'package:linksys_app/core/utils/logger.dart';
 import 'package:http/io_client.dart';
 import 'package:linksys_app/core/utils/storage.dart';
 import '../cloud/model/error_response.dart';
+import 'client/get_client.dart'
+    if (dart.library.io) 'client/mobile_client.dart'
+    if (dart.library.html) 'client/web_client.dart';
 
 typedef HttpErrorResponseHandler = void Function(ErrorResponse error);
 
@@ -36,7 +38,7 @@ class LinksysHttpClient extends http.BaseClient
     Duration Function(int retryCount) delay = _defaultDelay,
     FutureOr<void> Function(BaseRequest, http.BaseResponse?, int retryCount)?
         onRetry,
-  })  : _inner = client ?? (kIsWeb ? BrowserClient() : IOClient()),
+  })  : _inner = client ?? getClient(),
         _timeoutMs = timeoutMs,
         _retries = retries,
         _when = when,
@@ -90,9 +92,11 @@ class LinksysHttpClient extends http.BaseClient
         if (kIsWeb) "Access-Control-Allow-Origin": "*",
         // "Access-Control-Allow-Credentials":
         //     'true', // Required for cookies, authorization headers with HTTPS
-        if (kIsWeb) "Access-Control-Allow-Headers":
-            "Origin,Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,locale",
-        if (kIsWeb) "Access-Control-Allow-Methods": "POST, OPTIONS, DELETE, PUT, GET"
+        if (kIsWeb)
+          "Access-Control-Allow-Headers":
+              "Origin,Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,locale",
+        if (kIsWeb)
+          "Access-Control-Allow-Methods": "POST, OPTIONS, DELETE, PUT, GET"
       };
 
   // String getHost() => CloudEnvironmentManager().currentConfig?.apiBase ?? '';

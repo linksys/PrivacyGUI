@@ -5,6 +5,7 @@ import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/page/components/customs/debug_overlay_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_app/route/router_provider.dart';
 
 import 'package:linksys_app/util/debug_mixin.dart';
 import 'package:linksys_app/core/utils/logger.dart';
@@ -44,6 +45,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
   }
 
   Widget _contentView() {
+    final width = MediaQuery.of(context).size.width;
+    // HAS exception here
+    if (width > 768 && _selectedIndex == 0) {
+      _onItemTapped(1);
+    }
     return Scaffold(
       body: Stack(
         children: [
@@ -73,7 +79,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
         ],
       ),
       bottomNavigationBar: Offstage(
-        offstage: false,
+        offstage: width > 768,
         child: BottomNavigationBar(
             type: BottomNavigationBarType.shifting,
             iconSize:
@@ -105,7 +111,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
   }
 
   void _onItemTapped(int index) {
-    context.goNamed(_bottomTabItems[index].rootPath);
+    shellNavigatorKey.currentContext!.goNamed(_bottomTabItems[index].rootPath);
     setState(() {
       _selectedIndex = index;
     });
