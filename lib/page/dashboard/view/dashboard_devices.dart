@@ -51,13 +51,12 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
         child: AppDevicePanel.normal(
           title: item.name,
           place: item.upstreamDevice,
-          frequency: '5GHz', //TODO: XXXXXX item.band
+          frequency: '5GHz', //TODO: XXXXXX Read 'band' from NetworkConnections in DeviceManager
           deviceImage: AppTheme.of(context).images.devices.getByName(item.icon),
           rssi: item.signalStrength,
           onTap: !item.isOnline
               ? null
               : () {
-                  print("XXXXX selected ID=${item.deviceId}");
                   ref.read(deviceDetailIdProvider.notifier).state =
                       item.deviceId;
                   context.pushNamed(RouteNamed.deviceDetails);

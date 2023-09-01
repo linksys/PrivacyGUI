@@ -16,19 +16,17 @@ final deviceManagerProvider =
 class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   @override
   DeviceManagerState build() {
-    final pollingResult = ref.watch(pollingProvider).value;
-    print(
-        "XXXXXX Dev Mgr Notifier Build: polling iTems=${pollingResult?.data.length}, updateTime=${pollingResult?.lastUpdate}");
-    return createState(pollingResult);
+    final coreTransactionData = ref.watch(pollingProvider).value;
+    return createState(pollingResult: coreTransactionData);
   }
 
-  DeviceManagerState createState(CoreTransactionData? coreTransactionData) {
+  DeviceManagerState createState({CoreTransactionData? pollingResult}) {
     Map<String, dynamic>? getDevicesData;
     Map<String, dynamic>? getNetworkConnectionsData;
     Map<String, dynamic>? getWANStatusData;
     Map<String, dynamic>? getFirmwareUpdateStatusData;
 
-    final result = coreTransactionData?.data;
+    final result = pollingResult?.data;
     if (result != null) {
       getDevicesData = (result[JNAPAction.getDevices] as JNAPSuccess?)?.output;
       getNetworkConnectionsData =
@@ -45,7 +43,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     newState = _getWANStatusModel(newState, getWANStatusData);
     newState = _getFirmwareStatus(newState, getFirmwareUpdateStatusData);
     return newState.copyWith(
-      lastUpdateTime: coreTransactionData?.lastUpdate,
+      lastUpdateTime: pollingResult?.lastUpdate,
     );
   }
 
@@ -263,5 +261,27 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   //     //Update state
   //     fetchDeviceList();
   //   });
+  // }
+
+  //TODO: Reboot mesh system function
+  // Future rebootMeshSystem() async {
+  // emit(state.copyWith(
+  //   isSystemRestarting: true,
+  // ));
+  // final results = await _repository.send(
+  //   JNAPAction.reboot,
+  //   auth: true,
+  // );
+  // if (results.result == 'OK') {
+  //   Future.delayed(const Duration(seconds: 130), () {
+  //     emit(state.copyWith(
+  //       isSystemRestarting: false,
+  //     ));
+  //   });
+  // } else {
+  //   emit(state.copyWith(
+  //     isSystemRestarting: false,
+  //   ));
+  // }
   // }
 }

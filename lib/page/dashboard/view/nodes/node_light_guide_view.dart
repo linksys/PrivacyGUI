@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/core/utils/nodes.dart';
-import 'package:linksys_app/provider/devices/device_detail_provider.dart';
+import 'package:linksys_app/provider/devices/node_detail_provider.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -14,8 +14,8 @@ class NodeLightGuideView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isCognitive = isCognitiveMeshRouter(
-      modelNumber: ref.read(deviceDetailProvider).modelNumber,
-      hardwareVersion: ref.read(deviceDetailProvider).firmwareVersion,
+      modelNumber: ref.read(nodeDetailProvider).modelNumber,
+      hardwareVersion: ref.read(nodeDetailProvider).firmwareVersion,
     );
     return StyledAppPageView(
       title: 'Light guide',

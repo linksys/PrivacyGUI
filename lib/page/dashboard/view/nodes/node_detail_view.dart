@@ -5,8 +5,8 @@ import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/provider/devices/device_detail_provider.dart';
-import 'package:linksys_app/provider/devices/device_detail_state.dart';
+import 'package:linksys_app/provider/devices/node_detail_provider.dart';
+import 'package:linksys_app/provider/devices/node_detail_state.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -29,7 +29,7 @@ class NodeDetailView extends ArgumentsConsumerStatefulView {
 class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(deviceDetailProvider);
+    final state = ref.watch(nodeDetailProvider);
     final actions = [
       AppIconButton.noPadding(
         icon: getCharactersIcons(context).infoRound,
@@ -74,7 +74,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _header(DeviceDetailState state) {
+  Widget _header(NodeDetailState state) {
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(),
@@ -108,7 +108,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _nodeAvatar(DeviceDetailState state) {
+  Widget _nodeAvatar(NodeDetailState state) {
     return AppDeviceAvatar.extraLarge(
       image: AppTheme.of(context).images.devices.getByName(
             routerIconTest(modelNumber: state.modelNumber),
@@ -116,7 +116,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _nodeStatus(DeviceDetailState state) {
+  Widget _nodeStatus(NodeDetailState state) {
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -162,7 +162,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 onChanged: (value) {
                   setState(() {
                     ref
-                        .read(deviceDetailProvider.notifier)
+                        .read(nodeDetailProvider.notifier)
                         .toggleNodeLight(value);
                     //ref.read(navigationsProvider.notifier).push(NodeSwitchLightPath());
                   });
@@ -178,7 +178,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _getConnectionImage(DeviceDetailState state) {
+  Widget _getConnectionImage(NodeDetailState state) {
     return AppIcon.big(
       icon: state.isWiredConnection
           ? AppTheme.of(context).icons.characters.ethernetDefault
@@ -189,7 +189,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _content(DeviceDetailState state) {
+  Widget _content(NodeDetailState state) {
     return Expanded(
       child: LayoutBuilder(
         builder: (context, viewportConstraints) {
@@ -224,7 +224,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _detailSection(DeviceDetailState state) {
+  Widget _detailSection(NodeDetailState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -262,7 +262,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _lanSection(DeviceDetailState state) {
+  Widget _lanSection(NodeDetailState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -280,7 +280,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _wanSection(DeviceDetailState state) {
+  Widget _wanSection(NodeDetailState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

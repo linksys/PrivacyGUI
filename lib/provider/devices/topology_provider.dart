@@ -15,8 +15,6 @@ class TopologyNotifier extends Notifier<TopologyState> {
   @override
   TopologyState build() {
     final deviceManagerState = ref.watch(deviceManagerProvider);
-    print(
-        "XXXXXX TopologyNotifier Build: DevMgr: devicesNum=${deviceManagerState.deviceList.length}");
     return TopologyState(root: _buildRootNode(deviceManagerState));
   }
 
