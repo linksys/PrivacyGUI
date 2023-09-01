@@ -114,7 +114,7 @@ class _IPFormFieldState extends ConsumerState<IPFormField> {
 
   _buildDotWidget() => const AppPadding(
         padding: AppEdgeInsets.symmetric(horizontal: AppGapSize.semiSmall),
-        child: AppText.screenName(
+        child: AppText.titleLarge(
           '.',
         ),
       );
@@ -130,22 +130,6 @@ class _IPFormFieldState extends ConsumerState<IPFormField> {
       child: TextFormField(
         controller: controller,
         focusNode: focus,
-        decoration: InputDecoration(
-          hintStyle: theme.typography.inputFieldText
-              .copyWith(color: ConstantColors.textBoxTextGray),
-          enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                  color: theme.colors.textBoxStrokeHovered, width: 2),
-              borderRadius: BorderRadius.zero),
-          focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                  color: theme.colors.textBoxStrokeHovered, width: 2),
-              borderRadius: BorderRadius.zero),
-          disabledBorder: const OutlineInputBorder(
-              borderSide:
-                  BorderSide(color: ConstantColors.transparent, width: 2),
-              borderRadius: BorderRadius.zero),
-        ),
         inputFormatters: [
           FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
           // allow only  digits

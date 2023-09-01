@@ -54,7 +54,8 @@ class JNAPSuccess extends JNAPResult {
       ..addAll({
         keyJnapOutput: output,
         keyJnapSideEffects: sideEffects,
-      });
+      })
+      ..removeWhere((key, value) => value == null);
   }
 
   @override

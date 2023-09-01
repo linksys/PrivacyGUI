@@ -6,6 +6,7 @@ import 'package:linksys_app/core/jnap/command/http_base_command.dart';
 import 'package:linksys_app/core/jnap/jnap_command_queue.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
 
 extension CoreService on RouterRepository {
   Future<JNAPSuccess> checkAdminPassword(String password) async {
@@ -68,8 +69,10 @@ extension CoreService on RouterRepository {
   }
 
   Future<JNAPSuccess> isAdminPasswordDefault() async {
-    final command =
-        await createCommand(JNAPAction.isAdminPasswordDefault.actionValue);
+    final command = await createCommand(
+        JNAPAction.isAdminPasswordDefault.actionValue,
+        force: true,
+        cacheLevel: CacheLevel.noCache);
 
     // final result = await command.publish();
     final result = await CommandQueue().enqueue(command);

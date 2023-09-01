@@ -1,24 +1,22 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/provider/account/account_provider.dart';
+import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/_connectivity.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
-import 'package:linksys_app/bloc/network/cubit.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/models/device_info.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
+import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/service/cloud_network_service.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../../localization/localization_hook.dart';
-import '../../../core/utils/logger.dart';
-import '../../components/views/arguments_view.dart';
 
 class PrepareDashboardView extends ArgumentsConsumerStatefulView {
   const PrepareDashboardView({
@@ -48,22 +46,15 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
         ref.watch(authProvider.select((value) => value.value?.loginType));
     if (loginType == LoginType.remote) {
       logger.i('PREPARE LOGIN:: remote');
-      if (context.read<NetworkCubit>().state.selected == null) {
-        // TODO #LINKSYS
-        // await context.read<AccountCubit>().fetchAccount();
+      if (ref.read(networkProvider).selected == null) {
         CloudNetworkService(ref).refreshNetworks();
-
-        await context
-            .read<NetworkCubit>()
-            .getNetworks(accountId: ref.read(accountProvider).id);
-
         context.goNamed(RouteNamed.selectNetwork);
         return;
       }
     }
     logger.d('Go to dashboard');
-    final routerDeviceInfo = await context
-        .read<NetworkCubit>()
+    final routerDeviceInfo = await ref
+        .read(networkProvider.notifier)
         .getDeviceInfo()
         .then<RouterDeviceInfo?>((value) => value)
         .onError((error, stackTrace) => null);
@@ -71,6 +62,9 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(pCurrentSN, routerDeviceInfo.serialNumber);
       await ref.read(connectivityProvider.notifier).forceUpdate();
+      ProviderContainer()
+          .read(linksysCacheManagerProvider)
+          .loadCache(serialNumber: routerDeviceInfo.serialNumber);
 
       // ref.watch(navigationsProvider.notifier).clearAndPush(DashboardHomePath());
       context.goNamed(RouteNamed.dashboardHome);

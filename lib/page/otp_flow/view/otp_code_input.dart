@@ -84,7 +84,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
       },
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: AppText.screenName(
+        header: AppText.titleLarge(
           state.selectedMethod?.method ==
                   CommunicationMethodType.sms.name.toUpperCase()
               ? getAppLocalizations(context)
@@ -130,7 +130,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
             if (_errorCode.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: AppText.flavorText(
+                child: AppText.headlineMedium(
                   generalErrorCodeHandler(context, _errorCode),
                 ),
               ),

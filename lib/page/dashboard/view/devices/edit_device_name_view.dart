@@ -52,7 +52,7 @@ class _EditDeviceNameViewState extends ConsumerState<EditDeviceNameView> {
           children: [
             Row(
               children: [
-                AppText.descriptionMain(
+                AppText.bodyLarge(
                   getAppLocalizations(context).device_name,
                 ),
                 const AppGap.regular(),

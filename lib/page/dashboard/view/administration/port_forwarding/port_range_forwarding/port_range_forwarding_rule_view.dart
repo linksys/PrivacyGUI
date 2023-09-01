@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/jnap/models/port_range_forwarding_rule.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/dashboard/view/administration/port_forwarding/port_range_forwarding/bloc/port_range_forwarding_rule_cubit.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/provider/port_forwarding/port_range_forwarding_rule/_port_range_forwarding_rule.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -17,12 +15,8 @@ class PortRangeForwardingRuleView extends ArgumentsConsumerStatelessView {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return BlocProvider(
-      create: (context) => PortRangeForwardingRuleCubit(
-          repository: context.read<RouterRepository>()),
-      child: PortRangeForwardingRuleContentView(
-        args: super.args,
-      ),
+    return PortRangeForwardingRuleContentView(
+      args: super.args,
     );
   }
 }
@@ -37,7 +31,7 @@ class PortRangeForwardingRuleContentView extends ArgumentsConsumerStatefulView {
 
 class _AddRuleContentViewState
     extends ConsumerState<PortRangeForwardingRuleContentView> {
-  late final PortRangeForwardingRuleCubit _cubit;
+  late final PortRangeForwardingRuleNotifier _notifier;
 
   final TextEditingController _ruleNameController = TextEditingController();
   final TextEditingController _firstExternalPortController =
@@ -51,7 +45,7 @@ class _AddRuleContentViewState
 
   @override
   void initState() {
-    _cubit = context.read<PortRangeForwardingRuleCubit>();
+    _notifier = ref.read(portRangeForwardingRuleProvider.notifier);
     _rules = widget.args['rules'] ?? [];
     final rule = widget.args['edit'];
     if (rule != null) {
@@ -59,9 +53,9 @@ class _AddRuleContentViewState
       _firstExternalPortController.text = '${rule.externalPort}';
       _lastExternalPortController.text = '${rule.internalPort}';
       _deviceIpAddressController.text = rule.internalServerIPAddress;
-      _cubit.goEdit(_rules, rule);
+      _notifier.goEdit(_rules, rule);
     } else {
-      _cubit.goAdd(_rules);
+      _notifier.goAdd(_rules);
     }
     super.initState();
   }
@@ -73,67 +67,64 @@ class _AddRuleContentViewState
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PortRangeForwardingRuleCubit,
-        PortRangeForwardingRuleState>(builder: (context, state) {
-      return StyledAppPageView(
-        scrollable: true,
-        title: getAppLocalizations(context).port_range_forwarding,
-        actions: [
-          AppTertiaryButton(
-            getAppLocalizations(context).save,
-            onTap: () {
-              final rule = PortRangeForwardingRule(
-                  isEnabled: true,
-                  firstExternalPort:
-                      int.parse(_firstExternalPortController.text),
-                  protocol: _protocol,
-                  internalServerIPAddress: _deviceIpAddressController.text,
-                  lastExternalPort: int.parse(_lastExternalPortController.text),
-                  description: _ruleNameController.text);
-              _cubit.save(rule).then((value) {
-                if (value) {
-                  if (_cubit.isEdit()) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      AppToastHelp.positiveToast(context,
-                          text: getAppLocalizations(context).rule_updated),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      AppToastHelp.positiveToast(context,
-                          text: getAppLocalizations(context).rule_added),
-                    );
-                  }
-
-                  context.pop(true);
+    final state = ref.watch(portRangeForwardingRuleProvider);
+    return StyledAppPageView(
+      scrollable: true,
+      title: getAppLocalizations(context).port_range_forwarding,
+      actions: [
+        AppTertiaryButton(
+          getAppLocalizations(context).save,
+          onTap: () {
+            final rule = PortRangeForwardingRule(
+                isEnabled: true,
+                firstExternalPort: int.parse(_firstExternalPortController.text),
+                protocol: _protocol,
+                internalServerIPAddress: _deviceIpAddressController.text,
+                lastExternalPort: int.parse(_lastExternalPortController.text),
+                description: _ruleNameController.text);
+            _notifier.save(rule).then((value) {
+              if (value) {
+                if (_notifier.isEdit()) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    AppToastHelp.positiveToast(context,
+                        text: getAppLocalizations(context).rule_updated),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    AppToastHelp.positiveToast(context,
+                        text: getAppLocalizations(context).rule_added),
+                  );
                 }
-              });
-            },
-          )
-        ],
-        child: AppBasicLayout(
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const AppGap.semiBig(),
-              if (state is EditPortRangeForwardingRule)
-                ..._buildEditContents(state)
-              else
-                ..._buildAddContents(state)
-            ],
-          ),
+
+                context.pop(true);
+              }
+            });
+          },
+        )
+      ],
+      child: AppBasicLayout(
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AppGap.semiBig(),
+            if (state.mode == PortRangeForwardingRuleMode.editing)
+              ..._buildEditContents(state)
+            else
+              ..._buildAddContents(state)
+          ],
         ),
-      );
-    });
+      ),
+    );
   }
 
   List<Widget> _buildAddContents(PortRangeForwardingRuleState state) {
     return buildInputForms();
   }
 
-  List<Widget> _buildEditContents(EditPortRangeForwardingRule state) {
+  List<Widget> _buildEditContents(PortRangeForwardingRuleState state) {
     return [
       AppPanelWithSwitch(
-        value: state.rule.isEnabled,
+        value: state.rule?.isEnabled ?? false,
         title: getAppLocalizations(context).rule_enabled,
         onChangedEvent: (value) {},
       ),
@@ -141,7 +132,7 @@ class _AddRuleContentViewState
       AppTertiaryButton(
         getAppLocalizations(context).delete_rule,
         onTap: () {
-          _cubit.delete().then((value) {
+          _notifier.delete().then((value) {
             if (value) {
               ScaffoldMessenger.of(context).showSnackBar(
                 AppToastHelp.positiveToast(context,
@@ -181,7 +172,7 @@ class _AddRuleContentViewState
         ctaText: getAppLocalizations(context).select_device,
         // TODO: need to fix
         textValidator: () =>
-            _cubit.isDeviceIpValidate(_deviceIpAddressController.text),
+            _notifier.isDeviceIpValidate(_deviceIpAddressController.text),
         onCtaTap: () async {
           String? deviceIp = await context.pushNamed(RouteNamed.selectDevice);
         },

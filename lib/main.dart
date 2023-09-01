@@ -7,13 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/bloc/app_lifecycle/cubit.dart';
+import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/bloc/device/cubit.dart';
-import 'package:linksys_app/bloc/network/cubit.dart';
 import 'package:linksys_app/bloc/node/cubit.dart';
-import 'package:linksys_app/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
@@ -26,6 +24,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/color_schemes.g.dart';
+import 'package:linksys_widgets/theme/theme_data.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'firebase_options.dart';
 import 'route/router_provider.dart';
@@ -87,6 +87,7 @@ void main() async {
     // exit(1);
     return true;
   };
+  container.read(linksysCacheManagerProvider);
   BuildConfig.load();
   initBetterActions();
   runApp(
@@ -110,23 +111,12 @@ Widget _app() {
     ],
     child: MultiBlocProvider(
         providers: [
-          BlocProvider(create: (BuildContext context) => AppLifecycleCubit()),
           BlocProvider(
               create: (BuildContext context) => DeviceCubit(
                   routerRepository: context.read<RouterRepository>())),
           BlocProvider(
               create: (BuildContext context) =>
                   NodeCubit(context.read<RouterRepository>())),
-          BlocProvider(
-              create: (BuildContext context) => NetworkCubit(
-                    cloudRepository: context.read<LinksysCloudRepository>(),
-                    routerRepository: context.read<RouterRepository>(),
-                  )),
-          BlocProvider(
-              create: (BuildContext context) => WifiSettingCubit(
-                    cloudRepository: context.read<LinksysCloudRepository>(),
-                    routerRepository: context.read<RouterRepository>(),
-                  )),
         ],
         child: ProviderScope(
           observers: [Logger()],
@@ -174,20 +164,13 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
       onGenerateTitle: (context) => getAppLocalizations(context).app_title,
-      theme: ThemeData.light().copyWith(
-          scaffoldBackgroundColor: ConstantColors.gray98,
-          colorScheme:
-              const ColorScheme.light(background: ConstantColors.gray98)),
-      darkTheme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: ConstantColors.raisinBlock,
-        colorScheme:
-            const ColorScheme.dark(background: ConstantColors.raisinBlock),
-      ),
+      theme: linksysLightThemeData,
+      darkTheme: linksysDarkThemeData,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       // routerDelegate: ref.read(routerDelegateProvider),
       // routeInformationParser: LinksysRouteInformationParser(),
-      builder: (context, child) =>
+      builder: (context, child) => 
           AppResponsiveTheme(child: child ?? const Center()),
       routeInformationProvider: router.routeInformationProvider,
       routeInformationParser: router.routeInformationParser,
@@ -198,7 +181,6 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     logger.v('didChangeAppLifecycleState: ${state.name}');
-    context.read<AppLifecycleCubit>().update(state);
   }
 
   _initAuth() {

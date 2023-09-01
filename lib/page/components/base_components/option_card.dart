@@ -36,11 +36,11 @@ class OptionCard extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.descriptionMain(
+                  AppText.bodyLarge(
                     title,
                   ),
                   const AppGap.regular(),
-                  AppText.descriptionSub(
+                  AppText.bodyMedium(
                     description,
                   ),
                 ],

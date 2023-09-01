@@ -71,7 +71,7 @@ class _LinkupViewState extends ConsumerState<LinkupView> {
             if (snapshot.hasError) {
               // TODO Something wrong here
               return const Center(
-                child: AppText.descriptionMain('Unexceped error'),
+                child: AppText.bodyLarge('Unexceped error'),
               );
             }
 
@@ -80,7 +80,7 @@ class _LinkupViewState extends ConsumerState<LinkupView> {
               final data = snapshot.data;
               if (data == null) {
                 return const Center(
-                  child: AppText.descriptionMain('No news!'),
+                  child: AppText.bodyLarge('No news!'),
                 );
               }
               return ListView(
@@ -88,15 +88,15 @@ class _LinkupViewState extends ConsumerState<LinkupView> {
                 primary: false,
                 children: [
                   const Center(
-                    child: AppText.screenName('Linksys linkup'),
+                    child: AppText.titleLarge('Linksys linkup'),
                   ),
                   const AppGap.regular(),
-                  AppText.descriptionMain(data['subject'] ?? ''),
+                  AppText.bodyLarge(data['subject'] ?? ''),
                   const AppGap.big(),
                   ...List.from(data['contents']).map((content) {
                     return ExpansionTile(
                       initiallyExpanded: true,
-                      title: AppText.tags(content['category']),
+                      title: AppText.titleLarge(content['category']),
                       children: List.from(content['items'])
                           .map((item) => AppSimplePanel(
                                 title: item['title'],

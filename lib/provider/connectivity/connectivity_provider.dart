@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_info.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_state.dart';
 import 'package:linksys_app/constants/pref_key.dart';
@@ -74,7 +75,10 @@ class ConnectivityNotifier extends Notifier<ConnectivityState>
   Future<RouterType> _testRouterType(String? newIp) async {
     final routerRepository = ref.read(routerRepositoryProvider);
     final testJNAP = await routerRepository
-        .send(JNAPAction.isAdminPasswordDefault, type: CommandType.local)
+        .send(JNAPAction.isAdminPasswordDefault,
+            type: CommandType.local,
+            force: true,
+            cacheLevel: CacheLevel.noCache)
         .then((value) => true)
         .onError((error, stackTrace) => false);
     if (!testJNAP) {

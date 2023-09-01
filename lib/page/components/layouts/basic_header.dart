@@ -24,11 +24,11 @@ class BasicHeader extends ConsumerWidget {
     return Column(
       crossAxisAlignment: alignment ?? CrossAxisAlignment.start,
       children: [
-        AppText.mainTitle(
+        AppText.displayLarge(
           title ?? '',
         ),
         const AppGap.regular(),
-        AppText.descriptionSub(description ?? ''),
+        AppText.bodyMedium(description ?? ''),
       ],
     );
   }

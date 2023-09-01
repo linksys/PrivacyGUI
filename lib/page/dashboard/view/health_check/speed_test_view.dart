@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/bloc/network/cubit.dart';
-import 'package:linksys_app/bloc/network/state.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -50,19 +48,18 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<NetworkCubit, NetworkState>(
-      builder: (context, state) => StyledAppPageView(
-        child: AppBasicLayout(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          header: const Text(
-            'Speed Test',
-            style: TextStyle(
-              fontSize: 23,
-              fontWeight: FontWeight.w700,
-            ),
+    final state = ref.watch(networkProvider);
+    return StyledAppPageView(
+      child: AppBasicLayout(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        header: const Text(
+          'Speed Test',
+          style: TextStyle(
+            fontSize: 23,
+            fontWeight: FontWeight.w700,
           ),
-          content: _content(context, state),
         ),
+        content: _content(context, state),
       ),
     );
   }
@@ -99,7 +96,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
                 _status = "RUNNING";
                 _controller.forward();
               });
-              context.read<NetworkCubit>().runHealthCheck();
+              ref.read(networkProvider.notifier).runHealthCheck();
             });
           },
         );
@@ -123,8 +120,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                AppText.subhead('Upload'),
-                AppText.subhead('Download'),
+                AppText.displaySmall('Upload'),
+                AppText.displaySmall('Download'),
               ],
             ),
             AppGap.regular(),
@@ -132,8 +129,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                AppText.subhead('98Mbps'),
-                AppText.subhead('24Mpbs'),
+                AppText.displaySmall('98Mbps'),
+                AppText.displaySmall('24Mpbs'),
               ],
             ),
           ],

@@ -3,9 +3,9 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:linksys_app/constants/default_country_codes.dart';
 import 'package:linksys_app/constants/jnap_const.dart';
 import 'package:linksys_app/constants/pref_key.dart';
 import 'package:linksys_app/core/cloud/model/cloud_session_model.dart';
@@ -15,11 +15,9 @@ import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
-
 import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_app/provider/network/_network.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../constants/default_country_codes.dart';
 
 enum LoginType { none, local, remote }
 
@@ -265,7 +263,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
     state = await AsyncValue.guard(() async {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(prefSelectedNetworkId);
+      await prefs.remove(pSelectedNetworkId);
       await prefs.remove(pCurrentSN);
       await prefs.remove(pDeviceToken);
       const storage = FlutterSecureStorage();
@@ -277,6 +275,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       return AuthState.empty();
     });
     ref.read(pollingProvider.notifier).stopPolling();
+    ref.read(networkProvider.notifier).logout();
   }
 
   bool isCloudLogin() => state.value?.loginType == LoginType.remote;

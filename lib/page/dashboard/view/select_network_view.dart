@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
-import 'package:linksys_app/bloc/network/cubit.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/provider/select_network_provider.dart';
 import 'package:linksys_app/service/cloud_network_service.dart';
 import 'package:linksys_app/util/analytics.dart';
@@ -18,8 +18,6 @@ import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-import '../../components/styled/styled_page_view.dart';
-
 class SelectNetworkView extends ArgumentsConsumerStatefulView {
   const SelectNetworkView({super.key});
 
@@ -28,25 +26,24 @@ class SelectNetworkView extends ArgumentsConsumerStatefulView {
 }
 
 class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
-  late final NetworkCubit _networkCubit;
-
   @override
   void initState() {
-    _networkCubit = context.read<NetworkCubit>();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<SelectNetworkModel> model =
+    final AsyncValue<SelectNetworkState> model =
         CloudNetworkService(ref).watchSelectNetwork();
     return model.when(data: (state) {
       return StyledAppPageView(
         scrollable: true,
         isCloseStyle: true,
-        onBackTap: () {
-          ref.read(authProvider.notifier).logout();
-        },
+        onBackTap: ref.read(networkProvider).selected != null
+            ? null
+            : () {
+                ref.read(authProvider.notifier).logout();
+              },
         child: AppBasicLayout(
           crossAxisAlignment: CrossAxisAlignment.start,
           content: _networkSection(state, title: 'Network'),
@@ -62,11 +59,11 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
     });
   }
 
-  Widget _networkSection(SelectNetworkModel state, {String title = ''}) {
+  Widget _networkSection(SelectNetworkState state, {String title = ''}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.tags(
+        AppText.titleLarge(
           title,
         ),
         const AppGap.small(),
@@ -79,7 +76,9 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
             itemBuilder: (context, index) => InkWell(
               onTap: state.networks[index].isOnline
                   ? () async {
-                      await _networkCubit.selectNetwork(state.networks[index]);
+                      await ref
+                          .read(networkProvider.notifier)
+                          .selectNetwork(state.networks[index]);
                       // _navigationNotifier.clearAndPush(PrepareDashboardPath());
                       logEvent(
                         eventName: 'ActionSelectNetwork',
@@ -114,7 +113,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          AppText.descriptionMain(
+                          AppText.bodyLarge(
                             state.networks[index].network.friendlyName,
                             color: state.networks[index].isOnline
                                 ? null

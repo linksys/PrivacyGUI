@@ -56,19 +56,19 @@ class _DeviceListViewState extends ConsumerState<DeviceListView> {
               tabs: [
                 AppTab(
                   title: 'Main',
-                  icon: AppText.screenName(
+                  icon: AppText.titleLarge(
                     '${state.mainDeviceList.length}',
                   ),
                 ),
                 AppTab(
                   title: 'Guest',
-                  icon: AppText.screenName(
+                  icon: AppText.titleLarge(
                     '${state.guestDeviceList.length}',
                   ),
                 ),
                 AppTab(
                   title: 'Offline',
-                  icon: AppText.screenName(
+                  icon: AppText.titleLarge(
                     '${state.offlineDeviceList.length}',
                   ),
                 ),

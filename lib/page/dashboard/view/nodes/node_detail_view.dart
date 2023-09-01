@@ -56,12 +56,11 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 onCollaspeBackTap: () {
                   context.pop();
                 },
+                background: Theme.of(context).colorScheme.tertiaryContainer,
                 actions: actions,
                 header: Column(
                   children: [
                     LinksysAppBar(
-                      backgroundColor:
-                          AppTheme.of(context).colors.headerBackgroundEnd,
                       leading: AppIconButton(
                         icon: getCharactersIcons(context).arrowLeft,
                         onTap: () {
@@ -87,16 +86,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   Widget _header(NodeState state) {
     return Container(
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
-          colors: [
-            AppTheme.of(context).colors.headerBackgroundStart,
-            AppTheme.of(context).colors.headerBackgroundEnd,
-          ],
-        ),
-      ),
+      decoration: BoxDecoration(),
       child: Column(
         children: [
           _nodeAvatar(state),
@@ -104,9 +94,8 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              AppText.textLinkLarge(
+              AppText.titleSmall(
                 state.location,
-                color: AppTheme.of(context).colors.textBoxText,
               ),
               Positioned(
                 top: -2.5,
@@ -137,8 +126,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   Widget _nodeStatus(NodeState state) {
-    final textColor = AppTheme.of(context).colors.textBoxText;
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
@@ -148,14 +135,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               height: AppTheme.of(context).spacing.extraBig,
               width: AppTheme.of(context).spacing.extraBig,
               alignment: Alignment.center,
-              child: AppText.mainTitle(
+              child: AppText.titleLarge(
                 '${state.connectedDevices.length}',
-                color: textColor,
               ),
             ),
-            AppText.label(
+            AppText.bodyLarge(
               getAppLocalizations(context).devices,
-              color: textColor,
             ),
           ],
         ),
@@ -167,11 +152,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               alignment: Alignment.center,
               child: _getConnectionImage(state),
             ),
-            AppText.label(
+            AppText.bodyLarge(
               state.isWiredConnection
                   ? "Wired"
                   : Utils.getWifiSignalLevel(state.signalStrength).displayTitle,
-              color: textColor,
             ),
           ],
         ),
@@ -191,9 +175,8 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 },
               ),
             ),
-            AppText.label(
+            AppText.bodyLarge(
               'Light',
-              color: textColor,
             ),
           ],
         ),
@@ -252,7 +235,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppGap.big(),
-        AppText.tags(
+        AppText.titleLarge(
           getAppLocalizations(context).details_all_capital,
           color: ConstantColors.secondaryCyberPurple,
         ),
@@ -279,7 +262,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 getAppLocalizations(context).node_detail_label_firmware_version,
             description: state.firmwareVersion,
             infoText: getAppLocalizations(context).up_to_date,
-            infoTextColor: AppTheme.of(context).colors.ctaPrimaryDisable,
           ),
         ),
       ],
@@ -291,7 +273,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppGap.semiSmall(),
-        AppText.tags(
+        AppText.titleLarge(
           getAppLocalizations(context).node_detail_label_lan,
           color: ConstantColors.secondaryCyberPurple,
         ),
@@ -309,7 +291,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppGap.semiSmall(),
-        AppText.tags(
+        AppText.titleLarge(
           getAppLocalizations(context).node_detail_label_wan,
           color: ConstantColors.secondaryCyberPurple,
         ),

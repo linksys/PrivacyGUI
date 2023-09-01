@@ -81,15 +81,16 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
             // selectedFontSize:
             //     AppTheme.of(context).icons.sizes.resolve(AppIconSize.small),
             selectedIconTheme: IconThemeData(
-              color: AppTheme.of(context).colors.textBoxText,
+              color: Theme.of(context).colorScheme.onSurface,
               size:
                   AppTheme.of(context).icons.sizes.resolve(AppIconSize.regular),
             ),
-            selectedItemColor: AppTheme.of(context).colors.textBoxText,
+            selectedItemColor: Theme.of(context).colorScheme.onSurface,
             unselectedIconTheme: IconThemeData(
-                color: AppTheme.of(context).colors.textBoxText, opacity: 0.6),
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             unselectedItemColor:
-                AppTheme.of(context).colors.textBoxText.withOpacity(0.6),
+                Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             // unselectedFontSize:
             //     AppTheme.of(context).icons.sizes.resolve(AppIconSize.small),
             showSelectedLabels: true,
@@ -114,17 +115,14 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
     return BottomNavigationBarItem(
       icon: Icon(
         getCharactersIcons(context).getByName(item.iconId),
-        color: AppTheme.of(context).colors.textBoxText,
       ),
       activeIcon: CircleAvatar(
         backgroundColor: Colors.transparent,
         child: Icon(
           getCharactersIcons(context).getByName(item.iconId),
-          color: AppTheme.of(context).colors.textBoxText,
         ),
       ),
       label: item.title,
-      backgroundColor: AppTheme.of(context).colors.bottomBackground,
     );
   }
 
@@ -149,18 +147,6 @@ navigationBottomItems() => [
         title: 'Home',
         type: DashboardBottomItemType.home,
         rootPath: RouteNamed.dashboardHome,
-      ),
-      const DashboardBottomItem(
-        iconId: 'devicesDefault',
-        title: 'Devices',
-        type: DashboardBottomItemType.devices,
-        rootPath: RouteNamed.dashboardDevices,
-      ),
-      const DashboardBottomItem(
-        iconId: 'optionsDefault',
-        title: 'Settings',
-        type: DashboardBottomItemType.settings,
-        rootPath: RouteNamed.dashboardSettings,
       ),
     ];
 

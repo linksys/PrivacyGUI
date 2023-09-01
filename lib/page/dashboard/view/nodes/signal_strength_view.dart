@@ -30,15 +30,15 @@ class _SignalStrengthViewState extends ConsumerState<SignalStrengthView> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.descriptionSub(
+          AppText.bodyMedium(
             getAppLocalizations(context).signal_strength_description,
           ),
           const AppGap.regular(),
-          AppText.descriptionSub(
+          AppText.bodyMedium(
             getAppLocalizations(context).signal_strength_how_to_measured,
           ),
           const AppGap.regular(),
-          AppText.descriptionSub(
+          AppText.bodyMedium(
             getAppLocalizations(context).signal_strength_how_to_measured_answer,
           ),
           const AppGap.big(),
@@ -50,7 +50,7 @@ class _SignalStrengthViewState extends ConsumerState<SignalStrengthView> {
                 children: [
                   AppPadding(
                     padding: const AppEdgeInsets.only(bottom: AppGapSize.big),
-                    child: AppText.mainTitle(
+                    child: AppText.displayLarge(
                       getAppLocalizations(context).rssi_with_unit,
                     ),
                   ),
@@ -63,9 +63,9 @@ class _SignalStrengthViewState extends ConsumerState<SignalStrengthView> {
                     width: 26,
                     height: 26,
                   ),
-                  AppText.descriptionMain(
+                  AppText.bodyLarge(
                       getAppLocalizations(context).wifi_signal_weak_rssi_range),
-                  AppText.descriptionMain(
+                  AppText.bodyLarge(
                       getAppLocalizations(context).wifi_signal_weak)
                 ],
               ),
@@ -76,9 +76,9 @@ class _SignalStrengthViewState extends ConsumerState<SignalStrengthView> {
                     width: 26,
                     height: 26,
                   ),
-                  AppText.descriptionMain(
+                  AppText.bodyLarge(
                       getAppLocalizations(context).wifi_signal_good_rssi_range),
-                  AppText.descriptionMain(
+                  AppText.bodyLarge(
                       getAppLocalizations(context).wifi_signal_good)
                 ],
               ),
@@ -89,9 +89,9 @@ class _SignalStrengthViewState extends ConsumerState<SignalStrengthView> {
                     width: 26,
                     height: 26,
                   ),
-                  AppText.descriptionMain(
+                  AppText.bodyLarge(
                       getAppLocalizations(context).wifi_signal_fair_rssi_range),
-                  AppText.descriptionMain(
+                  AppText.bodyLarge(
                       getAppLocalizations(context).wifi_signal_fair)
                 ],
               ),
@@ -102,9 +102,9 @@ class _SignalStrengthViewState extends ConsumerState<SignalStrengthView> {
                     width: 26,
                     height: 26,
                   ),
-                  AppText.descriptionMain(getAppLocalizations(context)
+                  AppText.bodyLarge(getAppLocalizations(context)
                       .wifi_signal_excellent_rssi_range),
-                  AppText.descriptionMain(
+                  AppText.bodyLarge(
                       getAppLocalizations(context).wifi_signal_excellent)
                 ],
               ),
@@ -115,9 +115,8 @@ class _SignalStrengthViewState extends ConsumerState<SignalStrengthView> {
                     width: 26,
                     height: 26,
                   ),
-                  AppText.descriptionMain(
-                      getAppLocalizations(context).wired_device),
-                  AppText.descriptionMain(
+                  AppText.bodyLarge(getAppLocalizations(context).wired_device),
+                  AppText.bodyLarge(
                       '(${getAppLocalizations(context).wifi_signal_no_signal})')
                 ],
               ),

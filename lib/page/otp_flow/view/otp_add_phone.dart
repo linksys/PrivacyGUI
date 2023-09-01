@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/provider/otp/otp.dart';
@@ -155,8 +154,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
                 top: AppGapSize.extraBig,
                 bottom: AppGapSize.semiSmall,
               ),
-              child:
-                  AppText.descriptionMain(getAppLocalizations(context).phone),
+              child: AppText.bodyLarge(getAppLocalizations(context).phone),
             ),
             IntrinsicHeight(
               child: Row(
@@ -180,11 +178,11 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
                         width: 1,
                       )),
                       alignment: Alignment.center,
-                      child: AppText.descriptionMain(
+                      child: AppText.bodyLarge(
                         '+${currentRegion.countryCallingCode}',
                         color: isInputInvalid
                             ? ConstantColors.tertiaryRed
-                            : AppTheme.of(context).colors.tertiaryText,
+                            : ConstantColors.tertiaryRed,
                       ),
                     ),
                   ),
@@ -209,7 +207,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
             const AppGap.semiSmall(),
             Offstage(
               offstage: !isInputInvalid,
-              child: AppText.descriptionMain(
+              child: AppText.bodyLarge(
                 generalErrorCodeHandler(context, errorInvalidPhone),
                 color: ConstantColors.tertiaryRed,
               ),

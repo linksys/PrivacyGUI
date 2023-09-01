@@ -1,28 +1,23 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
-import 'package:linksys_app/bloc/network/cubit.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/core/bluetooth/bluetooth.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/actions/jnap_transaction.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/mdns/mdns_helper.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/landing/view/debug_device_info_view.dart';
-import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
@@ -46,15 +41,10 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
   String? _apnsToken;
   final CloudEnvironment _selectedEnv = cloudEnvTarget;
 
-  late final RouterRepository _routerRepository;
-  late final NetworkCubit _networkCubit;
-
   String appInfo = '';
 
   @override
   void initState() {
-    _networkCubit = context.read<NetworkCubit>();
-    _routerRepository = context.read<RouterRepository>();
     super.initState();
     checkTokens();
     setState(() {
@@ -68,7 +58,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
       scrollable: true,
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: const AppText.screenName(
+        header: const AppText.titleLarge(
           'Debug Tools',
         ),
         content: _content(),
@@ -81,7 +71,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ..._buildInfo(),
-        const AppText.descriptionMain(
+        const AppText.bodyLarge(
           'Log:',
         ),
         const AppGap.regular(),
@@ -178,9 +168,9 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: const AppText.descriptionMain('Basic Info'),
+        title: const AppText.bodyLarge('Basic Info'),
         children: [
-          AppText.descriptionSub(appInfo),
+          AppText.bodyMedium(appInfo),
           const AppGap.regular(),
           AppPrimaryButton(
             'More',
@@ -199,15 +189,15 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: const AppText.descriptionMain('Connection Info'),
+        title: const AppText.bodyLarge('Connection Info'),
         children: [
-          AppText.descriptionSub(
+          AppText.bodyMedium(
               'Router: ${connectivityState.connectivityInfo.routerType.name}'),
-          AppText.descriptionSub(
+          AppText.bodyMedium(
               'Connectivity: ${connectivityState.connectivityInfo.type.name}'),
-          AppText.descriptionSub(
+          AppText.bodyMedium(
               'Gateway Ip: ${connectivityState.connectivityInfo.gatewayIp}'),
-          AppText.descriptionSub(
+          AppText.bodyMedium(
               'SSID: ${connectivityState.connectivityInfo.ssid}'),
           const AppGap.regular(),
         ],
@@ -221,7 +211,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: const AppText.descriptionMain('PushNotification Info'),
+        title: const AppText.bodyLarge('PushNotification Info'),
         children: [
           Offstage(
             offstage: Platform.isIOS,
@@ -231,7 +221,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               children: [
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8.0),
-                  child: AppText.descriptionSub('FCM Token:'),
+                  child: AppText.bodyMedium('FCM Token:'),
                 ),
                 IconButton(
                     onPressed: _fcmToken != null
@@ -243,7 +233,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
                       Icons.share,
                       color: Colors.white,
                     )),
-                AppText.descriptionSub(_fcmToken ?? 'No FCM Token'),
+                AppText.bodyMedium(_fcmToken ?? 'No FCM Token'),
               ],
             ),
           ),
@@ -254,7 +244,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               alignment: WrapAlignment.start,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                const AppText.descriptionSub('APNS Token:'),
+                const AppText.bodyMedium('APNS Token:'),
                 IconButton(
                     onPressed: _apnsToken != null
                         ? () {
@@ -265,7 +255,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
                       Icons.share,
                       color: Colors.white,
                     )),
-                AppText.descriptionSub(_apnsToken ?? 'No APNS Token'),
+                AppText.bodyMedium(_apnsToken ?? 'No APNS Token'),
               ],
             ),
           ),
@@ -293,7 +283,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: const AppText.descriptionMain('Bluetooth testing'),
+        title: const AppText.bodyLarge('Bluetooth testing'),
         children: [
           AppPrimaryButton(
             'Scan & connect',
@@ -311,7 +301,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
           AppPrimaryButton(
             'Test get Mac address',
             onTap: () async {
-              final repository = context.read<RouterRepository>()
+              final repository = ref.read(routerRepositoryProvider)
                 ..enableBTSetup = true;
               final result1 = await repository
                   .send(
@@ -348,7 +338,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: const AppText.descriptionMain('MDNS testing'),
+        title: const AppText.bodyLarge('MDNS testing'),
         children: [
           AppPrimaryButton(
             'discover',

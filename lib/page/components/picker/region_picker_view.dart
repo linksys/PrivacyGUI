@@ -45,11 +45,11 @@ class _RegionPickerViewState extends ConsumerState<RegionPickerView> {
                                   vertical: AppGapSize.regular),
                               child: Row(
                                 children: [
-                                  AppText.descriptionMain(
+                                  AppText.bodyLarge(
                                     '${snapshot.data?[index].flagCode}',
                                   ),
                                   const AppGap.semiSmall(),
-                                  AppText.descriptionSub(
+                                  AppText.bodyMedium(
                                     '${snapshot.data?[index].countryName} +${snapshot.data?[index].countryCallingCode}',
                                   ),
                                 ],

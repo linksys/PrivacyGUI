@@ -33,7 +33,7 @@ class _LocalResetRouterPasswordState
   @override
   Widget build(BuildContext context) {
     return const Center(
-      child: AppText.descriptionMain('TBD'),
+      child: AppText.bodyLarge('TBD'),
     );
   }
 
@@ -62,7 +62,6 @@ class _LocalResetRouterPasswordState
                 shape: PinCodeFieldShape.underline,
                 fieldHeight: 46,
                 fieldWidth: 48,
-                inactiveColor: theme.colors.tertiaryText,
               ),
             ),
             const AppGap.regular(),
@@ -70,7 +69,7 @@ class _LocalResetRouterPasswordState
               AppPadding(
                 padding:
                     const AppEdgeInsets.symmetric(vertical: AppGapSize.small),
-                child: AppText.descriptionSub(
+                child: AppText.bodyMedium(
                   _errorReason,
                   color: ConstantColors.tertiaryRed,
                 ),

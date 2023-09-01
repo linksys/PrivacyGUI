@@ -36,7 +36,7 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
         context.pop();
       },
       child: AppBasicLayout(
-        header: AppText.screenName(
+        header: AppText.titleLarge(
           _createTitle(state),
           // description: _createDescription(state),
         ),

@@ -118,7 +118,7 @@ class _TopologyContentView extends ConsumerState<TopologyContentView> {
                 ),
               ),
               const AppGap.regular(),
-              const AppText.descriptionSub(
+              const AppText.bodyMedium(
                 'Connected to Internet',
               )
             ],
@@ -143,7 +143,7 @@ class _TopologyContentView extends ConsumerState<TopologyContentView> {
                   height: 12,
                 ),
                 const AppGap.semiSmall(),
-                const AppText.descriptionMain(
+                const AppText.bodyLarge(
                   'No internet connection',
                   color: ConstantColors.tertiaryRed,
                 )
@@ -201,7 +201,6 @@ class _TreeViewPageState extends ConsumerState<TreeViewPage> {
           viewWidth: MediaQuery.of(context).size.width,
         ),
         paint: Paint()
-          ..color = AppTheme.of(context).colors.tertiaryText
           ..strokeWidth = 1
           ..style = PaintingStyle.stroke,
         builder: (Node node) {
@@ -284,7 +283,7 @@ class _TreeViewPageState extends ConsumerState<TreeViewPage> {
                 child: AppPadding(
                   padding: const AppEdgeInsets.small(),
                   child: Center(
-                    child: AppText.descriptionSub(
+                    child: AppText.bodyMedium(
                       node0.isOnline ? '${node0.connectedDeviceCount}' : '0',
                       color: ConstantColors.primaryLinksysWhite,
                     ),
@@ -301,7 +300,7 @@ class _TreeViewPageState extends ConsumerState<TreeViewPage> {
                 ? Icon(getCharactersIcons(context).ethernetDefault)
                 : Icon(getCharactersIcons(context).wifiDefault),
             const AppGap.regular(),
-            AppText.descriptionSub(
+            AppText.bodyMedium(
               node0.location,
             ),
           ],

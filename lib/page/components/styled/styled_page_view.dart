@@ -54,7 +54,7 @@ class StyledAppPageView extends ConsumerWidget {
     return isCloseStyle
         ? LinksysAppBar.withClose(
             context: context,
-            title: title == null ? null : AppText.screenName(title),
+            title: title == null ? null : AppText.titleLarge(title),
             toolbarHeight: toolbarHeight,
             onBackTap: isBackEnabled()
                 ? (onBackTap ??
@@ -67,7 +67,7 @@ class StyledAppPageView extends ConsumerWidget {
           )
         : LinksysAppBar.withBack(
             context: context,
-            title: title == null ? null : AppText.screenName(title),
+            title: title == null ? null : AppText.titleLarge(title),
             toolbarHeight: toolbarHeight,
             onBackTap: isBackEnabled()
                 ? (onBackTap ??

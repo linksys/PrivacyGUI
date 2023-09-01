@@ -60,7 +60,7 @@ class NodeLightGuideView extends ConsumerWidget {
               const AppPadding(
                 padding:
                     AppEdgeInsets.symmetric(horizontal: AppGapSize.regular),
-                child: AppText.descriptionMain('During setup'),
+                child: AppText.bodyLarge('During setup'),
               ),
               _buildLightInfo(
                 led: AppTheme.of(context).images.ledBlueBlink,
@@ -124,7 +124,7 @@ class NodeLightGuideView extends ConsumerWidget {
               const AppPadding(
                 padding:
                     AppEdgeInsets.symmetric(horizontal: AppGapSize.regular),
-                child: AppText.descriptionMain('During setup'),
+                child: AppText.bodyLarge('During setup'),
               ),
               _buildLightInfo(
                 led: AppTheme.of(context).images.ledBlueBlink,
@@ -174,9 +174,9 @@ class NodeLightGuideView extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.descriptionMain(title),
+                AppText.bodyLarge(title),
                 const AppGap.small(),
-                AppText.descriptionSub(
+                AppText.bodyMedium(
                   desc,
                   maxLines: 5,
                 ),

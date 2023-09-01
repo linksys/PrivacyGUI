@@ -32,7 +32,7 @@ class _CloudForgotPasswordViewState
   @override
   Widget build(BuildContext context) {
     return const Center(
-      child: AppText.descriptionMain('TBD'),
+      child: AppText.bodyLarge('TBD'),
     );
   }
 

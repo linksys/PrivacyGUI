@@ -13,8 +13,8 @@ class RoutePath {
   /// dashboard
   static const dashboardHome = '/dashboardHome';
   static const dashboardMenu = '/dashboardMenu';
-  static const dashboardDevices = '/dashboardDevices';
-  static const dashboardSettings = '/dashboardSettings';
+  static const dashboardDevices = 'dashboardDevices';
+  static const dashboardSettings = 'dashboardSettings';
 
   /// settings
   static const settingsWifi = 'wifiSettings';

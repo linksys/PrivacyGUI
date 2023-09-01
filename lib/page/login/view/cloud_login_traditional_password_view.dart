@@ -77,7 +77,7 @@ class _LoginTraditionalPasswordViewState
         skipError: true,
         data: _contentView,
         error: (_, __) => const Center(
-              child: AppText.descriptionMain('Something wrong here!'),
+              child: AppText.bodyLarge('Something wrong here!'),
             ),
         loading: () => AppFullScreenSpinner(
             text: getAppLocalizations(context).processing));
@@ -107,14 +107,14 @@ class _LoginTraditionalPasswordViewState
       scrollable: true,
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: AppText.screenName(
+        header: AppText.titleLarge(
           getAppLocalizations(context).enter_password,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppGap.big(),
-            AppText.descriptionMain(_username),
+            AppText.bodyLarge(_username),
             AppPasswordField(
               key: const Key('login_password_view_input_field_password'),
               // headerText: getAppLocalizations(context).password,

@@ -4,19 +4,23 @@ import 'package:linksys_app/core/jnap/command/base_command.dart';
 
 abstract class BaseBTCommand<R, S extends JNAPCommandSpec>
     extends BaseCommand<R, S> {
-  BaseBTCommand({required super.spec, required super.executor});
+  BaseBTCommand(
+      {required super.spec,
+      required super.executor,
+      super.force,
+      super.cacheLevel});
 
   String _data = '';
 
   String get data => _data;
-
-  R createResponse(String payload) => spec.response(payload);
 }
 
 class JNAPBTCommand extends BaseBTCommand<JNAPResult, BTJNAPSpec> {
   JNAPBTCommand({
     required super.executor,
     required String action,
+    super.force,
+    super.cacheLevel,
     Map<String, dynamic> data = const {},
   }) : super(
             spec: BTJNAPSpec(

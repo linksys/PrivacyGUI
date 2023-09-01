@@ -1,13 +1,12 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/bloc/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -31,7 +30,7 @@ class _EditWifiNamePasswordViewState
   final TextEditingController passwordController = TextEditingController();
   bool isPasswordInvalid = false;
   late String _title;
-
+  late WifiType _wifiType;
   late bool isChanged = false;
   late String _oriSSID;
   late String _oriPassword;
@@ -40,10 +39,12 @@ class _EditWifiNamePasswordViewState
   initState() {
     super.initState();
 
-    final wifiItem = context.read<WifiSettingCubit>().state.selectedWifiItem;
+    final wifiItem =
+        ref.read(wifiSettingProvider).selectedWifiItem;
     _title = wifiItem.ssid;
     _oriSSID = wifiItem.ssid;
     _oriPassword = wifiItem.password;
+    _wifiType = wifiItem.wifiType;
     nameController.text = wifiItem.ssid;
     passwordController.text = wifiItem.password;
   }
@@ -76,12 +77,10 @@ class _EditWifiNamePasswordViewState
         if (result == OkCancelResult.ok) {
           // Update the name and the password
           setState(() => isLoading = true);
-          final wifiType =
-              context.read<WifiSettingCubit>().state.selectedWifiItem.wifiType;
-          context
-              .read<WifiSettingCubit>()
+          ref
+              .read(wifiSettingProvider.notifier)
               .updateWifiNameAndPassword(
-                  nameController.text, passwordController.text, wifiType)
+                  nameController.text, passwordController.text, _wifiType)
               .then((value) {
             setState(() => isLoading = false);
             context.pop();
@@ -139,8 +138,6 @@ class _EditWifiNamePasswordViewState
   }
 
   bool checkChanged() {
-    logger.d(
-        'XXXXX: chechChanged: ${_oriSSID != nameController.text || _oriPassword != passwordController.text}');
     return _oriSSID != nameController.text ||
         _oriPassword != passwordController.text;
   }

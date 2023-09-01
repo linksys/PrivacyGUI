@@ -40,14 +40,14 @@ class _OverlayInfoViewState extends ConsumerState<OverlayInfoView>
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.descriptionSub('Envrionment: ${cloudEnvTarget.name}'),
-            AppText.descriptionSub(
+            AppText.bodyMedium('Envrionment: ${cloudEnvTarget.name}'),
+            AppText.bodyMedium(
                 'Router: ${state.connectivityInfo.routerType.name}'),
-            AppText.descriptionSub(
+            AppText.bodyMedium(
                 'Connectivity: ${state.connectivityInfo.type.name}'),
-            AppText.descriptionSub(
+            AppText.bodyMedium(
                 'Gateway IP: ${state.connectivityInfo.gatewayIp}'),
-            AppText.descriptionSub('SSID: ${state.connectivityInfo.ssid}'),
+            AppText.bodyMedium('SSID: ${state.connectivityInfo.ssid}'),
           ],
         ),
       ),

@@ -30,12 +30,12 @@ class NoInternetConnectionModal extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppText.descriptionMain(
+                    AppText.bodyLarge(
                       getAppLocalizations(context)
                           .prompt_no_internet_connection,
                     ),
                     const AppGap.big(),
-                    AppText.descriptionSub(
+                    AppText.bodyMedium(
                       getAppLocalizations(context)
                           .prompt_no_internet_connection_description,
                     )

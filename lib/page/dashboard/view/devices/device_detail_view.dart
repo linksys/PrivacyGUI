@@ -35,11 +35,10 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           onCollaspeBackTap: () {
             context.pop();
           },
+          background: Theme.of(context).colorScheme.tertiaryContainer,
           header: Column(
             children: [
               LinksysAppBar(
-                backgroundColor:
-                    AppTheme.of(context).colors.headerBackgroundEnd,
                 leading: AppIconButton(
                   icon: getCharactersIcons(context).arrowLeft,
                   onTap: () {
@@ -65,16 +64,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     final device = state.selectedDeviceInfo!;
     return Container(
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
-          colors: [
-            AppTheme.of(context).colors.headerBackgroundStart,
-            AppTheme.of(context).colors.headerBackgroundEnd,
-          ],
-        ),
-      ),
+      decoration:
+          BoxDecoration(color: Theme.of(context).colorScheme.tertiaryContainer),
       child: Column(
         children: [
           _deviceAvatar(state),
@@ -82,9 +73,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              AppText.textLinkLarge(
+              AppText.titleSmall(
                 device.name,
-                color: AppTheme.of(context).colors.textBoxText,
               ),
               Positioned(
                 top: -2.5,
@@ -116,7 +106,6 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
 
   Widget _deviceStatus(DeviceState state) {
     final device = state.selectedDeviceInfo!;
-    final textColor = AppTheme.of(context).colors.textBoxText;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
@@ -134,9 +123,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                 width: 120 * 0.75,
               ),
             ),
-            AppText.label(
+            AppText.headlineSmall(
               device.parentInfo?.place ?? '',
-              color: textColor,
             ),
           ],
         ),
@@ -162,9 +150,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                   ),
                 ),
               ),
-              AppText.label(
+              AppText.headlineSmall(
                 Utils.getWifiSignalLevel(device.signal).displayTitle,
-                color: textColor,
               ),
             ],
           ),
@@ -214,7 +201,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppGap.big(),
-        AppText.tags(
+        AppText.titleLarge(
           getAppLocalizations(context).wifi_all_capital,
           color: ConstantColors.secondaryCyberPurple,
         ),
@@ -243,7 +230,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppGap.semiSmall(),
-        AppText.tags(
+        AppText.titleLarge(
           getAppLocalizations(context).details_all_capital,
           color: ConstantColors.secondaryCyberPurple,
         ),
