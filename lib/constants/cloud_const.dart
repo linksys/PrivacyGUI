@@ -1,8 +1,8 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
-
 import 'build_config.dart';
+
+import 'client_type/get_client_type.dart'
+    if (dart.library.io) 'client_type/mobile_client_type.dart'
+    if (dart.library.html) 'client_type/web_client_type.dart';
 
 const kCloudBase = 'CLOUD_BASE_URL';
 const kCloudJNAP = 'CLOUD_JNAP_BASE_URL';
@@ -82,16 +82,8 @@ const kDeviceNetworksEndpoint = '$kDeviceService/rest/networks/$kVarNetworkId';
 const kAccountNetworksEndpoint = '$kDeviceService/rest/accounts/self/networks';
 
 // Client type id/secret
-final kClientTypeId = kIsWeb
-    ? 'E918E731-F2CD-4A85-8CFA-1CD8C495939B'
-    : Platform.isIOS
-        ? 'E918E731-F2CD-4A85-8CFA-1CD8C495939B'
-        : 'B2101C5E-0E0C-4094-8BC5-6B97DE71C5BB';
-final kClientSecret = kIsWeb
-    ? 'I6BVSkCrAvQCR6FjOxfxVDdhGcqTsJr2'
-    : Platform.isIOS
-        ? "I6BVSkCrAvQCR6FjOxfxVDdhGcqTsJr2"
-        : 'wm2HbbWXEx1zWPsdg2Rskzjr9Ps6GQ8y';
+final kClientTypeId = clientTypeID;
+final kClientSecret = clientTypeSecret;
 
 // Header keys
 const kHeaderClientTypeId = 'X-Linksys-Client-Type-Id';
