@@ -6,16 +6,12 @@ import 'dart:typed_data';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
-import 'package:linksys_app/bloc/node/state.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/util/uuid.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:local_auth/local_auth.dart';
-
-import 'bloc/device/state.dart';
 import 'core/utils/logger.dart';
-import 'validator_rules/_validator_rules.dart';
 
 class Utils {
   static const String NoSpeedCalculationText = "-----";
@@ -447,82 +443,21 @@ class Utils {
     return maxUserLimit - startingIPAddress - 1;
   }
 
-  static String getDevicePlace(RouterDevice device) {
-    String place = '';
-    for (PropertyDevice property in device.properties) {
-      if (property.name == 'userDeviceLocation') {
-        place = property.value;
-        break;
-      }
-    }
-
-    if (place.isEmpty) {
-      place = getDeviceName(device);
-    }
-    return place;
-  }
-
-  static String getDeviceName(RouterDevice device) {
-    for (PropertyDevice property in device.properties) {
-      if (property.name == 'userDeviceName') {
-        if (property.value.isNotEmpty) {
-          return property.value;
-        }
-      }
-    }
-
-    String? deviceName;
-    final friendlyName = device.friendlyName;
-    final manufacturer = device.model.manufacturer;
-    final modelNumber = device.model.modelNumber;
-    final operatingSystem = device.unit.operatingSystem;
-    String deviceType = device.model.deviceType;
-    bool? isGuest;
-    bool isAndroidName = false;
-
-    for (ConnectionDevice connection in device.connections) {
-      if (connection.isGuest != null) {
-        isGuest = connection.isGuest;
-        break;
-      }
-    }
-
-    if (friendlyName != null) {
-      isAndroidName =
-          InputValidator([AndroidNameRule()]).validate(friendlyName);
-    }
-
-    if (['Mobile', 'Phone', 'Tablet'].contains(deviceType) && isAndroidName) {
-      if (manufacturer != null && modelNumber != null) {
-        deviceName = '$manufacturer $modelNumber';
-      } else if (operatingSystem != null) {
-        deviceName = '$operatingSystem $deviceType';
-        if (manufacturer != null) {
-          deviceName = '$manufacturer $deviceName';
-        }
-      }
-    }
-
-    if (deviceName != null) {
-      return deviceName;
-    } else if (friendlyName != null) {
-      return friendlyName;
-    } else if (modelNumber != null) {
-      return modelNumber;
-    } else if (isGuest != null) {
-      return isGuest ? 'guestNetworkDevice' : 'networkDevice';
+  //TODO: XXXXXX To be removed, put into device manager
+  static NodeSignalLevel getWifiSignalLevel(int signalStrength) {
+    if (signalStrength <= -70) {
+      return NodeSignalLevel.weak;
+    } else if (signalStrength > -70 && signalStrength <= -60) {
+      return NodeSignalLevel.fair;
+    } else if (signalStrength > -60 && signalStrength <= -50) {
+      return NodeSignalLevel.good;
+    } else if (signalStrength > -50 && signalStrength <= 0) {
+      return NodeSignalLevel.excellent;
     } else {
-      return 'networkDevice';
+      return NodeSignalLevel.none;
     }
-  }
-
-  static String getDeviceSignalImageString(DeviceDetailInfo deviceInfo) {
-    String icon = 'icon_signal_wired';
-    if (deviceInfo.connection == 'Wired') {
-      icon = 'icon_signal_wired';
-    } else {
-      final signal = deviceInfo.signal;
-      if (signal > 0) {
+    /*
+    if (signal > 0) {
         if (signal > 40) {
           icon = 'icon_signal_excellent';
         } else if (signal > 30) {
@@ -543,25 +478,10 @@ class Utils {
           icon = 'icon_signal_weak';
         }
       }
-    }
-
-    return icon;
+     */
   }
 
-  static NodeSignalLevel getWifiSignalLevel(int signalStrength) {
-    if (signalStrength <= -70) {
-      return NodeSignalLevel.weak;
-    } else if (signalStrength > -70 && signalStrength <= -60) {
-      return NodeSignalLevel.fair;
-    } else if (signalStrength > -60 && signalStrength <= -50) {
-      return NodeSignalLevel.good;
-    } else if (signalStrength > -50 && signalStrength <= 0) {
-      return NodeSignalLevel.excellent;
-    } else {
-      return NodeSignalLevel.none;
-    }
-  }
-
+  //TODO: XXXXXX To be removed, put into device manager
   static IconData getWifiSignalIconData(
       BuildContext context, int signalStrength) {
     switch (getWifiSignalLevel(signalStrength)) {
@@ -575,78 +495,6 @@ class Utils {
         return AppTheme.of(context).icons.characters.signalstrength1;
       case NodeSignalLevel.none:
         return AppTheme.of(context).icons.characters.signalstrength0; // Default
-    }
-  }
-
-  static bool checkIfWiredConnection(RouterDevice device) {
-    bool isWired = false;
-    final interfaces = device.knownInterfaces;
-    if (interfaces != null) {
-      for (final interface in interfaces) {
-        if (interface.interfaceType == 'Wired') {
-          isWired = true;
-        }
-      }
-    }
-    return isWired;
-  }
-
-  //TODO: Check duplicate functions
-  static String getDeviceLocation(RouterDevice device) {
-    for (final property in device.properties) {
-      if (property.name == 'userDeviceLocation' && property.value.isNotEmpty) {
-        return property.value;
-      }
-    }
-    return getDeviceName_(device);
-  }
-
-  static String getDeviceName_(RouterDevice device) {
-    for (final property in device.properties) {
-      if (property.name == 'userDeviceName' && property.value.isNotEmpty) {
-        return property.value;
-      }
-    }
-
-    bool isAndroidDevice = false;
-    if (device.friendlyName != null) {
-      final regExp =
-          RegExp(r'^Android$|^android-[a-fA-F0-9]{16}.*|^Android-[0-9]+');
-      isAndroidDevice = regExp.hasMatch(device.friendlyName!);
-    }
-
-    String? androidDeviceName;
-    if (isAndroidDevice &&
-        ['Mobile', 'Phone', 'Tablet'].contains(device.model.deviceType)) {
-      final manufacturer = device.model.manufacturer;
-      final modelNumber = device.model.modelNumber;
-      if (manufacturer != null && modelNumber != null) {
-        // e.g. 'Samsung Galaxy S8'
-        androidDeviceName = '$manufacturer $modelNumber';
-      } else if (device.unit.operatingSystem != null) {
-        // e.g. 'Android Oreo Mobile'
-        androidDeviceName =
-            '${device.unit.operatingSystem!} ${device.model.deviceType}';
-        if (manufacturer != null) {
-          // e.g. 'Samsung Android Oreo Mobile'
-          androidDeviceName = manufacturer + androidDeviceName;
-        }
-      }
-    }
-
-    if (androidDeviceName != null) {
-      return androidDeviceName;
-    } else if (device.friendlyName != null) {
-      return device.friendlyName!;
-    } else if (device.model.modelNumber != null) {
-      return device.model.modelNumber!;
-    } else {
-      // Check if it's a guest device
-      bool isGuest = false;
-      for (final connectionDevice in device.connections) {
-        isGuest = connectionDevice.isGuest ?? false;
-      }
-      return isGuest ? 'Guest Network Device' : 'Network Device';
     }
   }
 

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:linksys_app/bloc/node/cubit.dart';
-import 'package:linksys_app/bloc/node/state.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/core/utils/nodes.dart';
+import 'package:linksys_app/provider/devices/device_detail_provider.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -15,20 +13,18 @@ class NodeLightGuideView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return BlocBuilder<NodeCubit, NodeState>(builder: (context, state) {
-      final isCognitive = isCognitiveMeshRouter(
-        modelNumber: state.modelNumber,
-        hardwareVersion: state.firmwareVersion,
-      );
-      return StyledAppPageView(
-        title: 'Light guide',
-        isCloseStyle: true,
-        scrollable: true,
-        child: isCognitive
-            ? _buildCognitiveMeshLightGuide(context)
-            : _buildNodeMeshLightGuide(context),
-      );
-    });
+    final isCognitive = isCognitiveMeshRouter(
+      modelNumber: ref.read(deviceDetailProvider).modelNumber,
+      hardwareVersion: ref.read(deviceDetailProvider).firmwareVersion,
+    );
+    return StyledAppPageView(
+      title: 'Light guide',
+      isCloseStyle: true,
+      scrollable: true,
+      child: isCognitive
+          ? _buildCognitiveMeshLightGuide(context)
+          : _buildNodeMeshLightGuide(context),
+    );
   }
 
   Widget _buildCognitiveMeshLightGuide(BuildContext context) {

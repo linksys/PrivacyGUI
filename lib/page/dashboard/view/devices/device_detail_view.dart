@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/bloc/device/_device.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/provider/devices/external_device_detail_provider.dart';
+import 'package:linksys_app/provider/devices/external_device_detail_state.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -27,11 +27,13 @@ class DeviceDetailView extends ArgumentsConsumerStatefulView {
 class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DeviceCubit, DeviceState>(builder: (context, state) {
-      return LayoutBuilder(builder: (context, constraint) {
+    final state = ref.watch(externalDeviceDetailProvider);
+    //TODO: XXXXXX Fix wrong device error!!
+    return LayoutBuilder(
+      builder: (context, constraint) {
         return AppProfileHeaderLayout(
           expandedHeight: constraint.maxHeight / 2,
-          collaspeTitle: state.selectedDeviceInfo?.name,
+          collaspeTitle: state.item.name,
           onCollaspeBackTap: () {
             context.pop();
           },
@@ -56,25 +58,24 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             ],
           ),
         );
-      });
-    });
+      },
+    );
   }
 
-  Widget _header(DeviceState state) {
-    final device = state.selectedDeviceInfo!;
+  Widget _header(ExternalDeviceDetailState state) {
     return Container(
       alignment: Alignment.center,
       decoration:
           BoxDecoration(color: Theme.of(context).colorScheme.tertiaryContainer),
       child: Column(
         children: [
-          _deviceAvatar(state),
+          _deviceAvatar(state.item.icon),
           const AppGap.regular(),
           Stack(
             clipBehavior: Clip.none,
             children: [
               AppText.titleSmall(
-                device.name,
+                state.item.name,
               ),
               Positioned(
                 top: -2.5,
@@ -96,16 +97,13 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     );
   }
 
-  Widget _deviceAvatar(DeviceState state) {
+  Widget _deviceAvatar(String iconName) {
     return AppDeviceAvatar.extraLarge(
-        image: AppTheme.of(context)
-            .images
-            .devices
-            .getByName(state.selectedDeviceInfo!.icon));
+      image: AppTheme.of(context).images.devices.getByName(iconName),
+    );
   }
 
-  Widget _deviceStatus(DeviceState state) {
-    final device = state.selectedDeviceInfo!;
+  Widget _deviceStatus(ExternalDeviceDetailState state) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
@@ -117,14 +115,14 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
               alignment: Alignment.center,
               child: Image(
                 image: AppTheme.of(context).images.devices.getByName(
-                      device.parentInfo?.icon ?? 'genericDevice',
+                      state.item.upstreamIcon,
                     ),
                 height: 120 * 0.75,
                 width: 120 * 0.75,
               ),
             ),
             AppText.headlineSmall(
-              device.parentInfo?.place ?? '',
+              state.item.upstreamDevice,
             ),
           ],
         ),
@@ -133,7 +131,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             context.pushNamed(
               RouteNamed.settingsNodes,
               queryParameters: {
-                'selectedDeviceId': device.deviceID,
+                'selectedDeviceId': state.item.deviceId,
               },
             );
           },
@@ -146,12 +144,12 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                 child: AppIcon.big(
                   icon: Utils.getWifiSignalIconData(
                     context,
-                    device.signal,
+                    state.item.signalStrength,
                   ),
                 ),
               ),
               AppText.headlineSmall(
-                Utils.getWifiSignalLevel(device.signal).displayTitle,
+                Utils.getWifiSignalLevel(state.item.signalStrength).displayTitle,
               ),
             ],
           ),
@@ -161,7 +159,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     );
   }
 
-  Widget _content(DeviceState state) {
+  Widget _content(ExternalDeviceDetailState state) {
     return Expanded(
       child: LayoutBuilder(
         builder: (context, viewportConstraints) {
@@ -195,8 +193,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     );
   }
 
-  Widget _wifiSection(DeviceState state) {
-    final device = state.selectedDeviceInfo!;
+  Widget _wifiSection(ExternalDeviceDetailState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -208,24 +205,23 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).ip_address,
-          description: device.ipAddress, //TODO: It may be empty
+          description: state.item.ipv4Address,
         ),
         const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).mac_address,
-          description: device.macAddress,
+          description: state.item.macAddress,
         ),
         const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).ipv6_address,
-          description: device.macAddress, //TODO: Get IPv6 data
+          description: state.item.ipv6Address,
         ),
       ],
     );
   }
 
-  Widget _detailSection(DeviceState state) {
-    final device = state.selectedDeviceInfo!;
+  Widget _detailSection(ExternalDeviceDetailState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -237,17 +233,17 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).manufacturer,
-          description: device.manufacturer,
+          description: state.item.manufacturer,
         ),
         const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).model,
-          description: device.model,
+          description: state.item.model,
         ),
         const AppGap.semiSmall(),
         AppSimplePanel(
           title: getAppLocalizations(context).operating_system,
-          description: device.os,
+          description: state.item.operatingSystem,
         ),
       ],
     );

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/bloc/device/_device.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/provider/devices/device_detail_id_provider.dart';
+import 'package:linksys_app/provider/devices/device_list_provider.dart';
+import 'package:linksys_app/provider/devices/device_list_state.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -26,79 +27,43 @@ class DashboardDevices extends ArgumentsConsumerStatefulView {
 
 class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
   @override
-  initState() {
-    super.initState();
-    context.read<DeviceCubit>().fetchDeviceList();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DeviceCubit, DeviceState>(
-      builder: (context, state) => state.isLoading
-          ? const AppFullScreenSpinner()
-          : StyledAppPageView(
-              child: AppBasicLayout(
-                header: AppText.titleLarge('Devices'),
-                content: _buildDeviceListView([
-                  ...state.mainDeviceList,
-                  ...state.guestDeviceList,
-                  ...state.offlineDeviceList,
-                ]),
-              ),
-            ),
+    final filteredDeviceList = ref.watch(filteredDeviceListProvider);
+    return StyledAppPageView(
+      child: AppBasicLayout(
+        header: AppText.titleLarge('Devices'),
+        content: ListView.builder(
+          padding: EdgeInsets.zero,
+          itemCount: filteredDeviceList.length,
+          itemBuilder: (context, index) {
+            return _buildDeviceCell(filteredDeviceList[index]);
+          },
+        ),
+      ),
     );
   }
 
-  Widget _buildDeviceListView(List<DeviceDetailInfo> deviceList) {
-    return ListView.builder(
-      padding: EdgeInsets.zero,
-      itemCount: deviceList.length,
-      itemBuilder: (context, index) {
-        final device = deviceList[index];
-        return _buildDeviceCell(device);
-      },
-    );
-  }
-
-  Widget _wrapDeviceCell(DeviceDetailInfo device) {
-    bool isOnline = device.isOnline;
-    final child = _buildDeviceCell(device);
-    return isOnline
-        ? child
-        : AppSlideActionContainer(
-            rightMenuItems: [
-              AppMenuItem(
-                icon: getCharactersIcons(context).crossRound,
-                label: 'delete',
-                background: ConstantColors.tertiaryRed,
-              )
-            ],
-            child: child,
-          );
-  }
-
-  Widget _buildDeviceCell(DeviceDetailInfo device) {
+  Widget _buildDeviceCell(DeviceListItem item) {
     return AppPadding(
-        padding: const AppEdgeInsets.symmetric(horizontal: AppGapSize.regular),
-        child: Opacity(
-          opacity: device.isOnline ? 1 : 0.3,
-          child: AppDevicePanel.normal(
-            title: device.name,
-            place: device.parentInfo?.place ?? '',
-            frequency: device.connection,
-            deviceImage:
-                AppTheme.of(context).images.devices.getByName(device.icon),
-            rssi: device.signal,
-            onTap: !device.isOnline
-                ? null
-                : () {
-                    context
-                        .read<DeviceCubit>()
-                        .updateSelectedDeviceInfo(device);
-
-                    context.pushNamed(RouteNamed.deviceDetails);
-                  },
-          ),
-        ));
+      padding: const AppEdgeInsets.symmetric(horizontal: AppGapSize.regular),
+      child: Opacity(
+        opacity: item.isOnline ? 1 : 0.3,
+        child: AppDevicePanel.normal(
+          title: item.name,
+          place: item.upstreamDevice,
+          frequency: '5GHz', //TODO: XXXXXX item.band
+          deviceImage: AppTheme.of(context).images.devices.getByName(item.icon),
+          rssi: item.signalStrength,
+          onTap: !item.isOnline
+              ? null
+              : () {
+                  print("XXXXX selected ID=${item.deviceId}");
+                  ref.read(deviceDetailIdProvider.notifier).state =
+                      item.deviceId;
+                  context.pushNamed(RouteNamed.deviceDetails);
+                },
+        ),
+      ),
+    );
   }
 }
