@@ -176,7 +176,8 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
         child: AppResponsiveTheme(
           child: child ?? const Center(),
           leftFragment:
-              ref.read(authProvider).value?.loginType != LoginType.none
+              (ref.read(authProvider).value?.loginType ?? LoginType.none) !=
+                      LoginType.none
                   ? DashboardMenuView()
                   : null,
         ),
