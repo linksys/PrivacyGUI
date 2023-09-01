@@ -120,8 +120,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                AppText.subhead('Upload'),
-                AppText.subhead('Download'),
+                AppText.displaySmall('Upload'),
+                AppText.displaySmall('Download'),
               ],
             ),
             AppGap.regular(),
@@ -129,8 +129,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                AppText.subhead('98Mbps'),
-                AppText.subhead('24Mpbs'),
+                AppText.displaySmall('98Mbps'),
+                AppText.displaySmall('24Mpbs'),
               ],
             ),
           ],

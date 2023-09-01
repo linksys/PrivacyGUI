@@ -63,7 +63,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.tags(
+        AppText.titleLarge(
           title,
         ),
         const AppGap.small(),
@@ -113,7 +113,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          AppText.descriptionMain(
+                          AppText.bodyLarge(
                             state.networks[index].network.friendlyName,
                             color: state.networks[index].isOnline
                                 ? null

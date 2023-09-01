@@ -30,7 +30,7 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
       scrollable: true,
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: const AppText.screenName(
+        header: const AppText.titleLarge(
           'Your WiFi networks',
         ),
         content: _wifiList(state),
@@ -132,40 +132,36 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
     return items;
   }
 
-  
-
   Widget _information(List<WifiListItem> items, int index) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            AppText.tags(
+            AppText.titleLarge(
               items[index].wifiType.displayTitle,
             ),
             const AppGap.small(),
             Container(
               padding: const EdgeInsets.all(5),
-              child: AppText.label(
+              child: AppText.headlineSmall(
                 items[index].isWifiEnabled ? 'ON' : 'OFF',
               ),
             )
           ],
         ),
         const AppGap.semiSmall(),
-        AppText.descriptionMain(
+        AppText.bodyLarge(
           items[index].ssid,
         ),
         const AppGap.small(),
         HiddenPasswordWidget(password: items[index].password),
-        AppText.descriptionSub(
+        AppText.bodyMedium(
           '${items[index].numOfDevices} devices',
         ),
       ],
     );
   }
-
-  
 
   Map<WifiType, int> getConnectionDeviceCount(List<RouterDevice>? devices) {
     Map<WifiType, int> map = {

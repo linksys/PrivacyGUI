@@ -81,7 +81,7 @@ class _EditWifiSecurityViewState extends ConsumerState<EditWifiSecurityView> {
                       child: Row(
                         children: [
                           Expanded(
-                            child: AppText.label(
+                            child: AppText.headlineSmall(
                               _typeList[index].displayTitle,
                             ),
                           ),
@@ -130,8 +130,7 @@ class _EditWifiSecurityViewState extends ConsumerState<EditWifiSecurityView> {
   }
 
   void _save() {
-    final wifiType =
-        ref.read(wifiSettingProvider).selectedWifiItem.wifiType;
+    final wifiType = ref.read(wifiSettingProvider).selectedWifiItem.wifiType;
     ref
         .read(wifiSettingProvider.notifier)
         .updateSecurityType(_wifiSettingOption, _selectedType, wifiType)

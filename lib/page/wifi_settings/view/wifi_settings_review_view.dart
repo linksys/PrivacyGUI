@@ -45,7 +45,7 @@ class _WifiSettingsReviewViewState
                 children: [
                   Row(
                     children: [
-                      AppText.descriptionMain(
+                      AppText.bodyLarge(
                         state.selectedWifiItem.wifiType.displayTitle,
                       ),
                       const Spacer(),
@@ -67,13 +67,13 @@ class _WifiSettingsReviewViewState
                           })
                     ],
                   ),
-                  const AppText.descriptionSub(
+                  const AppText.bodyMedium(
                     'Where most of your devices connect.',
                   ),
                   const AppPadding(
                     padding: AppEdgeInsets.only(
                         top: AppGapSize.small, bottom: AppGapSize.regular),
-                    child: AppText.descriptionSub(
+                    child: AppText.bodyMedium(
                       '6 GHz, 5 GHz, 2.4 GHz',
                       //TODO: Remove the dummy recent bands
                     ),
@@ -127,11 +127,11 @@ class _WifiSettingsReviewViewState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.descriptionSub(
+                  AppText.bodyMedium(
                     currentOption.displayTitle,
                   ),
                   const AppGap.small(),
-                  AppText.descriptionSub(
+                  AppText.bodyMedium(
                     content,
                   ),
                 ],

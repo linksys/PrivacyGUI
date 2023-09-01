@@ -97,7 +97,7 @@ class _NumberPickerViewState extends ConsumerState<NumberPickerView> {
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      AppText.descriptionSub(
+      AppText.bodyMedium(
         widget.title,
         color: const Color.fromRGBO(0, 0, 0, 0.2),
       ),

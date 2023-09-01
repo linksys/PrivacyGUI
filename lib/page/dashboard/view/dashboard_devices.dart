@@ -11,6 +11,7 @@ import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class DashboardDevices extends ArgumentsConsumerStatefulView {
@@ -36,13 +37,14 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
       builder: (context, state) => state.isLoading
           ? const AppFullScreenSpinner()
           : StyledAppPageView(
-              title: 'Devices',
-              backState: StyledBackState.none,
-              child: _buildDeviceListView([
-                ...state.mainDeviceList,
-                ...state.guestDeviceList,
-                ...state.offlineDeviceList,
-              ]),
+              child: AppBasicLayout(
+                header: AppText.titleLarge('Devices'),
+                content: _buildDeviceListView([
+                  ...state.mainDeviceList,
+                  ...state.guestDeviceList,
+                  ...state.offlineDeviceList,
+                ]),
+              ),
             ),
     );
   }

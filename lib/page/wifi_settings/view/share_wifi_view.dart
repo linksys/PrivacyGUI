@@ -48,8 +48,7 @@ class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
   @override
   initState() {
     super.initState();
-    _currentItem =
-        ref.read(wifiSettingProvider).selectedWifiItem;
+    _currentItem = ref.read(wifiSettingProvider).selectedWifiItem;
   }
 
   Widget _wifiInfoSection() {
@@ -57,12 +56,12 @@ class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppGap.regular(),
-        AppText.descriptionMain(
+        AppText.bodyLarge(
           _currentItem.ssid,
         ),
         HiddenPasswordWidget(password: _currentItem.password),
         const AppGap.big(),
-        const AppText.tags(
+        const AppText.titleLarge(
           'JOIN THIS NETWORK',
         ),
         const AppGap.regular(),
@@ -127,7 +126,7 @@ class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
   void _shareByClipboard() async {
     await Clipboard.setData(ClipboardData(text: sharingContent));
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: AppText.descriptionMain(
+        content: AppText.bodyLarge(
       'Copied to clipboard',
     )));
   }
@@ -221,7 +220,7 @@ class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
     return StyledAppPageView(
       scrollable: true,
       child: AppBasicLayout(
-        header: AppText.screenName(
+        header: AppText.titleLarge(
           'Share ${_currentItem.wifiType.displayTitle} WiFi',
         ),
         content: Column(

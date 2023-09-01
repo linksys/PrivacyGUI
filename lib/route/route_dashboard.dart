@@ -34,22 +34,23 @@ final dashboardRoute = ShellRoute(
               ),
             ],
           ),
-        ]),
-    GoRoute(
-        name: RouteNamed.dashboardDevices,
-        path: RoutePath.dashboardDevices,
-        builder: (context, state) => DashboardDevices(),
-        routes: [
           GoRoute(
-            name: RouteNamed.deviceDetails,
-            path: RoutePath.deviceDetails,
-            builder: (context, state) => DeviceDetailView(),
+            name: RouteNamed.dashboardDevices,
+            path: RoutePath.dashboardDevices,
+            builder: (context, state) => DashboardDevices(),
+            routes: [
+              GoRoute(
+                name: RouteNamed.deviceDetails,
+                path: RoutePath.deviceDetails,
+                builder: (context, state) => DeviceDetailView(),
+              ),
+            ],
           ),
+          GoRoute(
+              name: RouteNamed.dashboardSettings,
+              path: RoutePath.dashboardSettings,
+              builder: (context, state) => DashboardSettingsView(),
+              routes: settings),
         ]),
-    GoRoute(
-        name: RouteNamed.dashboardSettings,
-        path: RoutePath.dashboardSettings,
-        builder: (context, state) => DashboardSettingsView(),
-        routes: settings)
   ],
 );

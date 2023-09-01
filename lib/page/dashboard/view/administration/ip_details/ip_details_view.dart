@@ -136,9 +136,8 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
         const SizedBox(
             width: 18, height: 18, child: CircularProgressIndicator()),
         const AppGap.semiSmall(),
-        AppText.descriptionSub(
+        AppText.bodyMedium(
           getAppLocalizations(context).ip_renewing,
-          color: AppTheme.of(context).colors.ctaPrimaryDisable,
         ),
       ],
     );
@@ -155,7 +154,7 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
               .settings
               .ssid ??
           '';
-      return AppText.descriptionMain(
+      return AppText.bodyLarge(
           getAppLocalizations(context).release_ip_description(ssid));
     }
     return const Center();

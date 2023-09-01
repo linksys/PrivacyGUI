@@ -89,7 +89,7 @@ class _TimePickerViewState extends ConsumerState<TimePickerView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          AppText.descriptionMain(
+          AppText.bodyLarge(
             widget.title,
             color: const Color.fromRGBO(0, 0, 0, 0.4),
           ),
@@ -105,7 +105,7 @@ class _TimePickerViewState extends ConsumerState<TimePickerView> {
             style: TextButton.styleFrom(
                 alignment: Alignment.centerLeft,
                 padding: const EdgeInsets.only(left: 0)),
-            child: AppText.screenName(
+            child: AppText.titleLarge(
               Utils.formatTimeAmPm(_current.inSeconds),
             ),
           ),
@@ -117,7 +117,7 @@ class _TimePickerViewState extends ConsumerState<TimePickerView> {
             maintainSize: true,
             maintainAnimation: true,
             maintainState: true,
-            child: const AppText.descriptionSub(
+            child: const AppText.bodyMedium(
               'next day',
               color: Colors.grey,
             ),

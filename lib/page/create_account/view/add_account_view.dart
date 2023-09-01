@@ -74,7 +74,7 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
               AppIcon.regular(
                   icon: AppTheme.of(context).icons.characters.checkDefault),
               const AppGap.semiSmall(),
-              AppText.descriptionMain(
+              AppText.bodyLarge(
                 tips[index],
               ),
             ],
@@ -90,7 +90,7 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
     return state.when(
         data: (state) => _contentView(),
         error: (_, __) => const Center(
-              child: AppText.descriptionMain('Something happen here'),
+              child: AppText.bodyLarge('Something happen here'),
             ),
         loading: () => AppFullScreenSpinner(
             text: getAppLocalizations(context).processing));
@@ -150,7 +150,7 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
                 offstage: _errorCode.isEmpty,
                 child: Wrap(
                   children: [
-                    AppText.descriptionSub(
+                    AppText.bodyMedium(
                       generalErrorCodeHandler(context, _errorCode),
                       color: ConstantColors.tertiaryRed,
                     ),
@@ -187,7 +187,7 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
                   getAppLocalizations(context).already_have_an_account,
                   onTap: _goLogin),
               const AppGap.big(),
-              AppText.descriptionMain(getAppLocalizations(context)
+              AppText.bodyLarge(getAppLocalizations(context)
                   .add_cloud_account_input_description),
               const AppGap.semiSmall(),
               _buildAccountTipsWidget(),

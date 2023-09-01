@@ -56,7 +56,7 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                           AppPadding(
                             padding: const AppEdgeInsets.symmetric(
                                 vertical: AppGapSize.regular),
-                            child: AppText.tags(
+                            child: AppText.titleMedium(
                               state.wifiList[index].wifiType.displayTitle,
                             ),
                           ),
@@ -66,11 +66,11 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                                 icon: getCharactersIcons(context).wifiDefault,
                               ),
                               const AppGap.semiSmall(),
-                              AppText.descriptionSub(
+                              AppText.bodyMedium(
                                 state.wifiList[index].ssid,
                               ),
                               const Spacer(),
-                              AppText.descriptionSub(
+                              AppText.bodyMedium(
                                 state.wifiList[index].isWifiEnabled
                                     ? getAppLocalizations(context)
                                         .on
@@ -96,7 +96,7 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                         onTap: () {
                           //TODO: Go to next
                         },
-                        child: const AppText.textLinkSmall(
+                        child: const AppText.labelLarge(
                           'Learn more about WiFi networks and settings',
                         ),
                       ),

@@ -76,7 +76,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
               content: Column(
                 children: [
                   IPFormField(
-                    header: AppText.descriptionMain(
+                    header: AppText.bodyLarge(
                       getAppLocalizations(context).ip_address,
                     ),
                     controller: _ipAddressController,
@@ -89,7 +89,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                   ),
                   const AppGap.semiBig(),
                   IPFormField(
-                    header: AppText.descriptionMain(
+                    header: AppText.bodyLarge(
                       getAppLocalizations(context).subnet_mask,
                     ),
                     controller: _subnetMaskController,
@@ -115,7 +115,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                     onChangedEvent: (value) {},
                   ),
                   IPFormField(
-                    header: AppText.descriptionMain(
+                    header: AppText.bodyLarge(
                       getAppLocalizations(context).start_ip_address,
                     ),
                     controller: _firstIPController,
@@ -142,7 +142,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                     },
                   ),
                   const AppGap.semiSmall(),
-                  AppText.descriptionSub(
+                  AppText.bodyMedium(
                     getAppLocalizations(context).dhcp_ip_range(
                         state.firstIPAddress, state.lastIPAddress),
                     color: ConstantColors.baseTertiaryGray,
@@ -216,7 +216,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
     } else {
       return [
         IPFormField(
-          header: AppText.descriptionMain(
+          header: AppText.bodyLarge(
             getAppLocalizations(context).static_dns1,
           ),
           controller: _dns1Controller,
@@ -229,7 +229,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
         ),
         const AppGap.semiBig(),
         IPFormField(
-          header: AppText.descriptionMain(
+          header: AppText.bodyLarge(
             getAppLocalizations(context).static_dns2_optional,
           ),
           controller: _dns2Controller,

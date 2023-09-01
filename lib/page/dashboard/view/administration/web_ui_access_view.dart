@@ -58,12 +58,11 @@ class _WebUiAccessViewState extends ConsumerState<WebUiAccessView> {
             const AppGap.regular(),
             SizedBox(
               width: Utils.getScreenWidth(context) * 0.7,
-              child: AppText.descriptionSub(
+              child: AppText.bodyMedium(
                 webUiAccess
                     ? getAppLocalizations(context).web_ui_access_on_description
                     : getAppLocalizations(context)
                         .web_ui_access_off_description,
-                color: AppTheme.of(context).colors.ctaPrimaryDisable,
               ),
             ),
           ],

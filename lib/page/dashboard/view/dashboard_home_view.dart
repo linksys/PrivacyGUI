@@ -16,6 +16,7 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/container/stacked_listview.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
+import 'package:linksys_widgets/widgets/panel/general_card.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class DashboardHomeView extends ConsumerStatefulWidget {
@@ -34,7 +35,13 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(networkProvider);
-    return AppPageView.noNavigationBar(
+    return AppPageView(
+      appBar: LinksysAppBar(
+        trailing: [
+          AppIconButton.noPadding(
+              icon: getCharactersIcons(context).refreshDefault)
+        ],
+      ),
       scrollable: true,
       padding: const AppEdgeInsets.only(
         top: AppGapSize.big,
@@ -74,12 +81,16 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppGap.big(),
+        AppText.displaySmall(
+          state.selected?.radioInfo?.first.settings.ssid ?? 'Home',
+        ),
+        AppGap.regular(),
         const Row(
           children: [
-            AppText.screenName(
+            AppText.titleLarge(
               'Internet ',
             ),
-            AppText.screenName(
+            AppText.titleLarge(
               'online', //TODO: XXXXXX Get online status
               color: ConstantColors.primaryLinksysBlue,
             ),
@@ -96,9 +107,9 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _wifiInfoTile(state),
-          const AppGap.extraBig(),
+          const AppGap.regular(),
           _nodesInfoTile(state),
-          const AppGap.extraBig(),
+          const AppGap.regular(),
           _devicesInfoTile(state),
         ],
       ),
@@ -107,9 +118,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   Widget _wifiInfoTile(NetworkState state) {
     if (state.selected?.radioInfo == null) {
-      return CircularProgressIndicator(
-        color: AppTheme.of(context).colors.textBoxText,
-      );
+      return CircularProgressIndicator();
     }
 
     int wifiCount = _getWifiCount(state.selected);
@@ -120,9 +129,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           image: const AssetImage('assets/images/wifi_signal_3.png')));
     }
     return _infoTile(
-      count: wifiCount,
-      descripition: 'WiFi networks active', //TODO: XXXXXX Get active status??
-      icons: icons,
+      iconData: getCharactersIcons(context).wifiDefault,
+      text: 'WiFi ($wifiCount)',
       onTap: () {
         context.pushNamed(RouteNamed.wifiShare);
       },
@@ -131,27 +139,19 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   Widget _nodesInfoTile(NetworkState state) {
     if (state.selected?.devices == null) {
-      return CircularProgressIndicator(
-        color: AppTheme.of(context).colors.textBoxText,
-      );
+      return CircularProgressIndicator();
     }
 
     final nodes = _getRouters(state.selected?.devices);
     List<Widget> icons = [];
-    for (int i = 0; i < nodes.length; i++) {
-      final image =
-          AppTheme.of(context).images.devices.getByName(routerIconTest(
-                modelNumber: nodes[i].model.modelNumber ?? '',
-                hardwareVersion: nodes[i].model.hardwareVersion,
-              ));
-      icons.add(_circleIcon(
-        image: image,
-      ));
-    }
+
+    final image = AppTheme.of(context).images.devices.getByName(routerIconTest(
+          modelNumber: nodes.first.model.modelNumber ?? '',
+          hardwareVersion: nodes.first.model.hardwareVersion,
+        ));
     return _infoTile(
-      count: nodes.length,
-      descripition: 'Nodes online', //TODO: XXXXXX Get Node online status
-      icons: icons,
+      image: image,
+      text: 'Nodes (${nodes.length})',
       onTap: () {
         context.pushNamed(RouteNamed.settingsNodes);
       },
@@ -160,27 +160,18 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   Widget _devicesInfoTile(NetworkState state) {
     if (state.selected?.devices == null) {
-      return CircularProgressIndicator(
-        color: AppTheme.of(context).colors.textBoxText,
-      );
+      return CircularProgressIndicator();
     }
 
     List<RouterDevice> connectedDevices =
         _getConnectedDevice(state.selected?.devices);
-    List<Widget> icons = [];
-    for (RouterDevice device in connectedDevices) {
-      icons.add(_circleIcon(
-          image: AppTheme.of(context)
-              .images
-              .devices
-              .getByName(iconTest(device.toJson()))));
-    }
+
     return _infoTile(
-      count: connectedDevices.length,
-      descripition: 'Devices online', //TODO: XXXXXX which online deivce??
-      icons: icons,
+      text:
+          '${connectedDevices.length} devices online', //TODO: XXXXXX which online deivce??
+      iconData: getCharactersIcons(context).devicesDefault,
       onTap: () {
-        // TODO dashboard shell
+        context.goNamed(RouteNamed.dashboardDevices);
       },
     );
   }
@@ -220,37 +211,24 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _infoTile(
-      {int count = 0,
-      String descripition = '',
-      List<Widget> icons = const [],
-      VoidCallback? onTap}) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        GestureDetector(
-          onTap: onTap,
-          child: Row(
-            children: [
-              AppText.mainTitle(count.toString()),
-              const AppGap.regular(),
-              Expanded(child: _iconStack(icons)),
-            ],
+  Widget _infoTile({
+    required String text,
+    IconData? iconData,
+    ImageProvider? image,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Row(
+        children: [
+          AppCard(
+            iconData: iconData,
+            image: image,
           ),
-        ),
-        const AppGap.semiSmall(),
-        Row(
-          children: [
-            AppIcon(
-              //TODO: XXXXXX Check for what??
-              icon: getCharactersIcons(context).checkRound,
-              color: ConstantColors.secondaryElectricGreen,
-            ),
-            const AppGap.semiSmall(),
-            AppText.descriptionSub(descripition),
-          ],
-        ),
-      ],
+          const AppGap.regular(),
+          AppText.labelLarge(text)
+        ],
+      ),
     );
   }
 
@@ -312,7 +290,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                 child: const CircleAvatar(
                   radius: 21,
                   backgroundColor: ConstantColors.primaryLinksysBlue,
-                  child: AppText.textLinkSmall(
+                  child: AppText.labelLarge(
                     'Go',
                     color: ConstantColors.primaryLinksysWhite,
                   ),
@@ -341,7 +319,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           children: [
             icon,
             const AppGap.semiSmall(),
-            AppText.screenName(num),
+            AppText.titleLarge(num),
           ],
         ),
         Text('${text}ps'),

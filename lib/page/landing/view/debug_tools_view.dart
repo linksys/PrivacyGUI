@@ -58,7 +58,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
       scrollable: true,
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: const AppText.screenName(
+        header: const AppText.titleLarge(
           'Debug Tools',
         ),
         content: _content(),
@@ -71,7 +71,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ..._buildInfo(),
-        const AppText.descriptionMain(
+        const AppText.bodyLarge(
           'Log:',
         ),
         const AppGap.regular(),
@@ -168,9 +168,9 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: const AppText.descriptionMain('Basic Info'),
+        title: const AppText.bodyLarge('Basic Info'),
         children: [
-          AppText.descriptionSub(appInfo),
+          AppText.bodyMedium(appInfo),
           const AppGap.regular(),
           AppPrimaryButton(
             'More',
@@ -189,15 +189,15 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: const AppText.descriptionMain('Connection Info'),
+        title: const AppText.bodyLarge('Connection Info'),
         children: [
-          AppText.descriptionSub(
+          AppText.bodyMedium(
               'Router: ${connectivityState.connectivityInfo.routerType.name}'),
-          AppText.descriptionSub(
+          AppText.bodyMedium(
               'Connectivity: ${connectivityState.connectivityInfo.type.name}'),
-          AppText.descriptionSub(
+          AppText.bodyMedium(
               'Gateway Ip: ${connectivityState.connectivityInfo.gatewayIp}'),
-          AppText.descriptionSub(
+          AppText.bodyMedium(
               'SSID: ${connectivityState.connectivityInfo.ssid}'),
           const AppGap.regular(),
         ],
@@ -211,7 +211,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: const AppText.descriptionMain('PushNotification Info'),
+        title: const AppText.bodyLarge('PushNotification Info'),
         children: [
           Offstage(
             offstage: Platform.isIOS,
@@ -221,7 +221,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               children: [
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8.0),
-                  child: AppText.descriptionSub('FCM Token:'),
+                  child: AppText.bodyMedium('FCM Token:'),
                 ),
                 IconButton(
                     onPressed: _fcmToken != null
@@ -233,7 +233,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
                       Icons.share,
                       color: Colors.white,
                     )),
-                AppText.descriptionSub(_fcmToken ?? 'No FCM Token'),
+                AppText.bodyMedium(_fcmToken ?? 'No FCM Token'),
               ],
             ),
           ),
@@ -244,7 +244,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               alignment: WrapAlignment.start,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                const AppText.descriptionSub('APNS Token:'),
+                const AppText.bodyMedium('APNS Token:'),
                 IconButton(
                     onPressed: _apnsToken != null
                         ? () {
@@ -255,7 +255,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
                       Icons.share,
                       color: Colors.white,
                     )),
-                AppText.descriptionSub(_apnsToken ?? 'No APNS Token'),
+                AppText.bodyMedium(_apnsToken ?? 'No APNS Token'),
               ],
             ),
           ),
@@ -283,7 +283,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: const AppText.descriptionMain('Bluetooth testing'),
+        title: const AppText.bodyLarge('Bluetooth testing'),
         children: [
           AppPrimaryButton(
             'Scan & connect',
@@ -338,7 +338,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         initiallyExpanded: true,
-        title: const AppText.descriptionMain('MDNS testing'),
+        title: const AppText.bodyLarge('MDNS testing'),
         children: [
           AppPrimaryButton(
             'discover',

@@ -52,9 +52,8 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
             const AppGap.regular(),
             SizedBox(
               width: Utils.getScreenWidth(context) * 0.7,
-              child: AppText.descriptionSub(
+              child: AppText.bodyMedium(
                 getAppLocalizations(context).auto_update_firmware_description,
-                color: AppTheme.of(context).colors.ctaPrimaryDisable,
               ),
             ),
           ],

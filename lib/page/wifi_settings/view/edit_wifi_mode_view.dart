@@ -50,11 +50,11 @@ class _EditWifiModeViewState extends ConsumerState<EditWifiModeView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        AppText.descriptionMain(
+                        AppText.bodyLarge(
                           _modeList[index].value,
                         ),
                         const AppGap.small(),
-                        const AppText.descriptionSub(
+                        const AppText.bodyMedium(
                           'Communicate to various network adapter standards. If you have a mixed network environment or if you are unsure of your network adapters on your wireless devices, this is the best network mode to choose.',
                         ),
                       ],

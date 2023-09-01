@@ -36,7 +36,7 @@ class _CloudForgotPasswordViewState
     return data.when(
         data: _contentView,
         error: (_, __) => const Center(
-              child: AppText.descriptionMain('Something wrong here'),
+              child: AppText.bodyLarge('Something wrong here'),
             ),
         loading: () => AppFullScreenSpinner(
             text: getAppLocalizations(context).processing));

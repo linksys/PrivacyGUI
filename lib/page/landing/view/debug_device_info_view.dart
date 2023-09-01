@@ -44,11 +44,11 @@ class _DebugDeviceInfoViewState extends ConsumerState<DebugDeviceInfoView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.descriptionMain(
+        AppText.bodyLarge(
           _appInfoFromLogger,
         ),
         const AppGap.regular(),
-        AppText.descriptionMain(
+        AppText.bodyLarge(
           getScreenInfo(context),
         ),
       ],

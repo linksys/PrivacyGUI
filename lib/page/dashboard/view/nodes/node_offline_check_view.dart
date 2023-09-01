@@ -56,11 +56,11 @@ class _NodeOfflineCheckViewState extends ConsumerState<NodeOfflineCheckView> {
                   children: [
                     BlocBuilder<NodeCubit, NodeState>(
                         builder: (context, state) {
-                      return AppText.descriptionMain(
+                      return AppText.bodyLarge(
                         state.location,
                       );
                     }),
-                    AppText.descriptionSub(
+                    AppText.bodyMedium(
                       getAppLocalizations(context).offline,
                     )
                   ],
@@ -68,28 +68,28 @@ class _NodeOfflineCheckViewState extends ConsumerState<NodeOfflineCheckView> {
               ],
             ),
             const AppGap.big(),
-            AppText.descriptionSub(
+            AppText.bodyMedium(
               getAppLocalizations(context).node_offline_power_is_on,
             ),
             const AppGap.semiSmall(),
-            AppText.descriptionSub(
+            AppText.bodyMedium(
               getAppLocalizations(context).node_offline_power_is_on_description,
             ),
             const AppGap.regular(),
-            AppText.descriptionSub(
+            AppText.bodyMedium(
               getAppLocalizations(context).node_offline_within_range,
             ),
             const AppGap.semiSmall(),
-            AppText.descriptionSub(
+            AppText.bodyMedium(
               getAppLocalizations(context)
                   .node_offline_within_range_description,
             ),
             const AppGap.regular(),
-            AppText.descriptionSub(
+            AppText.bodyMedium(
               getAppLocalizations(context).node_offline_still_offline,
             ),
             const AppGap.semiSmall(),
-            AppText.descriptionSub(
+            AppText.bodyMedium(
               getAppLocalizations(context)
                   .node_offline_still_offline_description,
             ),

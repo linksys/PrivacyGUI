@@ -20,11 +20,11 @@ class ClearDevicesModal extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.subhead(
+            AppText.displaySmall(
               getAppLocalizations(context).clear_all_offline_devices,
             ),
             const AppGap.semiBig(),
-            AppText.label(
+            AppText.headlineSmall(
               getAppLocalizations(context).clear_all_offline_devices_desc,
             ),
             const AppGap.semiBig(),

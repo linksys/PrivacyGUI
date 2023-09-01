@@ -24,6 +24,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/color_schemes.g.dart';
+import 'package:linksys_widgets/theme/theme_data.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'firebase_options.dart';
 import 'route/router_provider.dart';
@@ -160,20 +162,13 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
       onGenerateTitle: (context) => getAppLocalizations(context).app_title,
-      theme: ThemeData.light().copyWith(
-          scaffoldBackgroundColor: ConstantColors.gray98,
-          colorScheme:
-              const ColorScheme.light(background: ConstantColors.gray98)),
-      darkTheme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: ConstantColors.raisinBlock,
-        colorScheme:
-            const ColorScheme.dark(background: ConstantColors.raisinBlock),
-      ),
+      theme: linksysLightThemeData,
+      darkTheme: linksysDarkThemeData,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       // routerDelegate: ref.read(routerDelegateProvider),
       // routeInformationParser: LinksysRouteInformationParser(),
-      builder: (context, child) =>
+      builder: (context, child) => 
           AppResponsiveTheme(child: child ?? const Center()),
       routeInformationProvider: router.routeInformationProvider,
       routeInformationParser: router.routeInformationParser,

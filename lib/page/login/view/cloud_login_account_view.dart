@@ -50,7 +50,7 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
         skipError: true,
         data: (state) => _contentView(state),
         error: (_, __) => const Center(
-              child: AppText.descriptionMain('Something wrong here'),
+              child: AppText.bodyLarge('Something wrong here'),
             ),
         loading: () => AppFullScreenSpinner(
             text: getAppLocalizations(context).processing));
@@ -114,7 +114,7 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
         scrollable: true,
         child: AppBasicLayout(
           crossAxisAlignment: CrossAxisAlignment.start,
-          header: AppText.screenName(
+          header: AppText.titleLarge(
             getAppLocalizations(context).cloud_account_login_title,
           ),
           content: Column(

@@ -50,12 +50,12 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const AppGap.big(),
+              const AppGap.extraBig(),
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  AppDeviceAvatar.large(
+                  AppCard(
                     image: AppTheme.of(context).images.devices.getByName(
                           routerIconTest(
                               modelNumber:
@@ -73,7 +73,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                           : null,
                       child: Row(
                         children: [
-                          AppText.subhead(
+                          AppText.titleLarge(
                             state.selected?.radioInfo?.first.settings.ssid ??
                                 'Home',
                           ),
@@ -85,26 +85,20 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                       ),
                     ),
                   ),
-                  const AppGap.regular(),
-                  AppIconButton(
-                    icon: getCharactersIcons(context).bellDefault,
-                    onTap: () {
-                      // ref
-                      //     .read(navigationsProvider.notifier)
-                      //     .push(LinkupPath());
-                    },
-                  ),
                 ],
               ),
               AppSection.withList(
                 contentPadding: const AppEdgeInsets.big(),
                 items: [
                   AppSectionItemData(
-                      title: 'WiFi',
-                      iconData: getCharactersIcons(context).wifiDefault),
-                  AppSectionItemData(
-                      title: 'Set up',
+                      title: 'New Product',
                       iconData: getCharactersIcons(context).addDefault),
+                  AppSectionItemData(
+                      title: 'Settings',
+                      iconData: getCharactersIcons(context).settingsDefault,
+                      onTap: () {
+                        context.pushNamed(RouteNamed.dashboardSettings);
+                      }),
                   AppSectionItemData(
                       title: 'Account',
                       iconData:
@@ -115,24 +109,6 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                   AppSectionItemData(
                       title: 'Help',
                       iconData: getCharactersIcons(context).helpRound),
-                ],
-              ),
-              const AppGap.regular(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  AppCard(
-                    iconData: getCharactersIcons(context).infoRound,
-                    title: 'Speed Test',
-                  ),
-                  AppCard(
-                    iconData: getCharactersIcons(context).infoRound,
-                    title: 'Speed Test',
-                  ),
-                  AppCard(
-                    iconData: getCharactersIcons(context).infoRound,
-                    title: 'Speed Test',
-                  ),
                 ],
               ),
               const Spacer(),

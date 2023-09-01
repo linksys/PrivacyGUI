@@ -39,11 +39,11 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
           'assets/images/image_restart_disconnect.png',
         ),
         const AppGap.big(),
-        const AppText.descriptionMain(
+        const AppText.bodyLarge(
           'Restarting will temporarily disconnect devices',
         ),
         const AppGap.regular(),
-        const AppText.descriptionMain(
+        const AppText.bodyLarge(
           'They will reconnect when your network is ready.',
         ),
         const AppGap.big(),
@@ -67,7 +67,7 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppGap.extraBig(),
-        AppText.mainTitle(
+        AppText.displayLarge(
           'Restarting your network...',
         ),
         AppGap.extraBig(),

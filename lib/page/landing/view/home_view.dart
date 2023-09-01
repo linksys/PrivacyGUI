@@ -86,7 +86,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                     PackageInfo.fromPlatform().then((value) => value.version),
                 initialData: '-',
                 builder: (context, data) {
-                  return AppText.tags(
+                  return AppText.bodySmall(
                     'version ${data.data} ${cloudEnvTarget == CloudEnvironment.prod ? '' : cloudEnvTarget.name}',
                   );
                 }),

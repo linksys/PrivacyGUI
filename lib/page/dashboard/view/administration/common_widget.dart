@@ -21,7 +21,7 @@ Widget administrationSection({
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(child: AppText.tags(title)),
+              Expanded(child: AppText.titleLarge(title)),
               if (headerAction != null) headerAction,
             ],
           ),

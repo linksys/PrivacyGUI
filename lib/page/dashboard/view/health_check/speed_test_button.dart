@@ -166,7 +166,7 @@ class _TriLayerButtonState extends ConsumerState<TriLayerButton>
               width: 150,
               height: 150,
             ),
-            const AppText.subhead(
+            const AppText.labelLarge(
               'START',
               color: Colors.white,
             ),

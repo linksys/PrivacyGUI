@@ -100,10 +100,8 @@ class _InternetSettingsContentViewState
               Container(
                 width: double.infinity,
                 height: 100,
-                decoration: BoxDecoration(
-                    color: AppTheme.of(context).colors.ctaPrimaryDisable),
                 alignment: Alignment.center,
-                child: AppText.descriptionMain(
+                child: AppText.bodyLarge(
                   'To change these settings. connect to ${ref.read(networkProvider).selected?.radioInfo?.first.settings.ssid ?? ' '}',
                 ),
               ),
@@ -155,12 +153,10 @@ class _InternetSettingsContentViewState
         },
         children: {
           InternetSettingsViewType.ipv4: AppPadding.semiSmall(
-            child: AppText.descriptionMain(
-                getAppLocalizations(context).label_ipv4),
+            child: AppText.bodyLarge(getAppLocalizations(context).label_ipv4),
           ),
           InternetSettingsViewType.ipv6: AppPadding.semiSmall(
-            child: AppText.descriptionMain(
-                getAppLocalizations(context).label_ipv6),
+            child: AppText.bodyLarge(getAppLocalizations(context).label_ipv6),
           ),
         },
       ),
@@ -288,7 +284,7 @@ class _InternetSettingsContentViewState
           controller: _pppoeVLANIDController,
         ),
         const AppGap.semiSmall(),
-        AppText.descriptionSub(getAppLocalizations(context).vlan_id_desc),
+        AppText.bodyMedium(getAppLocalizations(context).vlan_id_desc),
       ],
     );
   }

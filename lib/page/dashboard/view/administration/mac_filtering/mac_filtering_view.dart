@@ -133,13 +133,13 @@ class _MacFilteringContentViewState
     return state.selectedDevices.isEmpty
         ? Expanded(
             child: Center(
-              child: AppText.descriptionSub(
+              child: AppText.bodyMedium(
                   getAppLocalizations(context).no_filtered_devices_yet),
             ),
           )
         : Column(
             children: [
-              AppText.tags(getAppLocalizations(context).filtered_devices),
+              AppText.titleLarge(getAppLocalizations(context).filtered_devices),
               // Add filtered devices
             ],
           );

@@ -81,7 +81,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
 
   Widget _informationSection(AccountState state) {
     return SectionTile(
-      header: const AppText.tags(
+      header: const AppText.titleLarge(
         'YOUR INFORMATION',
       ),
       child: Column(
@@ -98,7 +98,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
 
   Widget _securitySection(AccountState state) {
     return SectionTile(
-      header: const AppText.tags(
+      header: const AppText.titleLarge(
         'Security',
       ),
       child: Column(
@@ -132,7 +132,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
 
   Widget _localLoginInformationSection(BuildContext context) {
     return SectionTile(
-      header: const AppText.tags(
+      header: const AppText.titleLarge(
         'No Linksys account',
       ),
       child: Column(
@@ -140,10 +140,6 @@ class _AccountViewState extends ConsumerState<AccountView> {
           StyledText(
             text:
                 'Unlock app features with a Linksys account  <link href="https://flutter.dev">Learn more</link>',
-            style: AppTheme.of(context)
-                .typography
-                .textLinkSmall
-                .copyWith(color: AppTheme.of(context).colors.ctaSecondary),
             tags: {
               'link': StyledTextActionTag(
                   (String? text, Map<String?, String?> attrs) {
@@ -155,21 +151,21 @@ class _AccountViewState extends ConsumerState<AccountView> {
           const AppGap.regular(),
           const Row(children: [
             AppGap.small(),
-            AppText.descriptionMain('\u2022'),
+            AppText.bodyLarge('\u2022'),
             AppGap.small(),
-            AppText.descriptionMain('Benefit 1'),
+            AppText.bodyLarge('Benefit 1'),
           ]),
           const Row(children: [
             AppGap.small(),
-            AppText.descriptionMain('\u2022'),
+            AppText.bodyLarge('\u2022'),
             AppGap.small(),
-            AppText.descriptionMain('Benefit 2'),
+            AppText.bodyLarge('Benefit 2'),
           ]),
           const Row(children: [
             AppGap.small(),
-            AppText.descriptionMain('\u2022'),
+            AppText.bodyLarge('\u2022'),
             AppGap.small(),
-            AppText.descriptionMain('Benefit X'),
+            AppText.bodyLarge('Benefit X'),
           ]),
           const AppGap.semiBig(),
           AppPrimaryButton(

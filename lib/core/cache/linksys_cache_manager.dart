@@ -87,6 +87,10 @@ class LinksysCacheManager {
       return;
     }
     Map<String, dynamic> cacheModel = jsonDecode(cache);
+    // has no serial number
+    if (cacheModel[serialNumber] == null) {
+      cacheModel[serialNumber] = '{}';
+    }
     data.forEach((key, value) {
       jsonDecode(cacheModel[serialNumber])[key] = value;
     });

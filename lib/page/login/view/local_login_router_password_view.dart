@@ -92,7 +92,7 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
   Widget _enterRouterPasswordView(BuildContext context) {
     return AppBasicLayout(
       crossAxisAlignment: CrossAxisAlignment.start,
-      header: AppText.screenName(
+      header: AppText.titleLarge(
         getAppLocalizations(context).local_login_title,
       ),
       content: Column(
@@ -112,7 +112,7 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
               data:
                   Theme.of(context).copyWith(dividerColor: Colors.transparent),
               child: ExpansionTile(
-                title: AppText.label(
+                title: AppText.headlineSmall(
                   getAppLocalizations(context).show_hint,
                   color: ConstantColors.primaryLinksysBlue,
                 ),

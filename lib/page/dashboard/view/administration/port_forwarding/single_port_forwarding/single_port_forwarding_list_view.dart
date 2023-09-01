@@ -65,7 +65,7 @@ class _SinglePortForwardingContentViewState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppGap.semiBig(),
-            AppText.descriptionMain(getAppLocalizations(context)
+            AppText.bodyLarge(getAppLocalizations(context)
                 .single_port_forwarding_description),
             if (!_notifier.isExceedMax())
               AppTertiaryButton(

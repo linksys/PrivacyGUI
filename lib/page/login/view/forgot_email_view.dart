@@ -54,11 +54,11 @@ class _ForgotEmailViewState extends ConsumerState<ForgotEmailView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.descriptionMain(
+        AppText.bodyLarge(
           getAppLocalizations(context).cloud_forgot_email_router_connected_to,
         ),
         const AppGap.big(),
-        AppText.descriptionMain(
+        AppText.bodyLarge(
           maskedMail,
         ),
       ],

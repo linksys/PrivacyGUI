@@ -125,7 +125,7 @@ class _RouterPasswordContentViewState
           ),
           const AppGap.semiSmall(),
           if (!state.hasEdited)
-            AppText.descriptionSub(getAppLocalizations(context)
+            AppText.bodyMedium(getAppLocalizations(context)
                 .enter_router_password_to_change_password_hint),
         ],
       ),
@@ -135,13 +135,13 @@ class _RouterPasswordContentViewState
   _createRouterPasswordView(RouterPasswordState state) {
     return AppBasicLayout(
       crossAxisAlignment: CrossAxisAlignment.start,
-      header: AppText.screenName(
+      header: AppText.titleLarge(
         getAppLocalizations(context).set_a_router_password,
       ),
       content: Column(
         children: [
           const AppGap.semiBig(),
-          AppText.descriptionMain(
+          AppText.bodyLarge(
               getAppLocalizations(context).create_router_password_description),
           const AppGap.big(),
           AppPasswordField.withValidator(
