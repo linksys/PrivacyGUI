@@ -73,11 +73,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     }
     var locationMap = <String, String>{};
     for (final device in allDevices) {
-      // if (device.isAuthority || device.nodeType == 'Master') {
-      //   locationMap[device.deviceID] = _getDeviceLocation(device);
-      // } else if (device.nodeType == 'Slave') {
-      //   locationMap[device.deviceID] = _getDeviceLocation(device);
-      // }
+      // Record location(device name) for ALL devices
       locationMap[device.deviceID] = _getDeviceLocation(device);
     }
 
@@ -93,12 +89,11 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   ) {
     var connectionsMap = <String, Map<String, dynamic>>{};
     if (data != null) {
-      final connections = (data['connections']
-          as List); //.whereType<Map<String, dynamic>>().toList();
+      final connections = data['connections'] as List;
       for (final connection in connections) {
-        final mappp = connection as Map<String, dynamic>;
-        final macAddress = mappp['macAddress'];
-        final Map<String, dynamic>? wirelessData = mappp['wireless'];
+        final connectionData = connection as Map<String, dynamic>;
+        final macAddress = connectionData['macAddress'];
+        final Map<String, dynamic>? wirelessData = connectionData['wireless'];
         if (wirelessData != null) {
           final band = wirelessData['band'];
           final signalDecibels = wirelessData['signalDecibels'];
@@ -247,4 +242,26 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       );
     }
   }
+
+  //TODO: Delete device by Ids function
+  // Future<void> deleteDeviceList(List<DeviceDetailInfo> deviceInfoList) async {
+  //   List<String> deviceIdList = deviceInfoList.map((e) => e.deviceID).toList();
+  //   await _routerRepository
+  //       .deleteDevices(deviceIdList)
+  //       .then((value) => fetchDeviceList());
+  // }
+
+  //TODO: Update external device name function
+  // Future<void> updateDeviceInfoName() async {
+  //   await _routerRepository.send(JNAPAction.setDeviceProperties, data: {
+  //     'deviceID': deviceInfo.deviceID,
+  //     'propertiesToModify': {
+  //       'name': userDefinedDeviceName,
+  //       'value': name,
+  //     },
+  //   }).then((value) {
+  //     //Update state
+  //     fetchDeviceList();
+  //   });
+  // }
 }

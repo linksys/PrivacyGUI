@@ -4,20 +4,16 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
-import 'package:linksys_app/bloc/device/cubit.dart';
 import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/notification/notification_helper.dart';
 import 'package:linksys_app/provider/logger_observer.dart';
-import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_app/core/utils/logger.dart';
@@ -96,25 +92,12 @@ void main() async {
 final container = ProviderContainer();
 
 Widget _app() {
-  final routerRepository = container.read(routerRepositoryProvider);
-  final cloudRepository = container.read(cloudRepositoryProvider);
-
-  return MultiRepositoryProvider(
-    providers: [
-      RepositoryProvider(create: (context) => routerRepository),
-      RepositoryProvider(create: (context) => cloudRepository),
+  return ProviderScope(
+    observers: [
+      Logger(),
     ],
-    child: MultiBlocProvider(
-        providers: [
-          BlocProvider(
-              create: (BuildContext context) => DeviceCubit(
-                  routerRepository: context.read<RouterRepository>())),
-        ],
-        child: ProviderScope(
-          observers: [Logger()],
-          parent: container,
-          child: const MoabApp(),
-        )),
+    parent: container,
+    child: const MoabApp(),
   );
 }
 
@@ -145,7 +128,6 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // _cubit.stop();
     ref.read(connectivityProvider.notifier).stop();
     apnsStreamSubscription?.cancel();
     super.dispose();

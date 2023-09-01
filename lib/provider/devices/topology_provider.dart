@@ -7,6 +7,10 @@ import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/page/dashboard/view/topology/topology_node.dart';
 import 'package:linksys_app/provider/devices/topology_state.dart';
 
+final topologyProvider = NotifierProvider<TopologyNotifier, TopologyState>(
+  () => TopologyNotifier(),
+);
+
 class TopologyNotifier extends Notifier<TopologyState> {
   @override
   TopologyState build() {
@@ -168,7 +172,3 @@ class TopologyNotifier extends Notifier<TopologyState> {
     );
   }
 }
-
-final topologyProvider = NotifierProvider<TopologyNotifier, TopologyState>(
-  () => TopologyNotifier(),
-);

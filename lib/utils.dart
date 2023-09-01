@@ -8,14 +8,10 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/util/uuid.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:local_auth/local_auth.dart';
-
-import 'bloc/device/state.dart';
 import 'core/utils/logger.dart';
-import 'validator_rules/_validator_rules.dart';
 
 class Utils {
   static const String NoSpeedCalculationText = "-----";
@@ -446,85 +442,22 @@ class Utils {
 
     return maxUserLimit - startingIPAddress - 1;
   }
-  
-  //TODO: XXXXXX Peter's: To be removed
-  static String getDevicePlace(RouterDevice device) {
-    String place = '';
-    for (PropertyDevice property in device.properties) {
-      if (property.name == 'userDeviceLocation') {
-        place = property.value;
-        break;
-      }
-    }
 
-    if (place.isEmpty) {
-      place = getDeviceName(device);
-    }
-    return place;
-  }
-  //TODO: XXXXXX Peter's: To be removed
-  static String getDeviceName(RouterDevice device) {
-    for (PropertyDevice property in device.properties) {
-      if (property.name == 'userDeviceName') {
-        if (property.value.isNotEmpty) {
-          return property.value;
-        }
-      }
-    }
-
-    String? deviceName;
-    final friendlyName = device.friendlyName;
-    final manufacturer = device.model.manufacturer;
-    final modelNumber = device.model.modelNumber;
-    final operatingSystem = device.unit.operatingSystem;
-    String deviceType = device.model.deviceType;
-    bool? isGuest;
-    bool isAndroidName = false;
-
-    for (ConnectionDevice connection in device.connections) {
-      if (connection.isGuest != null) {
-        isGuest = connection.isGuest;
-        break;
-      }
-    }
-
-    if (friendlyName != null) {
-      isAndroidName =
-          InputValidator([AndroidNameRule()]).validate(friendlyName);
-    }
-
-    if (['Mobile', 'Phone', 'Tablet'].contains(deviceType) && isAndroidName) {
-      if (manufacturer != null && modelNumber != null) {
-        deviceName = '$manufacturer $modelNumber';
-      } else if (operatingSystem != null) {
-        deviceName = '$operatingSystem $deviceType';
-        if (manufacturer != null) {
-          deviceName = '$manufacturer $deviceName';
-        }
-      }
-    }
-
-    if (deviceName != null) {
-      return deviceName;
-    } else if (friendlyName != null) {
-      return friendlyName;
-    } else if (modelNumber != null) {
-      return modelNumber;
-    } else if (isGuest != null) {
-      return isGuest ? 'guestNetworkDevice' : 'networkDevice';
+  //TODO: XXXXXX To be removed, put into device manager
+  static NodeSignalLevel getWifiSignalLevel(int signalStrength) {
+    if (signalStrength <= -70) {
+      return NodeSignalLevel.weak;
+    } else if (signalStrength > -70 && signalStrength <= -60) {
+      return NodeSignalLevel.fair;
+    } else if (signalStrength > -60 && signalStrength <= -50) {
+      return NodeSignalLevel.good;
+    } else if (signalStrength > -50 && signalStrength <= 0) {
+      return NodeSignalLevel.excellent;
     } else {
-      return 'networkDevice';
+      return NodeSignalLevel.none;
     }
-  }
-
-  //TODO: XXXXXX Peter's: To be removed, 合併至 device manager
-  static String getDeviceSignalImageString(DeviceDetailInfo deviceInfo) {
-    String icon = 'icon_signal_wired';
-    if (deviceInfo.connection == 'Wired') {
-      icon = 'icon_signal_wired';
-    } else {
-      final signal = deviceInfo.signal;
-      if (signal > 0) {
+    /*
+    if (signal > 0) {
         if (signal > 40) {
           icon = 'icon_signal_excellent';
         } else if (signal > 30) {
@@ -545,26 +478,10 @@ class Utils {
           icon = 'icon_signal_weak';
         }
       }
-    }
-
-    return icon;
+     */
   }
 
-  //TODO: XXXXXX To be removed, 合併至 device manager
-  static NodeSignalLevel getWifiSignalLevel(int signalStrength) {
-    if (signalStrength <= -70) {
-      return NodeSignalLevel.weak;
-    } else if (signalStrength > -70 && signalStrength <= -60) {
-      return NodeSignalLevel.fair;
-    } else if (signalStrength > -60 && signalStrength <= -50) {
-      return NodeSignalLevel.good;
-    } else if (signalStrength > -50 && signalStrength <= 0) {
-      return NodeSignalLevel.excellent;
-    } else {
-      return NodeSignalLevel.none;
-    }
-  }
-  //TODO: XXXXXX To be removed, 合併至 device manager
+  //TODO: XXXXXX To be removed, put into device manager
   static IconData getWifiSignalIconData(
       BuildContext context, int signalStrength) {
     switch (getWifiSignalLevel(signalStrength)) {

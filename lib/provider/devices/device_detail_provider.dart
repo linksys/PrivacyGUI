@@ -4,6 +4,11 @@ import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/provider/devices/device_detail_id_provider.dart';
 import 'package:linksys_app/provider/devices/device_detail_state.dart';
 
+final deviceDetailProvider =
+    NotifierProvider<DeviceDetailNotifier, DeviceDetailState>(
+  () => DeviceDetailNotifier(),
+);
+
 class DeviceDetailNotifier extends Notifier<DeviceDetailState> {
   @override
   DeviceDetailState build() {
@@ -22,20 +27,21 @@ class DeviceDetailNotifier extends Notifier<DeviceDetailState> {
       return newState;
     }
     // Details of the specific device
-    String location = '';
-    bool isMaster = false;
-    bool isOnline = false;
-    List<RouterDevice> connectedDevices = [];
-    String upstreamDevice = '';
-    bool isWired = false;
-    int signalStrength = 0;
-    String serialNumber = '';
-    String modelNumber = '';
-    String firmwareVersion = '';
-    String lanIpAddress = '';
-    String wanIpAddress = '';
+    var location = '';
+    var isMaster = false;
+    var isOnline = false;
+    final connectedDevices = <RouterDevice>[];
+    var upstreamDevice = '';
+    var isWired = false;
+    var signalStrength = 0;
+    var serialNumber = '';
+    var modelNumber = '';
+    var firmwareVersion = '';
+    var lanIpAddress = '';
+    var wanIpAddress = '';
 
-    String masterId = '';
+    //TODO: Consider put master into the device manager as a common property
+    var masterId = '';
     final alldevices = ref.read(deviceManagerProvider).deviceList;
     for (final device in alldevices) {
       // Collect connected devices for the target device
@@ -60,8 +66,7 @@ class DeviceDetailNotifier extends Notifier<DeviceDetailState> {
         location = locationMap[targetId] ?? '';
         isMaster = (targetId == masterId);
         isOnline = device.connections.isNotEmpty;
-        upstreamDevice =
-            isMaster ? 'INTERNET' : _getSlaveUpstream(device, masterId);
+        upstreamDevice = isMaster ? 'INTERNET' : _getUpstream(device, masterId);
         isWired = ref
             .read(deviceManagerProvider.notifier)
             .checkWiredConnection(device);
@@ -96,7 +101,7 @@ class DeviceDetailNotifier extends Notifier<DeviceDetailState> {
     );
   }
 
-  String _getSlaveUpstream(RouterDevice device, String masterId) {
+  String _getUpstream(RouterDevice device, String masterId) {
     final locationMap = ref.read(deviceManagerProvider).locationMap;
     final parentId = device.connections.firstOrNull?.parentDeviceID;
     final upstreamLocation = locationMap[parentId];
@@ -111,29 +116,25 @@ class DeviceDetailNotifier extends Notifier<DeviceDetailState> {
     );
   }
 
-//TODO: Implement reboot 
+//TODO: Implement reboot
   // Future rebootMeshSystem() async {
-    // emit(state.copyWith(
-    //   isSystemRestarting: true,
-    // ));
-    // final results = await _repository.send(
-    //   JNAPAction.reboot,
-    //   auth: true,
-    // );
-    // if (results.result == 'OK') {
-    //   Future.delayed(const Duration(seconds: 130), () {
-    //     emit(state.copyWith(
-    //       isSystemRestarting: false,
-    //     ));
-    //   });
-    // } else {
-    //   emit(state.copyWith(
-    //     isSystemRestarting: false,
-    //   ));
-    // }
+  // emit(state.copyWith(
+  //   isSystemRestarting: true,
+  // ));
+  // final results = await _repository.send(
+  //   JNAPAction.reboot,
+  //   auth: true,
+  // );
+  // if (results.result == 'OK') {
+  //   Future.delayed(const Duration(seconds: 130), () {
+  //     emit(state.copyWith(
+  //       isSystemRestarting: false,
+  //     ));
+  //   });
+  // } else {
+  //   emit(state.copyWith(
+  //     isSystemRestarting: false,
+  //   ));
+  // }
   // }
 }
-
-final deviceDetailProvider =
-    NotifierProvider<DeviceDetailNotifier, DeviceDetailState>(
-        () => DeviceDetailNotifier());
