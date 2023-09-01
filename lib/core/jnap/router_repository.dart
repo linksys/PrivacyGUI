@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
@@ -256,6 +257,9 @@ class RouterRepository {
   }) {
     String url;
     final localIP = getLocalIP();
+    if (kIsWeb) {
+      type = CommandType.remote;
+    }
     final newRouterType = () {
       if (type == CommandType.local) {
         return RouterType.behindManaged;
@@ -291,6 +295,9 @@ class RouterRepository {
     final cloudToken = await getCloudToken();
     final cloudLogin = isCloudLogin();
     final loginType = getLoginType();
+    if (kIsWeb) {
+      type = CommandType.remote;
+    }
     Map<String, String> header = {};
     final newRouterType = () {
       if (type == CommandType.local) {

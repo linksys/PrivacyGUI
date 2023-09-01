@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -39,12 +40,16 @@ class Storage {
       Uri.parse('${Storage.tempDirectory?.path}/$secureProfilePresets');
 
   static init() async {
-    _tempDirectory = (await getTemporaryDirectory());
-    _docDirectory = await getApplicationDocumentsDirectory();
-    logger.d('temp directory: $_tempDirectory, doc directory: $_docDirectory');
-    final logFile = File.fromUri(logFileUri);
-    if (!logFile.existsSync()) {
-      logFile.createSync();
+    if (kIsWeb) {
+    } else {
+      _tempDirectory = (await getTemporaryDirectory());
+      _docDirectory = await getApplicationDocumentsDirectory();
+      logger
+          .d('temp directory: $_tempDirectory, doc directory: $_docDirectory');
+      final logFile = File.fromUri(logFileUri);
+      if (!logFile.existsSync()) {
+        logFile.createSync();
+      }
     }
   }
 

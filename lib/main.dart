@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
+import 'package:linksys_app/page/dashboard/view/dashboard_menu_view.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/constants/build_config.dart';
@@ -40,7 +41,9 @@ void main() async {
   //   // }
   //   exit(1);
   // });
-  HttpOverrides.global = MyHTTPOverrides();
+  if (!kIsWeb) {
+    HttpOverrides.global = MyHTTPOverrides();
+  }
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await Storage.init();
@@ -146,8 +149,17 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
       supportedLocales: AppLocalizations.supportedLocales,
       // routerDelegate: ref.read(routerDelegateProvider),
       // routeInformationParser: LinksysRouteInformationParser(),
-      builder: (context, child) => 
-          AppResponsiveTheme(child: child ?? const Center()),
+      builder: (context, child) => Container(
+        color: Theme.of(context).colorScheme.shadow,
+        child: AppResponsiveTheme(
+          child: child ?? const Center(),
+          leftFragment:
+              (ref.read(authProvider).value?.loginType ?? LoginType.none) !=
+                      LoginType.none
+                  ? DashboardMenuView()
+                  : null,
+        ),
+      ),
       routeInformationProvider: router.routeInformationProvider,
       routeInformationParser: router.routeInformationParser,
       routerDelegate: router.routerDelegate,

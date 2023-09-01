@@ -31,10 +31,10 @@
               "client_type": 3
             },
             {
-              "client_id": "110788105434-h12ns2uc9nirulib0jmv84bv1ap8ev0k.apps.googleusercontent.com",
+              "client_id": "110788105434-2jp7p5sdmi448a623ur2hj77ljfe3tjt.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.linksys.app.ios.ee"
+                "bundle_id": "com.linksys.app.ios"
               }
             }
           ]
