@@ -135,10 +135,10 @@ class LinksysCacheManager {
 
   bool didCacheExpire(String action) {
     if (jsonDecode(data[action]) == null ||
-        (jsonDecode(data[action])["cachedAt"] == null &&
-            DateTime.now().millisecondsSinceEpoch -
-                    int.parse(jsonDecode(data[action])["cachedAt"]) >
-                defaultCacheExpiration)) {
+        jsonDecode(data[action])["cachedAt"] == null ||
+        DateTime.now().millisecondsSinceEpoch -
+                int.parse(jsonDecode(data[action])["cachedAt"]) >=
+            defaultCacheExpiration) {
       return true;
     } else {
       return false;
