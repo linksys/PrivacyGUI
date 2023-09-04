@@ -44,6 +44,7 @@ class DeviceManagerState {
 }
 
 enum NodeSignalLevel {
+  wired(displayTitle: 'Wired'),
   none(displayTitle: 'No signal'),
   weak(displayTitle: 'Weak'),
   good(displayTitle: 'Good'),

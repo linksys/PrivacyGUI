@@ -1,6 +1,9 @@
-import 'package:graphview/GraphView.dart';
 
-class TopologyNode extends Node {
+import 'package:linksys_widgets/widgets/topology/tree_node.dart';
+
+typedef RouterTreeNode = AppTreeNode<TopologyModel>;
+
+class TopologyModel {
   final String deviceId;
   final String location;
   final bool isMaster;
@@ -8,11 +11,10 @@ class TopologyNode extends Node {
   final bool isWiredConnection;
   final int signalStrength;
   final bool isRouter;
-  String icon;  
+  String icon;
   int connectedDeviceCount;
-  final List<TopologyNode> children;
 
-  TopologyNode({
+  TopologyModel({
     this.deviceId = '',
     this.location = '',
     this.isMaster = false,
@@ -22,6 +24,5 @@ class TopologyNode extends Node {
     this.isRouter = false,
     this.icon = 'genericDevice',
     this.connectedDeviceCount = 0,
-    this.children = const [],
-  }) : super.Id(deviceId);
+  });
 }

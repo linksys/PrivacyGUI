@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_app/constants/default_country_codes.dart';
@@ -112,11 +113,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // Refresh token handle
       final sessionToken =
           await checkSessionToken().onError(handleSessionTokenError);
+
       logger.d('check local password...');
       const storage = FlutterSecureStorage();
 
       // check local password
-      final localPassword = await storage.read(key: pLocalPassword);
+      final localPassword =
+          kIsWeb ? null : await storage.read(key: pLocalPassword);
 
       // check cloud username and password
       final username = await storage.read(key: pUsername);

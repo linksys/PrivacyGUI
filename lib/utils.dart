@@ -443,61 +443,6 @@ class Utils {
     return maxUserLimit - startingIPAddress - 1;
   }
 
-  //TODO: XXXXXX To be removed, put into device manager
-  static NodeSignalLevel getWifiSignalLevel(int signalStrength) {
-    if (signalStrength <= -70) {
-      return NodeSignalLevel.weak;
-    } else if (signalStrength > -70 && signalStrength <= -60) {
-      return NodeSignalLevel.fair;
-    } else if (signalStrength > -60 && signalStrength <= -50) {
-      return NodeSignalLevel.good;
-    } else if (signalStrength > -50 && signalStrength <= 0) {
-      return NodeSignalLevel.excellent;
-    } else {
-      return NodeSignalLevel.none;
-    }
-    /*
-    if (signal > 0) {
-        if (signal > 40) {
-          icon = 'icon_signal_excellent';
-        } else if (signal > 30) {
-          icon = 'icon_signal_good';
-        } else if (signal > 20) {
-          icon = 'icon_signal_fair';
-        } else {
-          icon = 'icon_signal_weak';
-        }
-      } else {
-        if (signal > -50) {
-          icon = 'icon_signal_excellent';
-        } else if (signal > -60) {
-          icon = 'icon_signal_good';
-        } else if (signal > -70) {
-          icon = 'icon_signal_fair';
-        } else {
-          icon = 'icon_signal_weak';
-        }
-      }
-     */
-  }
-
-  //TODO: XXXXXX To be removed, put into device manager
-  static IconData getWifiSignalIconData(
-      BuildContext context, int signalStrength) {
-    switch (getWifiSignalLevel(signalStrength)) {
-      case NodeSignalLevel.excellent:
-        return AppTheme.of(context).icons.characters.signalstrength4;
-      case NodeSignalLevel.good:
-        return AppTheme.of(context).icons.characters.signalstrength3;
-      case NodeSignalLevel.fair:
-        return AppTheme.of(context).icons.characters.signalstrength2;
-      case NodeSignalLevel.weak:
-        return AppTheme.of(context).icons.characters.signalstrength1;
-      case NodeSignalLevel.none:
-        return AppTheme.of(context).icons.characters.signalstrength0; // Default
-    }
-  }
-
   // String converter
   static String fullStringEncoded(String value) {
     final utf8Encoded =
