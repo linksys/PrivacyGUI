@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/utils/wifi.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/provider/devices/external_device_detail_provider.dart';
@@ -142,14 +143,14 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                 width: AppTheme.of(context).spacing.extraBig,
                 alignment: Alignment.center,
                 child: AppIcon.big(
-                  icon: Utils.getWifiSignalIconData(
+                  icon: getWifiSignalIconData(
                     context,
                     state.item.signalStrength,
                   ),
                 ),
               ),
               AppText.headlineSmall(
-                Utils.getWifiSignalLevel(state.item.signalStrength).displayTitle,
+                getWifiSignalLevel(state.item.signalStrength).displayTitle,
               ),
             ],
           ),

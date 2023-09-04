@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
+import 'package:linksys_app/core/utils/wifi.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/devices/device_detail_provider.dart';
@@ -117,7 +118,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   Widget _nodeStatus(DeviceDetailState state) {
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
@@ -147,7 +147,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
             AppText.bodyLarge(
               state.isWiredConnection
                   ? "Wired"
-                  : Utils.getWifiSignalLevel(state.signalStrength).displayTitle,
+                  : getWifiSignalLevel(state.signalStrength).displayTitle,
             ),
           ],
         ),
@@ -182,7 +182,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     return AppIcon.big(
       icon: state.isWiredConnection
           ? AppTheme.of(context).icons.characters.ethernetDefault
-          : Utils.getWifiSignalIconData(
+          : getWifiSignalIconData(
               context,
               state.signalStrength,
             ),

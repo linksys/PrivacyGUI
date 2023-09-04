@@ -31,6 +31,7 @@ import 'package:linksys_app/page/dashboard/view/nodes/_nodes.dart';
 import 'package:linksys_app/page/dashboard/view/nodes/node_detail_view.dart';
 import 'package:linksys_app/page/dashboard/view/nodes/node_light_guide_view.dart';
 import 'package:linksys_app/page/dashboard/view/topology/_topology.dart';
+import 'package:linksys_app/page/dashboard/view/topology/topology_view.dart';
 import 'package:linksys_app/page/landing/view/_view.dart';
 import 'package:linksys_app/page/login/view/_view.dart';
 import 'package:linksys_app/page/otp_flow/view/_view.dart';

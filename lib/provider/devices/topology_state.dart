@@ -1,7 +1,7 @@
-import 'package:linksys_app/page/dashboard/view/topology/topology_node.dart';
+import 'package:linksys_app/page/dashboard/view/topology/topology_model.dart';
 
 class TopologyState {
-  final TopologyNode root;
+  final RouterTreeNode root;
   final String? selectedDeviceId;
 
   const TopologyState({
@@ -10,7 +10,7 @@ class TopologyState {
   });
 
   TopologyState copyWith({
-    TopologyNode? root,
+    RouterTreeNode? root,
     String? selectedDeviceId,
   }) {
     return TopologyState(
