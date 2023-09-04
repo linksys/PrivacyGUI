@@ -1,27 +1,28 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/provider/devices/device_detail_id_provider.dart';
-import 'package:linksys_app/provider/devices/device_detail_state.dart';
+import 'package:linksys_app/provider/devices/node_detail_state.dart';
 
-final deviceDetailProvider =
-    NotifierProvider<DeviceDetailNotifier, DeviceDetailState>(
-  () => DeviceDetailNotifier(),
+final nodeDetailProvider =
+    NotifierProvider<NodeDetailNotifier, NodeDetailState>(
+  () => NodeDetailNotifier(),
 );
 
-class DeviceDetailNotifier extends Notifier<DeviceDetailState> {
+class NodeDetailNotifier extends Notifier<NodeDetailState> {
   @override
-  DeviceDetailState build() {
+  NodeDetailState build() {
     final deviceManagerState = ref.watch(deviceManagerProvider);
-    print(
-        "XXXXXX DeviceDetailNotifier Build: DevMgr: devicesNum=${deviceManagerState.deviceList.length}");
-    return createState();
+    final targetId = ref.watch(deviceDetailIdProvider);
+    return createState(deviceManagerState, targetId);
   }
 
-  DeviceDetailState createState() {
-    var newState = const DeviceDetailState();
-    // Get the current target device Id
-    final targetId = ref.read(deviceDetailIdProvider);
+  NodeDetailState createState(
+    DeviceManagerState deviceManagerState,
+    String targetId,
+  ) {
+    var newState = const NodeDetailState();
     // The target Id should never be empty
     if (targetId.isEmpty) {
       return newState;
@@ -40,9 +41,8 @@ class DeviceDetailNotifier extends Notifier<DeviceDetailState> {
     var lanIpAddress = '';
     var wanIpAddress = '';
 
-    //TODO: Consider put master into the device manager as a common property
     var masterId = '';
-    final alldevices = ref.read(deviceManagerProvider).deviceList;
+    final alldevices = deviceManagerState.deviceList;
     for (final device in alldevices) {
       // Collect connected devices for the target device
       if (device.isAuthority || device.nodeType == 'Master') {
@@ -62,7 +62,7 @@ class DeviceDetailNotifier extends Notifier<DeviceDetailState> {
       }
       // Fill the details of the target device
       if (device.deviceID == targetId) {
-        final locationMap = ref.read(deviceManagerProvider).locationMap;
+        final locationMap = deviceManagerState.locationMap;
         location = locationMap[targetId] ?? '';
         isMaster = (targetId == masterId);
         isOnline = device.connections.isNotEmpty;
@@ -79,7 +79,7 @@ class DeviceDetailNotifier extends Notifier<DeviceDetailState> {
         modelNumber = device.model.modelNumber ?? '';
         firmwareVersion = device.unit.firmwareVersion ?? '';
         lanIpAddress = device.connections.firstOrNull?.ipAddress ?? '';
-        final wanStatusModel = ref.read(deviceManagerProvider).wanStatus;
+        final wanStatusModel = deviceManagerState.wanStatus;
         wanIpAddress = wanStatusModel?.wanConnection?.ipAddress ?? '';
       }
     }
@@ -115,26 +115,4 @@ class DeviceDetailNotifier extends Notifier<DeviceDetailState> {
       isLightTurnedOn: isOn,
     );
   }
-
-//TODO: Implement reboot
-  // Future rebootMeshSystem() async {
-  // emit(state.copyWith(
-  //   isSystemRestarting: true,
-  // ));
-  // final results = await _repository.send(
-  //   JNAPAction.reboot,
-  //   auth: true,
-  // );
-  // if (results.result == 'OK') {
-  //   Future.delayed(const Duration(seconds: 130), () {
-  //     emit(state.copyWith(
-  //       isSystemRestarting: false,
-  //     ));
-  //   });
-  // } else {
-  //   emit(state.copyWith(
-  //     isSystemRestarting: false,
-  //   ));
-  // }
-  // }
 }

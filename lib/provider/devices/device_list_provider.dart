@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/provider/devices/device_list_state.dart';
 
@@ -11,8 +12,16 @@ final filteredDeviceListProvider = Provider((ref) {
       .where(
         (device) => device.type == filterType,
       )
-      .toList();
-      //TODO: XXXXXX Sort the list by online status
+      .toList()
+    ..sort((dev1, dev2) {
+      if (dev1.isOnline == dev2.isOnline) {
+        return 0;
+      } else if (dev1.isOnline) {
+        return -1;
+      } else {
+        return 1;
+      }
+    });
 });
 
 final deviceListTypeProvider = StateProvider((ref) {
@@ -28,14 +37,12 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
   @override
   DeviceListState build() {
     final deviceManagerState = ref.watch(deviceManagerProvider);
-    print(
-        "XXXXXX DeviceListNotifier Build: DevMgr: devicesNum=${deviceManagerState.deviceList.length}");
-    return createState();
+    return createState(deviceManagerState);
   }
 
-  DeviceListState createState() {
+  DeviceListState createState(DeviceManagerState deviceManagerState) {
     const newState = DeviceListState();
-    final deviceList = ref.read(deviceManagerProvider).deviceList;
+    final deviceList = deviceManagerState.deviceList;
     final externalDevices = deviceList.where(
       (device) => (device.nodeType == null),
     );
@@ -65,6 +72,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     var operatingSystem = '';
     var signalStrength = 0;
     var isOnline = false;
+    //TODO: XXXXXX Derive DeviceListItemType value
 
     final deviceList = ref.read(deviceManagerProvider).deviceList;
     final targetDevice =

@@ -29,7 +29,6 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(externalDeviceDetailProvider);
-    //TODO: XXXXXX Fix wrong device error!!
     return LayoutBuilder(
       builder: (context, constraint) {
         return AppProfileHeaderLayout(

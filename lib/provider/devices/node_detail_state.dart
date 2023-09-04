@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 
 @immutable
-class DeviceDetailState {
+class NodeDetailState {
   final String deviceId;
   final String location;
   final bool isMaster;
@@ -17,9 +17,8 @@ class DeviceDetailState {
   final String lanIpAddress;
   final String wanIpAddress;
   final bool isLightTurnedOn;
-  // final bool isSystemRestarting;
 
-  const DeviceDetailState({
+  const NodeDetailState({
     this.deviceId = '',
     this.location = '',
     this.isMaster = false,
@@ -34,10 +33,9 @@ class DeviceDetailState {
     this.lanIpAddress = '',
     this.wanIpAddress = '',
     this.isLightTurnedOn = true,
-    // this.isSystemRestarting = false,
   });
 
-  DeviceDetailState copyWith({
+  NodeDetailState copyWith({
     String? deviceId,
     String? location,
     bool? isMaster,
@@ -52,9 +50,8 @@ class DeviceDetailState {
     String? lanIpAddress,
     String? wanIpAddress,
     bool? isLightTurnedOn,
-    // bool? isSystemRestarting,
   }) {
-    return DeviceDetailState(
+    return NodeDetailState(
       deviceId: deviceId ?? this.deviceId,
       location: location ?? this.location,
       isMaster: isMaster ?? this.isMaster,
@@ -69,7 +66,6 @@ class DeviceDetailState {
       lanIpAddress: lanIpAddress ?? this.lanIpAddress,
       wanIpAddress: wanIpAddress ?? this.wanIpAddress,
       isLightTurnedOn: isLightTurnedOn ?? this.isLightTurnedOn,
-      // isSystemRestarting: isSystemRestarting ?? this.isSystemRestarting,
     );
   }
 }

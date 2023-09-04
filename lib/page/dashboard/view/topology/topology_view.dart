@@ -44,8 +44,10 @@ class TopologyView extends ArgumentsConsumerStatelessView {
                         : null,
                     status: node.data.isOnline ? null : 'Offline',
                     tail: AppIcon.regular(
-                      icon: getWifiSignalIconData(
-                          context, node.data.signalStrength),
+                      icon: node.data.isWiredConnection
+                          ? getWifiSignalIconData(context, null)
+                          : getWifiSignalIconData(
+                              context, node.data.signalStrength),
                     ),
                     onTap: () {
                       if (node.data.isOnline) {

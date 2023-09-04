@@ -18,7 +18,7 @@ NodeSignalLevel getWifiSignalLevel(int? signalStrength) {
   }
 }
 
-IconData getWifiSignalIconData(BuildContext context, int signalStrength) {
+IconData getWifiSignalIconData(BuildContext context, int? signalStrength) {
   switch (getWifiSignalLevel(signalStrength)) {
     case NodeSignalLevel.excellent:
       return AppTheme.of(context).icons.characters.signalstrength4;

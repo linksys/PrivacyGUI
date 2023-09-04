@@ -4,7 +4,7 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/layouts/basic_header.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/provider/devices/device_detail_provider.dart';
+import 'package:linksys_app/provider/devices/node_detail_provider.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -53,7 +53,7 @@ class _NodeOfflineCheckViewState extends ConsumerState<NodeOfflineCheckView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppText.bodyLarge(
-                      ref.read(deviceDetailProvider).location,
+                      ref.read(nodeDetailProvider).location,
                     ),
                     AppText.bodyMedium(
                       getAppLocalizations(context).offline,
