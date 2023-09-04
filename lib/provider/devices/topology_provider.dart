@@ -84,25 +84,25 @@ class TopologyNotifier extends Notifier<TopologyState> {
     final routerDevices = deviceList.where((device) {
       return device.isAuthority || device.nodeType != null;
     });
-    final routerMap = <String, RouterTreeNode>{}; // {DeviceId : NodeObject}
+    final nodeMap = <String, RouterTreeNode>{}; // {DeviceId : NodeObject}
     for (final device in routerDevices) {
-      routerMap[device.deviceID] = _createTopologyNode(device, locationMap);
+      nodeMap[device.deviceID] = _createTopologyNode(device, locationMap);
     }
 
     // Master node is always at the first
-    final masterNode = routerMap[deviceList.first.deviceID]!;
+    final masterNode = nodeMap[deviceList.first.deviceID]!;
     for (final device in deviceList) {
       // Master node will not be a child of any others
       if (device.deviceID != masterNode.data.deviceId) {
         // Check if this item is a router device or an external device
-        final router = routerMap[device.deviceID];
+        final router = nodeMap[device.deviceID];
         if (router != null) {
           // A child device
           // Check if there is a parent
           final parentId = device.connections.firstOrNull?.parentDeviceID;
           if (parentId != null) {
             // Parent exists
-            final parentNode = routerMap[parentId];
+            final parentNode = nodeMap[parentId];
             if (parentNode != null) {
               // Add this item into parent's children list
               parentNode.children.add(router..parent = parentNode);
@@ -123,7 +123,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
             final parentId = device.connections.firstOrNull?.parentDeviceID;
             if (parentId != null) {
               // Parent exists
-              final parentNode = routerMap[parentId];
+              final parentNode = nodeMap[parentId];
               if (parentNode != null) {
                 // Increase its parent's connected device count
                 parentNode.data.connectedDeviceCount++;

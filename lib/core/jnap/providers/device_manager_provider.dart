@@ -229,7 +229,11 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     return false;
   }
 
-  Future<void> updateLocation(String newLocation) async {
+  // Update the name(location) of nodes and external devices
+  Future<void> updateDeviceName({
+    required String newName,
+    required bool isLocation,
+  }) async {
     // Get the current target device Id
     final targetId = ref.read(deviceDetailIdProvider);
     final routerRepository = ref.read(routerRepositoryProvider);
@@ -238,13 +242,14 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       data: {
         'deviceID': targetId,
         'propertiesToModify': [
-          {
-            'name': 'userDeviceLocation',
-            'value': newLocation,
-          },
+          if (isLocation)
+            {
+              'name': 'userDeviceLocation',
+              'value': newName,
+            },
           {
             'name': 'userDeviceName',
-            'value': newLocation,
+            'value': newName,
           }
         ],
       },
@@ -252,7 +257,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     );
     if (result.result == 'OK') {
       final newLocationMap = state.locationMap;
-      newLocationMap[targetId] = newLocation;
+      newLocationMap[targetId] = newName;
       state = state.copyWith(
         locationMap: newLocationMap,
       );
@@ -265,20 +270,6 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   //   await _routerRepository
   //       .deleteDevices(deviceIdList)
   //       .then((value) => fetchDeviceList());
-  // }
-
-  //TODO: Update external device name function
-  // Future<void> updateDeviceInfoName() async {
-  //   await _routerRepository.send(JNAPAction.setDeviceProperties, data: {
-  //     'deviceID': deviceInfo.deviceID,
-  //     'propertiesToModify': {
-  //       'name': userDefinedDeviceName,
-  //       'value': name,
-  //     },
-  //   }).then((value) {
-  //     //Update state
-  //     fetchDeviceList();
-  //   });
   // }
 
   //TODO: Reboot mesh system function

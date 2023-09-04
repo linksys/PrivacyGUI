@@ -95,7 +95,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 child: AppIconButton.noPadding(
                   icon: getCharactersIcons(context).editDefault,
                   onTap: () {
-                    //TODO: Go to edit page
+                    
                   },
                 ),
               ),
@@ -118,7 +118,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   Widget _nodeStatus(NodeDetailState state) {
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [

@@ -151,7 +151,6 @@ class _LoginTraditionalPasswordViewState
                             password: passwordController.text,
                           )
                           .onError((error, stackTrace) {
-                        logger.d('XXXXXXXXXXXXXXXXX');
                       });
                     },
             ),

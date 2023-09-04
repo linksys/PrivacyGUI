@@ -7,7 +7,6 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/provider/devices/external_device_detail_provider.dart';
 import 'package:linksys_app/provider/devices/external_device_detail_state.dart';
 import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';

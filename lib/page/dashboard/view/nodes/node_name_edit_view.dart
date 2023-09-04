@@ -29,31 +29,31 @@ class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-        title: getAppLocalizations(context).node_detail_label_node_name,
-        actions: [
-          AppTertiaryButton(
-            getAppLocalizations(context).save,
-            onTap: () {
-              final newLocation = _controller.text;
-              if (newLocation.isNotEmpty) {
-                ref
-                    .read(deviceManagerProvider.notifier)
-                    .updateLocation(newLocation);
-              }
-            },
-          ),
-        ],
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppTextField(
-              headerText:
-                  getAppLocalizations(context).node_detail_label_node_name,
-              controller: _controller,
-            )
-          ],
+      title: getAppLocalizations(context).node_detail_label_node_name,
+      actions: [
+        AppTertiaryButton(
+          getAppLocalizations(context).save,
+          onTap: () {
+            final newLocation = _controller.text;
+            if (newLocation.isNotEmpty) {
+              ref
+                  .read(deviceManagerProvider.notifier)
+                  .updateDeviceName(newName: newLocation, isLocation: true);
+            }
+          },
         ),
-      );
+      ],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppTextField(
+            headerText:
+                getAppLocalizations(context).node_detail_label_node_name,
+            controller: _controller,
+          )
+        ],
+      ),
+    );
   }
 }
