@@ -167,7 +167,7 @@ class SmartDeviceNotifier extends Notifier<LinksysSmartDevice> {
   Future<List<CloudEventSubscription>> queryNetworkEventSubscriptions() {
     final cloud = ref.read(cloudRepositoryProvider);
     return SharedPreferences.getInstance()
-        .then((value) => (value.getString(prefSelectedNetworkId)) ?? '')
+        .then((value) => (value.getString(pSelectedNetworkId)) ?? '')
         .then((networkId) => cloud.queryNetworkEventSubscriptions(networkId));
   }
 
@@ -175,7 +175,7 @@ class SmartDeviceNotifier extends Notifier<LinksysSmartDevice> {
       CloudEventType type) {
     final cloud = ref.read(cloudRepositoryProvider);
     return SharedPreferences.getInstance()
-        .then((value) => (value.getString(prefSelectedNetworkId)) ?? '')
+        .then((value) => (value.getString(pSelectedNetworkId)) ?? '')
         .then((networkId) => cloud.createNetworkEventSubscription(networkId,
             CloudEventSubscription.create(eventType: type)));
   }
