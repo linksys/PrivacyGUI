@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/page/components/customs/enabled_with_opacity_widget.dart';
+import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/provider/select_network_provider.dart';
 import 'package:linksys_app/route/constants.dart';
@@ -15,6 +16,7 @@ import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/panel/general_card.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class DashboardMenuView extends ConsumerStatefulWidget {
   const DashboardMenuView({Key? key}) : super(key: key);
@@ -116,6 +118,20 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                 ],
               ),
               const Spacer(),
+              const AppGap.semiBig(),
+                AppTertiaryButton.noPadding('Log out', onTap: () {
+                  ref.read(authProvider.notifier).logout();
+                }),
+                const AppGap.semiBig(),
+                FutureBuilder(
+                    future: PackageInfo.fromPlatform()
+                        .then((value) => value.version),
+                    initialData: '-',
+                    builder: (context, data) {
+                      return AppText.bodyLarge(
+                        'version ${data.data}',
+                      );
+                    }),
               AppTertiaryButton.noPadding('About Linksys', onTap: () {}),
               const AppGap.semiBig(),
             ],

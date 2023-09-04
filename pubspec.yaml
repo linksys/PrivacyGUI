@@ -67,7 +67,7 @@ dependencies:
   adaptive_dialog: ^1.9.0-0
   graphite: ^0.3.0
   graphview: ^1.2.0
-  local_auth: ^2.1.2
+  local_auth: ^2.1.7
   fl_chart: ^0.55.1
   styled_text: ^6.0.0
   image: ^3.2.0

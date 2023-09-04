@@ -248,21 +248,6 @@ class Utils {
     return result;
   }
 
-  static Future<bool> canUseBiometrics() async {
-    final LocalAuthentication auth = LocalAuthentication();
-    final List<BiometricType> availableBiometrics =
-        await auth.getAvailableBiometrics();
-    return await auth.canCheckBiometrics && availableBiometrics.isNotEmpty;
-  }
-
-  // TODO
-  static Future<bool> doLocalAuthenticate() async {
-    final LocalAuthentication auth = LocalAuthentication();
-    final bool didAuthenticate = await auth.authenticate(
-        localizedReason: "Please authenticate to go to next step");
-    return didAuthenticate;
-  }
-
   static String stringBase64Encode(String value) {
     return utf8.fuse(base64).encode(value);
   }

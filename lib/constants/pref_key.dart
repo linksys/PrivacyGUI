@@ -10,3 +10,4 @@ const pSessionTokenTs = 'SessionTokenTimeStamp';
 const pUserPassword = 'UserPassword';
 const pUsername = 'Username';
 const pLocalPassword = 'LocalPassword';
+const pBiometrics = 'Biometrics';

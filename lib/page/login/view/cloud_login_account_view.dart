@@ -181,7 +181,7 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
       logger.d('Go Password');
       context.goNamed(
         RouteNamed.cloudLoginPassword,
-        queryParameters: {'username': _accountController.text},
+        extra: {'username': _accountController.text},
       );
     }
   }

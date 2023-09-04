@@ -9,7 +9,7 @@ final loginRoute = GoRoute(
       name: RouteNamed.cloudLoginPassword,
       path: RoutePath.cloudLoginPassword,
       builder: (context, state) => CloudLoginPasswordView(
-        args: state.uri.queryParameters,
+        args: state.extra as Map<String, dynamic>? ?? {},
       ),
       routes: [
         ...otpRoutes,
@@ -20,7 +20,7 @@ final loginRoute = GoRoute(
             args: state.uri.queryParameters,
           ),
         ),
-                GoRoute(
+        GoRoute(
           name: RouteNamed.phoneRegionCode,
           path: RoutePath.phoneRegionCode,
           builder: (context, state) => RegionPickerView(

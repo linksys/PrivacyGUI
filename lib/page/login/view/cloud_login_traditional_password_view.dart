@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
@@ -10,6 +12,7 @@ import 'package:linksys_app/core/cloud/model/error_response.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_app/util/biometrics.dart';
 import 'package:linksys_app/util/error_code_handler.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -32,8 +35,8 @@ class _LoginTraditionalPasswordViewState
   final TextEditingController passwordController = TextEditingController();
   String _errorCode = '';
   String _username = '';
-  bool _needOtp = false;
-
+  bool _isEnrollBiometrics = false;
+  bool _isBiometricsLogin = false;
   // late AuthBloc _authBloc;
   // late OtpCubit _optCubit;
 
@@ -42,6 +45,21 @@ class _LoginTraditionalPasswordViewState
     super.initState();
     // _authBloc = context.read<AuthBloc>();
     // _optCubit = context.read<OtpCubit>();
+
+    _username = widget.args['username'] ?? '';
+    _isBiometricsLogin = widget.args['enrolledBiometrics'] ?? false;
+    if (_isBiometricsLogin) {
+      BiometricsHelp().loadBiometrics(_username).then((value) {
+        passwordController.text = value;
+        ref.read(authProvider.notifier).cloudLogin(
+            username: _username,
+            password: value,
+            isBiometricsLogin: _isBiometricsLogin);
+      }).onError((error, stackTrace) {
+        final err = error as PlatformException?;
+        context.pop();
+      });
+    }
   }
 
   @override
@@ -58,17 +76,19 @@ class _LoginTraditionalPasswordViewState
         _handleError(next.error, next.stackTrace!);
       }
     });
-    ref.listen(otpProvider, (previous, next) {
-      if (!_needOtp || next.step == previous?.step) {
+    ref.listen(otpProvider.select((value) => (value.step, value.extras)),
+        (previous, next) {
+      if (next.$1 == previous?.$1) {
         return;
       }
-      if (next.step == OtpStep.finish) {
+      if (next.$1 == OtpStep.finish) {
         logger.d('Login password: Otp pass! $next');
-        _needOtp = false;
         ref.read(authProvider.notifier).cloudLogin(
               username: _username,
               password: passwordController.text,
-              sessionToken: SessionToken.fromJson(next.extras),
+              sessionToken: SessionToken.fromJson(next.$2),
+              isEnrolledBiometrics: _isEnrollBiometrics,
+              isBiometricsLogin: _isBiometricsLogin,
             );
       }
     });
@@ -81,28 +101,9 @@ class _LoginTraditionalPasswordViewState
             ),
         loading: () => AppFullScreenSpinner(
             text: getAppLocalizations(context).processing));
-    // return BlocConsumer<AuthBloc, AuthState>(
-    //     listenWhen: (previous, current) {
-    //       if (current is AuthCloudLoginState) {
-    //         return true;
-    //       }
-    //       return false;
-    //     },
-    //     listener: (context, state) {
-    //       if (state is AuthCloudLoginState) {
-    //         // ref.read(navigationsProvider.notifier).push(PrepareDashboardPath());
-    //       } else {
-    //         logger.d('ERROR: Wrong state type on LoginTraditionalPasswordView');
-    //       }
-    //     },
-    //     builder: (context, state) => _isLoading
-    //         ? AppFullScreenSpinner(
-    //             text: getAppLocalizations(context).processing)
-    //         : _contentView(state));
   }
 
   Widget _contentView(AuthState state) {
-    _username = widget.args['username'] ?? '';
     return StyledAppPageView(
       scrollable: true,
       child: AppBasicLayout(
@@ -130,12 +131,21 @@ class _LoginTraditionalPasswordViewState
               },
             ),
             const AppGap.small(),
-            AppTertiaryButton.noPadding(
-              getAppLocalizations(context).forgot_password,
-              key: const Key('login_password_view_button_forgot_password'),
-              onTap: () {
-                context.pushNamed(RouteNamed.cloudForgotPassword);
-              },
+            Align(
+              alignment: Alignment.bottomRight,
+              child: AppTertiaryButton.noPadding(
+                getAppLocalizations(context).forgot_password,
+                key: const Key('login_password_view_button_forgot_password'),
+                onTap: () {
+                  context.pushNamed(RouteNamed.cloudForgotPassword);
+                },
+              ),
+            ),
+            const AppGap.regular(),
+            FutureBuilder(
+              future: BiometricsHelp().canAuthenticate(),
+              builder: (context, snapshot) =>
+                  _checkBiometrics(context, snapshot),
             ),
             const Spacer(),
             AppPrimaryButton(
@@ -149,9 +159,9 @@ class _LoginTraditionalPasswordViewState
                           .cloudLogin(
                             username: _username,
                             password: passwordController.text,
+                            isEnrolledBiometrics: _isEnrollBiometrics,
                           )
-                          .onError((error, stackTrace) {
-                      });
+                          .onError((error, stackTrace) {});
                     },
             ),
           ],
@@ -169,7 +179,6 @@ class _LoginTraditionalPasswordViewState
     }
 
     if (error.code == errorMfaRequired) {
-      _needOtp = true;
       final mfaError = ErrorMfaRequired.fromResponse(error);
       logger.d('handle mfa error');
       context.goNamed(
@@ -185,6 +194,28 @@ class _LoginTraditionalPasswordViewState
       setState(() {
         _errorCode = error.code;
       });
+    }
+  }
+
+  Widget _checkBiometrics(
+      BuildContext context, AsyncSnapshot<CanAuthenticateResponse> snapshot) {
+    if (kIsWeb) {
+      return const Center();
+    }
+    if (snapshot.hasError) {
+      return const Center();
+    } else {
+      return snapshot.data == CanAuthenticateResponse.success
+          ? AppCheckbox(
+              text: 'Enroll biometrics',
+              value: _isEnrollBiometrics,
+              onChanged: (value) {
+                setState(() {
+                  _isEnrollBiometrics = !_isEnrollBiometrics;
+                });
+              },
+            )
+          : const Center();
     }
   }
 }

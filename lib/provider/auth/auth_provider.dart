@@ -17,7 +17,9 @@ import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/provider/network/_network.dart';
+import 'package:linksys_app/provider/auth/auth_exception.dart';
+import 'package:linksys_app/provider/network/network_provider.dart';
+import 'package:linksys_app/util/biometrics.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum LoginType { none, local, remote }
@@ -28,12 +30,14 @@ class AuthState extends Equatable {
   final String? localPassword;
   final SessionToken? sessionToken;
   final LoginType loginType;
+  final bool isEnrolledBiometrics;
 
   const AuthState({
     this.username,
     this.password,
     this.localPassword,
     this.sessionToken,
+    this.isEnrolledBiometrics = false,
     required this.loginType,
   });
 
@@ -49,11 +53,13 @@ class AuthState extends Equatable {
         LoginType.values.firstWhereOrNull((e) => e.name == json['loginType']) ??
             LoginType.none;
     return AuthState(
-        username: json['username'],
-        password: json['password'],
-        localPassword: json['localPassword'],
-        sessionToken: sessionToken,
-        loginType: loginType);
+      username: json['username'],
+      password: json['password'],
+      localPassword: json['localPassword'],
+      sessionToken: sessionToken,
+      isEnrolledBiometrics: json['isEnrolledBiometrics'],
+      loginType: loginType,
+    );
   }
 
   AuthState copyWith({
@@ -61,6 +67,7 @@ class AuthState extends Equatable {
     String? password,
     String? localPassword,
     SessionToken? sessionToken,
+    bool? isEnrolledBiometrics,
     LoginType? loginType,
   }) {
     return AuthState(
@@ -68,6 +75,7 @@ class AuthState extends Equatable {
       password: password ?? this.password,
       localPassword: localPassword ?? this.localPassword,
       sessionToken: sessionToken ?? this.sessionToken,
+      isEnrolledBiometrics: isEnrolledBiometrics ?? this.isEnrolledBiometrics,
       loginType: loginType ?? this.loginType,
     );
   }
@@ -142,6 +150,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<SessionToken?> checkSessionToken() async {
+    if (kIsWeb) {
+      return Future.value(null);
+    }
     logger.d('check cloud session expiration...');
     const storage = FlutterSecureStorage();
     final ts = await storage.read(key: pSessionTokenTs);
@@ -185,22 +196,33 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     required String username,
     required String password,
     SessionToken? sessionToken,
+    bool isEnrolledBiometrics = false,
+    bool isBiometricsLogin = false,
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final cloud = ref.read(cloudRepositoryProvider);
       final newToken = sessionToken ??
           await cloud.login(username: username, password: password);
+      if (isEnrolledBiometrics) {
+        await BiometricsHelp().saveBiometrics(username, password);
+      }
       return await updateCredientials(
         sessionToken: newToken,
         username: username,
         password: password,
-      );
+      ).then((value) => value.copyWith(
+          isEnrolledBiometrics: isEnrolledBiometrics || isBiometricsLogin));
     });
     logger.d('after cloud login: $state');
   }
 
-  Future updateCredientials({
+  void updateBiometrics(bool isEnabled) {
+    state = AsyncValue.data((state.value ?? AuthState.empty())
+        .copyWith(isEnrolledBiometrics: isEnabled));
+  }
+
+  Future<AuthState> updateCredientials({
     SessionToken? sessionToken,
     String? username,
     String? password,
@@ -293,28 +315,4 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
     return regions;
   }
-}
-
-abstract class AuthException {
-  static const codeAuthExceptionNoSessionTokenFound = -1;
-
-  final String message;
-  const AuthException({
-    required this.message,
-  });
-}
-
-class NoSessionTokenFoundException extends AuthException {
-  NoSessionTokenFoundException() : super(message: 'no session token found');
-}
-
-class NeedToRefreshTokenException extends AuthException {
-  final String refreshToken;
-  NeedToRefreshTokenException(this.refreshToken)
-      : super(message: 'token expired! can be refresh');
-}
-
-class SessionTokenExpiredException extends AuthException {
-  SessionTokenExpiredException()
-      : super(message: 'token expired! logging out!');
 }

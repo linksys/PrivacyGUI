@@ -162,27 +162,27 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
                 ),
               ),
               const AppGap.semiSmall(),
-              FutureBuilder<bool>(
-                future: Utils.canUseBiometrics(),
-                initialData: false,
-                builder: (context, canUseBiometrics) {
-                  return Offstage(
-                    offstage: !(canUseBiometrics.data ?? false),
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          _enableBiometrics = !_enableBiometrics;
-                        });
-                      },
-                      child: AppPanelWithValueCheck(
-                        title: getAppLocalizations(context).enable_biometrics,
-                        valueText: '',
-                        isChecked: _enableBiometrics,
-                      ),
-                    ),
-                  );
-                },
-              ),
+              // FutureBuilder<bool>(
+              //   future: Utils.canUseBiometrics(),
+              //   initialData: false,
+              //   builder: (context, canUseBiometrics) {
+              //     return Offstage(
+              //       offstage: !(canUseBiometrics.data ?? false),
+              //       child: InkWell(
+              //         onTap: () {
+              //           setState(() {
+              //             _enableBiometrics = !_enableBiometrics;
+              //           });
+              //         },
+              //         child: AppPanelWithValueCheck(
+              //           title: getAppLocalizations(context).enable_biometrics,
+              //           valueText: '',
+              //           isChecked: _enableBiometrics,
+              //         ),
+              //       ),
+              //     );
+              //   },
+              // ),
               AppTertiaryButton(
                   getAppLocalizations(context).already_have_an_account,
                   onTap: _goLogin),

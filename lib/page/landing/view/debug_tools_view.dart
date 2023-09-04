@@ -120,6 +120,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
       ..._buildConnectionInfo(),
       // ..._buildCloudApp(),
       ..._buildPushNotificationInfo(),
+      ..._buildBiometricsInfo(),
     ];
   }
 
@@ -272,6 +273,25 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
             ],
           ),
           const AppGap.regular(),
+        ],
+      ),
+    ];
+  }
+
+  List<Widget> _buildBiometricsInfo() {
+    return [
+      ExpansionTile(
+        expandedAlignment: Alignment.centerLeft,
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+        initiallyExpanded: true,
+        title: const AppText.labelLarge('Biometrics'),
+        children: [
+          AppPrimaryButton(
+            'Test Biometrics',
+            onTap: () async {
+              
+            },
+          )
         ],
       ),
     ];

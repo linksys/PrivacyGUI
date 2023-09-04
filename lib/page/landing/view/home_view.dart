@@ -9,11 +9,13 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_app/util/biometrics.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -64,12 +66,20 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   Widget _footer(BuildContext context) {
+    final goRouter = GoRouter.of(context);
+
     return Column(children: [
       AppPrimaryButton(
         getAppLocalizations(context).login,
         key: const Key('home_view_button_login'),
         onTap: () async {
-          context.pushNamed(RoutePath.cloudLoginAccount);
+          final list = await BiometricsHelp().getKeyList();
+          if (list.isNotEmpty) {
+            goRouter.goNamed(RouteNamed.cloudLoginPassword,
+                extra: {'username': list[0], 'enrolledBiometrics': true});
+          } else {
+            goRouter.pushNamed(RouteNamed.cloudLoginAccount);
+          }
         },
       ),
       AppSecondaryButton(

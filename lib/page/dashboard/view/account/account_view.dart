@@ -5,9 +5,11 @@ import 'package:linksys_app/provider/account/account_state.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
 import 'package:linksys_app/page/components/base_components/tile/setting_tile.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/util/biometrics.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
+import 'package:linksys_widgets/widgets/panel/general_section.dart';
 import 'package:styled_text/styled_text.dart';
 
 class AccountView extends ConsumerStatefulWidget {
@@ -80,7 +82,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
   }
 
   Widget _informationSection(AccountState state) {
-    return SectionTile(
+    return AppSection(
       header: const AppText.titleLarge(
         'YOUR INFORMATION',
       ),
@@ -97,7 +99,10 @@ class _AccountViewState extends ConsumerState<AccountView> {
   }
 
   Widget _securitySection(AccountState state) {
-    return SectionTile(
+    final isBiometricEnrolled = ref.watch(authProvider
+            .select((value) => value.value?.isEnrolledBiometrics)) ??
+        false;
+    return AppSection(
       header: const AppText.titleLarge(
         'Security',
       ),
@@ -106,6 +111,38 @@ class _AccountViewState extends ConsumerState<AccountView> {
           AppPanelWithInfo(
               title: '2-Step Verification',
               infoText: state.mfaEnabled ? 'On' : 'Off'),
+          FutureBuilder(
+              future: BiometricsHelp()
+                  .canAuthenticate()
+                  .then((value) => value == CanAuthenticateResponse.success),
+              builder: (context, canAuthenticate) {
+                return Offstage(
+                  offstage: !(canAuthenticate.data ?? false),
+                  child: AppPanelWithSwitch(
+                    value: isBiometricEnrolled,
+                    title: 'Biometrics',
+                    onChangedEvent: (value) async {
+                      if (value) {
+                        await BiometricsHelp()
+                            .saveBiometrics(state.username, state.password)
+                            .then((_) {
+                          ref
+                              .read(authProvider.notifier)
+                              .updateBiometrics(value);
+                        });
+                      } else {
+                        await BiometricsHelp()
+                            .deleteBiometrics(state.username)
+                            .then((_) {
+                          ref
+                              .read(authProvider.notifier)
+                              .updateBiometrics(value);
+                        });
+                      }
+                    },
+                  ),
+                );
+              }),
         ],
       ),
     );
@@ -131,7 +168,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
   }
 
   Widget _localLoginInformationSection(BuildContext context) {
-    return SectionTile(
+    return AppSection(
       header: const AppText.titleLarge(
         'No Linksys account',
       ),

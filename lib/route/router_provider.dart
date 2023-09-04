@@ -103,9 +103,9 @@ class RouterNotifier extends ChangeNotifier {
 
       switch (loginType) {
         case LoginType.remote:
-          return '/prepareDashboard';
+          return RoutePath.prepareDashboard;
         case LoginType.local:
-          return '/prepareDashboard';
+          return RoutePath.prepareDashboard;
         default:
           return null;
       }

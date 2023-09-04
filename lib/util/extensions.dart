@@ -17,4 +17,8 @@ extension StringExt on String {
     final digest = hmac.convert(utf8.encode(this));
     return digest.bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
+
+  String toMd5() {
+    return md5.convert(utf8.encode(this)).toString();
+  }
 }
