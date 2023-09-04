@@ -28,7 +28,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
     // if (deviceManagerState.isEmptyState()) {
     //   return TopologyNode();
     // }
-    // final deviceId = null; //state.selectedDeviceId; //TODO: XXXXXX Check this
+    // final deviceId = null; //state.selectedDeviceId;
     // return deviceId != null
     //     ? _buildDeviceChain(deviceId, deviceManagerState)
     //     : _buildRouterTopology(deviceManagerState);
@@ -153,7 +153,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
     bool isOnline = device.connections.isNotEmpty;
     bool isRouter = device.isAuthority || device.nodeType != null;
     bool isWiredConnection =
-        ref.read(deviceManagerProvider.notifier).checkWiredConnection(device);
+        ref.read(deviceManagerProvider.notifier).checkIsWiredConnection(device);
     int signalStrength =
         ref.read(deviceManagerProvider.notifier).getWirelessSignal(device);
     final data = TopologyModel(

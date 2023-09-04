@@ -70,32 +70,30 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     var manufacturer = '';
     var model = '';
     var operatingSystem = '';
+    var band = '';
     var signalStrength = 0;
     var isOnline = false;
-    //TODO: XXXXXX Derive DeviceListItemType value
+    var type = DeviceListItemType.main;
 
-    final deviceList = ref.read(deviceManagerProvider).deviceList;
-    final targetDevice =
-        deviceList.firstWhere((device) => device.deviceID == targetId);
     final locationMap = ref.read(deviceManagerProvider).locationMap;
-
     name = locationMap[targetId] ?? '';
-    icon = iconTest(targetDevice.toJson());
-    upstreamDevice =
-        locationMap[_getUpstreamDevice(targetDevice).deviceID] ?? '';
-    upstreamIcon = iconTest(_getUpstreamDevice(targetDevice).toJson());
-    isOnline = targetDevice.connections.isNotEmpty;
-    ipv4Address =
-        isOnline ? (targetDevice.connections.first.ipAddress ?? '') : '';
-    ipv6Address =
-        isOnline ? (targetDevice.connections.first.ipv6Address ?? '') : '';
-    macAddress = isOnline ? (targetDevice.connections.first.macAddress) : '';
-    manufacturer = targetDevice.model.manufacturer ?? '';
-    model = targetDevice.model.modelNumber ?? '';
-    operatingSystem = targetDevice.unit.operatingSystem ?? '';
-    signalStrength = ref
-        .read(deviceManagerProvider.notifier)
-        .getWirelessSignal(targetDevice);
+    icon = iconTest(device.toJson());
+    upstreamDevice = locationMap[_getUpstreamDevice(device).deviceID] ?? '';
+    upstreamIcon = iconTest(_getUpstreamDevice(device).toJson());
+    isOnline = device.connections.isNotEmpty;
+    ipv4Address = isOnline ? (device.connections.first.ipAddress ?? '') : '';
+    ipv6Address = isOnline ? (device.connections.first.ipv6Address ?? '') : '';
+    macAddress =
+        ref.read(deviceManagerProvider.notifier).getDeviceMacAddress(device);
+    manufacturer = device.model.manufacturer ?? '';
+    model = device.model.modelNumber ?? '';
+    operatingSystem = device.unit.operatingSystem ?? '';
+    band = ref.read(deviceManagerProvider.notifier).getWirelessBand(device);
+    signalStrength =
+        ref.read(deviceManagerProvider.notifier).getWirelessSignal(device);
+    type = ref.read(deviceManagerProvider.notifier).checkIsGuestNetwork(device)
+        ? DeviceListItemType.guest
+        : DeviceListItemType.main;
 
     return newState.copyWith(
       deviceId: targetId,
@@ -109,8 +107,10 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
       manufacturer: manufacturer,
       model: model,
       operatingSystem: operatingSystem,
+      band: band,
       signalStrength: signalStrength,
       isOnline: isOnline,
+      type: type,
     );
   }
 

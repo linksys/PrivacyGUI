@@ -91,18 +91,20 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       for (final connection in connections) {
         final connectionData = connection as Map<String, dynamic>;
         final macAddress = connectionData['macAddress'];
-        final Map<String, dynamic>? wirelessData = connectionData['wireless'];
+        final wirelessData =
+            connectionData['wireless'] as Map<String, dynamic>?;
         if (wirelessData != null) {
           final band = wirelessData['band'];
           final signalDecibels = wirelessData['signalDecibels'];
+          final isGuest = wirelessData['isGuest'];
           connectionsMap[macAddress] = {
             'signalDecibels': signalDecibels,
             'band': band,
+            'isGuest': isGuest,
           };
         }
       }
     }
-
     return state.copyWith(
       wirelessConnections: connectionsMap,
     );
@@ -175,16 +177,47 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     } else if (device.model.modelNumber != null) {
       return device.model.modelNumber!;
     } else {
-      // Check if it's a guest device
-      bool isGuest = false;
-      for (final connectionDevice in device.connections) {
-        isGuest = connectionDevice.isGuest ?? false;
-      }
+      // Check if it's connecting to the guest network
+      // NOTE: This value can also be derived from 'NetworkConnections', but they should be identical
+      final isGuest = device.connections.firstOrNull?.isGuest ?? false;
       return isGuest ? 'Guest Network Device' : 'Network Device';
     }
   }
 
-  bool checkWiredConnection(RouterDevice device) {
+  String getDeviceMacAddress(RouterDevice device) {
+    var macAddress = '';
+    if (device.knownInterfaces != null) {
+      final knownInterface = device.knownInterfaces!.firstOrNull;
+      macAddress = knownInterface?.macAddress ?? '';
+    } else if (device.knownMACAddresses != null) {
+      // This case is only for a part of old routers that does not support 'GetDevices3' action
+      macAddress = device.knownMACAddresses!.firstOrNull ?? '';
+    }
+    return macAddress;
+  }
+
+  int getWirelessSignal(RouterDevice device) {
+    final wirelessConnections = state.wirelessConnections;
+    final wirelessData = wirelessConnections[getDeviceMacAddress(device)];
+    final signalDecibels = wirelessData?['signalDecibels'] as int?;
+    return signalDecibels ?? 0;
+  }
+
+  String getWirelessBand(RouterDevice device) {
+    final wirelessConnections = state.wirelessConnections;
+    final wirelessData = wirelessConnections[getDeviceMacAddress(device)];
+    final band = wirelessData?['band'] as String?;
+    return band ?? '';
+  }
+
+  bool checkIsGuestNetwork(RouterDevice device) {
+    final wirelessConnections = state.wirelessConnections;
+    final wirelessData = wirelessConnections[getDeviceMacAddress(device)];
+    final isGuest = wirelessData?['isGuest'] as bool?;
+    return isGuest ?? false;
+  }
+
+  bool checkIsWiredConnection(RouterDevice device) {
     final interfaces = device.knownInterfaces;
     if (interfaces != null) {
       for (final interface in interfaces) {
@@ -194,21 +227,6 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       }
     }
     return false;
-  }
-
-  int getWirelessSignal(RouterDevice device) {
-    var macAddress = '';
-    if (device.knownInterfaces != null) {
-      final knownInterface = device.knownInterfaces!.first;
-      macAddress = knownInterface.macAddress;
-    } else if (device.knownMACAddresses != null) {
-      // This case is only for a part of old routers that does not support 'GetDevices3' action
-      macAddress = device.knownMACAddresses!.firstOrNull ?? '';
-    }
-    final connections = state.wirelessConnections;
-    final wirelessData = connections[macAddress];
-    final signalDecibels = wirelessData?['signalDecibels'] as int?;
-    return signalDecibels ?? 0;
   }
 
   Future<void> updateLocation(String newLocation) async {

@@ -30,6 +30,7 @@ class DeviceListItem {
   final String manufacturer;
   final String model;
   final String operatingSystem;
+  final String band;
   final int signalStrength;
   final bool isOnline;
   final DeviceListItemType type;
@@ -46,6 +47,7 @@ class DeviceListItem {
     this.manufacturer = '',
     this.model = '',
     this.operatingSystem = '',
+    this.band = '',
     this.signalStrength = 0,
     this.isOnline = false,
     this.type = DeviceListItemType.main,
@@ -63,6 +65,7 @@ class DeviceListItem {
     String? manufacturer,
     String? model,
     String? operatingSystem,
+    String? band,
     int? signalStrength,
     bool? isOnline,
     DeviceListItemType? type,
@@ -79,6 +82,7 @@ class DeviceListItem {
       manufacturer: manufacturer ?? this.manufacturer,
       model: model ?? this.model,
       operatingSystem: operatingSystem ?? this.operatingSystem,
+      band: band ?? this.band,
       signalStrength: signalStrength ?? this.signalStrength,
       isOnline: isOnline ?? this.isOnline,
       type: type ?? this.type,
