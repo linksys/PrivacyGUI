@@ -55,11 +55,15 @@ const Map<CloudEnvironment, dynamic> kCloudEnvironmentMap = {
 const kVarGrantType = '{grantType}';
 const kVarNetworkId = '{networkId}';
 const kVarUsername = '{username}';
+const kVarToken = '{token}';
+const kVarEventSubscriptionId = '{eventSubscriptionId}';
 
 // Cloud API Service
 const kAuthorizationService = '/cloud/authorization-service';
 const kUserService = '/cloud/user-service';
 const kDeviceService = '/cloud/device-service';
+const kSmartDeviceService = '/cloud/smart-device-service';
+const kEventService = '/cloud/event-service';
 
 /// Cloud API Endpoint
 // Authorization service
@@ -80,7 +84,16 @@ const kUserGetAccount = '$kUserService/rest/accounts/self';
 // Device service
 const kDeviceNetworksEndpoint = '$kDeviceService/rest/networks/$kVarNetworkId';
 const kAccountNetworksEndpoint = '$kDeviceService/rest/accounts/self/networks';
-
+// Smart device service
+const kSmartDeviceRegisterEndpoint = '$kSmartDeviceService/rest/smartdevices';
+const kSmartDeviceVerificationEndpoint =
+    '$kSmartDeviceService/rest/verifications/$kVarToken/status';
+// Event service
+const kEventeSubscriptionCreate =
+    '$kEventService/rest/clients/self/accounts/self/networks/$kVarNetworkId/eventsubscriptions';
+const kEventNetworkActionCreate =
+    '$kEventService/rest/eventsubscriptions/$kVarEventSubscriptionId/actions';
+    
 // Client type id/secret
 final kClientTypeId = clientTypeID;
 final kClientSecret = clientTypeSecret;

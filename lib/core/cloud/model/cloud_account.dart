@@ -136,14 +136,14 @@ class CANotifications extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'notifications': notifications,
-    };
+    return {'notification': notifications.map((e) => e.toJson()).toList()};
   }
 
   factory CANotifications.fromJson(Map<String, dynamic> json) {
     return CANotifications(
-      notifications: List.from(json['notifications']),
+      notifications: List.from(json['notification'])
+          .map((e) => CANotification.fromJson(e))
+          .toList(),
     );
   }
 
@@ -248,7 +248,7 @@ class CALocale extends Equatable {
 ///
 class CAPreferences extends Equatable {
   final String? newsletterOptIn;
-  final String? fakeSubscription;
+  final bool? fakeSubscription;
   final bool? mfaEnabled;
   final CALocale? locale;
   final CAMobile? mobile;
@@ -265,7 +265,7 @@ class CAPreferences extends Equatable {
 
   CAPreferences copyWith({
     String? newsletterOptIn,
-    String? fakeSubscription,
+    bool? fakeSubscription,
     bool? mfaEnabled,
     CALocale? locale,
     CAMobile? mobile,

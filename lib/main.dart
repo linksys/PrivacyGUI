@@ -19,6 +19,7 @@ import 'package:linksys_app/provider/logger_observer.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
+import 'package:linksys_app/provider/smart_device_provider.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/color_schemes.g.dart';
 import 'package:linksys_widgets/theme/theme_data.dart';
@@ -140,6 +141,8 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    ref.read(smartDeviceProvider.notifier).init();
+
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
       onGenerateTitle: (context) => getAppLocalizations(context).app_title,

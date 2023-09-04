@@ -1,7 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_app/constants/_constants.dart';
+import 'package:linksys_app/core/cloud/linksys_requests/event_service.dart';
+import 'package:linksys_app/core/cloud/linksys_requests/smart_device_service.dart';
+import 'package:linksys_app/core/cloud/model/cloud_event_action.dart';
+import 'package:linksys_app/core/cloud/model/cloud_event_subscription.dart';
 import 'package:linksys_app/core/http/linksys_http_client.dart';
 import 'package:linksys_app/core/cloud/linksys_requests/authorization_service.dart';
 import 'package:linksys_app/core/cloud/linksys_requests/device_service.dart';
@@ -110,5 +115,69 @@ class LinksysCloudRepository {
         .then((value) =>
             value != null ? SessionToken.fromJson(jsonDecode(value)) : null)
         .then((value) => value?.accessToken ?? '');
+  }
+
+  // User service
+  Future<CAPreferences> getPreferences() {
+    return loadSessionToken()
+        .then((token) => _httpClient.getPreferences(token: token))
+        .then((response) =>
+            CAPreferences.fromJson(jsonDecode(response.body)['preferences']));
+  }
+
+  Future<bool> setPreferences(CAPreferences preferences) {
+    return loadSessionToken()
+        .then((token) =>
+            _httpClient.setPreferences(token: token, preferences: preferences))
+        .then((response) => response.statusCode == HttpStatus.ok);
+  }
+
+  // Smart device
+  Future<(String?, String?)> registerSmartDevice(
+    String deviceToken, {
+    String? appType,
+  }) async {
+    return _httpClient
+        .registerSmartDevice(deviceToken, appType: appType)
+        .then((response) {
+      final data = jsonDecode(response.body);
+      final smartDevice = data['smartDevice'];
+      return (
+        smartDevice['smartDeviceId'] as String?,
+        smartDevice['smartDeviceSecret'] as String?
+      );
+    });
+  }
+
+  Future<bool> verifySmartDevice(String verificationToken) {
+    return _httpClient
+        .verifySmartDevice(verificationToken)
+        .then((response) => response.statusCode == HttpStatus.ok);
+  }
+
+  // event service
+  Future<List<CloudEventSubscription>> queryNetworkEventSubscriptions(String networkId) {
+    return loadSessionToken()
+        .then((token) => _httpClient.queryEventSubscription(token, networkId))
+        .then((response) =>
+            List.from(jsonDecode(response.body)['eventSubscriptions'])
+                .map((e) => CloudEventSubscription.fromMap(e['eventSubscription']))
+                .toList());
+  }
+
+  Future<String> createNetworkEventSubscription(
+      String networkId, CloudEventSubscription cloudEventSubscription) {
+    return loadSessionToken().then((token) => _httpClient
+        .createNetworkEventSubscription(
+            token, networkId, cloudEventSubscription)
+        .then((response) => jsonDecode(response.body)['eventSubscription']
+            ['eventSubscriptionId']));
+  }
+
+  Future<bool> createNetworkEventAction(
+      String eventSubscriptionId, CloudEventAction cloudEventAction) {
+    return loadSessionToken().then((token) => _httpClient
+        .createNetworkEventAction(token, eventSubscriptionId, cloudEventAction)
+        .then((response) => response.statusCode == HttpStatus.ok));
   }
 }

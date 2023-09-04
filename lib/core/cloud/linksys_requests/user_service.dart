@@ -35,7 +35,8 @@ extension UserService on LinksysHttpClient {
       ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
 
     return this.put(Uri.parse(endpoint),
-        headers: header, body: jsonEncode({'preferences': preferences}));
+        headers: header,
+        body: jsonEncode({'preferences': preferences.toJson()}));
   }
 
   Future<Response> getPhoneCallingCodes({required String token}) {

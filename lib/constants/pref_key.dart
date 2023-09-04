@@ -3,8 +3,10 @@
 const pCloudEnv = 'CloudEnvironment';
 const pCurrentSN = 'LinksysCurrentSN';
 const pDeviceToken = 'LinksysDeviceToken';
+const pSmartDeviceId = 'LinksysSmartDeviceId';
+const pSmartDeviceSecret = 'LinksysSmartDeviceSecret';
+const pSmartDeviceVerified = 'LinksysSmartDeviceVerified';
 const pSelectedNetworkId = 'LinksysSelectedNetworkId';
-// secured
 const pSessionToken = 'SessionToken';
 const pSessionTokenTs = 'SessionTokenTimeStamp';
 const pUserPassword = 'UserPassword';

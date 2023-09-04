@@ -33,7 +33,10 @@ void initCloudMessage() async {
   }
   if (Platform.isIOS) {
     // Get the device token from the native
-    final token = await IosPushNotificationPlugin().readApnsToken() ?? '';
+    final token = await IosPushNotificationPlugin().readApnsToken();
+    if (token != null) {
+      (await SharedPreferences.getInstance()).setString(pDeviceToken, token);
+    }
     logger.i('APNS: Read device token: $token');
     // Start listening the push notifications
     apnsStreamSubscription =
@@ -80,18 +83,25 @@ void initCloudMessage() async {
     AndroidNotification? android = message.notification?.android;
     if (notification != null && android != null && !kIsWeb) {
       flutterLocalNotificationsPlugin.show(
-          notification.hashCode,
-          notification.title,
-          notification.body,
-          NotificationDetails(
-              android: AndroidNotificationDetails(channel.id, channel.name,
-                  channelDescription: channel.description,
-                  icon: 'launch_foreground')));
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            channel.id,
+            channel.name,
+            channelDescription: channel.description,
+          ),
+        ),
+      );
     } else if (notification == null) {
       // Silent message
       pushNotificationHandler(message.data);
     }
   });
   final token = await FirebaseMessaging.instance.getToken();
+  if (token != null) {
+    (await SharedPreferences.getInstance()).setString(pDeviceToken, token);
+  }
   logger.i('FCM Token: $token');
 }

@@ -51,10 +51,10 @@ public class SwiftIosPushNotificationPlugin: NSObject, FlutterPlugin, FlutterStr
         guard let eventSink = eventSink else {
             return
         }
-        guard let userInfo = notification.userInfo, let data = userInfo["data"] else {
+        guard let userInfo = notification.userInfo else {
             return
         }
-        eventSink(data)
+        eventSink(userInfo)
     }
     public func application(
       _ application: UIApplication,
@@ -77,15 +77,17 @@ public class SwiftIosPushNotificationPlugin: NSObject, FlutterPlugin, FlutterStr
         print("AppDelegate: Register APNs failed: \(error.localizedDescription)")
     }
     
+    // Silent
     public func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) -> Bool {
         print("AppDelegate: didReceiveRemoteNotification: userInfo=\(userInfo)")
 
         if let _ = userInfo["aps"] {
-            if let payload = userInfo["data"] as? [String: Any] {
+            if let payload = userInfo as? [String: Any] {
                 NotificationCenter.default.post(
                     name: NSNotification.Name("ReceiveAPNsPayloadNotification"),
                     object: nil,
-                    userInfo: ["data": payload])
+                    userInfo: payload)
+                completionHandler(UIBackgroundFetchResult.newData)
                 return true
             }
         }
@@ -105,6 +107,7 @@ public class SwiftIosPushNotificationPlugin: NSObject, FlutterPlugin, FlutterStr
     
     /*  Called when the application is in the foreground. We get a UNNotification object that contains the UNNotificationRequest request. In the body of the method, you need to make a completion handler call with a set of options to notify UNNotificationPresentationOptions
      */
+    // Forground
     @available(iOS 14.0, *)
     public func userNotificationCenter(_ center: UNUserNotificationCenter,
                                        willPresent notification: UNNotification,
@@ -116,6 +119,7 @@ public class SwiftIosPushNotificationPlugin: NSObject, FlutterPlugin, FlutterStr
     
     /*  Used to select a tap action for notification. You get a UNNotificationResponse object that contains an actionIdentifier to define an action. The system identifiers UNNotificationDefaultActionIdentifier and UNNotificationDismissActionIdentifier are used when you need to open the application by tap on a notification or close a notification with a swipe.
      */
+    // Tap notification
     @available(iOS 14.0, *)
     public func userNotificationCenter(_ center: UNUserNotificationCenter,
                                        didReceive response: UNNotificationResponse,
@@ -127,7 +131,7 @@ public class SwiftIosPushNotificationPlugin: NSObject, FlutterPlugin, FlutterStr
             NotificationCenter.default.post(
                 name: NSNotification.Name("ReceiveAPNsPayloadNotification"),
                 object: nil,
-                userInfo: ["data": payload])
+                userInfo: payload)
         }
         completionHandler()
     }

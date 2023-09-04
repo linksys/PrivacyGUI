@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
+import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/constants/build_config.dart';
@@ -21,10 +22,14 @@ import 'package:linksys_app/page/landing/view/debug_device_info_view.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
+import 'package:linksys_app/provider/smart_device_provider.dart';
 import 'package:linksys_app/util/analytics.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/panel/general_expansion.dart';
+import 'package:linksys_widgets/widgets/panel/general_section.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DebugToolsView extends ConsumerStatefulWidget {
   const DebugToolsView({
@@ -120,7 +125,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
       ..._buildConnectionInfo(),
       // ..._buildCloudApp(),
       ..._buildPushNotificationInfo(),
-      ..._buildBiometricsInfo(),
+      _buildSmartDeviceTile(),
     ];
   }
 
@@ -165,11 +170,8 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
 
   List<Widget> _buildBasicInfo() {
     return [
-      ExpansionTile(
-        expandedAlignment: Alignment.centerLeft,
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        initiallyExpanded: true,
-        title: const AppText.bodyLarge('Basic Info'),
+      AppExpansion(
+        title: 'Basic Info',
         children: [
           AppText.bodyMedium(appInfo),
           const AppGap.regular(),
@@ -186,11 +188,9 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
   List<Widget> _buildConnectionInfo() {
     final connectivityState = ref.watch(connectivityProvider);
     return [
-      ExpansionTile(
-        expandedAlignment: Alignment.centerLeft,
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+      AppExpansion(
         initiallyExpanded: true,
-        title: const AppText.bodyLarge('Connection Info'),
+        title: 'Connection Info',
         children: [
           AppText.bodyMedium(
               'Router: ${connectivityState.connectivityInfo.routerType.name}'),
@@ -206,13 +206,35 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
     ];
   }
 
+  Widget _buildSmartDeviceTile() {
+    final smartDevice = ref.watch(smartDeviceProvider);
+    return AppExpansion(
+      title: 'Linksys Smart Devices',
+      children: [
+        AppText.labelLarge('SmartDeviceId: ${smartDevice.id}'),
+        AppText.labelLarge(
+            'SmartDevice Verified: ${smartDevice.isVerified}'),
+        AppPrimaryButton(
+          'Register Smartdevice',
+          onTap: () {
+            SharedPreferences.getInstance().then((prefs) {
+              final deviceToken = prefs.getString(pDeviceToken);
+              if (deviceToken != null) {
+                ref
+                    .read(smartDeviceProvider.notifier)
+                    .registerSmartDevice(deviceToken);
+              } else {}
+            });
+          },
+        ),
+      ],
+    );
+  }
+
   List<Widget> _buildPushNotificationInfo() {
     return [
-      ExpansionTile(
-        expandedAlignment: Alignment.centerLeft,
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        initiallyExpanded: true,
-        title: const AppText.bodyLarge('PushNotification Info'),
+      AppExpansion(
+        title: 'PushNotification Info',
         children: [
           Offstage(
             offstage: Platform.isIOS,
@@ -299,11 +321,8 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
 
   List<Widget> _buildBluetoothTestSection() {
     return [
-      ExpansionTile(
-        expandedAlignment: Alignment.centerLeft,
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        initiallyExpanded: true,
-        title: const AppText.bodyLarge('Bluetooth testing'),
+      AppExpansion(
+        title: 'Bluetooth testing',
         children: [
           AppPrimaryButton(
             'Scan & connect',
