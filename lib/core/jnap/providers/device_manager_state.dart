@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:linksys_app/core/jnap/models/back_haul_info.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/models/wan_status.dart';
 
@@ -9,6 +10,7 @@ class DeviceManagerState {
   final Map<String, String> locationMap;
   final Map<String, Map<String, dynamic>> wirelessConnections;
   final RouterWANStatus? wanStatus;
+  final List<BackHaulInfoData> backhaulInfoData;
   final bool isFirmwareUpToDate;
   final int lastUpdateTime;
 
@@ -17,6 +19,7 @@ class DeviceManagerState {
     this.locationMap = const {},
     this.wirelessConnections = const {},
     this.wanStatus,
+    this.backhaulInfoData = const [],
     this.isFirmwareUpToDate = false,
     this.lastUpdateTime = 0,
   });
@@ -26,6 +29,7 @@ class DeviceManagerState {
     Map<String, String>? locationMap,
     Map<String, Map<String, dynamic>>? wirelessConnections,
     RouterWANStatus? wanStatus,
+    List<BackHaulInfoData>? backhaulInfoData,
     bool? isFirmwareUpToDate,
     int? lastUpdateTime,
   }) {
@@ -34,6 +38,7 @@ class DeviceManagerState {
       locationMap: locationMap ?? this.locationMap,
       wirelessConnections: wirelessConnections ?? this.wirelessConnections,
       wanStatus: wanStatus ?? this.wanStatus,
+      backhaulInfoData: backhaulInfoData ?? this.backhaulInfoData,
       isFirmwareUpToDate: isFirmwareUpToDate ?? this.isFirmwareUpToDate,
       lastUpdateTime: lastUpdateTime ?? this.lastUpdateTime,
     );

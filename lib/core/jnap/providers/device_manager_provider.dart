@@ -1,5 +1,7 @@
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/models/back_haul_info.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/models/wan_status.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
@@ -25,6 +27,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     Map<String, dynamic>? getNetworkConnectionsData;
     Map<String, dynamic>? getWANStatusData;
     Map<String, dynamic>? getFirmwareUpdateStatusData;
+    Map<String, dynamic>? getBackHaulInfoData;
 
     final result = pollingResult?.data;
     if (result != null) {
@@ -35,6 +38,8 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
           (result[JNAPAction.getWANStatus] as JNAPSuccess?)?.output;
       getFirmwareUpdateStatusData =
           (result[JNAPAction.getFirmwareUpdateStatus] as JNAPSuccess?)?.output;
+      getBackHaulInfoData =
+          (result[JNAPAction.getBackhaulInfo] as JNAPSuccess?)?.output;
     }
 
     var newState = const DeviceManagerState();
@@ -42,9 +47,34 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     newState = _getWirelessConnections(newState, getNetworkConnectionsData);
     newState = _getWANStatusModel(newState, getWANStatusData);
     newState = _getFirmwareStatus(newState, getFirmwareUpdateStatusData);
+    newState = _getBackhaukInfoData(newState, getBackHaulInfoData);
     return newState.copyWith(
       lastUpdateTime: pollingResult?.lastUpdate,
     );
+  }
+
+  DeviceManagerState _getBackhaukInfoData(
+      DeviceManagerState state, Map<String, dynamic>? data) {
+    var newState = state.copyWith(
+        backhaulInfoData: List.from(data?['backhaulDevices'] ?? [])
+            .map((e) => BackHaulInfoData.fromMap(e))
+            .toList());
+    // update ipAddr
+    newState = newState.copyWith(
+        deviceList: newState.deviceList.map((device) {
+      final deviceID = device.deviceID;
+      final backhaulInfo = newState.backhaulInfoData
+          .firstWhereOrNull((backhaul) => backhaul.deviceUUID == deviceID);
+      if (backhaulInfo != null && device.connections.isNotEmpty) {
+        final updatedConnections = device.connections
+            .map((connection) =>
+                connection.copyWith(ipAddress: backhaulInfo.ipAddress))
+            .toList();
+        return device.copyWith(connections: updatedConnections);
+      }
+      return device;
+    }).toList());
+    return newState;
   }
 
   DeviceManagerState _getDeviceListAndLocations(
@@ -227,6 +257,33 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       }
     }
     return false;
+  }
+
+  RouterDevice? findParent(String deviceID) {
+    final node = state.deviceList
+        .firstWhereOrNull((element) => element.deviceID == deviceID);
+    if (node == null) {
+      return null;
+    }
+    if (node.connections.isEmpty) {
+      return null;
+    }
+    String? parentIpAddr;
+    for (var element in node.connections) {
+      for (var backhaul in state.backhaulInfoData) {
+        if (backhaul.ipAddress == element.ipAddress) {
+          parentIpAddr = backhaul.parentIPAddress;
+          break;
+        }
+      }
+    }
+    if (parentIpAddr == null) {
+      return null;
+    }
+    return state.deviceList.firstWhereOrNull((element) =>
+        element.connections
+            .firstWhereOrNull((element) => element.ipAddress == parentIpAddr) !=
+        null);
   }
 
   // Update the name(location) of nodes and external devices

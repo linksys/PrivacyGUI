@@ -22,6 +22,7 @@ class JNAPTransactionBuilder {
         JNAPAction.getFirmwareUpdateStatus: {},
         JNAPAction.getHealthCheckResults: {'includeModuleResults': true},
         JNAPAction.getSupportedHealthCheckModules: {},
+        JNAPAction.getBackhaulInfo: {},
       },
       auth: true,
     );
