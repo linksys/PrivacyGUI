@@ -52,7 +52,7 @@ class CommandQueue {
           'linksys cache manager: responsed with local cache data: ${command.spec.action}');
       command.complete((
         command.createResponse(
-            jsonDecode(linksysCacheManger.data[command.spec.action])["data"]),
+            jsonEncode(linksysCacheManger.data[command.spec.action]["data"])),
         DataSource.fromCache
       ));
     } else if (_checkUseCacheDataForJnapTransactionCommand(command)) {
@@ -103,8 +103,8 @@ class CommandQueue {
       BaseCommand command, LinksysCacheManager cacheManager) {
     for (var element in (jsonDecode(command.spec.payload()) as List<dynamic>)) {
       if (!cacheManager.data.containsKey(element["action"]) ||
-          cacheManager.didCacheExpire(
-              jsonDecode(cacheManager.data[element["action"]])["target"])) {
+          cacheManager
+              .didCacheExpire(cacheManager.data[element["action"]]["target"])) {
         return true;
       }
     }
@@ -135,8 +135,7 @@ class CommandQueue {
   Map<String, dynamic> _buildTransacationData(BaseCommand command) {
     final actions = [];
     for (var element in (jsonDecode(command.spec.payload()) as List<dynamic>)) {
-      actions.add(jsonDecode(
-          jsonDecode(linksysCacheManger.data[element["action"]])["data"]));
+      actions.add(linksysCacheManger.data[element["action"]]["data"]);
     }
     final dataMap = {keyJnapResult: jnapResultOk, keyJnapResponses: actions};
     logger.d(

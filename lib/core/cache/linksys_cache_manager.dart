@@ -17,6 +17,10 @@ class LinksysCacheManager {
     _instance ??= LinksysCacheManager._();
     return _instance!;
   }
+
+  /// cache system can cache multiple devices via serial number.
+  /// data variable is specific device cache map data.
+  /// cache is plain text for data that used for saving in file.
   String lastSerialNumber = "";
   late int defaultCacheExpiration;
   Map<String, dynamic> data = {};
@@ -25,7 +29,7 @@ class LinksysCacheManager {
 
   void init() async {
     logger.d('Starting to init linksys cache manager');
-    defaultCacheExpiration = 120000;
+    defaultCacheExpiration = 110000;
     cacheManager = FlutterCacheManager();
     cache = await cacheManager.get() ?? "";
     logger.d('linksys cache manager: init cache data: $cache');
@@ -60,7 +64,7 @@ class LinksysCacheManager {
       if (allCaches[serialNumber] == null) {
         return false;
       }
-      data = jsonDecode(allCaches[serialNumber]);
+      data = allCaches[serialNumber];
       lastSerialNumber = serialNumber;
       logger.d(
           "linksys cache manager: Load cache success for $serialNumber : ${data.toString()}");
@@ -82,20 +86,15 @@ class LinksysCacheManager {
       });
     }
     if (cache.isEmpty) {
-      Map<String, String> cache = {serialNumber: jsonEncode(data)};
+      Map<String, dynamic> cache = {serialNumber: data};
       cacheManager.set(jsonEncode(cache));
       return;
     }
     Map<String, dynamic> cacheModel = jsonDecode(cache);
-    // has no serial number
-    if (cacheModel[serialNumber] == null) {
-      cacheModel[serialNumber] = '{}';
-    }
     data.forEach((key, value) {
-      jsonDecode(cacheModel[serialNumber])[key] = value;
+      cacheModel[serialNumber][key] = value;
     });
     cache = jsonEncode(cacheModel);
-    // logger.d("linksys cache manager: save cache of $serialNumber : $cache");
     cacheManager.set(cache);
   }
 
@@ -115,66 +114,14 @@ class LinksysCacheManager {
     return cache;
   }
 
-  void cacheTransacationResults(
-      Map<String, dynamic> result, String? serialNumber) {
-    if (serialNumber == null) {
-      result.forEach((key, value) {
-        if (key == '/core/GetDeviceInfo') {
-          serialNumber = jsonDecode(value)['serialNumber'];
-        }
-      });
-    }
-    if (serialNumber != null) {
-      result.forEach((key, value) {
-        var tmp = jsonDecode(value);
-        tmp['cacheAt'] = DateTime.now().millisecondsSinceEpoch;
-        data[key] = jsonEncode(tmp);
-      });
-    }
-  }
-
   bool didCacheExpire(String action) {
-    if (jsonDecode(data[action]) == null ||
-        jsonDecode(data[action])["cachedAt"] == null ||
-        DateTime.now().millisecondsSinceEpoch -
-                int.parse(jsonDecode(data[action])["cachedAt"]) >=
+    if (data[action] == null ||
+        data[action]["cachedAt"] == null ||
+        DateTime.now().millisecondsSinceEpoch - data[action]["cachedAt"] >=
             defaultCacheExpiration) {
       return true;
     } else {
       return false;
     }
   }
-
-  Map<String, dynamic>? buildTransacationCachedResult(
-      Map<String, dynamic> results) {
-    Map<String, dynamic> result = {"result": "OK", "responses": ""};
-    var expired = false;
-    results.forEach((key, value) {
-      if (data[key] != null) {
-        var cachedResult = didCacheExpire(key);
-        if (cachedResult != null) {
-          expired = true;
-        }
-      }
-      if (data[key] == null || expired) {
-        return;
-      }
-      var temp = (result["responses"] as String) + jsonEncode(data[key]);
-      result["responses"] = temp;
-    });
-    return result;
-  }
-
-  // Future<String> send(String action, String data, Map<String, String> options,
-  //     String originalAction) async {
-  //   if (options["serialNumber"] != null) {
-  //     loadCache(serialNumber: options["serialNumber"]!);
-  //   }
-  //   String cachedResult = "";
-
-  //   if (action == "/core/Transacation") {
-  //     cachedResult = jsonEncode(buildTransacationCachedResult(data, data));
-  //   }
-  //   return cachedResult;
-  // }
 }

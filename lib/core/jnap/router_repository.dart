@@ -217,10 +217,10 @@ class RouterRepository {
       if (cacheLevel == CacheLevel.localCached) {
         final dataResult = {
           "target": action,
-          "cachedAt": DateTime.now().millisecondsSinceEpoch.toString(),
+          "cachedAt": DateTime.now().millisecondsSinceEpoch,
         };
-        dataResult["data"] = jsonEncode(record.$1.toJson());
-        linksysCacheManager.data[action] = jsonEncode(dataResult);
+        dataResult["data"] = record.$1.toJson();
+        linksysCacheManager.data[action] = dataResult;
         if (serialNumber != null) {
           linksysCacheManager.saveCache(serialNumber);
         }
@@ -239,10 +239,10 @@ class RouterRepository {
       record.$1.data.forEach((key, value) {
         final dataResult = {
           "target": key.actionValue,
-          "cachedAt": DateTime.now().millisecondsSinceEpoch.toString(),
+          "cachedAt": DateTime.now().millisecondsSinceEpoch,
         };
-        dataResult["data"] = jsonEncode((value as JNAPSuccess).toJson());
-        linksysCacheManager.data[key.actionValue] = jsonEncode(dataResult);
+        dataResult["data"] = (value as JNAPSuccess).toJson();
+        linksysCacheManager.data[key.actionValue] = dataResult;
       });
       if (serialNumber != null) {
         linksysCacheManager.saveCache(serialNumber);
