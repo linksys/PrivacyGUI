@@ -1,5 +1,4 @@
 import 'package:linksys_app/core/cloud/model/cloud_event_action.dart';
-import 'package:linksys_app/core/cloud/model/cloud_event_subscription.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -9,8 +8,8 @@ void main() {
         actionType: 'NOTIFICATION',
         startAt: '2022-03-22T3:21:00Z',
         endAt: '2032-03-22T3:21:00Z',
-        timestoTrigger: '1',
-        triggerInterval: '12',
+        timestoTrigger: 1,
+        triggerInterval: 12,
         payload: '{"type": "PUSH","value": "SMART_DEVICE_ID"}',
       );
       final actual = data.toJson();
@@ -22,8 +21,8 @@ void main() {
         actionType: 'NOTIFICATION',
         startAt: '2022-03-22T3:21:00Z',
         endAt: '2032-03-22T3:21:00Z',
-        timestoTrigger: '1',
-        triggerInterval: '12',
+        timestoTrigger: 1,
+        triggerInterval: 12,
         payload: '{"type": "PUSH","value": "SMART_DEVICE_ID"}',
       );
       final actual = data.toMap();
@@ -31,8 +30,8 @@ void main() {
         "actionType": "NOTIFICATION",
         "startAt": "2022-03-22T3:21:00Z",
         "endAt": "2032-03-22T3:21:00Z",
-        "timestoTrigger": '1',
-        "triggerInterval": '12',
+        "timestoTrigger": 1,
+        "triggerInterval": 12,
         "payload": "{\"type\": \"PUSH\",\"value\": \"SMART_DEVICE_ID\"}",
       });
     });

@@ -2,6 +2,11 @@ part of 'router_provider.dart';
 
 final settings = [
   GoRoute(
+    name: RouteNamed.settingsNotification,
+    path: RoutePath.settingsNotification,
+    builder: (context, state) => NotificationSettingsView(),
+  ),
+  GoRoute(
       name: RouteNamed.settingsWifi,
       path: RoutePath.settingsWifi,
       builder: (context, state) => WifiSettingsView(),

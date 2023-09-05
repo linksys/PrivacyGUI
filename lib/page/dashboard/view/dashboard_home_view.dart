@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/models/network.dart';
 import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/customs/enabled_with_opacity_widget.dart';
 import 'package:linksys_app/provider/network/_network.dart';
+import 'package:linksys_app/provider/smart_device_provider.dart';
 import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_app/util/smart_device_prefs_helper.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -19,6 +23,7 @@ import 'package:linksys_widgets/widgets/container/stacked_listview.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/panel/general_card.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardHomeView extends ConsumerStatefulWidget {
   const DashboardHomeView({Key? key}) : super(key: key);
@@ -31,6 +36,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   @override
   void initState() {
     super.initState();
+    _pushNotificationCheck();
   }
 
   @override
@@ -378,5 +384,50 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     }
 
     return connectedDevices;
+  }
+
+  void _pushNotificationCheck() {
+    if (!mounted) {
+      return;
+    }
+    if (GoRouter.of(context).routerDelegate.currentConfiguration.fullPath !=
+        RoutePath.dashboardHome) {
+      return;
+    }
+    SharedPreferences.getInstance().then((prefs) {
+      final isPushPromptShown = prefs.getBool(
+              SmartDevicesPrefsHelper.getNidKey(prefs, key: pShowPushPrompt)) ??
+          false;
+      if (!isPushPromptShown) {
+        prefs.setBool(
+            SmartDevicesPrefsHelper.getNidKey(prefs, key: pShowPushPrompt),
+            true);
+        showAdaptiveDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: AppText.bodyLarge('Push Notification'),
+            content: AppText.bodyLarge(
+                'Do you want to receive Linksys push notifications?'),
+            actions: [
+              AppTertiaryButton(
+                'Yes',
+                onTap: () {
+                  final deviceToken = prefs.getString(pDeviceToken);
+                  if (deviceToken != null) {
+                    ref
+                        .read(smartDeviceProvider.notifier)
+                        .registerSmartDevice(deviceToken);
+                  } else {}
+                  context.pop();
+                },
+              ),
+              AppTertiaryButton('No', onTap: () {
+                context.pop();
+              })
+            ],
+          ),
+        );
+      }
+    });
   }
 }

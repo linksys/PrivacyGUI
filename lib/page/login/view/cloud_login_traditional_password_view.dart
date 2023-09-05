@@ -56,7 +56,7 @@ class _LoginTraditionalPasswordViewState
             password: value,
             isBiometricsLogin: _isBiometricsLogin);
       }).onError((error, stackTrace) {
-        final err = error as PlatformException?;
+        // final err = error as PlatformException?;
         context.pop();
       });
     }

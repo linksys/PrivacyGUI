@@ -52,7 +52,7 @@ class BiometricsHelp {
           key: key,
         );
       }
-      return null;
+      throw Exception(); // TODO
     });
   }
 

@@ -89,7 +89,7 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
           AppSectionItemData(
             title: 'Notifications',
             iconData: getCharactersIcons(context).smsDefault,
-            onTap: () => context.goNamed('notifications'),
+            onTap: () => context.goNamed('notificationSettings'),
           ),
           AppSectionItemData(
             title: 'WiFi',

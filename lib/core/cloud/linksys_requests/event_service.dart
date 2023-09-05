@@ -40,6 +40,30 @@ extension EventService on LinksysHttpClient {
         .post(Uri.parse(endpoint), headers: header, body: jsonEncode(body));
   }
 
+  Future<Response> getNetworkEventAction(String token, eventSubscriptionId) {
+    final endpoint = combineUrl(kEventNetworkActionCreate, args: {
+      kVarEventSubscriptionId: eventSubscriptionId,
+    });
+    final header = defaultHeader
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+    return this.get(
+      Uri.parse(endpoint),
+      headers: header,
+    );
+  }
+
+  Future<Response> deleteNetworkEventAction(String token, eventSubscriptionId) {
+    final endpoint = combineUrl(kEventNetworkActionCreate, args: {
+      kVarEventSubscriptionId: eventSubscriptionId,
+    });
+    final header = defaultHeader
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+    return this.delete(
+      Uri.parse(endpoint),
+      headers: header,
+    );
+  }
+
   Future<Response> createNetworkEventAction(
     String token,
     String eventSubscriptionId,

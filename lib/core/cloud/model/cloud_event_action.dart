@@ -5,22 +5,22 @@ import 'package:equatable/equatable.dart';
 
 class CloudEventAction extends Equatable {
   final String actionType;
-  final String startAt;
-  final String endAt;
-  final String timestoTrigger;
-  final String triggerInterval;
+  final String? startAt;
+  final String? endAt;
+  final int timestoTrigger;
+  final int triggerInterval;
   final String payload;
   const CloudEventAction({
     required this.actionType,
-    required this.startAt,
-    required this.endAt,
+    this.startAt,
+    this.endAt,
     required this.timestoTrigger,
     required this.triggerInterval,
     required this.payload,
   });
 
   @override
-  List<Object> get props {
+  List<Object?> get props {
     return [
       actionType,
       startAt,
@@ -35,8 +35,8 @@ class CloudEventAction extends Equatable {
     String? actionType,
     String? startAt,
     String? endAt,
-    String? timestoTrigger,
-    String? triggerInterval,
+    int? timestoTrigger,
+    int? triggerInterval,
     String? payload,
   }) {
     return CloudEventAction(
@@ -57,16 +57,16 @@ class CloudEventAction extends Equatable {
       'timestoTrigger': timestoTrigger,
       'triggerInterval': triggerInterval,
       'payload': payload,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory CloudEventAction.fromMap(Map<String, dynamic> map) {
     return CloudEventAction(
       actionType: map['actionType'] as String,
-      startAt: map['startAt'] as String,
-      endAt: map['endAt'] as String,
-      timestoTrigger: map['timestoTrigger'] as String,
-      triggerInterval: map['triggerInterval'] as String,
+      startAt: map['startAt'] as String?,
+      endAt: map['endAt'] as String?,
+      timestoTrigger: map['timestoTrigger'] as int,
+      triggerInterval: map['triggerInterval'] as int,
       payload: map['payload'] as String,
     );
   }

@@ -6,7 +6,10 @@ const pDeviceToken = 'LinksysDeviceToken';
 const pSmartDeviceId = 'LinksysSmartDeviceId';
 const pSmartDeviceSecret = 'LinksysSmartDeviceSecret';
 const pSmartDeviceVerified = 'LinksysSmartDeviceVerified';
+
 const pSelectedNetworkId = 'LinksysSelectedNetworkId';
+const pShowPushPrompt = 'PushPrompt';
+// secured
 const pSessionToken = 'SessionToken';
 const pSessionTokenTs = 'SessionTokenTimeStamp';
 const pUserPassword = 'UserPassword';

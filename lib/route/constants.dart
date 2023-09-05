@@ -17,6 +17,7 @@ class RoutePath {
   static const dashboardSettings = 'dashboardSettings';
 
   /// settings
+  static const settingsNotification = 'notificationSettings';
   static const settingsWifi = 'wifiSettings';
   static const settingsNodes = 'nodes';
   static const settingsRouterPassword = 'routerPassword';
@@ -96,6 +97,7 @@ class RouteNamed {
   static const dashboardSettings = 'dashboardSettings';
 
   /// settings
+  static const settingsNotification = 'notificationSettings';
   static const settingsWifi = 'wifiSettings';
   static const settingsNodes = 'nodes';
   static const settingsRouterPassword = 'routerPassword';

@@ -156,13 +156,14 @@ class LinksysCloudRepository {
   }
 
   // event service
-  Future<List<CloudEventSubscription>> queryNetworkEventSubscriptions(String networkId) {
+  Future<List<CloudEventSubscription>> queryNetworkEventSubscriptions(
+      String networkId) {
     return loadSessionToken()
         .then((token) => _httpClient.queryEventSubscription(token, networkId))
-        .then((response) =>
-            List.from(jsonDecode(response.body)['eventSubscriptions'])
-                .map((e) => CloudEventSubscription.fromMap(e['eventSubscription']))
-                .toList());
+        .then((response) => List.from(
+                jsonDecode(response.body)['eventSubscriptions'])
+            .map((e) => CloudEventSubscription.fromMap(e['eventSubscription']))
+            .toList());
   }
 
   Future<String> createNetworkEventSubscription(
@@ -179,5 +180,26 @@ class LinksysCloudRepository {
     return loadSessionToken().then((token) => _httpClient
         .createNetworkEventAction(token, eventSubscriptionId, cloudEventAction)
         .then((response) => response.statusCode == HttpStatus.ok));
+  }
+
+  Future<List<CloudEventAction>> getNetworkEventAction(
+      String eventSubscriptionId) {
+    return loadSessionToken()
+        .then((token) =>
+            _httpClient.getNetworkEventAction(token, eventSubscriptionId))
+        .then((response) {
+      final json = jsonDecode(response.body);
+      final actions = List.from(json['eventActions']['eventAction'])
+          .map((e) => CloudEventAction.fromMap(e))
+          .toList();
+      return actions;
+    });
+  }
+
+  Future<bool> deleteNetworkEventAction(String eventSubscriptionId) {
+    return loadSessionToken()
+        .then((token) =>
+            _httpClient.deleteNetworkEventAction(token, eventSubscriptionId))
+        .then((response) => response.statusCode == HttpStatus.ok);
   }
 }
