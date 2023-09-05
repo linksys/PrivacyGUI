@@ -125,18 +125,24 @@ class _AccountViewState extends ConsumerState<AccountView> {
                       if (value) {
                         await BiometricsHelp()
                             .saveBiometrics(state.username, state.password)
-                            .then((_) {
-                          ref
-                              .read(authProvider.notifier)
-                              .updateBiometrics(value);
+                            .onError((error, stackTrace) => false)
+                            .then((success) {
+                          if (success) {
+                            ref
+                                .read(authProvider.notifier)
+                                .updateBiometrics(value);
+                          }
                         });
                       } else {
                         await BiometricsHelp()
                             .deleteBiometrics(state.username)
-                            .then((_) {
-                          ref
-                              .read(authProvider.notifier)
-                              .updateBiometrics(value);
+                            .onError((error, stackTrace) => false)
+                            .then((success) {
+                          if (success) {
+                            ref
+                                .read(authProvider.notifier)
+                                .updateBiometrics(value);
+                          }
                         });
                       }
                     },

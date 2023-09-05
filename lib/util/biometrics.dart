@@ -4,7 +4,7 @@ import 'package:linksys_app/util/extensions.dart';
 import 'package:local_auth/local_auth.dart';
 
 const AuthenticationOptions _defaultOptions =
-    AuthenticationOptions(biometricOnly: true);
+    AuthenticationOptions(biometricOnly: true, useErrorDialogs: false);
 
 enum CanAuthenticateResponse {
   success,
@@ -56,7 +56,7 @@ class BiometricsHelp {
     });
   }
 
-  Future<void> _delete({
+  Future<bool> _delete({
     required String key,
     String reason = 'Authenticate to access data',
   }) {
@@ -66,45 +66,59 @@ class BiometricsHelp {
           key: key,
         );
       }
+      return value;
     });
   }
 
   Future<List<String>> getKeyList() async {
-    final data = await const FlutterSecureStorage().read(key: pBiometrics);
-    return data == null ? [] : data.split(',');
+    final data =
+        await const FlutterSecureStorage().read(key: pBiometrics) ?? '';
+    return data.isEmpty ? [] : data.split(',');
   }
 
-  Future saveBiometrics(String username, String password) async {
+  Future<bool> saveBiometrics(String username, String password) async {
     const storage = FlutterSecureStorage();
     final keys = await storage.read(key: pBiometrics);
     final keyList = keys == null ? <String>[] : keys.split(',');
 
-    await _write(key: _getKey(username), data: password);
-    await storage.write(
-        key: pBiometrics, value: (keyList..add(username)).join(','));
+    return await _write(key: _getKey(username), data: password).then((value) {
+      if (value) {
+        storage.write(
+            key: pBiometrics, value: (keyList..add(username)).join(','));
+      }
+      return value;
+    });
   }
 
   Future<String> loadBiometrics(String username) async {
     return _read(key: _getKey(username)).then((value) => value ?? '');
   }
 
-  Future deleteBiometrics(String username) async {
+  Future<bool> deleteBiometrics(String username) async {
     const storage = FlutterSecureStorage();
     final keys = await storage.read(key: pBiometrics);
     if (keys == null) {
-      return;
+      return false;
     }
     final keyList = keys.split(',');
     final key = _getKey(username);
 
-    await _delete(key: key);
-    keyList.remove(username);
-    if (keyList.isEmpty) {
-      await storage.delete(key: pBiometrics);
-    } else {
-      await storage.write(
-          key: pBiometrics, value: (keyList..remove(username)).join(','));
-    }
+    return await _delete(key: key).then((value) {
+      keyList.remove(username);
+      if (keyList.isEmpty) {
+        storage.delete(key: pBiometrics);
+      } else {
+        storage.write(
+            key: pBiometrics, value: (keyList..remove(username)).join(','));
+      }
+      return value;
+    });
+  }
+
+  Future deleteAllBiometrics() async {
+    // Delete key list only
+    const storage = FlutterSecureStorage();
+    storage.delete(key: pBiometrics);
   }
 
   String _getKey(String username) {

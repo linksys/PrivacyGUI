@@ -6,6 +6,7 @@ import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/util/smart_device_prefs_helper.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -334,12 +335,16 @@ class SmartDeviceNotifier extends Notifier<LinksysSmartDevice> {
         if (value) {
           final updatedSubscription = state.subscriptions.map((e) {
             if (e.subscriptionId == eventSubscriptionId) {
-              return e.copyWith(eventAction: null);
+              return NetworkEventSubscrition(
+                  subscriptionId: e.subscriptionId,
+                  eventAction: null,
+                  type: e.type);
             }
             return e;
           }).toList();
           state = state.copyWith(subscriptions: updatedSubscription);
         }
+        logger.d(state);
         return value;
       },
     );

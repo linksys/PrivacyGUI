@@ -205,14 +205,22 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final newToken = sessionToken ??
           await cloud.login(username: username, password: password);
       if (isEnrolledBiometrics) {
-        await BiometricsHelp().saveBiometrics(username, password);
+        BiometricsHelp().deleteAllBiometrics();
+        isEnrolledBiometrics = await BiometricsHelp()
+            .saveBiometrics(username, password)
+            .onError((error, stackTrace) => false);
       }
       return await updateCredientials(
         sessionToken: newToken,
         username: username,
         password: password,
-      ).then((value) => value.copyWith(
-          isEnrolledBiometrics: isEnrolledBiometrics || isBiometricsLogin));
+      ).then((value) {
+        final hasBiometrics = isEnrolledBiometrics || isBiometricsLogin;
+        if (!hasBiometrics) {
+          BiometricsHelp().deleteAllBiometrics();
+        }
+        return value.copyWith(isEnrolledBiometrics: hasBiometrics);
+      });
     });
     logger.d('after cloud login: $state');
   }
