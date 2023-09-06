@@ -2,19 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 
+const signalThresholdSNR = [40, 25, 10];
+const signalThresholdRSSI = [-60, -70, -80];
+
 NodeSignalLevel getWifiSignalLevel(int? signalStrength) {
   if (signalStrength == null) {
     return NodeSignalLevel.wired;
-  } else if (signalStrength <= -80) {
+  }
+  var signalThreshold =
+      signalStrength > 0 ? signalThresholdSNR : signalThresholdRSSI;
+  var index = signalThreshold.indexWhere((element) => signalStrength > element);
+  if (index == -1) {
     return NodeSignalLevel.weak;
-  } else if (signalStrength > -80 && signalStrength <= -70) {
-    return NodeSignalLevel.fair;
-  } else if (signalStrength > -70 && signalStrength <= -60) {
-    return NodeSignalLevel.good;
-  } else if (signalStrength > -60 && signalStrength <= 0) {
-    return NodeSignalLevel.excellent;
   } else {
-    return NodeSignalLevel.none;
+    switch (3 - index) {
+      case 3:
+        return NodeSignalLevel.excellent;
+      case 2:
+        return NodeSignalLevel.good;
+      case 1:
+        return NodeSignalLevel.fair;
+      default:
+        return NodeSignalLevel.none;
+    }
   }
 }
 

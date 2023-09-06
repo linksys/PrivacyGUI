@@ -70,21 +70,18 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         children: [
           _deviceAvatar(state.item.icon),
           const AppGap.regular(),
-          Stack(
-            clipBehavior: Clip.none,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AppText.titleSmall(
                 state.item.name,
               ),
-              Positioned(
-                top: -2.5,
-                right: -(AppTheme.of(context).spacing.big),
-                child: AppIconButton.noPadding(
-                  icon: getCharactersIcons(context).editDefault,
-                  onTap: () {
-                    //TODO: Go to edit page
-                  },
-                ),
+              const AppGap.semiSmall(),
+              AppIconButton.noPadding(
+                icon: getCharactersIcons(context).editDefault,
+                onTap: () {
+                  context.pushNamed(RouteNamed.changeDeviceName);
+                },
               ),
             ],
           ),
