@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
@@ -38,7 +39,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
     return model.when(data: (state) {
       return StyledAppPageView(
         scrollable: true,
-        isCloseStyle: true,
+      appBarStyle: AppBarStyle.close,
         onBackTap: ref.read(networkProvider).selected != null
             ? null
             : () {

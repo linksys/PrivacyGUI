@@ -19,7 +19,7 @@ class NoInternetConnectionModal extends ConsumerWidget {
       child: AppPageView.bottomSheetModalBlur(
         padding: const AppEdgeInsets.only(),
         bottomSheet: Container(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surfaceVariant,
           height: 240,
           padding: const EdgeInsets.all(24),
           child: Stack(
@@ -40,15 +40,6 @@ class NoInternetConnectionModal extends ConsumerWidget {
                           .prompt_no_internet_connection_description,
                     )
                   ],
-                ),
-              ),
-              Container(
-                alignment: Alignment.topRight,
-                child: AppIconButton(
-                  icon: getCharactersIcons(context).crossDefault,
-                  onTap: () {
-                    context.pop();
-                  },
                 ),
               ),
             ],

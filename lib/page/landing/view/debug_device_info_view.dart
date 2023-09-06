@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/page/components/layouts/basic_header.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -28,7 +29,7 @@ class _DebugDeviceInfoViewState extends ConsumerState<DebugDeviceInfoView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      isCloseStyle: true,
+      appBarStyle: AppBarStyle.close,
       scrollable: true,
       child: AppBasicLayout(
         header: const BasicHeader(

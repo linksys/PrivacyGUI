@@ -11,6 +11,7 @@ import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/customs/enabled_with_opacity_widget.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/provider/smart_device_provider.dart';
 import 'package:linksys_app/route/constants.dart';
@@ -45,13 +46,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     final _ = ref.watch(deviceManagerProvider);
     //TODO: Replace the data source with the one from device manager
     final state = ref.watch(networkProvider);
-    return AppPageView(
-      appBar: LinksysAppBar(
-        trailing: [
-          AppIconButton.noPadding(
-              icon: getCharactersIcons(context).refreshDefault)
-        ],
-      ),
+    return StyledAppPageView(
       scrollable: true,
       padding: const AppEdgeInsets.only(
         top: AppGapSize.big,
@@ -61,10 +56,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       ),
       child: Stack(
         children: [
-          Image(
-            image: AppTheme.of(context).images.dashboardBg,
-            fit: BoxFit.cover, // to cover the entire screen
-          ),
           EnabledOpacityWidget(
             enabled: state.selected?.deviceInfo != null,
             child: Column(

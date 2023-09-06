@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/validator_rules/_validator_rules.dart';
@@ -34,7 +35,7 @@ class _MacFilteringEnterDeviceViewState
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      isCloseStyle: true,
+      appBarStyle: AppBarStyle.close,
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: Column(

@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/page/components/customs/debug_overlay_view.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/route/router_provider.dart';
@@ -14,6 +16,7 @@ import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/base/padding.dart';
 
 enum DashboardBottomItemType { more, home, devices, settings }
 
@@ -51,34 +54,12 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
     if (width > 768 && _selectedIndex == 0) {
       _onItemTapped(1);
     }
-    return Scaffold(
-      body: Stack(
-        children: [
-          GestureDetector(
-              onTap: () {
-                if (!kIsWeb && increase()) {
-                  logger.d('Triggered!');
-                  context.pushNamed(RouteNamed.debug);
-                }
-              },
-              child: widget.child),
-          !showDebugPanel
-              ? const Center()
-              : Positioned(
-                  left: Utils.getScreenWidth(context) -
-                      Utils.getScreenWidth(context) / 2,
-                  child: IgnorePointer(
-                    ignoring: true,
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                          top: Utils.getTopSafeAreaPadding(context)),
-                      child: const OverlayInfoView(),
-                    ),
-                  ),
-                ),
-          // : Container(),
-        ],
-      ),
+    return StyledAppPageView(
+      backState: StyledBackState.none,
+      appBarStyle: AppBarStyle.none,
+      handleNoConnection: true,
+      handleBanner: true,
+      padding: const AppEdgeInsets.zero(),
       bottomNavigationBar: Offstage(
         offstage: width > 768,
         child: BottomNavigationBar(
@@ -107,6 +88,33 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
             onTap: _onItemTapped,
             items:
                 List.from(_bottomTabItems.map((e) => _bottomSheetIconView(e)))),
+      ),
+      child: Stack(
+        children: [
+          GestureDetector(
+              onTap: () {
+                if (!kIsWeb && increase()) {
+                  logger.d('Triggered!');
+                  context.pushNamed(RouteNamed.debug);
+                }
+              },
+              child: widget.child),
+          !showDebugPanel
+              ? const Center()
+              : Positioned(
+                  left: Utils.getScreenWidth(context) -
+                      Utils.getScreenWidth(context) / 2,
+                  child: IgnorePointer(
+                    ignoring: true,
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                          top: Utils.getTopSafeAreaPadding(context)),
+                      child: const OverlayInfoView(),
+                    ),
+                  ),
+                ),
+          // : Container(),
+        ],
       ),
     );
   }

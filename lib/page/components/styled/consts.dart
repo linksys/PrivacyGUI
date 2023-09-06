@@ -3,3 +3,9 @@ enum StyledBackState {
   disabled,
   none,
 }
+
+enum AppBarStyle {
+  back,
+  close,
+  none,
+}

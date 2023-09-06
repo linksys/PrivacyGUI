@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/devices/device_detail_id_provider.dart';
@@ -13,7 +12,6 @@ import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class DashboardDevices extends ArgumentsConsumerStatefulView {
   const DashboardDevices({

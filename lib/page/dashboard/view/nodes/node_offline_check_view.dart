@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/layouts/basic_header.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/devices/node_detail_provider.dart';
@@ -28,7 +29,7 @@ class _NodeOfflineCheckViewState extends ConsumerState<NodeOfflineCheckView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      isCloseStyle: true,
+      appBarStyle: AppBarStyle.close,
       scrollable: true,
       child: AppBasicLayout(
         header: BasicHeader(

@@ -153,17 +153,15 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
       darkTheme: linksysDarkThemeData,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      // routerDelegate: ref.read(routerDelegateProvider),
-      // routeInformationParser: LinksysRouteInformationParser(),
       builder: (context, child) => Container(
         color: Theme.of(context).colorScheme.shadow,
         child: AppResponsiveTheme(
-          child: child ?? const Center(),
           leftFragment:
               (ref.read(authProvider).value?.loginType ?? LoginType.none) !=
                       LoginType.none
-                  ? DashboardMenuView()
+                  ? const DashboardMenuView()
                   : null,
+          child: child ?? const Center(),
         ),
       ),
       routeInformationProvider: router.routeInformationProvider,

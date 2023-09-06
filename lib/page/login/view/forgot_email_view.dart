@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/customs/network_check_view.dart';
 import 'package:linksys_app/page/components/layouts/basic_header.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -26,7 +27,7 @@ class _ForgotEmailViewState extends ConsumerState<ForgotEmailView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      isCloseStyle: true,
+      appBarStyle: AppBarStyle.close,
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: BasicHeader(

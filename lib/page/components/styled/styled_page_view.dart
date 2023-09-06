@@ -1,6 +1,13 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_app/page/components/customs/no_network_bottom_modal.dart';
+import 'package:linksys_app/page/components/styled/banner_info.dart';
+import 'package:linksys_app/page/components/styled/banner_provider.dart';
+import 'package:linksys_widgets/widgets/banner/banner_view.dart';
+import 'package:linksys_app/provider/connectivity/_connectivity.dart';
 
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -20,7 +27,9 @@ class StyledAppPageView extends ConsumerWidget {
   final Widget? bottomSheet;
   final Widget? bottomNavigationBar;
   final bool? scrollable;
-  final bool isCloseStyle;
+  final AppBarStyle appBarStyle;
+  final bool handleNoConnection;
+  final bool handleBanner;
 
   const StyledAppPageView({
     super.key,
@@ -34,50 +43,99 @@ class StyledAppPageView extends ConsumerWidget {
     this.child,
     this.bottomSheet,
     this.bottomNavigationBar,
-    this.isCloseStyle = false,
+    this.appBarStyle = AppBarStyle.back,
+    this.handleNoConnection = false,
+    this.handleBanner = false,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => AppPageView(
-        appBar: _buildAppBar(context, ref),
-        padding: padding,
-        scrollable: scrollable,
-        bottomSheet: bottomSheet,
-        bottomNavigationBar: bottomNavigationBar,
-        child: child,
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Stack(
+      children: [
+        AppPageView(
+          appBar: _buildAppBar(context, ref),
+          padding: padding,
+          scrollable: scrollable,
+          bottomSheet: bottomSheet,
+          bottomNavigationBar: bottomNavigationBar,
+          child: child,
+        ),
+        ..._handleBanner(ref),
+        ..._handleConnectivity(ref),
+      ],
+    );
+  }
 
   bool isBackEnabled() => backState == StyledBackState.enabled;
 
-  LinksysAppBar _buildAppBar(BuildContext context, WidgetRef ref) {
+  LinksysAppBar? _buildAppBar(BuildContext context, WidgetRef ref) {
     final title = this.title;
-    return isCloseStyle
-        ? LinksysAppBar.withClose(
-            context: context,
-            title: title == null ? null : AppText.titleLarge(title),
-            toolbarHeight: toolbarHeight,
-            onBackTap: isBackEnabled()
-                ? (onBackTap ??
-                    () {
-                      // ref.read(navigationsProvider.notifier).pop();
-                      context.pop();
-                    })
-                : null,
-            showBack: backState != StyledBackState.none,
-          )
-        : LinksysAppBar.withBack(
-            context: context,
-            title: title == null ? null : AppText.titleLarge(title),
-            toolbarHeight: toolbarHeight,
-            onBackTap: isBackEnabled()
-                ? (onBackTap ??
-                    () {
-                      // ref.read(navigationsProvider.notifier).pop();
-                      context.pop();
-                    })
-                : null,
-            showBack: backState != StyledBackState.none,
-            trailing: actions,
-          );
+    switch (appBarStyle) {
+      case AppBarStyle.back:
+        return LinksysAppBar.withBack(
+          context: context,
+          title: title == null ? null : AppText.titleLarge(title),
+          toolbarHeight: toolbarHeight,
+          onBackTap: isBackEnabled()
+              ? (onBackTap ??
+                  () {
+                    // ref.read(navigationsProvider.notifier).pop();
+                    context.pop();
+                  })
+              : null,
+          showBack: backState != StyledBackState.none,
+          trailing: actions,
+        );
+      case AppBarStyle.close:
+        return LinksysAppBar.withClose(
+          context: context,
+          title: title == null ? null : AppText.titleLarge(title),
+          toolbarHeight: toolbarHeight,
+          onBackTap: isBackEnabled()
+              ? (onBackTap ??
+                  () {
+                    // ref.read(navigationsProvider.notifier).pop();
+                    context.pop();
+                  })
+              : null,
+          showBack: backState != StyledBackState.none,
+        );
+      case AppBarStyle.none:
+        return null;
+    }
+  }
+
+  List<Widget> _handleBanner(WidgetRef ref) {
+    if (!handleBanner) {
+      return [];
+    }
+    final bannerInfo = ref.watch(bannerProvider);
+    if (bannerInfo.isDiaplay) {
+      return [
+        AppBanner(
+          style: bannerInfo.style,
+          text: bannerInfo.text,
+        )
+      ];
+    } else {
+      return [];
+    }
+  }
+
+  List<Widget> _handleConnectivity(WidgetRef ref) {
+    if (handleNoConnection) {
+      final connectivity = ref.watch(connectivityProvider);
+      if (!connectivity.hasInternet ||
+          connectivity.connectivityInfo.type == ConnectivityResult.none) {
+        logger.i(
+            'No internet access: ${connectivity.hasInternet}, ${connectivity.connectivityInfo.type}');
+        return [const NoInternetConnectionModal()];
+      } else if (!(connectivity.cloudAvailabilityInfo?.isCloudOk ?? false)) {
+        logger.i(
+            'cloud unavailable: ${connectivity.cloudAvailabilityInfo?.isCloudOk}');
+        return [const NoInternetConnectionModal()];
+      }
+    }
+    return [];
   }
 }

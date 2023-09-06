@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/core/utils/nodes.dart';
 import 'package:linksys_app/provider/devices/node_detail_provider.dart';
@@ -19,7 +20,7 @@ class NodeLightGuideView extends ConsumerWidget {
     );
     return StyledAppPageView(
       title: 'Light guide',
-      isCloseStyle: true,
+      appBarStyle: AppBarStyle.close,
       scrollable: true,
       child: isCognitive
           ? _buildCognitiveMeshLightGuide(context)

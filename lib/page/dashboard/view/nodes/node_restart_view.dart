@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/base_components/progress_bars/indeterminate_progress_bar.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
@@ -17,13 +18,13 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-        isCloseStyle: true,
-        child: Visibility(
-          visible: true,//TODO: Refactor the build with AsyncValue
-          replacement: restartingIndicator(),
-          child: restartConfirmation(),
-        ),
-      );
+      appBarStyle: AppBarStyle.close,
+      child: Visibility(
+        visible: true, //TODO: Refactor the build with AsyncValue
+        replacement: restartingIndicator(),
+        child: restartConfirmation(),
+      ),
+    );
   }
 
   Widget restartConfirmation() {

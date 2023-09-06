@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/core/cloud/model/region_code.dart';
@@ -25,7 +26,7 @@ class _RegionPickerViewState extends ConsumerState<RegionPickerView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      isCloseStyle: true,
+      appBarStyle: AppBarStyle.close,
       child: AppBasicLayout(
         header: const BasicHeader(
           title: 'Select region',

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/cloud/model/error_response.dart';
 import 'package:linksys_app/page/components/layouts/basic_header.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
@@ -38,7 +39,7 @@ class _CloudForgotPasswordViewState
 
   Widget _setNewPasswordView() {
     return StyledAppPageView(
-      isCloseStyle: true,
+      appBarStyle: AppBarStyle.close,
       child: AppBasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).enter_your_new_password,
@@ -127,7 +128,7 @@ class _CloudForgotPasswordViewState
 
   Widget _linkExpiredView() {
     return StyledAppPageView(
-      isCloseStyle: true,
+      appBarStyle: AppBarStyle.close,
       child: AppBasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).error_reset_password_link_expired,
