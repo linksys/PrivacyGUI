@@ -49,6 +49,7 @@ class RoutePath {
 
   /// device
   static const deviceDetails = 'deviceDetails';
+  static const changeDeviceName = 'changeDeviceName';
 
   /// account
   static const accountInfo = 'accountInfo';
@@ -129,6 +130,7 @@ class RouteNamed {
 
   ///device
   static const deviceDetails = 'deviceDetails';
+  static const changeDeviceName = 'changeDeviceName';
 
   /// account
   static const accountInfo = 'accountInfo';
