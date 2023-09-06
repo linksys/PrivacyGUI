@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/cache/cache_manager.dart';
+import 'cache_manager_base.dart'
+    if (dart.library.io) 'cache_manager_mobile.dart'
+    if (dart.library.html) 'cache_manager_web.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 
 enum DataSource { fromCache, fromRemote }

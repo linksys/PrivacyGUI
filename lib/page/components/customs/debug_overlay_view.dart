@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/provider/connectivity/_connectivity.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
@@ -20,9 +21,11 @@ class _OverlayInfoViewState extends ConsumerState<OverlayInfoView>
   @override
   void initState() {
     super.initState();
-    checkLocationPermissions().then((value) {
-      ref.read(connectivityProvider.notifier).forceUpdate();
-    });
+    if (!kIsWeb) {
+      checkLocationPermissions().then((value) {
+        ref.read(connectivityProvider.notifier).forceUpdate();
+      });
+    }
   }
 
   @override

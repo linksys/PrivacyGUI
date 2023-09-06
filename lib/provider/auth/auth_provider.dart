@@ -126,13 +126,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       const storage = FlutterSecureStorage();
 
       // check local password
-      final localPassword =
-          kIsWeb ? null : await storage.read(key: pLocalPassword);
+      final localPassword = await storage.read(key: pLocalPassword);
 
+      logger.d('check cloud credientials...');
       // check cloud username and password
       final username = await storage.read(key: pUsername);
       final password = await storage.read(key: pUserPassword);
 
+      logger.d('check login type...');
       if (sessionToken != null) {
         loginType = LoginType.remote;
       } else if (localPassword != null) {
@@ -150,9 +151,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<SessionToken?> checkSessionToken() async {
-    if (kIsWeb) {
-      return Future.value(null);
-    }
     logger.d('check cloud session expiration...');
     const storage = FlutterSecureStorage();
     final ts = await storage.read(key: pSessionTokenTs);

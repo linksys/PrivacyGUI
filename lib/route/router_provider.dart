@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/http/linksys_http_client.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/picker/region_picker_view.dart';
 import 'package:linksys_app/page/components/picker/simple_item_picker.dart';
@@ -28,7 +27,6 @@ import 'package:linksys_app/page/dashboard/view/dashboard_menu_view.dart';
 import 'package:linksys_app/page/dashboard/view/dashboard_shell.dart';
 import 'package:linksys_app/page/dashboard/view/devices/device_detail_view.dart';
 import 'package:linksys_app/page/dashboard/view/nodes/_nodes.dart';
-import 'package:linksys_app/page/dashboard/view/nodes/node_detail_view.dart';
 import 'package:linksys_app/page/dashboard/view/nodes/node_light_guide_view.dart';
 import 'package:linksys_app/page/dashboard/view/notifications/notification_settings_page.dart';
 import 'package:linksys_app/page/dashboard/view/topology/_topology.dart';
@@ -54,6 +52,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     refreshListenable: router,
     observers: [Logger()],
+    initialLocation: '/',
     routerNeglect: true,
     routes: [
       homeRoute,
@@ -138,7 +137,7 @@ class Logger extends NavigatorObserver {
   /// route, is `previousRoute`.
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    logger.d('did push the page - $route');
+    logger.d('did push the page - ${route.runtimeType}');
   }
 
   /// The [Navigator] popped `route`.

@@ -46,7 +46,9 @@ void main() async {
     HttpOverrides.global = MyHTTPOverrides();
   }
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  if (!kIsWeb) {
+    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  }
   await Storage.init();
   logger.v('App Start');
   await initLog();
@@ -128,7 +130,9 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
     connectivity.start();
     connectivity.forceUpdate().then((value) => _initAuth());
 
-    FlutterNativeSplash.remove();
+    if (!kIsWeb) {
+      FlutterNativeSplash.remove();
+    }
   }
 
   @override
@@ -142,7 +146,6 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     ref.read(smartDeviceProvider.notifier).init();
-
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
       onGenerateTitle: (context) => getAppLocalizations(context).app_title,
@@ -175,8 +178,9 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
   }
 
   _initAuth() {
-    // context.read<AuthBloc>().add(InitAuth());
-    ref.read(authProvider.notifier).init();
+    ref.read(authProvider.notifier).init().then((_) {
+      logger.d('init auth finish');
+    });
   }
 
   _intIAP() {}
