@@ -25,6 +25,7 @@ import 'package:linksys_app/page/dashboard/view/administration/port_forwarding/s
 import 'package:linksys_app/page/dashboard/view/dashboard_devices.dart';
 import 'package:linksys_app/page/dashboard/view/dashboard_menu_view.dart';
 import 'package:linksys_app/page/dashboard/view/dashboard_shell.dart';
+import 'package:linksys_app/page/dashboard/view/devices/change_device_avatar_view.dart';
 import 'package:linksys_app/page/dashboard/view/devices/change_device_name_view.dart';
 import 'package:linksys_app/page/dashboard/view/devices/device_detail_view.dart';
 import 'package:linksys_app/page/dashboard/view/nodes/_nodes.dart';

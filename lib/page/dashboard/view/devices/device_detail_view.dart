@@ -68,7 +68,12 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           BoxDecoration(color: Theme.of(context).colorScheme.tertiaryContainer),
       child: Column(
         children: [
-          _deviceAvatar(state.item.icon),
+          GestureDetector(
+            onTap: () {
+              context.goNamed(RouteNamed.changeDeviceAvatar);
+            },
+            child: _deviceAvatar(state.item.icon),
+          ),
           const AppGap.regular(),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
