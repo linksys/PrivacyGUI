@@ -10,11 +10,11 @@ void main(List<String> args) {
   }
   final String data = args.first;
   final qrCode = QrCode(4, QrErrorCorrectLevel.L)
-    ..addData('Hello, world in QR form!');
+    ..addData(data);
   final qr = QrImage(qrCode);
   final image = _drawQRCodeDefault(qr);
 
-  File file = File('./qr_code.png');
+  File file = File('ios/Scripts/InHouse/qr_code.png');
   if (!file.existsSync()) {
     file.createSync(recursive: true);
   }

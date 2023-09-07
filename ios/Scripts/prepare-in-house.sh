@@ -23,6 +23,8 @@ function updateLinks() {
   mv "$manifestPath" "./artifacts/manifest.plist"
 }
 version=$1
+url="https://linksys-mobile.s3.us-west-1.amazonaws.com/${version}/install.html"
+dart run ios/Scripts/InHouse/qr_code_generator.dart $url
 
 copyInHouseAssets
 updateLinks "$version"
