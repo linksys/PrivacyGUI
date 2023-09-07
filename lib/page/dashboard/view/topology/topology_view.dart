@@ -43,12 +43,14 @@ class TopologyView extends ArgumentsConsumerStatelessView {
                         ? node.data.connectedDeviceCount
                         : null,
                     status: node.data.isOnline ? null : 'Offline',
-                    tail: AppIcon.regular(
-                      icon: node.data.isWiredConnection
-                          ? getWifiSignalIconData(context, null)
-                          : getWifiSignalIconData(
-                              context, node.data.signalStrength),
-                    ),
+                    tail: node.data.isOnline
+                        ? AppIcon.regular(
+                            icon: node.data.isWiredConnection
+                                ? getWifiSignalIconData(context, null)
+                                : getWifiSignalIconData(
+                                    context, node.data.signalStrength),
+                          )
+                        : null,
                     onTap: () {
                       if (node.data.isOnline) {
                         // Update the current target Id for node state

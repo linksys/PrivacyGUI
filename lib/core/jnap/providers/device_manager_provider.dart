@@ -81,11 +81,11 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     DeviceManagerState state,
     Map<String, dynamic>? data,
   ) {
-    var allDevices = <RouterDevice>[];
+    var allDevices = <LinksysDevice>[];
     if (data != null) {
       allDevices = List.from(
         data['devices'],
-      ).map((e) => RouterDevice.fromJson(e)).toList();
+      ).map((e) => LinksysDevice.fromMap(e)).toList();
       // Sort the device list in order to correctly build the location map later
       allDevices.sort((device1, device2) {
         if (device1.isAuthority) {
@@ -99,15 +99,31 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
         }
       });
     }
-    var locationMap = <String, String>{};
-    for (final device in allDevices) {
-      // Record location(device name) for ALL devices
-      locationMap[device.deviceID] = _getDeviceLocation(device);
-    }
+    var nodes = allDevices.where((device) => device.nodeType != null).toList();
+    final masterNode = nodes.firstWhereOrNull((node) => node.isAuthority);
+    var externalDevices =
+        allDevices.where((device) => device.nodeType == null).toList();
+    // collect all the connected devices for nodes
+    nodes = nodes.fold(<LinksysDevice>[], (list, node) {
+      final connectedDevices = externalDevices.where((device) {
+        // Make sure the external device is online
+        if (device.connections.isNotEmpty) {
+          // There usually be only one item
+          final parentDeviceId = device.connections.firstOrNull?.parentDeviceID;
+          // Count it if this item's parentId is the target device,
+          // or if its parentId is null and the target device is master
+          return ((parentDeviceId == node.deviceID) ||
+              (parentDeviceId == null &&
+                  node.deviceID == masterNode?.deviceID));
+        }
+        return false;
+      }).toList();
+
+      return list..add(node.copyWith(connectedDevices: connectedDevices));
+    }).toList();
 
     return state.copyWith(
-      deviceList: allDevices,
-      locationMap: locationMap,
+      deviceList: [...nodes, ...externalDevices],
     );
   }
 
@@ -156,62 +172,6 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     return state.copyWith(
       isFirmwareUpToDate: data?['availableUpdate'] == null,
     );
-  }
-
-  String _getDeviceLocation(RouterDevice device) {
-    for (final property in device.properties) {
-      if (property.name == 'userDeviceLocation' && property.value.isNotEmpty) {
-        return property.value;
-      }
-    }
-    return _getDeviceName(device);
-  }
-
-  String _getDeviceName(RouterDevice device) {
-    for (final property in device.properties) {
-      if (property.name == 'userDeviceName' && property.value.isNotEmpty) {
-        return property.value;
-      }
-    }
-
-    bool isAndroidDevice = false;
-    if (device.friendlyName != null) {
-      final regExp =
-          RegExp(r'^Android$|^android-[a-fA-F0-9]{16}.*|^Android-[0-9]+');
-      isAndroidDevice = regExp.hasMatch(device.friendlyName!);
-    }
-
-    String? androidDeviceName;
-    if (isAndroidDevice &&
-        ['Mobile', 'Phone', 'Tablet'].contains(device.model.deviceType)) {
-      final manufacturer = device.model.manufacturer;
-      final modelNumber = device.model.modelNumber;
-      if (manufacturer != null && modelNumber != null) {
-        // e.g. 'Samsung Galaxy S8'
-        androidDeviceName = '$manufacturer $modelNumber';
-      } else if (device.unit.operatingSystem != null) {
-        // e.g. 'Android Oreo Mobile'
-        androidDeviceName =
-            '${device.unit.operatingSystem!} ${device.model.deviceType}';
-        if (manufacturer != null) {
-          // e.g. 'Samsung Android Oreo Mobile'
-          androidDeviceName = manufacturer + androidDeviceName;
-        }
-      }
-    }
-
-    if (androidDeviceName != null) {
-      return androidDeviceName;
-    } else if (device.friendlyName != null) {
-      return device.friendlyName!;
-    } else if (device.model.modelNumber != null) {
-      return device.model.modelNumber!;
-    } else {
-      // Check if it's connecting to the guest network
-      // NOTE: This value can also be derived from 'NetworkConnections', but they should be identical
-      final isGuest = device.connections.firstOrNull?.isGuest ?? false;
-      return isGuest ? 'Guest Network Device' : 'Network Device';
-    }
   }
 
   String getDeviceMacAddress(RouterDevice device) {
@@ -294,30 +254,29 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     // Get the current target device Id
     final targetId = ref.read(deviceDetailIdProvider);
     final routerRepository = ref.read(routerRepositoryProvider);
+    List<PropertyDevice> properties = [
+      if (isLocation)
+        PropertyDevice(name: 'userDeviceLocation', value: newName),
+      PropertyDevice(name: 'userDeviceName', value: newName)
+    ];
     final result = await routerRepository.send(
       JNAPAction.setDeviceProperties,
       data: {
         'deviceID': targetId,
-        'propertiesToModify': [
-          if (isLocation)
-            {
-              'name': 'userDeviceLocation',
-              'value': newName,
-            },
-          {
-            'name': 'userDeviceName',
-            'value': newName,
-          }
-        ],
+        'propertiesToModify': properties.map((e) => e.toMap()),
       },
       auth: true,
     );
     if (result.result == 'OK') {
-      final newLocationMap = state.locationMap;
-      newLocationMap[targetId] = newName;
-      state = state.copyWith(
-        locationMap: newLocationMap,
-      );
+      final newList = state.deviceList.fold(<LinksysDevice>[], (list, element) {
+        if (element.deviceID == targetId) {
+          list.add(element.copyWith(properties: properties));
+        } else {
+          list.add(element);
+        }
+        return list;
+      });
+      state = state.copyWith(deviceList: newList);
     }
   }
 

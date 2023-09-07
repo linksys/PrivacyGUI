@@ -1,8 +1,7 @@
-import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
+import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/page/dashboard/view/topology/topology_model.dart';
 import 'package:linksys_app/provider/devices/topology_state.dart';
@@ -79,18 +78,16 @@ class TopologyNotifier extends Notifier<TopologyState> {
 
   RouterTreeNode _buildRouterTopology(DeviceManagerState deviceManagerState) {
     final deviceList = deviceManagerState.deviceList;
-    final locationMap = deviceManagerState.locationMap;
 
     final routerDevices = deviceList.where((device) {
       return device.isAuthority || device.nodeType != null;
     });
-    final nodeMap = <String, RouterTreeNode>{}; // {DeviceId : NodeObject}
-    for (final device in routerDevices) {
-      nodeMap[device.deviceID] = _createTopologyNode(device, locationMap);
-    }
-
+    // {DeviceId : NodeObject}
+    final nodeMap = Map.fromEntries(routerDevices.map((device) =>
+        MapEntry(device.deviceID, _createTopologyNode(device))));
     // Master node is always at the first
     final masterNode = nodeMap[deviceList.first.deviceID]!;
+
     for (final device in deviceList) {
       // Master node will not be a child of any others
       if (device.deviceID != masterNode.data.deviceId) {
@@ -120,26 +117,6 @@ class TopologyNotifier extends Notifier<TopologyState> {
           }
         } else {
           // An external device
-          // Ensure it is online now
-          if (device.connections.isNotEmpty) {
-            // Check if there is a parent
-            final parentId = device.connections.firstOrNull?.parentDeviceID;
-            if (parentId != null) {
-              // Parent exists
-              final parentNode = nodeMap[parentId];
-              if (parentNode != null) {
-                // Increase its parent's connected device count
-                parentNode.data.connectedDeviceCount++;
-              } else {
-                // Error! parentDeviceID should always be valid if it exists
-                masterNode.data.connectedDeviceCount++;
-              }
-            } else {
-              // No parent
-              // Count this device under the master's connected device
-              masterNode.data.connectedDeviceCount++;
-            }
-          }
         }
       }
     }
@@ -147,11 +124,10 @@ class TopologyNotifier extends Notifier<TopologyState> {
   }
 
   RouterTreeNode _createTopologyNode(
-    RouterDevice device,
-    Map<String, String> locationMap,
+    LinksysDevice device,
   ) {
     String deviceId = device.deviceID;
-    String location = locationMap[deviceId] ?? '';
+    String location = device.getDeviceLocation();
     bool isMaster = device.isAuthority || device.nodeType == 'Master';
     bool isOnline = device.connections.isNotEmpty;
     bool isRouter = device.isAuthority || device.nodeType != null;
@@ -167,9 +143,8 @@ class TopologyNotifier extends Notifier<TopologyState> {
       isWiredConnection: isWiredConnection,
       signalStrength: signalStrength,
       isRouter: isRouter,
-      icon: iconTest(device.toJson()),
-      // The following will be derived later
-      connectedDeviceCount: 0,
+      icon: iconTest(device.toMap()),
+      connectedDeviceCount: device.connectedDevices.length,
     );
     return RouterTreeNode(data: data, children: []);
   }

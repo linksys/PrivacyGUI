@@ -119,19 +119,19 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
               ),
               const Spacer(),
               const AppGap.semiBig(),
-                AppTertiaryButton.noPadding('Log out', onTap: () {
-                  ref.read(authProvider.notifier).logout();
-                }),
-                const AppGap.semiBig(),
-                FutureBuilder(
-                    future: PackageInfo.fromPlatform()
-                        .then((value) => value.version),
-                    initialData: '-',
-                    builder: (context, data) {
-                      return AppText.bodyLarge(
-                        'version ${data.data}',
-                      );
-                    }),
+              AppTertiaryButton.noPadding('Log out', onTap: () {
+                ref.read(authProvider.notifier).logout();
+              }),
+              const AppGap.semiBig(),
+              FutureBuilder(
+                  future:
+                      PackageInfo.fromPlatform().then((value) => value.version),
+                  initialData: '-',
+                  builder: (context, data) {
+                    return AppText.bodyLarge(
+                      'version ${data.data}',
+                    );
+                  }),
               AppTertiaryButton.noPadding('About Linksys', onTap: () {}),
               const AppGap.semiBig(),
             ],

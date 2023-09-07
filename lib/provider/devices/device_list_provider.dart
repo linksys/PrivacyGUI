@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
+import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/provider/devices/device_list_state.dart';
 
@@ -75,11 +76,10 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     var isOnline = false;
     var type = DeviceListItemType.main;
 
-    final locationMap = ref.read(deviceManagerProvider).locationMap;
-    name = locationMap[targetId] ?? '';
-    icon = iconTest(device.toJson());
-    upstreamDevice = locationMap[_getUpstreamDevice(device).deviceID] ?? '';
-    upstreamIcon = iconTest(_getUpstreamDevice(device).toJson());
+    name = device.getDeviceLocation();
+    icon = iconTest(device.toMap());
+    upstreamDevice = _getUpstreamDevice(device).getDeviceLocation();
+    upstreamIcon = iconTest(_getUpstreamDevice(device).toMap());
     isOnline = device.connections.isNotEmpty;
     ipv4Address = isOnline ? (device.connections.first.ipAddress ?? '') : '';
     ipv6Address = isOnline ? (device.connections.first.ipv6Address ?? '') : '';

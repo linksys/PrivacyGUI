@@ -177,7 +177,9 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
         if (device.connections.isNotEmpty &&
             (device.connections.first.isGuest ?? false)) {
           guestCount += 1;
-        } else if (!device.isAuthority && device.nodeType == null) {
+        } else if (device.connections.isNotEmpty &&
+            !device.isAuthority &&
+            device.nodeType == null) {
           mainCount += 1;
         }
       }

@@ -143,7 +143,7 @@ class NetworkNotifier extends Notifier<NetworkState> {
     if (result.containsKey(JNAPAction.getDevices)) {
       final output = (result[JNAPAction.getDevices] as JNAPSuccess).output;
       final devices = List.from(output['devices'])
-          .map((e) => RouterDevice.fromJson(e))
+          .map((e) => RouterDevice.fromMap(e))
           .toList();
       _handleDevicesResult(devices);
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/provider/connectivity/_connectivity.dart';
@@ -10,7 +11,6 @@ import 'package:linksys_app/provider/internet_settings/_internet_settings.dart';
 import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/string_mapping.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -98,11 +98,15 @@ class _InternetSettingsContentViewState
           children: [
             if (!_isBehindRouter)
               Container(
+                color: Theme.of(context).colorScheme.surfaceVariant,
                 width: double.infinity,
                 height: 100,
                 alignment: Alignment.center,
-                child: AppText.bodyLarge(
-                  'To change these settings. connect to ${ref.read(networkProvider).selected?.radioInfo?.first.settings.ssid ?? ' '}',
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: AppText.bodyLarge(
+                    'To change these settings. connect to ${ref.read(networkProvider).selected?.radioInfo?.first.settings.ssid ?? ' '}',
+                  ),
                 ),
               ),
             AppPadding(
@@ -135,8 +139,8 @@ class _InternetSettingsContentViewState
     return SizedBox(
       width: double.infinity,
       child: CupertinoSlidingSegmentedControl<InternetSettingsViewType>(
-        backgroundColor: const Color.fromRGBO(211, 211, 211, 1.0),
-        thumbColor: const Color.fromRGBO(248, 248, 248, 1.0),
+        // backgroundColor: const Color.fromRGBO(211, 211, 211, 1.0),
+        // thumbColor: const Color.fromRGBO(248, 248, 248, 1.0),
         groupValue: _selected,
         onValueChanged: (InternetSettingsViewType? value) {
           if (value != null) {
