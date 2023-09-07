@@ -48,7 +48,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(networkProvider);
+    final _ = ref.watch(networkProvider);
     return StyledAppPageView(
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,12 +59,12 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
             fontWeight: FontWeight.w700,
           ),
         ),
-        content: _content(context, state),
+        content: _content(context),
       ),
     );
   }
 
-  Widget _content(BuildContext context, NetworkState state) {
+  Widget _content(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
           image: DecorationImage(

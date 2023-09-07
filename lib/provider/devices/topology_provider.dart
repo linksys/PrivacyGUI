@@ -24,7 +24,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
   }
 
   RouterTreeNode _buildRootNode(DeviceManagerState deviceManagerState) {
-    // if (deviceManagerState.isEmptyState()) {
+    // if (ref.read(deviceManagerProvider.notifier).isEmptyState()) {
     //   return TopologyNode();
     // }
     // final deviceId = null; //state.selectedDeviceId;

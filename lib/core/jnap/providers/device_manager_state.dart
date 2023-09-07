@@ -149,9 +149,6 @@ class DeviceManagerState {
       lastUpdateTime: lastUpdateTime ?? this.lastUpdateTime,
     );
   }
-
-  // Used in cases where the watched DeviceManager is still empty at very beginning stage
-  bool isEmptyState() => deviceList.isEmpty;
 }
 
 enum NodeSignalLevel {
