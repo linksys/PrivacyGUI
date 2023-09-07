@@ -774,7 +774,6 @@ String routerIconTest({required String modelNumber, String? hardwareVersion}) {
       'hardwareVersion': hardwareVersion ?? '1',
     }
   };
-  print('routerIconTest: $data');
   return iconTest(data);
 }
 

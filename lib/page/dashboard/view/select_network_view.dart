@@ -1,17 +1,15 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:great_list_view/great_list_view.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/network/_network.dart';
-import 'package:linksys_app/provider/select_network/check_network_online_provider.dart';
 import 'package:linksys_app/provider/select_network/select_network_provider.dart';
-import 'package:linksys_app/service/cloud_network_service.dart';
 import 'package:linksys_app/util/analytics.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/data/colors.dart';
@@ -19,7 +17,6 @@ import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class SelectNetworkView extends ArgumentsConsumerStatefulView {
   const SelectNetworkView({super.key});
@@ -29,8 +26,10 @@ class SelectNetworkView extends ArgumentsConsumerStatefulView {
 }
 
 class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
-  final animatedListcontroller = AnimatedListController();
-
+  /// Will used to access the Animated list
+  final GlobalKey<AnimatedListState> listKey = GlobalKey<AnimatedListState>();
+  final List<CloudNetworkModel> _items = [];
+  bool _isLoading = true;
   @override
   void initState() {
     super.initState();
@@ -38,100 +37,126 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<SelectNetworkState> model =
-        CloudNetworkService(ref).watchSelectNetwork();
-    final AsyncValue<CheckNetworkOnlineState> checkNetworkOnlineState =
-        ref.watch(checkNetworkOnlineProvider);
-    return model.when(data: (state) {
-      return StyledAppPageView(
-        scrollable: true,
-        appBarStyle: AppBarStyle.close,
-        onBackTap: ref.read(networkProvider).selected != null
-            ? null
-            : () {
-                ref.read(authProvider.notifier).logout();
-              },
-        child: AppBasicLayout(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          content:
-              _networkSection(state, checkNetworkOnlineState, title: 'Network'),
-        ),
-      );
-    }, error: (error, stackTrace) {
-      return Center(
-        child: Text('Error - $error'),
-      );
-    }, loading: () {
-      return AppFullScreenSpinner(
-          text: getAppLocalizations(context).processing);
+    ref.listen(selectNetworkProvider, (_, data) {
+      setState(() {
+        _isLoading = data.isLoading || (data.value?.isCheckingOnline ?? false);
+      });
+      if (data.value != null) {
+        final state = data.value;
+        final networks = state?.networks ?? [];
+
+        for (final network in networks) {
+          Future.delayed(const Duration(milliseconds: 500)).then((_) {
+            final target = _items.firstWhereOrNull((element) =>
+                element.network.networkId == network.network.networkId);
+            if (target != null) {
+              if (network.isOnline != target.isOnline) {
+                int index = _items.indexOf(target);
+                logger.d(
+                    '<${network.network.friendlyName}> Network goes online!!!! <$index>');
+                removeItem(index, network).then((_) => insertItem(0, network));
+              }
+            } else {
+              insertItem(_items.length, network);
+            }
+          });
+        }
+      }
     });
+    return StyledAppPageView(
+      scrollable: true,
+      appBarStyle: AppBarStyle.close,
+      onBackTap: ref.read(networkProvider).selected != null
+          ? null
+          : () {
+              ref.read(authProvider.notifier).logout();
+            },
+      child: AppBasicLayout(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        content: _networkSection(_items, _isLoading, title: 'Network'),
+      ),
+    );
   }
 
-  Widget _networkSection(SelectNetworkState state,
-      AsyncValue<CheckNetworkOnlineState> checkNetworkOnlineState,
+  Future<void> insertItem(int index, CloudNetworkModel network) async {
+    listKey.currentState
+        ?.insertItem(index, duration: const Duration(milliseconds: 300));
+    _items.insert(index, network);
+  }
+
+  Future<void> removeItem(int index, CloudNetworkModel network) async {
+    listKey.currentState?.removeItem(
+        index, (_, animation) => _networkItem(network),
+        duration: const Duration(milliseconds: 300));
+    _items.removeAt(index);
+  }
+
+  Widget _networkSection(List<CloudNetworkModel> networks, bool isLoading,
       {String title = ''}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _title(checkNetworkOnlineState, title: title),
+        _title(isLoading, title: title),
         const AppGap.small(),
         SizedBox(
-          height: 92.0 * state.networks.length,
-          child: ListView.builder(
+          height: 92.0 * networks.length,
+          child: AnimatedList(
+            key: listKey,
             physics: const NeverScrollableScrollPhysics(),
             shrinkWrap: true,
-            itemCount: state.networks.length,
-            itemBuilder: (context, index) => _networkItem(state, index),
+            initialItemCount: 0,
+            itemBuilder: (context, index, animation) =>
+                slideIt(animation, networks[index]),
           ),
         ),
       ],
     );
   }
 
-  Widget _title(AsyncValue<CheckNetworkOnlineState> state,
-      {String title = ''}) {
-    return state.when(data: (state) {
-      return AppText.titleLarge(
-        title,
-      );
-    }, error: (error, stackTrace) {
-      return const Center();
-    }, loading: () {
-      return Row(
-        children: [
-          AppText.titleLarge(
-            title,
-          ),
-          const AppGap.regular(),
+  Widget _title(bool isLoading, {String title = ''}) {
+    return Row(
+      children: [
+        AppText.titleLarge(
+          title,
+        ),
+        const AppGap.regular(),
+        if (isLoading)
           const SizedBox(
             width: 16,
             height: 16,
             child: CircularProgressIndicator(),
           ),
-        ],
-      );
-    });
+      ],
+    );
   }
 
-  Widget _networkItem(SelectNetworkState state, int index) {
+  Widget slideIt(animation, CloudNetworkModel network) {
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(-1, 0),
+        end: const Offset(0, 0),
+      ).animate(animation),
+      child: _networkItem(network),
+    );
+  }
+
+  Widget _networkItem(CloudNetworkModel network) {
     return InkWell(
-      onTap: state.networks[index].isOnline
+      onTap: network.isOnline
           ? () async {
-              await ref
-                  .read(networkProvider.notifier)
-                  .selectNetwork(state.networks[index]);
+              await ref.read(networkProvider.notifier).selectNetwork(network);
               // _navigationNotifier.clearAndPush(PrepareDashboardPath());
               logEvent(
                 eventName: 'ActionSelectNetwork',
                 parameters: {
-                  'networkId': state.networks[index].network.networkId,
+                  'networkId': network.network.networkId,
                 },
               );
               context.goNamed('prepareDashboard');
             }
           : null,
       child: Opacity(
-        opacity: state.networks[index].isOnline ? 1 : 0.4,
+        opacity: network.isOnline ? 1 : 0.4,
         child: AppPadding(
           padding: const AppEdgeInsets.symmetric(
             vertical: AppGapSize.regular,
@@ -141,10 +166,8 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
               Image(
                 image: AppTheme.of(context).images.devices.getByName(
                       routerIconTest(
-                        modelNumber:
-                            state.networks[index].network.routerModelNumber,
-                        hardwareVersion:
-                            state.networks[index].network.routerHardwareVersion,
+                        modelNumber: network.network.routerModelNumber,
+                        hardwareVersion: network.network.routerHardwareVersion,
                       ),
                     ),
                 width: 60,
@@ -155,8 +178,8 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.bodyLarge(
-                    state.networks[index].network.friendlyName,
-                    color: state.networks[index].isOnline
+                    network.network.friendlyName,
+                    color: network.isOnline
                         ? null
                         : ConstantColors.textBoxTextGray,
                   ),
