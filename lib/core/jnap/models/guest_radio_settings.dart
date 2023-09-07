@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+// Only for 'GetGuestRadioSettings2'
 class GuestRadioSetting extends Equatable {
   final bool isGuestNetworkACaptivePortal;
   final bool isGuestNetworkEnabled;

@@ -4,25 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/constants/_constants.dart';
-import 'package:linksys_app/core/jnap/models/device.dart';
-import 'package:linksys_app/core/jnap/models/network.dart';
-import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
-import 'package:linksys_app/core/utils/icon_rules.dart';
-import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/customs/enabled_with_opacity_widget.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/provider/dashboard/dashboard_home_provider.dart';
+import 'package:linksys_app/provider/dashboard/dashboard_home_state.dart';
 import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/provider/smart_device_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/smart_device_prefs_helper.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
-import 'package:linksys_widgets/widgets/container/stacked_listview.dart';
-import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/panel/general_card.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,9 +37,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   @override
   Widget build(BuildContext context) {
-    final _ = ref.watch(deviceManagerProvider);
-    //TODO: Replace the data source with the one from device manager
-    final state = ref.watch(networkProvider);
+    final _ = ref.watch(networkProvider); //TODO: XXXXXX Remove this state
+    final state = ref.watch(dashboardHomeProvider);
     return StyledAppPageView(
       scrollable: true,
       padding: const AppEdgeInsets.only(
@@ -57,7 +50,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       child: Stack(
         children: [
           EnabledOpacityWidget(
-            enabled: state.selected?.deviceInfo != null,
+            enabled: state.canDisplayScreen,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,29 +63,30 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               ],
             ),
           ),
-          if (state.selected?.devices == null) const AppFullScreenSpinner(),
+          if (ref.read(deviceManagerProvider.notifier).isEmptyState())
+            const AppFullScreenSpinner(),
         ],
       ),
     );
   }
 
-  Widget _homeTitle(NetworkState state) {
+  Widget _homeTitle(DashboardHomeState state) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppGap.big(),
         AppText.displaySmall(
-          state.selected?.radioInfo?.first.settings.ssid ?? 'Home',
+          state.mainWifiSsid,
         ),
-        AppGap.regular(),
-        const Row(
+        const AppGap.regular(),
+        Row(
           children: [
-            AppText.titleLarge(
+            const AppText.titleLarge(
               'Internet ',
             ),
             AppText.titleLarge(
-              'online', //TODO: XXXXXX Get online status
+              state.isWanConnected ? 'online' : 'offline',
               color: ConstantColors.primaryLinksysBlue,
             ),
           ],
@@ -101,7 +95,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _networkInfoTiles(NetworkState state) {
+  Widget _networkInfoTiles(DashboardHomeState state) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Column(
@@ -117,12 +111,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _wifiInfoTile(NetworkState state) {
-    if (state.selected?.radioInfo == null) {
-      return CircularProgressIndicator();
-    }
-
-    int wifiCount = _getWifiCount(state.selected);
+  Widget _wifiInfoTile(DashboardHomeState state) {
+    int wifiCount = state.numOfWifi;
     List<Widget> icons = [];
     for (int i = 0; i < wifiCount; i++) {
       icons.add(_circleIcon(
@@ -138,38 +128,21 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _nodesInfoTile(NetworkState state) {
-    if (state.selected?.devices == null) {
-      return CircularProgressIndicator();
-    }
-
-    final nodes = _getRouters(state.selected?.devices);
-    List<Widget> icons = [];
-
-    final image = AppTheme.of(context).images.devices.getByName(routerIconTest(
-          modelNumber: nodes.first.model.modelNumber ?? '',
-          hardwareVersion: nodes.first.model.hardwareVersion,
-        ));
+  Widget _nodesInfoTile(DashboardHomeState state) {
+    final image =
+        AppTheme.of(context).images.devices.getByName(state.masterIcon);
     return _infoTile(
       image: image,
-      text: 'Nodes (${nodes.length})',
+      text: 'Nodes (${state.numOfNodes})',
       onTap: () {
         context.pushNamed(RouteNamed.settingsNodes);
       },
     );
   }
 
-  Widget _devicesInfoTile(NetworkState state) {
-    if (state.selected?.devices == null) {
-      return CircularProgressIndicator();
-    }
-
-    List<RouterDevice> connectedDevices =
-        _getConnectedDevice(state.selected?.devices);
-
+  Widget _devicesInfoTile(DashboardHomeState state) {
     return _infoTile(
-      text:
-          '${connectedDevices.length} devices online', //TODO: XXXXXX which online deivce??
+      text: '${state.numOfOnlineExternalDevices} devices online',
       iconData: getCharactersIcons(context).devicesDefault,
       onTap: () {
         context.goNamed(RouteNamed.dashboardDevices);
@@ -204,14 +177,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _iconStack(List<Widget> widgets) {
-    return LinksysStackedListView(
-      itemExtent: 48,
-      widthFactor: 0.5,
-      items: widgets,
-    );
-  }
-
   Widget _infoTile({
     required String text,
     IconData? iconData,
@@ -233,7 +198,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _speedTestTile(NetworkState state) {
+  Widget _speedTestTile(DashboardHomeState state) {
     return SizedBox(
       width: double.infinity,
       height: 80,
@@ -251,17 +216,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _speedResult(NetworkState state) {
-    final healthCheckResults = state.selected?.healthCheckResults;
-    int uploadBandwidth = 0;
-    int downloadBandwidth = 0;
-    if (healthCheckResults != null && healthCheckResults.isNotEmpty) {
-      final result = ref
-          .read(networkProvider.notifier)
-          .getLatestHealthCheckResult(healthCheckResults);
-      uploadBandwidth = result.speedTestResult?.uploadBandwidth ?? 0;
-      downloadBandwidth = result.speedTestResult?.downloadBandwidth ?? 0;
-    }
+  Widget _speedResult(DashboardHomeState state) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,19 +226,43 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                  child: _speedItem(
-                      uploadBandwidth,
-                      AppIcon(
-                        icon: getCharactersIcons(context).arrowUp,
-                        color: ConstantColors.secondaryCyberPurple,
-                      ))),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        AppIcon(
+                          icon: getCharactersIcons(context).arrowUp,
+                          color: ConstantColors.secondaryCyberPurple,
+                        ),
+                        const AppGap.semiSmall(),
+                        AppText.titleLarge(state.uploadResult.value),
+                      ],
+                    ),
+                    Text('${state.uploadResult.unit}ps'),
+                  ],
+                ),
+              ),
               Expanded(
-                  child: _speedItem(
-                      downloadBandwidth,
-                      AppIcon(
-                        icon: getCharactersIcons(context).arrowDown,
-                        color: ConstantColors.secondaryCyberPurple,
-                      ))),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        AppIcon(
+                          icon: getCharactersIcons(context).arrowDown,
+                          color: ConstantColors.secondaryCyberPurple,
+                        ),
+                        const AppGap.semiSmall(),
+                        AppText.titleLarge(state.downloadResult.value),
+                      ],
+                    ),
+                    Text('${state.downloadResult.unit}ps'),
+                  ],
+                ),
+              ),
               GestureDetector(
                 onTap: () {
                   // GoRouter helath check
@@ -302,80 +281,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         ),
       ],
     );
-  }
-
-  Widget _speedItem(int speed, AppIcon icon) {
-    String num = '0';
-    String text = 'b';
-    // The speed is in kilobits per second
-    String speedText = Utils.formatBytes(speed * 1024);
-    num = speedText.split(' ').first;
-    text = speedText.split(' ').last;
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            icon,
-            const AppGap.semiSmall(),
-            AppText.titleLarge(num),
-          ],
-        ),
-        Text('${text}ps'),
-      ],
-    );
-  }
-
-  int _getWifiCount(MoabNetwork? network) {
-    if (network == null) return 0;
-
-    int count = 0;
-    final radioInfo = network.radioInfo;
-    if (radioInfo != null && radioInfo.isNotEmpty) {
-      Map<String, bool> wifiMap = {};
-      for (RouterRadioInfo info in radioInfo) {
-        wifiMap[info.settings.ssid] = true;
-      }
-      count = wifiMap.length;
-    }
-    if (network.guestRadioSetting != null &&
-        network.guestRadioSetting!.isGuestNetworkEnabled) {
-      count += 1;
-    }
-    if (network.iotNetworkSetting != null &&
-        network.iotNetworkSetting!.isIoTNetworkEnabled) {
-      count += 1;
-    }
-    return count;
-  }
-
-  List<RouterDevice> _getRouters(List<RouterDevice>? devices) {
-    List<RouterDevice> list = [];
-    if (devices != null && devices.isNotEmpty) {
-      for (RouterDevice device in devices) {
-        if (device.isAuthority || device.nodeType != null) {
-          list.add(device);
-        }
-      }
-    }
-    return list;
-  }
-
-  List<RouterDevice> _getConnectedDevice(List<RouterDevice>? devices) {
-    List<RouterDevice> connectedDevices = [];
-    if (devices != null && devices.isNotEmpty) {
-      for (RouterDevice device in devices) {
-        if (!device.isAuthority && device.nodeType == null) {
-          if (device.connections.isNotEmpty) {
-            connectedDevices.add(device);
-          }
-        }
-      }
-    }
-
-    return connectedDevices;
   }
 
   void _pushNotificationCheck() {

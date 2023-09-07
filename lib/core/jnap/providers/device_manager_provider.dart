@@ -214,6 +214,9 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     }
   }
 
+  // Used in cases where the watched DeviceManager is still empty at very beginning stage
+  bool isEmptyState() => state.deviceList.isEmpty;
+
   String getDeviceMacAddress(RouterDevice device) {
     var macAddress = '';
     if (device.knownInterfaces != null) {
@@ -284,6 +287,23 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
         element.connections
             .firstWhereOrNull((element) => element.ipAddress == parentIpAddr) !=
         null);
+  }
+
+  //TODO: XXXXXX Use these two functions to replace all access of device objects in everywhere else
+  List<RouterDevice> getNodeDevices() {
+    return state.deviceList
+        .where(
+          (device) => device.nodeType != null,
+        )
+        .toList();
+  }
+
+  List<RouterDevice> getExternalDevices() {
+    return state.deviceList
+        .where(
+          (device) => device.nodeType == null,
+        )
+        .toList();
   }
 
   // Update the name(location) of nodes and external devices
