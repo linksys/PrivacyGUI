@@ -49,7 +49,11 @@ final dashboardRoute = ShellRoute(
                     GoRoute(
                         name: RouteNamed.changeDeviceName,
                         path: RoutePath.changeDeviceName,
-                        builder: (context, state) => ChangeDeviceNameView())
+                        builder: (context, state) => ChangeDeviceNameView()),
+                    GoRoute(
+                        name: RouteNamed.changeDeviceAvatar,
+                        path: RoutePath.changeDeviceAvatar,
+                        builder: (context, state) => ChangeDeviceAvatarView()),
                   ]),
             ],
           ),

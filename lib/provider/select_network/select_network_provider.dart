@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/constants/_constants.dart';
-import 'package:linksys_app/constants/jnap_const.dart';
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
-import 'package:linksys_app/core/jnap/command/base_command.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/nodes.dart';
 import 'package:linksys_app/provider/network/cloud_network_model.dart';
+import 'package:linksys_app/provider/select_network/check_network_online_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-final selectNetworkNotifierProvider =
+final selectNetworkProvider =
     AsyncNotifierProvider<SelectNetworkNotifier, SelectNetworkState>(() {
   return SelectNetworkNotifier();
 });
@@ -23,7 +20,6 @@ class SelectNetworkNotifier extends AsyncNotifier<SelectNetworkState> {
 
   Future<SelectNetworkState> _getModel() async {
     final cloudRepository = ref.read(cloudRepositoryProvider);
-    final routerRepository = ref.read(routerRepositoryProvider);
     // For now, we only care about node routers
     final networkModels = await Future.wait(
         (await cloudRepository.getNetworks())
@@ -31,19 +27,9 @@ class SelectNetworkNotifier extends AsyncNotifier<SelectNetworkState> {
                 modelNumber: element.network.routerModelNumber,
                 hardwareVersion: element.network.routerHardwareVersion))
             .map((e) async {
-      bool isOnline = await routerRepository
-          .send(JNAPAction.isAdminPasswordDefault,
-              extraHeaders: {
-                kJNAPNetworkId: e.network.networkId,
-              },
-              type: CommandType.remote,
-              force: true,
-              cacheLevel: CacheLevel.noCache)
-          .then((value) => value.result == 'OK')
-          .onError((error, stackTrace) => false);
       return CloudNetworkModel(
         network: e.network,
-        isOnline: isOnline,
+        isOnline: false,
       );
     }).toList());
 
@@ -56,6 +42,7 @@ class SelectNetworkNotifier extends AsyncNotifier<SelectNetworkState> {
   Future<void> refreshCloudNetworks() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(_getModel);
+    ref.read(checkNetworkOnlineProvider.notifier).checkNetworkOnline();
   }
 
   Future<void> saveSelectedNetwork(CloudNetworkModel network) async {
@@ -65,6 +52,21 @@ class SelectNetworkNotifier extends AsyncNotifier<SelectNetworkState> {
 
   Future<void> deleteNetworks() async {
     //TODO: Delete function
+  }
+
+  void updateCloudNetworkModel(CloudNetworkModel model) {
+    var networks = state.value?.networks ?? [];
+    if (model.isOnline == true) {
+      final index = networks.indexWhere(
+          (element) => element.network.networkId == model.network.networkId);
+      final updateModel = networks[index].copyWith(isOnline: model.isOnline);
+      networks[index] = updateModel;
+      // Update state
+      state = AsyncValue.data(SelectNetworkState(networks: [
+        ...networks.where((element) => element.isOnline),
+        ...networks.where((element) => !element.isOnline),
+      ]));
+    }
   }
 }
 
