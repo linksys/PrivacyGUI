@@ -12,6 +12,7 @@
           <a class="button button-primary" href="itms-services://?action=download-manifest&url=https://linksys-mobile.s3.us-west-1.amazonaws.com/{version}/manifest.plist" id="text">Download</a>
         </div>
       </div>
+      <img src="qr_code.png" alt="qr_code" />
     </div>
   </div>
 </body>
