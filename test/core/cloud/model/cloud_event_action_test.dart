@@ -43,8 +43,8 @@ void main() {
       expect(data.actionType, 'NOTIFICATION');
       expect(data.startAt, '2022-03-22T3:21:00Z');
       expect(data.endAt, '2032-03-22T3:21:00Z');
-      expect(data.timestoTrigger, '1');
-      expect(data.triggerInterval, '12');
+      expect(data.timestoTrigger, 1);
+      expect(data.triggerInterval, 12);
       expect(data.payload, '{"type": "PUSH","value": "SMART_DEVICE_ID"}');
     });
   });

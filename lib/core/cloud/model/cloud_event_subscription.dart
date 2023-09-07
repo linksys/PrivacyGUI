@@ -71,12 +71,12 @@ class CloudEventSubscription extends Equatable {
             },
           )
           .toList(),
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory CloudEventSubscription.fromMap(Map<String, dynamic> map) {
     return CloudEventSubscription(
-      eventSubscriptionId: map['eventSubscriptionId'] as String,
+      eventSubscriptionId: map['eventSubscriptionId'] as String?,
       name: map['name'] as String,
       eventType: CloudEventType.values
           .firstWhere((type) => type.value == map['eventType']),
