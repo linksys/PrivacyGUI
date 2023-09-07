@@ -29,4 +29,14 @@ class CloudNetworkModel extends Equatable {
         network,
         isOnline,
       ];
+
+  CloudNetworkModel copyWith({
+    Network? network,
+    bool? isOnline,
+  }) {
+    return CloudNetworkModel(
+      network: network ?? this.network,
+      isOnline: isOnline ?? this.isOnline,
+    );
+  }
 }

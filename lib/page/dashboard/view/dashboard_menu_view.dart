@@ -5,13 +5,12 @@ import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/page/components/customs/enabled_with_opacity_widget.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/network/_network.dart';
-import 'package:linksys_app/provider/select_network_provider.dart';
+import 'package:linksys_app/provider/select_network/select_network_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/panel/general_card.dart';
@@ -35,7 +34,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   Widget build(BuildContext context) {
     final state = ref.watch(networkProvider);
     final hasMultiNetworks =
-        ref.watch(selectNetworkNotifierProvider).when(data: (state) {
+        ref.watch(selectNetworkProvider).when(data: (state) {
       return state.networks.length > 1;
     }, error: (error, stackTrace) {
       return false;
