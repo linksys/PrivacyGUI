@@ -45,7 +45,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
     return model.when(data: (state) {
       return StyledAppPageView(
         scrollable: true,
-      appBarStyle: AppBarStyle.close,
+        appBarStyle: AppBarStyle.close,
         onBackTap: ref.read(networkProvider).selected != null
             ? null
             : () {
@@ -77,17 +77,11 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
         const AppGap.small(),
         SizedBox(
           height: 92.0 * state.networks.length,
-          child: AutomaticAnimatedListView<CloudNetworkModel>(
-            list: state.networks,
-            listController: animatedListcontroller,
-            itemBuilder: (context, item, data) =>
-                _networkItem(state, state.networks.indexOf(item)),
-            comparator: AnimatedListDiffListComparator(
-              sameContent: (a, b) => a.network.networkId == b.network.networkId,
-              sameItem: (a, b) => a.network.networkId == b.network.networkId,
-            ),
-            reorderModel: AutomaticAnimatedListReorderModel(state.networks),
-            detectMoves: true,
+          child: ListView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            itemCount: state.networks.length,
+            itemBuilder: (context, index) => _networkItem(state, index),
           ),
         ),
       ],
