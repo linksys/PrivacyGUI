@@ -1,9 +1,9 @@
-import 'package:collection/collection.dart';
+import 'package:animated_list_plus/animated_list_plus.dart';
+import 'package:animated_list_plus/transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
-import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
@@ -28,7 +28,7 @@ class SelectNetworkView extends ArgumentsConsumerStatefulView {
 class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
   /// Will used to access the Animated list
   final GlobalKey<AnimatedListState> listKey = GlobalKey<AnimatedListState>();
-  final List<CloudNetworkModel> _items = [];
+  List<CloudNetworkModel> _items = [];
   bool _isLoading = true;
   @override
   void initState() {
@@ -37,32 +37,10 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(selectNetworkProvider, (_, data) {
-      setState(() {
-        _isLoading = data.isLoading || (data.value?.isCheckingOnline ?? false);
-      });
-      if (data.value != null) {
-        final state = data.value;
-        final networks = state?.networks ?? [];
+    final state = ref.watch(selectNetworkProvider);
+    _items = state.value?.networks ?? [];
+    _isLoading = state.isLoading || (state.value?.isCheckingOnline ?? false);
 
-        for (final network in networks) {
-          Future.delayed(const Duration(milliseconds: 500)).then((_) {
-            final target = _items.firstWhereOrNull((element) =>
-                element.network.networkId == network.network.networkId);
-            if (target != null) {
-              if (network.isOnline != target.isOnline) {
-                int index = _items.indexOf(target);
-                logger.d(
-                    '<${network.network.friendlyName}> Network goes online!!!! <$index>');
-                removeItem(index, network).then((_) => insertItem(0, network));
-              }
-            } else {
-              insertItem(_items.length, network);
-            }
-          });
-        }
-      }
-    });
     return StyledAppPageView(
       scrollable: true,
       appBarStyle: AppBarStyle.close,
@@ -78,19 +56,6 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
     );
   }
 
-  Future<void> insertItem(int index, CloudNetworkModel network) async {
-    listKey.currentState
-        ?.insertItem(index, duration: const Duration(milliseconds: 300));
-    _items.insert(index, network);
-  }
-
-  Future<void> removeItem(int index, CloudNetworkModel network) async {
-    listKey.currentState?.removeItem(
-        index, (_, animation) => _networkItem(network),
-        duration: const Duration(milliseconds: 300));
-    _items.removeAt(index);
-  }
-
   Widget _networkSection(List<CloudNetworkModel> networks, bool isLoading,
       {String title = ''}) {
     return Column(
@@ -100,13 +65,13 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
         const AppGap.small(),
         SizedBox(
           height: 92.0 * networks.length,
-          child: AnimatedList(
-            key: listKey,
+          child: ImplicitlyAnimatedList<CloudNetworkModel>(
             physics: const NeverScrollableScrollPhysics(),
-            shrinkWrap: true,
-            initialItemCount: 0,
-            itemBuilder: (context, index, animation) =>
-                slideIt(animation, networks[index]),
+            items: _items,
+            itemBuilder: (context, animation, item, index) =>
+                slideIt(animation, item),
+            areItemsTheSame: (a, b) =>
+                a.network.networkId == b.network.networkId,
           ),
         ),
       ],
@@ -120,24 +85,43 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
           title,
         ),
         const AppGap.regular(),
-        if (isLoading)
-          const SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(),
-          ),
+        _checkLoadingStatus(isLoading),
       ],
     );
   }
 
+  Widget _checkLoadingStatus(bool isLoading) {
+    if (isLoading) {
+      return const SizedBox(
+        width: 16,
+        height: 16,
+        child: CircularProgressIndicator(),
+      );
+    } else {
+      return AppIconButton(
+        padding: const AppEdgeInsets.zero(),
+        icon: getCharactersIcons(context).refreshDefault,
+        onTap: () {
+          ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
+        },
+      );
+    }
+  }
+
   Widget slideIt(animation, CloudNetworkModel network) {
-    return SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(-1, 0),
-        end: const Offset(0, 0),
-      ).animate(animation),
+    return SizeFadeTransition(
+      sizeFraction: 0.7,
+      curve: Curves.easeInOut,
+      animation: animation,
       child: _networkItem(network),
     );
+    // return SlideTransition(
+    //   position: Tween<Offset>(
+    //     begin: const Offset(-1, 0),
+    //     end: const Offset(0, 0),
+    //   ).animate(animation),
+    //   child: _networkItem(network),
+    // );
   }
 
   Widget _networkItem(CloudNetworkModel network) {

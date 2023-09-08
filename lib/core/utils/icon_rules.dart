@@ -144,6 +144,26 @@ const List<Map<String, dynamic>> iconRules = [
     'iconClass': 'routerMbe7000',
   },
   {
+    'description': 'Linksys Cherry (LN12/Cherry Variants; "LN12 Series")',
+    'test': {
+      'model': {
+        'manufacturer': 'Linksys',
+        'modelNumber': '^ln12',
+      },
+    },
+    'iconClass': 'routerLn12',
+  },
+  {
+    'description': 'Linksys Elm (LN11/Elm Variants; "LN11 Series")',
+    'test': {
+      'model': {
+        'manufacturer': 'Linksys',
+        'modelNumber': '^ln11',
+      },
+    },
+    'iconClass': 'routerLn11',
+  },
+  {
     'description': 'Linksys Router',
     'test': {
       'model': {
@@ -761,7 +781,7 @@ String _iconMapping(String iconClass) {
     //
     default:
       // do router check
-      return 'genericDevice';
+      return iconClass;
   }
 }
 

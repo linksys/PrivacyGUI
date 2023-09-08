@@ -47,7 +47,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
     if (loginType == LoginType.remote) {
       logger.i('PREPARE LOGIN:: remote');
       if (ref.read(networkProvider).selected == null) {
-        ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
+        await ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
         context.goNamed(RouteNamed.selectNetwork);
         return;
       }

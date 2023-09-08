@@ -94,7 +94,7 @@ dependencies:
   go_router: ^10.0.0
   get_it: ^7.6.0
   qr: ^3.0.1
-  great_list_view: ^0.2.3
+  animated_list_plus: ^0.5.2
 
 dev_dependencies:
   flutter_test:

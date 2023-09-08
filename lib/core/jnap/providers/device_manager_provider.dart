@@ -283,7 +283,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       JNAPAction.setDeviceProperties,
       data: {
         'deviceID': targetId,
-        'propertiesToModify': properties.map((e) => e.toMap()),
+        'propertiesToModify': properties.map((e) => e.toMap()).toList(),
       },
       auth: true,
     );
