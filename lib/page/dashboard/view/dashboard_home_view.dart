@@ -5,6 +5,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
+import 'package:linksys_app/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:linksys_app/page/components/customs/enabled_with_opacity_widget.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
@@ -40,6 +41,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   Widget build(BuildContext context) {
     final _ = ref.watch(networkProvider); //TODO: XXXXXX Remove this state
     final state = ref.watch(dashboardHomeProvider);
+    final wanStatus = ref.watch(nodeWanStatusProvider);
     return StyledAppPageView(
       scrollable: true,
       backState: StyledBackState.none,
@@ -57,7 +59,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _homeTitle(state),
+                _homeTitle(state, wanStatus == NodeWANStatus.online),
                 const AppGap.big(),
                 _networkInfoTiles(state),
                 const AppGap.extraBig(),
@@ -72,7 +74,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _homeTitle(DashboardHomeState state) {
+  Widget _homeTitle(DashboardHomeState state, bool isOnline) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,8 +90,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               'Internet ',
             ),
             AppText.titleLarge(
-              state.isWanConnected ? 'online' : 'offline',
-              color: ConstantColors.primaryLinksysBlue,
+              isOnline ? 'online' : 'offline',
+              color: isOnline ? ConstantColors.primaryLinksysBlue : Colors.red,
             ),
           ],
         ),

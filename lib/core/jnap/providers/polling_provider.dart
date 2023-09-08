@@ -54,11 +54,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         .then((data) => CoreTransactionData(
             lastUpdate: DateTime.now().millisecondsSinceEpoch, data: data));
 
-    state = await AsyncValue.guard(() => fetchFuture)
-        .onError((error, stackTrace) => AsyncError(
-              error ?? '',
-              stackTrace,
-            ));
+    state = await AsyncValue.guard(() => fetchFuture);
     logger.d('Polling Provider: finish polling - ${DateTime.now()}, $state');
   }
 
