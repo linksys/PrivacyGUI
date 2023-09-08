@@ -86,7 +86,12 @@ class ConnectivityNotifier extends Notifier<ConnectivityState>
     }
 
     final routerSN = await routerRepository
-        .send(JNAPAction.getDeviceInfo, type: CommandType.local)
+        .send(
+          JNAPAction.getDeviceInfo,
+          type: CommandType.local,
+          force: true,
+          cacheLevel: CacheLevel.noCache,
+        )
         .then<String>(
             (value) => NodeDeviceInfo.fromJson(value.output).serialNumber)
         .onError((error, stackTrace) => '');

@@ -53,7 +53,7 @@ class NetworkNotifier extends Notifier<NetworkState> {
 
   Future<NodeDeviceInfo> getDeviceInfo() async {
     final repo = ref.read(routerRepositoryProvider);
-    final result = await repo.send(JNAPAction.getDeviceInfo);
+    final result = await repo.send(JNAPAction.getDeviceInfo, force: true);
     final nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
     _handleDeviceInfoResult(nodeDeviceInfo);
     return nodeDeviceInfo;
@@ -166,8 +166,7 @@ class NetworkNotifier extends Notifier<NetworkState> {
     state = state.copyWith(
         selected: state.selected?.copyWith(deviceInfo: nodeDeviceInfo) ??
             MoabNetwork(
-                id: nodeDeviceInfo.serialNumber,
-                deviceInfo: nodeDeviceInfo));
+                id: nodeDeviceInfo.serialNumber, deviceInfo: nodeDeviceInfo));
   }
 
   _handleWANStatusResult(RouterWANStatus wanStatus) {
