@@ -70,6 +70,9 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                     child: InkWell(
                       onTap: hasMultiNetworks
                           ? () {
+                              ref
+                                  .read(selectNetworkProvider.notifier)
+                                  .refreshCloudNetworks();
                               context.pushNamed(RouteNamed.selectNetwork);
                             }
                           : null,

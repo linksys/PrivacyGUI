@@ -43,11 +43,11 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
     await ref.read(connectivityProvider.notifier).forceUpdate();
     if (!context.mounted) return;
     final loginType =
-        ref.watch(authProvider.select((value) => value.value?.loginType));
+        ref.read(authProvider.select((value) => value.value?.loginType));
     if (loginType == LoginType.remote) {
       logger.i('PREPARE LOGIN:: remote');
       if (ref.read(networkProvider).selected == null) {
-        await ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
+        ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
         context.goNamed(RouteNamed.selectNetwork);
         return;
       }
@@ -68,9 +68,11 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
 
       // ref.watch(navigationsProvider.notifier).clearAndPush(DashboardHomePath());
       context.goNamed(RouteNamed.dashboardHome);
-      ref.watch(pollingProvider.notifier).startPolling();
+      ref.read(pollingProvider.notifier).stopPolling();
+      ref.read(pollingProvider.notifier).startPolling();
     } else {
       // TODO #LINKSYS Error handling for unable to get deviceinfo
+      logger.i('PREPARE :: Error handling for unable to get deviceinfo');
     }
   }
 }
