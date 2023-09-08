@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/page/components/customs/enabled_with_opacity_widget.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/provider/dashboard/dashboard_home_provider.dart';
 import 'package:linksys_app/provider/dashboard/dashboard_home_state.dart';
@@ -41,6 +42,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     final state = ref.watch(dashboardHomeProvider);
     return StyledAppPageView(
       scrollable: true,
+      backState: StyledBackState.none,
       padding: const AppEdgeInsets.only(
         top: AppGapSize.big,
         left: AppGapSize.regular,
