@@ -83,21 +83,18 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         children: [
           _nodeAvatar(state),
           const AppGap.regular(),
-          Stack(
-            clipBehavior: Clip.none,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AppText.titleSmall(
                 state.location,
               ),
-              Positioned(
-                top: -2.5,
-                right: -(AppTheme.of(context).spacing.big),
-                child: AppIconButton.noPadding(
-                  icon: getCharactersIcons(context).editDefault,
-                  onTap: () {
-                    
-                  },
-                ),
+              const AppGap.semiSmall(),
+              AppIconButton.noPadding(
+                icon: getCharactersIcons(context).editDefault,
+                onTap: () {
+                  context.pushNamed(RouteNamed.changeNodeName);
+                },
               ),
             ],
           ),
@@ -121,20 +118,25 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        Column(
-          children: [
-            Container(
-              height: AppTheme.of(context).spacing.extraBig,
-              width: AppTheme.of(context).spacing.extraBig,
-              alignment: Alignment.center,
-              child: AppText.titleLarge(
-                '${state.connectedDevices.length}',
+        GestureDetector(
+          onTap: () {
+            print('test');
+          },
+          child: Column(
+            children: [
+              Container(
+                height: AppTheme.of(context).spacing.extraBig,
+                width: AppTheme.of(context).spacing.extraBig,
+                alignment: Alignment.center,
+                child: AppText.titleLarge(
+                  '${state.connectedDevices.length}',
+                ),
               ),
-            ),
-            AppText.bodyLarge(
-              getAppLocalizations(context).devices,
-            ),
-          ],
+              AppText.bodyLarge(
+                getAppLocalizations(context).devices,
+              ),
+            ],
+          ),
         ),
         Column(
           children: [

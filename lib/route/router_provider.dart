@@ -29,6 +29,7 @@ import 'package:linksys_app/page/dashboard/view/devices/change_device_avatar_vie
 import 'package:linksys_app/page/dashboard/view/devices/change_device_name_view.dart';
 import 'package:linksys_app/page/dashboard/view/devices/device_detail_view.dart';
 import 'package:linksys_app/page/dashboard/view/nodes/_nodes.dart';
+import 'package:linksys_app/page/dashboard/view/nodes/change_node_name_view.dart';
 import 'package:linksys_app/page/dashboard/view/nodes/node_light_guide_view.dart';
 import 'package:linksys_app/page/dashboard/view/notifications/notification_settings_page.dart';
 import 'package:linksys_app/page/dashboard/view/topology/_topology.dart';

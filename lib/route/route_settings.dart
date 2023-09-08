@@ -45,6 +45,13 @@ final settings = [
           name: RouteNamed.nodeDetails,
           path: RoutePath.nodeDetails,
           builder: (context, state) => NodeDetailView(),
+          routes: [
+            GoRoute(
+              name: RouteNamed.changeNodeName,
+              path: RoutePath.changeNodeName,
+              builder: (context, state) => const ChangeNodeNameView(),
+            )
+          ],
         ),
         GoRoute(
           name: RouteNamed.nodeOffline,
