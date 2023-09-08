@@ -1,4 +1,5 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -123,7 +124,7 @@ class StyledAppPageView extends ConsumerWidget {
   }
 
   List<Widget> _handleConnectivity(WidgetRef ref) {
-    if (handleNoConnection) {
+    if (!kIsWeb && handleNoConnection) {
       final connectivity = ref.watch(connectivityProvider);
       if (!connectivity.hasInternet ||
           connectivity.connectivityInfo.type == ConnectivityResult.none) {
