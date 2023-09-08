@@ -51,12 +51,12 @@ class NetworkNotifier extends Notifier<NetworkState> {
     return healthCheckResults.first;
   }
 
-  Future<RouterDeviceInfo> getDeviceInfo() async {
+  Future<NodeDeviceInfo> getDeviceInfo() async {
     final repo = ref.read(routerRepositoryProvider);
     final result = await repo.send(JNAPAction.getDeviceInfo);
-    final routerDeviceInfo = RouterDeviceInfo.fromJson(result.output);
-    _handleDeviceInfoResult(routerDeviceInfo);
-    return routerDeviceInfo;
+    final nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
+    _handleDeviceInfoResult(nodeDeviceInfo);
+    return nodeDeviceInfo;
   }
 
   Future<void> runHealthCheck() async {
@@ -118,8 +118,8 @@ class NetworkNotifier extends Notifier<NetworkState> {
   Future pollingData(Map<JNAPAction, JNAPResult> result) async {
     if (result.containsKey(JNAPAction.getDeviceInfo)) {
       final output = (result[JNAPAction.getDeviceInfo] as JNAPSuccess).output;
-      final routerDeviceInfo = RouterDeviceInfo.fromJson(output);
-      _handleDeviceInfoResult(routerDeviceInfo);
+      final nodeDeviceInfo = NodeDeviceInfo.fromJson(output);
+      _handleDeviceInfoResult(nodeDeviceInfo);
     }
     if (result.containsKey(JNAPAction.getWANStatus)) {
       final output = (result[JNAPAction.getWANStatus] as JNAPSuccess).output;
@@ -143,7 +143,7 @@ class NetworkNotifier extends Notifier<NetworkState> {
     if (result.containsKey(JNAPAction.getDevices)) {
       final output = (result[JNAPAction.getDevices] as JNAPSuccess).output;
       final devices = List.from(output['devices'])
-          .map((e) => RouterDevice.fromMap(e))
+          .map((e) => RawDevice.fromMap(e))
           .toList();
       _handleDevicesResult(devices);
     }
@@ -161,13 +161,13 @@ class NetworkNotifier extends Notifier<NetworkState> {
   /// Handle JNAP results
   ///
 
-  _handleDeviceInfoResult(RouterDeviceInfo routerDeviceInfo) {
-    buildBetterActions(routerDeviceInfo.services);
+  _handleDeviceInfoResult(NodeDeviceInfo nodeDeviceInfo) {
+    buildBetterActions(nodeDeviceInfo.services);
     state = state.copyWith(
-        selected: state.selected?.copyWith(deviceInfo: routerDeviceInfo) ??
+        selected: state.selected?.copyWith(deviceInfo: nodeDeviceInfo) ??
             MoabNetwork(
-                id: routerDeviceInfo.serialNumber,
-                deviceInfo: routerDeviceInfo));
+                id: nodeDeviceInfo.serialNumber,
+                deviceInfo: nodeDeviceInfo));
   }
 
   _handleWANStatusResult(RouterWANStatus wanStatus) {
@@ -192,7 +192,7 @@ class NetworkNotifier extends Notifier<NetworkState> {
             state.selected!.copyWith(iotNetworkSetting: ioTNetworkSetting));
   }
 
-  _handleDevicesResult(List<RouterDevice> devices) {
+  _handleDevicesResult(List<RawDevice> devices) {
     state =
         state.copyWith(selected: state.selected!.copyWith(devices: devices));
   }

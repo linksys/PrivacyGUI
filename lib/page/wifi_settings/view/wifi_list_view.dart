@@ -163,7 +163,7 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
     );
   }
 
-  Map<WifiType, int> getConnectionDeviceCount(List<RouterDevice>? devices) {
+  Map<WifiType, int> getConnectionDeviceCount(List<RawDevice>? devices) {
     Map<WifiType, int> map = {
       WifiType.main: 0,
       WifiType.guest: 0,
@@ -173,7 +173,7 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
     int guestCount = 0;
     int iotCount = 0;
     if (devices != null && devices.isNotEmpty) {
-      for (RouterDevice device in devices) {
+      for (RawDevice device in devices) {
         if (device.connections.isNotEmpty &&
             (device.connections.first.isGuest ?? false)) {
           guestCount += 1;

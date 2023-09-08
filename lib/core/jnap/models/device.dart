@@ -1,23 +1,21 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
-
 import 'package:equatable/equatable.dart';
 
-class RouterDevice extends Equatable {
-  final List<ConnectionDevice> connections;
-  final List<PropertyDevice> properties;
-  final UnitDevice unit;
+class RawDevice extends Equatable {
+  final List<RawDeviceConnection> connections;
+  final List<RawDeviceProperty> properties;
+  final RawDeviceUnit unit;
   final String deviceID;
   final int maxAllowedProperties;
-  final ModelDevice model;
+  final RawDeviceModel model;
   final bool isAuthority;
   final int lastChangeRevision;
   final String? friendlyName;
-  final List<KnownInterfaceDevice>? knownInterfaces;
+  final List<RawDeviceKnownInterface>? knownInterfaces;
   final List<String>? knownMACAddresses;
   final String? nodeType;
 
-  const RouterDevice({
+  const RawDevice({
     required this.connections,
     required this.properties,
     required this.unit,
@@ -50,21 +48,21 @@ class RouterDevice extends Equatable {
     ];
   }
 
-  RouterDevice copyWith({
-    List<ConnectionDevice>? connections,
-    List<PropertyDevice>? properties,
-    UnitDevice? unit,
+  RawDevice copyWith({
+    List<RawDeviceConnection>? connections,
+    List<RawDeviceProperty>? properties,
+    RawDeviceUnit? unit,
     String? deviceID,
     int? maxAllowedProperties,
-    ModelDevice? model,
+    RawDeviceModel? model,
     bool? isAuthority,
     int? lastChangeRevision,
     String? friendlyName,
-    List<KnownInterfaceDevice>? knownInterfaces,
+    List<RawDeviceKnownInterface>? knownInterfaces,
     List<String>? knownMACAddresses,
     String? nodeType,
   }) {
-    return RouterDevice(
+    return RawDevice(
       connections: connections ?? this.connections,
       properties: properties ?? this.properties,
       unit: unit ?? this.unit,
@@ -107,30 +105,30 @@ class RouterDevice extends Equatable {
     };
   }
 
-  factory RouterDevice.fromMap(Map<String, dynamic> map) {
-    return RouterDevice(
-      connections: List<ConnectionDevice>.from(
-        map['connections'].map<ConnectionDevice>(
-          (x) => ConnectionDevice.fromMap(x),
+  factory RawDevice.fromMap(Map<String, dynamic> map) {
+    return RawDevice(
+      connections: List<RawDeviceConnection>.from(
+        map['connections'].map<RawDeviceConnection>(
+          (x) => RawDeviceConnection.fromMap(x),
         ),
       ),
-      properties: List<PropertyDevice>.from(
-        map['properties'].map<PropertyDevice>(
-          (x) => PropertyDevice.fromMap(x as Map<String, dynamic>),
+      properties: List<RawDeviceProperty>.from(
+        map['properties'].map<RawDeviceProperty>(
+          (x) => RawDeviceProperty.fromMap(x as Map<String, dynamic>),
         ),
       ),
-      unit: UnitDevice.fromMap(map['unit'] as Map<String, dynamic>),
+      unit: RawDeviceUnit.fromMap(map['unit'] as Map<String, dynamic>),
       deviceID: map['deviceID'] as String,
       maxAllowedProperties: map['maxAllowedProperties'] as int,
-      model: ModelDevice.fromMap(map['model'] as Map<String, dynamic>),
+      model: RawDeviceModel.fromMap(map['model'] as Map<String, dynamic>),
       isAuthority: map['isAuthority'] as bool,
       lastChangeRevision: map['lastChangeRevision'] as int,
       friendlyName:
           map['friendlyName'] != null ? map['friendlyName'] as String : null,
       knownInterfaces: map['knownInterfaces'] != null
-          ? List<KnownInterfaceDevice>.from(
-              map['knownInterfaces'].map<KnownInterfaceDevice?>(
-                (x) => KnownInterfaceDevice.fromMap(x as Map<String, dynamic>),
+          ? List<RawDeviceKnownInterface>.from(
+              map['knownInterfaces'].map<RawDeviceKnownInterface?>(
+                (x) => RawDeviceKnownInterface.fromMap(x as Map<String, dynamic>),
               ),
             )
           : null,
@@ -143,21 +141,21 @@ class RouterDevice extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory RouterDevice.fromJson(String source) =>
-      RouterDevice.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory RawDevice.fromJson(String source) =>
+      RawDevice.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;
 }
 
-class ConnectionDevice extends Equatable {
+class RawDeviceConnection extends Equatable {
   final String macAddress;
   final String? ipAddress;
   final String? ipv6Address;
   final String? parentDeviceID;
   final bool? isGuest;
 
-  const ConnectionDevice({
+  const RawDeviceConnection({
     required this.macAddress,
     this.ipAddress,
     this.ipv6Address,
@@ -165,14 +163,14 @@ class ConnectionDevice extends Equatable {
     this.isGuest,
   });
 
-  ConnectionDevice copyWith({
+  RawDeviceConnection copyWith({
     String? macAddress,
     String? ipAddress,
     String? ipv6Address,
     String? parentDeviceID,
     bool? isGuest,
   }) {
-    return ConnectionDevice(
+    return RawDeviceConnection(
       macAddress: macAddress ?? this.macAddress,
       ipAddress: ipAddress ?? this.ipAddress,
       ipv6Address: ipv6Address ?? this.ipv6Address,
@@ -191,8 +189,8 @@ class ConnectionDevice extends Equatable {
     };
   }
 
-  factory ConnectionDevice.fromMap(Map<String, dynamic> map) {
-    return ConnectionDevice(
+  factory RawDeviceConnection.fromMap(Map<String, dynamic> map) {
+    return RawDeviceConnection(
       macAddress: map['macAddress'] as String,
       ipAddress: map['ipAddress'] != null ? map['ipAddress'] as String : null,
       ipv6Address:
@@ -206,8 +204,8 @@ class ConnectionDevice extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory ConnectionDevice.fromJson(String source) =>
-      ConnectionDevice.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory RawDeviceConnection.fromJson(String source) =>
+      RawDeviceConnection.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;
@@ -224,20 +222,20 @@ class ConnectionDevice extends Equatable {
   }
 }
 
-class PropertyDevice extends Equatable {
+class RawDeviceProperty extends Equatable {
   final String name;
   final String value;
 
-  const PropertyDevice({
+  const RawDeviceProperty({
     required this.name,
     required this.value,
   });
 
-  PropertyDevice copyWith({
+  RawDeviceProperty copyWith({
     String? name,
     String? value,
   }) {
-    return PropertyDevice(
+    return RawDeviceProperty(
       name: name ?? this.name,
       value: value ?? this.value,
     );
@@ -250,8 +248,8 @@ class PropertyDevice extends Equatable {
     };
   }
 
-  factory PropertyDevice.fromMap(Map<String, dynamic> map) {
-    return PropertyDevice(
+  factory RawDeviceProperty.fromMap(Map<String, dynamic> map) {
+    return RawDeviceProperty(
       name: map['name'] as String,
       value: map['value'] as String,
     );
@@ -259,8 +257,8 @@ class PropertyDevice extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory PropertyDevice.fromJson(String source) =>
-      PropertyDevice.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory RawDeviceProperty.fromJson(String source) =>
+      RawDeviceProperty.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;
@@ -269,26 +267,26 @@ class PropertyDevice extends Equatable {
   List<Object> get props => [name, value];
 }
 
-class UnitDevice extends Equatable {
+class RawDeviceUnit extends Equatable {
   final String? serialNumber;
   final String? firmwareVersion;
   final String? firmwareDate;
   final String? operatingSystem;
 
-  const UnitDevice({
+  const RawDeviceUnit({
     this.serialNumber,
     this.firmwareVersion,
     this.firmwareDate,
     this.operatingSystem,
   });
 
-  UnitDevice copyWith({
+  RawDeviceUnit copyWith({
     String? serialNumber,
     String? firmwareVersion,
     String? firmwareDate,
     String? operatingSystem,
   }) {
-    return UnitDevice(
+    return RawDeviceUnit(
       serialNumber: serialNumber ?? this.serialNumber,
       firmwareVersion: firmwareVersion ?? this.firmwareVersion,
       firmwareDate: firmwareDate ?? this.firmwareDate,
@@ -305,8 +303,8 @@ class UnitDevice extends Equatable {
     };
   }
 
-  factory UnitDevice.fromMap(Map<String, dynamic> map) {
-    return UnitDevice(
+  factory RawDeviceUnit.fromMap(Map<String, dynamic> map) {
+    return RawDeviceUnit(
       serialNumber:
           map['serialNumber'] != null ? map['serialNumber'] as String : null,
       firmwareVersion: map['firmwareVersion'] != null
@@ -322,8 +320,8 @@ class UnitDevice extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory UnitDevice.fromJson(String source) =>
-      UnitDevice.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory RawDeviceUnit.fromJson(String source) =>
+      RawDeviceUnit.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;
@@ -333,14 +331,14 @@ class UnitDevice extends Equatable {
       [serialNumber, firmwareVersion, firmwareDate, operatingSystem];
 }
 
-class ModelDevice extends Equatable {
+class RawDeviceModel extends Equatable {
   final String deviceType;
   final String? manufacturer;
   final String? modelNumber;
   final String? hardwareVersion;
   final String? modelDescription;
 
-  const ModelDevice({
+  const RawDeviceModel({
     required this.deviceType,
     this.manufacturer,
     this.modelNumber,
@@ -348,14 +346,14 @@ class ModelDevice extends Equatable {
     this.modelDescription,
   });
 
-  ModelDevice copyWith({
+  RawDeviceModel copyWith({
     String? deviceType,
     String? manufacturer,
     String? modelNumber,
     String? hardwareVersion,
     String? modelDescription,
   }) {
-    return ModelDevice(
+    return RawDeviceModel(
       deviceType: deviceType ?? this.deviceType,
       manufacturer: manufacturer ?? this.manufacturer,
       modelNumber: modelNumber ?? this.modelNumber,
@@ -374,8 +372,8 @@ class ModelDevice extends Equatable {
     };
   }
 
-  factory ModelDevice.fromMap(Map<String, dynamic> map) {
-    return ModelDevice(
+  factory RawDeviceModel.fromMap(Map<String, dynamic> map) {
+    return RawDeviceModel(
       deviceType: map['deviceType'] as String,
       manufacturer:
           map['manufacturer'] != null ? map['manufacturer'] as String : null,
@@ -392,8 +390,8 @@ class ModelDevice extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory ModelDevice.fromJson(String source) =>
-      ModelDevice.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory RawDeviceModel.fromJson(String source) =>
+      RawDeviceModel.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;
@@ -410,23 +408,23 @@ class ModelDevice extends Equatable {
   }
 }
 
-class KnownInterfaceDevice extends Equatable {
+class RawDeviceKnownInterface extends Equatable {
   final String macAddress;
   final String interfaceType;
   final String? band;
 
-  const KnownInterfaceDevice({
+  const RawDeviceKnownInterface({
     required this.macAddress,
     required this.interfaceType,
     this.band,
   });
 
-  KnownInterfaceDevice copyWith({
+  RawDeviceKnownInterface copyWith({
     String? macAddress,
     String? interfaceType,
     String? band,
   }) {
-    return KnownInterfaceDevice(
+    return RawDeviceKnownInterface(
       macAddress: macAddress ?? this.macAddress,
       interfaceType: interfaceType ?? this.interfaceType,
       band: band ?? this.band,
@@ -441,8 +439,8 @@ class KnownInterfaceDevice extends Equatable {
     };
   }
 
-  factory KnownInterfaceDevice.fromMap(Map<String, dynamic> map) {
-    return KnownInterfaceDevice(
+  factory RawDeviceKnownInterface.fromMap(Map<String, dynamic> map) {
+    return RawDeviceKnownInterface(
       macAddress: map['macAddress'] as String,
       interfaceType: map['interfaceType'] as String,
       band: map['band'] != null ? map['band'] as String : null,
@@ -451,8 +449,8 @@ class KnownInterfaceDevice extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory KnownInterfaceDevice.fromJson(String source) =>
-      KnownInterfaceDevice.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory RawDeviceKnownInterface.fromJson(String source) =>
+      RawDeviceKnownInterface.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

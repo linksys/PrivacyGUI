@@ -1,6 +1,6 @@
 import 'package:linksys_app/core/jnap/models/device.dart';
 
-extension DeviceUtil on RouterDevice {
+extension DeviceUtil on RawDevice {
   String getDeviceLocation() {
     for (final property in properties) {
       if (property.name == 'userDeviceLocation' && property.value.isNotEmpty) {

@@ -33,7 +33,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     var location = '';
     var isMaster = false;
     var isOnline = false;
-    var connectedDevices = <RouterDevice>[];
+    var connectedDevices = <RawDevice>[];
     var upstreamDevice = '';
     var isWired = false;
     var signalStrength = 0;
@@ -43,7 +43,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     var lanIpAddress = '';
     var wanIpAddress = '';
 
-    RouterDevice? master = deviceManagerState.deviceList
+    RawDevice? master = deviceManagerState.deviceList
         .firstWhereOrNull((element) => element.isAuthority);
     final alldevices = deviceManagerState.deviceList;
     for (final device in alldevices) {
@@ -90,7 +90,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     );
   }
 
-  String? _getUpstream(RouterDevice device) {
+  String? _getUpstream(RawDevice device) {
     final parent =
         ref.read(deviceManagerProvider.notifier).findParent(device.deviceID);
     final upstreamLocation = parent?.getDeviceLocation();

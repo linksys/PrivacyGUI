@@ -34,7 +34,7 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
   String _errorReason = '';
 
   String _hint = '';
-  RouterDeviceInfo? _deviceInfo;
+  NodeDeviceInfo? _deviceInfo;
 
   final TextEditingController _passwordController = TextEditingController();
 

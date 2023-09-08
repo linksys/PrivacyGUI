@@ -58,8 +58,8 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     DashboardManagerState state,
     Map<String, dynamic> data,
   ) {
-    final routerDeviceInfo = RouterDeviceInfo.fromJson(data);
-    final services = routerDeviceInfo.services;
+    final nodeDeviceInfo = NodeDeviceInfo.fromJson(data);
+    final services = nodeDeviceInfo.services;
     // Build/Update better actions
     buildBetterActions(services);
     return state.copyWith(

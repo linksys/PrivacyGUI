@@ -88,7 +88,7 @@ class ConnectivityNotifier extends Notifier<ConnectivityState>
     final routerSN = await routerRepository
         .send(JNAPAction.getDeviceInfo, type: CommandType.local)
         .then<String>(
-            (value) => RouterDeviceInfo.fromJson(value.output).serialNumber)
+            (value) => NodeDeviceInfo.fromJson(value.output).serialNumber)
         .onError((error, stackTrace) => '');
     final prefs = await SharedPreferences.getInstance();
     final currentSN = prefs.get(pCurrentSN);

@@ -21,12 +21,12 @@ class MoabNetwork extends Equatable {
   });
 
   final String id;
-  final RouterDeviceInfo? deviceInfo;
+  final NodeDeviceInfo? deviceInfo;
   final RouterWANStatus? wanStatus;
   final List<RouterRadioInfo>? radioInfo;
   final GuestRadioSetting? guestRadioSetting;
   final IoTNetworkSetting? iotNetworkSetting;
-  final List<RouterDevice>? devices;
+  final List<RawDevice>? devices;
   final List<HealthCheckResult>? healthCheckResults;
   final SpeedTestResult? currentSpeedTestStatus;
 
@@ -45,12 +45,12 @@ class MoabNetwork extends Equatable {
 
   MoabNetwork copyWith({
     String? id,
-    RouterDeviceInfo? deviceInfo,
+    NodeDeviceInfo? deviceInfo,
     RouterWANStatus? wanStatus,
     List<RouterRadioInfo>? radioInfo,
     GuestRadioSetting? guestRadioSetting,
     IoTNetworkSetting? iotNetworkSetting,
-    List<RouterDevice>? devices,
+    List<RawDevice>? devices,
     List<HealthCheckResult>? healthCheckResults,
     SpeedTestResult? currentSpeedTestStatus,
   }) {

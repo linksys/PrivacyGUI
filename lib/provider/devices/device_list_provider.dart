@@ -57,7 +57,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     );
   }
 
-  DeviceListItem createItem(RouterDevice device) {
+  DeviceListItem createItem(RawDevice device) {
     const newState = DeviceListItem();
     // Details of the specific external device
     final targetId = device.deviceID;
@@ -114,7 +114,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     );
   }
 
-  RouterDevice _getUpstreamDevice(RouterDevice device) {
+  RawDevice _getUpstreamDevice(RawDevice device) {
     final deviceList = ref.read(deviceManagerProvider).deviceList;
     final parentId = device.connections.firstOrNull?.parentDeviceID;
     if (parentId != null) {

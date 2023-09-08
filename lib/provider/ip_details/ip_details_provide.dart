@@ -28,7 +28,7 @@ class IpDetailsNotifier extends Notifier<IpDetailsState> {
     final devices = devicesJson == null
         ? null
         : List.from(devicesJson.output['devices'])
-            .map((e) => RouterDevice.fromMap(e))
+            .map((e) => RawDevice.fromMap(e))
             .toList();
     final masterNode =
         devices?.firstWhereOrNull((element) => element.nodeType == 'Master');

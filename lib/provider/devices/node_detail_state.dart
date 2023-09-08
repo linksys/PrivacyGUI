@@ -7,7 +7,7 @@ class NodeDetailState {
   final String location;
   final bool isMaster;
   final bool isOnline;
-  final List<RouterDevice> connectedDevices;
+  final List<RawDevice> connectedDevices;
   final String upstreamDevice;
   final bool isWiredConnection;
   final int signalStrength;
@@ -40,7 +40,7 @@ class NodeDetailState {
     String? location,
     bool? isMaster,
     bool? isOnline,
-    List<RouterDevice>? connectedDevices,
+    List<RawDevice>? connectedDevices,
     String? upstreamDevice,
     bool? isWiredConnection,
     int? signalStrength,

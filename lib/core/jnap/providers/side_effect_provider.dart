@@ -171,7 +171,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     final routerRepository = ref.read(routerRepositoryProvider);
     return routerRepository
         .send(JNAPAction.getDeviceInfo)
-        .then((response) => RouterDeviceInfo.fromJson(response.output))
+        .then((response) => NodeDeviceInfo.fromJson(response.output))
         .then((devceInfo) => devceInfo.serialNumber == cachedSerialNumber)
         .then(
             (value) async => (value ? await testRouterFullyBootedUp() : false))

@@ -177,7 +177,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   // Used in cases where the watched DeviceManager is still empty at very beginning stage
   bool isEmptyState() => state.deviceList.isEmpty;
 
-  String getDeviceMacAddress(RouterDevice device) {
+  String getDeviceMacAddress(RawDevice device) {
     var macAddress = '';
     if (device.knownInterfaces != null) {
       final knownInterface = device.knownInterfaces!.firstOrNull;
@@ -189,28 +189,28 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     return macAddress;
   }
 
-  int getWirelessSignal(RouterDevice device) {
+  int getWirelessSignal(RawDevice device) {
     final wirelessConnections = state.wirelessConnections;
     final wirelessData = wirelessConnections[getDeviceMacAddress(device)];
     final signalDecibels = wirelessData?['signalDecibels'] as int?;
     return signalDecibels ?? 0;
   }
 
-  String getWirelessBand(RouterDevice device) {
+  String getWirelessBand(RawDevice device) {
     final wirelessConnections = state.wirelessConnections;
     final wirelessData = wirelessConnections[getDeviceMacAddress(device)];
     final band = wirelessData?['band'] as String?;
     return band ?? '';
   }
 
-  bool checkIsGuestNetwork(RouterDevice device) {
+  bool checkIsGuestNetwork(RawDevice device) {
     final wirelessConnections = state.wirelessConnections;
     final wirelessData = wirelessConnections[getDeviceMacAddress(device)];
     final isGuest = wirelessData?['isGuest'] as bool?;
     return isGuest ?? false;
   }
 
-  bool checkIsWiredConnection(RouterDevice device) {
+  bool checkIsWiredConnection(RawDevice device) {
     final interfaces = device.knownInterfaces;
     if (interfaces != null) {
       for (final interface in interfaces) {
@@ -222,7 +222,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     return false;
   }
 
-  RouterDevice? findParent(String deviceID) {
+  RawDevice? findParent(String deviceID) {
     final node = state.deviceList
         .firstWhereOrNull((element) => element.deviceID == deviceID);
     if (node == null) {
@@ -250,7 +250,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   }
 
   //TODO: XXXXXX Use these two functions to replace all access of device objects in everywhere else
-  List<RouterDevice> getNodeDevices() {
+  List<RawDevice> getNodeDevices() {
     return state.deviceList
         .where(
           (device) => device.nodeType != null,
@@ -258,7 +258,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
         .toList();
   }
 
-  List<RouterDevice> getExternalDevices() {
+  List<RawDevice> getExternalDevices() {
     return state.deviceList
         .where(
           (device) => device.nodeType == null,
@@ -274,10 +274,10 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     // Get the current target device Id
     final targetId = ref.read(deviceDetailIdProvider);
     final routerRepository = ref.read(routerRepositoryProvider);
-    List<PropertyDevice> properties = [
+    List<RawDeviceProperty> properties = [
       if (isLocation)
-        PropertyDevice(name: 'userDeviceLocation', value: newName),
-      PropertyDevice(name: 'userDeviceName', value: newName)
+        RawDeviceProperty(name: 'userDeviceLocation', value: newName),
+      RawDeviceProperty(name: 'userDeviceName', value: newName)
     ];
     final result = await routerRepository.send(
       JNAPAction.setDeviceProperties,

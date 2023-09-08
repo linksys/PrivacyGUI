@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
-class RouterDeviceInfo extends Equatable {
-  const RouterDeviceInfo({
+class NodeDeviceInfo extends Equatable {
+  const NodeDeviceInfo({
     required this.modelNumber,
     required this.firmwareVersion,
     required this.description,
@@ -12,8 +12,8 @@ class RouterDeviceInfo extends Equatable {
     required this.services,
   });
 
-  factory RouterDeviceInfo.fromJson(Map<String, dynamic> json) {
-    return RouterDeviceInfo(
+  factory NodeDeviceInfo.fromJson(Map<String, dynamic> json) {
+    return NodeDeviceInfo(
       modelNumber: json['modelNumber'],
       firmwareVersion: json['firmwareVersion'],
       description: json['description'],
@@ -47,7 +47,7 @@ class RouterDeviceInfo extends Equatable {
     }..removeWhere((key, value) => value == null);
   }
 
-  RouterDeviceInfo copyWith({
+  NodeDeviceInfo copyWith({
     String? modelNumber,
     String? firmwareVersion,
     String? description,
@@ -57,7 +57,7 @@ class RouterDeviceInfo extends Equatable {
     String? hardwareVersion,
     List<String>? services,
   }) {
-    return RouterDeviceInfo(
+    return NodeDeviceInfo(
       modelNumber: modelNumber ?? this.modelNumber,
       firmwareVersion: firmwareVersion ?? this.firmwareVersion,
       description: description ?? this.description,

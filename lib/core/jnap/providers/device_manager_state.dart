@@ -1,13 +1,10 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
-
 import 'package:linksys_app/core/jnap/models/back_haul_info.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/models/wan_status.dart';
 
-class LinksysDevice extends RouterDevice {
+class LinksysDevice extends RawDevice {
   final List<LinksysDevice> connectedDevices;
   const LinksysDevice({
     required super.connections,
@@ -27,16 +24,16 @@ class LinksysDevice extends RouterDevice {
 
   @override
   LinksysDevice copyWith({
-    List<ConnectionDevice>? connections,
-    List<PropertyDevice>? properties,
-    UnitDevice? unit,
+    List<RawDeviceConnection>? connections,
+    List<RawDeviceProperty>? properties,
+    RawDeviceUnit? unit,
     String? deviceID,
     int? maxAllowedProperties,
-    ModelDevice? model,
+    RawDeviceModel? model,
     bool? isAuthority,
     int? lastChangeRevision,
     String? friendlyName,
-    List<KnownInterfaceDevice>? knownInterfaces,
+    List<RawDeviceKnownInterface>? knownInterfaces,
     List<String>? knownMACAddresses,
     String? nodeType,
     List<LinksysDevice>? connectedDevices,
@@ -68,28 +65,28 @@ class LinksysDevice extends RouterDevice {
 
   factory LinksysDevice.fromMap(Map<String, dynamic> map) {
     return LinksysDevice(
-      connections: List<ConnectionDevice>.from(
-        map['connections'].map<ConnectionDevice>(
-          (x) => ConnectionDevice.fromMap(x as Map<String, dynamic>),
+      connections: List<RawDeviceConnection>.from(
+        map['connections'].map<RawDeviceConnection>(
+          (x) => RawDeviceConnection.fromMap(x as Map<String, dynamic>),
         ),
       ),
-      properties: List<PropertyDevice>.from(
-        map['properties'].map<PropertyDevice>(
-          (x) => PropertyDevice.fromMap(x as Map<String, dynamic>),
+      properties: List<RawDeviceProperty>.from(
+        map['properties'].map<RawDeviceProperty>(
+          (x) => RawDeviceProperty.fromMap(x as Map<String, dynamic>),
         ),
       ),
-      unit: UnitDevice.fromMap(map['unit'] as Map<String, dynamic>),
+      unit: RawDeviceUnit.fromMap(map['unit'] as Map<String, dynamic>),
       deviceID: map['deviceID'] as String,
       maxAllowedProperties: map['maxAllowedProperties'] as int,
-      model: ModelDevice.fromMap(map['model'] as Map<String, dynamic>),
+      model: RawDeviceModel.fromMap(map['model'] as Map<String, dynamic>),
       isAuthority: map['isAuthority'] as bool,
       lastChangeRevision: map['lastChangeRevision'] as int,
       friendlyName:
           map['friendlyName'] != null ? map['friendlyName'] as String : null,
       knownInterfaces: map['knownInterfaces'] != null
-          ? List<KnownInterfaceDevice>.from(
-              map['knownInterfaces'].map<KnownInterfaceDevice?>(
-                (x) => KnownInterfaceDevice.fromMap(x as Map<String, dynamic>),
+          ? List<RawDeviceKnownInterface>.from(
+              map['knownInterfaces'].map<RawDeviceKnownInterface?>(
+                (x) => RawDeviceKnownInterface.fromMap(x as Map<String, dynamic>),
               ),
             )
           : null,

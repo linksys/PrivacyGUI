@@ -6,8 +6,8 @@ class IpDetailsState extends Equatable {
   final String ipv6WANType;
   final String ipv4WANAddress;
   final String ipv6WANAddress;
-  final RouterDevice? masterNode;
-  final List<RouterDevice> slaveNodes;
+  final RawDevice? masterNode;
+  final List<RawDevice> slaveNodes;
   final bool ipv4Renewing;
   final bool ipv6Renewing;
   final String? error;
@@ -56,8 +56,8 @@ class IpDetailsState extends Equatable {
     String? ipv6WANType,
     String? ipv4WANAddress,
     String? ipv6WANAddress,
-    RouterDevice? masterNode,
-    List<RouterDevice>? slaveNodes,
+    RawDevice? masterNode,
+    List<RawDevice>? slaveNodes,
     bool? ipv4Renewing,
     bool? ipv6Renewing,
     String? error,

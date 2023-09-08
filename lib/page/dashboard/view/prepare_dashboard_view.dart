@@ -53,18 +53,18 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
       }
     }
     logger.d('Go to dashboard');
-    final routerDeviceInfo = await ref
+    final nodeDeviceInfo = await ref
         .read(networkProvider.notifier)
         .getDeviceInfo()
-        .then<RouterDeviceInfo?>((value) => value)
+        .then<NodeDeviceInfo?>((value) => value)
         .onError((error, stackTrace) => null);
-    if (routerDeviceInfo != null) {
+    if (nodeDeviceInfo != null) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(pCurrentSN, routerDeviceInfo.serialNumber);
+      await prefs.setString(pCurrentSN, nodeDeviceInfo.serialNumber);
       await ref.read(connectivityProvider.notifier).forceUpdate();
       ProviderContainer()
           .read(linksysCacheManagerProvider)
-          .loadCache(serialNumber: routerDeviceInfo.serialNumber);
+          .loadCache(serialNumber: nodeDeviceInfo.serialNumber);
 
       // ref.watch(navigationsProvider.notifier).clearAndPush(DashboardHomePath());
       context.goNamed(RouteNamed.dashboardHome);
