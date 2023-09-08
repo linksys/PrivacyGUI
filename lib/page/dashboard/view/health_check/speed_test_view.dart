@@ -96,7 +96,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
                 _status = "RUNNING";
                 _controller.forward();
               });
-              ref.read(networkProvider.notifier).runHealthCheck();
+              // ref.read(networkProvider.notifier).runHealthCheck(); //TODO: XXXXX Build RunSpeedTest function
             });
           },
         );

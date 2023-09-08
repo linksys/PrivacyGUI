@@ -7,8 +7,8 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/common_widget.dart';
+import 'package:linksys_app/provider/dashboard/dashboard_home_provider.dart';
 import 'package:linksys_app/provider/internet_settings/_internet_settings.dart';
-import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/string_mapping.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -105,7 +105,7 @@ class _InternetSettingsContentViewState
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: AppText.bodyLarge(
-                    'To change these settings. connect to ${ref.read(networkProvider).selected?.radioInfo?.first.settings.ssid ?? ' '}',
+                    'To change these settings. connect to ${ref.read(dashboardHomeProvider).mainWifiSsid}',
                   ),
                 ),
               ),

@@ -97,5 +97,4 @@ class DeviceListItem {
 enum DeviceListItemType {
   main,
   guest,
-  iot,
 }
