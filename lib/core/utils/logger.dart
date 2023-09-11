@@ -10,7 +10,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 final logger = Logger(
     filter: ProductionFilter(),
-    printer: SimplePrinter(printTime: true, colors: false),
+    printer: SimplePrinter(printTime: true, colors: stdout.supportsAnsiEscapes),
     output: CustomOutput());
 
 class CustomOutput extends LogOutput {

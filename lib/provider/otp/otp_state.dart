@@ -3,8 +3,6 @@ import 'package:linksys_app/core/cloud/model/cloud_communication_method.dart';
 
 enum OtpStep { init, chooseOtpMethod, inputOtp, addPhone, finish }
 
-// TODO: Need a more understandable name
-enum OtpFunction { send, setting, setting2sv, add }
 
 class OtpState extends Equatable {
   const OtpState({
@@ -12,7 +10,6 @@ class OtpState extends Equatable {
     required this.methods,
     required this.token,
     required this.selectedMethod,
-    required this.function,
     required this.isLoading,
     this.extras = const {},
   });
@@ -22,7 +19,6 @@ class OtpState extends Equatable {
         methods = [],
         token = '',
         selectedMethod = null,
-        function = OtpFunction.send,
         isLoading = false,
         extras = {};
 
@@ -31,7 +27,6 @@ class OtpState extends Equatable {
     List<CommunicationMethod>? methods,
     String? token,
     CommunicationMethod? selectedMethod,
-    OtpFunction? function,
     bool? isLoading,
     Map<String, dynamic>? extras,
   }) {
@@ -40,7 +35,6 @@ class OtpState extends Equatable {
       methods: methods ?? this.methods,
       token: token ?? this.token,
       selectedMethod: selectedMethod ?? this.selectedMethod,
-      function: function ?? this.function,
       isLoading: isLoading ?? this.isLoading,
       extras: extras ?? this.extras,
     );
@@ -50,7 +44,6 @@ class OtpState extends Equatable {
   final List<CommunicationMethod> methods;
   final String token;
   final CommunicationMethod? selectedMethod;
-  final OtpFunction function;
   final bool isLoading;
   final Map<String, dynamic> extras;
 
@@ -60,12 +53,7 @@ class OtpState extends Equatable {
         methods,
         token,
         selectedMethod,
-        function,
         isLoading,
         extras,
       ];
-
-  bool isSendFunction() => function == OtpFunction.send;
-  bool isSettingFunction() => function == OtpFunction.setting;
-  bool isSetting2svFunction() => function == OtpFunction.setting2sv;
 }

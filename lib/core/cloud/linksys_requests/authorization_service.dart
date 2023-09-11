@@ -79,7 +79,7 @@ extension AuthorizationService on LinksysHttpClient {
         .post(Uri.parse(endpoint), headers: header, body: jsonEncode(body));
   }
 
-  Future<Response> mfaValidate({
+  Future<Response> oAuthMfaValidate({
     required String otpCode,
     required String verificationToken,
     bool rememberUserAgent = false,

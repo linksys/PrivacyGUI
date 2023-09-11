@@ -75,16 +75,9 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
             const AppGap.extraBig(),
             AppPrimaryButton(
               key: const Key('otp_method_selector_view_button_continue'),
-              !state.isSendFunction() &&
-                      state.selectedMethod?.method ==
-                          CommunicationMethodType.sms.name.toUpperCase()
-                  ? getAppLocalizations(context).add_phone_number
-                  : getAppLocalizations(context).text_continue,
+              getAppLocalizations(context).text_continue,
               onTap: () {
-                !state.isSendFunction()
-                    ? _checkPhoneExist(
-                        context, state.selectedMethod!, state.token)
-                    : _onSend(state.selectedMethod!);
+                _onSend(state.selectedMethod!);
               },
             ),
           ],
@@ -94,27 +87,7 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
   }
 
   String _createTitle(OtpState state) {
-    if (state.isSendFunction()) {
-      return getAppLocalizations(context).otp_send_method_choice_title;
-    } else if (state.isSettingFunction()) {
-      return getAppLocalizations(context).otp_setting_method_choice_title;
-    } else if (state.isSetting2svFunction()) {
-      return getAppLocalizations(context).otp_2sv_setting_method_choice_title;
-    } else {
-      return '';
-    }
-  }
-
-  String _createDescription(OtpState state) {
-    if (state.isSendFunction()) {
-      return '';
-    } else if (state.isSettingFunction()) {
-      return getAppLocalizations(context).otp_method_choice_description;
-    } else if (state.isSetting2svFunction()) {
-      return getAppLocalizations(context).otp_method_choice_description;
-    } else {
-      return '';
-    }
+    return getAppLocalizations(context).otp_send_method_choice_title;
   }
 
   _checkPhoneExist(
@@ -129,10 +102,8 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
   _onSend(CommunicationMethod method) {
     _setLoading(true);
     ref.read(otpProvider.notifier).onInputOtp();
-    // ref.read(navigationsProvider.notifier).push(OtpInputCodePath()
-    //   ..next = widget.next
-    //   ..args.addAll(widget.args));
-    context.pushNamed(RouteNamed.otpInputCode, queryParameters: widget.args);
+
+    context.pushNamed(RouteNamed.otpInputCode, extra: widget.args);
 
     _setLoading(false);
   }

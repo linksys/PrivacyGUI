@@ -67,7 +67,7 @@ void main() async {
   initCloudMessage();
   // Pass all uncaught errors from the framework to Crashlytics.
   FlutterError.onError = (FlutterErrorDetails details) {
-    logger.e('Uncaught Flutter Error:\n', details);
+    logger.e('Uncaught Flutter Error:\n', error: details);
     FirebaseCrashlytics.instance.recordFlutterFatalError(details);
     // if (kReleaseMode) {
     //   // Only exit app on release mode
@@ -76,7 +76,7 @@ void main() async {
     // exit(1);
   };
   PlatformDispatcher.instance.onError = (error, stack) {
-    logger.e('Uncaught Error:\n', error, stack);
+    logger.e('Uncaught Error:\n', error: error, stackTrace: stack);
     logger.e(stack.toString());
     FirebaseCrashlytics.instance.recordError(error, stack);
     // if (kReleaseMode) {

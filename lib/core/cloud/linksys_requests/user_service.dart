@@ -55,6 +55,56 @@ extension UserService on LinksysHttpClient {
     return this.get(Uri.parse(endpoint), headers: header);
   }
 
+  Future<Response> getMfaMethods({
+    required String token,
+  }) {
+    final endpoint = combineUrl(kUserMfaMethods);
+    final header = defaultHeader
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+
+    return this.get(Uri.parse(endpoint), headers: header);
+  }
+
+  Future<Response> prepareAddMfaMethod({
+    required String token,
+  }) {
+    final endpoint = combineUrl(kUserMfaMethods);
+    final header = defaultHeader
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+
+    return this.post(Uri.parse(endpoint), headers: header);
+  }
+
+  Future<Response> deleteMfaMethod(
+      {required String token, required String mfaID}) {
+    final endpoint = combineUrl(
+      kUserMfaMethodsDelete,
+      args: {
+        kVarId: mfaID,
+      },
+    );
+    final header = defaultHeader
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+
+    return this.delete(Uri.parse(endpoint), headers: header);
+  }
+
+  Future<Response> mfaValidate(
+      {required token,
+      required String verificationToken,
+      required String code}) {
+    final endpoint = combineUrl(kUserMfaValidate);
+    final header = defaultHeader
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+
+    return this.post(Uri.parse(endpoint),
+        headers: header,
+        body: jsonEncode({
+          'verificationToken': verificationToken,
+          'otp': code,
+        }));
+  }
+
   Future<Response> checkPhoneNumber({
     required String token,
     required String countryCode,
@@ -78,16 +128,6 @@ extension UserService on LinksysHttpClient {
     required String token,
   }) {
     final endpoint = combineUrl(kUserGetAccount);
-    final header = defaultHeader
-      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
-
-    return this.get(Uri.parse(endpoint), headers: header);
-  }
-
-  Future<Response> getMfaMethods({
-    required String token,
-  }) {
-    final endpoint = combineUrl(kUserGetMfaMethods);
     final header = defaultHeader
       ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
 

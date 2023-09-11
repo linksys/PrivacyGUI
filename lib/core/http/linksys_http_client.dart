@@ -247,7 +247,7 @@ class LinksysHttpClient extends http.BaseClient
       _logResponse(response, ignoreResponse: true);
       Storage.saveByteFile(savedPathUri, response.bodyBytes);
     } catch (e) {
-      logger.e('Download data failed!', e);
+      logger.e('Download data failed!', error: e);
       return false;
     }
     return true;

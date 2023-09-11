@@ -66,14 +66,38 @@ class LinksysCloudRepository {
     );
   }
 
+  Future<String> prepareAddMfa() {
+    return loadSessionToken()
+        .then((token) => _httpClient.prepareAddMfaMethod(token: token))
+        .then((response) => jsonDecode(response.body)['verificationToken']);
+  }
+
+  Future<bool> deleteMfaMethod(String mfaID) {
+    return loadSessionToken()
+        .then(
+            (token) => _httpClient.deleteMfaMethod(token: token, mfaID: mfaID))
+        .then((response) => response.statusCode == HttpStatus.noContent);
+  }
+
+  Future<CommunicationMethod> mfaValidate({
+    required String otpCode,
+    required String verificationToken,
+  }) {
+    return loadSessionToken()
+        .then((token) => _httpClient.mfaValidate(
+            token: token, verificationToken: verificationToken, code: otpCode))
+        .then((response) =>
+            CommunicationMethod.fromJson(jsonDecode(response.body)));
+  }
+
   // TODO is there any other response??
-  Future<SessionToken> mfaValidate({
+  Future<SessionToken> oAuthMfaValidate({
     required String otpCode,
     required String verificationToken,
     bool rememberUserAgent = false,
   }) {
     return _httpClient
-        .mfaValidate(
+        .oAuthMfaValidate(
           otpCode: otpCode,
           verificationToken: verificationToken,
           rememberUserAgent: rememberUserAgent,

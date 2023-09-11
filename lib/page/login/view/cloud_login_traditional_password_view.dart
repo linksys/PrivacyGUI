@@ -182,8 +182,8 @@ class _LoginTraditionalPasswordViewState
       final mfaError = ErrorMfaRequired.fromResponse(error);
       logger.d('handle mfa error');
       context.goNamed(
-        'otp',
-        queryParameters: {
+        RouteNamed.otpStart,
+        extra: {
           'username': _username,
           'token': mfaError.verificationToken,
           'password': passwordController.text,

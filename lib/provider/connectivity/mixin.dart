@@ -120,14 +120,14 @@ mixin ConnectivityListener {
         wifiName = await networkInfo.getWifiName();
       }
     } on PlatformException catch (e) {
-      logger.e('Failed to get Wifi Name', e);
+      logger.e('Failed to get Wifi Name', error: e);
       wifiName = 'Unknown SSID';
     }
 
     try {
       wifiGatewayIP = await networkInfo.getWifiGatewayIP();
     } on PlatformException catch (e) {
-      logger.e('Failed to get Wifi gateway address', e);
+      logger.e('Failed to get Wifi gateway address', error: e);
       wifiGatewayIP = 'Unknown Gateway IP';
     }
 

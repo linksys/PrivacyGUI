@@ -63,4 +63,7 @@ class CommunicationMethod extends Equatable {
 
   @override
   List<Object?> get props => [id, method, target, phone];
+
+  @override
+  bool? get stringify => true;
 }

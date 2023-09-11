@@ -91,7 +91,7 @@ class _InputNewPasswordViewState extends ConsumerState<InputNewPasswordView> {
   }
 
   _handleError(Object? error) {
-    logger.d('Password validation error:', error);
+    logger.d('Password validation error:', error: error);
     setState(() {
       if (error is ErrorResponse) {
         _errorMessage = generalErrorCodeHandler(context, error.code);

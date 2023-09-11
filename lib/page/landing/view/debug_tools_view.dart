@@ -354,7 +354,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
                   )
                   .then<JNAPSuccess?>((value) => value)
                   .onError((error, stackTrace) {
-                logger.e('Error', error, stackTrace);
+                logger.e('Error', error: error, stackTrace: stackTrace);
                 return null;
               });
               logger.d('result1: $result1}');

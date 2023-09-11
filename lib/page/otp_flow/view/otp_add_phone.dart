@@ -1,9 +1,11 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/provider/otp/otp.dart';
 import 'package:linksys_app/constants/_constants.dart';
+import 'package:linksys_app/constants/default_country_codes.dart';
+import 'package:linksys_app/core/cloud/model/cloud_account.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/cloud/model/cloud_communication_method.dart';
 import 'package:linksys_app/core/cloud/model/cloud_phone.dart';
@@ -14,7 +16,6 @@ import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/error_code_handler.dart';
 import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -35,6 +36,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
   final PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil();
   TextEditingController phoneController = TextEditingController();
 
+  CAMobile? editPhone;
   bool hasInput = false;
   bool isInputInvalid = false;
   Map _countryCodes = {};
@@ -47,7 +49,20 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
   @override
   void initState() {
     super.initState();
-    loadPhoneSamples().then((_) => updateRegion(currentRegion));
+    editPhone = widget.args['phone'];
+    loadPhoneSamples().then((_) {
+      final data = List.from(defaultCountryCodes['countryCodes'])
+          .firstWhereOrNull((element) =>
+              '+${element['countryCode']}' == editPhone?.countryCode);
+
+      return data != null ? RegionCode.fromJson(data) : currentRegion;
+    }).then((region) => updateRegion(region));
+  }
+
+  @override
+  void dispose() {
+    phoneController.dispose();
+    super.dispose();
   }
 
   Future<void> loadPhoneSamples() async {
@@ -56,7 +71,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
     _countryCodes = json.decode(jsonText);
   }
 
-  void _onInputChanged(text) {
+  void _onInputChanged(String text) {
     setState(() {
       hasInput = text.isNotEmpty;
       isInputInvalid = false;
@@ -64,42 +79,21 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
   }
 
   void _checkPhoneNumber() async {
+    final router = GoRouter.of(context);
     final userInputPhoneNumber = phoneController.text;
     _setLoading(true);
     try {
       final phoneNumber = await phoneNumberUtil.parse(userInputPhoneNumber,
           regionCode: currentRegion.countryCode);
       final phoneMethod = CommunicationMethod(
-          method: CommunicationMethodType.sms.name.toUpperCase(),
+          method: 'SMS',
           target: phoneNumber.e164,
           phone: CloudPhoneModel(
             country: currentRegion.countryCode,
             countryCallingCode: '+${currentRegion.countryCallingCode}',
             phoneNumber: phoneNumber.nationalNumber,
           ));
-
-      ref.read(otpProvider.notifier).onInputOtp(method: phoneMethod);
-      final OtpFunction function = widget.args['function'] ?? OtpFunction.send;
-      if (function == OtpFunction.add) {
-        // String token = await context
-        //     .read<AccountCubit>()
-        //     .startAddCommunicationMethod(
-        //       CommunicationMethod(
-        //         method: CommunicationMethodType.sms.name.toUpperCase(),
-        //         target: phoneNumber.e164,
-        //         phone: CloudPhoneModel(
-        //           country: currentRegion.countryCode,
-        //           countryCallingCode: '+${currentRegion.countryCallingCode}',
-        //           phoneNumber: phoneNumber.nationalNumber,
-        //         ),
-        //       ),
-        //     );
-        // context.read<OtpCubit>().updateToken(token);
-        // context
-        //     .read<OtpCubit>()
-        //     .authChallenge(method: phoneMethod, token: token);
-      }
-      context.pushNamed(RouteNamed.otpInputCode, queryParameters: widget.args);
+      router.pop(phoneMethod);
     } catch (e) {
       logger.e(
           'AddPhone: Special error: [$userInputPhoneNumber] is valid but cannot be parsed');
@@ -111,9 +105,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
     }
   }
 
-  _setLoading(bool isLoading) {
-    ref.read(otpProvider.notifier).setLoading(isLoading);
-  }
+  _setLoading(bool isLoading) {}
 
   Future<void> updateRegion(RegionCode region) async {
     setState(() {
@@ -125,6 +117,10 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
       regionCode: currentRegion.countryCode,
       behavior: PhoneInputBehavior.strict,
     );
+    phoneController.addListener(() {
+      logger.d('phone number changed');
+      _onInputChanged(phoneController.value.text);
+    });
   }
 
   Future<String> _getPhoneHint(String countryCode) async {
@@ -139,7 +135,6 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(otpProvider);
     return StyledAppPageView(
       scrollable: true,
       child: AppBasicLayout(
@@ -173,7 +168,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
                       decoration: BoxDecoration(
                           border: Border.all(
                         color: isInputInvalid
-                            ? Colors.red
+                            ? Theme.of(context).colorScheme.error
                             : Theme.of(context).colorScheme.primary,
                         width: 1,
                       )),
@@ -181,8 +176,8 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
                       child: AppText.bodyLarge(
                         '+${currentRegion.countryCallingCode}',
                         color: isInputInvalid
-                            ? ConstantColors.tertiaryRed
-                            : ConstantColors.tertiaryRed,
+                            ? Theme.of(context).colorScheme.error
+                            : Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -193,11 +188,12 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
                         initialData: getAppLocalizations(context).phone,
                         builder: (context, data) {
                           return AppTextField(
-                            controller: phoneController,
+                            controller: phoneController
+                              ..text = editPhone?.phoneNumber ?? '',
                             hintText:
                                 data.data ?? getAppLocalizations(context).phone,
-                            onChanged: _onInputChanged,
                             inputType: TextInputType.number,
+                            onChanged: _onInputChanged,
                           );
                         }),
                   ),
@@ -209,7 +205,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
               offstage: !isInputInvalid,
               child: AppText.bodyLarge(
                 generalErrorCodeHandler(context, errorInvalidPhone),
-                color: ConstantColors.tertiaryRed,
+                color: Theme.of(context).colorScheme.error,
               ),
             ),
           ],
@@ -217,15 +213,9 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
         footer: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Visibility(
-              maintainState: true,
-              maintainAnimation: true,
-              maintainSize: true,
-              visible: hasInput,
-              child: AppPrimaryButton(
-                getAppLocalizations(context).otp_send_code,
-                onTap: _checkPhoneNumber,
-              ),
+            AppPrimaryButton(
+              getAppLocalizations(context).otp_send_code,
+              onTap: hasInput ? _checkPhoneNumber : null,
             ),
           ],
         ),

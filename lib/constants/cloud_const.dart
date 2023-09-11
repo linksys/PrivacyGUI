@@ -57,6 +57,7 @@ const kVarNetworkId = '{networkId}';
 const kVarUsername = '{username}';
 const kVarToken = '{token}';
 const kVarEventSubscriptionId = '{eventSubscriptionId}';
+const kVarId = '{id}';
 
 // Cloud API Service
 const kAuthorizationService = '/cloud/authorization-service';
@@ -79,8 +80,11 @@ const kUserPhoneCallingCodesEndpoint = '$kUserService/rest/phonecallingcodes';
 const kUserPhoneNumberCheckEndpoint = '$kUserService/rest/phonenumbercheck';
 const kUserGetMaskedMfaMethods =
     '$kUserService/rest/accounts/$kVarUsername/masked-mfa-methods';
-const kUserGetMfaMethods = '$kUserService/rest/accounts/self/mfa-methods';
+const kUserMfaMethods = '$kUserService/rest/accounts/self/mfa-methods';
+const kUserMfaMethodsDelete = '$kUserMfaMethods/$kVarId';
+const kUserMfaValidate = '$kUserService/rest/accounts/self/mfa-validate';
 const kUserGetAccount = '$kUserService/rest/accounts/self';
+
 // Device service
 const kDeviceNetworksEndpoint = '$kDeviceService/rest/networks/$kVarNetworkId';
 const kAccountNetworksEndpoint = '$kDeviceService/rest/accounts/self/networks';
@@ -93,7 +97,7 @@ const kEventeSubscriptionCreate =
     '$kEventService/rest/clients/self/accounts/self/networks/$kVarNetworkId/eventsubscriptions';
 const kEventNetworkActionCreate =
     '$kEventService/rest/eventsubscriptions/$kVarEventSubscriptionId/actions';
-    
+
 // Client type id/secret
 final kClientTypeId = clientTypeID;
 final kClientSecret = clientTypeSecret;

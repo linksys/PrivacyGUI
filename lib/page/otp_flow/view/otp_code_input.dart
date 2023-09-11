@@ -34,7 +34,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
   late final TextEditingController _otpController;
   bool _rememberMe = false;
   SessionToken? _sessionToken; // for mfa login
-
+  bool isAdd = false;
   _startListenOtp() async {
     if (Platform.isAndroid) {
       _subscription = SmsReceiverPlugin().smsReceiverStream.listen((message) {
@@ -54,6 +54,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
     _startListenOtp();
     final state = ref.read(otpProvider);
     _onInit(state);
+    isAdd = widget.args['function'] == 'add';
   }
 
   @override
@@ -79,7 +80,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
     return StyledAppPageView(
       scrollable: true,
       onBackTap: () {
-        ref.read(otpProvider.notifier).processBack();
+        // ref.read(otpProvider.notifier).processBack();
         context.pop();
       },
       child: AppBasicLayout(
@@ -107,15 +108,16 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
               length: 6,
               controller: _otpController,
             ),
-            AppCheckbox(
-              value: _rememberMe,
-              text: 'Don\'t challenge on the next 30 days.',
-              onChanged: (_) {
-                setState(() {
-                  _rememberMe = !_rememberMe;
-                });
-              },
-            ),
+            if (!isAdd)
+              AppCheckbox(
+                value: _rememberMe,
+                text: 'Don\'t challenge on the next 30 days.',
+                onChanged: (_) {
+                  setState(() {
+                    _rememberMe = !_rememberMe;
+                  });
+                },
+              ),
             const AppGap.regular(),
             AppTertiaryButton.noPadding(
                 getAppLocalizations(context).otp_resend_code, onTap: () {
@@ -123,7 +125,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
               _onSend(state.selectedMethod!, state.token)
                   .then((_) => _showCodeResentHint())
                   .onError((error, stackTrace) {
-                logger.e('Error OTP input: $error', stackTrace);
+                logger.e('Error OTP input: $error', stackTrace: stackTrace);
               });
               _setLoading(false);
             }),
@@ -155,11 +157,10 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
       return;
     }
     _setLoading(true);
-    final function = widget.args['function'] ?? OtpFunction.send;
     logger.d('YOUR OTP Code is $value');
     await ref
         .read(otpProvider.notifier)
-        .authChallengeVerify(code: code, token: token)
+        .mfaVerify(code: code, token: token)
         .onError((error, stackTrace) => _handleError(error, stackTrace))
         .whenComplete(() {
       _setLoading(false);
@@ -198,7 +199,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
   Future<void> _onSend(CommunicationMethod method, String token) async {
     await ref
         .read(otpProvider.notifier)
-        .authChallenge(method: method, token: token);
+        .mfaChallenge(method: method, token: token);
   }
 
   void _onInit(OtpState state) async {
@@ -216,6 +217,6 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
     await Future.delayed(Duration(seconds: 1));
     ref
         .read(otpProvider.notifier)
-        .authChallenge(method: state.selectedMethod!, token: state.token);
+        .mfaChallenge(method: state.selectedMethod!, token: state.token);
   }
 }

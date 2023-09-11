@@ -212,14 +212,9 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
 
   bool checkIsWiredConnection(RawDevice device) {
     final interfaces = device.knownInterfaces;
-    if (interfaces != null) {
-      for (final interface in interfaces) {
-        if (interface.interfaceType == 'Wired') {
-          return true;
-        }
-      }
-    }
-    return false;
+    return interfaces
+            ?.firstWhereOrNull((element) => element.interfaceType == 'Wired') !=
+        null;
   }
 
   RawDevice? findParent(String deviceID) {

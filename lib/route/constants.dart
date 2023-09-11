@@ -32,6 +32,7 @@ class RoutePath {
   /// otp
   static const otpStart = 'otp';
   static const otpSelectMethods = 'otpSelectMethod';
+  static const otpAddPhone = 'optAddPhone';
   static const otpInputCode = 'optInputCode';
 
   /// wifi
@@ -55,6 +56,7 @@ class RoutePath {
 
   /// account
   static const accountInfo = 'accountInfo';
+  static const twoStepVerification = 'twoStepVerification';
 
   /// internet
   static const mtuPicker = 'mtuPicker';
@@ -115,6 +117,7 @@ class RouteNamed {
   /// otp
   static const otpStart = 'otp';
   static const otpSelectMethods = 'otpSelectMethod';
+  static const otpAddPhone = 'optAddPhone';
   static const otpInputCode = 'optInputCode';
 
   /// wifi
@@ -138,6 +141,7 @@ class RouteNamed {
 
   /// account
   static const accountInfo = 'accountInfo';
+  static const twoStepVerification = 'twoStepVerification';
 
   /// internet
   static const mtuPicker = 'mtuPicker';

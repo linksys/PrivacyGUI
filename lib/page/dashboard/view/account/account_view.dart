@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/cloud/model/cloud_account.dart';
 import 'package:linksys_app/provider/account/account_provider.dart';
 import 'package:linksys_app/provider/account/account_state.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
-import 'package:linksys_app/page/components/base_components/tile/setting_tile.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/biometrics.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -76,6 +78,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
           ),
         ),
         _securitySection(state),
+        _marketingSection(state),
         const Spacer(),
       ],
     );
@@ -91,7 +94,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
           ..._createInfoTile(
             state.username,
             state.password,
-            state.mobile?.fullFormat,
+            state.mobile,
           ),
         ],
       ),
@@ -109,8 +112,12 @@ class _AccountViewState extends ConsumerState<AccountView> {
       child: Column(
         children: [
           AppPanelWithInfo(
-              title: '2-Step Verification',
-              infoText: state.mfaEnabled ? 'On' : 'Off'),
+            title: '2-Step Verification',
+            infoText: state.mfaEnabled ? 'On' : 'Off',
+            onTap: () {
+              context.pushNamed(RouteNamed.twoStepVerification);
+            },
+          ),
           FutureBuilder(
               future: BiometricsHelp()
                   .canAuthenticate()
@@ -154,22 +161,46 @@ class _AccountViewState extends ConsumerState<AccountView> {
     );
   }
 
+  Widget _marketingSection(AccountState state) {
+    return AppSection(
+      header: const AppText.titleLarge(
+        'Marketing',
+      ),
+      child: Column(
+        children: [
+          AppPanelWithSwitch(
+            title: 'Newsletter',
+            value: state.newsletterOptIn,
+            description: 'Be the first to know about exclusive deals & news',
+            onChangedEvent: (value) {
+              ref.read(accountProvider.notifier).setNewsletterOptIn(value);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   List<Widget> _createInfoTile(
-      String username, String password, String? phoneNumber) {
+      String username, String password, CAMobile? mobile) {
     return [
       AppSimplePanel(
         title: 'Email',
         description: username,
       ),
-      AppPasswordField(
-        headerText: 'Password',
-        controller: _passwordController,
-      ),
-      if (phoneNumber != null)
+      if (mobile != null)
         AppSimplePanel(
           title: 'Phone Number',
-          description: phoneNumber,
+          description: mobile.fullFormat,
+          onTap: () {
+            context.pushNamed(RouteNamed.otpAddPhone, extra: {'phone': mobile});
+          },
         ),
+      AppTextField(
+        headerText: 'Password',
+        controller: _passwordController,
+        secured: true,
+      ),
     ];
   }
 

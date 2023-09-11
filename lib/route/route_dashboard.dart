@@ -12,10 +12,16 @@ final dashboardRoute = ShellRoute(
         builder: (context, state) => DashboardMenuView(),
         routes: [
           GoRoute(
-            name: RouteNamed.accountInfo,
-            path: RoutePath.accountInfo,
-            builder: (context, state) => AccountView(),
-          ),
+              name: RouteNamed.accountInfo,
+              path: RoutePath.accountInfo,
+              builder: (context, state) => AccountView(),
+              routes: [
+                GoRoute(
+                  name: RouteNamed.twoStepVerification,
+                  path: RoutePath.twoStepVerification,
+                  builder: (context, state) => TwoStepVerificationView(),
+                ),
+              ]),
         ]),
     GoRoute(
         name: RouteNamed.dashboardHome,

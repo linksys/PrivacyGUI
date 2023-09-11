@@ -8,6 +8,7 @@ import 'package:linksys_app/page/components/picker/region_picker_view.dart';
 import 'package:linksys_app/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_app/page/dashboard/view/_view.dart';
 import 'package:linksys_app/page/dashboard/view/account/_account.dart';
+import 'package:linksys_app/page/dashboard/view/account/two_step_verification_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/_administration.dart';
 import 'package:linksys_app/page/dashboard/view/administration/internet_settings/connection_type_selection_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/internet_settings/internet_settings_mac_clone_view.dart';

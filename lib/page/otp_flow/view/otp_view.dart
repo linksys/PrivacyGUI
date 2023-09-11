@@ -23,20 +23,19 @@ class OtpFlowViewState extends ConsumerState<OtpFlowView> {
   initState() {
     final otp = ref.read(otpProvider.notifier);
 
-    OtpFunction function = OtpFunction.send;
-    if (widget.args.containsKey('function')) {
-      function = widget.args['function'] as OtpFunction;
-    }
     CommunicationMethod? selected = widget.args['selected'];
     final List<CommunicationMethod>? methods = widget.args['commMethods'];
     final String vToken = widget.args['token'] ?? '';
     final String username = widget.args['username'] ?? '';
-    final future = username.isEmpty
-        ? Future.delayed(const Duration(milliseconds: 100))
-        : otp.fetchMaskedMethods(username: username);
+    final String function = widget.args['function'] ?? '';
+    final future = function == 'add'
+        ? otp.prepareAddMfa()
+        : otp.fetchMfaMethods(username: username);
     future.then((_) {
-      otp.updateToken(vToken);
-      otp.updateOtpMethods(methods, function);
+      if (vToken.isNotEmpty) {
+        otp.updateToken(vToken);
+      }
+      otp.updateOtpMethods(methods);
       if (selected != null) {
         otp.onInputOtp(method: selected);
       }
@@ -49,10 +48,14 @@ class OtpFlowViewState extends ConsumerState<OtpFlowView> {
     logger.d('otp view build!!!');
     ref.listen(otpProvider.select((value) => value.step), (previous, next) {
       if (next == OtpStep.inputOtp) {
-        context.goNamed(RouteNamed.otpInputCode, queryParameters: widget.args);
+        context.pushReplacementNamed(RouteNamed.otpInputCode,
+            extra: widget.args);
       } else if (next == OtpStep.chooseOtpMethod) {
-        context.goNamed(RouteNamed.otpSelectMethods,
-            queryParameters: widget.args);
+        context.pushReplacementNamed(RouteNamed.otpSelectMethods,
+            extra: widget.args);
+      } else if (next == OtpStep.addPhone) {
+        context.pushReplacementNamed(RouteNamed.otpAddPhone,
+            extra: widget.args);
       }
     });
     return const AppFullScreenSpinner();
