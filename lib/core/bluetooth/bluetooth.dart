@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:collection/collection.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:linksys_app/core/bluetooth/exceptions.dart';
 import 'package:linksys_app/core/jnap/command/base_command.dart';
@@ -95,8 +96,8 @@ class BluetoothManager with JNAPCommandExecutor<JNAPResult> {
         logger.d('BT Service: $service');
       }
     } catch (e) {
-      logger.e('BT connect error', e);
-      throw BTDeviceConnectionError(device.id.id);
+      logger.e('BT connect error', error: e);
+      throw BTDeviceConnectionError(device.remoteId.str);
     }
     _connectedDevice = device;
   }
