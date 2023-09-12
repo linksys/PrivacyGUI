@@ -358,7 +358,7 @@ const List<Map<String, dynamic>> iconRules = [
     'description': 'Mobile/Phone - iPad',
     'test': {
       'model': {
-        'deviceType': 'Mobile|Phone/',
+        'deviceType': 'Mobile|Phone',
         'modelNumber': 'iPad',
       },
     },
@@ -368,7 +368,7 @@ const List<Map<String, dynamic>> iconRules = [
     'description': 'Mobile/Phone - iPhone',
     'test': {
       'model': {
-        'deviceType': 'Mobile|Phone/',
+        'deviceType': 'Mobile|Phone',
         'modelNumber': 'iPhone',
       },
     },
@@ -378,7 +378,7 @@ const List<Map<String, dynamic>> iconRules = [
     'description': 'Mobile/Phone - iPod',
     'test': {
       'model': {
-        'deviceType': 'Mobile|Phone/',
+        'deviceType': 'Mobile|Phone',
         'modelNumber': 'iPod',
       },
     },
@@ -388,7 +388,7 @@ const List<Map<String, dynamic>> iconRules = [
     'description': 'Mobile/Phone - Kindle',
     'test': {
       'model': {
-        'deviceType': 'Mobile|Phone/',
+        'deviceType': 'Mobile|Phone',
         'modelNumber': 'Kindle',
       },
     },

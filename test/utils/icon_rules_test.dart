@@ -3,27 +3,111 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 
 void main() {
-  test('test isPlainJsonObj', () {
-    const Map<String, dynamic> testJson = {
-      'description': 'Linksys Router',
-      'test': {
-        'model': {
-          'manufacturer': 'Cisco|Linksys|Belkin',
-          'modelNumber': '^(E|EA|WRT|XAC|MR|MX).+\$',
-          'deviceType': 'Infrastructure'
-        }
-      },
-      'iconClass': {'lookup': 'model.modelNumber'}
-    };
-    const deviceJson = '''
+  group('test iconTest series', () {
+    test('test iconTest - MR9500', () {
+      const deviceJson = '''
     {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "MR9500", "hardwareVersion": "1"}}
     ''';
-    // final result = isPlainObject(testJson);
-    // print(result);
-    List<bool> list = [];
-    // doAttributesTests(jsonDecode(deviceJson), testJson['test']!, list);
-    // print('$list');
-    final result = iconTest(jsonDecode(deviceJson));
-    print(result);
+      final result = iconTest(jsonDecode(deviceJson));
+      expect(result, 'routerMr9500');
+    });
+    test('test iconTest - Oak', () {
+      const deviceJson = '''
+    {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "MBE7000", "hardwareVersion": "1"}}
+    ''';
+      final result = iconTest(jsonDecode(deviceJson));
+      expect(result, 'routerMx6200');
+    });
+    test('test iconTest - Maple', () {
+      const deviceJson = '''
+    {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "MX6200", "hardwareVersion": "1"}}
+    ''';
+      final result = iconTest(jsonDecode(deviceJson));
+      expect(result, 'routerMx6200');
+    });
+    test('test iconTest - Cherry', () {
+      const deviceJson = '''
+    {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "LN12", "hardwareVersion": "1"}}
+    ''';
+      final result = iconTest(jsonDecode(deviceJson));
+      expect(result, 'routerLn12');
+    });
+    test('test iconTest - Elm', () {
+      const deviceJson = '''
+    {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "LN11", "hardwareVersion": "1"}}
+    ''';
+      final result = iconTest(jsonDecode(deviceJson));
+      expect(result, 'routerLn11');
+    });
+    test('test iconTest - iPhone', () {
+      const device = {
+        "model": {
+          "deviceType": "Phone",
+          "manufacturer": "Apple Inc.",
+          "modelNumber": "iPhone",
+          "hardwareVersion": null,
+          "modelDescription": null
+        },
+      };
+      final result = iconTest(device);
+      expect(result, 'smartphone');
+    });
+    test('test iconTest - Android', () {
+      const device = {
+        "model": {
+          "deviceType": "Mobile",
+          "manufacturer": null,
+          "modelNumber": null,
+          "hardwareVersion": null,
+          "modelDescription": null
+        },
+        "friendlyName": "Android",
+      };
+      final result = iconTest(device);
+      expect(result, 'smartphone');
+    });
+    test('test iconTest - MacBook', () {
+      const device = {
+        "unit": {
+          "serialNumber": null,
+          "firmwareVersion": null,
+          "firmwareDate": null,
+          "operatingSystem": "macOS"
+        },
+        "model": {
+          "deviceType": "Computer",
+          "manufacturer": "Apple, Inc.",
+          "modelNumber": "MacBook Air",
+          "hardwareVersion": null,
+          "modelDescription": null
+        },
+
+      };
+      final result = iconTest(device);
+      expect(result, 'laptopMac');
+    });
+  });
+
+  group('test testRouterIcon series', () {
+    test('test routerIconTest - MR9500', () {
+      final result = routerIconTest(modelNumber: 'MR9500');
+      expect(result, 'routerMr9500');
+    });
+    test('test routerIconTest - Oak', () {
+      final result = routerIconTest(modelNumber: 'MBE7000');
+      expect(result, 'routerMx6200');
+    });
+    test('test routerIconTest - Maple', () {
+      final result = routerIconTest(modelNumber: 'MX6200');
+      expect(result, 'routerMx6200');
+    });
+    test('test routerIconTest - Cherry', () {
+      final result = routerIconTest(modelNumber: 'LN12');
+      expect(result, 'routerLn12');
+    });
+    test('test routerIconTest - Elm', () {
+      final result = routerIconTest(modelNumber: 'LN11');
+      expect(result, 'routerLn11');
+    });
   });
 }
