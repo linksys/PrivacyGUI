@@ -122,7 +122,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                 width: 120 * 0.75,
               ),
             ),
-            AppText.headlineSmall(
+            AppText.labelLarge(
               state.item.upstreamDevice,
             ),
           ],
@@ -145,12 +145,14 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                 child: AppIcon.big(
                   icon: getWifiSignalIconData(
                     context,
-                    state.item.signalStrength,
+                    state.item.isWired ? null : state.item.signalStrength,
                   ),
                 ),
               ),
-              AppText.headlineSmall(
-                getWifiSignalLevel(state.item.signalStrength).displayTitle,
+              AppText.labelLarge(
+                getWifiSignalLevel(
+                        state.item.isWired ? null : state.item.signalStrength)
+                    .displayTitle,
               ),
             ],
           ),

@@ -74,6 +74,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     var band = '';
     var signalStrength = 0;
     var isOnline = false;
+    var isWired = false;
     var type = DeviceListItemType.main;
 
     name = device.getDeviceLocation();
@@ -81,6 +82,8 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     upstreamDevice = _getUpstreamDevice(device).getDeviceLocation();
     upstreamIcon = iconTest(_getUpstreamDevice(device).toMap());
     isOnline = device.connections.isNotEmpty;
+    isWired =
+        ref.read(deviceManagerProvider.notifier).checkIsWiredConnection(device);
     ipv4Address = isOnline ? (device.connections.first.ipAddress ?? '') : '';
     ipv6Address = isOnline ? (device.connections.first.ipv6Address ?? '') : '';
     macAddress =
@@ -110,6 +113,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
       band: band,
       signalStrength: signalStrength,
       isOnline: isOnline,
+      isWired: isWired,
       type: type,
     );
   }

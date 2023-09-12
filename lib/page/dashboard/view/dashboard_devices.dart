@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/utils/wifi.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/devices/device_detail_id_provider.dart';
@@ -51,7 +52,10 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
           place: item.upstreamDevice,
           frequency: item.band,
           deviceImage: AppTheme.of(context).images.devices.getByName(item.icon),
-          rssi: item.signalStrength,
+          rssiIcon: item.isOnline
+              ? getWifiSignalIconData(
+                  context, item.isWired ? null : item.signalStrength)
+              : null,
           onTap: !item.isOnline
               ? null
               : () {

@@ -33,6 +33,7 @@ class DeviceListItem {
   final String band;
   final int signalStrength;
   final bool isOnline;
+  final bool isWired;
   final DeviceListItemType type;
 
   const DeviceListItem({
@@ -50,6 +51,7 @@ class DeviceListItem {
     this.band = '',
     this.signalStrength = 0,
     this.isOnline = false,
+    this.isWired = false,
     this.type = DeviceListItemType.main,
   });
 
@@ -68,6 +70,7 @@ class DeviceListItem {
     String? band,
     int? signalStrength,
     bool? isOnline,
+    bool? isWired,
     DeviceListItemType? type,
   }) {
     return DeviceListItem(
@@ -85,6 +88,7 @@ class DeviceListItem {
       band: band ?? this.band,
       signalStrength: signalStrength ?? this.signalStrength,
       isOnline: isOnline ?? this.isOnline,
+      isWired: isWired ?? this.isWired,
       type: type ?? this.type,
     );
   }
