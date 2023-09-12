@@ -106,6 +106,10 @@
 
     */
 import 'package:collection/collection.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/main.dart';
 
 const List<Map<String, dynamic>> _velopModelMap = [
   {
@@ -317,7 +321,8 @@ dynamic doVelopModelTests({
 }) {
   var out = _velopModelMap.firstWhereOrNull((rule) {
     final List<String>? hwVersions = rule['hardwareVersions'];
-    return RegExp(rule['pattern'], caseSensitive: false).hasMatch(modelNumber) &&
+    return RegExp(rule['pattern'], caseSensitive: false)
+            .hasMatch(modelNumber) &&
         ((hwVersions?.indexOf(hardwareVersion) ?? 0) > -1);
   })?[paramName];
 
@@ -392,4 +397,18 @@ bool isCognitiveMeshRouter({
           hardwareVersion: hardwareVersion,
           paramName: 'isCognitiveMesh') ??
       false;
+}
+
+bool isServiceSupport(JNAPService service) {
+  final provider = container.read(linksysCacheManagerProvider);
+  if (provider.data[JNAPAction.getDeviceInfo.actionValue] != null) {
+    for (var item in provider.data[JNAPAction.getDeviceInfo.actionValue]['data']
+        ['output']['services']) {
+      if ((item as String).contains(service.value)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return false;
 }

@@ -1,9 +1,11 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/core/utils/devices.dart';
+import 'package:linksys_app/core/utils/nodes.dart';
 import 'package:linksys_app/provider/devices/device_detail_id_provider.dart';
 import 'package:linksys_app/provider/devices/node_detail_state.dart';
 
@@ -97,10 +99,26 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     return upstreamLocation;
   }
 
+  Future<void> getLEDLight() async {
+    ref.read(deviceManagerProvider.notifier).getLEDLight().then((value) {
+      state = state.copyWith(isLightTurnedOn: value);
+    });
+  }
+
+  Future<void> _setLEDLight(bool isOn) async {
+    ref.read(deviceManagerProvider.notifier).setLEDLight(isOn).then((value) {
+      state = state.copyWith(isLightTurnedOn: isOn);
+    });
+  }
+
   Future<void> toggleNodeLight(bool isOn) async {
     //TODO: Implement real commands for switching the light
-    state = state.copyWith(
-      isLightTurnedOn: isOn,
+    final isCognitive = isCognitiveMeshRouter(
+      modelNumber: state.modelNumber,
+      hardwareVersion: state.firmwareVersion,
     );
+    if (isCognitive) {
+      _setLEDLight(isOn);
+    }
   }
 }

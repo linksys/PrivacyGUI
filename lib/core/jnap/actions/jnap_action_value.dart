@@ -267,6 +267,10 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/nodes/setup/StartBlinkingNodeLed'),
   stopBlinkingNodeLed(
       value: 'http://linksys.com/jnap/nodes/setup/StopBlinkingNodeLed'),
+  getLedNightModeSetting(
+      value: 'http://linksys.com/jnap/routerleds/GetLedNightModeSetting'),
+  setLedNightModeSetting(
+      value: 'http://linksys.com/jnap/routerleds/SetLedNightModeSetting'),
   ;
 
   const _JNAPActionValue({required this.value});

@@ -287,6 +287,12 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.nodeHealthCheck:
       // TODO: Handle this case.
       break;
+    case JNAPService.routerLEDs:
+      break;
+    case JNAPService.routerLEDs2:
+      break;
+    case JNAPService.routerLEDs3:
+      break;
   }
 }
 
@@ -479,6 +485,10 @@ void initBetterActions() {
       _JNAPActionValue.startBlinkingNodeLed.value;
   _betterActionMap[JNAPAction.stopBlinkNodeLed] =
       _JNAPActionValue.stopBlinkingNodeLed.value;
+  _betterActionMap[JNAPAction.getLedNightModeSetting] =
+      _JNAPActionValue.getLedNightModeSetting.value;
+  _betterActionMap[JNAPAction.setLedNightModeSetting] =
+      _JNAPActionValue.setLedNightModeSetting.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

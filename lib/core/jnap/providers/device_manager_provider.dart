@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/models/back_haul_info.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/models/wan_status.dart';
@@ -293,6 +294,28 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       });
       state = state.copyWith(deviceList: newList);
     }
+  }
+
+  Future<bool> getLEDLight() async {
+    final routerRepository = ref.read(routerRepositoryProvider);
+    final result = await routerRepository.send(
+      JNAPAction.getLedNightModeSetting,
+      auth: true,
+      cacheLevel: CacheLevel.noCache,
+    );
+    if (result.result == 'OK') {
+      return result.output['Enable'];
+    }
+    return false;
+  }
+
+  Future<void> setLEDLight(bool isOn) async {
+    final routerRepository = ref.read(routerRepositoryProvider);
+    final result = await routerRepository.send(
+      JNAPAction.setLedNightModeSetting,
+      data: {'Enable': isOn},
+      auth: true,
+    );
   }
 
   //TODO: Delete device by Ids function
