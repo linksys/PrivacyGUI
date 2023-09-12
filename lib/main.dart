@@ -129,10 +129,6 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
     final connectivity = ref.read(connectivityProvider.notifier);
     connectivity.start();
     connectivity.forceUpdate().then((value) => _initAuth());
-
-    if (!kIsWeb) {
-      FlutterNativeSplash.remove();
-    }
   }
 
   @override
@@ -178,6 +174,9 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
   _initAuth() {
     ref.read(authProvider.notifier).init().then((_) {
       logger.d('init auth finish');
+      if (!kIsWeb) {
+        FlutterNativeSplash.remove();
+      }
     });
   }
 
