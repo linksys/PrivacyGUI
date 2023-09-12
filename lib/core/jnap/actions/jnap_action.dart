@@ -139,7 +139,10 @@ enum JNAPAction {
   getVLANTaggingSettings,
   setVLANTaggingSettings,
   // wirelessScheduler
-  getWirelessSchedulerSettings;
+  getWirelessSchedulerSettings,
+  //led
+  getLedNightModeSetting,
+  setLedNightModeSetting;
 
   String get actionValue {
     return _betterActionMap[this]!;

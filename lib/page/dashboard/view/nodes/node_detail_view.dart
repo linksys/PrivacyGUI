@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
+import 'package:linksys_app/core/utils/nodes.dart';
 import 'package:linksys_app/core/utils/wifi.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
@@ -28,6 +30,14 @@ class NodeDetailView extends ArgumentsConsumerStatefulView {
 }
 
 class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
+  @override
+  void initState() {
+    super.initState();
+    if (isServiceSupport(JNAPService.routerLEDs3)) {
+      ref.read(nodeDetailProvider.notifier).getLEDLight();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(nodeDetailProvider);
@@ -162,16 +172,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               child: AppSwitch.full(
                 value: state.isLightTurnedOn,
                 onChanged: (value) {
-                  setState(() {
-                    ref
-                        .read(nodeDetailProvider.notifier)
-                        .toggleNodeLight(value);
-                    //ref.read(navigationsProvider.notifier).push(NodeSwitchLightPath());
-                  });
+                  ref.read(nodeDetailProvider.notifier).toggleNodeLight(value);
+                  //ref.read(navigationsProvider.notifier).push(NodeSwitchLightPath());
                 },
               ),
             ),
-            AppText.bodyLarge(
+            const AppText.bodyLarge(
               'Light',
             ),
           ],

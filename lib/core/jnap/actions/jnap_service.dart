@@ -33,7 +33,7 @@ enum JNAPService {
   // https://linksys.atlassian.net/wiki/spaces/LSW/pages/43516238/Application+Prioritization+-+Dev+Spec
   gamingPrioritization(
       value:
-      'http://linksys.com/jnap/gamingprioritization/GamingPrioritization'),
+          'http://linksys.com/jnap/gamingprioritization/GamingPrioritization'),
   guestNetwork(value: 'http://linksys.com/jnap/guestnetwork/GuestNetwork'),
   guestNetwork2(value: 'http://linksys.com/jnap/guestnetwork/GuestNetwork2'),
   guestNetwork3(value: 'http://linksys.com/jnap/guestnetwork/GuestNetwork3'),
@@ -71,7 +71,7 @@ enum JNAPService {
       value: 'http://linksys.com/jnap/nodes/healthcheck/HealthCheckManager'),
   nodesNetworkConnections(
       value:
-      'http://linksys.com/jnap/nodes/networkconnections/NodesNetworkConnections'),
+          'http://linksys.com/jnap/nodes/networkconnections/NodesNetworkConnections'),
   ownedNetwork(value: 'http://linksys.com/jnap/ownednetwork/OwnedNetwork'),
   ownedNetwork2(value: 'http://linksys.com/jnap/ownednetwork/OwnedNetwork2'),
   ownedNetwork3(value: 'http://linksys.com/jnap/ownednetwork/OwnedNetwork3'),
@@ -126,7 +126,11 @@ enum JNAPService {
   wirelessScheduler(
       value: 'http://linksys.com/jnap/wirelessscheduler/WirelessScheduler'),
   wirelessScheduler2(
-      value: 'http://linksys.com/jnap/wirelessscheduler/WirelessScheduler2');
+      value: 'http://linksys.com/jnap/wirelessscheduler/WirelessScheduler2'),
+  routerLEDs(value: 'http://linksys.com/jnap/routerleds/RouterLEDs'),
+  routerLEDs2(value: 'http://linksys.com/jnap/routerleds/RouterLEDs2'),
+  routerLEDs3(value: 'http://linksys.com/jnap/routerleds/RouterLEDs3'),
+  ;
 
   const JNAPService({required this.value});
 
