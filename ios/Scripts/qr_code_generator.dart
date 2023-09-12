@@ -9,8 +9,7 @@ void main(List<String> args) {
     exit(0);
   }
   final String data = args.first;
-  final qrCode = QrCode(4, QrErrorCorrectLevel.L)
-    ..addData(data);
+  final qrCode = QrCode(4, QrErrorCorrectLevel.L)..addData(data);
   final qr = QrImage(qrCode);
   final image = _drawQRCodeDefault(qr);
 
@@ -19,7 +18,6 @@ void main(List<String> args) {
     file.createSync(recursive: true);
   }
   file.writeAsBytesSync(encodePng(image));
-  
 }
 
 Image _drawQRCodeDefault(QrImage qr) {
@@ -27,8 +25,11 @@ Image _drawQRCodeDefault(QrImage qr) {
   int blockSize = (size / qr.moduleCount).floor() + 2;
   int imageSize = (blockSize * qr.moduleCount) + (blockSize * 2);
 
-  var img = Image(imageSize, imageSize);
-  fill(img, Color.fromRgb(255, 255, 255));
+  var img = Image(
+    width: imageSize,
+    height: imageSize,
+  );
+  fill(img, color: ColorInt16.rgb(255, 255, 255));
 
   for (var x = 0; x < qr.moduleCount; x++) {
     for (var y = 0; y < qr.moduleCount; y++) {
@@ -36,7 +37,13 @@ Image _drawQRCodeDefault(QrImage qr) {
       int xx = (x * blockSize) + blockSize;
       int yy = (y * blockSize) + blockSize;
       fillRect(
-          img, xx, yy, xx + blockSize, yy + blockSize, Color.fromRgb(0, 0, 0));
+        img,
+        x1: xx,
+        y1: yy,
+        x2: xx + blockSize,
+        y2: yy + blockSize,
+        color: ColorInt16.rgb(0, 0, 0),
+      );
     }
   }
 
