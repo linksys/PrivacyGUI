@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 
 class RawDevice extends Equatable {
@@ -48,6 +49,25 @@ class RawDevice extends Equatable {
     ];
   }
 
+  String? get operatingSystem =>
+      unit.operatingSystem ??
+      properties
+          .firstWhereOrNull((property) => property.name == 'userDeviceOS')
+          ?.value;
+
+  String? get manufacturer =>
+      model.manufacturer ??
+      properties
+          .firstWhereOrNull(
+              (property) => property.name == 'userDeviceManufacturer')
+          ?.value;
+
+  String? get modelNumber =>
+      model.modelNumber ??
+      properties
+          .firstWhereOrNull(
+              (property) => property.name == 'userDeviceModelNumber')
+          ?.value;
   RawDevice copyWith({
     List<RawDeviceConnection>? connections,
     List<RawDeviceProperty>? properties,
@@ -128,7 +148,8 @@ class RawDevice extends Equatable {
       knownInterfaces: map['knownInterfaces'] != null
           ? List<RawDeviceKnownInterface>.from(
               map['knownInterfaces'].map<RawDeviceKnownInterface?>(
-                (x) => RawDeviceKnownInterface.fromMap(x as Map<String, dynamic>),
+                (x) =>
+                    RawDeviceKnownInterface.fromMap(x as Map<String, dynamic>),
               ),
             )
           : null,
@@ -450,7 +471,8 @@ class RawDeviceKnownInterface extends Equatable {
   String toJson() => json.encode(toMap());
 
   factory RawDeviceKnownInterface.fromJson(String source) =>
-      RawDeviceKnownInterface.fromMap(json.decode(source) as Map<String, dynamic>);
+      RawDeviceKnownInterface.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

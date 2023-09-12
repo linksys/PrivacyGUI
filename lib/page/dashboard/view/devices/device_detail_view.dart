@@ -225,6 +225,12 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   }
 
   Widget _detailSection(ExternalDeviceDetailState state) {
+    final model = state.item.model;
+    final manufacturer = state.item.manufacturer;
+    final operatingSystem = state.item.operatingSystem;
+    if ('$model$manufacturer$operatingSystem'.isEmpty) {
+      return const Center();
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -233,21 +239,27 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           getAppLocalizations(context).details_all_capital,
           color: ConstantColors.secondaryCyberPurple,
         ),
-        const AppGap.semiSmall(),
-        AppSimplePanel(
-          title: getAppLocalizations(context).manufacturer,
-          description: state.item.manufacturer,
-        ),
-        const AppGap.semiSmall(),
-        AppSimplePanel(
-          title: getAppLocalizations(context).model,
-          description: state.item.model,
-        ),
-        const AppGap.semiSmall(),
-        AppSimplePanel(
-          title: getAppLocalizations(context).operating_system,
-          description: state.item.operatingSystem,
-        ),
+        if (manufacturer.isNotEmpty) ...[
+          const AppGap.semiSmall(),
+          AppSimplePanel(
+            title: getAppLocalizations(context).manufacturer,
+            description: manufacturer,
+          )
+        ],
+        if (model.isNotEmpty) ...[
+          const AppGap.semiSmall(),
+          AppSimplePanel(
+            title: getAppLocalizations(context).model,
+            description: model,
+          )
+        ],
+        if (operatingSystem.isNotEmpty) ...[
+          const AppGap.semiSmall(),
+          AppSimplePanel(
+            title: getAppLocalizations(context).operating_system,
+            description: operatingSystem,
+          )
+        ],
       ],
     );
   }

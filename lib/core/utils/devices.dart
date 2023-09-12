@@ -27,14 +27,14 @@ extension DeviceUtil on RawDevice {
     String? androidDeviceName;
     if (isAndroidDevice &&
         ['Mobile', 'Phone', 'Tablet'].contains(model.deviceType)) {
-      final manufacturer = model.manufacturer;
-      final modelNumber = model.modelNumber;
+      final manufacturer = this.manufacturer;
+      final modelNumber = this.modelNumber;
       if (manufacturer != null && modelNumber != null) {
         // e.g. 'Samsung Galaxy S8'
         androidDeviceName = '$manufacturer $modelNumber';
-      } else if (unit.operatingSystem != null) {
+      } else if (operatingSystem != null) {
         // e.g. 'Android Oreo Mobile'
-        androidDeviceName = '${unit.operatingSystem!} ${model.deviceType}';
+        androidDeviceName = '${operatingSystem!} ${model.deviceType}';
         if (manufacturer != null) {
           // e.g. 'Samsung Android Oreo Mobile'
           androidDeviceName = manufacturer + androidDeviceName;

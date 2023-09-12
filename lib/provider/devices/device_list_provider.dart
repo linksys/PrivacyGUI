@@ -88,9 +88,9 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     ipv6Address = isOnline ? (device.connections.first.ipv6Address ?? '') : '';
     macAddress =
         ref.read(deviceManagerProvider.notifier).getDeviceMacAddress(device);
-    manufacturer = device.model.manufacturer ?? '';
-    model = device.model.modelNumber ?? '';
-    operatingSystem = device.unit.operatingSystem ?? '';
+    manufacturer = device.manufacturer ?? '';
+    model = device.modelNumber ?? '';
+    operatingSystem = device.operatingSystem ?? '';
     band = ref.read(deviceManagerProvider.notifier).getWirelessBand(device);
     signalStrength =
         ref.read(deviceManagerProvider.notifier).getWirelessSignal(device);
