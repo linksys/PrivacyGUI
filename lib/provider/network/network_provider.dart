@@ -32,12 +32,11 @@ class NetworkNotifier extends Notifier<NetworkState> {
   @override
   NetworkState build() => const NetworkState();
 
-  Future selectNetwork(CloudNetworkModel network) async {
+  Future selectNetwork(String networkId) async {
     final pref = await SharedPreferences.getInstance();
     await pref.remove(pCurrentSN);
-    await pref.setString(pSelectedNetworkId, network.network.networkId);
-    state =
-        state.copyWith(selected: MoabNetwork(id: network.network.networkId));
+    await pref.setString(pSelectedNetworkId, networkId);
+    state = state.copyWith(selected: AppNetwork(id: networkId));
   }
 
   Future<void> createAdminPassword(String password, String hint) async {
@@ -67,7 +66,7 @@ class NetworkNotifier extends Notifier<NetworkState> {
         final speedTestResult = await getHealthCheckStatus();
         if (speedTestResult.exitCode != 'Unavailable') {
           final selected = state.selected!;
-          MoabNetwork selectedCopy = MoabNetwork(
+          AppNetwork selectedCopy = AppNetwork(
               id: selected.id,
               deviceInfo: selected.deviceInfo,
               wanStatus: selected.wanStatus,
@@ -165,7 +164,7 @@ class NetworkNotifier extends Notifier<NetworkState> {
     buildBetterActions(nodeDeviceInfo.services);
     state = state.copyWith(
         selected: state.selected?.copyWith(deviceInfo: nodeDeviceInfo) ??
-            MoabNetwork(
+            AppNetwork(
                 id: nodeDeviceInfo.serialNumber, deviceInfo: nodeDeviceInfo));
   }
 

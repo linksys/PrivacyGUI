@@ -40,6 +40,7 @@ import 'package:linksys_app/page/login/view/_view.dart';
 import 'package:linksys_app/page/otp_flow/view/_view.dart';
 import 'package:linksys_app/page/wifi_settings/view/_view.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
+import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/provider/otp/otp.dart';
 
 import '../page/dashboard/view/administration/lan/lan_view.dart';
@@ -101,10 +102,9 @@ class RouterNotifier extends ChangeNotifier {
   }
 
   String? _redirectLogic(GoRouterState state) {
+    final loginType =
+        _ref.watch(authProvider.select((data) => data.value?.loginType));
     if (state.matchedLocation == '/') {
-      final loginType =
-          _ref.watch(authProvider.select((data) => data.value?.loginType));
-
       switch (loginType) {
         case LoginType.remote:
           return RoutePath.prepareDashboard;
@@ -114,21 +114,12 @@ class RouterNotifier extends ChangeNotifier {
           return null;
       }
     }
-    // if (state.location.startsWith('/otp')) {
-    //   final step = _ref.watch(otpProvider).step;
-
-    //   switch (step) {
-    //     case OtpStep.chooseOtpMethod:
-    //       return '/otp/otpSelectMethod';
-    //     case OtpStep.addPhone:
-    //       return '/otp/otpAddPhone';
-    //     case OtpStep.inputOtp:
-    //       return 'otp/otpInputCode';
-    //     case OtpStep.finish:
-    //     default:
-    //       return null;
-    //   }
-    // }
+    final network = _ref.read(networkProvider).selected;
+    if (loginType != LoginType.none &&
+        network == null &&
+        state.matchedLocation != RoutePath.selectNetwork) {
+      return RoutePath.prepareDashboard;
+    }
 
     return null;
   }

@@ -128,7 +128,9 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
     return InkWell(
       onTap: network.isOnline
           ? () async {
-              await ref.read(networkProvider.notifier).selectNetwork(network);
+              await ref
+                  .read(networkProvider.notifier)
+                  .selectNetwork(network.network.networkId);
               // _navigationNotifier.clearAndPush(PrepareDashboardPath());
               logEvent(
                 eventName: 'ActionSelectNetwork',

@@ -10,10 +10,10 @@ class NetworkState extends Equatable {
     return const NetworkState();
   }
 
-  final MoabNetwork? selected;
+  final AppNetwork? selected;
 
   NetworkState copyWith({
-    MoabNetwork? selected,
+    AppNetwork? selected,
   }) {
     return NetworkState(
       selected: selected ?? this.selected,

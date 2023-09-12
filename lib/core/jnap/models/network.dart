@@ -7,8 +7,8 @@ import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/jnap/models/wan_status.dart';
 import 'package:linksys_app/core/jnap/models/health_check_result.dart';
 
-class MoabNetwork extends Equatable {
-  const MoabNetwork({
+class AppNetwork extends Equatable {
+  const AppNetwork({
     required this.id,
     this.deviceInfo,
     this.wanStatus,
@@ -43,7 +43,7 @@ class MoabNetwork extends Equatable {
         currentSpeedTestStatus,
       ];
 
-  MoabNetwork copyWith({
+  AppNetwork copyWith({
     String? id,
     NodeDeviceInfo? deviceInfo,
     RouterWANStatus? wanStatus,
@@ -54,7 +54,7 @@ class MoabNetwork extends Equatable {
     List<HealthCheckResult>? healthCheckResults,
     SpeedTestResult? currentSpeedTestStatus,
   }) {
-    return MoabNetwork(
+    return AppNetwork(
       id: id ?? this.id,
       deviceInfo: deviceInfo ?? this.deviceInfo,
       wanStatus: wanStatus ?? this.wanStatus,

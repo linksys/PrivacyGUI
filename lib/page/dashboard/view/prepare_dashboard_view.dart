@@ -40,6 +40,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
       AppFullScreenSpinner(text: getAppLocalizations(context).processing);
 
   _checkSelfNetworks() async {
+    final router = GoRouter.of(context);
     await ref.read(connectivityProvider.notifier).forceUpdate();
     if (!context.mounted) return;
     final loginType =
@@ -47,9 +48,15 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
     if (loginType == LoginType.remote) {
       logger.i('PREPARE LOGIN:: remote');
       if (ref.read(networkProvider).selected == null) {
-        ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
-        context.goNamed(RouteNamed.selectNetwork);
-        return;
+        final prefs = await SharedPreferences.getInstance();
+        final networkId = prefs.getString(pSelectedNetworkId);
+        if (networkId == null) {
+          ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
+          router.goNamed(RouteNamed.selectNetwork);
+          return;
+        } else {
+          ref.read(networkProvider.notifier).selectNetwork(networkId);
+        }
       }
     }
     logger.d('Go to dashboard');
@@ -69,7 +76,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
           .loadCache(serialNumber: nodeDeviceInfo.serialNumber);
 
       // ref.watch(navigationsProvider.notifier).clearAndPush(DashboardHomePath());
-      context.goNamed(RouteNamed.dashboardHome);
+      router.goNamed(RouteNamed.dashboardHome);
       ref.read(pollingProvider.notifier).stopPolling();
       ref.read(pollingProvider.notifier).startPolling();
     } else {
