@@ -1,27 +1,27 @@
-import 'package:equatable/equatable.dart';
-import 'package:linksys_app/core/jnap/models/network.dart';
+// import 'package:equatable/equatable.dart';
+// import 'package:linksys_app/core/jnap/models/network.dart';
 
-class NetworkState extends Equatable {
-  const NetworkState({
-    this.selected,
-  });
+// class NetworkState extends Equatable {
+//   const NetworkState({
+//     this.selected,
+//   });
 
-  factory NetworkState.initState() {
-    return const NetworkState();
-  }
+//   factory NetworkState.initState() {
+//     return const NetworkState();
+//   }
 
-  final AppNetwork? selected;
+//   final AppNetwork? selected;
 
-  NetworkState copyWith({
-    AppNetwork? selected,
-  }) {
-    return NetworkState(
-      selected: selected ?? this.selected,
-    );
-  }
+//   NetworkState copyWith({
+//     AppNetwork? selected,
+//   }) {
+//     return NetworkState(
+//       selected: selected ?? this.selected,
+//     );
+//   }
 
-  @override
-  List<Object?> get props => [
-        selected,
-      ];
-}
+//   @override
+//   List<Object?> get props => [
+//         selected,
+//       ];
+// }
