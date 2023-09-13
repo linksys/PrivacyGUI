@@ -182,6 +182,18 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
             ),
           ],
         ),
+        isServiceSupport(JNAPService.setup9)
+            ? GestureDetector(
+                onTap: () {
+                  ref.read(nodeDetailProvider.notifier).toggleBlinkNode();
+                },
+                child: Column(
+                  children: [
+                    AppText.bodyMedium(state.blinkingStatus.value),
+                  ],
+                ),
+              )
+            : Container(),
       ],
     );
   }

@@ -142,7 +142,9 @@ enum JNAPAction {
   getWirelessSchedulerSettings,
   //led
   getLedNightModeSetting,
-  setLedNightModeSetting;
+  setLedNightModeSetting,
+  startBlinkingNodeLed,
+  stopBlinkingNodeLed;
 
   String get actionValue {
     return _betterActionMap[this]!;
