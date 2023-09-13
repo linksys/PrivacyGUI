@@ -39,7 +39,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   @override
   Widget build(BuildContext context) {
-    final _ = ref.watch(networkProvider); //TODO: XXXXXX Remove this state
     final state = ref.watch(dashboardHomeProvider);
     final wanStatus = ref.watch(nodeWanStatusProvider);
     return StyledAppPageView(

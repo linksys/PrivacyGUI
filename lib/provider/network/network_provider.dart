@@ -1,5 +1,5 @@
 import 'dart:async';
-
+/*
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
@@ -35,11 +35,6 @@ class NetworkNotifier extends Notifier<NetworkState> {
     await pref.remove(pCurrentSN);
     await pref.setString(pSelectedNetworkId, networkId);
     state = state.copyWith(selected: AppNetwork(id: networkId));
-  }
-
-  Future<void> createAdminPassword(String password, String hint) async {
-    final repo = ref.read(routerRepositoryProvider);
-    await repo.createAdminPassword('admin', hint);
   }
 
   // HealthCheckResult getLatestHealthCheckResult(
@@ -196,3 +191,4 @@ class NetworkNotifier extends Notifier<NetworkState> {
   //           state.selected!.copyWith(healthCheckResults: healthCheckResults));
   // }
 }
+*/

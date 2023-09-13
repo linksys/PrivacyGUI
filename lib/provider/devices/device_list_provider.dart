@@ -26,7 +26,8 @@ final filteredDeviceListProvider = Provider((ref) {
 });
 
 final deviceListTypeProvider = StateProvider((ref) {
-  return DeviceListItemType.main;
+  // Main Wi-Fi devices are given by default
+  return WifiConnectionType.main;
 });
 
 final _deviceListProvider =
@@ -42,22 +43,16 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
   }
 
   DeviceListState createState(DeviceManagerState deviceManagerState) {
-    const newState = DeviceListState();
-    final deviceList = deviceManagerState.deviceList;
-    final externalDevices = deviceList.where(
-      (device) => (device.nodeType == null),
-    );
-    final list = externalDevices
-        .map(
-          (device) => createItem(device),
-        )
+    const newState = DeviceListState();    
+    final list = deviceManagerState.externalDevices
+        .map((device) => createItem(device))
         .toList();
     return newState.copyWith(
       devices: list,
     );
   }
 
-  DeviceListItem createItem(RawDevice device) {
+  DeviceListItem createItem(LinksysDevice device) {
     const newState = DeviceListItem();
     // Details of the specific external device
     final targetId = device.deviceID;
@@ -75,7 +70,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     var signalStrength = 0;
     var isOnline = false;
     var isWired = false;
-    var type = DeviceListItemType.main;
+    var type = WifiConnectionType.main;
 
     name = device.getDeviceLocation();
     icon = iconTest(device.toMap());
@@ -94,9 +89,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     band = ref.read(deviceManagerProvider.notifier).getWirelessBand(device);
     signalStrength =
         ref.read(deviceManagerProvider.notifier).getWirelessSignal(device);
-    type = ref.read(deviceManagerProvider.notifier).checkIsGuestNetwork(device)
-        ? DeviceListItemType.guest
-        : DeviceListItemType.main;
+    type = device.connectedWifiType;
 
     return newState.copyWith(
       deviceId: targetId,
@@ -118,6 +111,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     );
   }
 
+  //TODO: Check if this logic is duplicate
   RawDevice _getUpstreamDevice(RawDevice device) {
     final deviceList = ref.read(deviceManagerProvider).deviceList;
     final parentId = device.connections.firstOrNull?.parentDeviceID;

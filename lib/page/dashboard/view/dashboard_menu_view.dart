@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/dashboard/dashboard_home_provider.dart';
@@ -55,10 +56,16 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 AppCard(
+                  // Get image by master node's model number
                   image: AppTheme.of(context).images.devices.getByName(
                         routerIconTest(
-                          //TODO: XXXXXX Add deviceManger: deviceInfo?.modelNumber
-                          modelNumber: '',
+                          modelNumber: ref
+                                  .read(deviceManagerProvider)
+                                  .deviceList
+                                  .firstOrNull
+                                  ?.model
+                                  .modelNumber ??
+                              '',
                         ),
                       ),
                 ),

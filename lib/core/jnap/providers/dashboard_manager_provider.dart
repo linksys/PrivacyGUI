@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/models/device_info.dart';
 import 'package:linksys_app/core/jnap/models/guest_radio_settings.dart';
@@ -7,6 +8,9 @@ import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/provider/network/_network.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final dashboardManagerProvider =
     NotifierProvider<DashboardManagerNotifier, DashboardManagerState>(
@@ -54,6 +58,30 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     return newState;
   }
 
+  Future selectNetwork(String networkId) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.remove(pCurrentSN);
+    await pref.setString(pSelectedNetworkId, networkId);
+    state = state.copyWith(
+      networkId: networkId,
+    );
+  }
+
+  //TODO: XXXXX check DeviceInfo data storage
+  Future<NodeDeviceInfo> getDeviceInfo() async {
+    final routerRepository = ref.read(routerRepositoryProvider);
+    final result = await routerRepository.send(JNAPAction.getDeviceInfo, force: true);
+    final nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
+    final services = nodeDeviceInfo.services;
+    // Build/Update better actions
+    buildBetterActions(services);
+    state = state.copyWith(
+      serialNumber: nodeDeviceInfo.serialNumber,
+      deviceServices: services,
+    );
+    return nodeDeviceInfo;
+  }
+
   DashboardManagerState _getAvailableDeviceServices(
     DashboardManagerState state,
     Map<String, dynamic> data,
@@ -63,6 +91,7 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     // Build/Update better actions
     buildBetterActions(services);
     return state.copyWith(
+      serialNumber: nodeDeviceInfo.serialNumber,
       deviceServices: services,
     );
   }

@@ -34,7 +34,6 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
   String _errorReason = '';
 
   String _hint = '';
-  NodeDeviceInfo? _deviceInfo;
 
   final TextEditingController _passwordController = TextEditingController();
 
@@ -74,7 +73,6 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
             RouterType.others;
 
     if (isConnected) {
-      _deviceInfo = await ref.read(networkProvider.notifier).getDeviceInfo();
       await ref
           .read(authProvider.notifier)
           .getAdminPasswordInfo()

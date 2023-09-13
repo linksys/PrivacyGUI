@@ -77,14 +77,13 @@ class TopologyNotifier extends Notifier<TopologyState> {
   // }
 
   RouterTreeNode _buildRouterTopology(DeviceManagerState deviceManagerState) {
-    final deviceList = deviceManagerState.deviceList;
-
-    final routerDevices = deviceList.where((device) {
-      return device.isAuthority || device.nodeType != null;
-    });
     // {DeviceId : NodeObject}
-    final nodeMap = Map.fromEntries(routerDevices.map((device) =>
-        MapEntry(device.deviceID, _createTopologyNode(device))));
+    final nodeMap = Map.fromEntries(
+      deviceManagerState.nodeDevices.map(
+        (device) => MapEntry(device.deviceID, _createTopologyNode(device)),
+      ),
+    );
+    final deviceList = deviceManagerState.deviceList;
     // Master node is always at the first
     final masterNode = nodeMap[deviceList.first.deviceID]!;
 

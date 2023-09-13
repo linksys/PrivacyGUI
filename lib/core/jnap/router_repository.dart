@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
+import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/_connectivity.dart';
@@ -412,7 +413,7 @@ extension RouterRepositoryUtil on RouterRepository {
   }
 
   String getNetworkId() {
-    return ref.read(networkProvider).selected?.id ?? '';
+    return ref.read(dashboardManagerProvider).networkId ?? 'NetworkIdErr';
   }
 
   Future<String> getCloudToken() async {

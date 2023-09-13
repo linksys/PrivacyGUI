@@ -31,12 +31,9 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     // Get available Wi-Fi radios
     final numOfWifi = _getNumberOfAvailableWifi(dashboardManagerState);
     // Get node number in the mesh
-    final numOfNodes =
-        ref.read(deviceManagerProvider.notifier).getNodeDevices().length;
+    final numOfNodes = deviceManagerState.nodeDevices.length;
     // Get online external devices number
-    final externalDevices =
-        ref.read(deviceManagerProvider.notifier).getExternalDevices();
-    final onlineDevices = externalDevices
+    final onlineDevices = deviceManagerState.externalDevices
         .where((device) => device.connections.isNotEmpty)
         .toList();
     final numOfOnlineExternalDevices = onlineDevices.length;
