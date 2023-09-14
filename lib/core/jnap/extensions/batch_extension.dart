@@ -43,26 +43,29 @@ extension BatchCommands on RouterRepository {
       auth: true,
     )).then((successWrap) => successWrap.data);
   }
+  */
 
   Future<Map<JNAPAction, JNAPResult>> deleteDevices(
-      List<String> deviceIdList) async {
+    List<String> deviceIds,
+  ) async {
     return transaction(
       JNAPTransactionBuilder(
         commands: Map.fromEntries(
-          deviceIdList
+          deviceIds
               .map(
-                (e) => MapEntry(
+                (deviceId) => MapEntry(
                   JNAPAction.deleteDevice,
-                  {'deviceID': e},
+                  {'deviceID': deviceId},
                 ),
               )
               .toList(),
         ),
         auth: true,
       ),
-    ).then((successWrap) => successWrap.data);
+    ).then(
+      (successWrap) => successWrap.data,
+    );
   }
-  */
 
   Future<Map<JNAPAction, JNAPResult>> fetchAllRadioInfo() {
     return transaction(

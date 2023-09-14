@@ -13,7 +13,6 @@ import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/models/device_info.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
-import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/provider/select_network/select_network_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';

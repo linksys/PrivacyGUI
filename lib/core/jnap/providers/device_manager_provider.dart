@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/command/base_command.dart';
+import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
 import 'package:linksys_app/core/jnap/models/back_haul_info.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/models/wan_status.dart';
@@ -316,20 +317,19 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
 
   Future<void> setLEDLight(bool isOn) async {
     final routerRepository = ref.read(routerRepositoryProvider);
-    final result = await routerRepository.send(
+    await routerRepository.send(
       JNAPAction.setLedNightModeSetting,
       data: {'Enable': isOn},
       auth: true,
     );
   }
 
-  //TODO: Delete device by Ids function
-  // Future<void> deleteDeviceList(List<DeviceDetailInfo> deviceInfoList) async {
-  //   List<String> deviceIdList = deviceInfoList.map((e) => e.deviceID).toList();
-  //   await _routerRepository
-  //       .deleteDevices(deviceIdList)
-  //       .then((value) => fetchDeviceList());
-  // }
+  Future<bool> deleteDevices({required List<String> deviceIds}) {
+    final routerRepository = ref.read(routerRepositoryProvider);
+    return routerRepository.deleteDevices(deviceIds).then((mapData) {
+      return !mapData.values.any((result) => result.result != 'OK');
+    });
+  }
 
   //TODO: Reboot mesh system function
   // Future rebootMeshSystem() async {

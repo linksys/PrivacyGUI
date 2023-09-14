@@ -42,7 +42,6 @@ import 'package:linksys_app/page/login/view/_view.dart';
 import 'package:linksys_app/page/otp_flow/view/_view.dart';
 import 'package:linksys_app/page/wifi_settings/view/_view.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
-import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/provider/otp/otp.dart';
 
 import '../page/dashboard/view/administration/lan/lan_view.dart';

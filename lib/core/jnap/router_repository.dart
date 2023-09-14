@@ -26,7 +26,6 @@ import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/spec/jnap_spec.dart';
 import 'package:linksys_app/core/jnap/providers/side_effect_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
