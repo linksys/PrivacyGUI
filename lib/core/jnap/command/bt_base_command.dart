@@ -7,7 +7,7 @@ abstract class BaseBTCommand<R, S extends JNAPCommandSpec>
   BaseBTCommand(
       {required super.spec,
       required super.executor,
-      super.force,
+      super.fetchRemote,
       super.cacheLevel});
 
   String _data = '';
@@ -19,7 +19,7 @@ class JNAPBTCommand extends BaseBTCommand<JNAPResult, BTJNAPSpec> {
   JNAPBTCommand({
     required super.executor,
     required String action,
-    super.force,
+    super.fetchRemote,
     super.cacheLevel,
     Map<String, dynamic> data = const {},
   }) : super(

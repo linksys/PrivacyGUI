@@ -75,7 +75,7 @@ class RouterRepository {
       Map<String, String> extraHeaders = const {},
       bool auth = false,
       CommandType? type,
-      bool force = false,
+      bool fetchRemote = false,
       CacheLevel cacheLevel = CacheLevel.localCached}) async {
     final prefs = await SharedPreferences.getInstance();
     final sn = prefs.get(pCurrentSN) as String?;
@@ -84,7 +84,7 @@ class RouterRepository {
         extraHeaders: extraHeaders,
         needAuth: auth,
         type: type,
-        force: force,
+        fetchRemote: fetchRemote,
         cacheLevel: cacheLevel);
     final sideEffectManager = ref.read(sideEffectProvider.notifier);
     final linksysCacheManager = ref.read(linksysCacheManagerProvider);
@@ -161,18 +161,18 @@ class RouterRepository {
       Map<String, String> extraHeaders = const {},
       bool needAuth = false,
       CommandType? type,
-      bool force = false,
+      bool fetchRemote = false,
       CacheLevel cacheLevel = CacheLevel.localCached}) async {
     if (isEnableBTSetup) {
       return _createBTCommand(action,
-          data: data, needAuth: needAuth, force: force, cacheLevel: cacheLevel);
+          data: data, needAuth: needAuth, fetchRemote: fetchRemote, cacheLevel: cacheLevel);
     } else {
       return _createHttpCommand(action,
           data: data,
           extraHeaders: extraHeaders,
           needAuth: needAuth,
           type: type,
-          force: force,
+          fetchRemote: fetchRemote,
           cacheLevel: cacheLevel);
     }
   }
@@ -359,13 +359,13 @@ class RouterRepository {
   BaseCommand<JNAPResult, BTJNAPSpec> _createBTCommand(String action,
       {Map<String, dynamic> data = const {},
       bool needAuth = false,
-      bool force = false,
+      bool fetchRemote = false,
       CacheLevel cacheLevel = CacheLevel.localCached}) {
     return JNAPBTCommand(
         executor: executor,
         action: action,
         data: data,
-        force: force,
+        fetchRemote: fetchRemote,
         cacheLevel: cacheLevel);
   }
 
@@ -375,7 +375,7 @@ class RouterRepository {
       Map<String, String> extraHeaders = const {},
       bool needAuth = false,
       CommandType? type,
-      bool force = false,
+      bool fetchRemote = false,
       CacheLevel cacheLevel = CacheLevel.localCached}) async {
     final routerType = getRouterType();
     // final communicateType =
@@ -399,7 +399,7 @@ class RouterRepository {
           action: action,
           data: data,
           extraHeader: header,
-          force: force,
+          fetchRemote: fetchRemote,
           cacheLevel: cacheLevel);
     } else {
       throw Exception();

@@ -71,7 +71,7 @@ extension CoreService on RouterRepository {
   Future<JNAPSuccess> isAdminPasswordDefault() async {
     final command = await createCommand(
         JNAPAction.isAdminPasswordDefault.actionValue,
-        force: true,
+        fetchRemote: true,
         cacheLevel: CacheLevel.noCache);
 
     // final result = await command.publish();

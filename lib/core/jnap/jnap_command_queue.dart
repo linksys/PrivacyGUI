@@ -115,7 +115,7 @@ class CommandQueue {
     if (command is JNAPHttpCommand &&
         linksysCacheManger.data.containsKey(command.spec.action) &&
         linksysCacheManger.data[command.spec.action] != null &&
-        !command.force &&
+        !command.fetchRemote &&
         !linksysCacheManger.didCacheExpire(command.spec.action)) {
       return true;
     } else {

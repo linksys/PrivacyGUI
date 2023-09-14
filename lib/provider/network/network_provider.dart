@@ -45,7 +45,7 @@ class NetworkNotifier extends Notifier<NetworkState> {
 
   Future<NodeDeviceInfo> getDeviceInfo() async {
     final repo = ref.read(routerRepositoryProvider);
-    final result = await repo.send(JNAPAction.getDeviceInfo, force: true);
+    final result = await repo.send(JNAPAction.getDeviceInfo, fetchRemote: true);
     final nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
     _handleDeviceInfoResult(nodeDeviceInfo);
     return nodeDeviceInfo;

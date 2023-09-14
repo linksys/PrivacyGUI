@@ -77,7 +77,7 @@ class ConnectivityNotifier extends Notifier<ConnectivityState>
     final testJNAP = await routerRepository
         .send(JNAPAction.isAdminPasswordDefault,
             type: CommandType.local,
-            force: true,
+            fetchRemote: true,
             cacheLevel: CacheLevel.noCache)
         .then((value) => true)
         .onError((error, stackTrace) => false);
@@ -89,7 +89,7 @@ class ConnectivityNotifier extends Notifier<ConnectivityState>
         .send(
           JNAPAction.getDeviceInfo,
           type: CommandType.local,
-          force: true,
+          fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
         )
         .then<String>(

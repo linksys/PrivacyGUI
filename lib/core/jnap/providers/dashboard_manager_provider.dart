@@ -70,7 +70,7 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
   //TODO: XXXXX check DeviceInfo data storage
   Future<NodeDeviceInfo> getDeviceInfo() async {
     final routerRepository = ref.read(routerRepositoryProvider);
-    final result = await routerRepository.send(JNAPAction.getDeviceInfo, force: true);
+    final result = await routerRepository.send(JNAPAction.getDeviceInfo, fetchRemote: true);
     final nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
     final services = nodeDeviceInfo.services;
     // Build/Update better actions

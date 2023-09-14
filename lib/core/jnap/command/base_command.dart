@@ -11,13 +11,13 @@ abstract class BaseCommand<R, S extends JNAPSpec> {
   BaseCommand(
       {required this.spec,
       required this.executor,
-      this.force = false,
+      this.fetchRemote = false,
       this.cacheLevel = CacheLevel.localCached});
 
   final S spec;
   final JNAPCommandExecutor executor;
   final Completer<(R, DataSource)> _completer = Completer();
-  final bool force;
+  final bool fetchRemote;
   final CacheLevel cacheLevel;
 
   Future<R> publish();
