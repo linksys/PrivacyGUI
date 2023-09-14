@@ -39,7 +39,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   @override
   Widget build(BuildContext context) {
-    final _ = ref.watch(networkProvider); //TODO: XXXXXX Remove this state
     final state = ref.watch(dashboardHomeProvider);
     final wanStatus = ref.watch(nodeWanStatusProvider);
     return StyledAppPageView(
@@ -53,19 +52,16 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       ),
       child: Stack(
         children: [
-          EnabledOpacityWidget(
-            enabled: state.canDisplayScreen,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _homeTitle(state, wanStatus == NodeWANStatus.online),
-                const AppGap.big(),
-                _networkInfoTiles(state),
-                const AppGap.extraBig(),
-                _speedTestTile(state),
-              ],
-            ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _homeTitle(state, wanStatus == NodeWANStatus.online),
+              const AppGap.big(),
+              _networkInfoTiles(state),
+              const AppGap.extraBig(),
+              _speedTestTile(state),
+            ],
           ),
           if (ref.read(deviceManagerProvider.notifier).isEmptyState())
             const AppFullScreenSpinner(),

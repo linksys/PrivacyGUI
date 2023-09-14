@@ -1,9 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
-
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_app/constants/default_country_codes.dart';
@@ -16,9 +14,9 @@ import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/repository/router/extensions/core_extension.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/provider/auth/auth_exception.dart';
-import 'package:linksys_app/provider/network/network_provider.dart';
 import 'package:linksys_app/util/biometrics.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -289,6 +287,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         .then((value) => value.output['passwordHint'] ?? '');
   }
 
+  Future<void> createAdminPassword(String password, String hint) async {
+    final repo = ref.read(routerRepositoryProvider);
+    await repo.createAdminPassword('admin', hint);
+  }
+
   Future logout() async {
     state = const AsyncValue.loading();
 
@@ -306,7 +309,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       return AuthState.empty();
     });
     ref.read(pollingProvider.notifier).stopPolling();
-    ref.read(networkProvider.notifier).logout();
+    //TODO: XXXXXX Clear state of managers
   }
 
   bool isCloudLogin() => state.value?.loginType == LoginType.remote;

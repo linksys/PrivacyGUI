@@ -1,5 +1,5 @@
 import 'dart:async';
-
+/*
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
@@ -7,10 +7,8 @@ import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/models/device_info.dart';
 import 'package:linksys_app/core/jnap/models/guest_radio_settings.dart';
 import 'package:linksys_app/core/jnap/models/health_check_result.dart';
-import 'package:linksys_app/core/jnap/models/iot_network_settings.dart';
 import 'package:linksys_app/core/jnap/models/network.dart';
 import 'package:linksys_app/core/jnap/models/radio_info.dart';
-import 'package:linksys_app/core/jnap/models/wan_status.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
@@ -39,25 +37,21 @@ class NetworkNotifier extends Notifier<NetworkState> {
     state = state.copyWith(selected: AppNetwork(id: networkId));
   }
 
-  Future<void> createAdminPassword(String password, String hint) async {
-    final repo = ref.read(routerRepositoryProvider);
-    await repo.createAdminPassword('admin', hint);
-  }
-
-  HealthCheckResult getLatestHealthCheckResult(
-      List<HealthCheckResult> healthCheckResults) {
-    healthCheckResults.sort((e1, e2) => e2.timestamp.compareTo(e1.timestamp));
-    return healthCheckResults.first;
-  }
+  // HealthCheckResult getLatestHealthCheckResult(
+  //     List<HealthCheckResult> healthCheckResults) {
+  //   healthCheckResults.sort((e1, e2) => e2.timestamp.compareTo(e1.timestamp));
+  //   return healthCheckResults.first;
+  // }
 
   Future<NodeDeviceInfo> getDeviceInfo() async {
     final repo = ref.read(routerRepositoryProvider);
-    final result = await repo.send(JNAPAction.getDeviceInfo, force: true);
+    final result = await repo.send(JNAPAction.getDeviceInfo, fetchRemote: true);
     final nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
     _handleDeviceInfoResult(nodeDeviceInfo);
     return nodeDeviceInfo;
   }
 
+/*
   Future<void> runHealthCheck() async {
     final repo = ref.read(routerRepositoryProvider);
     final result = await repo.send(JNAPAction.runHealthCheck);
@@ -69,7 +63,7 @@ class NetworkNotifier extends Notifier<NetworkState> {
           AppNetwork selectedCopy = AppNetwork(
               id: selected.id,
               deviceInfo: selected.deviceInfo,
-              wanStatus: selected.wanStatus,
+              // wanStatus: selected.wanStatus,
               radioInfo: selected.radioInfo,
               devices: selected.devices,
               healthCheckResults: selected.healthCheckResults,
@@ -90,6 +84,7 @@ class NetworkNotifier extends Notifier<NetworkState> {
         .toList();
     _handleHealthCheckResults(healthCheckResults);
   }
+  
 
   Future<SpeedTestResult> getHealthCheckStatus() async {
     final repo = ref.read(routerRepositoryProvider);
@@ -105,6 +100,7 @@ class NetworkNotifier extends Notifier<NetworkState> {
     }
     return speedTestResult;
   }
+  */
 
   void logout() {
     state = const NetworkState();
@@ -120,24 +116,24 @@ class NetworkNotifier extends Notifier<NetworkState> {
       final nodeDeviceInfo = NodeDeviceInfo.fromJson(output);
       _handleDeviceInfoResult(nodeDeviceInfo);
     }
-    if (result.containsKey(JNAPAction.getWANStatus)) {
-      final output = (result[JNAPAction.getWANStatus] as JNAPSuccess).output;
-      final wanStatus = RouterWANStatus.fromJson(output);
-      _handleWANStatusResult(wanStatus);
-    }
-    if (result.containsKey(JNAPAction.getRadioInfo)) {
-      final output = (result[JNAPAction.getRadioInfo] as JNAPSuccess).output;
-      final radioInfo = List.from(output['radios'])
-          .map((e) => RouterRadioInfo.fromJson(e))
-          .toList();
-      _handleRadioInfoResult(radioInfo);
-    }
-    if (result.containsKey(JNAPAction.getGuestRadioSettings)) {
-      final output =
-          (result[JNAPAction.getGuestRadioSettings] as JNAPSuccess).output;
-      final guestRadioInfoSetting = GuestRadioSetting.fromJson(output);
-      _handleGuestRadioSettingsResult(guestRadioInfoSetting);
-    }
+    // if (result.containsKey(JNAPAction.getWANStatus)) {
+    //   final output = (result[JNAPAction.getWANStatus] as JNAPSuccess).output;
+    //   final wanStatus = RouterWANStatus.fromJson(output);
+    //   _handleWANStatusResult(wanStatus);
+    // }
+    // if (result.containsKey(JNAPAction.getRadioInfo)) {
+    //   final output = (result[JNAPAction.getRadioInfo] as JNAPSuccess).output;
+    //   final radioInfo = List.from(output['radios'])
+    //       .map((e) => RouterRadioInfo.fromJson(e))
+    //       .toList();
+    //   _handleRadioInfoResult(radioInfo);
+    // }
+    // if (result.containsKey(JNAPAction.getGuestRadioSettings)) {
+    //   final output =
+    //       (result[JNAPAction.getGuestRadioSettings] as JNAPSuccess).output;
+    //   final guestRadioInfoSetting = GuestRadioSetting.fromJson(output);
+    //   _handleGuestRadioSettingsResult(guestRadioInfoSetting);
+    // }
 
     if (result.containsKey(JNAPAction.getDevices)) {
       final output = (result[JNAPAction.getDevices] as JNAPSuccess).output;
@@ -146,14 +142,14 @@ class NetworkNotifier extends Notifier<NetworkState> {
           .toList();
       _handleDevicesResult(devices);
     }
-    if (result.containsKey(JNAPAction.getHealthCheckResults)) {
-      final output =
-          (result[JNAPAction.getHealthCheckResults] as JNAPSuccess).output;
-      final healthCheckResults = List.from(output['healthCheckResults'])
-          .map((e) => HealthCheckResult.fromJson(e))
-          .toList();
-      _handleHealthCheckResults(healthCheckResults);
-    }
+    // if (result.containsKey(JNAPAction.getHealthCheckResults)) {
+    //   final output =
+    //       (result[JNAPAction.getHealthCheckResults] as JNAPSuccess).output;
+    //   final healthCheckResults = List.from(output['healthCheckResults'])
+    //       .map((e) => HealthCheckResult.fromJson(e))
+    //       .toList();
+    //   _handleHealthCheckResults(healthCheckResults);
+    // }
   }
 
   ///
@@ -168,36 +164,31 @@ class NetworkNotifier extends Notifier<NetworkState> {
                 id: nodeDeviceInfo.serialNumber, deviceInfo: nodeDeviceInfo));
   }
 
-  _handleWANStatusResult(RouterWANStatus wanStatus) {
-    state = state.copyWith(
-        selected: state.selected!.copyWith(wanStatus: wanStatus));
-  }
+  // _handleWANStatusResult(RouterWANStatus wanStatus) {
+  //   state = state.copyWith(
+  //       selected: state.selected!.copyWith(wanStatus: wanStatus));
+  // }
 
-  _handleRadioInfoResult(List<RouterRadioInfo> radioInfo) {
-    state = state.copyWith(
-        selected: state.selected!.copyWith(radioInfo: radioInfo));
-  }
+  // _handleRadioInfoResult(List<RouterRadioInfo> radioInfo) {
+  //   state = state.copyWith(
+  //       selected: state.selected!.copyWith(radioInfo: radioInfo));
+  // }
 
-  _handleGuestRadioSettingsResult(GuestRadioSetting guestRadioSetting) {
-    state = state.copyWith(
-        selected:
-            state.selected!.copyWith(guestRadioSetting: guestRadioSetting));
-  }
-
-  _handleIoTNetworkSettingResult(IoTNetworkSetting ioTNetworkSetting) {
-    state = state.copyWith(
-        selected:
-            state.selected!.copyWith(iotNetworkSetting: ioTNetworkSetting));
-  }
+  // _handleGuestRadioSettingsResult(GuestRadioSetting guestRadioSetting) {
+  //   state = state.copyWith(
+  //       selected:
+  //           state.selected!.copyWith(guestRadioSetting: guestRadioSetting));
+  // }
 
   _handleDevicesResult(List<RawDevice> devices) {
     state =
         state.copyWith(selected: state.selected!.copyWith(devices: devices));
   }
 
-  _handleHealthCheckResults(List<HealthCheckResult> healthCheckResults) {
-    state = state.copyWith(
-        selected:
-            state.selected!.copyWith(healthCheckResults: healthCheckResults));
-  }
+  // _handleHealthCheckResults(List<HealthCheckResult> healthCheckResults) {
+  //   state = state.copyWith(
+  //       selected:
+  //           state.selected!.copyWith(healthCheckResults: healthCheckResults));
+  // }
 }
+*/

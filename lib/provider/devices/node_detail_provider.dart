@@ -1,14 +1,22 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/devices.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/nodes.dart';
 import 'package:linksys_app/provider/devices/device_detail_id_provider.dart';
 import 'package:linksys_app/provider/devices/node_detail_state.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+const String blinkingDeviceId = 'blinkDeviceId';
 final nodeDetailProvider =
     NotifierProvider<NodeDetailNotifier, NodeDetailState>(
   () => NodeDetailNotifier(),
@@ -112,13 +120,53 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
   }
 
   Future<void> toggleNodeLight(bool isOn) async {
-    //TODO: Implement real commands for switching the light
     final isCognitive = isCognitiveMeshRouter(
       modelNumber: state.modelNumber,
       hardwareVersion: state.firmwareVersion,
     );
     if (isCognitive) {
       _setLEDLight(isOn);
+    }
+  }
+
+  Future<JNAPResult> startBlinkNodeLED(String deviceId) async {
+    final repository = ref.read(routerRepositoryProvider);
+    return repository.send(JNAPAction.startBlinkNodeLed,
+        data: {'deviceID': deviceId}, auth: true);
+  }
+
+  Future<JNAPResult> stopBlinkNodeLED() async {
+    final repository = ref.read(routerRepositoryProvider);
+    return repository.send(JNAPAction.stopBlinkNodeLed,
+        auth: true, cacheLevel: CacheLevel.noCache);
+  }
+
+  Future<void> toggleBlinkNode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final blinkDevice = prefs.get(blinkingDeviceId);
+    final deviceId = ref.read(deviceDetailIdProvider);
+    if (blinkDevice == null) {
+      state = state.copyWith(blinkingStatus: BlinkingStatus.blinking);
+      startBlinkNodeLED(deviceId).then((response) {
+        prefs.setString(blinkingDeviceId, deviceId);
+        state = state.copyWith(blinkingStatus: BlinkingStatus.stopBlinking);
+        Timer(const Duration(seconds: 24), () {
+          stopBlinkNodeLED().then((response) {
+            state = state.copyWith(blinkingStatus: BlinkingStatus.blinkNode);
+          });
+        });
+      }).onError((error, stackTrace) {
+        state = state.copyWith(blinkingStatus: BlinkingStatus.blinkNode);
+        logger.e(error.toString());
+      });
+    } else {
+      stopBlinkNodeLED().then((response) {
+        prefs.remove(blinkingDeviceId);
+        state = state.copyWith(blinkingStatus: BlinkingStatus.blinkNode);
+      }).onError((error, stackTrace) {
+        state = state.copyWith(blinkingStatus: BlinkingStatus.stopBlinking);
+        logger.e(error.toString());
+      });
     }
   }
 }

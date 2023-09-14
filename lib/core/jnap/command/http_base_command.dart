@@ -11,7 +11,7 @@ abstract class BaseHttpCommand<R, S extends JNAPSpec>
       {required this.url,
       required super.spec,
       required super.executor,
-      super.force,
+      super.fetchRemote,
       super.cacheLevel});
 
   final String url;
@@ -29,7 +29,7 @@ class JNAPHttpCommand extends BaseHttpCommand<JNAPResult, HttpJNAPSpec> {
   JNAPHttpCommand({
     required super.url,
     required super.executor,
-    super.force,
+    super.fetchRemote,
     super.cacheLevel,
     required String action,
     Map<String, dynamic> data = const {},

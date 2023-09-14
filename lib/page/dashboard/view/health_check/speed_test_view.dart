@@ -48,7 +48,6 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
 
   @override
   Widget build(BuildContext context) {
-    final _ = ref.watch(networkProvider);
     return StyledAppPageView(
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,7 +95,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
                 _status = "RUNNING";
                 _controller.forward();
               });
-              ref.read(networkProvider.notifier).runHealthCheck();
+              //TODO: Build RunSpeedTest function
             });
           },
         );
@@ -139,4 +138,46 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
         return Container();
     }
   }
+
+  //TODO: Create a speed test provider and move this function into it
+  /*
+  Future<void> runHealthCheck() async {
+    final repo = ref.read(routerRepositoryProvider);
+    final result = await repo.send(JNAPAction.runHealthCheck);
+    if (result.output['resultID'] != null) {
+      Timer.periodic(const Duration(seconds: 5), (timer) async {
+        final speedTestResult = await getHealthCheckStatus();
+        if (speedTestResult.exitCode != 'Unavailable') {
+          final selected = state.selected!;
+          MoabNetwork selectedCopy = MoabNetwork(
+              id: selected.id,
+              deviceInfo: selected.deviceInfo,
+              // wanStatus: selected.wanStatus,
+              radioInfo: selected.radioInfo,
+              devices: selected.devices,
+              healthCheckResults: selected.healthCheckResults,
+              currentSpeedTestStatus: null);
+          state = state.copyWith(selected: selectedCopy);
+          getHealthCheckResults();
+          timer.cancel();
+        }
+      });
+    }
+  }
+  //TODO: Integrate the following with DashboardManagerProvider
+  Future<void> getHealthCheckResults() async {
+    final repo = ref.read(routerRepositoryProvider);
+    final result = await repo.send(JNAPAction.getHealthCheckResults);
+    final healthCheckResults = List.from(result.output['healthCheckResults'])
+        .map((e) => HealthCheckResult.fromJson(e))
+        .toList();
+    _handleHealthCheckResults(healthCheckResults);
+  }
+
+  _handleHealthCheckResults(List<HealthCheckResult> healthCheckResults) {
+    state = state.copyWith(
+      selected: 
+        state.selected!.copyWith(healthCheckResults: healthCheckResults));
+  }
+  */
 }

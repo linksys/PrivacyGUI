@@ -31,21 +31,15 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     // Get available Wi-Fi radios
     final numOfWifi = _getNumberOfAvailableWifi(dashboardManagerState);
     // Get node number in the mesh
-    final numOfNodes =
-        ref.read(deviceManagerProvider.notifier).getNodeDevices().length;
+    final numOfNodes = deviceManagerState.nodeDevices.length;
     // Get online external devices number
-    final externalDevices =
-        ref.read(deviceManagerProvider.notifier).getExternalDevices();
-    final onlineDevices = externalDevices
+    final onlineDevices = deviceManagerState.externalDevices
         .where((device) => device.connections.isNotEmpty)
         .toList();
     final numOfOnlineExternalDevices = onlineDevices.length;
     // Get WAN connection status
     final isWanConnected =
         deviceManagerState.wanStatus?.wanStatus == 'Connected';
-    // Check is dashboard screen ready to display
-    final hasBuiltBetterAction =
-        dashboardManagerState.deviceServices.isNotEmpty;
     // Get master node icon
     final sortedDeviceList = ref.read(deviceManagerProvider).deviceList;
     final masterIcon = routerIconTest(
@@ -67,7 +61,6 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       numOfNodes: numOfNodes,
       numOfOnlineExternalDevices: numOfOnlineExternalDevices,
       isWanConnected: isWanConnected,
-      canDisplayScreen: hasBuiltBetterAction,
       masterIcon: masterIcon,
       uploadResult: uploadResult,
       downloadResult: downloadResult,

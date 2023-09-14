@@ -54,7 +54,7 @@ class SelectNetworkNotifier extends AsyncNotifier<SelectNetworkState> {
               kJNAPNetworkId: network.network.networkId,
             },
             type: CommandType.remote,
-            force: true,
+            fetchRemote: true,
             cacheLevel: CacheLevel.noCache)
         .then((value) => value.result == 'OK')
         .onError((error, stackTrace) => false);

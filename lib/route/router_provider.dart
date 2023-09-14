@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/picker/region_picker_view.dart';
 import 'package:linksys_app/page/components/picker/simple_item_picker.dart';
@@ -115,9 +116,9 @@ class RouterNotifier extends ChangeNotifier {
           return null;
       }
     }
-    final network = _ref.read(networkProvider).selected;
+    final managedNetworkId = _ref.read(selectedNetworkIdProvider);
     if (loginType != LoginType.none &&
-        network == null &&
+        managedNetworkId == null &&
         state.matchedLocation != RoutePath.selectNetwork) {
       return RoutePath.prepareDashboard;
     }

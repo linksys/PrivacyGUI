@@ -24,17 +24,17 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   }
 
   DeviceManagerState createState({CoreTransactionData? pollingResult}) {
-    Map<String, dynamic>? getDevicesData;
     Map<String, dynamic>? getNetworkConnectionsData;
+    Map<String, dynamic>? getDevicesData;
     Map<String, dynamic>? getWANStatusData;
     Map<String, dynamic>? getFirmwareUpdateStatusData;
     Map<String, dynamic>? getBackHaulInfoData;
 
     final result = pollingResult?.data;
     if (result != null) {
-      getDevicesData = (result[JNAPAction.getDevices] as JNAPSuccess?)?.output;
       getNetworkConnectionsData =
           (result[JNAPAction.getNetworkConnections] as JNAPSuccess?)?.output;
+      getDevicesData = (result[JNAPAction.getDevices] as JNAPSuccess?)?.output;
       getWANStatusData =
           (result[JNAPAction.getWANStatus] as JNAPSuccess?)?.output;
       getFirmwareUpdateStatusData =
@@ -44,87 +44,14 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     }
 
     var newState = const DeviceManagerState();
-    newState = _getDeviceListAndLocations(newState, getDevicesData);
     newState = _getWirelessConnections(newState, getNetworkConnectionsData);
+    // The data process of NetworkConnections MUST be done before building device list
+    newState = _getDeviceListAndLocations(newState, getDevicesData);
     newState = _getWANStatusModel(newState, getWANStatusData);
     newState = _getFirmwareStatus(newState, getFirmwareUpdateStatusData);
     newState = _getBackhaukInfoData(newState, getBackHaulInfoData);
     return newState.copyWith(
       lastUpdateTime: pollingResult?.lastUpdate,
-    );
-  }
-
-  DeviceManagerState _getBackhaukInfoData(
-      DeviceManagerState state, Map<String, dynamic>? data) {
-    var newState = state.copyWith(
-        backhaulInfoData: List.from(data?['backhaulDevices'] ?? [])
-            .map((e) => BackHaulInfoData.fromMap(e))
-            .toList());
-    // update ipAddr
-    newState = newState.copyWith(
-        deviceList: newState.deviceList.map((device) {
-      final deviceID = device.deviceID;
-      final backhaulInfo = newState.backhaulInfoData
-          .firstWhereOrNull((backhaul) => backhaul.deviceUUID == deviceID);
-      if (backhaulInfo != null && device.connections.isNotEmpty) {
-        final updatedConnections = device.connections
-            .map((connection) =>
-                connection.copyWith(ipAddress: backhaulInfo.ipAddress))
-            .toList();
-        return device.copyWith(connections: updatedConnections);
-      }
-      return device;
-    }).toList());
-    return newState;
-  }
-
-  DeviceManagerState _getDeviceListAndLocations(
-    DeviceManagerState state,
-    Map<String, dynamic>? data,
-  ) {
-    var allDevices = <LinksysDevice>[];
-    if (data != null) {
-      allDevices = List.from(
-        data['devices'],
-      ).map((e) => LinksysDevice.fromMap(e)).toList();
-      // Sort the device list in order to correctly build the location map later
-      allDevices.sort((device1, device2) {
-        if (device1.isAuthority) {
-          return -1;
-        } else if (device1.nodeType == null) {
-          return 1;
-        } else if (device2.nodeType != null) {
-          return (device1.nodeType == 'Master') ? -1 : 1;
-        } else {
-          return -1;
-        }
-      });
-    }
-    var nodes = allDevices.where((device) => device.nodeType != null).toList();
-    final masterNode = nodes.firstWhereOrNull((node) => node.isAuthority);
-    var externalDevices =
-        allDevices.where((device) => device.nodeType == null).toList();
-    // collect all the connected devices for nodes
-    nodes = nodes.fold(<LinksysDevice>[], (list, node) {
-      final connectedDevices = externalDevices.where((device) {
-        // Make sure the external device is online
-        if (device.connections.isNotEmpty) {
-          // There usually be only one item
-          final parentDeviceId = device.connections.firstOrNull?.parentDeviceID;
-          // Count it if this item's parentId is the target device,
-          // or if its parentId is null and the target device is master
-          return ((parentDeviceId == node.deviceID) ||
-              (parentDeviceId == null &&
-                  node.deviceID == masterNode?.deviceID));
-        }
-        return false;
-      }).toList();
-
-      return list..add(node.copyWith(connectedDevices: connectedDevices));
-    }).toList();
-
-    return state.copyWith(
-      deviceList: [...nodes, ...externalDevices],
     );
   }
 
@@ -157,6 +84,68 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     );
   }
 
+  DeviceManagerState _getDeviceListAndLocations(
+    DeviceManagerState state,
+    Map<String, dynamic>? data,
+  ) {
+    var allDevices = <LinksysDevice>[];
+    if (data != null) {
+      allDevices = List.from(
+        data['devices'],
+      ).map((e) => LinksysDevice.fromMap(e)).toList();
+      // Sort the device list in order to correctly build the location map later
+      allDevices.sort((device1, device2) {
+        if (device1.isAuthority) {
+          return -1;
+        } else if (device1.nodeType == null) {
+          return 1;
+        } else if (device2.nodeType != null) {
+          return (device1.nodeType == 'Master') ? -1 : 1;
+        } else {
+          return -1;
+        }
+      });
+    }
+    var nodes = allDevices.where((device) => device.nodeType != null).toList();
+    final masterNode = nodes.firstWhereOrNull((node) => node.isAuthority);
+    var externalDevices =
+        allDevices.where((device) => device.nodeType == null).toList();
+
+    // Collect all the connected devices for nodes
+    nodes = nodes.fold(<LinksysDevice>[], (list, node) {
+      final connectedDevices = externalDevices.where((device) {
+        // Make sure the external device is online
+        if (device.connections.isNotEmpty) {
+          // There usually be only one item
+          final parentDeviceId = device.connections.firstOrNull?.parentDeviceID;
+          // Count it if this item's parentId is the target node,
+          // or if its parentId is null and the target node is master
+          return ((parentDeviceId == node.deviceID) ||
+              (parentDeviceId == null &&
+                  node.deviceID == masterNode?.deviceID));
+        }
+        return false;
+      }).toList();
+
+      return list..add(node.copyWith(connectedDevices: connectedDevices));
+    }).toList();
+
+    // Determine connected Wi-Fi network for each external deivce
+    final wirelessConnections = state.wirelessConnections;
+    externalDevices = externalDevices.map((device) {
+      final wirelessData = wirelessConnections[getDeviceMacAddress(device)];
+      final isGuestDevice = (wirelessData?['isGuest'] as bool?) ?? false;
+      return device.copyWith(
+        connectedWifiType:
+            isGuestDevice ? WifiConnectionType.guest : WifiConnectionType.main,
+      );
+    }).toList();
+
+    return state.copyWith(
+      deviceList: [...nodes, ...externalDevices],
+    );
+  }
+
   DeviceManagerState _getWANStatusModel(
     DeviceManagerState state,
     Map<String, dynamic>? data,
@@ -173,6 +162,38 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     return state.copyWith(
       isFirmwareUpToDate: data?['availableUpdate'] == null,
     );
+  }
+
+  DeviceManagerState _getBackhaukInfoData(
+    DeviceManagerState state,
+    Map<String, dynamic>? data,
+  ) {
+    var newState = state.copyWith(
+      backhaulInfoData: List.from(
+        data?['backhaulDevices'] ?? [],
+      ).map((e) => BackHaulInfoData.fromMap(e)).toList(),
+    );
+    // Update IP address
+    newState = newState.copyWith(
+      deviceList: newState.deviceList.map((device) {
+        final deviceId = device.deviceID;
+        final backhaulInfo = newState.backhaulInfoData
+            .firstWhereOrNull((backhaul) => backhaul.deviceUUID == deviceId);
+        if (backhaulInfo != null && device.connections.isNotEmpty) {
+          // Replace the IP in Devices with the one from BackhaulInfo
+          final updatedConnections = device.connections
+              .map(
+                (connection) => connection.copyWith(
+                  ipAddress: backhaulInfo.ipAddress,
+                ),
+              )
+              .toList();
+          return device.copyWith(connections: updatedConnections);
+        }
+        return device;
+      }).toList(),
+    );
+    return newState;
   }
 
   // Used in cases where the watched DeviceManager is still empty at very beginning stage
@@ -212,13 +233,6 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
         ?.band;
   }
 
-  bool checkIsGuestNetwork(RawDevice device) {
-    final wirelessConnections = state.wirelessConnections;
-    final wirelessData = wirelessConnections[getDeviceMacAddress(device)];
-    final isGuest = wirelessData?['isGuest'] as bool?;
-    return isGuest ?? false;
-  }
-
   bool checkIsWiredConnection(RawDevice device) {
     final interfaces = device.knownInterfaces;
     return interfaces
@@ -251,23 +265,6 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
         element.connections
             .firstWhereOrNull((element) => element.ipAddress == parentIpAddr) !=
         null);
-  }
-
-  //TODO: XXXXXX Use these two functions to replace all access of device objects in everywhere else
-  List<RawDevice> getNodeDevices() {
-    return state.deviceList
-        .where(
-          (device) => device.nodeType != null,
-        )
-        .toList();
-  }
-
-  List<RawDevice> getExternalDevices() {
-    return state.deviceList
-        .where(
-          (device) => device.nodeType == null,
-        )
-        .toList();
   }
 
   // Update the name(location) of nodes and external devices

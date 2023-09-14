@@ -244,6 +244,8 @@ void _updateBetterActions(JNAPService service) {
       _betterActionMap[JNAPAction.setupSetAdminPassword] =
           _JNAPActionValue.setupSetAdminPassword2.value;
       break;
+    case JNAPService.setup9:
+      break;
     case JNAPService.smartMode:
       break;
     case JNAPService.smartMode2:
@@ -489,6 +491,10 @@ void initBetterActions() {
       _JNAPActionValue.getLedNightModeSetting.value;
   _betterActionMap[JNAPAction.setLedNightModeSetting] =
       _JNAPActionValue.setLedNightModeSetting.value;
+  _betterActionMap[JNAPAction.startBlinkingNodeLed] =
+      _JNAPActionValue.startBlinkingNodeLed.value;
+  _betterActionMap[JNAPAction.stopBlinkingNodeLed] =
+      _JNAPActionValue.stopBlinkingNodeLed.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

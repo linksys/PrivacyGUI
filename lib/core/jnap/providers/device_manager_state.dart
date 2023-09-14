@@ -6,6 +6,8 @@ import 'package:linksys_app/core/jnap/models/wan_status.dart';
 
 class LinksysDevice extends RawDevice {
   final List<LinksysDevice> connectedDevices;
+  final WifiConnectionType connectedWifiType;
+
   const LinksysDevice({
     required super.connections,
     required super.properties,
@@ -20,24 +22,25 @@ class LinksysDevice extends RawDevice {
     super.knownMACAddresses,
     super.nodeType,
     this.connectedDevices = const [],
+    this.connectedWifiType = WifiConnectionType.main,
   });
 
   @override
-  LinksysDevice copyWith({
-    List<RawDeviceConnection>? connections,
-    List<RawDeviceProperty>? properties,
-    RawDeviceUnit? unit,
-    String? deviceID,
-    int? maxAllowedProperties,
-    RawDeviceModel? model,
-    bool? isAuthority,
-    int? lastChangeRevision,
-    String? friendlyName,
-    List<RawDeviceKnownInterface>? knownInterfaces,
-    List<String>? knownMACAddresses,
-    String? nodeType,
-    List<LinksysDevice>? connectedDevices,
-  }) {
+  LinksysDevice copyWith(
+      {List<RawDeviceConnection>? connections,
+      List<RawDeviceProperty>? properties,
+      RawDeviceUnit? unit,
+      String? deviceID,
+      int? maxAllowedProperties,
+      RawDeviceModel? model,
+      bool? isAuthority,
+      int? lastChangeRevision,
+      String? friendlyName,
+      List<RawDeviceKnownInterface>? knownInterfaces,
+      List<String>? knownMACAddresses,
+      String? nodeType,
+      List<LinksysDevice>? connectedDevices,
+      WifiConnectionType? connectedWifiType}) {
     return LinksysDevice(
       connections: connections ?? this.connections,
       properties: properties ?? this.properties,
@@ -52,6 +55,7 @@ class LinksysDevice extends RawDevice {
       knownMACAddresses: knownMACAddresses ?? this.knownMACAddresses,
       nodeType: nodeType ?? this.nodeType,
       connectedDevices: connectedDevices ?? this.connectedDevices,
+      connectedWifiType: connectedWifiType ?? this.connectedWifiType,
     );
   }
 
@@ -60,6 +64,7 @@ class LinksysDevice extends RawDevice {
     return <String, dynamic>{
       ...super.toMap(),
       'connectedDevices': connectedDevices.map((e) => e.toMap()).toList(),
+      'connectedWifiType': connectedWifiType,
     }..removeWhere((key, value) => value == null);
   }
 
@@ -86,7 +91,8 @@ class LinksysDevice extends RawDevice {
       knownInterfaces: map['knownInterfaces'] != null
           ? List<RawDeviceKnownInterface>.from(
               map['knownInterfaces'].map<RawDeviceKnownInterface?>(
-                (x) => RawDeviceKnownInterface.fromMap(x as Map<String, dynamic>),
+                (x) =>
+                    RawDeviceKnownInterface.fromMap(x as Map<String, dynamic>),
               ),
             )
           : null,
@@ -99,6 +105,9 @@ class LinksysDevice extends RawDevice {
               .map((e) => LinksysDevice.fromMap(e))
               .toList()
           : [],
+      connectedWifiType: map['connectedWifiType'] != null
+          ? map['connectedWifiType'] as WifiConnectionType
+          : WifiConnectionType.main,
     );
   }
 
@@ -112,16 +121,36 @@ class LinksysDevice extends RawDevice {
 @immutable
 class DeviceManagerState {
   // Collected data for a specific network with its own devices shared to overall screens
-  final List<LinksysDevice> deviceList;
   final Map<String, Map<String, dynamic>> wirelessConnections;
+  final List<LinksysDevice> deviceList;
   final RouterWANStatus? wanStatus;
   final List<BackHaulInfoData> backhaulInfoData;
   final bool isFirmwareUpToDate;
   final int lastUpdateTime;
+  // Calculated properties
+  List<LinksysDevice> get nodeDevices {
+    return deviceList.where((device) => device.nodeType != null).toList();
+  }
 
+  List<LinksysDevice> get externalDevices {
+    return deviceList.where((device) => device.nodeType == null).toList();
+  }
+
+  List<LinksysDevice> get mainWifiDevices {
+    return deviceList
+        .where((device) => device.connectedWifiType == WifiConnectionType.main)
+        .toList();
+  }
+
+  List<LinksysDevice> get guestWifiDevices {
+    return deviceList
+        .where((device) => device.connectedWifiType == WifiConnectionType.guest)
+        .toList();
+  }
+  
   const DeviceManagerState({
-    this.deviceList = const [],
     this.wirelessConnections = const {},
+    this.deviceList = const [],
     this.wanStatus,
     this.backhaulInfoData = const [],
     this.isFirmwareUpToDate = false,
@@ -129,17 +158,16 @@ class DeviceManagerState {
   });
 
   DeviceManagerState copyWith({
-    List<LinksysDevice>? deviceList,
-    Map<String, String>? locationMap,
     Map<String, Map<String, dynamic>>? wirelessConnections,
+    List<LinksysDevice>? deviceList,
     RouterWANStatus? wanStatus,
     List<BackHaulInfoData>? backhaulInfoData,
     bool? isFirmwareUpToDate,
     int? lastUpdateTime,
   }) {
     return DeviceManagerState(
-      deviceList: deviceList ?? this.deviceList,
       wirelessConnections: wirelessConnections ?? this.wirelessConnections,
+      deviceList: deviceList ?? this.deviceList,
       wanStatus: wanStatus ?? this.wanStatus,
       backhaulInfoData: backhaulInfoData ?? this.backhaulInfoData,
       isFirmwareUpToDate: isFirmwareUpToDate ?? this.isFirmwareUpToDate,
@@ -161,4 +189,9 @@ enum NodeSignalLevel {
   });
 
   final String displayTitle;
+}
+
+enum WifiConnectionType {
+  main,
+  guest,
 }

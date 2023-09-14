@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
@@ -46,7 +47,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
         ref.read(authProvider.select((value) => value.value?.loginType));
     if (loginType == LoginType.remote) {
       logger.i('PREPARE LOGIN:: remote');
-      if (ref.read(networkProvider).selected == null) {
+      if (ref.read(selectedNetworkIdProvider) == null) {
         final prefs = await SharedPreferences.getInstance();
         final networkId = prefs.getString(pSelectedNetworkId);
         if (networkId == null) {
@@ -54,13 +55,15 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
           router.goNamed(RouteNamed.selectNetwork);
           return;
         } else {
-          await ref.read(networkProvider.notifier).selectNetwork(networkId);
+          await ref
+              .read(dashboardManagerProvider.notifier)
+              .saveSelectedNetwork(networkId);
         }
       }
     }
     logger.d('Go to dashboard');
     final nodeDeviceInfo = await ref
-        .read(networkProvider.notifier)
+        .read(dashboardManagerProvider.notifier)
         .getDeviceInfo()
         .then<NodeDeviceInfo?>((value) => value)
         .onError((error, stackTrace) => null);

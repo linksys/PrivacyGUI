@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_app/provider/connectivity/_connectivity.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
@@ -7,8 +8,6 @@ import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/ip_details/_ip_details.dart';
-import 'package:linksys_app/provider/network/network_provider.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -146,12 +145,10 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
   Widget _checkRenewAvailable() {
     if (!_isBehindRouter) {
       final ssid = ref
-              .read(networkProvider.notifier)
-              .state
-              .selected
-              ?.radioInfo
-              ?.first
-              .settings
+              .read(dashboardManagerProvider)
+              .mainRadios
+              .firstOrNull
+              ?.settings
               .ssid ??
           '';
       return AppText.bodyLarge(

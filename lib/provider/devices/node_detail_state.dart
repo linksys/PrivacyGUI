@@ -1,6 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 
+enum BlinkingStatus {
+  blinkNode('Blink Node'),
+  blinking('Blinking'),
+  stopBlinking('Stop Blink');
+
+  final String value;
+  const BlinkingStatus(this.value);
+}
+
 @immutable
 class NodeDetailState {
   final String deviceId;
@@ -17,23 +26,24 @@ class NodeDetailState {
   final String lanIpAddress;
   final String wanIpAddress;
   final bool isLightTurnedOn;
+  final BlinkingStatus blinkingStatus;
 
-  const NodeDetailState({
-    this.deviceId = '',
-    this.location = '',
-    this.isMaster = false,
-    this.isOnline = false,
-    this.connectedDevices = const [],
-    this.upstreamDevice = '',
-    this.isWiredConnection = false,
-    this.signalStrength = 0,
-    this.serialNumber = '',
-    this.modelNumber = '',
-    this.firmwareVersion = '',
-    this.lanIpAddress = '',
-    this.wanIpAddress = '',
-    this.isLightTurnedOn = true,
-  });
+  const NodeDetailState(
+      {this.deviceId = '',
+      this.location = '',
+      this.isMaster = false,
+      this.isOnline = false,
+      this.connectedDevices = const [],
+      this.upstreamDevice = '',
+      this.isWiredConnection = false,
+      this.signalStrength = 0,
+      this.serialNumber = '',
+      this.modelNumber = '',
+      this.firmwareVersion = '',
+      this.lanIpAddress = '',
+      this.wanIpAddress = '',
+      this.isLightTurnedOn = true,
+      this.blinkingStatus = BlinkingStatus.blinkNode});
 
   NodeDetailState copyWith({
     String? deviceId,
@@ -50,6 +60,7 @@ class NodeDetailState {
     String? lanIpAddress,
     String? wanIpAddress,
     bool? isLightTurnedOn,
+    BlinkingStatus? blinkingStatus,
   }) {
     return NodeDetailState(
       deviceId: deviceId ?? this.deviceId,
@@ -66,6 +77,7 @@ class NodeDetailState {
       lanIpAddress: lanIpAddress ?? this.lanIpAddress,
       wanIpAddress: wanIpAddress ?? this.wanIpAddress,
       isLightTurnedOn: isLightTurnedOn ?? this.isLightTurnedOn,
+      blinkingStatus: blinkingStatus ?? this.blinkingStatus,
     );
   }
 }

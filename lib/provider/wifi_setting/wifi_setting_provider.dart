@@ -75,22 +75,6 @@ class WifiSettingNotifier extends Notifier<WifiSettingState> {
           signal: 0));
       guestRadioInfoSetting0 = guestRadioInfoSetting;
     }
-    // if (results.containsKey(JNAPAction.getIoTNetworkSettings.actionValue)) {
-    //   final isIoTNetworkEnabled =
-    //       results[JNAPAction.getIoTNetworkSettings.actionValue]!
-    //           .output['isIoTNetworkEnabled'];
-    //   _wifiList.add(WifiListItem(
-    //       wifiType: WifiType.iot,
-    //       ssid: '',
-    //       password: '',
-    //       securityType: _wifiList.isNotEmpty
-    //           ? _wifiList.first.securityType
-    //           : WifiSecurityType.wpa2Wpa3Mixed,
-    //       mode: _wifiList.isNotEmpty ? _wifiList.first.mode : WifiMode.mixed,
-    //       isWifiEnabled: isIoTNetworkEnabled,
-    //       numOfDevices: 0,
-    //       signal: 0));
-    // }
 
     state = state.copyWith(
       wifiList: wifiList,
@@ -143,12 +127,6 @@ class WifiSettingNotifier extends Notifier<WifiSettingState> {
               selectedWifiItem:
                   state.selectedWifiItem.copyWith(isWifiEnabled: enable));
         });
-        break;
-      case WifiType.iot:
-        // await repo.setIoTNetworkSettings(enable).then((value) {
-        //   fetchAllRadioInfo();
-        //   state = state.copyWith(selectedWifiItem: state.selectedWifiItem.copyWith(isWifiEnabled: enable));
-        // });
         break;
     }
   }
@@ -213,8 +191,6 @@ class WifiSettingNotifier extends Notifier<WifiSettingState> {
                   .copyWith(ssid: name, password: password));
         });
         break;
-      case WifiType.iot:
-        break;
     }
   }
 
@@ -272,8 +248,6 @@ class WifiSettingNotifier extends Notifier<WifiSettingState> {
         break;
       case WifiType.guest:
         break;
-      case WifiType.iot:
-        break;
     }
   }
 
@@ -303,8 +277,6 @@ class WifiSettingNotifier extends Notifier<WifiSettingState> {
         });
         break;
       case WifiType.guest:
-        break;
-      case WifiType.iot:
         break;
     }
   }

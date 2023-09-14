@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/customs/enabled_with_opacity_widget.dart';
-import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/route/constants.dart';
 
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -28,31 +26,28 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(networkProvider);
     return StyledAppPageView(
-        scrollable: true,
-        child: EnabledOpacityWidget(
-          enabled: state.selected?.deviceInfo != null,
-          child: SizedBox(
-            width: double.infinity,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const AppGap.semiBig(),
-                _title(),
-                const AppGap.semiBig(),
-                _section(
-                  _generalSettingsSection(context),
-                ),
-                const AppGap.semiBig(),
-                _section(
-                  _advancedSettingsSection(),
-                ),
-              ],
+      scrollable: true,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AppGap.semiBig(),
+            _title(),
+            const AppGap.semiBig(),
+            _section(
+              _generalSettingsSection(context),
             ),
-          ),
-        ));
+            const AppGap.semiBig(),
+            _section(
+              _advancedSettingsSection(),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _title() {

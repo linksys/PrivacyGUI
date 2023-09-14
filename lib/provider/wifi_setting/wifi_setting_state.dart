@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 import 'package:linksys_app/core/jnap/models/guest_radio_settings.dart';
-import 'package:linksys_app/core/jnap/models/iot_network_settings.dart';
 import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 
@@ -9,7 +8,6 @@ class WifiSettingState extends Equatable {
   final WifiListItem selectedWifiItem;
   final List<RouterRadioInfo>? mainRadioInfo;
   final GuestRadioSetting? guestRadioInfo;
-  final IoTNetworkSetting? iotNetworkSetting;
 
   const WifiSettingState({
     this.wifiList = const [],
@@ -24,7 +22,6 @@ class WifiSettingState extends Equatable {
         signal: 0),
     this.mainRadioInfo,
     this.guestRadioInfo,
-    this.iotNetworkSetting,
   });
 
   WifiSettingState copyWith({
@@ -32,14 +29,12 @@ class WifiSettingState extends Equatable {
     WifiListItem? selectedWifiItem,
     List<RouterRadioInfo>? mainRadioInfo,
     GuestRadioSetting? guestRadioInfo,
-    IoTNetworkSetting? iotNetworkSetting,
   }) {
     return WifiSettingState(
       wifiList: wifiList ?? this.wifiList,
       selectedWifiItem: selectedWifiItem ?? this.selectedWifiItem,
       mainRadioInfo: mainRadioInfo ?? this.mainRadioInfo,
       guestRadioInfo: guestRadioInfo ?? this.guestRadioInfo,
-      iotNetworkSetting: iotNetworkSetting ?? this.iotNetworkSetting,
     );
   }
 
@@ -49,7 +44,6 @@ class WifiSettingState extends Equatable {
         selectedWifiItem,
         mainRadioInfo,
         guestRadioInfo,
-        iotNetworkSetting,
       ];
 }
 
@@ -150,8 +144,7 @@ class WifiListItem extends Equatable {
 
 enum WifiType {
   main(displayTitle: 'MAIN'),
-  guest(displayTitle: 'GUEST'),
-  iot(displayTitle: 'IOT DEVICES');
+  guest(displayTitle: 'GUEST');
 
   const WifiType({required this.displayTitle});
 
@@ -168,8 +161,6 @@ enum WifiType {
         WifiSettingOption.securityTypeBelow6G,
         WifiSettingOption.mode,
       ]);
-    } else if (this == WifiType.iot) {
-      options = [];
     }
 
     return options;

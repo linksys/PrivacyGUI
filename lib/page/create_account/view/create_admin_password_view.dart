@@ -6,9 +6,8 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/layouts/basic_header.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/provider/network/_network.dart';
+import 'package:linksys_app/provider/auth/_auth.dart';
 import 'package:linksys_app/route/constants.dart';
-
 import 'package:linksys_app/util/in_app_browser.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -142,7 +141,7 @@ class _CreateAdminPasswordViewState
   _createPassword(String password, String hint) async {
     _setLoading(true);
     await ref
-        .read(networkProvider.notifier)
+        .read(authProvider.notifier)
         .createAdminPassword(password, hint)
         .then((value) {
       setState(() {

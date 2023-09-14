@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 
 @immutable
 class DeviceListState {
@@ -34,7 +35,7 @@ class DeviceListItem {
   final int signalStrength;
   final bool isOnline;
   final bool isWired;
-  final DeviceListItemType type;
+  final WifiConnectionType type;
 
   const DeviceListItem({
     this.deviceId = '',
@@ -52,7 +53,7 @@ class DeviceListItem {
     this.signalStrength = 0,
     this.isOnline = false,
     this.isWired = false,
-    this.type = DeviceListItemType.main,
+    this.type = WifiConnectionType.main,
   });
 
   DeviceListItem copyWith({
@@ -71,7 +72,7 @@ class DeviceListItem {
     int? signalStrength,
     bool? isOnline,
     bool? isWired,
-    DeviceListItemType? type,
+    WifiConnectionType? type,
   }) {
     return DeviceListItem(
       deviceId: deviceId ?? this.deviceId,
@@ -92,10 +93,4 @@ class DeviceListItem {
       type: type ?? this.type,
     );
   }
-}
-
-enum DeviceListItemType {
-  main,
-  guest,
-  iot,
 }

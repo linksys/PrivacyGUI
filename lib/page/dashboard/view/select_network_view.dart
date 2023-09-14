@@ -3,6 +3,7 @@ import 'package:animated_list_plus/transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
@@ -43,7 +44,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
     return StyledAppPageView(
       scrollable: true,
       appBarStyle: AppBarStyle.close,
-      onBackTap: ref.read(networkProvider).selected != null
+      onBackTap: ref.read(selectedNetworkIdProvider) != null
           ? null
           : () {
               ref.read(authProvider.notifier).logout();
@@ -128,8 +129,8 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
       onTap: network.isOnline
           ? () async {
               await ref
-                  .read(networkProvider.notifier)
-                  .selectNetwork(network.network.networkId);
+                  .read(dashboardManagerProvider.notifier)
+                  .saveSelectedNetwork(network.network.networkId);
               // _navigationNotifier.clearAndPush(PrepareDashboardPath());
               logEvent(
                 eventName: 'ActionSelectNetwork',

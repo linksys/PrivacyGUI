@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/jnap/models/device.dart';
-import 'package:linksys_app/core/jnap/models/guest_radio_settings.dart';
-import 'package:linksys_app/core/jnap/models/iot_network_settings.dart';
 import 'package:linksys_app/core/jnap/models/radio_info.dart';
+import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:linksys_app/core/jnap/providers/dashboard_manager_state.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/page/components/customs/hidden_password_widget.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -25,7 +25,6 @@ class WifiListView extends ConsumerStatefulWidget {
 class _WifiListViewState extends ConsumerState<WifiListView> {
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(networkProvider);
     return StyledAppPageView(
       scrollable: true,
       child: AppBasicLayout(
@@ -33,13 +32,15 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
         header: const AppText.titleLarge(
           'Your WiFi networks',
         ),
-        content: _wifiList(state),
+        content: _wifiList(),
       ),
     );
   }
 
-  Widget _wifiList(NetworkState state) {
-    final items = _getWifiInfo(state);
+  Widget _wifiList() {
+    final dashboardManagerState = ref.watch(dashboardManagerProvider);
+    final deviceManagerState = ref.watch(deviceManagerProvider);
+    final items = _getWifiInfo(deviceManagerState, dashboardManagerState);
     return Column(
         children: List.generate(items.length, (index) {
       return Column(
@@ -79,55 +80,44 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
     }));
   }
 
-  List<WifiListItem> _getWifiInfo(NetworkState state) {
+  List<WifiListItem> _getWifiInfo(
+    DeviceManagerState deviceManagerState,
+    DashboardManagerState dashboardManagerState,
+  ) {
     List<WifiListItem> items = [];
-    List<RouterRadioInfo>? radioInfo = state.selected?.radioInfo;
-    Map<WifiType, int> deviceCountMap =
-        getConnectionDeviceCount(state.selected?.devices);
-    if (radioInfo != null) {
-      Map<String, RouterRadioInfo> infoMap =
-          Map.fromEntries(radioInfo.map((e) => MapEntry(e.settings.ssid, e)));
-      items = List.from(infoMap.values).map((e) {
-        RouterRadioInfo info = e as RouterRadioInfo;
-        return WifiListItem(
-            wifiType: WifiType.main,
-            ssid: info.settings.ssid,
-            password: info.settings.wpaPersonalSettings.passphrase,
-            securityType:
-                WifiListItem.convertToWifiSecurityType(info.settings.security),
-            mode: WifiListItem.convertToWifiMode(info.settings.mode),
-            isWifiEnabled: info.settings.isEnabled,
-            numOfDevices: deviceCountMap[WifiType.main] ?? 0,
-            signal: 0);
-      }).toList();
-    }
-    GuestRadioSetting? guestRadioSetting = state.selected?.guestRadioSetting;
-    if (guestRadioSetting != null) {
-      items.add(WifiListItem(
+    final mainRadios = dashboardManagerState.mainRadios;
+    Map<String, RouterRadioInfo> infoMap =
+        Map.fromEntries(mainRadios.map((e) => MapEntry(e.settings.ssid, e)));
+    items = List.from(infoMap.values).map((e) {
+      RouterRadioInfo info = e as RouterRadioInfo;
+      return WifiListItem(
+        wifiType: WifiType.main,
+        ssid: info.settings.ssid,
+        password: info.settings.wpaPersonalSettings.passphrase,
+        securityType:
+            WifiListItem.convertToWifiSecurityType(info.settings.security),
+        mode: WifiListItem.convertToWifiMode(info.settings.mode),
+        isWifiEnabled: info.settings.isEnabled,
+        numOfDevices: deviceManagerState.mainWifiDevices.length,
+        signal: 0,
+      );
+    }).toList();
+    final guestRadio = dashboardManagerState.guestRadios.firstOrNull;
+    if (guestRadio != null) {
+      items.add(
+        WifiListItem(
           wifiType: WifiType.guest,
-          ssid: guestRadioSetting.radios.first.guestSSID,
-          password: guestRadioSetting.radios.first.guestWPAPassphrase ?? '',
+          ssid: guestRadio.guestSSID,
+          password: guestRadio.guestWPAPassphrase ?? '',
           securityType: items.isNotEmpty
               ? items.first.securityType
               : WifiSecurityType.wpa2Wpa3Mixed,
           mode: items.isNotEmpty ? items.first.mode : WifiMode.mixed,
-          isWifiEnabled: guestRadioSetting.isGuestNetworkEnabled,
-          numOfDevices: deviceCountMap[WifiType.guest] ?? 0,
-          signal: 0));
-    }
-    IoTNetworkSetting? iotNetworkSetting = state.selected?.iotNetworkSetting;
-    if (iotNetworkSetting != null) {
-      items.add(WifiListItem(
-          wifiType: WifiType.iot,
-          ssid: '',
-          password: '',
-          securityType: items.isNotEmpty
-              ? items.first.securityType
-              : WifiSecurityType.wpa2Wpa3Mixed,
-          mode: items.isNotEmpty ? items.first.mode : WifiMode.mixed,
-          isWifiEnabled: iotNetworkSetting.isIoTNetworkEnabled,
-          numOfDevices: deviceCountMap[WifiType.iot] ?? 0,
-          signal: 0));
+          isWifiEnabled: dashboardManagerState.isGuestNetworkEnabled,
+          numOfDevices: deviceManagerState.guestWifiDevices.length,
+          signal: 0,
+        ),
+      );
     }
     return items;
   }
@@ -161,32 +151,5 @@ class _WifiListViewState extends ConsumerState<WifiListView> {
         ),
       ],
     );
-  }
-
-  Map<WifiType, int> getConnectionDeviceCount(List<RawDevice>? devices) {
-    Map<WifiType, int> map = {
-      WifiType.main: 0,
-      WifiType.guest: 0,
-      WifiType.iot: 0,
-    };
-    int mainCount = 0;
-    int guestCount = 0;
-    int iotCount = 0;
-    if (devices != null && devices.isNotEmpty) {
-      for (RawDevice device in devices) {
-        if (device.connections.isNotEmpty &&
-            (device.connections.first.isGuest ?? false)) {
-          guestCount += 1;
-        } else if (device.connections.isNotEmpty &&
-            !device.isAuthority &&
-            device.nodeType == null) {
-          mainCount += 1;
-        }
-      }
-      map[WifiType.main] = mainCount;
-      map[WifiType.guest] = guestCount;
-      map[WifiType.iot] = iotCount;
-    }
-    return map;
   }
 }
