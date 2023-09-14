@@ -6,6 +6,10 @@ import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/provider/devices/device_list_state.dart';
 
+final offlineDeviceListProvider = Provider((ref) {
+  final deviceListState = ref.watch(_deviceListProvider);
+  return deviceListState.devices.where((device) => !device.isOnline).toList();
+});
 final filteredDeviceListProvider = Provider((ref) {
   final filterType = ref.watch(deviceListTypeProvider);
   final deviceListState = ref.watch(_deviceListProvider);
@@ -13,16 +17,8 @@ final filteredDeviceListProvider = Provider((ref) {
       .where(
         (device) => device.type == filterType,
       )
-      .toList()
-    ..sort((dev1, dev2) {
-      if (dev1.isOnline == dev2.isOnline) {
-        return 0;
-      } else if (dev1.isOnline) {
-        return -1;
-      } else {
-        return 1;
-      }
-    });
+      .where((device) => device.isOnline)
+      .toList();
 });
 
 final deviceListTypeProvider = StateProvider((ref) {

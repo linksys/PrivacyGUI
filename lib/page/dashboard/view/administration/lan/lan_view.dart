@@ -145,7 +145,6 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                   AppText.bodyMedium(
                     getAppLocalizations(context).dhcp_ip_range(
                         state.firstIPAddress, state.lastIPAddress),
-                    color: ConstantColors.baseTertiaryGray,
                   ),
                   const AppGap.semiBig(),
                   AppTextField(

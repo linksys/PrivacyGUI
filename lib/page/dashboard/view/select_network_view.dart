@@ -12,7 +12,6 @@ import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/provider/select_network/select_network_provider.dart';
 import 'package:linksys_app/util/analytics.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/theme/data/colors.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -163,12 +162,10 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.bodyLarge(
-                    network.network.friendlyName,
-                    color: network.isOnline
-                        ? null
-                        : ConstantColors.textBoxTextGray,
-                  ),
+                  AppText.bodyLarge(network.network.friendlyName,
+                      color: network.isOnline
+                          ? null
+                          : Theme.of(context).colorScheme.onInverseSurface),
                   const AppGap.small(),
                 ],
               ),

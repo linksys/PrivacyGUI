@@ -91,7 +91,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             ),
             AppText.titleLarge(
               isOnline ? 'online' : 'offline',
-              color: isOnline ? ConstantColors.primaryLinksysBlue : Colors.red,
+              color:
+                  isOnline ? Theme.of(context).colorScheme.primary : Colors.red,
             ),
           ],
         ),
@@ -172,7 +173,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     }
     return CircleAvatar(
       radius: 23,
-      backgroundColor: ConstantColors.secondaryClearBlue,
       child: CircleAvatar(
         radius: 22,
         backgroundColor: Colors.white,
@@ -207,7 +207,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       width: double.infinity,
       height: 80,
       child: Card(
-        elevation: 0,
+        elevation: 10,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(100.0),
         ),
@@ -238,7 +238,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                       children: [
                         AppIcon(
                           icon: getCharactersIcons(context).arrowUp,
-                          color: ConstantColors.secondaryCyberPurple,
                         ),
                         const AppGap.semiSmall(),
                         AppText.titleLarge(state.uploadResult.value),
@@ -257,7 +256,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                       children: [
                         AppIcon(
                           icon: getCharactersIcons(context).arrowDown,
-                          color: ConstantColors.secondaryCyberPurple,
                         ),
                         const AppGap.semiSmall(),
                         AppText.titleLarge(state.downloadResult.value),
@@ -271,12 +269,11 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                 onTap: () {
                   // GoRouter helath check
                 },
-                child: const CircleAvatar(
+                child: CircleAvatar(
                   radius: 21,
-                  backgroundColor: ConstantColors.primaryLinksysBlue,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   child: AppText.labelLarge(
                     'Go',
-                    color: ConstantColors.primaryLinksysWhite,
                   ),
                 ),
               ),

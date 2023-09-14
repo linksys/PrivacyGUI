@@ -147,22 +147,22 @@ class _TriLayerButtonState extends ConsumerState<TriLayerButton>
           children: [
             Container(
               decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: ConstantColors.primaryLinksysBlue.withOpacity(0.3)),
+                shape: BoxShape.circle,
+              ),
               width: 200,
               height: 200,
             ),
             Container(
               decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: ConstantColors.primaryLinksysBlue.withOpacity(0.5)),
+                shape: BoxShape.circle,
+              ),
               width: 180,
               height: 180,
             ),
             Container(
               decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: ConstantColors.primaryLinksysBlue),
+                shape: BoxShape.circle,
+              ),
               width: 150,
               height: 150,
             ),

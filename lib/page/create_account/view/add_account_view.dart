@@ -152,7 +152,6 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
                   children: [
                     AppText.bodyMedium(
                       generalErrorCodeHandler(context, _errorCode),
-                      color: ConstantColors.tertiaryRed,
                     ),
                     AppTertiaryButton(
                       getAppLocalizations(context).login_to_continue,

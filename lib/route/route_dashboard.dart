@@ -60,6 +60,10 @@ final dashboardRoute = ShellRoute(
                         name: RouteNamed.changeDeviceAvatar,
                         path: RoutePath.changeDeviceAvatar,
                         builder: (context, state) => ChangeDeviceAvatarView()),
+                    GoRoute(
+                        name: RouteNamed.offlineDevices,
+                        path: RoutePath.offlineDevices,
+                        builder: (context, state) => OfflineDevicesView()),
                   ]),
             ],
           ),

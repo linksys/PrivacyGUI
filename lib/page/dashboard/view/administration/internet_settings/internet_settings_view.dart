@@ -98,7 +98,7 @@ class _InternetSettingsContentViewState
           children: [
             if (!_isBehindRouter)
               Container(
-                color: Theme.of(context).colorScheme.surfaceVariant,
+                color: Theme.of(context).colorScheme.primaryContainer,
                 width: double.infinity,
                 height: 100,
                 alignment: Alignment.center,

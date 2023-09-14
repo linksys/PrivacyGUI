@@ -31,12 +31,12 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     return LayoutBuilder(
       builder: (context, constraint) {
         return AppProfileHeaderLayout(
-          expandedHeight: constraint.maxHeight / 2,
+          expandedHeight: constraint.maxHeight / 3,
           collaspeTitle: state.item.name,
           onCollaspeBackTap: () {
             context.pop();
           },
-          background: Theme.of(context).colorScheme.tertiaryContainer,
+          background: Theme.of(context).colorScheme.background,
           header: Column(
             children: [
               LinksysAppBar(
@@ -65,7 +65,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     return Container(
       alignment: Alignment.center,
       decoration:
-          BoxDecoration(color: Theme.of(context).colorScheme.tertiaryContainer),
+          BoxDecoration(color: Theme.of(context).colorScheme.background),
       child: Column(
         children: [
           GestureDetector(
@@ -75,23 +75,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             child: _deviceAvatar(state.item.icon),
           ),
           const AppGap.regular(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AppText.titleSmall(
-                state.item.name,
-              ),
-              const AppGap.semiSmall(),
-              AppIconButton.noPadding(
-                icon: getCharactersIcons(context).editDefault,
-                onTap: () {
-                  context.pushNamed(RouteNamed.changeDeviceName);
-                },
-              ),
-            ],
-          ),
           // const AppGap.extraBig(),
-          _deviceStatus(state),
+          // _deviceStatus(state),
           const AppGap.semiSmall(),
         ],
       ),
@@ -100,6 +85,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
 
   Widget _deviceAvatar(String iconName) {
     return AppDeviceAvatar.extraLarge(
+      borderColor: Colors.transparent,
+      backgroundColor: Colors.transparent,
       image: AppTheme.of(context).images.devices.getByName(iconName),
     );
   }
@@ -181,7 +168,10 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                       ),
                       child: Column(
                         children: [
+                          _generalSection(state),
+                          const AppGap.big(),
                           _wifiSection(state),
+                          const AppGap.big(),
                           _detailSection(state),
                         ],
                       ),
@@ -196,30 +186,52 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     );
   }
 
-  Widget _wifiSection(ExternalDeviceDetailState state) {
+  Widget _generalSection(ExternalDeviceDetailState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppGap.big(),
-        AppText.titleLarge(
-          getAppLocalizations(context).wifi_all_capital,
-          color: ConstantColors.secondaryCyberPurple,
+        AppSimplePanel(
+          title: getAppLocalizations(context).device_name,
+          description: state.item.name,
+          onTap: () {
+            context.pushNamed(RouteNamed.changeDeviceName);
+          },
         ),
-        const AppGap.semiSmall(),
+        const Divider(height: 8),
+        AppSimplePanel(
+          title: getAppLocalizations(context).node_detail_label_connected_to,
+          description: state.item.upstreamDevice,
+        ),
+      ],
+    );
+  }
+
+  Widget _wifiSection(ExternalDeviceDetailState state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText.labelSmall(
+          getAppLocalizations(context).wifi_all_capital,
+        ),
+        const AppGap.small(),
         AppSimplePanel(
           title: getAppLocalizations(context).ip_address,
           description: state.item.ipv4Address,
         ),
-        const AppGap.semiSmall(),
+        const Divider(height: 8),
         AppSimplePanel(
           title: getAppLocalizations(context).mac_address,
           description: state.item.macAddress,
         ),
-        const AppGap.semiSmall(),
-        AppSimplePanel(
-          title: getAppLocalizations(context).ipv6_address,
-          description: state.item.ipv6Address,
-        ),
+        const Divider(height: 8),
+        if (state.item.ipv6Address.isNotEmpty) ...[
+          AppSimplePanel(
+            title: getAppLocalizations(context).ipv6_address,
+            description: state.item.ipv6Address,
+          ),
+          const Divider(height: 8),
+        ],
       ],
     );
   }
@@ -235,30 +247,29 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppGap.semiSmall(),
-        AppText.titleLarge(
+        AppText.labelSmall(
           getAppLocalizations(context).details_all_capital,
-          color: ConstantColors.secondaryCyberPurple,
         ),
         if (manufacturer.isNotEmpty) ...[
-          const AppGap.semiSmall(),
           AppSimplePanel(
             title: getAppLocalizations(context).manufacturer,
             description: manufacturer,
-          )
+          ),
+          const Divider(height: 8),
         ],
         if (model.isNotEmpty) ...[
-          const AppGap.semiSmall(),
           AppSimplePanel(
             title: getAppLocalizations(context).model,
             description: model,
-          )
+          ),
+          const Divider(height: 8),
         ],
         if (operatingSystem.isNotEmpty) ...[
-          const AppGap.semiSmall(),
           AppSimplePanel(
             title: getAppLocalizations(context).operating_system,
             description: operatingSystem,
-          )
+          ),
+          const Divider(height: 8),
         ],
       ],
     );

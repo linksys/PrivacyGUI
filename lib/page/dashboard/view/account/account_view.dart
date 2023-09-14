@@ -57,7 +57,6 @@ class _AccountViewState extends ConsumerState<AccountView> {
         const AppPadding(
           padding: AppEdgeInsets.symmetric(vertical: AppGapSize.regular),
           child: Divider(
-            color: ConstantColors.primaryLinksysBlack,
           ),
         ),
         // _biometricsTile(state),
@@ -74,7 +73,6 @@ class _AccountViewState extends ConsumerState<AccountView> {
         const AppPadding(
           padding: AppEdgeInsets.symmetric(vertical: AppGapSize.regular),
           child: Divider(
-            color: ConstantColors.primaryLinksysBlack,
           ),
         ),
         _securitySection(state),

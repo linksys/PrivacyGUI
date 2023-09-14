@@ -19,7 +19,7 @@ class NoInternetConnectionModal extends ConsumerWidget {
       child: AppPageView.bottomSheetModalBlur(
         padding: const AppEdgeInsets.only(),
         bottomSheet: Container(
-          color: Theme.of(context).colorScheme.surfaceVariant,
+          color: Theme.of(context).colorScheme.primaryContainer,
           height: 240,
           padding: const EdgeInsets.all(24),
           child: Stack(

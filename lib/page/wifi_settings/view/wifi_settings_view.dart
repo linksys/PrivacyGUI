@@ -106,7 +106,6 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
               return const Divider(
                 thickness: 1,
                 height: 1,
-                color: ConstantColors.basePrimaryGray,
               );
             },
           ),

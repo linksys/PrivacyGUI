@@ -11,8 +11,6 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/util/error_code_handler.dart';
 import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/theme/data/colors.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -114,7 +112,6 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
               child: ExpansionTile(
                 title: AppText.headlineSmall(
                   getAppLocalizations(context).show_hint,
-                  color: ConstantColors.primaryLinksysBlue,
                 ),
                 collapsedTextColor: Theme.of(context).colorScheme.onTertiary,
                 textColor: Theme.of(context).colorScheme.onTertiary,

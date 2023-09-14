@@ -169,7 +169,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               height: AppTheme.of(context).spacing.extraBig,
               width: AppTheme.of(context).spacing.extraBig,
               alignment: Alignment.center,
-              child: AppSwitch.full(
+              child: AppSwitch(
                 value: state.isLightTurnedOn,
                 onChanged: (value) {
                   ref.read(nodeDetailProvider.notifier).toggleNodeLight(value);
@@ -239,7 +239,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         const AppGap.big(),
         AppText.titleLarge(
           getAppLocalizations(context).details_all_capital,
-          color: ConstantColors.secondaryCyberPurple,
         ),
         const AppGap.semiSmall(),
         AppSimplePanel(
@@ -277,7 +276,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         const AppGap.semiSmall(),
         AppText.titleLarge(
           getAppLocalizations(context).node_detail_label_lan,
-          color: ConstantColors.secondaryCyberPurple,
         ),
         const AppGap.semiSmall(),
         AppSimplePanel(
@@ -295,7 +293,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         const AppGap.semiSmall(),
         AppText.titleLarge(
           getAppLocalizations(context).node_detail_label_wan,
-          color: ConstantColors.secondaryCyberPurple,
         ),
         const AppGap.semiSmall(),
         AppSimplePanel(

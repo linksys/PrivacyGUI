@@ -11,7 +11,6 @@ import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/util/wifi_credential.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/theme/data/colors.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -68,7 +67,6 @@ class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
         RepaintBoundary(
           key: globalKey,
           child: Container(
-            color: ConstantColors.primaryLinksysWhite,
             height: 160,
             width: 160,
             child: AppPadding.regular(

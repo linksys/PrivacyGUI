@@ -71,7 +71,6 @@ class _LocalResetRouterPasswordState
                     const AppEdgeInsets.symmetric(vertical: AppGapSize.small),
                 child: AppText.bodyMedium(
                   _errorReason,
-                  color: ConstantColors.tertiaryRed,
                 ),
               ),
           ],

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:linksys_app/page/login/view/_view.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/data/icons.dart';
+import 'package:linksys_widgets/theme/theme_data.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -19,15 +20,8 @@ void main() {
         overrides: overrides,
         child: MaterialApp(
           navigatorKey: globalKey,
-          theme: ThemeData.light().copyWith(
-              scaffoldBackgroundColor: ConstantColors.gray98,
-              colorScheme:
-                  const ColorScheme.light(background: ConstantColors.gray98)),
-          darkTheme: ThemeData.dark().copyWith(
-            scaffoldBackgroundColor: ConstantColors.raisinBlock,
-            colorScheme:
-                const ColorScheme.dark(background: ConstantColors.raisinBlock),
-          ),
+          theme: linksysLightThemeData,
+          darkTheme: linksysDarkThemeData,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(

@@ -42,7 +42,6 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
   _checkSelfNetworks() async {
     final router = GoRouter.of(context);
     await ref.read(connectivityProvider.notifier).forceUpdate();
-    if (!context.mounted) return;
     final loginType =
         ref.read(authProvider.select((value) => value.value?.loginType));
     if (loginType == LoginType.remote) {
@@ -55,7 +54,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
           router.goNamed(RouteNamed.selectNetwork);
           return;
         } else {
-          ref.read(networkProvider.notifier).selectNetwork(networkId);
+          await ref.read(networkProvider.notifier).selectNetwork(networkId);
         }
       }
     }

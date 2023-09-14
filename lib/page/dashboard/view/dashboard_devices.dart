@@ -29,17 +29,39 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
   Widget build(BuildContext context) {
     final filteredDeviceList = ref.watch(filteredDeviceListProvider);
     return StyledAppPageView(
+      padding: AppEdgeInsets.zero(),
       child: AppBasicLayout(
-        header: AppText.titleLarge('Devices'),
-        content: ListView.builder(
+        header: AppPadding.regular(child: AppText.headlineMedium('Devices')),
+        content: ListView.separated(
           padding: EdgeInsets.zero,
-          itemCount: filteredDeviceList.length,
+          itemCount: filteredDeviceList.length + 1,
           itemBuilder: (context, index) {
-            return _buildDeviceCell(filteredDeviceList[index]);
+            return _buildCell(index, filteredDeviceList);
+          },
+          separatorBuilder: (BuildContext context, int index) {
+            return const Divider(
+              height: 8,
+            );
           },
         ),
       ),
     );
+  }
+
+  Widget _buildCell(int index, List<DeviceListItem> deviceList) {
+    if (index == deviceList.length) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: AppSimplePanel(
+          title: 'Offline (${ref.read(offlineDeviceListProvider).length})',
+          onTap: () {
+            context.pushNamed(RouteNamed.offlineDevices);
+          },
+        ),
+      );
+    } else {
+      return _buildDeviceCell(deviceList[index]);
+    }
   }
 
   Widget _buildDeviceCell(DeviceListItem item) {
@@ -50,7 +72,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
         child: AppDevicePanel.normal(
           title: item.name,
           place: item.upstreamDevice,
-          frequency: item.band,
+          band: item.band,
           deviceImage: AppTheme.of(context).images.devices.getByName(item.icon),
           rssiIcon: item.isOnline
               ? getWifiSignalIconData(

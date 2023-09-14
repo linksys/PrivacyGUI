@@ -200,8 +200,16 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   String getWirelessBand(RawDevice device) {
     final wirelessConnections = state.wirelessConnections;
     final wirelessData = wirelessConnections[getDeviceMacAddress(device)];
-    final band = wirelessData?['band'] as String?;
-    return band ?? '';
+    final band = (wirelessData?['band'] ?? _getWirelessBandFromDevices(device))
+        as String?;
+    return band ?? (checkIsWiredConnection(device) ? 'Ethernet' : '');
+  }
+
+  String? _getWirelessBandFromDevices(RawDevice device) {
+    return device.knownInterfaces
+        ?.firstWhereOrNull(
+            (knownInterface) => knownInterface.interfaceType == 'Wireless')
+        ?.band;
   }
 
   bool checkIsGuestNetwork(RawDevice device) {
