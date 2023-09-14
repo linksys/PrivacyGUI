@@ -40,9 +40,6 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     // Get WAN connection status
     final isWanConnected =
         deviceManagerState.wanStatus?.wanStatus == 'Connected';
-    // Check is dashboard screen ready to display
-    final hasBuiltBetterAction =
-        dashboardManagerState.deviceServices.isNotEmpty;
     // Get master node icon
     final sortedDeviceList = ref.read(deviceManagerProvider).deviceList;
     final masterIcon = routerIconTest(
@@ -64,7 +61,6 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       numOfNodes: numOfNodes,
       numOfOnlineExternalDevices: numOfOnlineExternalDevices,
       isWanConnected: isWanConnected,
-      canDisplayScreen: hasBuiltBetterAction,
       masterIcon: masterIcon,
       uploadResult: uploadResult,
       downloadResult: downloadResult,

@@ -45,7 +45,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
     return StyledAppPageView(
       scrollable: true,
       appBarStyle: AppBarStyle.close,
-      onBackTap: ref.read(dashboardManagerProvider).networkId != null
+      onBackTap: ref.read(selectedNetworkIdProvider) != null
           ? null
           : () {
               ref.read(authProvider.notifier).logout();
@@ -131,7 +131,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
           ? () async {
               await ref
                   .read(dashboardManagerProvider.notifier)
-                  .selectNetwork(network.network.networkId);
+                  .saveSelectedNetwork(network.network.networkId);
               // _navigationNotifier.clearAndPush(PrepareDashboardPath());
               logEvent(
                 eventName: 'ActionSelectNetwork',

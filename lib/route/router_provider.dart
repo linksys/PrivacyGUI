@@ -115,7 +115,7 @@ class RouterNotifier extends ChangeNotifier {
           return null;
       }
     }
-    final managedNetworkId = _ref.read(dashboardManagerProvider).networkId;
+    final managedNetworkId = _ref.read(selectedNetworkIdProvider);
     if (loginType != LoginType.none &&
         managedNetworkId == null &&
         state.matchedLocation != RoutePath.selectNetwork) {

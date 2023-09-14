@@ -48,7 +48,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
         ref.read(authProvider.select((value) => value.value?.loginType));
     if (loginType == LoginType.remote) {
       logger.i('PREPARE LOGIN:: remote');
-      if (ref.read(dashboardManagerProvider).networkId == null) {
+      if (ref.read(selectedNetworkIdProvider) == null) {
         final prefs = await SharedPreferences.getInstance();
         final networkId = prefs.getString(pSelectedNetworkId);
         if (networkId == null) {
@@ -56,7 +56,9 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
           router.goNamed(RouteNamed.selectNetwork);
           return;
         } else {
-          ref.read(dashboardManagerProvider.notifier).selectNetwork(networkId);
+          await ref
+              .read(dashboardManagerProvider.notifier)
+              .saveSelectedNetwork(networkId);
         }
       }
     }

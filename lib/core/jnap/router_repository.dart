@@ -257,7 +257,7 @@ class RouterRepository {
     required CommandType? type,
   }) {
     String url;
-    final localIP = getLocalIP();
+    final localIP = _getLocalIP();
     if (kIsWeb) {
       type = CommandType.remote;
     }
@@ -318,7 +318,7 @@ class RouterRepository {
         header = {
           HttpHeaders.authorizationHeader:
               'LinksysUserAuth session_token=$cloudToken',
-          kJNAPNetworkId: getNetworkId(),
+          kJNAPNetworkId: _getNetworkId(),
           kHeaderClientTypeId: kClientTypeId,
         };
         break;
@@ -331,7 +331,7 @@ class RouterRepository {
         header = {
           HttpHeaders.authorizationHeader:
               'LinksysUserAuth session_token=$cloudToken',
-          kJNAPNetworkId: getNetworkId(),
+          kJNAPNetworkId: _getNetworkId(),
           kHeaderClientTypeId: kClientTypeId,
         };
         break;
@@ -408,12 +408,12 @@ class RouterRepository {
 }
 
 extension RouterRepositoryUtil on RouterRepository {
-  String getLocalIP() {
+  String _getLocalIP() {
     return ref.read(connectivityProvider).connectivityInfo.gatewayIp ?? '';
   }
 
-  String getNetworkId() {
-    return ref.read(dashboardManagerProvider).networkId ?? 'NetworkIdErr';
+  String _getNetworkId() {
+    return ref.read(selectedNetworkIdProvider) ?? 'NetworkIdError';
   }
 
   Future<String> getCloudToken() async {
