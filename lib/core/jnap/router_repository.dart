@@ -100,7 +100,8 @@ class RouterRepository {
   }
 
   Future<JNAPTransactionSuccessWrap> transaction(JNAPTransactionBuilder builder,
-      {bool fetchRemote = false}) async {
+      {bool fetchRemote = false,
+      CacheLevel cacheLevel = CacheLevel.localCached}) async {
     final payload = builder.commands
         .map((entry) =>
             {'action': entry.key.actionValue, 'request': entry.value})
@@ -109,7 +110,9 @@ class RouterRepository {
     final sn = prefs.get(pCurrentSN) as String?;
     final linksysCacheManager = ref.read(linksysCacheManagerProvider);
     final command = await createTransaction(payload,
-        needAuth: builder.auth, fetchRemote: fetchRemote);
+        needAuth: builder.auth,
+        fetchRemote: fetchRemote,
+        cacheLevel: cacheLevel);
 
     return CommandQueue()
         .enqueue(command)
@@ -123,7 +126,8 @@ class RouterRepository {
         record.$2
       );
     }).then((record) {
-      _handleTransactionCacheProcess(record, linksysCacheManager, sn);
+      _handleTransactionCacheProcess(
+          record, linksysCacheManager, sn, cacheLevel);
       return record.$1;
     });
   }
@@ -132,6 +136,7 @@ class RouterRepository {
       List<Map<String, dynamic>> payload,
       {bool needAuth = false,
       bool fetchRemote = false,
+      CacheLevel cacheLevel = CacheLevel.localCached,
       CommandType? type}) async {
     final loginType = getLoginType();
     final routerType = getRouterType();
@@ -151,11 +156,13 @@ class RouterRepository {
 
     if (url.isNotEmpty) {
       return TransactionHttpCommand(
-          url: url,
-          executor: executor,
-          payload: payload,
-          extraHeader: header,
-          fetchRemote: fetchRemote);
+        url: url,
+        executor: executor,
+        payload: payload,
+        extraHeader: header,
+        fetchRemote: fetchRemote,
+        cacheLevel: cacheLevel,
+      );
     } else {
       throw Exception();
     }
@@ -243,18 +250,21 @@ class RouterRepository {
     (JNAPTransactionSuccessWrap result, DataSource ds) record,
     LinksysCacheManager linksysCacheManager,
     String? serialNumber,
+    CacheLevel cacheLevel,
   ) {
     if (record.$2 == DataSource.fromRemote) {
-      record.$1.data.forEach((entry) {
-        final dataResult = {
-          "target": entry.key.actionValue,
-          "cachedAt": DateTime.now().millisecondsSinceEpoch,
-        };
-        dataResult["data"] = (entry.value as JNAPSuccess).toJson();
-        linksysCacheManager.data[entry.key.actionValue] = dataResult;
-      });
-      if (serialNumber != null) {
-        linksysCacheManager.saveCache(serialNumber);
+      if (cacheLevel == CacheLevel.localCached) {
+        record.$1.data.forEach((entry) {
+          final dataResult = {
+            "target": entry.key.actionValue,
+            "cachedAt": DateTime.now().millisecondsSinceEpoch,
+          };
+          dataResult["data"] = (entry.value as JNAPSuccess).toJson();
+          linksysCacheManager.data[entry.key.actionValue] = dataResult;
+        });
+        if (serialNumber != null) {
+          linksysCacheManager.saveCache(serialNumber);
+        }
       }
     }
     return record;
