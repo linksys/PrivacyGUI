@@ -26,8 +26,8 @@ class WifiSettingNotifier extends Notifier<WifiSettingState> {
     final repo = ref.read(routerRepositoryProvider);
     await repo.fetchAllRadioInfo();
     final results = await repo.fetchAllRadioInfo();
-    final radioInfo =
-        JNAPTransactionSuccessWrap.getResult(JNAPAction.getRadioInfo, results);
+    final radioInfo = JNAPTransactionSuccessWrap.getResult(
+        JNAPAction.getRadioInfo, Map.fromEntries(results));
 
     if (radioInfo != null) {
       final mainRadioInfo = List.from(radioInfo.output['radios'])
@@ -58,7 +58,7 @@ class WifiSettingNotifier extends Notifier<WifiSettingState> {
       mainRadioInfo0 = mainRadioInfo;
     }
     final guestRadioSettings = JNAPTransactionSuccessWrap.getResult(
-        JNAPAction.getGuestRadioSettings, results);
+        JNAPAction.getGuestRadioSettings, Map.fromEntries(results));
     if (guestRadioSettings != null) {
       final guestRadioInfoSetting =
           GuestRadioSetting.fromJson(guestRadioSettings.output);

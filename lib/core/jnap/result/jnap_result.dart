@@ -92,11 +92,11 @@ class JNAPTransactionSuccess extends JNAPResult {
 }
 
 class JNAPTransactionSuccessWrap extends JNAPResult {
-  final Map<JNAPAction, JNAPResult> data;
+  final List<MapEntry<JNAPAction, JNAPResult>> data;
 
   const JNAPTransactionSuccessWrap({
     required super.result,
-    this.data = const {},
+    this.data = const [],
   });
 
   factory JNAPTransactionSuccessWrap.convert({
@@ -105,7 +105,9 @@ class JNAPTransactionSuccessWrap extends JNAPResult {
   }) {
     return JNAPTransactionSuccessWrap(
       result: transactionSuccess.result,
-      data: Map.fromIterables(actions, transactionSuccess.responses),
+      data: Map.fromIterables(actions, transactionSuccess.responses)
+          .entries
+          .toList(),
     );
   }
 

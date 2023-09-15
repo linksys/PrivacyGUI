@@ -108,10 +108,10 @@ class ConnectivityNotifier extends Notifier<ConnectivityState>
     final results = await routerRepository.fetchIsConfigured();
 
     bool isDefaultPassword = JNAPTransactionSuccessWrap.getResult(
-            JNAPAction.isAdminPasswordDefault, results)
+            JNAPAction.isAdminPasswordDefault, Map.fromEntries(results))
         ?.output['isAdminPasswordDefault'];
     bool isSetByUser = JNAPTransactionSuccessWrap.getResult(
-            JNAPAction.isAdminPasswordDefault, results)
+            JNAPAction.isAdminPasswordDefault, Map.fromEntries(results))
         ?.output['isAdminPasswordSetByUser'];
     return RouterConfiguredData(
         isDefaultPassword: isDefaultPassword, isSetByUser: isSetByUser);

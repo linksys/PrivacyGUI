@@ -327,7 +327,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   Future<bool> deleteDevices({required List<String> deviceIds}) {
     final routerRepository = ref.read(routerRepositoryProvider);
     return routerRepository.deleteDevices(deviceIds).then((mapData) {
-      return !mapData.values.any((result) => result.result != 'OK');
+      return !mapData.any((result) => result.value.result != 'OK');
     });
   }
 

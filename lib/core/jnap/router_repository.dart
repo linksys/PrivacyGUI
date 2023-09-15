@@ -101,7 +101,7 @@ class RouterRepository {
 
   Future<JNAPTransactionSuccessWrap> transaction(
       JNAPTransactionBuilder builder) async {
-    final payload = builder.commands.entries
+    final payload = builder.commands
         .map((entry) =>
             {'action': entry.key.actionValue, 'request': entry.value})
         .toList();
@@ -116,7 +116,7 @@ class RouterRepository {
         .then((record) {
       return (
         JNAPTransactionSuccessWrap.convert(
-          actions: List.from(builder.commands.keys),
+          actions: builder.commands.map((e) => e.key).toList(),
           transactionSuccess: record.$1 as JNAPTransactionSuccess,
         ),
         record.$2
@@ -164,7 +164,10 @@ class RouterRepository {
       CacheLevel cacheLevel = CacheLevel.localCached}) async {
     if (isEnableBTSetup) {
       return _createBTCommand(action,
-          data: data, needAuth: needAuth, fetchRemote: fetchRemote, cacheLevel: cacheLevel);
+          data: data,
+          needAuth: needAuth,
+          fetchRemote: fetchRemote,
+          cacheLevel: cacheLevel);
     } else {
       return _createHttpCommand(action,
           data: data,
@@ -236,13 +239,13 @@ class RouterRepository {
     String? serialNumber,
   ) {
     if (record.$2 == DataSource.fromRemote) {
-      record.$1.data.forEach((key, value) {
+      record.$1.data.forEach((entry) {
         final dataResult = {
-          "target": key.actionValue,
+          "target": entry.key.actionValue,
           "cachedAt": DateTime.now().millisecondsSinceEpoch,
         };
-        dataResult["data"] = (value as JNAPSuccess).toJson();
-        linksysCacheManager.data[key.actionValue] = dataResult;
+        dataResult["data"] = (entry.value as JNAPSuccess).toJson();
+        linksysCacheManager.data[entry.key.actionValue] = dataResult;
       });
       if (serialNumber != null) {
         linksysCacheManager.saveCache(serialNumber);

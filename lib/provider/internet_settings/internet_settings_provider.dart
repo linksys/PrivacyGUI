@@ -19,13 +19,13 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
     final repo = ref.read(routerRepositoryProvider);
     final results = await repo.fetchInternetSettings();
     final wanSettings =
-        JNAPTransactionSuccessWrap.getResult(JNAPAction.getWANSettings, results)
+        JNAPTransactionSuccessWrap.getResult(JNAPAction.getWANSettings, Map.fromEntries(results))
             ?.output;
     final ipv6Settings = JNAPTransactionSuccessWrap.getResult(
-            JNAPAction.getIPv6Settings, results)
+            JNAPAction.getIPv6Settings, Map.fromEntries(results))
         ?.output;
     final wanStatusJson =
-        JNAPTransactionSuccessWrap.getResult(JNAPAction.getWANStatus, results);
+        JNAPTransactionSuccessWrap.getResult(JNAPAction.getWANStatus, Map.fromEntries(results));
     final wanStatus = wanStatusJson == null
         ? null
         : RouterWANStatus.fromJson(wanStatusJson.output);
@@ -34,7 +34,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         : IPv6AutomaticSettings.fromJson(
             ipv6Settings!['ipv6AutomaticSettings']);
     final macAddressCloneSettings = JNAPTransactionSuccessWrap.getResult(
-            JNAPAction.getMACAddressCloneSettings, results)
+            JNAPAction.getMACAddressCloneSettings, Map.fromEntries(results))
         ?.output;
     state = state.copyWith(
       ipv4ConnectionType: wanSettings?['wanType'] ?? '',

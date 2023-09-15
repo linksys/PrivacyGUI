@@ -19,11 +19,11 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
     final repo = ref.read(routerRepositoryProvider);
     final results = await repo.fetchIsConfigured();
     final bool isAdminDefault = JNAPTransactionSuccessWrap.getResult(
-                JNAPAction.isAdminPasswordDefault, results)
+                JNAPAction.isAdminPasswordDefault, Map.fromEntries(results))
             ?.output['isAdminPasswordDefault'] ??
         false;
     final bool isSetByUser = JNAPTransactionSuccessWrap.getResult(
-                JNAPAction.isAdminPasswordSetByUser, results)
+                JNAPAction.isAdminPasswordSetByUser, Map.fromEntries(results))
             ?.output['isAdminPasswordSetByUser'] ??
         true;
     String passwordHint = '';

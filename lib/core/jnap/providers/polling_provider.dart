@@ -52,7 +52,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         .transaction(JNAPTransactionBuilder.coreTransactions())
         .then((successWrap) => successWrap.data)
         .then((data) => CoreTransactionData(
-            lastUpdate: DateTime.now().millisecondsSinceEpoch, data: data));
+            lastUpdate: DateTime.now().millisecondsSinceEpoch, data: Map.fromEntries(data)));
 
     state = await AsyncValue.guard(() => fetchFuture);
     logger.d('Polling Provider: finish polling - ${DateTime.now()}, $state');

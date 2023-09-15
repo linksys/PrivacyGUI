@@ -17,14 +17,14 @@ class IpDetailsNotifier extends Notifier<IpDetailsState> {
 
   fetch() async {
     final repo = ref.read(routerRepositoryProvider);
-    final result = await repo.fetchIpDetails();
+    final results = await repo.fetchIpDetails();
     final wanStatusJson =
-        JNAPTransactionSuccessWrap.getResult(JNAPAction.getWANStatus, result);
+        JNAPTransactionSuccessWrap.getResult(JNAPAction.getWANStatus, Map.fromEntries(results));
     final wanStatus = wanStatusJson == null
         ? null
         : RouterWANStatus.fromJson(wanStatusJson.output);
     final devicesJson =
-        JNAPTransactionSuccessWrap.getResult(JNAPAction.getDevices, result);
+        JNAPTransactionSuccessWrap.getResult(JNAPAction.getDevices, Map.fromEntries(results));
     final devices = devicesJson == null
         ? null
         : List.from(devicesJson.output['devices'])
