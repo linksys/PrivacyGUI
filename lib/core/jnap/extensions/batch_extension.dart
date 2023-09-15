@@ -55,6 +55,7 @@ extension BatchCommands on RouterRepository {
             .toList(),
         auth: true,
       ),
+      fetchRemote: true,
     ).then(
       (successWrap) => successWrap.data,
     );
