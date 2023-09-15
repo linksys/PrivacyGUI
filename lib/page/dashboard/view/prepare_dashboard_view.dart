@@ -49,8 +49,8 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
       if (ref.read(selectedNetworkIdProvider) == null) {
         final prefs = await SharedPreferences.getInstance();
         final networkId = prefs.getString(pSelectedNetworkId);
+        ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
         if (networkId == null) {
-          ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
           router.goNamed(RouteNamed.selectNetwork);
           return;
         } else {

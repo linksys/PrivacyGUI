@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
+import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/devices/device_detail_id_provider.dart';
@@ -39,36 +40,7 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
         : StyledAppPageView(
             padding: const AppEdgeInsets.zero(),
             child: AppBasicLayout(
-              header: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppPadding.regular(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        AppText.headlineMedium('Offline'),
-                        AppTertiaryButton.noPadding(
-                          _isEdit ? 'Cancel' : 'Edit',
-                          onTap: () {
-                            setState(() {
-                              _isEdit = !_isEdit;
-                              if (_isEdit) {
-                                _removeIDs.clear();
-                              }
-                            });
-                          },
-                        )
-                      ],
-                    ),
-                  ),
-                  AppPadding.regular(
-                      child: AppText.labelLarge(
-                          'Offline (${offlineDeviceList.length})')),
-                  const Divider(
-                    height: 8,
-                  ),
-                ],
-              ),
+              header: _buildHeader(offlineDeviceList),
               content: ListView.separated(
                 padding: EdgeInsets.zero,
                 itemCount: offlineDeviceList.length,
@@ -81,75 +53,7 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
                   );
                 },
               ),
-              footer: _isEdit
-                  ? AppPadding.regular(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          AppCheckbox(
-                            text: 'Select all',
-                            value:
-                                _removeIDs.length == offlineDeviceList.length,
-                            onChanged: (value) {
-                              setState(() {
-                                if (value == true) {
-                                  _removeIDs
-                                    ..addAll(offlineDeviceList
-                                        .map((e) => e.deviceId)
-                                        .toList())
-                                    ..unique((x) => x);
-                                } else {
-                                  _removeIDs.clear();
-                                }
-                              });
-                            },
-                          ),
-                          AppPrimaryButton(
-                            'Remove(${_removeIDs.length})',
-                            onTap: _removeIDs.isEmpty
-                                ? null
-                                : () {
-                                    showAdaptiveDialog(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        title: AppText.bodyLarge(
-                                            'Remove all offline devices'),
-                                        content: AppText.bodyLarge(
-                                            'These devices will reappear if they reconnect to your WiFi network.'),
-                                        actions: [
-                                          AppTertiaryButton('Cancel',
-                                              onTap: () {
-                                            context.pop();
-                                          }),
-                                          AppTertiaryButton(
-                                            'Clear',
-                                            onTap: () {
-                                              setState(() {
-                                                _isLoading = true;
-                                              });
-                                              ref
-                                                  .read(deviceManagerProvider
-                                                      .notifier)
-                                                  .deleteDevices(
-                                                      deviceIds: _removeIDs)
-                                                  .then((value) {
-                                                setState(() {
-                                                  _isEdit = false;
-                                                  _isLoading = false;
-                                                });
-                                              });
-                                              context.pop();
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                          ),
-                        ],
-                      ),
-                    )
-                  : null,
+              footer: _isEdit ? _buildFooter(offlineDeviceList) : null,
             ),
           );
   }
@@ -185,5 +89,115 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
               },
       ),
     );
+  }
+
+  Widget _buildHeader(List<DeviceListItem> offlineDeviceList) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppPadding.regular(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              AppText.headlineMedium('Offline'),
+              AppTertiaryButton.noPadding(
+                _isEdit ? 'Cancel' : 'Edit',
+                onTap: () {
+                  setState(() {
+                    _isEdit = !_isEdit;
+                    if (_isEdit) {
+                      _removeIDs.clear();
+                    }
+                  });
+                },
+              )
+            ],
+          ),
+        ),
+        AppPadding.regular(
+            child: AppText.labelLarge('Offline (${offlineDeviceList.length})')),
+        const Divider(
+          height: 8,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFooter(List<DeviceListItem> offlineDeviceList) {
+    return AppPadding.regular(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          AppCheckbox(
+            text: 'Select all',
+            value: _removeIDs.length == offlineDeviceList.length,
+            onChanged: (value) {
+              setState(() {
+                if (value == true) {
+                  _removeIDs
+                    ..addAll(offlineDeviceList.map((e) => e.deviceId).toList())
+                    ..unique((x) => x);
+                } else {
+                  _removeIDs.clear();
+                }
+              });
+            },
+          ),
+          AppPrimaryButton(
+            'Remove(${_removeIDs.length})',
+            onTap: _removeIDs.isEmpty
+                ? null
+                : () {
+                    _showConfirmDialog();
+                  },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showConfirmDialog() {
+    showAdaptiveDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: AppText.bodyLarge('Remove all offline devices'),
+        content: AppText.bodyLarge(
+            'These devices will reappear if they reconnect to your WiFi network.'),
+        actions: [
+          AppTertiaryButton('Cancel', onTap: () {
+            context.pop();
+          }),
+          AppTertiaryButton(
+            'Clear',
+            onTap: () {
+              _removeDevices();
+              context.pop();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _removeDevices() {
+    setState(() {
+      _isLoading = true;
+    });
+    ref
+        .read(deviceManagerProvider.notifier)
+        .deleteDevices(deviceIds: _removeIDs)
+        .then((value) {
+      setState(() {
+        _isEdit = false;
+        _isLoading = false;
+      });
+      showSuccessSnackBar(context, 'Success!');
+    }).onError((error, stackTrace) {
+      setState(() {
+        _isEdit = false;
+        _isLoading = false;
+      });
+      showFailedSnackBar(context, 'Failed!');
+    });
   }
 }

@@ -160,9 +160,9 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
           controller: scrollController,
           child: Container(
             alignment: Alignment.bottomLeft,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.background,
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(30),
                 topRight: Radius.circular(30),
               ),

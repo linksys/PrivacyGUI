@@ -106,7 +106,8 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               Storage.deleteFile(Uri.parse(shareLogPath));
               Storage.createLoggerFile();
             }
-            showSnackBar(context, Text("Share result: ${result.status}"));
+            showSnackBar(context,
+                content: Text("Share result: ${result.status}"));
           },
         ),
         const AppGap.regular(),
@@ -226,7 +227,8 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         AppPrimaryButton(
           'Test',
           onTap: () async {
-            ref.read(smartDeviceProvider.notifier).fetchEventSubscriptions();
+            // ref.read(smartDeviceProvider.notifier).fetchEventSubscriptions();
+            showFailedSnackBar(context, '123');
           },
         ),
       ],
