@@ -1,34 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/theme/color_tonal_palettes.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 showSuccessSnackBar(BuildContext context, String message) {
   showSimpleSnackBar(
     context,
-    Image.asset('assets/images/icon_check_green.png'),
     message,
+    icon: AppIcon.regular(
+      icon: getCharactersIcons(context).checkDefault,
+      color: Colors.white,
+    ),
+    background: Color(greenTonal.get(40)),
   );
 }
 
-showSimpleSnackBar(BuildContext context, Image? image, String message) {
+showFailedSnackBar(BuildContext context, String message) {
+  showSimpleSnackBar(
+    context,
+    message,
+    icon: AppIcon.regular(
+      icon: getCharactersIcons(context).crossDefault,
+      color: Colors.white,
+    ),
+    background: Theme.of(context).colorScheme.error,
+  );
+}
+
+showSimpleSnackBar(
+  BuildContext context,
+  String message, {
+  AppIcon? icon,
+  Color? background,
+}) {
   showSnackBar(
     context,
-    SizedBox(
-      height: 48,
-      child: Row(
-        children: [
-          image ?? const Center(),
-          const AppGap.regular(),
-          Text(message),
-        ],
+    background: background,
+    content: Container(
+      child: SizedBox(
+        height: 48,
+        child: Row(
+          children: [
+            icon ?? const Center(),
+            const AppGap.regular(),
+            Text(message),
+          ],
+        ),
       ),
     ),
   );
 }
 
-showSnackBar(BuildContext context, Widget content) {
+showSnackBar(BuildContext context,
+    {required Widget content, Color? background}) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       behavior: SnackBarBehavior.floating,
+      backgroundColor: background,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       content: content,
     ),
