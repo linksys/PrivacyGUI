@@ -638,5 +638,6 @@
   "reservations_added": "Reservations added",
   "forgot_question": "Forgot?",
   "error_local_access_locked": "Access locked. Too many failed attempts to log in.",
-  "local_how_to_regain_access": "How to regain access"
+  "local_how_to_regain_access": "How to regain access",
+  "remove_node_from_network": "Remove node from network"
 }

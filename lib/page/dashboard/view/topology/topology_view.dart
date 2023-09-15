@@ -52,10 +52,10 @@ class TopologyView extends ArgumentsConsumerStatelessView {
                           )
                         : null,
                     onTap: () {
+                      ref.read(deviceDetailIdProvider.notifier).state =
+                          node.data.deviceId;
                       if (node.data.isOnline) {
                         // Update the current target Id for node state
-                        ref.read(deviceDetailIdProvider.notifier).state =
-                            node.data.deviceId;
                         context.pushNamed(RouteNamed.nodeDetails);
                       } else {
                         context.pushNamed(RouteNamed.nodeOffline);
