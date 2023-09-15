@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:linksys_app/constants/jnap_const.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
@@ -105,8 +106,9 @@ class JNAPTransactionSuccessWrap extends JNAPResult {
   }) {
     return JNAPTransactionSuccessWrap(
       result: transactionSuccess.result,
-      data: Map.fromIterables(actions, transactionSuccess.responses)
-          .entries
+      data: actions
+          .mapIndexed((index, action) =>
+              MapEntry(action, transactionSuccess.responses[index]))
           .toList(),
     );
   }
