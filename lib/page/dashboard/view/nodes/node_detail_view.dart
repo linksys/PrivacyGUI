@@ -58,7 +58,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           onCollaspeBackTap: () {
             context.pop();
           },
-          background: Theme.of(context).colorScheme.tertiaryContainer,
+          background: Theme.of(context).colorScheme.background,
           actions: actions,
           header: Column(
             children: [
@@ -118,6 +118,8 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
 
   Widget _nodeAvatar(NodeDetailState state) {
     return AppDeviceAvatar.extraLarge(
+      borderColor: Colors.transparent,
+      backgroundColor: Colors.transparent,
       image: AppTheme.of(context).images.devices.getByName(
             routerIconTest(modelNumber: state.modelNumber),
           ),

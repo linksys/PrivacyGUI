@@ -147,7 +147,7 @@ class DeviceManagerState {
         .where((device) => device.connectedWifiType == WifiConnectionType.guest)
         .toList();
   }
-  
+
   const DeviceManagerState({
     this.wirelessConnections = const {},
     this.deviceList = const [],
@@ -192,6 +192,9 @@ enum NodeSignalLevel {
 }
 
 enum WifiConnectionType {
-  main,
-  guest,
+  main('main'),
+  guest('guest');
+
+  final String value;
+  const WifiConnectionType(this.value);
 }

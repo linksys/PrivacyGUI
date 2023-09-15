@@ -24,6 +24,7 @@ class DeviceListItem {
   final String name;
   final String icon;
   final String upstreamDevice;
+  final String upstreamDeviceID;
   final String upstreamIcon;
   final String ipv4Address;
   final String ipv6Address;
@@ -42,6 +43,7 @@ class DeviceListItem {
     this.name = '',
     this.icon = '',
     this.upstreamDevice = '',
+    this.upstreamDeviceID = '',
     this.upstreamIcon = '',
     this.ipv4Address = '',
     this.ipv6Address = '',
@@ -61,6 +63,7 @@ class DeviceListItem {
     String? name,
     String? icon,
     String? upstreamDevice,
+    String? upstreamDeviceID,
     String? upstreamIcon,
     String? ipv4Address,
     String? ipv6Address,
@@ -79,6 +82,7 @@ class DeviceListItem {
       name: name ?? this.name,
       icon: icon ?? this.icon,
       upstreamDevice: upstreamDevice ?? this.upstreamDevice,
+      upstreamDeviceID: upstreamDeviceID ?? this.upstreamDeviceID,
       upstreamIcon: upstreamIcon ?? this.upstreamIcon,
       ipv4Address: ipv4Address ?? this.ipv4Address,
       ipv6Address: ipv6Address ?? this.ipv6Address,
