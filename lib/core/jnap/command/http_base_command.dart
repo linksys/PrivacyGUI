@@ -62,6 +62,7 @@ class TransactionHttpCommand
     required super.executor,
     required List<Map<String, dynamic>> payload,
     Map<String, String> extraHeader = const {},
+    super.fetchRemote,
   }) : super(
             spec: HttpTransactionSpec(
           extraHeader: extraHeader,
