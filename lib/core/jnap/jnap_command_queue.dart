@@ -125,7 +125,8 @@ class CommandQueue {
 
   bool _checkUseCacheDataForJnapTransactionCommand(BaseCommand command) {
     if (command is TransactionHttpCommand &&
-        !_checkNonExistActionAndExpiration(command, linksysCacheManger)) {
+        !_checkNonExistActionAndExpiration(command, linksysCacheManger) &&
+        !command.fetchRemote) {
       return true;
     } else {
       return false;

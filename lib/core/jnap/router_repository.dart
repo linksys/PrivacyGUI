@@ -99,8 +99,8 @@ class RouterRepository {
     });
   }
 
-  Future<JNAPTransactionSuccessWrap> transaction(
-      JNAPTransactionBuilder builder) async {
+  Future<JNAPTransactionSuccessWrap> transaction(JNAPTransactionBuilder builder,
+      {bool fetchRemote = false}) async {
     final payload = builder.commands
         .map((entry) =>
             {'action': entry.key.actionValue, 'request': entry.value})
@@ -108,7 +108,8 @@ class RouterRepository {
     final prefs = await SharedPreferences.getInstance();
     final sn = prefs.get(pCurrentSN) as String?;
     final linksysCacheManager = ref.read(linksysCacheManagerProvider);
-    final command = await createTransaction(payload, needAuth: builder.auth);
+    final command = await createTransaction(payload,
+        needAuth: builder.auth, fetchRemote: fetchRemote);
 
     return CommandQueue()
         .enqueue(command)
@@ -130,6 +131,7 @@ class RouterRepository {
   Future<TransactionHttpCommand> createTransaction(
       List<Map<String, dynamic>> payload,
       {bool needAuth = false,
+      bool fetchRemote = false,
       CommandType? type}) async {
     final loginType = getLoginType();
     final routerType = getRouterType();
@@ -149,7 +151,11 @@ class RouterRepository {
 
     if (url.isNotEmpty) {
       return TransactionHttpCommand(
-          url: url, executor: executor, payload: payload, extraHeader: header);
+          url: url,
+          executor: executor,
+          payload: payload,
+          extraHeader: header,
+          fetchRemote: fetchRemote);
     } else {
       throw Exception();
     }
