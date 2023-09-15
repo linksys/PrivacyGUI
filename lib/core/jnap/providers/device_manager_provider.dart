@@ -324,10 +324,22 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     );
   }
 
-  Future<bool> deleteDevices({required List<String> deviceIds}) {
+  Future<void> deleteDevices({required List<String> deviceIds}) {
     final routerRepository = ref.read(routerRepositoryProvider);
-    return routerRepository.deleteDevices(deviceIds).then((mapData) {
-      return !mapData.any((result) => result.value.result != 'OK');
+    return routerRepository.deleteDevices(deviceIds).then((dataResults) {
+      final idResults = Map.fromIterables(deviceIds, dataResults)
+          .entries
+          .map((entry) => MapEntry(entry.key, entry.value.value));
+      final idResultsMap = Map.fromEntries(idResults);
+      idResultsMap.removeWhere((key, value) => value.result != 'OK');
+      final completedIds = idResultsMap.keys.toList();
+      final newDeviceList = state.deviceList;
+      newDeviceList.removeWhere(
+        (device) => completedIds.contains(device.deviceID),
+      );
+      state = state.copyWith(
+        deviceList: newDeviceList,
+      );
     });
   }
 
