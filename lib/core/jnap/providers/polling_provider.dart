@@ -52,7 +52,8 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         .transaction(JNAPTransactionBuilder.coreTransactions())
         .then((successWrap) => successWrap.data)
         .then((data) => CoreTransactionData(
-            lastUpdate: DateTime.now().millisecondsSinceEpoch, data: Map.fromEntries(data)));
+            lastUpdate: DateTime.now().millisecondsSinceEpoch,
+            data: Map.fromEntries(data)));
 
     state = await AsyncValue.guard(() => fetchFuture);
     logger.d('Polling Provider: finish polling - ${DateTime.now()}, $state');
@@ -72,6 +73,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   }
 
   stopPolling() {
+    logger.d('stop polling data');
     if ((_timer?.isActive ?? false)) {
       _timer?.cancel();
     }

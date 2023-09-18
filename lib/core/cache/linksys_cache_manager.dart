@@ -53,12 +53,11 @@ class LinksysCacheManager {
     }
   }
 
-  bool loadCache({required String serialNumber}) {
+  Future<bool> loadCache({required String serialNumber}) async {
     logger.d("linksys cache manager: Starting to load cache");
     if (serialNumber != lastSerialNumber) {
-      cacheManager.get().then((value) {
-        cache = value ?? "";
-      });
+      final value = await cacheManager.get();
+      cache = value ?? "";
       if (cache.isEmpty) {
         return false;
       }

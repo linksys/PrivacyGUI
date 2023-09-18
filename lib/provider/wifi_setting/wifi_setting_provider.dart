@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/constants/pref_key.dart';
 import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/models/guest_radio_settings.dart';
 import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
@@ -38,6 +39,7 @@ class WifiSettingNotifier extends Notifier<WifiSettingState> {
         await repo.send(
           JNAPAction.setRadioSettings,
           auth: true,
+          cacheLevel: CacheLevel.noCache,
           data: {
             'radios': radioSettings.map((e) => e.toJson()).toList(),
           },
@@ -55,10 +57,13 @@ class WifiSettingNotifier extends Notifier<WifiSettingState> {
           GuestRadioInfo newRadioInfo = radioInfo.copyWith(isEnabled: enable);
           radios.add(newRadioInfo);
         }
-        await repo.send(JNAPAction.setGuestRadioSettings, auth: true, data: {
-          'isGuestNetworkEnabled': enable,
-          'radios': radios.map((e) => e.toJson()).toList(),
-        }).then((value) {
+        await repo.send(JNAPAction.setGuestRadioSettings,
+            auth: true,
+            cacheLevel: CacheLevel.noCache,
+            data: {
+              'isGuestNetworkEnabled': enable,
+              'radios': radios.map((e) => e.toJson()).toList(),
+            }).then((value) {
           // fetchAllRadioInfo();
           state = state.copyWith(
               selectedWifiItem:
@@ -101,6 +106,7 @@ class WifiSettingNotifier extends Notifier<WifiSettingState> {
         await repo.send(
           JNAPAction.setRadioSettings,
           auth: true,
+          cacheLevel: CacheLevel.noCache,
           data: {
             'radios': radioSettings.map((e) => e.toJson()).toList(),
           },
@@ -119,10 +125,14 @@ class WifiSettingNotifier extends Notifier<WifiSettingState> {
               radioInfo.copyWith(guestSSID: name, guestWPAPassphrase: password);
           radios.add(newRadioInfo);
         }
-        await repo.send(JNAPAction.setGuestRadioSettings, auth: true, data: {
-          'isGuestNetworkEnabled': guestRadios.firstOrNull?.isEnabled ?? false,
-          'radios': radios.map((e) => e.toJson()).toList(),
-        }).then((value) {
+        await repo.send(JNAPAction.setGuestRadioSettings,
+            auth: true,
+            cacheLevel: CacheLevel.noCache,
+            data: {
+              'isGuestNetworkEnabled':
+                  guestRadios.firstOrNull?.isEnabled ?? false,
+              'radios': radios.map((e) => e.toJson()).toList(),
+            }).then((value) {
           // fetchAllRadioInfo();
           state = state.copyWith(
               selectedWifiItem: state.selectedWifiItem
@@ -168,6 +178,7 @@ class WifiSettingNotifier extends Notifier<WifiSettingState> {
         await repo.send(
           JNAPAction.setRadioSettings,
           auth: true,
+          cacheLevel: CacheLevel.noCache,
           data: {
             'radios': radioSettings.map((e) => e.toJson()).toList(),
           },
@@ -206,6 +217,7 @@ class WifiSettingNotifier extends Notifier<WifiSettingState> {
         await repo.send(
           JNAPAction.setRadioSettings,
           auth: true,
+          cacheLevel: CacheLevel.noCache,
           data: {
             'radios': radioSettings.map((e) => e.toJson()).toList(),
           },

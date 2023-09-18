@@ -5,6 +5,7 @@ import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/page/dashboard/view/topology/topology_model.dart';
 import 'package:linksys_app/provider/devices/topology_state.dart';
+import 'package:linksys_widgets/widgets/topology/tree_node.dart';
 
 final topologyProvider = NotifierProvider<TopologyNotifier, TopologyState>(
   () => TopologyNotifier(),
@@ -14,7 +15,9 @@ class TopologyNotifier extends Notifier<TopologyState> {
   @override
   TopologyState build() {
     final deviceManagerState = ref.watch(deviceManagerProvider);
-    return TopologyState(root: _buildRootNode(deviceManagerState));
+    return TopologyState(
+        onlineRoot: _buildRootNode(deviceManagerState),
+        offlineRoot: _buildOfflineRootNode(deviceManagerState));
   }
 
   void setSelectedDeviceId(String deviceId) {
@@ -32,10 +35,24 @@ class TopologyNotifier extends Notifier<TopologyState> {
     //     ? _buildDeviceChain(deviceId, deviceManagerState)
     //     : _buildRouterTopology(deviceManagerState);
     return RouterTreeNode(
-        data: TopologyModel(),
+        type: AppTreeNodeType.internet,
+        data: const TopologyModel(isOnline: true, location: 'Internet'),
         children: [_buildRouterTopology(deviceManagerState)]);
   }
 
+  RouterTreeNode _buildOfflineRootNode(DeviceManagerState deviceManagerState) {
+    // if (ref.read(deviceManagerProvider.notifier).isEmptyState()) {
+    //   return TopologyNode();
+    // }
+    // final deviceId = null; //state.selectedDeviceId;
+    // return deviceId != null
+    //     ? _buildDeviceChain(deviceId, deviceManagerState)
+    //     : _buildRouterTopology(deviceManagerState);
+    return RouterTreeNode(
+        type: AppTreeNodeType.offline,
+        data: const TopologyModel(isOnline: true, location: 'Offline'),
+        children: [..._buildOfflineRouterTopology(deviceManagerState)]);
+  }
   // TopologyNode _buildDeviceChain(
   //   String selectedDeviceId,
   //   DeviceManagerState deviceManagerState,
@@ -76,12 +93,26 @@ class TopologyNotifier extends Notifier<TopologyState> {
   //   }
   // }
 
+  List<RouterTreeNode> _buildOfflineRouterTopology(
+      DeviceManagerState deviceManagerState) {
+    return [
+      ...deviceManagerState.nodeDevices
+          .where((device) => device.connections.isEmpty)
+          .map(
+            (device) => _createTopologyNode(device),
+          )
+          .toList(),
+    ];
+  }
+
   RouterTreeNode _buildRouterTopology(DeviceManagerState deviceManagerState) {
     // {DeviceId : NodeObject}
     final nodeMap = Map.fromEntries(
-      deviceManagerState.nodeDevices.map(
-        (device) => MapEntry(device.deviceID, _createTopologyNode(device)),
-      ),
+      deviceManagerState.nodeDevices
+          .where((device) => device.connections.isNotEmpty)
+          .map(
+            (device) => MapEntry(device.deviceID, _createTopologyNode(device)),
+          ),
     );
     final deviceList = deviceManagerState.deviceList;
     // Master node is always at the first

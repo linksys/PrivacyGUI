@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -108,16 +109,13 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                     title: 'Settings',
                     iconData: getCharactersIcons(context).settingsDefault,
                     onTap: () {
-                      shellNavigatorKey.currentContext!
-                          .pushReplacementNamed(RouteNamed.dashboardSettings);
+                      _navigateTo(RouteNamed.dashboardSettings);
                     }),
                 AppSectionItemData(
                     title: 'Account',
                     iconData: getCharactersIcons(context).administrationDefault,
                     onTap: () {
-                      shellNavigatorKey.currentContext!
-                          .pushReplacementNamed(RouteNamed.accountInfo);
-                      // context.pushNamed(RouteNamed.accountInfo);
+                      _navigateTo(RouteNamed.accountInfo);
                     }),
                 AppSectionItemData(
                     title: 'Help',
@@ -126,9 +124,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                     title: 'Linksys LinkUp',
                     iconData: getCharactersIcons(context).bellDefault,
                     onTap: () {
-                      shellNavigatorKey.currentContext!
-                          .pushReplacementNamed(RouteNamed.linkup);
-                      // context.pushNamed(RouteNamed.accountInfo);
+                      _navigateTo(RouteNamed.linkup);
                     }),
               ],
             ),
@@ -151,5 +147,13 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         ),
       ),
     );
+  }
+
+  void _navigateTo(String name) {
+    if (kIsWeb) {
+      shellNavigatorKey.currentContext!.pushReplacementNamed(name);
+    } else {
+      shellNavigatorKey.currentContext!.pushNamed(name);
+    }
   }
 }

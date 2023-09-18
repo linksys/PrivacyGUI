@@ -11,7 +11,6 @@ import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/devices/node_detail_provider.dart';
 import 'package:linksys_app/provider/devices/node_detail_state.dart';
 import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -178,6 +177,38 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               getAppLocalizations(context).node_detail_label_connected_devices,
           description: '${state.connectedDevices.length} devices',
         ),
+        ...isServiceSupport(JNAPService.setup9)
+            ? [
+                const Divider(
+                  height: 8,
+                ),
+                GestureDetector(
+                  onTap: () {
+                    ref.read(nodeDetailProvider.notifier).toggleBlinkNode();
+                  },
+                  child: AppSimplePanel(
+                    title: state.blinkingStatus.value,
+                    description: 'Blink node function',
+                  ),
+                )
+              ]
+            : [],
+        ...isServiceSupport(JNAPService.routerLEDs3)
+            ? [
+                const Divider(
+                  height: 8,
+                ),
+                AppPanelWithSwitch(
+                  value: state.isLightTurnedOn,
+                  title: 'Night Mode',
+                  onChangedEvent: (value) {
+                    ref
+                        .read(nodeDetailProvider.notifier)
+                        .toggleNodeLight(value);
+                  },
+                ),
+              ]
+            : []
       ],
     );
   }

@@ -3,6 +3,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/constants/_constants.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/models/device_info.dart';
 import 'package:linksys_app/core/jnap/models/wan_status.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
@@ -152,7 +153,11 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
 
     final routerRepository = ref.read(routerRepositoryProvider);
     return routerRepository
-        .send(JNAPAction.getWANStatus)
+        .send(
+          JNAPAction.getWANStatus,
+          fetchRemote: true,
+          cacheLevel: CacheLevel.noCache,
+        )
         .then((response) => RouterWANStatus.fromJson(response.output))
         .then((status) {
       final wanConnected = status.wanStatus == 'Connected' ||
@@ -170,7 +175,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
 
     final routerRepository = ref.read(routerRepositoryProvider);
     return routerRepository
-        .send(JNAPAction.getDeviceInfo)
+        .send(JNAPAction.getDeviceInfo, fetchRemote: true)
         .then((response) => NodeDeviceInfo.fromJson(response.output))
         .then((devceInfo) => devceInfo.serialNumber == cachedSerialNumber)
         .then(

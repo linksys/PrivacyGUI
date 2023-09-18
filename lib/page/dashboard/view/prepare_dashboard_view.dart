@@ -72,7 +72,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
       await prefs.setString(pCurrentSN, nodeDeviceInfo.serialNumber);
       await ref.read(connectivityProvider.notifier).forceUpdate();
       logger.d('Force update connectivity finish!');
-      ProviderContainer()
+      await ProviderContainer()
           .read(linksysCacheManagerProvider)
           .loadCache(serialNumber: nodeDeviceInfo.serialNumber);
 

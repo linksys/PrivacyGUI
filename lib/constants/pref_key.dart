@@ -9,6 +9,8 @@ const pSmartDeviceVerified = 'LinksysSmartDeviceVerified';
 
 const pSelectedNetworkId = 'LinksysSelectedNetworkId';
 const pShowPushPrompt = 'PushPrompt';
+const pAppFirstLaunch = 'AppFirstLaunch';
+
 // secured
 const pSessionToken = 'SessionToken';
 const pSessionTokenTs = 'SessionTokenTimeStamp';

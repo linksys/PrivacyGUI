@@ -60,6 +60,7 @@ class _WifiDetailViewState extends ConsumerState<WifiDetailView> {
         RepaintBoundary(
           key: globalKey,
           child: Container(
+            color: Colors.white,
             height: 240,
             width: 240,
             child: QrImageView(
@@ -84,8 +85,12 @@ class _WifiDetailViewState extends ConsumerState<WifiDetailView> {
         children: [
           Align(
             alignment: Alignment.centerRight,
-            child: AppSwitch(
-              value: widget.item.isWifiEnabled,
+            child: AbsorbPointer(
+              absorbing: true,
+              child: AppSwitch(
+                value: widget.item.isWifiEnabled,
+                onChanged: (value) {},
+              ),
             ),
           ),
           AppText.labelLarge('WiFi name'),

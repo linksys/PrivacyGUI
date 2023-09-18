@@ -6,8 +6,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
+import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/page/dashboard/view/dashboard_menu_view.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
@@ -25,6 +28,7 @@ import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/color_schemes.g.dart';
 import 'package:linksys_widgets/theme/theme_data.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'route/router_provider.dart';
 import 'util/analytics.dart';
@@ -51,6 +55,17 @@ void main() async {
   await Storage.init();
   logger.v('App Start');
   await initLog();
+////
+  SharedPreferences.getInstance().then((prefs) {
+    final isAppFirstLaunch = prefs.getBool(pAppFirstLaunch) ?? true;
+    if (!isAppFirstLaunch) {
+      return;
+    }
+    const FlutterSecureStorage().deleteAll();
+    prefs.setBool(pAppFirstLaunch, false);
+  });
+////
+
   logger.d('Start to init Firebase Core');
   final appConst = await PackageInfo.fromPlatform();
   await Firebase.initializeApp(
@@ -167,7 +182,11 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     logger.v('didChangeAppLifecycleState: ${state.name}');
     if (state == AppLifecycleState.resumed) {
-      ref.read(connectivityProvider.notifier).forceUpdate();
+      ref.read(connectivityProvider.notifier).forceUpdate().then((_) {
+        ref.read(pollingProvider.notifier).startPolling();
+      });
+    } else if (state == AppLifecycleState.paused) {
+      ref.read(pollingProvider.notifier).stopPolling();
     }
   }
 
