@@ -81,7 +81,7 @@ class RouterRepository {
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final sn = prefs.get(pCurrentSN) as String?;
-    cacheLevel ??= isMatchedJNAPNoCachePolicy(action.actionValue as JNAPAction)
+    cacheLevel ??= isMatchedJNAPNoCachePolicy(action)
         ? CacheLevel.noCache
         : CacheLevel.localCached;
     final command = await createCommand(action.actionValue,
