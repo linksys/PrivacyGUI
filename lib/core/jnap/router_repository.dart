@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
+import 'package:linksys_app/core/cache/utility.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
@@ -69,15 +70,20 @@ class RouterRepository {
 
   bool get isEnableBTSetup => _btSetupMode;
 
-  Future<JNAPSuccess> send(JNAPAction action,
-      {Map<String, dynamic> data = const {},
-      Map<String, String> extraHeaders = const {},
-      bool auth = false,
-      CommandType? type,
-      bool fetchRemote = false,
-      CacheLevel cacheLevel = CacheLevel.localCached}) async {
+  Future<JNAPSuccess> send(
+    JNAPAction action, {
+    Map<String, dynamic> data = const {},
+    Map<String, String> extraHeaders = const {},
+    bool auth = false,
+    CommandType? type,
+    bool fetchRemote = false,
+    CacheLevel? cacheLevel,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final sn = prefs.get(pCurrentSN) as String?;
+    cacheLevel ??= isMatchedJNAPNoCachePolicy(action)
+        ? CacheLevel.noCache
+        : CacheLevel.localCached;
     final command = await createCommand(action.actionValue,
         data: data,
         extraHeaders: extraHeaders,
@@ -93,7 +99,7 @@ class RouterRepository {
         .then((record) => sideEffectManager.handleSideEffect(record))
         .then((record) {
       _handleCacheProcess(
-          record, action.actionValue, linksysCacheManager, sn, cacheLevel);
+          record, action.actionValue, linksysCacheManager, sn, cacheLevel!);
       sideEffectManager.finishSideEffect();
       return record.$1;
     });
@@ -168,13 +174,15 @@ class RouterRepository {
     }
   }
 
-  Future<BaseCommand<JNAPResult, JNAPCommandSpec>> createCommand(String action,
-      {Map<String, dynamic> data = const {},
-      Map<String, String> extraHeaders = const {},
-      bool needAuth = false,
-      CommandType? type,
-      bool fetchRemote = false,
-      CacheLevel cacheLevel = CacheLevel.localCached}) async {
+  Future<BaseCommand<JNAPResult, JNAPCommandSpec>> createCommand(
+    String action, {
+    Map<String, dynamic> data = const {},
+    Map<String, String> extraHeaders = const {},
+    bool needAuth = false,
+    CommandType? type,
+    bool fetchRemote = false,
+    CacheLevel cacheLevel = CacheLevel.localCached,
+  }) async {
     if (isEnableBTSetup) {
       return _createBTCommand(action,
           data: data,
@@ -374,11 +382,13 @@ class RouterRepository {
     return header;
   }
 
-  BaseCommand<JNAPResult, BTJNAPSpec> _createBTCommand(String action,
-      {Map<String, dynamic> data = const {},
-      bool needAuth = false,
-      bool fetchRemote = false,
-      CacheLevel cacheLevel = CacheLevel.localCached}) {
+  BaseCommand<JNAPResult, BTJNAPSpec> _createBTCommand(
+    String action, {
+    Map<String, dynamic> data = const {},
+    bool needAuth = false,
+    bool fetchRemote = false,
+    CacheLevel cacheLevel = CacheLevel.localCached,
+  }) {
     return JNAPBTCommand(
         executor: executor,
         action: action,
@@ -388,13 +398,14 @@ class RouterRepository {
   }
 
   Future<BaseCommand<JNAPResult, HttpJNAPSpec>> _createHttpCommand(
-      String action,
-      {Map<String, dynamic> data = const {},
-      Map<String, String> extraHeaders = const {},
-      bool needAuth = false,
-      CommandType? type,
-      bool fetchRemote = false,
-      CacheLevel cacheLevel = CacheLevel.localCached}) async {
+    String action, {
+    Map<String, dynamic> data = const {},
+    Map<String, String> extraHeaders = const {},
+    bool needAuth = false,
+    CommandType? type,
+    bool fetchRemote = false,
+    CacheLevel cacheLevel = CacheLevel.localCached,
+  }) async {
     final routerType = getRouterType();
     // final communicateType =
     //     type ?? (!isCloudLogin() ? CommandType.local : CommandType.remote);
