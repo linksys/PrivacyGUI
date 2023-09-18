@@ -53,7 +53,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     return LayoutBuilder(
       builder: (context, constraint) {
         return AppProfileHeaderLayout(
-          expandedHeight: constraint.maxHeight / 2,
+          expandedHeight: constraint.maxHeight / 3,
           collaspeTitle: state.location,
           onCollaspeBackTap: () {
             context.pop();
@@ -92,25 +92,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       child: Column(
         children: [
           _nodeAvatar(state),
-          const AppGap.regular(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AppText.titleSmall(
-                state.location,
-              ),
-              const AppGap.semiSmall(),
-              AppIconButton.noPadding(
-                icon: getCharactersIcons(context).editDefault,
-                onTap: () {
-                  context.pushNamed(RouteNamed.changeNodeName);
-                },
-              ),
-            ],
-          ),
-          // const AppGap.extraBig(),
-          _nodeStatus(state),
-          const AppGap.semiSmall(),
         ],
       ),
     );
@@ -123,80 +104,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       image: AppTheme.of(context).images.devices.getByName(
             routerIconTest(modelNumber: state.modelNumber),
           ),
-    );
-  }
-
-  Widget _nodeStatus(NodeDetailState state) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        GestureDetector(
-          onTap: () {
-            print('test');
-          },
-          child: Column(
-            children: [
-              Container(
-                height: AppTheme.of(context).spacing.extraBig,
-                width: AppTheme.of(context).spacing.extraBig,
-                alignment: Alignment.center,
-                child: AppText.titleLarge(
-                  '${state.connectedDevices.length}',
-                ),
-              ),
-              AppText.bodyLarge(
-                getAppLocalizations(context).devices,
-              ),
-            ],
-          ),
-        ),
-        Column(
-          children: [
-            Container(
-              height: AppTheme.of(context).spacing.extraBig,
-              width: AppTheme.of(context).spacing.extraBig,
-              alignment: Alignment.center,
-              child: _getConnectionImage(state),
-            ),
-            AppText.bodyLarge(
-              state.isWiredConnection
-                  ? "Wired"
-                  : getWifiSignalLevel(state.signalStrength).displayTitle,
-            ),
-          ],
-        ),
-        Column(
-          children: [
-            Container(
-              height: AppTheme.of(context).spacing.extraBig,
-              width: AppTheme.of(context).spacing.extraBig,
-              alignment: Alignment.center,
-              child: AppSwitch(
-                value: state.isLightTurnedOn,
-                onChanged: (value) {
-                  ref.read(nodeDetailProvider.notifier).toggleNodeLight(value);
-                  //ref.read(navigationsProvider.notifier).push(NodeSwitchLightPath());
-                },
-              ),
-            ),
-            const AppText.bodyLarge(
-              'Light',
-            ),
-          ],
-        ),
-        isServiceSupport(JNAPService.setup9)
-            ? GestureDetector(
-                onTap: () {
-                  ref.read(nodeDetailProvider.notifier).toggleBlinkNode();
-                },
-                child: Column(
-                  children: [
-                    AppText.bodyMedium(state.blinkingStatus.value),
-                  ],
-                ),
-              )
-            : Container(),
-      ],
     );
   }
 
@@ -230,6 +137,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                       ),
                       child: Column(
                         children: [
+                          _generalSection(state),
                           _detailSection(state),
                           _lanSection(state),
                           if (state.isMaster) _wanSection(state),
@@ -246,25 +154,53 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
+  Widget _generalSection(NodeDetailState state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const AppGap.big(),
+        AppSimplePanel(
+          title: getAppLocalizations(context).name,
+          description: state.location,
+          onTap: () {
+            context.pushNamed(RouteNamed.changeNodeName);
+          },
+        ),
+        const Divider(height: 8),
+        AppPanelWithTrailWidget(
+          title: getAppLocalizations(context).node_detail_label_connected_to,
+          description: state.upstreamDevice,
+          trailing: _getConnectionImage(state),
+        ),
+        const Divider(height: 8),
+        AppSimplePanel(
+          title:
+              getAppLocalizations(context).node_detail_label_connected_devices,
+          description: '${state.connectedDevices.length} devices',
+        ),
+      ],
+    );
+  }
+
   Widget _detailSection(NodeDetailState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppGap.big(),
-        AppText.titleLarge(
+        AppText.labelSmall(
           getAppLocalizations(context).details_all_capital,
         ),
-        const AppGap.semiSmall(),
+        const Divider(height: 8),
         AppSimplePanel(
           title: getAppLocalizations(context).node_detail_label_serial_number,
           description: state.serialNumber,
         ),
-        const AppGap.semiSmall(),
+        const Divider(height: 8),
         AppSimplePanel(
           title: getAppLocalizations(context).node_detail_label_model_number,
           description: state.modelNumber,
         ),
-        const AppGap.semiSmall(),
+        const Divider(height: 8),
         Visibility(
           visible: ref.watch(deviceManagerProvider).isFirmwareUpToDate,
           replacement: AppSimplePanel(
@@ -288,7 +224,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppGap.semiSmall(),
-        AppText.titleLarge(
+        AppText.labelSmall(
           getAppLocalizations(context).node_detail_label_lan,
         ),
         const AppGap.semiSmall(),

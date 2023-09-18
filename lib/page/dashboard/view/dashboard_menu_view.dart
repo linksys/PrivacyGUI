@@ -77,7 +77,9 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                             ref
                                 .read(selectNetworkProvider.notifier)
                                 .refreshCloudNetworks();
-                            context.pushNamed(RouteNamed.selectNetwork);
+                            // context.pushNamed(RouteNamed.selectNetwork);
+                            shellNavigatorKey.currentContext!
+                                .pushNamed(RouteNamed.selectNetwork);
                           }
                         : null,
                     child: Row(
@@ -95,8 +97,9 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                 ),
               ],
             ),
+            const AppGap.regular(),
             AppSection.withList(
-              contentPadding: const AppEdgeInsets.big(),
+              contentPadding: const AppEdgeInsets.zero(),
               items: [
                 AppSectionItemData(
                     title: 'New Product',
@@ -106,19 +109,27 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                     iconData: getCharactersIcons(context).settingsDefault,
                     onTap: () {
                       shellNavigatorKey.currentContext!
-                          .pushNamed(RouteNamed.dashboardSettings);
+                          .pushReplacementNamed(RouteNamed.dashboardSettings);
                     }),
                 AppSectionItemData(
                     title: 'Account',
                     iconData: getCharactersIcons(context).administrationDefault,
                     onTap: () {
                       shellNavigatorKey.currentContext!
-                          .pushNamed(RouteNamed.accountInfo);
+                          .pushReplacementNamed(RouteNamed.accountInfo);
                       // context.pushNamed(RouteNamed.accountInfo);
                     }),
                 AppSectionItemData(
                     title: 'Help',
                     iconData: getCharactersIcons(context).helpRound),
+                AppSectionItemData(
+                    title: 'Linksys LinkUp',
+                    iconData: getCharactersIcons(context).bellDefault,
+                    onTap: () {
+                      shellNavigatorKey.currentContext!
+                          .pushReplacementNamed(RouteNamed.linkup);
+                      // context.pushNamed(RouteNamed.accountInfo);
+                    }),
               ],
             ),
             const Spacer(),
@@ -126,7 +137,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             AppTertiaryButton.noPadding('Log out', onTap: () {
               ref.read(authProvider.notifier).logout();
             }),
-            const AppGap.semiBig(),
+            AppTertiaryButton.noPadding('About Linksys', onTap: () {}),
             FutureBuilder(
                 future:
                     PackageInfo.fromPlatform().then((value) => value.version),
@@ -136,8 +147,6 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                     'version ${data.data}',
                   );
                 }),
-            AppTertiaryButton.noPadding('About Linksys', onTap: () {}),
-            const AppGap.semiBig(),
           ],
         ),
       ),

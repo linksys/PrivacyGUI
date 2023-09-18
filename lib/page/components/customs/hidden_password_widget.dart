@@ -20,7 +20,7 @@ class _HiddenPasswordWidgetState extends ConsumerState<HiddenPasswordWidget> {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        AppText.bodyMedium(
+        AppText.headlineMedium(
           _getPasswordContent(),
         ),
         const AppGap.semiSmall(),

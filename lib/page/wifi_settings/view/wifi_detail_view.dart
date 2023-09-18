@@ -4,8 +4,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/page/components/customs/hidden_password_widget.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
@@ -31,57 +31,76 @@ enum ShareWifiOption {
   final String iconId;
 }
 
-class ShareWifiView extends ArgumentsConsumerStatefulView {
-  const ShareWifiView({Key? key, super.args}) : super(key: key);
+class WifiDetailView extends ConsumerStatefulWidget {
+  final WifiListItem item;
+  const WifiDetailView({Key? key, required this.item}) : super(key: key);
 
   @override
-  ConsumerState<ShareWifiView> createState() => _ShareWifiViewState();
+  ConsumerState<WifiDetailView> createState() => _WifiDetailViewState();
 }
 
-class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
+class _WifiDetailViewState extends ConsumerState<WifiDetailView> {
   GlobalKey globalKey = GlobalKey();
-  late WifiListItem _currentItem;
   String get sharingContent =>
-      'Connect to my WiFi Network:\n${_currentItem.ssid}\n\nPassword: ${_currentItem.password}';
+      'Connect to my WiFi Network:\n${widget.item.ssid}\n\nPassword: ${widget.item.password}';
 
   @override
   initState() {
     super.initState();
-    _currentItem = ref.read(wifiSettingProvider).selectedWifiItem;
   }
 
-  Widget _wifiInfoSection() {
+  Widget _qrcodeSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AppGap.regular(),
-        AppText.bodyLarge(
-          _currentItem.ssid,
-        ),
-        HiddenPasswordWidget(password: _currentItem.password),
-        const AppGap.big(),
-        const AppText.titleLarge(
+        const AppText.labelLarge(
           'JOIN THIS NETWORK',
         ),
         const AppGap.regular(),
         RepaintBoundary(
           key: globalKey,
           child: Container(
-            height: 160,
-            width: 160,
-            child: AppPadding.regular(
-              child: QrImageView(
-                data: WiFiCredential(
-                  ssid: _currentItem.ssid,
-                  password: _currentItem.password,
-                  type: SecurityType
-                      .wpa, //TODO: The security type is fixed for now
-                ).generate(),
-              ),
+            height: 240,
+            width: 240,
+            child: QrImageView(
+              data: WiFiCredential(
+                ssid: widget.item.ssid,
+                password: widget.item.password,
+                type:
+                    SecurityType.wpa, //TODO: The security type is fixed for now
+              ).generate(),
             ),
           ),
         ),
+        const AppGap.regular(),
       ],
+    );
+  }
+
+  Widget _wifiInfoSection() {
+    return AppPadding.regular(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: AppSwitch(
+              value: widget.item.isWifiEnabled,
+            ),
+          ),
+          AppText.labelLarge('WiFi name'),
+          const AppGap.small(),
+          AppText.headlineMedium(
+            widget.item.ssid,
+          ),
+          const AppGap.regular(),
+          AppText.labelLarge('Password'),
+          const AppGap.small(),
+          HiddenPasswordWidget(password: widget.item.password),
+          const AppGap.small(),
+          AppText.labelLarge('${widget.item.numOfDevices} devices connected'),
+        ],
+      ),
     );
   }
 
@@ -216,17 +235,20 @@ class _ShareWifiViewState extends ConsumerState<ShareWifiView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
+      appBarStyle: AppBarStyle.none,
+      backState: StyledBackState.none,
       scrollable: true,
+      padding: const AppEdgeInsets.symmetric(horizontal: AppGapSize.semiBig),
       child: AppBasicLayout(
-        header: AppText.titleLarge(
-          'Share ${_currentItem.wifiType.displayTitle} WiFi',
-        ),
         content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppGap.big(),
-            _wifiInfoSection(),
+            const AppGap.regular(),
+            Card(child: _wifiInfoSection()),
             const AppGap.big(),
             _optionSection(),
+            const AppGap.big(),
+            _qrcodeSection(),
           ],
         ),
         crossAxisAlignment: CrossAxisAlignment.start,

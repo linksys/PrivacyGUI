@@ -4,7 +4,7 @@ import 'package:linksys_app/constants/_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum CloudEnvironment {
-  dev,
+  // dev,
   qa,
   prod;
 

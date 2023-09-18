@@ -50,6 +50,7 @@ class StyledAppTabPageView extends ConsumerWidget {
         child: AppTabLayout(
           flexibleSpace: FlexibleSpaceBar(
             background: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildAppBar(context, ref),
                 headerContent ?? Container(),

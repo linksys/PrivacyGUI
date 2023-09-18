@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
+import 'package:linksys_app/provider/wifi_setting/wifi_list_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -23,31 +23,29 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
   @override
   void initState() {
     super.initState();
-
-    ref.read(wifiSettingProvider.notifier).fetchAllRadioInfo();
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(wifiSettingProvider);
+    final state = ref.watch(wifiListProvider);
 
     return StyledAppPageView(
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: Visibility(
-          visible: state.wifiList.isNotEmpty,
+          visible: state.isNotEmpty,
           replacement: const AppFullScreenSpinner(),
           child: ListView.separated(
             physics: const ClampingScrollPhysics(),
-            itemCount: state.wifiList.length + 1,
+            itemCount: state.length,
             itemBuilder: (context, index) {
-              return index != state.wifiList.length
+              return index != state.length
                   ? GestureDetector(
                       behavior: HitTestBehavior.translucent,
                       onTap: () {
                         ref
                             .read(wifiSettingProvider.notifier)
-                            .selectWifi(state.wifiList[index]);
+                            .selectWifi(state[index]);
                         context.pushNamed(RouteNamed.wifiSettingsReview);
                       },
                       child: Column(
@@ -57,7 +55,7 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                             padding: const AppEdgeInsets.symmetric(
                                 vertical: AppGapSize.regular),
                             child: AppText.titleMedium(
-                              state.wifiList[index].wifiType.displayTitle,
+                              state[index].wifiType.displayTitle,
                             ),
                           ),
                           Row(
@@ -67,11 +65,11 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                               ),
                               const AppGap.semiSmall(),
                               AppText.bodyMedium(
-                                state.wifiList[index].ssid,
+                                state[index].ssid,
                               ),
                               const Spacer(),
                               AppText.bodyMedium(
-                                state.wifiList[index].isWifiEnabled
+                                state[index].isWifiEnabled
                                     ? getAppLocalizations(context)
                                         .on
                                         .toUpperCase()

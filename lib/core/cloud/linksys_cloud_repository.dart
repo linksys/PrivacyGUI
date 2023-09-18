@@ -3,10 +3,12 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_app/constants/_constants.dart';
+import 'package:linksys_app/core/cloud/linksys_requests/asset_service.dart';
 import 'package:linksys_app/core/cloud/linksys_requests/event_service.dart';
 import 'package:linksys_app/core/cloud/linksys_requests/smart_device_service.dart';
 import 'package:linksys_app/core/cloud/model/cloud_event_action.dart';
 import 'package:linksys_app/core/cloud/model/cloud_event_subscription.dart';
+import 'package:linksys_app/core/cloud/model/cloud_linkup.dart';
 import 'package:linksys_app/core/http/linksys_http_client.dart';
 import 'package:linksys_app/core/cloud/linksys_requests/authorization_service.dart';
 import 'package:linksys_app/core/cloud/linksys_requests/device_service.dart';
@@ -225,5 +227,12 @@ class LinksysCloudRepository {
         .then((token) =>
             _httpClient.deleteNetworkEventAction(token, eventSubscriptionId))
         .then((response) => response.statusCode == HttpStatus.ok);
+  }
+
+  // asset service
+  Future<CloudLinkUpModel> fetchLinkUp() {
+    return loadSessionToken()
+        .then((token) => _httpClient.fetchLinkup(token: token))
+        .then((response) => CloudLinkUpModel.fromJson(response.body));
   }
 }

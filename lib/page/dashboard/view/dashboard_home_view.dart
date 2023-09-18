@@ -96,15 +96,14 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   Widget _networkInfoTiles(DashboardHomeState state) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      child: Column(
+      padding: const EdgeInsets.symmetric(horizontal: 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _wifiInfoTile(state),
-          const AppGap.regular(),
-          _nodesInfoTile(state),
-          const AppGap.regular(),
-          _devicesInfoTile(state),
+          Flexible(child: _wifiInfoTile(state)),
+          Flexible(child: _nodesInfoTile(state)),
+          Flexible(child: _devicesInfoTile(state)),
         ],
       ),
     );
@@ -112,15 +111,15 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   Widget _wifiInfoTile(DashboardHomeState state) {
     int wifiCount = state.numOfWifi;
-    List<Widget> icons = [];
-    for (int i = 0; i < wifiCount; i++) {
-      icons.add(_circleIcon(
-          //TODO: XXXXXX Get wifi signal
-          image: const AssetImage('assets/images/wifi_signal_3.png')));
-    }
+    // List<Widget> icons = [];
+    // for (int i = 0; i < wifiCount; i++) {
+    //   icons.add(_circleIcon(
+    //       //TODO: XXXXXX Get wifi signal
+    //       image: const AssetImage('assets/images/wifi_signal_3.png')));
+    // }
     return _infoTile(
       iconData: getCharactersIcons(context).wifiDefault,
-      text: 'WiFi ($wifiCount)',
+      text: 'WiFi $wifiCount',
       onTap: () {
         context.pushNamed(RouteNamed.wifiShare);
       },
@@ -132,7 +131,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         AppTheme.of(context).images.devices.getByName(state.masterIcon);
     return _infoTile(
       image: image,
-      text: 'Nodes (${state.numOfNodes})',
+      text: 'Nodes ${state.numOfNodes}',
       onTap: () {
         context.pushNamed(RouteNamed.settingsNodes);
       },
@@ -141,37 +140,11 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   Widget _devicesInfoTile(DashboardHomeState state) {
     return _infoTile(
-      text: '${state.numOfOnlineExternalDevices} devices online',
+      text: '${state.numOfOnlineExternalDevices} devices',
       iconData: getCharactersIcons(context).devicesDefault,
       onTap: () {
         context.goNamed(RouteNamed.dashboardDevices);
       },
-    );
-  }
-
-  Widget _circleIcon({ImageProvider? image, SvgPicture? svgPicture}) {
-    // Check input only one kind of image
-    assert(image != null || svgPicture != null);
-    assert(!(image != null && svgPicture != null));
-
-    Widget child = Container();
-    final image0 = image;
-    if (image0 != null) {
-      child = Image(
-        image: image0,
-        width: 30,
-        height: 30,
-      );
-    } else {
-      child = svgPicture!;
-    }
-    return CircleAvatar(
-      radius: 23,
-      child: CircleAvatar(
-        radius: 22,
-        backgroundColor: Colors.white,
-        child: child,
-      ),
     );
   }
 
@@ -183,15 +156,10 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   }) {
     return InkWell(
       onTap: onTap,
-      child: Row(
-        children: [
-          AppCard(
-            iconData: iconData,
-            image: image,
-          ),
-          const AppGap.regular(),
-          AppText.labelLarge(text)
-        ],
+      child: AppCard(
+        iconData: iconData,
+        image: image,
+        title: text,
       ),
     );
   }
@@ -199,15 +167,15 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   Widget _speedTestTile(DashboardHomeState state) {
     return SizedBox(
       width: double.infinity,
-      height: 80,
+      height: 160,
       child: Card(
         elevation: 10,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(100.0),
+          borderRadius: BorderRadius.circular(10.0),
         ),
         child: AppPadding(
           padding: const AppEdgeInsets.symmetric(
-              horizontal: AppGapSize.regular, vertical: AppGapSize.semiSmall),
+              horizontal: AppGapSize.regular, vertical: AppGapSize.regular),
           child: _speedResult(state),
         ),
       ),
@@ -219,13 +187,14 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        AppText.titleLarge('Speed'),
         Expanded(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -243,7 +212,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               ),
               Expanded(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -257,18 +226,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                     ),
                     Text('${state.downloadResult.unit}ps'),
                   ],
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  // GoRouter helath check
-                },
-                child: CircleAvatar(
-                  radius: 21,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  child: AppText.labelLarge(
-                    'Go',
-                  ),
                 ),
               ),
             ],

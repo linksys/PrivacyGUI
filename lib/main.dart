@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/page/dashboard/view/dashboard_menu_view.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
@@ -46,9 +47,7 @@ void main() async {
     HttpOverrides.global = MyHTTPOverrides();
   }
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  if (!kIsWeb) {
-    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-  }
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await Storage.init();
   logger.v('App Start');
   await initLog();
@@ -152,11 +151,9 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
       builder: (context, child) => Container(
         color: Theme.of(context).colorScheme.shadow,
         child: AppResponsiveTheme(
-          leftFragment:
-              (ref.read(authProvider).value?.loginType ?? LoginType.none) !=
-                      LoginType.none
-                  ? const DashboardMenuView()
-                  : null,
+          leftFragment: ref.read(deviceManagerProvider.notifier).isEmptyState()
+              ? const DashboardMenuView()
+              : null,
           child: child ?? const Center(),
         ),
       ),
@@ -169,14 +166,15 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     logger.v('didChangeAppLifecycleState: ${state.name}');
+    if (state == AppLifecycleState.resumed) {
+      ref.read(connectivityProvider.notifier).forceUpdate();
+    }
   }
 
   _initAuth() {
     ref.read(authProvider.notifier).init().then((_) {
       logger.d('init auth finish');
-      if (!kIsWeb) {
-        FlutterNativeSplash.remove();
-      }
+      FlutterNativeSplash.remove();
     });
   }
 

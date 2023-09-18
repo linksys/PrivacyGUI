@@ -38,6 +38,7 @@ import 'package:linksys_app/page/dashboard/view/notifications/notification_setti
 import 'package:linksys_app/page/dashboard/view/topology/_topology.dart';
 import 'package:linksys_app/page/dashboard/view/topology/topology_view.dart';
 import 'package:linksys_app/page/landing/view/_view.dart';
+import 'package:linksys_app/page/linkup/view/linkup_view.dart';
 import 'package:linksys_app/page/login/view/_view.dart';
 import 'package:linksys_app/page/otp_flow/view/_view.dart';
 import 'package:linksys_app/page/wifi_settings/view/_view.dart';

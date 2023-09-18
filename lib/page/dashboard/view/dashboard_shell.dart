@@ -14,6 +14,7 @@ import 'package:linksys_app/util/debug_mixin.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/theme/color_schemes_ext.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -36,7 +37,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
     with DebugObserver {
   int _selectedIndex = 1;
   final List<DashboardBottomItem> _bottomTabItems = [];
-
+  static final showBottomSheetList = [
+    RoutePath.dashboardHome,
+    RoutePath.dashboardMenu
+  ];
   @override
   void initState() {
     super.initState();
@@ -54,6 +58,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
     if (width > 768 && _selectedIndex == 0) {
       _onItemTapped(1);
     }
+    final lastPage = GoRouter.of(context)
+        .routerDelegate
+        .currentConfiguration
+        .last
+        .matchedLocation;
     return StyledAppPageView(
       backState: StyledBackState.none,
       appBarStyle: AppBarStyle.none,
@@ -62,32 +71,43 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
       padding: const AppEdgeInsets.zero(),
       bottomNavigationBar: Offstage(
         offstage: width > 768,
-        child: BottomNavigationBar(
-            type: BottomNavigationBarType.shifting,
-            iconSize:
-                AppTheme.of(context).icons.sizes.resolve(AppIconSize.regular),
-            // selectedFontSize:
-            //     AppTheme.of(context).icons.sizes.resolve(AppIconSize.small),
-            selectedIconTheme: IconThemeData(
-              color: Theme.of(context).colorScheme.onSurface,
-              size:
-                  AppTheme.of(context).icons.sizes.resolve(AppIconSize.regular),
-            ),
-            selectedItemColor: Theme.of(context).colorScheme.onSurface,
-            unselectedIconTheme: IconThemeData(
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-            unselectedItemColor:
-                Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-            // unselectedFontSize:
-            //     AppTheme.of(context).icons.sizes.resolve(AppIconSize.small),
-            showSelectedLabels: true,
-            showUnselectedLabels: true,
-            currentIndex: _selectedIndex,
-            //New
-            onTap: _onItemTapped,
-            items:
-                List.from(_bottomTabItems.map((e) => _bottomSheetIconView(e)))),
+        child: !showBottomSheetList.contains(lastPage)
+            ? null
+            : BottomNavigationBar(
+                useLegacyColorScheme: false,
+                backgroundColor: Theme.of(context)
+                    .extension<ColorSchemeExt>()
+                    ?.surfaceContainer,
+                type: BottomNavigationBarType.fixed,
+                iconSize: AppTheme.of(context)
+                    .icons
+                    .sizes
+                    .resolve(AppIconSize.regular),
+                // selectedFontSize:
+                //     AppTheme.of(context).icons.sizes.resolve(AppIconSize.small),
+                selectedIconTheme: IconThemeData(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  size: AppTheme.of(context)
+                      .icons
+                      .sizes
+                      .resolve(AppIconSize.regular),
+                ),
+                selectedItemColor:
+                    Theme.of(context).colorScheme.primaryContainer,
+                unselectedIconTheme: IconThemeData(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                unselectedItemColor:
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                // unselectedFontSize:
+                //     AppTheme.of(context).icons.sizes.resolve(AppIconSize.small),
+                showSelectedLabels: false,
+                showUnselectedLabels: false,
+                currentIndex: _selectedIndex,
+                //New
+                onTap: _onItemTapped,
+                items: List.from(
+                    _bottomTabItems.map((e) => _bottomSheetIconView(e)))),
       ),
       child: Stack(
         children: [
@@ -131,8 +151,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
       icon: Icon(
         getCharactersIcons(context).getByName(item.iconId),
       ),
-      activeIcon: CircleAvatar(
-        backgroundColor: Colors.transparent,
+      activeIcon: Container(
+        decoration: BoxDecoration(
+          borderRadius: const BorderRadius.all(Radius.circular(100)),
+          shape: BoxShape.rectangle,
+          color: Theme.of(context).colorScheme.primaryContainer,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
         child: Icon(
           getCharactersIcons(context).getByName(item.iconId),
         ),

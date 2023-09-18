@@ -15,7 +15,6 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
-import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -82,12 +81,12 @@ class _HomeViewState extends ConsumerState<HomeView> {
           }
         },
       ),
-      AppSecondaryButton(
-        getAppLocalizations(context).setup_new_router,
-        key: const Key('home_view_button_setup'),
-        onTap: null,
-      ),
-      ...showDebugButton(),
+      // AppSecondaryButton(
+      //   getAppLocalizations(context).setup_new_router,
+      //   key: const Key('home_view_button_setup'),
+      //   onTap: null,
+      // ),
+      // ...showDebugButton(),
       Stack(
         children: [
           Center(

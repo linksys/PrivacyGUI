@@ -80,6 +80,9 @@ class RoutePath {
   static const selectDevice = 'selectDevice';
   static const selectProtocol = 'selectProtocol';
 
+  /// linkup
+  static const linkup = 'linkup';
+
   /// debug
   static const debug = 'debug';
 }
@@ -165,6 +168,9 @@ class RouteNamed {
   static const protRangeTriggeringRule = 'portRangeTriggeringRule';
   static const selectDevice = 'selectDevice';
   static const selectProtocol = 'selectProtocol';
+
+  /// linkup
+  static const linkup = 'linkup';
 
   /// debug
   static const debug = 'debug';

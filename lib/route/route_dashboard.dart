@@ -22,6 +22,11 @@ final dashboardRoute = ShellRoute(
                   builder: (context, state) => TwoStepVerificationView(),
                 ),
               ]),
+          GoRoute(
+            name: RouteNamed.linkup,
+            path: RoutePath.linkup,
+            builder: (context, state) => LinkupView(),
+          )
         ]),
     GoRoute(
         name: RouteNamed.dashboardHome,
@@ -32,15 +37,6 @@ final dashboardRoute = ShellRoute(
             name: RouteNamed.wifiShare,
             path: RoutePath.wifiShare,
             builder: (context, state) => WifiListView(),
-            routes: [
-              GoRoute(
-                name: RouteNamed.wifiShareDetails,
-                path: RoutePath.wifiShareDetails,
-                builder: (context, state) => ShareWifiView(
-                  args: state.uri.queryParameters,
-                ),
-              ),
-            ],
           ),
           GoRoute(
             name: RouteNamed.dashboardDevices,

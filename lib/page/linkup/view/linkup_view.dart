@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
+import 'package:linksys_app/core/cloud/model/cloud_linkup.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/panel/general_expansion.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 const tempData = {
@@ -52,13 +56,12 @@ class LinkupView extends ConsumerStatefulWidget {
 }
 
 class _LinkupViewState extends ConsumerState<LinkupView> {
-  late final Future<Map<String, dynamic>> _future;
+  late final Future<CloudLinkUpModel> _future;
 
   @override
   initState() {
     super.initState();
-    _future =
-        Future.delayed(const Duration(seconds: 1)).then((value) => tempData);
+    _future = ref.read(cloudRepositoryProvider).fetchLinkUp();
   }
 
   @override
@@ -70,6 +73,8 @@ class _LinkupViewState extends ConsumerState<LinkupView> {
             // Check for errors
             if (snapshot.hasError) {
               // TODO Something wrong here
+              logger.e('',
+                  error: snapshot.error, stackTrace: snapshot.stackTrace);
               return const Center(
                 child: AppText.bodyLarge('Unexceped error'),
               );
@@ -91,16 +96,16 @@ class _LinkupViewState extends ConsumerState<LinkupView> {
                     child: AppText.titleLarge('Linksys linkup'),
                   ),
                   const AppGap.regular(),
-                  AppText.bodyLarge(data['subject'] ?? ''),
+                  AppText.bodyLarge(data.subject ?? ''),
                   const AppGap.big(),
-                  ...List.from(data['contents']).map((content) {
-                    return ExpansionTile(
+                  ...data.contents.map((content) {
+                    return AppExpansion(
                       initiallyExpanded: true,
-                      title: AppText.titleLarge(content['category']),
-                      children: List.from(content['items'])
+                      title: content.category,
+                      children: content.items
                           .map((item) => AppSimplePanel(
-                                title: item['title'],
-                                description: item['body'],
+                                title: item.title,
+                                description: item.body,
                               ))
                           .toList(),
                     );

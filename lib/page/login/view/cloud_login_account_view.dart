@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -150,13 +151,14 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
                 onTap:
                     _accountController.text.isNotEmpty ? _prepareLogin : null,
               ),
-              AppSecondaryButton(
-                  getAppLocalizations(context)
-                      .cloud_account_login_with_router_password,
-                  key: const Key('login_view_button_login_router_password'),
-                  onTap: () {
-                // Go Router
-              }),
+              if (!kIsWeb)
+                AppSecondaryButton(
+                    getAppLocalizations(context)
+                        .cloud_account_login_with_router_password,
+                    key: const Key('login_view_button_login_router_password'),
+                    onTap: () {
+                  // Go Router
+                }),
             ],
           ),
         ));

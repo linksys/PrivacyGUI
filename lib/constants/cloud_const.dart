@@ -48,7 +48,7 @@ const kCloudEnvironmentConfigDev = {
 const Map<CloudEnvironment, dynamic> kCloudEnvironmentMap = {
   CloudEnvironment.prod: kCloudEnvironmentConfigProd,
   CloudEnvironment.qa: kCloudEnvironmentConfigQa,
-  CloudEnvironment.dev: kCloudEnvironmentConfigDev,
+  // CloudEnvironment.dev: kCloudEnvironmentConfigDev,
 };
 
 // Variable replacements
@@ -65,6 +65,7 @@ const kUserService = '/cloud/user-service';
 const kDeviceService = '/cloud/device-service';
 const kSmartDeviceService = '/cloud/smart-device-service';
 const kEventService = '/cloud/event-service';
+const kAssetService = '/cloud/asset-service';
 
 /// Cloud API Endpoint
 // Authorization service
@@ -97,6 +98,8 @@ const kEventeSubscriptionCreate =
     '$kEventService/rest/clients/self/accounts/self/networks/$kVarNetworkId/eventsubscriptions';
 const kEventNetworkActionCreate =
     '$kEventService/rest/eventsubscriptions/$kVarEventSubscriptionId/actions';
+// Asset service
+const kFetchLinkup = '$kAssetService/rest/assets/linkup';
 
 // Client type id/secret
 final kClientTypeId = clientTypeID;

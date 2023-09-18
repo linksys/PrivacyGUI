@@ -242,16 +242,16 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   }
 
   RawDevice? findParent(String deviceID) {
-    final node = state.deviceList
+    final device = state.deviceList
         .firstWhereOrNull((element) => element.deviceID == deviceID);
-    if (node == null) {
+    if (device == null) {
       return null;
     }
-    if (node.connections.isEmpty) {
+    if (device.connections.isEmpty) {
       return null;
     }
     String? parentIpAddr;
-    for (var element in node.connections) {
+    for (var element in device.connections) {
       for (var backhaul in state.backhaulInfoData) {
         if (backhaul.ipAddress == element.ipAddress) {
           parentIpAddr = backhaul.parentIPAddress;
@@ -259,13 +259,20 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
         }
       }
     }
-    if (parentIpAddr == null) {
-      return null;
+    //
+    if (parentIpAddr != null) {
+      return state.deviceList.firstWhereOrNull((element) =>
+          element.connections.firstWhereOrNull(
+              (element) => element.ipAddress == parentIpAddr) !=
+          null);
     }
-    return state.deviceList.firstWhereOrNull((element) =>
-        element.connections
-            .firstWhereOrNull((element) => element.ipAddress == parentIpAddr) !=
-        null);
+    //
+    // There usually be only one item
+    final parentDeviceId = device.connections.firstOrNull?.parentDeviceID;
+    // Count it if this item's parentId is the target node,
+    // or if its parentId is null and the target node is master
+    return state.deviceList
+        .firstWhereOrNull((element) => parentDeviceId == element.deviceID);
   }
 
   // Update the name(location) of nodes and external devices

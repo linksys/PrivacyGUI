@@ -4,13 +4,9 @@ import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 
 class WifiSettingState extends Equatable {
-  final List<WifiListItem> wifiList;
   final WifiListItem selectedWifiItem;
-  final List<RouterRadioInfo>? mainRadioInfo;
-  final GuestRadioSetting? guestRadioInfo;
 
   const WifiSettingState({
-    this.wifiList = const [],
     this.selectedWifiItem = const WifiListItem(
         wifiType: WifiType.main,
         ssid: '',
@@ -20,30 +16,19 @@ class WifiSettingState extends Equatable {
         isWifiEnabled: false,
         numOfDevices: 0,
         signal: 0),
-    this.mainRadioInfo,
-    this.guestRadioInfo,
   });
 
   WifiSettingState copyWith({
-    List<WifiListItem>? wifiList,
     WifiListItem? selectedWifiItem,
-    List<RouterRadioInfo>? mainRadioInfo,
-    GuestRadioSetting? guestRadioInfo,
   }) {
     return WifiSettingState(
-      wifiList: wifiList ?? this.wifiList,
       selectedWifiItem: selectedWifiItem ?? this.selectedWifiItem,
-      mainRadioInfo: mainRadioInfo ?? this.mainRadioInfo,
-      guestRadioInfo: guestRadioInfo ?? this.guestRadioInfo,
     );
   }
 
   @override
   List<Object?> get props => [
-        wifiList,
         selectedWifiItem,
-        mainRadioInfo,
-        guestRadioInfo,
       ];
 }
 
@@ -54,6 +39,7 @@ class WifiListItem extends Equatable {
   final WifiSecurityType securityType;
   final WifiSecurityType? security6GType;
   final WifiMode mode;
+  final String? band;
   final bool isWifiEnabled;
   final int numOfDevices;
   final int signal;
@@ -65,6 +51,7 @@ class WifiListItem extends Equatable {
     required this.securityType,
     this.security6GType,
     required this.mode,
+    this.band,
     required this.isWifiEnabled,
     required this.numOfDevices,
     required this.signal,
@@ -78,6 +65,7 @@ class WifiListItem extends Equatable {
         securityType,
         security6GType,
         mode,
+        band,
         isWifiEnabled,
         numOfDevices,
         signal,
@@ -90,6 +78,7 @@ class WifiListItem extends Equatable {
     WifiSecurityType? securityType,
     WifiSecurityType? security6GType,
     WifiMode? mode,
+    String? band,
     bool? isWifiEnabled,
     int? numOfDevices,
     int? signal,
@@ -101,6 +90,7 @@ class WifiListItem extends Equatable {
       securityType: securityType ?? this.securityType,
       security6GType: security6GType ?? this.security6GType,
       mode: mode ?? this.mode,
+      band: band ?? this.band,
       isWifiEnabled: isWifiEnabled ?? this.isWifiEnabled,
       numOfDevices: numOfDevices ?? this.numOfDevices,
       signal: signal ?? this.signal,
