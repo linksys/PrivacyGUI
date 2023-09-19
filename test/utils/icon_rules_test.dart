@@ -4,12 +4,19 @@ import 'package:linksys_app/core/utils/icon_rules.dart';
 
 void main() {
   group('test iconTest series', () {
-    test('test iconTest - MR9500', () {
+    test('test iconTest - Unknown model number', () {
       const deviceJson = '''
-    {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "MR9500", "hardwareVersion": "1"}}
+    {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "MX57CF", "hardwareVersion": "1"}}
     ''';
       final result = iconTest(jsonDecode(deviceJson));
-      expect(result, 'routerMr9500');
+      expect(result, 'genericDevice');
+    });
+    test('test iconTest - MR9600', () {
+      const deviceJson = '''
+    {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "MR9600", "hardwareVersion": "1"}}
+    ''';
+      final result = iconTest(jsonDecode(deviceJson));
+      expect(result, 'routerEa9350');
     });
     test('test iconTest - Oak', () {
       const deviceJson = '''
@@ -81,7 +88,6 @@ void main() {
           "hardwareVersion": null,
           "modelDescription": null
         },
-
       };
       final result = iconTest(device);
       expect(result, 'laptopMac');
@@ -89,9 +95,13 @@ void main() {
   });
 
   group('test testRouterIcon series', () {
-    test('test routerIconTest - MR9500', () {
+    test('test routerIconTest - Unknown model number', () {
       final result = routerIconTest(modelNumber: 'MR9500');
-      expect(result, 'routerMr9500');
+      expect(result, 'genericDevice');
+    });
+    test('test routerIconTest - MR9600', () {
+      final result = routerIconTest(modelNumber: 'MR9600');
+      expect(result, 'routerEa9350');
     });
     test('test routerIconTest - Oak', () {
       final result = routerIconTest(modelNumber: 'MBE7000');

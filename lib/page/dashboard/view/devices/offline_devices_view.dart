@@ -61,7 +61,7 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
   Widget _buildDeviceCell(DeviceListItem item) {
     return AppPadding(
       padding: const AppEdgeInsets.symmetric(horizontal: AppGapSize.regular),
-      child: AppDevicePanel.normal(
+      child: AppDevicePanel.offline(
         headerChecked: _removeIDs.contains(item.deviceId),
         onHeaderChecked: _isEdit
             ? (value) {
@@ -77,10 +77,7 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
               }
             : null,
         title: item.name,
-        place: '',
-        band: '',
         deviceImage: AppTheme.of(context).images.devices.getByName(item.icon),
-        rssiIcon: null,
         onTap: !item.isOnline
             ? null
             : () {

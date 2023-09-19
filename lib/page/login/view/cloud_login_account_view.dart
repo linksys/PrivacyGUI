@@ -145,7 +145,7 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
                       onTap: () {}),
                 ),
               const Spacer(),
-              AppPrimaryButton(
+              AppPrimaryButton.fillWidth(
                 getAppLocalizations(context).login,
                 key: const Key('login_view_button_continue'),
                 onTap:

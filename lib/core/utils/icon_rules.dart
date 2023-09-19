@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:linksys_app/core/utils/extension.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 
 const List<Map<String, dynamic>> iconRules = [
   {
@@ -122,6 +123,13 @@ const List<Map<String, dynamic>> iconRules = [
       },
     },
     'iconClass': 'routerMx5500',
+  },
+  {
+    'description': 'Linksys MX5600 (MX56/Palm Variants; "MX5600 Series")',
+    'test': {
+      'model': {'manufacturer': 'Linksys|Belkin', 'modelNumber': '^mx56'}
+    },
+    'iconClass': 'routerMx5600'
   },
   {
     'description': 'Linksys MX6200 (MX62/Maple Variants; "MX6200 Series")',
@@ -678,7 +686,7 @@ const List<Map<String, dynamic>> iconRules = [
   }
 ];
 
-String _iconMapping(String iconClass) {
+String _iconMapping(String iconClass, {String? fallback}) {
   switch (iconClass) {
     //
     case 'routerE4200':
@@ -767,6 +775,7 @@ String _iconMapping(String iconClass) {
     case 'routerWhw0301':
     case 'routerWhw03':
     case 'routerMx5500':
+    case 'routerMx5600':
     case 'routerMx2000':
       return 'linksysVelop';
     //
@@ -779,9 +788,13 @@ String _iconMapping(String iconClass) {
     case 'routerVlp01b':
       return 'routerWhw01b';
     //
+    case 'routerLn11':
+      return 'routerLn11';
+    case 'routerLn12':
+      return 'routerLn12';
     default:
       // do router check
-      return iconClass;
+      return fallback ?? 'genericDevice';
   }
 }
 
@@ -814,9 +827,8 @@ String iconTest(Map<String, dynamic> target) {
     final capitalized = modelNumber.capitalized();
     return _iconMapping('router$capitalized');
   } else if (iconClass is String) {
-    return _iconMapping(iconClass);
+    return _iconMapping(iconClass, fallback: iconClass);
   }
-
   return _iconMapping(result['iconClass'] as String? ?? 'genericDevice');
 }
 

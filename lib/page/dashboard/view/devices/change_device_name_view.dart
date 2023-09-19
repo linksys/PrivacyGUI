@@ -71,7 +71,7 @@ class __ChangeDeviceNameViewState extends ConsumerState<ChangeDeviceNameView> {
   void _onNameChanged(String text) {
     setState(() {
       isChanged = true;
-      nameController.text = text;
+      // nameController.text = text;
     });
   }
 }

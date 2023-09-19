@@ -78,9 +78,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                             ref
                                 .read(selectNetworkProvider.notifier)
                                 .refreshCloudNetworks();
-                            // context.pushNamed(RouteNamed.selectNetwork);
-                            shellNavigatorKey.currentContext!
-                                .pushNamed(RouteNamed.selectNetwork);
+
+                            _navigateTo(RouteNamed.selectNetwork);
                           }
                         : null,
                     child: Row(

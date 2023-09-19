@@ -148,7 +148,7 @@ class _LoginTraditionalPasswordViewState
                   _checkBiometrics(context, snapshot),
             ),
             const Spacer(),
-            AppPrimaryButton(
+            AppPrimaryButton.fillWidth(
               getAppLocalizations(context).text_continue,
               key: const Key('login_password_view_button_continue'),
               onTap: passwordController.text.isEmpty

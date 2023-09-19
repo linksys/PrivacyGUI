@@ -182,14 +182,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 const Divider(
                   height: 8,
                 ),
-                GestureDetector(
+                AppSimplePanel(
+                  title: state.blinkingStatus.value,
+                  description: 'Blink node function',
                   onTap: () {
                     ref.read(nodeDetailProvider.notifier).toggleBlinkNode();
                   },
-                  child: AppSimplePanel(
-                    title: state.blinkingStatus.value,
-                    description: 'Blink node function',
-                  ),
                 )
               ]
             : [],

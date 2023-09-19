@@ -68,7 +68,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
     final goRouter = GoRouter.of(context);
 
     return Column(children: [
-      AppPrimaryButton(
+      AppPrimaryButton.fillWidth(
         getAppLocalizations(context).login,
         key: const Key('home_view_button_login'),
         onTap: () async {

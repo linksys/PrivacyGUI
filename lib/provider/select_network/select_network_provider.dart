@@ -30,7 +30,7 @@ class SelectNetworkNotifier extends AsyncNotifier<SelectNetworkState> {
                 modelNumber: element.network.routerModelNumber,
                 hardwareVersion: element.network.routerHardwareVersion))
             .map((e) async {
-      return CloudNetworkModel(
+            return CloudNetworkModel(
         network: e.network,
         isOnline: false,
       );

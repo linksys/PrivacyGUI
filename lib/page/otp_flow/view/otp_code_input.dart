@@ -137,7 +137,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
                 ),
               ),
             const Spacer(),
-            AppPrimaryButton(
+            AppPrimaryButton.fillWidth(
               'Next',
               onTap: _otpController.text.length >= 6
                   ? () {

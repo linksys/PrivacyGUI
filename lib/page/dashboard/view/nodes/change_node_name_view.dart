@@ -73,7 +73,7 @@ class __ChangeNodeNameViewState extends ConsumerState<ChangeNodeNameView> {
   void _onNameChanged(String text) {
     setState(() {
       isChanged = true;
-      nameController.text = text;
+      // nameController.text = text;
     });
   }
 }

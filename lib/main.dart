@@ -175,7 +175,10 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
 
   Widget _build(Widget child) {
     return LayoutBuilder(builder: ((context, constraints) {
-      if (constraints.maxWidth > 768) {
+      final isDone = ref
+          .watch(deviceManagerProvider.select((value) => value.deviceList))
+          .isNotEmpty;
+      if (constraints.maxWidth > 768 && isDone) {
         return Row(
           children: [
             SizedBox(
