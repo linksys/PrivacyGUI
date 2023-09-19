@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/page/components/customs/hidden_password_widget.dart';
+import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/core/utils/logger.dart';
@@ -120,37 +121,19 @@ class _WifiDetailViewState extends ConsumerState<WifiDetailView> {
 
     return Column(
         children: List.generate(options.length, (index) {
-      return Column(
-        children: [
-          GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            // child: Container(
-            //   child: AppText.textLinkLarge(
-            //     options[index].displayTitle,
-            //   ),
-            //   height: 80,
-            //   alignment: Alignment.centerLeft,
-            // ),
-            child: AppSimplePanel(
-              title: options[index].displayTitle,
-              icon:
-                  getCharactersIcons(context).getByName(options[index].iconId),
-            ),
-            onTap: () {
-              _onOptionTapped(options[index]);
-            },
-          ),
-        ],
+      return AppSimplePanel(
+        title: options[index].displayTitle,
+        icon: getCharactersIcons(context).getByName(options[index].iconId),
+        onTap: () {
+          _onOptionTapped(options[index]);
+        },
       );
     }));
   }
 
-  void _shareByClipboard() async {
-    await Clipboard.setData(ClipboardData(text: sharingContent));
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: AppText.bodyLarge(
-      'Copied to clipboard',
-    )));
+  void _shareByClipboard() {
+    Clipboard.setData(ClipboardData(text: sharingContent))
+        .then((value) => showSuccessSnackBar(context, 'Copied to clipboard'));
   }
 
   void _shareByQrCode() async {

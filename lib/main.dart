@@ -165,17 +165,30 @@ class _MoabAppState extends ConsumerState<MoabApp> with WidgetsBindingObserver {
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => Container(
         color: Theme.of(context).colorScheme.shadow,
-        child: AppResponsiveTheme(
-          leftFragment: ref.read(deviceManagerProvider.notifier).isEmptyState()
-              ? const DashboardMenuView()
-              : null,
-          child: child ?? const Center(),
-        ),
+        child: AppResponsiveTheme(child: _build(child ?? Center())),
       ),
       routeInformationProvider: router.routeInformationProvider,
       routeInformationParser: router.routeInformationParser,
       routerDelegate: router.routerDelegate,
     );
+  }
+
+  Widget _build(Widget child) {
+    return LayoutBuilder(builder: ((context, constraints) {
+      if (constraints.maxWidth > 768) {
+        return Row(
+          children: [
+            SizedBox(
+              width: 320,
+              child: const DashboardMenuView(),
+            ),
+            Expanded(child: Container(child: child)),
+          ],
+        );
+      } else {
+        return child;
+      }
+    }));
   }
 
   @override

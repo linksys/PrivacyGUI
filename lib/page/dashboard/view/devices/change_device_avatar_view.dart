@@ -3,7 +3,6 @@ import 'dart:core';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/provider/devices/external_device_detail_provider.dart';
@@ -11,7 +10,6 @@ import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 import '../../../components/views/arguments_view.dart';
@@ -30,15 +28,17 @@ class ChangeDeviceAvatarView extends ArgumentsConsumerStatefulView {
 class __ChangeDeviceAvatarViewState
     extends ConsumerState<ChangeDeviceAvatarView> {
   bool isChanged = false;
-  late List<dynamic> avatars;
+  // late List<dynamic> avatars;
 
   @override
-  void initState() {}
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(externalDeviceDetailProvider);
-    avatars = getAllDeviceAvatars();
+    // avatars = getAllDeviceAvatars();
     return StyledAppPageView(
       title: getAppLocalizations(context).device_name,
       child: AppBasicLayout(
@@ -63,25 +63,29 @@ class __ChangeDeviceAvatarViewState
       physics: const ScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3, childAspectRatio: (3 / 2)),
-      itemCount: avatars.length,
+      itemCount: deviceAvatarNameList.length,
       itemBuilder: (context, index) {
         return GestureDetector(
           onTap: () {
-            context.pop();
+            context.pop(deviceAvatarNameList[index]);
           },
-          child: AppDeviceAvatar.large(image: avatars[index]),
+          child: AppDeviceAvatar.large(
+              image: AppTheme.of(context)
+                  .images
+                  .devices
+                  .getByName(deviceAvatarNameList[index])),
         );
       },
     ));
   }
 
-  List<dynamic> getAllDeviceAvatars() {
-    var list = [];
-    for (var element in deviceAvatarNameList) {
-      list.add(AppTheme.of(context).images.devices.getByName(element));
-    }
-    return list;
-  }
+  // List<dynamic> getAllDeviceAvatars() {
+  //   var list = [];
+  //   for (var element in deviceAvatarNameList) {
+  //     list.add(AppTheme.of(context).images.devices.getByName(element));
+  //   }
+  //   return list;
+  // }
 }
 
 const deviceAvatarNameList = [

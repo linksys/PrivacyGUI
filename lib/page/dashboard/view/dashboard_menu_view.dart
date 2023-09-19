@@ -151,7 +151,11 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
 
   void _navigateTo(String name) {
     if (kIsWeb) {
-      shellNavigatorKey.currentContext!.pushReplacementNamed(name);
+      if (shellNavigatorKey.currentContext!.canPop()) {
+        shellNavigatorKey.currentContext!.pushReplacementNamed(name);
+      } else {
+        shellNavigatorKey.currentContext!.pushNamed(name);
+      }
     } else {
       shellNavigatorKey.currentContext!.pushNamed(name);
     }

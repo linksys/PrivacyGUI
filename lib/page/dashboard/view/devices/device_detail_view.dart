@@ -69,8 +69,11 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       child: Column(
         children: [
           GestureDetector(
-            onTap: () {
-              context.goNamed(RouteNamed.changeDeviceAvatar);
+            onTap: () async {
+              final result = await context.pushNamed<String?>(RouteNamed.changeDeviceAvatar);
+              if (result != null) {
+                // update property
+              }
             },
             child: _deviceAvatar(state.item.icon),
           ),
