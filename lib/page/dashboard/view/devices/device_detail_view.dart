@@ -6,6 +6,7 @@ import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/provider/devices/external_device_detail_provider.dart';
 import 'package:linksys_app/provider/devices/external_device_detail_state.dart';
+import 'package:linksys_app/provider/devices/topology_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -70,7 +71,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         children: [
           GestureDetector(
             onTap: () async {
-              final result = await context.pushNamed<String?>(RouteNamed.changeDeviceAvatar);
+              final result = await context
+                  .pushNamed<String?>(RouteNamed.changeDeviceAvatar);
               if (result != null) {
                 // update property
               }
@@ -205,6 +207,11 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         AppSimplePanel(
           title: getAppLocalizations(context).node_detail_label_connected_to,
           description: state.item.upstreamDevice,
+          onTap: () {
+            ref.read(topologySelectedIdProvider.notifier).state =
+                state.item.deviceId;
+            context.pushNamed(RouteNamed.settingsNodes);
+          },
         ),
       ],
     );

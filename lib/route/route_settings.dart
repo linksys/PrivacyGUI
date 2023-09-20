@@ -39,7 +39,9 @@ final settings = [
   GoRoute(
       name: RouteNamed.settingsNodes,
       path: RoutePath.settingsNodes,
-      builder: (context, state) => TopologyView(),
+      builder: (context, state) => TopologyView(
+            args: state.uri.queryParameters,
+          ),
       routes: [
         GoRoute(
           name: RouteNamed.nodeDetails,

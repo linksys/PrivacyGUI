@@ -14,6 +14,7 @@ import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/topology/tree_item.dart';
+import 'package:linksys_widgets/widgets/topology/tree_node.dart';
 import 'package:linksys_widgets/widgets/topology/tree_view.dart';
 
 typedef TopologyTreeView = AppTreeView<TopologyModel>;
@@ -25,7 +26,8 @@ class TopologyView extends ArgumentsConsumerStatelessView {
   Widget build(BuildContext context, WidgetRef ref) {
     final topologyState = ref.watch(topologyProvider);
 
-    final isShowingDeviceChain = topologyState.selectedDeviceId != null;
+    final isShowingDeviceChain =
+        ref.watch(topologySelectedIdProvider).isNotEmpty;
     return StyledAppPageView(
       // scrollable: true,
       child: AppBasicLayout(
@@ -33,7 +35,7 @@ class TopologyView extends ArgumentsConsumerStatelessView {
           children: [
             Flexible(
               child: TopologyTreeView(
-                roots: _getNodes(topologyState),
+                roots: _getNodes(topologyState, !isShowingDeviceChain),
                 itemBuilder: (index, node) {
                   return AppTreeNodeItem(
                     name: node.data.location,
@@ -41,9 +43,10 @@ class TopologyView extends ArgumentsConsumerStatelessView {
                         .images
                         .devices
                         .getByName(node.data.icon),
-                    count: node.data.isOnline
-                        ? node.data.connectedDeviceCount
-                        : null,
+                    count:
+                        node.data.isOnline && node.type == AppTreeNodeType.node
+                            ? node.data.connectedDeviceCount
+                            : null,
                     status: node.data.isOnline ? null : 'Offline',
                     tail: node.data.isOnline
                         ? AppIcon.regular(
@@ -56,7 +59,9 @@ class TopologyView extends ArgumentsConsumerStatelessView {
                     onTap: () {
                       ref.read(deviceDetailIdProvider.notifier).state =
                           node.data.deviceId;
-                      if (node.data.isOnline) {
+                      if (node.type == AppTreeNodeType.device) {
+                        context.pop();
+                      } else if (node.data.isOnline) {
                         // Update the current target Id for node state
                         context.pushNamed(RouteNamed.nodeDetails);
                       } else {
@@ -79,66 +84,12 @@ class TopologyView extends ArgumentsConsumerStatelessView {
     );
   }
 
-  List<RouterTreeNode> _getNodes(TopologyState topologyState) {
+  List<RouterTreeNode> _getNodes(
+      TopologyState topologyState, bool showOffline) {
     return [
       topologyState.onlineRoot,
-      if (topologyState.offlineRoot.children.isNotEmpty)
+      if (showOffline && topologyState.offlineRoot.children.isNotEmpty)
         topologyState.offlineRoot,
     ];
-  }
-
-  // Widget _buildOfflineNode(
-  //   BuildContext context,
-  //   WidgetRef ref,
-  //   RouterTreeNode offlineRoot,
-  // ) {
-  //   // if (offlineNodes.isEmpty) {
-  //   //   return const Center();
-  //   // }
-
-  //   return Flexible(
-  //     child: Container(
-  //       color: Colors.green,
-  //       child: TopologyTreeView(
-  //         root: offlineRoot,
-  //         itemBuilder: (index, node) {
-  //           return AppTreeNodeItem(
-  //             name: node.data.location,
-  //             image:
-  //                 AppTheme.of(context).images.devices.getByName(node.data.icon),
-  //             count: node.data.isOnline ? node.data.connectedDeviceCount : null,
-  //             status: node.data.isOnline ? null : 'Offline',
-  //             tail: node.data.isOnline
-  //                 ? AppIcon.regular(
-  //                     icon: node.data.isWiredConnection
-  //                         ? getWifiSignalIconData(context, null)
-  //                         : getWifiSignalIconData(
-  //                             context, node.data.signalStrength),
-  //                   )
-  //                 : null,
-  //             onTap: () {
-  //               ref.read(deviceDetailIdProvider.notifier).state =
-  //                   node.data.deviceId;
-  //               if (node.data.isOnline) {
-  //                 // Update the current target Id for node state
-  //                 context.pushNamed(RouteNamed.nodeDetails);
-  //               } else {
-  //                 context.pushNamed(RouteNamed.nodeOffline);
-  //               }
-  //             },
-  //           );
-  //         },
-  //         rootBuilder: (index, node) => InternetCell(
-  //           name: 'Offline',
-  //           icon: getCharactersIcons(context).nodesDefault,
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  RouterTreeNode _createOfflineTreeNode(List<RouterTreeNode> offlineNodes) {
-    return RouterTreeNode(
-        data: const TopologyModel(isOnline: true), children: offlineNodes);
   }
 }

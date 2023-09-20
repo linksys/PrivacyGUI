@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/provider/devices/topology_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -94,7 +95,10 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
           AppSectionItemData(
             title: 'Nodes',
             iconData: getCharactersIcons(context).nodesDefault,
-            onTap: () => context.pushNamed(RouteNamed.settingsNodes),
+            onTap: () {
+              ref.read(topologySelectedIdProvider.notifier).state = '';
+              context.pushNamed(RouteNamed.settingsNodes);
+            },
           ),
           AppSectionItemData(
             title: 'Router Password and Hint',

@@ -10,6 +10,7 @@ import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/provider/dashboard/dashboard_home_provider.dart';
 import 'package:linksys_app/provider/dashboard/dashboard_home_state.dart';
+import 'package:linksys_app/provider/devices/topology_provider.dart';
 import 'package:linksys_app/provider/smart_device_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/smart_device_prefs_helper.dart';
@@ -133,6 +134,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       image: image,
       text: 'Nodes ${state.numOfNodes}',
       onTap: () {
+        ref.read(topologySelectedIdProvider.notifier).state = '';
         context.pushNamed(RouteNamed.settingsNodes);
       },
     );
