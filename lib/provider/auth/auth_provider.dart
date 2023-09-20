@@ -12,6 +12,7 @@ import 'package:linksys_app/core/cloud/model/region_code.dart';
 import 'package:linksys_app/core/http/linksys_http_client.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
+import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/repository/router/extensions/core_extension.dart';
@@ -309,6 +310,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       return AuthState.empty();
     });
     ref.read(pollingProvider.notifier).stopPolling();
+    ref.read(selectedNetworkIdProvider.notifier).state = null;
     //TODO: XXXXXX Clear state of managers
   }
 

@@ -24,6 +24,23 @@ class JNAPTransactionBuilder {
             JNAPAction.getHealthCheckResults, {'includeModuleResults': true}),
         const MapEntry(JNAPAction.getSupportedHealthCheckModules, {}),
         const MapEntry(JNAPAction.getBackhaulInfo, {}),
+
+        // ===========================
+
+        // const MapEntry(JNAPAction.getOwnedNetworkID, {}),
+        // const MapEntry(JNAPAction.getGuestNetworkSettings, {}),
+        // const MapEntry(JNAPAction.getLANSettings, {}),
+        // const MapEntry(JNAPAction.getIPv6Settings, {}),
+        // const MapEntry(JNAPAction.getDHCPClientLeases, {}),
+        // const MapEntry(JNAPAction.getWPSServerSessionStatus, {}),
+        // const MapEntry(JNAPAction.getWANSettings, {}),
+        // const MapEntry(JNAPAction.getSinglePortForwardingRules, {}),
+        // const MapEntry(JNAPAction.getPortRangeForwardingRules, {}),
+        // const MapEntry(JNAPAction.getPortRangeTriggeringRules, {}),
+        // const MapEntry(JNAPAction.getGuestNetworkClients, {}),
+        // const MapEntry(JNAPAction.getTimeSettings, {}),
+        // const MapEntry(JNAPAction.getLocalTime, {}),
+        // const MapEntry(JNAPAction.getMACAddressCloneSettings, {}),
       ],
       auth: true,
     );

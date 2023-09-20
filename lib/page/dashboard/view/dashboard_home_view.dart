@@ -21,6 +21,7 @@ import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/panel/general_card.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
 
 class DashboardHomeView extends ConsumerStatefulWidget {
   const DashboardHomeView({Key? key}) : super(key: key);
@@ -40,6 +41,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   Widget build(BuildContext context) {
     final state = ref.watch(dashboardHomeProvider);
     final wanStatus = ref.watch(nodeWanStatusProvider);
+    final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
     return StyledAppPageView(
       scrollable: true,
       backState: StyledBackState.none,
@@ -55,39 +57,56 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _homeTitle(state, wanStatus == NodeWANStatus.online),
+              _homeTitle(state.mainWifiSsid, wanStatus == NodeWANStatus.online,
+                  isLoading),
               const AppGap.big(),
-              _networkInfoTiles(state),
+              _networkInfoTiles(state, isLoading),
               const AppGap.extraBig(),
-              _speedTestTile(state),
+              _speedTestTile(state, isLoading),
             ],
           ),
-          if (ref.read(deviceManagerProvider.notifier).isEmptyState())
-            const AppFullScreenSpinner(),
+          // if (isLoading)
+          //   const AppFullScreenSpinner(),
         ],
       ),
     );
   }
 
-  Widget _homeTitle(DashboardHomeState state, bool isOnline) {
+  Widget _homeTitle(String ssid, bool isOnline, bool isLoading) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppGap.big(),
-        AppText.displaySmall(
-          state.mainWifiSsid,
-        ),
+        _ssid(ssid, isLoading),
         const AppGap.regular(),
-        Row(
+        Stack(
           children: [
-            const AppText.titleLarge(
-              'Internet ',
+            AnimatedOpacity(
+              opacity: isLoading ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(),
+              ),
             ),
-            AppText.titleLarge(
-              isOnline ? 'online' : 'offline',
-              color:
-                  isOnline ? Theme.of(context).colorScheme.primary : Colors.red,
+            AnimatedOpacity(
+              opacity: isLoading ? 0.0 : 1.0,
+              duration: const Duration(milliseconds: 500),
+              child: Row(
+                children: [
+                  const AppText.titleLarge(
+                    'Internet ',
+                  ),
+                  AppText.titleLarge(
+                    isOnline ? 'online' : 'offline',
+                    color: isOnline
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.red,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -95,44 +114,54 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _networkInfoTiles(DashboardHomeState state) {
+  Widget _ssid(String ssid, bool isLoading) {
+    return isLoading
+        ? Shimmer(
+            gradient: _shimmerGradient,
+            child: AppText.displaySmall(
+              ssid,
+            ),
+          )
+        : AppText.displaySmall(
+            ssid,
+          );
+  }
+
+  Widget _networkInfoTiles(DashboardHomeState state, bool isLoading) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Flexible(child: _wifiInfoTile(state)),
-          Flexible(child: _nodesInfoTile(state)),
-          Flexible(child: _devicesInfoTile(state)),
+          Flexible(child: _wifiInfoTile(state.numOfWifi, isLoading)),
+          Flexible(child: _nodesInfoTile(state, isLoading)),
+          Flexible(
+              child: _devicesInfoTile(
+                  state.numOfOnlineExternalDevices, isLoading)),
         ],
       ),
     );
   }
 
-  Widget _wifiInfoTile(DashboardHomeState state) {
-    int wifiCount = state.numOfWifi;
-    // List<Widget> icons = [];
-    // for (int i = 0; i < wifiCount; i++) {
-    //   icons.add(_circleIcon(
-    //       //TODO: XXXXXX Get wifi signal
-    //       image: const AssetImage('assets/images/wifi_signal_3.png')));
-    // }
+  Widget _wifiInfoTile(int wifiCount, bool isLoading) {
     return _infoTile(
       iconData: getCharactersIcons(context).wifiDefault,
       text: 'WiFi $wifiCount',
+      isLoading: isLoading,
       onTap: () {
         context.pushNamed(RouteNamed.wifiShare);
       },
     );
   }
 
-  Widget _nodesInfoTile(DashboardHomeState state) {
+  Widget _nodesInfoTile(DashboardHomeState state, bool isLoading) {
     final image =
         AppTheme.of(context).images.devices.getByName(state.masterIcon);
     return _infoTile(
       image: image,
       text: 'Nodes ${state.numOfNodes}',
+      isLoading: isLoading,
       onTap: () {
         ref.read(topologySelectedIdProvider.notifier).state = '';
         context.pushNamed(RouteNamed.settingsNodes);
@@ -140,10 +169,11 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _devicesInfoTile(DashboardHomeState state) {
+  Widget _devicesInfoTile(int numOfOnlineExternalDevices, bool isLoading) {
     return _infoTile(
-      text: '${state.numOfOnlineExternalDevices} devices',
+      text: '$numOfOnlineExternalDevices devices',
       iconData: getCharactersIcons(context).devicesDefault,
+      isLoading: isLoading,
       onTap: () {
         context.goNamed(RouteNamed.dashboardDevices);
       },
@@ -155,18 +185,30 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     IconData? iconData,
     ImageProvider? image,
     VoidCallback? onTap,
+    bool isLoading = false,
   }) {
-    return InkWell(
-      onTap: onTap,
-      child: AppCard(
-        iconData: iconData,
-        image: image,
-        title: text,
-      ),
-    );
+    return isLoading
+        ? Card(
+            child: Shimmer(
+              gradient: _shimmerGradient,
+              child: AppCard(
+                iconData: iconData,
+                image: image,
+                title: text,
+              ),
+            ),
+          )
+        : InkWell(
+            onTap: onTap,
+            child: AppCard(
+              iconData: iconData,
+              image: image,
+              title: text,
+            ),
+          );
   }
 
-  Widget _speedTestTile(DashboardHomeState state) {
+  Widget _speedTestTile(DashboardHomeState state, bool isLoading) {
     return SizedBox(
       width: double.infinity,
       height: 160,
@@ -178,7 +220,12 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         child: AppPadding(
           padding: const AppEdgeInsets.symmetric(
               horizontal: AppGapSize.regular, vertical: AppGapSize.regular),
-          child: _speedResult(state),
+          child: isLoading
+              ? Shimmer(
+                  gradient: _shimmerGradient,
+                  child: _speedResult(state),
+                )
+              : _speedResult(state),
         ),
       ),
     );
@@ -285,3 +332,19 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     });
   }
 }
+
+const _shimmerGradient = LinearGradient(
+  colors: [
+    Color(0xFFEBEBF4),
+    Color(0xFFF4F4F4),
+    Color(0xFFEBEBF4),
+  ],
+  stops: [
+    0.1,
+    0.3,
+    0.4,
+  ],
+  begin: Alignment(-1.0, -0.3),
+  end: Alignment(1.0, 0.3),
+  tileMode: TileMode.clamp,
+);

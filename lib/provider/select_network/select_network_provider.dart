@@ -96,7 +96,9 @@ class SelectNetworkNotifier extends AsyncNotifier<SelectNetworkState> {
       final index = networks.indexWhere(
           (element) => element.network.networkId == model.network.networkId);
       final updateModel = networks[index].copyWith(isOnline: model.isOnline);
-      networks[index] = updateModel;
+      if (index >= 0) {
+        networks[index] = updateModel;
+      }
       // Update state
       return SelectNetworkState(networks: [
         ...networks.where((element) => element.isOnline),
