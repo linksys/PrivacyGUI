@@ -231,6 +231,22 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
+  get _shimmerGradient => LinearGradient(
+        colors: [
+          Theme.of(context).colorScheme.primaryContainer,
+          Theme.of(context).colorScheme.surface,
+          Theme.of(context).colorScheme.primaryContainer,
+        ],
+        stops: const [
+          0.1,
+          0.3,
+          0.4,
+        ],
+        begin: const Alignment(-1.0, -0.3),
+        end: const Alignment(1.0, 0.3),
+        tileMode: TileMode.clamp,
+      );
+
   Widget _speedResult(DashboardHomeState state) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
@@ -332,19 +348,3 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     });
   }
 }
-
-const _shimmerGradient = LinearGradient(
-  colors: [
-    Color(0xFFEBEBF4),
-    Color(0xFFF4F4F4),
-    Color(0xFFEBEBF4),
-  ],
-  stops: [
-    0.1,
-    0.3,
-    0.4,
-  ],
-  begin: Alignment(-1.0, -0.3),
-  end: Alignment(1.0, 0.3),
-  tileMode: TileMode.clamp,
-);

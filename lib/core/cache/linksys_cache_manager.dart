@@ -108,7 +108,7 @@ class LinksysCacheManager {
   Future<Map<String, dynamic>?> getCache(String? serialNumber) async {
     String sn = serialNumber ?? lastSerialNumber;
     final tempCache = await cacheManager.get();
-    if (tempCache == null) {
+    if (tempCache == null || tempCache.isEmpty) {
       logger.d('linksys cache manager: no cache from $serialNumber');
       return null;
     }

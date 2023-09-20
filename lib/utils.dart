@@ -6,11 +6,8 @@ import 'dart:typed_data';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/util/uuid.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:local_auth/local_auth.dart';
 import 'core/utils/logger.dart';
 
 class Utils {

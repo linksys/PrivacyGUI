@@ -1,6 +1,5 @@
 import 'package:collection/collection.dart';
 import 'package:linksys_app/core/utils/extension.dart';
-import 'package:linksys_app/core/utils/logger.dart';
 
 const List<Map<String, dynamic>> iconRules = [
   {

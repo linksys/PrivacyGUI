@@ -52,7 +52,7 @@ dependencies:
   firebase_messaging: ^14.6.6
   firebase_analytics: ^10.4.5
   firebase_crashlytics: ^3.3.5
-  flutter_local_notifications: ^15.1.0+1
+  flutter_local_notifications: ^15.1.1
   logger: ^2.0.2
   path_provider: ^2.1.0
   share_plus: ^7.1.0
