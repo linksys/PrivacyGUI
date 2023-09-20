@@ -42,44 +42,45 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
   _checkSelfNetworks() async {
     final router = GoRouter.of(context);
     await ref.read(connectivityProvider.notifier).forceUpdate();
+    final prefs = await SharedPreferences.getInstance();
+    String? serialNumber = prefs.getString(pCurrentSN);
     final loginType =
         ref.read(authProvider.select((value) => value.value?.loginType));
     if (loginType == LoginType.remote) {
       logger.i('PREPARE LOGIN:: remote');
       if (ref.read(selectedNetworkIdProvider) == null) {
-        final prefs = await SharedPreferences.getInstance();
         final networkId = prefs.getString(pSelectedNetworkId);
+
         ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
-        if (networkId == null) {
+        if (networkId == null || serialNumber == null) {
           router.goNamed(RouteNamed.selectNetwork);
           return;
         } else {
           await ref
               .read(dashboardManagerProvider.notifier)
-              .saveSelectedNetwork(networkId);
+              .saveSelectedNetwork(serialNumber, networkId);
         }
       }
     }
     logger.d('Go to dashboard');
+    await ProviderContainer()
+        .read(linksysCacheManagerProvider)
+        .loadCache(serialNumber: serialNumber ?? '');
     final nodeDeviceInfo = await ref
         .read(dashboardManagerProvider.notifier)
-        .getDeviceInfo()
+        .checkDeviceInfo(serialNumber)
         .then<NodeDeviceInfo?>((value) => value)
         .onError((error, stackTrace) => null);
     if (nodeDeviceInfo != null) {
       logger.d('SN changed: ${nodeDeviceInfo.serialNumber}');
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(pCurrentSN, nodeDeviceInfo.serialNumber);
+      // final prefs = await SharedPreferences.getInstance();
+      // await prefs.setString(pCurrentSN, nodeDeviceInfo.serialNumber);
       await ref.read(connectivityProvider.notifier).forceUpdate();
       logger.d('Force update connectivity finish!');
-      await ProviderContainer()
-          .read(linksysCacheManagerProvider)
-          .loadCache(serialNumber: nodeDeviceInfo.serialNumber);
 
-      // ref.watch(navigationsProvider.notifier).clearAndPush(DashboardHomePath());
-      router.goNamed(RouteNamed.dashboardHome);
       ref.read(pollingProvider.notifier).stopPolling();
       ref.read(pollingProvider.notifier).startPolling();
+      router.goNamed(RouteNamed.dashboardHome);
     } else {
       // TODO #LINKSYS Error handling for unable to get deviceinfo
       logger.i('PREPARE :: Error handling for unable to get deviceinfo');

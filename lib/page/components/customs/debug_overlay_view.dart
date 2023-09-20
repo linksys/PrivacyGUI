@@ -21,11 +21,11 @@ class _OverlayInfoViewState extends ConsumerState<OverlayInfoView>
   @override
   void initState() {
     super.initState();
-    if (!kIsWeb) {
-      checkLocationPermissions().then((value) {
-        ref.read(connectivityProvider.notifier).forceUpdate();
-      });
-    }
+    // if (!kIsWeb) {
+    //   checkLocationPermissions().then((value) {
+    //     ref.read(connectivityProvider.notifier).forceUpdate();
+    //   });
+    // }
   }
 
   @override

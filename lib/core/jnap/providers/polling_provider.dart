@@ -5,6 +5,7 @@ import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/actions/jnap_transaction.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/utils/bench_mark.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 
 const int pollDurationInSec = 120;
@@ -46,7 +47,8 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   }
 
   _polling(RouterRepository repository) async {
-    logger.d('Polling Provider: start polling - ${DateTime.now()}');
+    final benchMark = BenchMarkLogger(name: 'Polling provider');
+    benchMark.start();
     state = const AsyncValue.loading();
     final fetchFuture = repository
         .transaction(JNAPTransactionBuilder.coreTransactions())
@@ -56,7 +58,8 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
             data: Map.fromEntries(data)));
 
     state = await AsyncValue.guard(() => fetchFuture);
-    logger.d('Polling Provider: finish polling - ${DateTime.now()}, $state');
+    logger.d('state: $state');
+    benchMark.end();
   }
 
   startPolling() {

@@ -59,10 +59,12 @@ class LinksysCacheManager {
       final value = await cacheManager.get();
       cache = value ?? "";
       if (cache.isEmpty) {
+        data = {};
         return false;
       }
       final allCaches = jsonDecode(cache);
       if (allCaches[serialNumber] == null) {
+        data = {};
         return false;
       }
       data = allCaches[serialNumber];
@@ -103,13 +105,15 @@ class LinksysCacheManager {
     cacheManager.set(cache);
   }
 
-  String? getCache(String? serialNumber) {
-    String? sn = serialNumber ?? lastSerialNumber;
-    cacheManager.get().then((value) {
-      cache = value ?? "";
-    });
+  Future<Map<String, dynamic>?> getCache(String? serialNumber) async {
+    String sn = serialNumber ?? lastSerialNumber;
+    final tempCache = await cacheManager.get();
+    if (tempCache == null) {
+      logger.d('linksys cache manager: no cache from $serialNumber');
+      return null;
+    }
     logger.d("linksys cache manager: get cache of $serialNumber");
-    return jsonDecode(cache)[sn];
+    return jsonDecode(tempCache)[sn];
   }
 
   String? getAllCaches() {

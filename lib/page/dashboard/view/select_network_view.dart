@@ -128,9 +128,11 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
     return InkWell(
       onTap: network.isOnline
           ? () async {
+              final goRouter = GoRouter.of(context);
               await ref
                   .read(dashboardManagerProvider.notifier)
-                  .saveSelectedNetwork(network.network.networkId);
+                  .saveSelectedNetwork(network.network.routerSerialNumber,
+                      network.network.networkId);
               // _navigationNotifier.clearAndPush(PrepareDashboardPath());
               logEvent(
                 eventName: 'ActionSelectNetwork',
@@ -138,7 +140,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                   'networkId': network.network.networkId,
                 },
               );
-              context.goNamed('prepareDashboard');
+              goRouter.goNamed('prepareDashboard');
             }
           : null,
       child: Opacity(

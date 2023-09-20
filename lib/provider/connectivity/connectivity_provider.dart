@@ -4,6 +4,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/command/base_command.dart';
+import 'package:linksys_app/core/utils/bench_mark.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_info.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_state.dart';
 import 'package:linksys_app/constants/pref_key.dart';
@@ -53,7 +54,10 @@ class ConnectivityNotifier extends Notifier<ConnectivityState>
   }
 
   Future<ConnectivityState> forceUpdate() async {
+    final benchMark = BenchMarkLogger(name: 'connectivity::forceUpdate');
+    benchMark.start();
     await updateConnectivity(await connectivity.checkConnectivity());
+    benchMark.end();
     return state;
   }
 
@@ -74,16 +78,16 @@ class ConnectivityNotifier extends Notifier<ConnectivityState>
 
   Future<RouterType> _testRouterType(String? newIp) async {
     final routerRepository = ref.read(routerRepositoryProvider);
-    final testJNAP = await routerRepository
-        .send(JNAPAction.isAdminPasswordDefault,
-            type: CommandType.local,
-            fetchRemote: true,
-            cacheLevel: CacheLevel.noCache)
-        .then((value) => true)
-        .onError((error, stackTrace) => false);
-    if (!testJNAP) {
-      return RouterType.others;
-    }
+    // final testJNAP = await routerRepository
+    //     .send(JNAPAction.isAdminPasswordDefault,
+    //         type: CommandType.local,
+    //         fetchRemote: true,
+    //         cacheLevel: CacheLevel.noCache)
+    //     .then((value) => true)
+    //     .onError((error, stackTrace) => false);
+    // if (!testJNAP) {
+    //   return RouterType.others;
+    // }
 
     final routerSN = await routerRepository
         .send(
@@ -95,6 +99,9 @@ class ConnectivityNotifier extends Notifier<ConnectivityState>
         .then<String>(
             (value) => NodeDeviceInfo.fromJson(value.output).serialNumber)
         .onError((error, stackTrace) => '');
+    if (routerSN.isEmpty) {
+      return RouterType.others;
+    }
     final prefs = await SharedPreferences.getInstance();
     final currentSN = prefs.get(pCurrentSN);
     if (routerSN.isNotEmpty && routerSN == currentSN) {

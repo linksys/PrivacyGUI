@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/constants/_constants.dart';
+import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/models/device_info.dart';
 import 'package:linksys_app/core/jnap/models/guest_radio_settings.dart';
@@ -9,6 +10,8 @@ import 'package:linksys_app/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/utils/bench_mark.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final dashboardManagerProvider =
@@ -20,6 +23,7 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
   @override
   DashboardManagerState build() {
     final coreTransactionData = ref.watch(pollingProvider).value;
+    logger.d('dashboard manager provider - rebuild');
     return createState(pollingResult: coreTransactionData);
   }
 
@@ -57,25 +61,53 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     return newState;
   }
 
-  Future<void> saveSelectedNetwork(String networkId) async {
+  Future<void> saveSelectedNetwork(
+      String serialNumber, String networkId) async {
     // Update latest selected network ID in storage
     final pref = await SharedPreferences.getInstance();
-    await pref.remove(pCurrentSN);
+    // await pref.remove(pCurrentSN);
+    await pref.setString(pCurrentSN, serialNumber);
     await pref.setString(pSelectedNetworkId, networkId);
     // Update provider
     ref.read(selectedNetworkIdProvider.notifier).state = networkId;
+    state = const DashboardManagerState();
   }
 
-  Future<NodeDeviceInfo> getDeviceInfo() async {
-    final routerRepository = ref.read(routerRepositoryProvider);
-    final result = await routerRepository.send(
-      JNAPAction.getDeviceInfo,
-      fetchRemote: true,
-    );
-    final nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
+  Future<NodeDeviceInfo> checkDeviceInfo(String? serialNumber) async {
+    final benchMark = BenchMarkLogger(name: 'checkDeviceInfo');
+    benchMark.start();
+    NodeDeviceInfo? nodeDeviceInfo =
+        await _checkDeviceInfoFromCache(serialNumber);
+    if (nodeDeviceInfo == null) {
+      final routerRepository = ref.read(routerRepositoryProvider);
+      final result = await routerRepository.send(
+        JNAPAction.getDeviceInfo,
+        fetchRemote: true,
+      );
+      nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
+    }
     // Build/Update better actions
     buildBetterActions(nodeDeviceInfo.services);
+    benchMark.end();
     return nodeDeviceInfo;
+  }
+
+  Future<NodeDeviceInfo?> _checkDeviceInfoFromCache(
+      String? serialNumber) async {
+    if (serialNumber == null) {
+      return null;
+    }
+    final data =
+        await ref.read(linksysCacheManagerProvider).getCache(serialNumber);
+    if (data == null) {
+      return null;
+    }
+    final deviceInfoRaw = data[JNAPAction.getDeviceInfo.actionValue];
+    if (deviceInfoRaw == null) {
+      return null;
+    }
+    return NodeDeviceInfo.fromJson(
+        JNAPSuccess.fromJson(deviceInfoRaw['data']).output);
   }
 
   // DashboardManagerState _getAvailableDeviceServices(
