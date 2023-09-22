@@ -124,6 +124,9 @@ class _LoginTraditionalPasswordViewState
               errorText: generalErrorCodeHandler(context, _errorCode),
               controller: passwordController,
               autofillHint: const [AutofillHints.password],
+              onSubmitted: (_) {
+                _cloudLogin();
+              },
               onChanged: (value) {
                 setState(() {
                   _errorCode = '';
@@ -154,14 +157,7 @@ class _LoginTraditionalPasswordViewState
               onTap: passwordController.text.isEmpty
                   ? null
                   : () async {
-                      await ref
-                          .read(authProvider.notifier)
-                          .cloudLogin(
-                            username: _username,
-                            password: passwordController.text,
-                            isEnrolledBiometrics: _isEnrollBiometrics,
-                          )
-                          .onError((error, stackTrace) {});
+                      await _cloudLogin();
                     },
             ),
           ],
@@ -195,6 +191,17 @@ class _LoginTraditionalPasswordViewState
         _errorCode = error.code;
       });
     }
+  }
+
+  Future<void> _cloudLogin() {
+    return ref
+        .read(authProvider.notifier)
+        .cloudLogin(
+          username: _username,
+          password: passwordController.text,
+          isEnrolledBiometrics: _isEnrollBiometrics,
+        )
+        .onError((error, stackTrace) {});
   }
 
   Widget _checkBiometrics(

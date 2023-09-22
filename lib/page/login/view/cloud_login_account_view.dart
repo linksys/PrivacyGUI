@@ -132,6 +132,9 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
                 autofillHints: const [AutofillHints.username],
                 errorText: generalErrorCodeHandler(context, _errorCode),
                 ctaText: getAppLocalizations(context).forgot_question,
+                onSubmitted: (_) {
+                  _prepareLogin();
+                },
               ),
               if (_errorCode == "RESOURCE_NOT_FOUND")
                 AppPadding(
