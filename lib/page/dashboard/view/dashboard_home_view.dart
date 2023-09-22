@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
@@ -19,7 +18,6 @@ import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/panel/general_card.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -58,7 +56,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _homeTitle(state.mainWifiSsid, wanStatus == NodeWANStatus.online,
-                  isLoading),
+                  isLoading, state.isFirstPolling),
               const AppGap.big(),
               _networkInfoTiles(state, isLoading),
               const AppGap.extraBig(),
@@ -72,7 +70,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _homeTitle(String ssid, bool isOnline, bool isLoading) {
+  Widget _homeTitle(String ssid, bool isOnline, bool isLoading, bool isFirstPolling) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,7 +81,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         Stack(
           children: [
             AnimatedOpacity(
-              opacity: isLoading ? 1.0 : 0.0,
+              opacity: isFirstPolling ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 300),
               child: const SizedBox(
                 width: 16,
@@ -92,7 +90,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               ),
             ),
             AnimatedOpacity(
-              opacity: isLoading ? 0.0 : 1.0,
+              opacity: isFirstPolling ? 0.0 : 1.0,
               duration: const Duration(milliseconds: 500),
               child: Row(
                 children: [

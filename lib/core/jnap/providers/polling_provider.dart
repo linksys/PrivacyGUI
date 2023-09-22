@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/actions/jnap_transaction.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
@@ -44,6 +45,24 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   @override
   FutureOr<CoreTransactionData> build() {
     return const CoreTransactionData(lastUpdate: 0, data: {});
+  }
+
+  fetchFirstLaunchedCacheData() {
+    final cache = ref.read(linksysCacheManagerProvider).data;
+    final commands = JNAPTransactionBuilder.coreTransactions().commands;
+    final checkCacheDataList = commands
+        .where((command) => cache.keys.contains(command.key.actionValue));
+    // Have not done any polling yet
+    if (checkCacheDataList.length != commands.length) return;
+
+    final cacheDataList = checkCacheDataList
+        .where((command) => cache[command.key.actionValue]['data'] != null)
+        .map((command) => MapEntry(command.key,
+            JNAPSuccess.fromJson(cache[command.key.actionValue]['data'])))
+        .toList();
+
+    state = AsyncValue.data(CoreTransactionData(
+        lastUpdate: 0, data: Map.fromEntries(cacheDataList)));
   }
 
   _polling(RouterRepository repository) async {
