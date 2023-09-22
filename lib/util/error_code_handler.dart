@@ -13,6 +13,8 @@ String generalErrorCodeHandler(BuildContext context, String code) {
       return getAppLocalizations(context).error_enter_a_valid_email_format;
     case errorInvalidPassword:
       return getAppLocalizations(context).error_incorrect_password;
+    case errorInvalidCredentials:
+      return getAppLocalizations(context).error_incorrect_password;
     case errorResourceNotFound:
       return getAppLocalizations(context).error_email_address_not_fount;
     case errorInvalidOtp:

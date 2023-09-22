@@ -13,6 +13,7 @@ const errorAuthenticationMissing = 'AUTHENTICATION_MISSING';
 const errorNotAuthenticated = 'NOT_AUTHENTICATED';
 const errorInvalidSessionToken = "INVALID_SESSION_TOKEN";
 const errorMfaRequired = 'mfa_required';
+const errorInvalidCredentials = 'invalid_credentials';
 // JNAP Error
 const errorJNAPUnauthorized = '_ErrorUnauthorized';
 const errorAdminAccountLocked = 'ErrorAdminAccountLocked';

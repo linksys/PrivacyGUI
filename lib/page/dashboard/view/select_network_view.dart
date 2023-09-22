@@ -138,7 +138,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                 await ref
                     .read(dashboardManagerProvider.notifier)
                     .saveSelectedNetwork(network.network.routerSerialNumber,
-                      network.network.networkId);
+                        network.network.networkId);
                 logEvent(
                   eventName: 'ActionSelectNetwork',
                   parameters: {
@@ -150,7 +150,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
             }
           : null,
       child: Opacity(
-        opacity: network.isOnline ? 1 : 0.4,
+        opacity: network.isOnline ? 1 : 0.8,
         child: AppPadding(
           padding: const AppEdgeInsets.symmetric(
             vertical: AppGapSize.regular,

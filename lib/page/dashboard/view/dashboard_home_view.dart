@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
@@ -19,7 +18,6 @@ import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/panel/general_card.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -189,6 +187,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   }) {
     return isLoading
         ? Card(
+            elevation: 10,
             child: Shimmer(
               gradient: _shimmerGradient,
               child: AppCard(
@@ -233,9 +232,9 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   get _shimmerGradient => LinearGradient(
         colors: [
-          Theme.of(context).colorScheme.primaryContainer,
-          Theme.of(context).colorScheme.surface,
-          Theme.of(context).colorScheme.primaryContainer,
+          Colors.grey,
+          Colors.grey[300]!,
+          Colors.grey,
         ],
         stops: const [
           0.1,
