@@ -40,6 +40,8 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     // Get WAN connection status
     final isWanConnected =
         deviceManagerState.wanStatus?.wanStatus == 'Connected';
+    // If is first polling
+    final isFirstPolling = deviceManagerState.lastUpdateTime == 0;
     // Get master node icon
     final sortedDeviceList = ref.read(deviceManagerProvider).deviceList;
     final masterIcon = routerIconTest(
@@ -61,6 +63,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       numOfNodes: numOfNodes,
       numOfOnlineExternalDevices: numOfOnlineExternalDevices,
       isWanConnected: isWanConnected,
+      isFirstPolling: isFirstPolling,
       masterIcon: masterIcon,
       uploadResult: uploadResult,
       downloadResult: downloadResult,

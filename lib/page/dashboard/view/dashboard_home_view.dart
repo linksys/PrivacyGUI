@@ -56,7 +56,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _homeTitle(state.mainWifiSsid, wanStatus == NodeWANStatus.online,
-                  isLoading),
+                  isLoading, state.isFirstPolling),
               const AppGap.big(),
               _networkInfoTiles(state, isLoading),
               const AppGap.extraBig(),
@@ -70,7 +70,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _homeTitle(String ssid, bool isOnline, bool isLoading) {
+  Widget _homeTitle(String ssid, bool isOnline, bool isLoading, bool isFirstPolling) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,7 +81,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         Stack(
           children: [
             AnimatedOpacity(
-              opacity: isLoading ? 1.0 : 0.0,
+              opacity: isFirstPolling ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 300),
               child: const SizedBox(
                 width: 16,
@@ -90,7 +90,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               ),
             ),
             AnimatedOpacity(
-              opacity: isLoading ? 0.0 : 1.0,
+              opacity: isFirstPolling ? 0.0 : 1.0,
               duration: const Duration(milliseconds: 500),
               child: Row(
                 children: [
