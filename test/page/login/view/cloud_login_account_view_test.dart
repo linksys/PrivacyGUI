@@ -1,35 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/login/view/_view.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/theme/theme_data.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-void main() {
-  // Assign a globalKey in order to retrieve current Build Context
-  GlobalKey<NavigatorState> globalKey = GlobalKey();
+import '../../../common/testable_widget.dart';
 
-  Widget testableWidget(
-          {required Widget child, List<Override> overrides = const []}) =>
-      ProviderScope(
-        overrides: overrides,
-        child: MaterialApp(
-          navigatorKey: globalKey,
-          theme: linksysLightThemeData,
-          darkTheme: linksysDarkThemeData,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: AppResponsiveTheme(
-              child: child,
-            ),
-          ),
-        ),
-      );
+
+void main() {
+  
 
   setUpAll(() async {});
   tearDownAll(() async {});
