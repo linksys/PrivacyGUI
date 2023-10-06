@@ -7,14 +7,20 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 // Assign a globalKey in order to retrieve current Build Context
 GlobalKey<NavigatorState> globalKey = GlobalKey();
 
-Widget testableWidget(
-        {required Widget child, List<Override> overrides = const []}) =>
+Widget testableWidget({
+  required Widget child,
+  List<Override> overrides = const [],
+  ThemeMode themeMode = ThemeMode.system,
+  Locale? locale,
+}) =>
     ProviderScope(
       overrides: overrides,
       child: MaterialApp(
         navigatorKey: globalKey,
         theme: linksysLightThemeData,
         darkTheme: linksysDarkThemeData,
+        locale: locale,
+        themeMode: themeMode,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(

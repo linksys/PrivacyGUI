@@ -32,7 +32,7 @@ final _slaveNode1 = RouterTreeNode(
     isMaster: false,
     isOnline: true,
     isWiredConnection: false,
-    signalStrength: 0,
+    signalStrength: -44,
     isRouter: true,
     icon: 'routerMx6200',
     connectedDeviceCount: 20,
@@ -48,7 +48,7 @@ final _slaveNode2 = RouterTreeNode(
     isMaster: false,
     isOnline: true,
     isWiredConnection: false,
-    signalStrength: 0,
+    signalStrength: -66,
     isRouter: true,
     icon: 'routerMx6200',
     connectedDeviceCount: 17,
@@ -64,7 +64,7 @@ final _slaveNode3 = RouterTreeNode(
     isMaster: false,
     isOnline: true,
     isWiredConnection: false,
-    signalStrength: 0,
+    signalStrength: -58,
     isRouter: true,
     icon: 'routerMx6200',
     connectedDeviceCount: 7,
@@ -80,7 +80,7 @@ final _slaveNode4 = RouterTreeNode(
     isMaster: false,
     isOnline: true,
     isWiredConnection: false,
-    signalStrength: 0,
+    signalStrength: -55,
     isRouter: true,
     icon: 'routerMx6200',
     connectedDeviceCount: 1,
@@ -92,14 +92,94 @@ final _slaveNode5 = RouterTreeNode(
   type: AppTreeNodeType.node,
   data: const TopologyModel(
     deviceId: 'ROUTER-SLAVE-DEVICEID-000005',
-    location: 'Bed room 3',
+    location: 'A super long long long long long long cool name',
     isMaster: false,
     isOnline: true,
     isWiredConnection: false,
-    signalStrength: 0,
+    signalStrength: -70,
     isRouter: true,
     icon: 'routerMx6200',
-    connectedDeviceCount: 11,
+    connectedDeviceCount: 999,
+  ),
+  children: [],
+);
+
+final _slaveOfflineNode1 = RouterTreeNode(
+  type: AppTreeNodeType.node,
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000001',
+    location: 'Kitchen',
+    isMaster: false,
+    isOnline: false,
+    isWiredConnection: false,
+    signalStrength: -49,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 20,
+  ),
+  children: [],
+);
+
+final _slaveOfflineNode2 = RouterTreeNode(
+  type: AppTreeNodeType.node,
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000002',
+    location: 'Basement',
+    isMaster: false,
+    isOnline: false,
+    isWiredConnection: false,
+    signalStrength: -78,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 17,
+  ),
+  children: [],
+);
+
+final _slaveOfflineNode3 = RouterTreeNode(
+  type: AppTreeNodeType.node,
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000003',
+    location: 'Bed room 1',
+    isMaster: false,
+    isOnline: false,
+    isWiredConnection: false,
+    signalStrength: -55,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 7,
+  ),
+  children: [],
+);
+
+final _slaveOfflineNode4 = RouterTreeNode(
+  type: AppTreeNodeType.node,
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000004',
+    location: 'Bed room 2',
+    isMaster: false,
+    isOnline: false,
+    isWiredConnection: false,
+    signalStrength: -58,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 1,
+  ),
+  children: [],
+);
+
+final _slaveOfflineNode5 = RouterTreeNode(
+  type: AppTreeNodeType.node,
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000005',
+    location: 'A super long long long long long long cool name',
+    isMaster: false,
+    isOnline: false,
+    isWiredConnection: false,
+    signalStrength: -70,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 999,
   ),
   children: [],
 );
@@ -121,14 +201,234 @@ final testTopologyState1 = TopologyState(
 
 final testTopologyState2 = TopologyState(
   onlineRoot: _onlineRoot
-    ..children.add(
-      _masterNode
-        ..parent = _onlineRoot
-        ..children.add(_slaveNode1..parent = _masterNode)
-        ..children.add(_slaveNode2..parent = _masterNode),
-    ),
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveNode2
+          ..children.clear()
+          ..parent = _masterNode
+      ])),
   offlineRoot: RouterTreeNode(
       type: AppTreeNodeType.offline,
       data: const TopologyModel(isOnline: true, location: 'Offline'),
       children: []),
+);
+
+final testTopologyState3 = TopologyState(
+  onlineRoot: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode
+          ..children.addAll([
+            _slaveNode2
+              ..children.clear()
+              ..parent = _slaveNode1
+          ]),
+      ])),
+  offlineRoot: RouterTreeNode(
+      type: AppTreeNodeType.offline,
+      data: const TopologyModel(isOnline: true, location: 'Offline'),
+      children: []),
+);
+
+final testTopologyState4 = TopologyState(
+  onlineRoot: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveNode2
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveNode3
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveNode4
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveNode5
+          ..children.clear()
+          ..parent = _masterNode,
+      ])),
+  offlineRoot: RouterTreeNode(
+      type: AppTreeNodeType.offline,
+      data: const TopologyModel(isOnline: true, location: 'Offline'),
+      children: []),
+);
+
+final testTopologyState5 = TopologyState(
+  onlineRoot: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode
+          ..children.addAll([
+            _slaveNode2
+              ..children.clear()
+              ..parent = _slaveNode1
+              ..children.addAll([
+                _slaveNode3
+                  ..children.clear()
+                  ..parent = _slaveNode2
+                  ..children.addAll([
+                    _slaveNode4
+                      ..children.clear()
+                      ..parent = _slaveNode3
+                      ..children.addAll([
+                        _slaveNode5
+                          ..children.clear()
+                          ..parent = _slaveNode4,
+                      ]),
+                  ]),
+              ]),
+          ]),
+      ])),
+  offlineRoot: RouterTreeNode(
+      type: AppTreeNodeType.offline,
+      data: const TopologyModel(isOnline: true, location: 'Offline'),
+      children: []),
+);
+
+final testTopologyState6 = TopologyState(
+  onlineRoot: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode
+          ..children.addAll([
+            _slaveNode2
+              ..children.clear()
+              ..parent = _slaveNode1,
+            _slaveNode3
+              ..children.clear()
+              ..parent = _slaveNode1
+              ..children.addAll([
+                _slaveNode4
+                  ..children.clear()
+                  ..parent = _slaveNode3,
+                _slaveNode5
+                  ..children.clear()
+                  ..parent = _slaveNode3,
+              ]),
+          ]),
+      ])),
+  offlineRoot: RouterTreeNode(
+      type: AppTreeNodeType.offline,
+      data: const TopologyModel(isOnline: true, location: 'Offline'),
+      children: []),
+);
+
+final testTopologyStateOffline1 = TopologyState(
+  onlineRoot: _onlineRoot
+    ..children.clear()
+    ..children.add(
+      _masterNode
+        ..children.clear()
+        ..parent = _onlineRoot,
+    ),
+  offlineRoot: RouterTreeNode(
+      type: AppTreeNodeType.offline,
+      data: const TopologyModel(isOnline: false, location: 'Offline'),
+      children: [_slaveOfflineNode1..children.clear()]),
+);
+
+final testTopologyStateOffline2 = TopologyState(
+  onlineRoot: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()),
+  offlineRoot: RouterTreeNode(
+      type: AppTreeNodeType.offline,
+      data: const TopologyModel(isOnline: true, location: 'Offline'),
+      children: [
+        _slaveOfflineNode1..children.clear(),
+        _slaveOfflineNode2..children.clear()
+      ]),
+);
+
+final testTopologyStateOffline3 = TopologyState(
+  onlineRoot: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveNode2
+          ..children.clear()
+          ..parent = _masterNode,
+      ])),
+  offlineRoot: RouterTreeNode(
+      type: AppTreeNodeType.offline,
+      data: const TopologyModel(isOnline: true, location: 'Offline'),
+      children: [
+        _slaveOfflineNode3..children.clear(),
+        _slaveOfflineNode4..children.clear(),
+        _slaveOfflineNode5..children.clear(),
+      ]),
+);
+
+final testTopologyStateOffline4 = TopologyState(
+  onlineRoot: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode,
+      ])),
+  offlineRoot: RouterTreeNode(
+      type: AppTreeNodeType.offline,
+      data: const TopologyModel(isOnline: true, location: 'Offline'),
+      children: [
+        _slaveOfflineNode2..children.clear(),
+        _slaveOfflineNode3..children.clear(),
+        _slaveOfflineNode4..children.clear(),
+        _slaveOfflineNode5..children.clear(),
+      ]),
+);
+
+final testTopologyStateOffline5 = TopologyState(
+  onlineRoot: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()),
+  offlineRoot: RouterTreeNode(
+      type: AppTreeNodeType.offline,
+      data: const TopologyModel(isOnline: true, location: 'Offline'),
+      children: [
+        _slaveOfflineNode1..children.clear(),
+        _slaveOfflineNode2..children.clear(),
+        _slaveOfflineNode3..children.clear(),
+        _slaveOfflineNode4..children.clear(),
+        _slaveOfflineNode5..children.clear(),
+      ]),
 );
