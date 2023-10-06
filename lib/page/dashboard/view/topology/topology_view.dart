@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/utils/wifi.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/dashboard/view/topology/topology_model.dart';
@@ -72,7 +73,9 @@ class TopologyView extends ArgumentsConsumerStatelessView {
                 },
                 rootBuilder: (index, node) => InfoCell(
                   type: node.type,
-                  name: node.data.location,
+                  name: node.data.location == 'Internet'
+                      ? getAppLocalizations(context).internet
+                      : node.data.location,
                   icon: getCharactersIcons(context).nodesDefault,
                 ),
               ),

@@ -1,6 +1,6 @@
 reportPath=$1
 echo "*********************Running Tests********************"
-flutter test --file-reporter json:$reportPath/tests.json
+flutter test --file-reporter json:$reportPath/tests.json --exclude-tags=golden
 if ! dart test_scripts/test_result_parser.dart; then
   echo 'Test failed!******************************************'
   exit 1

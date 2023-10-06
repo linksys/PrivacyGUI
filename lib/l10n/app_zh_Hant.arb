@@ -2,5 +2,6 @@
   "@@locale": "zh_Hant",
   "app_title": "Linksys Flutter",
   "login": "登入",
-  "setup_new_router": "設定新的WiFi"
+  "setup_new_router": "設定新的WiFi",
+  "internet": "網路"
 }
