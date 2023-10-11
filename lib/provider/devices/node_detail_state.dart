@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
+import 'package:linksys_app/core/jnap/models/node_light_settings.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 
 enum BlinkingStatus {
   blinkNode('Blink Node'),
@@ -8,6 +11,36 @@ enum BlinkingStatus {
 
   final String value;
   const BlinkingStatus(this.value);
+}
+
+enum NodeLightStatus {
+  on,
+  off,
+  night;
+
+  static NodeLightStatus getStatus(NodeLightSettings? settings) {
+    if (settings == null) {
+      return NodeLightStatus.off;
+    }
+    if ((settings.allDayOff ?? false) ||
+        (settings.startHour == 0 && settings.endHour == 24)) {
+      return NodeLightStatus.off;
+    } else if (!settings.isNightModeEnable) {
+      return NodeLightStatus.on;
+    } else {
+      return NodeLightStatus.night;
+    }
+  }
+
+  String resolveString(BuildContext context) {
+    if (this == NodeLightStatus.on) {
+      return getAppLocalizations(context).on;
+    } else if (this == NodeLightStatus.off) {
+      return getAppLocalizations(context).off;
+    } else {
+      return 'Night';
+    }
+  }
 }
 
 @immutable
@@ -25,7 +58,7 @@ class NodeDetailState {
   final String firmwareVersion;
   final String lanIpAddress;
   final String wanIpAddress;
-  final bool isLightTurnedOn;
+  final NodeLightSettings? nodeLightSettings;
   final BlinkingStatus blinkingStatus;
 
   const NodeDetailState(
@@ -42,7 +75,7 @@ class NodeDetailState {
       this.firmwareVersion = '',
       this.lanIpAddress = '',
       this.wanIpAddress = '',
-      this.isLightTurnedOn = true,
+      this.nodeLightSettings,
       this.blinkingStatus = BlinkingStatus.blinkNode});
 
   NodeDetailState copyWith({
@@ -59,7 +92,7 @@ class NodeDetailState {
     String? firmwareVersion,
     String? lanIpAddress,
     String? wanIpAddress,
-    bool? isLightTurnedOn,
+    NodeLightSettings? nodeLightSettings,
     BlinkingStatus? blinkingStatus,
   }) {
     return NodeDetailState(
@@ -76,7 +109,7 @@ class NodeDetailState {
       firmwareVersion: firmwareVersion ?? this.firmwareVersion,
       lanIpAddress: lanIpAddress ?? this.lanIpAddress,
       wanIpAddress: wanIpAddress ?? this.wanIpAddress,
-      isLightTurnedOn: isLightTurnedOn ?? this.isLightTurnedOn,
+      nodeLightSettings: nodeLightSettings ?? this.nodeLightSettings,
       blinkingStatus: blinkingStatus ?? this.blinkingStatus,
     );
   }

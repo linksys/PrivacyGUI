@@ -271,6 +271,8 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/routerleds/GetLedNightModeSetting'),
   setLedNightModeSetting(
       value: 'http://linksys.com/jnap/routerleds/SetLedNightModeSetting'),
+  setLedNightModeSetting2(
+      value: 'http://linksys.com/jnap/routerleds/SetLedNightModeSetting2'),
   ;
 
   const _JNAPActionValue({required this.value});

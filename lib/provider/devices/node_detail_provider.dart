@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
+import 'package:linksys_app/core/jnap/models/node_light_settings.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
@@ -109,24 +110,17 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
 
   Future<void> getLEDLight() async {
     ref.read(deviceManagerProvider.notifier).getLEDLight().then((value) {
-      state = state.copyWith(isLightTurnedOn: value);
+      state = state.copyWith(nodeLightSettings: value);
     });
   }
 
-  Future<void> _setLEDLight(bool isOn) async {
-    ref.read(deviceManagerProvider.notifier).setLEDLight(isOn).then((value) {
-      state = state.copyWith(isLightTurnedOn: isOn);
+  Future<void> setLEDLight(NodeLightSettings settings) async {
+    ref
+        .read(deviceManagerProvider.notifier)
+        .setLEDLight(settings)
+        .then((value) {
+      state = state.copyWith(nodeLightSettings: settings);
     });
-  }
-
-  Future<void> toggleNodeLight(bool isOn) async {
-    final isCognitive = isCognitiveMeshRouter(
-      modelNumber: state.modelNumber,
-      hardwareVersion: state.firmwareVersion,
-    );
-    if (isCognitive) {
-      _setLEDLight(isOn);
-    }
   }
 
   Future<JNAPResult> startBlinkNodeLED(String deviceId) async {

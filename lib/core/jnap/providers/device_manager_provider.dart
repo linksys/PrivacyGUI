@@ -6,6 +6,7 @@ import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
 import 'package:linksys_app/core/jnap/models/back_haul_info.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
+import 'package:linksys_app/core/jnap/models/node_light_settings.dart';
 import 'package:linksys_app/core/jnap/models/wan_status.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
@@ -310,24 +311,25 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     }
   }
 
-  Future<bool> getLEDLight() async {
+  Future<NodeLightSettings> getLEDLight() async {
     final routerRepository = ref.read(routerRepositoryProvider);
     final result = await routerRepository.send(
       JNAPAction.getLedNightModeSetting,
       auth: true,
       cacheLevel: CacheLevel.noCache,
     );
-    if (result.result == 'OK') {
-      return result.output['Enable'];
-    }
-    return false;
+    return NodeLightSettings.fromMap(result.output);
   }
 
-  Future<void> setLEDLight(bool isOn) async {
+  Future<void> setLEDLight(NodeLightSettings settings) async {
     final routerRepository = ref.read(routerRepositoryProvider);
     await routerRepository.send(
       JNAPAction.setLedNightModeSetting,
-      data: {'Enable': isOn},
+      data: {
+        'Enable': settings.isNightModeEnable,
+        'StartingTime': settings.startHour,
+        'EndingTime': settings.endHour,
+      }..removeWhere((key, value) => value == null),
       auth: true,
     );
   }

@@ -46,6 +46,7 @@ import 'package:linksys_app/provider/auth/_auth.dart';
 import 'package:linksys_app/provider/otp/otp.dart';
 
 import '../page/dashboard/view/administration/lan/lan_view.dart';
+import '../page/dashboard/view/nodes/node_switch_light_view.dart';
 import 'constants.dart';
 
 part 'route_home.dart';

@@ -52,7 +52,12 @@ final settings = [
               name: RouteNamed.changeNodeName,
               path: RoutePath.changeNodeName,
               builder: (context, state) => const ChangeNodeNameView(),
-            )
+            ),
+            GoRoute(
+              name: RouteNamed.nodeLightSettings,
+              path: RoutePath.nodeLightSettings,
+              builder: (context, state) => const NodeSwitchLightView(),
+            ),
           ],
         ),
         GoRoute(

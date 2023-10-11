@@ -48,6 +48,7 @@ class RoutePath {
   static const nodeOffline = 'nodeOffline';
   static const nodeLight = 'nodeLight';
   static const changeNodeName = 'changeNodeName';
+  static const nodeLightSettings = 'nodeLightSettings';
 
   /// device
   static const deviceDetails = 'deviceDetails';
@@ -137,6 +138,7 @@ class RouteNamed {
   static const nodeOffline = 'nodeOffline';
   static const nodeLight = 'nodeLight';
   static const changeNodeName = 'changeNodeName';
+  static const nodeLightSettings = 'nodeLightSettings';
 
   ///device
   static const deviceDetails = 'deviceDetails';

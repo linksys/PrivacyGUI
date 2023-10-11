@@ -131,6 +131,7 @@ enum JNAPService {
   routerLEDs(value: 'http://linksys.com/jnap/routerleds/RouterLEDs'),
   routerLEDs2(value: 'http://linksys.com/jnap/routerleds/RouterLEDs2'),
   routerLEDs3(value: 'http://linksys.com/jnap/routerleds/RouterLEDs3'),
+  routerLEDs4(value: 'http://linksys.com/jnap/routerleds/RouterLEDs4'),
   ;
 
   const JNAPService({required this.value});

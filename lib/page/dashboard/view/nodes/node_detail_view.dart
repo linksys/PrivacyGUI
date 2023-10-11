@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/models/node_light_settings.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/core/utils/nodes.dart';
@@ -191,24 +192,32 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 )
               ]
             : [],
-        ...isServiceSupport(JNAPService.routerLEDs3)
-            ? [
-                const Divider(
-                  height: 8,
-                ),
-                AppPanelWithSwitch(
-                  value: state.isLightTurnedOn,
-                  title: 'Night Mode',
-                  onChangedEvent: (value) {
-                    ref
-                        .read(nodeDetailProvider.notifier)
-                        .toggleNodeLight(value);
-                  },
-                ),
-              ]
-            : []
+        ..._createNodeLightTile(state.nodeLightSettings)
       ],
     );
+  }
+
+  List<Widget> _createNodeLightTile(NodeLightSettings? nodeLightSettings) {
+    bool isSupportNightModeOnly = isServiceSupport(JNAPService.routerLEDs3);
+    bool isSupportNodeLight = isServiceSupport(JNAPService.routerLEDs4);
+    if (!isSupportNodeLight && !isSupportNightModeOnly) {
+      return [];
+    } else {
+      final title = isSupportNodeLight ? 'Node Light' : 'Night Mode';
+      return [
+        const Divider(
+                  height: 8,
+                ),
+                AppPanelWithInfo(
+                  infoText: NodeLightStatus.getStatus(nodeLightSettings)
+                      .resolveString(context),
+                  title: title,
+                  onTap: () {
+                    context.pushNamed(RouteNamed.nodeLightSettings);
+                  },
+                ),
+      ];
+    }
   }
 
   Widget _detailSection(NodeDetailState state) {

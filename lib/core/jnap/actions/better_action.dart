@@ -295,6 +295,10 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.routerLEDs3:
       break;
+    case JNAPService.routerLEDs4:
+      _betterActionMap[JNAPAction.setLedNightModeSetting] =
+          _JNAPActionValue.setLedNightModeSetting2.value;
+      break;
   }
 }
 
