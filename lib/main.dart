@@ -14,7 +14,6 @@ import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/page/dashboard/view/dashboard_menu_view.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
-import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/notification/notification_helper.dart';
@@ -25,13 +24,13 @@ import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_app/provider/smart_device_provider.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/theme/color_schemes.g.dart';
 import 'package:linksys_widgets/theme/theme_data.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'route/router_provider.dart';
 import 'util/analytics.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 void main() async {
   // enableFlutterDriverExtension();
@@ -49,6 +48,8 @@ void main() async {
   // });
   if (!kIsWeb) {
     HttpOverrides.global = MyHTTPOverrides();
+  } else {
+    usePathUrlStrategy();
   }
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
@@ -82,7 +83,9 @@ void main() async {
   // Pass all uncaught errors from the framework to Crashlytics.
   FlutterError.onError = (FlutterErrorDetails details) {
     logger.e('Uncaught Flutter Error:\n', error: details);
-    FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    if (!kIsWeb) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    }
     // if (kReleaseMode) {
     //   // Only exit app on release mode
     //   exit(1);
@@ -92,7 +95,9 @@ void main() async {
   PlatformDispatcher.instance.onError = (error, stack) {
     logger.e('Uncaught Error:\n', error: error, stackTrace: stack);
     logger.e(stack.toString());
-    FirebaseCrashlytics.instance.recordError(error, stack);
+    if (!kIsWeb) {
+      FirebaseCrashlytics.instance.recordError(error, stack);
+    }
     // if (kReleaseMode) {
     //   // Only exit app on release mode
     //   exit(1);
@@ -118,7 +123,7 @@ Widget _app() {
     observers: [
       Logger(),
     ],
-    parent: container,
+    // parent: container,
     child: const MoabApp(),
   );
 }

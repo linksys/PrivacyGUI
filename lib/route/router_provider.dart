@@ -41,6 +41,7 @@ import 'package:linksys_app/page/landing/view/_view.dart';
 import 'package:linksys_app/page/linkup/view/linkup_view.dart';
 import 'package:linksys_app/page/login/view/_view.dart';
 import 'package:linksys_app/page/otp_flow/view/_view.dart';
+import 'package:linksys_app/page/pnp/pnp_setup_view.dart';
 import 'package:linksys_app/page/wifi_settings/view/_view.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
 import 'package:linksys_app/provider/otp/otp.dart';
@@ -76,6 +77,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => SelectNetworkView(),
       ),
       dashboardRoute,
+      GoRoute(
+        name: RouteNamed.pnp,
+        path: RoutePath.pnp,
+        builder: (context, state) => const PnpSetupView(),
+      ),
     ],
     redirect: (context, state) {
       return router._redirectLogic(state);
@@ -105,6 +111,10 @@ class RouterNotifier extends ChangeNotifier {
   }
 
   String? _redirectLogic(GoRouterState state) {
+    if (state.matchedLocation == '/pnp/index.html') {
+      return '/pnp';
+    }
+
     final loginType =
         _ref.watch(authProvider.select((data) => data.value?.loginType));
     if (state.matchedLocation == '/') {
