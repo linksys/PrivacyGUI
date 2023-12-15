@@ -69,7 +69,6 @@ dependencies:
   graphview: ^1.2.0
   local_auth: ^2.1.7
   fl_chart: ^0.55.1
-  styled_text: ^6.0.0
   image: ^4.1.0
   collection: ^1.16.0
   in_app_purchase: ^3.0.8

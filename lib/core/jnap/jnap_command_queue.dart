@@ -78,8 +78,6 @@ class CommandQueue {
     _queue.add(command);
     logger.d(
         'Command Queue:: enqueue command ${command.runtimeType}, ${command.spec.action}');
-    logger.d(
-        'Command Queue:: enqueue command ${command.runtimeType}, ${command.spec.action}');
     return command.wait();
   }
 

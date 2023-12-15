@@ -33,6 +33,7 @@ class LinksysHttpClient extends http.BaseClient
     IOClient? client,
     int timeoutMs = 10000,
     int retries = 1,
+    String? Function()? getHost,
     FutureOr<bool> Function(http.BaseResponse) when = _defaultWhen,
     FutureOr<bool> Function(Object, StackTrace) whenError = _defaultWhenError,
     Duration Function(int retryCount) delay = _defaultDelay,
@@ -44,7 +45,8 @@ class LinksysHttpClient extends http.BaseClient
         _when = when,
         _whenError = whenError,
         _delay = delay,
-        _onRetry = onRetry {
+        _onRetry = onRetry,
+        _getHost = getHost {
     RangeError.checkNotNegative(_retries, 'retries');
   }
 
@@ -84,6 +86,8 @@ class LinksysHttpClient extends http.BaseClient
 
   /// The callback to call to indicate that a request is being retried.
   final FutureOr<void> Function(BaseRequest, http.BaseResponse?, int)? _onRetry;
+  /// Custom host methodology
+  final String? Function()? _getHost;
 
   Map<String, String> get defaultHeader => {
         kHeaderClientTypeId: kClientTypeId,
@@ -99,8 +103,7 @@ class LinksysHttpClient extends http.BaseClient
           "Access-Control-Allow-Methods": "POST, OPTIONS, DELETE, PUT, GET"
       };
 
-  // String getHost() => CloudEnvironmentManager().currentConfig?.apiBase ?? '';
-  String getHost() => 'https://${cloudEnvironmentConfig[kCloudBase]}';
+  String getHost() => _getHost?.call() ?? 'https://${cloudEnvironmentConfig[kCloudBase]}';
 
   String wrapSessionToken(String token) =>
       'LinksysUserAuth session_token="$token"';
