@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/repository/router/extensions/device_list_extension.dart';
+import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/_connectivity.dart';
@@ -13,9 +18,10 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-class EnterRouterPasswordView extends ConsumerStatefulWidget {
+class EnterRouterPasswordView extends ArgumentsConsumerStatefulView {
   const EnterRouterPasswordView({
     Key? key,
+    super.args,
   }) : super(key: key);
 
   @override
@@ -24,7 +30,7 @@ class EnterRouterPasswordView extends ConsumerStatefulWidget {
 }
 
 class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
-  bool _isConnectedToRouter = false;
+  bool _isConnectedToRouter = true;
   bool _isLoading = false;
   bool _isPasswordValidate = false;
   String _errorReason = '';
@@ -36,6 +42,8 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
   @override
   void initState() {
     super.initState();
+    checkWifi();
+    ref.read(dashboardManagerProvider.notifier).checkDeviceInfo(null);
   }
 
   @override
@@ -64,21 +72,28 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
       _isLoading = true;
     });
 
-    bool isConnected =
-        ref.read(connectivityProvider).connectivityInfo.routerType !=
-            RouterType.others;
+    // bool isConnected =
+    //     ref.read(connectivityProvider).connectivityInfo.routerType !=
+    //         RouterType.others;
 
-    if (isConnected) {
-      await ref
-          .read(authProvider.notifier)
-          .getAdminPasswordInfo()
-          .then((value) => _handleAdminPasswordInfo(value))
-          .onError((error, stackTrace) {
-        logger.d('Get Admin Password Hint Error $error');
-      });
-    }
+    // if (isConnected) {
+    //   await ref
+    //       .read(authProvider.notifier)
+    //       .getAdminPasswordInfo()
+    //       .then((value) => _handleAdminPasswordInfo(value))
+    //       .onError((error, stackTrace) {
+    //     logger.d('Get Admin Password Hint Error $error');
+    //   });
+    // }
+    await ref
+        .read(authProvider.notifier)
+        .getAdminPasswordInfo()
+        .then((value) => _handleAdminPasswordInfo(value))
+        .onError((error, stackTrace) {
+      logger.d('Get Admin Password Hint Error $error');
+    });
     setState(() {
-      _isConnectedToRouter = isConnected;
+      // _isConnectedToRouter = isConnected;
       _isLoading = false;
     });
   }

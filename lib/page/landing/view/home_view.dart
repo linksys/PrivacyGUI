@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -72,12 +73,17 @@ class _HomeViewState extends ConsumerState<HomeView> {
         getAppLocalizations(context).login,
         key: const Key('home_view_button_login'),
         onTap: () async {
-          final list = await BiometricsHelp().getKeyList();
-          if (list.isNotEmpty) {
-            goRouter.goNamed(RouteNamed.cloudLoginPassword,
-                extra: {'username': list[0], 'enrolledBiometrics': true});
+          if (BuildConfig.forceCommandType == ForceCommand.local) {
+            // Local version flow
+            goRouter.goNamed(RouteNamed.localLoginPassword);
           } else {
-            goRouter.pushNamed(RouteNamed.cloudLoginAccount);
+            final list = await BiometricsHelp().getKeyList();
+            if (list.isNotEmpty) {
+              goRouter.goNamed(RouteNamed.cloudLoginPassword,
+                  extra: {'username': list[0], 'enrolledBiometrics': true});
+            } else {
+              goRouter.pushNamed(RouteNamed.cloudLoginAccount);
+            }
           }
         },
       ),
@@ -95,8 +101,15 @@ class _HomeViewState extends ConsumerState<HomeView> {
                     PackageInfo.fromPlatform().then((value) => value.version),
                 initialData: '-',
                 builder: (context, data) {
+                  var version = 'version ${data.data}';
+                  version =
+                      '$version ${cloudEnvTarget == CloudEnvironment.prod ? '' : cloudEnvTarget.name}';
+                  // if (kDebugMode && kIsWeb) {
+                  if (kIsWeb) {
+                    version = '$version - ${BuildConfig.forceCommandType.name}';
+                  }
                   return AppText.bodySmall(
-                    'version ${data.data} ${cloudEnvTarget == CloudEnvironment.prod ? '' : cloudEnvTarget.name}',
+                    version,
                   );
                 }),
           ),

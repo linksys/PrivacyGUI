@@ -117,10 +117,13 @@ class RouterNotifier extends ChangeNotifier {
           return null;
       }
     }
+
+    // if no network Id for remote login
     final managedNetworkId = _ref.read(selectedNetworkIdProvider);
-    if (loginType != LoginType.none &&
+    if (loginType == LoginType.remote &&
         managedNetworkId == null &&
         state.matchedLocation != RoutePath.selectNetwork) {
+      logger.d('empty network');
       return RoutePath.prepareDashboard;
     }
 

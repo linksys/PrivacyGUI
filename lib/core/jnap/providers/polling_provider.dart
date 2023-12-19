@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/actions/jnap_transaction.dart';
@@ -49,34 +50,79 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
   fetchFirstLaunchedCacheData() {
     final cache = ref.read(linksysCacheManagerProvider).data;
-    final commands = JNAPTransactionBuilder.coreTransactions().commands;
-    final checkCacheDataList = commands
-        .where((command) => cache.keys.contains(command.key.actionValue));
-    // Have not done any polling yet
-    if (checkCacheDataList.length != commands.length) return;
+    if (BuildConfig.forceCommandType == ForceCommand.local) {
+      final firstCommands =
+          JNAPTransactionBuilder.firstCoreTransactions().commands;
+      final secondCommands =
+          JNAPTransactionBuilder.secondCoreTransactions().commands;
 
-    final cacheDataList = checkCacheDataList
-        .where((command) => cache[command.key.actionValue]['data'] != null)
-        .map((command) => MapEntry(command.key,
-            JNAPSuccess.fromJson(cache[command.key.actionValue]['data'])))
-        .toList();
+      // Have not done any polling yet
+      final checkFirstCacheDataList = firstCommands
+          .where((command) => cache.keys.contains(command.key.actionValue));
+      if (checkFirstCacheDataList.length != firstCommands.length) return;
+      final checkSecondCacheDataList = secondCommands
+          .where((command) => cache.keys.contains(command.key.actionValue));
+      if (checkSecondCacheDataList.length != firstCommands.length) return;
 
-    state = AsyncValue.data(CoreTransactionData(
-        lastUpdate: 0, data: Map.fromEntries(cacheDataList)));
+      final firstCacheDataList = checkFirstCacheDataList
+          .where((command) => cache[command.key.actionValue]['data'] != null)
+          .map((command) => MapEntry(command.key,
+              JNAPSuccess.fromJson(cache[command.key.actionValue]['data'])))
+          .toList();
+      final secondCacheDataList = checkSecondCacheDataList
+          .where((command) => cache[command.key.actionValue]['data'] != null)
+          .map((command) => MapEntry(command.key,
+              JNAPSuccess.fromJson(cache[command.key.actionValue]['data'])))
+          .toList();
+      firstCacheDataList.addAll(secondCacheDataList);
+      state = AsyncValue.data(CoreTransactionData(
+          lastUpdate: 0, data: Map.fromEntries(firstCacheDataList)));
+    } else {
+      final commands = JNAPTransactionBuilder.coreTransactions().commands;
+      final checkCacheDataList = commands
+          .where((command) => cache.keys.contains(command.key.actionValue));
+      // Have not done any polling yet
+      if (checkCacheDataList.length != commands.length) return;
+
+      final cacheDataList = checkCacheDataList
+          .where((command) => cache[command.key.actionValue]['data'] != null)
+          .map((command) => MapEntry(command.key,
+              JNAPSuccess.fromJson(cache[command.key.actionValue]['data'])))
+          .toList();
+
+      state = AsyncValue.data(CoreTransactionData(
+          lastUpdate: 0, data: Map.fromEntries(cacheDataList)));
+    }
   }
 
   _polling(RouterRepository repository) async {
     final benchMark = BenchMarkLogger(name: 'Polling provider');
     benchMark.start();
     state = const AsyncValue.loading();
-    final fetchFuture = repository
-        .transaction(JNAPTransactionBuilder.coreTransactions())
-        .then((successWrap) => successWrap.data)
-        .then((data) => CoreTransactionData(
-            lastUpdate: DateTime.now().millisecondsSinceEpoch,
-            data: Map.fromEntries(data)));
+    if (BuildConfig.forceCommandType == ForceCommand.local) {
+      final fetchFuture = repository
+          .transaction(JNAPTransactionBuilder.firstCoreTransactions())
+          .then((successWrap) async {
+        final secondSuccessWrap = await repository
+            .transaction(JNAPTransactionBuilder.secondCoreTransactions());
+        successWrap.data.addAll(secondSuccessWrap.data);
+        return successWrap.data;
+      }).then((data) => CoreTransactionData(
+              lastUpdate: DateTime.now().millisecondsSinceEpoch,
+              data: Map.fromEntries(data)));
 
-    state = await AsyncValue.guard(() => fetchFuture);
+      state = await AsyncValue.guard(() => fetchFuture);
+    } else {
+      final fetchFuture = repository
+          .transaction(JNAPTransactionBuilder.coreTransactions())
+          .then((successWrap) => successWrap.data)
+          .then((data) => CoreTransactionData(
+              lastUpdate: DateTime.now().millisecondsSinceEpoch,
+              data: Map.fromEntries(data)));
+
+      state = await AsyncValue.guard(() => fetchFuture);
+    }
+
     logger.d('state: $state');
     benchMark.end();
   }

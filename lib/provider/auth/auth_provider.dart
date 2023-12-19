@@ -177,7 +177,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       return refreshToken(error.refreshToken);
     } else {
       // not handling at this moment
-      throw error;
+      return Future.value(null);
     }
   }
 
@@ -273,7 +273,12 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         },
       );
       if (response.result == jnapResultOk) {
-        return previousState.copyWith(localPassword: password);
+        const storage = FlutterSecureStorage();
+        await storage.write(key: pLocalPassword, value: password);
+        return previousState.copyWith(
+          localPassword: password,
+          loginType: LoginType.local,
+        );
       } else {
         throw response;
       }

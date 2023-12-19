@@ -9,6 +9,33 @@ class JNAPTransactionBuilder {
     this.auth = false,
   }) : _commands = commands;
 
+  factory JNAPTransactionBuilder.firstCoreTransactions() {
+    return JNAPTransactionBuilder(
+      commands: [
+        const MapEntry(JNAPAction.getDeviceInfo, {}),
+        const MapEntry(JNAPAction.getWANStatus, {}),
+      ],
+    );
+  }
+
+  factory JNAPTransactionBuilder.secondCoreTransactions() {
+    return JNAPTransactionBuilder(
+      commands: [
+        const MapEntry(JNAPAction.getNodesWirelessNetworkConnections, {}),
+        const MapEntry(JNAPAction.getNetworkConnections, {}),
+        const MapEntry(JNAPAction.getRadioInfo, {}),
+        const MapEntry(JNAPAction.getGuestRadioSettings, {}),
+        const MapEntry(JNAPAction.getDevices, {}),
+        const MapEntry(JNAPAction.getFirmwareUpdateStatus, {}),
+        const MapEntry(
+            JNAPAction.getHealthCheckResults, {'includeModuleResults': true}),
+        const MapEntry(JNAPAction.getSupportedHealthCheckModules, {}),
+        const MapEntry(JNAPAction.getBackhaulInfo, {}),
+      ],
+      auth: true,
+    );
+  }
+
   factory JNAPTransactionBuilder.coreTransactions() {
     return JNAPTransactionBuilder(
       commands: [

@@ -66,23 +66,27 @@ void main() async {
   });
 ////
 
-  logger.d('Start to init Firebase Core');
-  final appConst = await PackageInfo.fromPlatform();
-  await Firebase.initializeApp(
-    options: appConst.appName.endsWith('ee')
-        ? DefaultFirebaseOptions.iosEE
-        : DefaultFirebaseOptions.currentPlatform,
-  );
-  await initAnalyticsDefault();
-  // if (!kReleaseMode) {
-  //   MqttLogger.loggingOn = true;
-  // }
-  logger.d('Done for init Firebase Core');
-  initCloudMessage();
+  if (!kIsWeb) {
+    logger.d('Start to init Firebase Core');
+    final appConst = await PackageInfo.fromPlatform();
+    await Firebase.initializeApp(
+      options: appConst.appName.endsWith('ee')
+          ? DefaultFirebaseOptions.iosEE
+          : DefaultFirebaseOptions.currentPlatform,
+    );
+    await initAnalyticsDefault();
+    // if (!kReleaseMode) {
+    //   MqttLogger.loggingOn = true;
+    // }
+    logger.d('Done for init Firebase Core');
+    initCloudMessage();
+  }
   // Pass all uncaught errors from the framework to Crashlytics.
   FlutterError.onError = (FlutterErrorDetails details) {
     logger.e('Uncaught Flutter Error:\n', error: details);
-    FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    if (!kIsWeb) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    }
     // if (kReleaseMode) {
     //   // Only exit app on release mode
     //   exit(1);
@@ -92,7 +96,9 @@ void main() async {
   PlatformDispatcher.instance.onError = (error, stack) {
     logger.e('Uncaught Error:\n', error: error, stackTrace: stack);
     logger.e(stack.toString());
-    FirebaseCrashlytics.instance.recordError(error, stack);
+    if (!kIsWeb) {
+      FirebaseCrashlytics.instance.recordError(error, stack);
+    }
     // if (kReleaseMode) {
     //   // Only exit app on release mode
     //   exit(1);

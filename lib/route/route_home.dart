@@ -10,7 +10,14 @@ final homeRoute = GoRoute(
       path: RoutePath.debug,
       builder: (context, state) => const DebugToolsView(),
     ),
-    loginRoute
+    loginRoute,
+    GoRoute(
+      name: RouteNamed.localLoginPassword,
+      path: RoutePath.localLoginPassword,
+      builder: (context, state) => EnterRouterPasswordView(
+        args: state.uri.queryParameters,
+      ),
+    ),
     //setupRoute
   ],
 );

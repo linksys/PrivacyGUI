@@ -47,7 +47,7 @@ class JNAPHttpCommand extends BaseHttpCommand<JNAPResult, HttpJNAPSpec> {
     _header = {
       keyMqttHeaderAction: spec.action,
       HttpHeaders.contentTypeHeader: ContentType.json.value,
-      HttpHeaders.acceptEncodingHeader: '*/*',
+      // HttpHeaders.acceptEncodingHeader: '*/*',
       ...spec.extraHeader
     }..removeWhere((key, value) => value.isEmpty);
     final result = await executor.execute(this);
@@ -76,7 +76,7 @@ class TransactionHttpCommand
     _header = {
       keyMqttHeaderAction: spec.action,
       HttpHeaders.contentTypeHeader: ContentType.json.value,
-      HttpHeaders.acceptEncodingHeader: '*/*',
+      // HttpHeaders.acceptEncodingHeader: '*/*',
       ...spec.extraHeader
     }..removeWhere((key, value) => value.isEmpty);
     final result = await executor.execute(this);

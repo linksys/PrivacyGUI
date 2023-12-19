@@ -29,6 +29,9 @@ import 'package:linksys_app/core/jnap/providers/side_effect_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'providers/ip_getter/get_local_ip.dart'
+    if (dart.library.io) 'providers/ip_getter/mobile_get_local_ip.dart'
+    if (dart.library.html) 'providers/ip_getter/web_get_local_ip.dart';
 
 enum CommandType {
   remote,
@@ -159,7 +162,6 @@ class RouterRepository {
       routerType: routerType,
       type: communicateType,
     );
-
     if (url.isNotEmpty) {
       return TransactionHttpCommand(
         url: url,
@@ -283,9 +285,10 @@ class RouterRepository {
     required CommandType? type,
   }) {
     String url;
-    final localIP = _getLocalIP();
+    var localIP = _getLocalIP();
+    localIP = localIP.startsWith('http') ? localIP : 'https://$localIP/';
     if (kIsWeb) {
-      type = CommandType.remote;
+      type = checkForce() ?? type;
     }
     final newRouterType = () {
       if (type == CommandType.local) {
@@ -300,15 +303,13 @@ class RouterRepository {
       case RouterType.others:
         url = isCloudLogin()
             ? cloudEnvironmentConfig[kCloudJNAP]
-            : 'https://$localIP/JNAP/';
+            : '${localIP}JNAP/';
         break;
       case RouterType.behind:
-        url = isCloudLogin()
-            ? 'https://$localIP/cloud/JNAP/'
-            : 'https://$localIP/JNAP/';
+        url = isCloudLogin() ? '${localIP}cloud/JNAP/' : '${localIP}JNAP/';
         break;
       case RouterType.behindManaged:
-        url = 'https://$localIP/JNAP/';
+        url = '${localIP}JNAP/';
         break;
     }
     return url;
@@ -323,7 +324,7 @@ class RouterRepository {
     final cloudLogin = isCloudLogin();
     final loginType = getLoginType();
     if (kIsWeb) {
-      type = CommandType.remote;
+      type = checkForce() ?? type;
     }
     Map<String, String> header = {};
     final newRouterType = () {
@@ -372,7 +373,7 @@ class RouterRepository {
         final authKey = cloudLogin ? kJNAPSession : kJNAPAuthorization;
         final authValue = cloudLogin
             ? await getCloudToken()
-            : 'Basic ${Utils.stringBase64Encode('admin:${loginType == LoginType.none ? 'admin' : getLocalPassword()}')}';
+            : 'Basic ${Utils.stringBase64Encode('admin:${loginType == LoginType.none ? 'admin' : await getLocalPassword()}')}';
         header = {
           authKey: (needAuth | isCloudLogin()) ? authValue : '',
         };
@@ -438,7 +439,7 @@ class RouterRepository {
 
 extension RouterRepositoryUtil on RouterRepository {
   String _getLocalIP() {
-    return ref.read(connectivityProvider).connectivityInfo.gatewayIp ?? '';
+    return getLocalIp(ref);
   }
 
   String _getNetworkId() {
@@ -454,8 +455,23 @@ extension RouterRepositoryUtil on RouterRepository {
         '';
   }
 
+  CommandType? checkForce() {
+    final force = BuildConfig.forceCommandType;
+    switch (force) {
+      case ForceCommand.remote:
+        return CommandType.remote;
+      case ForceCommand.local:
+        return CommandType.local;
+      default:
+        return null;
+    }
+  }
+
   Future<String> getLocalPassword() async {
-    return await const FlutterSecureStorage().read(key: pLocalPassword) ?? '';
+    final password = ref.read(authProvider).value?.localPassword ??
+        await const FlutterSecureStorage().read(key: pLocalPassword) ??
+        '';
+    return password;
   }
 
   RouterType getRouterType() =>

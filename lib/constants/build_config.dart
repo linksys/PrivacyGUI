@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:linksys_app/constants/_constants.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum CloudEnvironment {
@@ -13,11 +14,31 @@ enum CloudEnvironment {
   }
 }
 
+enum ForceCommand {
+  local,
+  remote,
+  none;
+
+  static ForceCommand reslove(String type) {
+    logger.d('Force - $type');
+    if (type == 'local') {
+      return ForceCommand.local;
+    } else if (type == 'remote') {
+      return ForceCommand.remote;
+    } else {
+      return ForceCommand.none;
+    }
+  }
+}
+
 class BuildConfig {
   static const String cloudEnv =
       String.fromEnvironment('cloud_env', defaultValue: 'qa');
   static const bool isEnableEnvPicker =
       bool.fromEnvironment('enable_env_picker', defaultValue: true);
+
+  static ForceCommand forceCommandType = ForceCommand.reslove(
+      const String.fromEnvironment('force', defaultValue: 'none'));
 
   static load() async {
     final prefs = await SharedPreferences.getInstance();

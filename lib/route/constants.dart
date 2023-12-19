@@ -4,11 +4,12 @@ class RoutePath {
   static const prepareDashboard = '/prepareDashboard';
   static const selectNetwork = '/selectNetwork';
 
-  /// cloud login
+  /// login
   static const cloudLoginAccount = 'cloudLoginAccount';
   static const cloudLoginPassword = 'cloudLoginPassword';
   static const cloudForgotPassword = 'cloudForgotPassword';
   static const phoneRegionCode = 'phoneRegionCode';
+  static const localLoginPassword = 'localLoginPassword';
 
   /// dashboard
   static const dashboardHome = '/dashboardHome';
@@ -99,6 +100,7 @@ class RouteNamed {
   static const cloudLoginPassword = 'cloudLoginPassword';
   static const cloudForgotPassword = 'cloudForgotPassword';
   static const phoneRegionCode = 'phoneRegionCode';
+  static const localLoginPassword = 'localLoginPassword';
 
   /// dashboard
   static const dashboardMenu = 'dashboardMenu';
