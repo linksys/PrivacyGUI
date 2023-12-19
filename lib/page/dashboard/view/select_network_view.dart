@@ -11,7 +11,7 @@ import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/provider/select_network/select_network_provider.dart';
-import 'package:linksys_app/util/analytics.dart';
+import 'package:linksys_app/firebase/analytics.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';

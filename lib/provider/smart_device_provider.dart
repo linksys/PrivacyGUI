@@ -16,7 +16,7 @@ import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
 import 'package:linksys_app/core/cloud/model/cloud_account.dart';
 import 'package:linksys_app/core/cloud/model/cloud_event_action.dart';
 import 'package:linksys_app/core/cloud/model/cloud_event_subscription.dart';
-import 'package:linksys_app/notification/notification_receiver.dart';
+import 'package:linksys_app/firebase/notification_receiver.dart';
 
 const defaultSubscriptionEvents = CloudEventType.values;
 

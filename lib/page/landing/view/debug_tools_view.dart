@@ -21,7 +21,7 @@ import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_app/provider/smart_device_provider.dart';
-import 'package:linksys_app/util/analytics.dart';
+import 'package:linksys_app/firebase/analytics.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/panel/general_expansion.dart';
