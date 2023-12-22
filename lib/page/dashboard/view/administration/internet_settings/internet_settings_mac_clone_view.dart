@@ -36,7 +36,7 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
     return StyledAppPageView(
       title: getAppLocalizations(context).mac_address_clone,
       actions: [
-        AppTertiaryButton(
+        AppTextButton(
           getAppLocalizations(context).save,
           onTap: _isValid
               ? () {
@@ -68,7 +68,7 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
 
   Widget _buildMACInput() {
     if (_isEnabled) {
-      return AppMacField(
+      return AppTextField.macAddress(
         controller: _valueController,
         headerText: getAppLocalizations(context).enter_mac_address,
         hintText: getAppLocalizations(context).mac_address,

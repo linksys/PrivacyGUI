@@ -52,7 +52,7 @@ class _CloudPasswordValidationViewState
             },
           ),
           const AppGap.extraBig(),
-          AppPrimaryButton(
+          AppFilledButton(
             'Next',
             onTap: _verifyPassword,
           ),

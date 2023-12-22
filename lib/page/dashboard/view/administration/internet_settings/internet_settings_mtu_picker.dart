@@ -36,7 +36,7 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
     return StyledAppPageView(
       title: getAppLocalizations(context).connection_type,
       actions: [
-        AppTertiaryButton(
+        AppTextButton(
           getAppLocalizations(context).done,
           onTap: () {
             FocusManager.instance.primaryFocus?.unfocus();

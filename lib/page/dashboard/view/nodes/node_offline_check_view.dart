@@ -114,7 +114,7 @@ class _NodeOfflineCheckViewState extends ConsumerState<NodeOfflineCheckView> {
                           content: const AppText.bodyLarge(
                               'Do you want to remove this node from your network?'),
                           actions: [
-                            AppTertiaryButton(
+                            AppTextButton(
                               'Remove this node',
                               onTap: () {
                                 context.pop();
@@ -139,7 +139,7 @@ class _NodeOfflineCheckViewState extends ConsumerState<NodeOfflineCheckView> {
                                 });
                               },
                             ),
-                            AppTertiaryButton('Keep this node', onTap: () {
+                            AppTextButton('Keep this node', onTap: () {
                               context.pop();
                             })
                           ],

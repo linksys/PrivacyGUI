@@ -119,7 +119,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
                 },
               ),
             const AppGap.regular(),
-            AppTertiaryButton.noPadding(
+            AppTextButton.noPadding(
                 getAppLocalizations(context).otp_resend_code, onTap: () {
               _setLoading(true);
               _onSend(state.selectedMethod!, state.token)
@@ -137,7 +137,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
                 ),
               ),
             const Spacer(),
-            AppPrimaryButton.fillWidth(
+            AppFilledButton.fillWidth(
               'Next',
               onTap: _otpController.text.length >= 6
                   ? () {

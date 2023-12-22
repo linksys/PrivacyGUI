@@ -35,7 +35,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     return StyledAppPageView(
       title: getAppLocalizations(context).firmware_update,
       actions: [
-        AppTertiaryButton(
+        AppTextButton(
           getAppLocalizations(context).save,
           onTap: () {},
         ),

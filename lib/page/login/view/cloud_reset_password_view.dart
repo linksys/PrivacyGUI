@@ -77,7 +77,7 @@ class _CloudForgotPasswordViewState
               ],
             ),
             const AppGap.semiBig(),
-            AppPrimaryButton(
+            AppFilledButton(
               getAppLocalizations(context).text_continue,
               onTap: _localValidatePassword(_passwordController.text)
                   ? () async {
@@ -136,7 +136,7 @@ class _CloudForgotPasswordViewState
         content: Column(
           children: [
             const AppGap.extraBig(),
-            AppPrimaryButton(
+            AppFilledButton(
               getAppLocalizations(context).back_to_login,
               onTap: () {
                 context.goNamed(RouteNamed.home);

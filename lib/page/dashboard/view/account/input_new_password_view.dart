@@ -69,7 +69,7 @@ class _InputNewPasswordViewState extends ConsumerState<InputNewPasswordView> {
             ],
           ),
           const AppGap.extraBig(),
-          AppPrimaryButton(
+          AppFilledButton(
             'Next',
             onTap: _applyPassword,
           ),

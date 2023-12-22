@@ -69,7 +69,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
     final goRouter = GoRouter.of(context);
 
     return Column(children: [
-      AppPrimaryButton.fillWidth(
+      AppFilledButton.fillWidth(
         getAppLocalizations(context).login,
         key: const Key('home_view_button_login'),
         onTap: () async {
@@ -116,8 +116,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
           if (BuildConfig.isEnableEnvPicker)
             Align(
                 alignment: Alignment.bottomRight,
-                child:
-                    AppTertiaryButton.noPadding('Select Env', onTap: () async {
+                child: AppTextButton.noPadding('Select Env', onTap: () async {
                   final _ = await showModalBottomSheet(
                       enableDrag: false,
                       context: context,
@@ -133,7 +132,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
     if (_isOpenDebug) {
       return [
         const AppGap.semiBig(),
-        AppSecondaryButton(
+        AppTextButton(
           'Debug Tools',
           onTap: () {
             context.pushNamed(RouteNamed.debug);
@@ -177,7 +176,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                             },
                           )),
                   const Spacer(),
-                  AppPrimaryButton(
+                  AppFilledButton(
                     'Save',
                     onTap: () async {
                       setState(() {

@@ -6,7 +6,6 @@ import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 import '../../../common/testable_widget.dart';
 
-
 void main() {
   setUpAll(() async {});
   tearDownAll(() async {});
@@ -38,7 +37,7 @@ void main() {
 
     final passwordViewInput = find.byType(AppTextField);
     final spinnerView = find.byType(AppFullScreenSpinner);
-    final continueButton = find.byType(AppPrimaryButton);
+    final continueButton = find.byType(AppFilledButton);
 
     final iconData = AppIconsData.regular().characters;
 
@@ -59,7 +58,7 @@ void main() {
     // verify secure property is true
     expect(tester.widget<AppTextField>(passwordViewInput).secured, isTrue);
     // verify the button is disable
-    expect(tester.widget<AppPrimaryButton>(continueButton).onTap, isNull);
+    expect(tester.widget<AppFilledButton>(continueButton).onTap, isNull);
   });
 
   testWidgets('test cloud login password view - click hide/show password',

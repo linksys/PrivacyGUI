@@ -40,7 +40,7 @@ class __ChangeNodeNameViewState extends ConsumerState<ChangeNodeNameView> {
       actions: [
         AppPadding(
           padding: const AppEdgeInsets.only(right: AppGapSize.regular),
-          child: AppTertiaryButton.noPadding(
+          child: AppTextButton.noPadding(
             getAppLocalizations(context).save,
             onTap: isChanged ? _checkInputData : null,
           ),

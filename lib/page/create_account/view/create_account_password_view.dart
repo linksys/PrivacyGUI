@@ -109,10 +109,10 @@ class _CreateAccountPasswordViewState
                 ),
               ],
             ),
-            AppTertiaryButton('I already have a Linksys account password',
+            AppTextButton('I already have a Linksys account password',
                 onTap: () {}),
             const AppGap.big(),
-            AppPrimaryButton(
+            AppFilledButton(
               'Next',
               onTap: _onNextAction,
             ),

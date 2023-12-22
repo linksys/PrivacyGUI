@@ -99,7 +99,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
       );
     } else {
       return AppIconButton(
-        padding: const AppEdgeInsets.zero(),
+        padding: const EdgeInsets.all(0),
         icon: getCharactersIcons(context).refreshDefault,
         onTap: () {
           ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();

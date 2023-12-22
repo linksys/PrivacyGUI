@@ -52,7 +52,7 @@ class _PortRangeTriggeringContentViewState
       scrollable: true,
       title: getAppLocalizations(context).port_range_triggering,
       actions: [
-        AppTertiaryButton(
+        AppTextButton(
           getAppLocalizations(context).edit,
           onTap: () {
             // TODO
@@ -67,7 +67,7 @@ class _PortRangeTriggeringContentViewState
             AppText.bodyLarge(
                 getAppLocalizations(context).port_range_triggering_description),
             if (!_notifier.isExceedMax())
-              AppTertiaryButton(
+              AppTextButton(
                 getAppLocalizations(context).add_rule,
                 onTap: () {
                   context.pushNamed<bool?>(

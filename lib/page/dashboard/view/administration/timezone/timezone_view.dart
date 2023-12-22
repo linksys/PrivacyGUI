@@ -48,7 +48,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneContentView> {
       scrollable: true,
       title: getAppLocalizations(context).timezone,
       actions: [
-        AppTertiaryButton(
+        AppTextButton(
           getAppLocalizations(context).save,
           onTap: () {
             _notifier.save().then((_) => showSuccessSnackBar(

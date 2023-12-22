@@ -39,7 +39,7 @@ class __ChangeDeviceNameViewState extends ConsumerState<ChangeDeviceNameView> {
       actions: [
         AppPadding(
           padding: const AppEdgeInsets.only(right: AppGapSize.regular),
-          child: AppTertiaryButton.noPadding(
+          child: AppTextButton.noPadding(
             getAppLocalizations(context).save,
             onTap: isChanged ? _checkInputData : null,
           ),

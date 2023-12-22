@@ -70,7 +70,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _homeTitle(String ssid, bool isOnline, bool isLoading, bool isFirstPolling) {
+  Widget _homeTitle(
+      String ssid, bool isOnline, bool isLoading, bool isFirstPolling) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -325,7 +326,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             content: AppText.bodyLarge(
                 'Do you want to receive Linksys push notifications?'),
             actions: [
-              AppTertiaryButton(
+              AppTextButton(
                 'Yes',
                 onTap: () {
                   final deviceToken = prefs.getString(pDeviceToken);
@@ -337,7 +338,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                   context.pop();
                 },
               ),
-              AppTertiaryButton('No', onTap: () {
+              AppTextButton('No', onTap: () {
                 context.pop();
               })
             ],

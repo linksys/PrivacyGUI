@@ -6,10 +6,7 @@ import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 import '../../../common/testable_widget.dart';
 
-
 void main() {
-  
-
   setUpAll(() async {});
   tearDownAll(() async {});
 
@@ -31,7 +28,7 @@ void main() {
 
     final accountViewInput = find.byType(AppTextField);
     final spinnerView = find.byType(AppFullScreenSpinner);
-    final continueButton = find.byType(AppPrimaryButton);
+    final continueButton = find.byType(AppFilledButton);
 
     expect(spinnerView, findsOneWidget);
     expect(accountViewInput, findsNothing);

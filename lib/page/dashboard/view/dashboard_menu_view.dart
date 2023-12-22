@@ -42,7 +42,9 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
     }, loading: () {
       return false;
     }); // .networks.length > 1;
-    // return AppTertiaryButton.noPadding('${state.selected?.deviceInfo?.modelNumber ?? '123'}', onTap: () {});
+    // return AppTextButton.noPadding('${state.selected?.deviceInfo?.modelNumber ?? '123'}', onTap: () {});
+    final isCloudLogin =
+        ref.read(authProvider).value?.loginType == LoginType.remote;
     return AppPageView.noNavigationBar(
       scrollable: true,
       child: SizedBox(
@@ -86,6 +88,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                       children: [
                         AppText.titleMedium(
                           dashboardHomeState.mainWifiSsid,
+                          overflow: TextOverflow.fade,
                         ),
                         if (hasMultiNetworks)
                           AppIcon.regular(
@@ -102,37 +105,36 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
               contentPadding: const AppEdgeInsets.zero(),
               items: [
                 AppSectionItemData(
-                    title: 'New Product',
-                    iconData: getCharactersIcons(context).addDefault),
-                AppSectionItemData(
                     title: 'Settings',
                     iconData: getCharactersIcons(context).settingsDefault,
                     onTap: () {
                       _navigateTo(RouteNamed.dashboardSettings);
                     }),
-                AppSectionItemData(
-                    title: 'Account',
-                    iconData: getCharactersIcons(context).administrationDefault,
-                    onTap: () {
-                      _navigateTo(RouteNamed.accountInfo);
-                    }),
+                if (isCloudLogin)
+                  AppSectionItemData(
+                      title: 'Account',
+                      iconData:
+                          getCharactersIcons(context).administrationDefault,
+                      onTap: () {
+                        _navigateTo(RouteNamed.accountInfo);
+                      }),
                 AppSectionItemData(
                     title: 'Help',
                     iconData: getCharactersIcons(context).helpRound),
-                AppSectionItemData(
-                    title: 'Linksys LinkUp',
-                    iconData: getCharactersIcons(context).bellDefault,
-                    onTap: () {
-                      _navigateTo(RouteNamed.linkup);
-                    }),
+                // AppSectionItemData(
+                //     title: 'Linksys LinkUp',
+                //     iconData: getCharactersIcons(context).bellDefault,
+                //     onTap: () {
+                //       _navigateTo(RouteNamed.linkup);
+                //     }),
               ],
             ),
             const Spacer(),
             const AppGap.semiBig(),
-            AppTertiaryButton.noPadding('Log out', onTap: () {
+            AppTextButton.noPadding('Log out', onTap: () {
               ref.read(authProvider.notifier).logout();
             }),
-            AppTertiaryButton.noPadding('About Linksys', onTap: () {}),
+            AppTextButton.noPadding('About Linksys', onTap: () {}),
             FutureBuilder(
                 future:
                     PackageInfo.fromPlatform().then((value) => value.version),

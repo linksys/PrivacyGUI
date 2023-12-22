@@ -131,7 +131,6 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
                 inputType: TextInputType.emailAddress,
                 autofillHints: const [AutofillHints.username],
                 errorText: generalErrorCodeHandler(context, _errorCode),
-                ctaText: getAppLocalizations(context).forgot_question,
                 onSubmitted: (_) {
                   _prepareLogin();
                 },
@@ -140,7 +139,7 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
                 AppPadding(
                   padding: const AppEdgeInsets.symmetric(
                       vertical: AppGapSize.semiSmall),
-                  child: AppTertiaryButton(
+                  child: AppTextButton(
                       key: const Key(
                           'login_view_button_email_with_another_linksys_app'),
                       getAppLocalizations(context)
@@ -148,14 +147,14 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
                       onTap: () {}),
                 ),
               const Spacer(),
-              AppPrimaryButton.fillWidth(
+              AppFilledButton.fillWidth(
                 getAppLocalizations(context).login,
                 key: const Key('login_view_button_continue'),
                 onTap:
                     _accountController.text.isNotEmpty ? _prepareLogin : null,
               ),
               if (!kIsWeb)
-                AppSecondaryButton(
+                AppTextButton(
                     getAppLocalizations(context)
                         .cloud_account_login_with_router_password,
                     key: const Key('login_view_button_login_router_password'),

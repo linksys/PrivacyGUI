@@ -136,7 +136,7 @@ class _LoginTraditionalPasswordViewState
             const AppGap.small(),
             Align(
               alignment: Alignment.bottomRight,
-              child: AppTertiaryButton.noPadding(
+              child: AppTextButton.noPadding(
                 getAppLocalizations(context).forgot_password,
                 key: const Key('login_password_view_button_forgot_password'),
                 onTap: () {
@@ -151,7 +151,7 @@ class _LoginTraditionalPasswordViewState
                   _checkBiometrics(context, snapshot),
             ),
             const Spacer(),
-            AppPrimaryButton.fillWidth(
+            AppFilledButton.fillWidth(
               getAppLocalizations(context).text_continue,
               key: const Key('login_password_view_button_continue'),
               onTap: passwordController.text.isEmpty

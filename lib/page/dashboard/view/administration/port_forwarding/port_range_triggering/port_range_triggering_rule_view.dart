@@ -75,7 +75,7 @@ class _AddRuleContentViewState
       scrollable: true,
       title: getAppLocalizations(context).single_port_forwarding,
       actions: [
-        AppTertiaryButton(
+        AppTextButton(
           getAppLocalizations(context).save,
           onTap: () {
             final rule = PortRangeTriggeringRule(
@@ -133,7 +133,7 @@ class _AddRuleContentViewState
         onChangedEvent: (value) {},
       ),
       ...buildInputForms(),
-      AppTertiaryButton(
+      AppTextButton(
         getAppLocalizations(context).delete_rule,
         onTap: () {
           _notifier.delete().then((value) {

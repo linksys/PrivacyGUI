@@ -73,7 +73,7 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
                       },
                     )),
             const AppGap.extraBig(),
-            AppPrimaryButton.fillWidth(
+            AppFilledButton.fillWidth(
               key: const Key('otp_method_selector_view_button_continue'),
               getAppLocalizations(context).text_continue,
               onTap: () {

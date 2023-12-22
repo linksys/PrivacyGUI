@@ -97,7 +97,7 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               AppText.headlineMedium('Offline'),
-              AppTertiaryButton.noPadding(
+              AppTextButton.noPadding(
                 _isEdit ? 'Cancel' : 'Edit',
                 onTap: () {
                   setState(() {
@@ -140,7 +140,7 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
               });
             },
           ),
-          AppPrimaryButton(
+          AppFilledButton(
             'Remove(${_removeIDs.length})',
             onTap: _removeIDs.isEmpty
                 ? null
@@ -161,10 +161,10 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
         content: AppText.bodyLarge(
             'These devices will reappear if they reconnect to your WiFi network.'),
         actions: [
-          AppTertiaryButton('Cancel', onTap: () {
+          AppTextButton('Cancel', onTap: () {
             context.pop();
           }),
-          AppTertiaryButton(
+          AppTextButton(
             'Clear',
             onTap: () {
               _removeDevices();

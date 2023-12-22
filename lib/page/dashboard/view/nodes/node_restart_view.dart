@@ -43,14 +43,14 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
           'They will reconnect when your network is ready.',
         ),
         const AppGap.big(),
-        AppPrimaryButton(
+        AppFilledButton(
           'Restart',
           onTap: () {
             //TODO: Reboot request
           },
         ),
         const AppGap.regular(),
-        AppSecondaryButton(
+        AppTextButton(
           getAppLocalizations(context).cancel,
           onTap: () => context.pop(),
         ),

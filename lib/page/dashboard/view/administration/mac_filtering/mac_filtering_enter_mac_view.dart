@@ -41,7 +41,7 @@ class _MacFilteringEnterDeviceViewState
         content: Column(
           children: [
             const AppGap.semiBig(),
-            AppMacField(
+            AppTextField.macAddress(
               controller: _macController,
               headerText: getAppLocalizations(context).enter_mac_address,
               hintText: getAppLocalizations(context).mac_address,
@@ -53,7 +53,7 @@ class _MacFilteringEnterDeviceViewState
               },
             ),
             const AppGap.extraBig(),
-            AppPrimaryButton(
+            AppFilledButton(
               getAppLocalizations(context).save,
               onTap: _isValid ? () {} : null,
             ),

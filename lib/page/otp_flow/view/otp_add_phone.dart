@@ -213,7 +213,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
         footer: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppPrimaryButton.fillWidth(
+            AppFilledButton.fillWidth(
               getAppLocalizations(context).otp_send_code,
               onTap: hasInput ? _checkPhoneNumber : null,
             ),

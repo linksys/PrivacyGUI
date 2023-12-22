@@ -52,7 +52,7 @@ class _PortRangeForwardingContentViewState
       scrollable: true,
       title: getAppLocalizations(context).port_range_forwarding,
       actions: [
-        AppTertiaryButton(
+        AppTextButton(
           getAppLocalizations(context).edit,
           onTap: () {
             // TODO
@@ -67,7 +67,7 @@ class _PortRangeForwardingContentViewState
             AppText.bodyLarge(
                 getAppLocalizations(context).port_range_forwarding_description),
             if (!_notifier.isExceedMax())
-              AppTertiaryButton(
+              AppTextButton(
                 getAppLocalizations(context).add_rule,
                 onTap: () {
                   context.pushNamed<bool?>(RouteNamed.portRangeForwardingRule,

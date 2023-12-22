@@ -38,7 +38,7 @@ class _NodeSwitchLightViewState extends ConsumerState<NodeSwitchLightView> {
       title: 'Node light',
       actions: _isSupportLed4
           ? [
-              AppTertiaryButton.noPadding(
+              AppTextButton.noPadding(
                 'Save',
                 onTap: () {
                   NodeLightSettings settings;

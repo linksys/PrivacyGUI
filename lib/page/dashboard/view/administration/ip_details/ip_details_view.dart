@@ -117,7 +117,7 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
   }
 
   _buildRenewButton(bool isIPv6) {
-    return AppTertiaryButton.noPadding(
+    return AppTextButton.noPadding(
       getAppLocalizations(context).release_and_renew,
       onTap: _isBehindRouter
           ? () {

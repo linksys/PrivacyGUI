@@ -39,8 +39,7 @@ class _EditWifiNamePasswordViewState
   initState() {
     super.initState();
 
-    final wifiItem =
-        ref.read(wifiSettingProvider).selectedWifiItem;
+    final wifiItem = ref.read(wifiSettingProvider).selectedWifiItem;
     _title = wifiItem.ssid;
     _oriSSID = wifiItem.ssid;
     _oriPassword = wifiItem.password;
@@ -108,7 +107,7 @@ class _EditWifiNamePasswordViewState
             actions: [
               AppPadding(
                 padding: const AppEdgeInsets.only(right: AppGapSize.regular),
-                child: AppTertiaryButton.noPadding(
+                child: AppTextButton.noPadding(
                   getAppLocalizations(context).save,
                   onTap: isChanged ? _checkInputData : null,
                 ),

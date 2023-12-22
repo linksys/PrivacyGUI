@@ -38,7 +38,7 @@ class _ForgotEmailViewState extends ConsumerState<ForgotEmailView> {
             : NetworkCheckView(
                 description: getAppLocalizations(context)
                     .cloud_forgot_email_connect_to_your_router,
-                button: AppPrimaryButton(
+                button: AppFilledButton(
                   getAppLocalizations(context).am_connected,
                   onTap: () {
                     // TODO router API

@@ -35,7 +35,7 @@ class _WebUiAccessViewState extends ConsumerState<WebUiAccessView> {
     return StyledAppPageView(
       title: getAppLocalizations(context).web_ui_access,
       actions: [
-        AppTertiaryButton(
+        AppTextButton(
           getAppLocalizations(context).save,
           onTap: () {},
         ),

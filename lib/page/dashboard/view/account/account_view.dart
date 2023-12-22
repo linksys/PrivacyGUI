@@ -56,8 +56,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
         _localLoginInformationSection(context),
         const AppPadding(
           padding: AppEdgeInsets.symmetric(vertical: AppGapSize.regular),
-          child: Divider(
-          ),
+          child: Divider(),
         ),
         // _biometricsTile(state),
         const Spacer(),
@@ -72,8 +71,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
         _informationSection(state),
         const AppPadding(
           padding: AppEdgeInsets.symmetric(vertical: AppGapSize.regular),
-          child: Divider(
-          ),
+          child: Divider(),
         ),
         _securitySection(state),
         _marketingSection(state),
@@ -240,7 +238,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
             AppText.bodyLarge('Benefit X'),
           ]),
           const AppGap.semiBig(),
-          AppPrimaryButton(
+          AppFilledButton(
             'Create an account',
             onTap: () {
               // ref.read(navigationsProvider.notifier).push(

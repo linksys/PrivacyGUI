@@ -57,7 +57,7 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
                 : NetworkCheckView(
                     description: getAppLocalizations(context)
                         .local_login_connect_to_your_router,
-                    button: AppPrimaryButton.fillWidth(
+                    button: AppFilledButton.fillWidth(
                       getAppLocalizations(context).text_continue,
                       onTap: () {
                         checkWifi();
@@ -134,12 +134,12 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
                 children: [Text(_hint)],
               ),
             ),
-          AppTertiaryButton(getAppLocalizations(context).forgot_router_password,
+          AppTextButton(getAppLocalizations(context).forgot_router_password,
               onTap: () {
             // Go Router
           }),
           const Spacer(),
-          AppPrimaryButton.fillWidth(
+          AppFilledButton.fillWidth(
             getAppLocalizations(context).text_continue,
             onTap: _isPasswordValidate ? _localLogin : null,
           ),

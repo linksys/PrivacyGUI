@@ -70,7 +70,7 @@ class _AddRuleContentViewState
     return StyledAppPageView(
       title: getAppLocalizations(context).single_port_forwarding,
       actions: [
-        AppTertiaryButton(
+        AppTextButton(
           getAppLocalizations(context).save,
           onTap: () {
             final rule = SinglePortForwardingRule(
@@ -126,7 +126,7 @@ class _AddRuleContentViewState
           value: state.rule?.isEnabled ?? false,
           title: getAppLocalizations(context).rule_enabled),
       ...buildInputForms(),
-      AppTertiaryButton(
+      AppTextButton(
         getAppLocalizations(context).delete_rule,
         onTap: () {
           _notifier.delete().then((value) {
@@ -166,13 +166,9 @@ class _AddRuleContentViewState
         controller: _deviceIpAddressController,
         hintText: getAppLocalizations(context).device_ip_address,
         headerText: getAppLocalizations(context).device_ip_address,
-        ctaText: getAppLocalizations(context).select_device,
         // TODO: need to fix
         textValidator: () =>
             _notifier.isDeviceIpValidate(_deviceIpAddressController.text),
-        onCtaTap: () async {
-          String? deviceIp = await context.pushNamed(RouteNamed.selectDevice);
-        },
       ),
       const AppGap.semiSmall(),
       AppPanelWithInfo(

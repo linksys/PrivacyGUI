@@ -60,7 +60,7 @@ class _SinglePortForwardingContentViewState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppTertiaryButton.noPadding(
+                      AppTextButton.noPadding(
                         getAppLocalizations(context).add_device_reservations,
                         onTap: () {},
                       ),
@@ -70,14 +70,14 @@ class _SinglePortForwardingContentViewState
             const AppGap.semiBig(),
             administrationSection(
               title: getAppLocalizations(context).dhcp_list,
-              headerAction: AppTertiaryButton.noPadding(
+              headerAction: AppTextButton.noPadding(
                 getAppLocalizations(context).add,
                 onTap: () {},
               ),
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppTertiaryButton.noPadding(
+                  AppTextButton.noPadding(
                     getAppLocalizations(context).add_device_reservations,
                     onTap: () {},
                   ),

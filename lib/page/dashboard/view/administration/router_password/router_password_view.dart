@@ -79,7 +79,7 @@ class _RouterPasswordContentViewState
                 ? getAppLocalizations(context).router_password
                 : ' ',
             actions: [
-              AppTertiaryButton(
+              AppTextButton(
                 getAppLocalizations(context).save,
                 onTap: (state.hasEdited && state.isValid) ? _save : null,
               ),
@@ -173,7 +173,7 @@ class _RouterPasswordContentViewState
           Row(
             children: [
               Expanded(
-                child: AppTertiaryButton(
+                child: AppTextButton(
                   getAppLocalizations(context)
                       .create_router_password_how_to_access,
                   onTap: () {},

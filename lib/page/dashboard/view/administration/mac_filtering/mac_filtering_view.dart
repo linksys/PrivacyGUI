@@ -105,7 +105,7 @@ class _MacFilteringContentViewState
             ),
             AppPanelWithTrailWidget(
               title: getAppLocalizations(context).device_ip_address,
-              trailing: AppTertiaryButton.noPadding(
+              trailing: AppTextButton.noPadding(
                 getAppLocalizations(context).select_device,
                 onTap: () async {
                   // String? deviceIp = await ref.read(navigationsProvider.notifier)

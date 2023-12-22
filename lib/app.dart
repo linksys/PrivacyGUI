@@ -22,7 +22,8 @@ class LinksysApp extends ConsumerStatefulWidget {
   ConsumerState<LinksysApp> createState() => _LinksysAppState();
 }
 
-class _LinksysAppState extends ConsumerState<LinksysApp> with WidgetsBindingObserver {
+class _LinksysAppState extends ConsumerState<LinksysApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
@@ -67,12 +68,12 @@ class _LinksysAppState extends ConsumerState<LinksysApp> with WidgetsBindingObse
       final isDone = ref
           .watch(deviceManagerProvider.select((value) => value.deviceList))
           .isNotEmpty;
-      if (constraints.maxWidth > 768 && isDone) {
+            if (constraints.maxWidth > 768 && isDone) {
         return Row(
           children: [
-            SizedBox(
+            const SizedBox(
               width: 320,
-              child: const DashboardMenuView(),
+              child: DashboardMenuView(),
             ),
             Expanded(child: Container(child: child)),
           ],
@@ -101,5 +102,4 @@ class _LinksysAppState extends ConsumerState<LinksysApp> with WidgetsBindingObse
       FlutterNativeSplash.remove();
     });
   }
-
 }

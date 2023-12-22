@@ -52,7 +52,7 @@ class _SinglePortForwardingContentViewState
     return StyledAppPageView(
       title: getAppLocalizations(context).single_port_forwarding,
       actions: [
-        AppTertiaryButton(
+        AppTextButton(
           getAppLocalizations(context).edit,
           onTap: () {
             // TODO
@@ -68,7 +68,7 @@ class _SinglePortForwardingContentViewState
             AppText.bodyLarge(getAppLocalizations(context)
                 .single_port_forwarding_description),
             if (!_notifier.isExceedMax())
-              AppTertiaryButton(
+              AppTextButton(
                 getAppLocalizations(context).add_rule,
                 onTap: () {
                   context.pushNamed<bool?>(RouteNamed.singlePortForwardingRule,

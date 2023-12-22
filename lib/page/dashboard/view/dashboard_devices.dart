@@ -54,7 +54,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 AppText.headlineMedium('Devices'),
-                AppTertiaryButton.noPadding(
+                AppTextButton.noPadding(
                   'Filters',
                   icon: getCharactersIcons(context).filterDefault,
                   onTap: () {
@@ -222,13 +222,13 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        AppTertiaryButton(
+                        AppTextButton(
                           'Clear all',
                           onTap: () {
                             initFilter();
                           },
                         ),
-                        AppPrimaryButton(
+                        AppFilledButton(
                           'Show ${ref.read(filteredDeviceListProvider).$2.length} devices',
                           onTap: () {
                             context.pop();

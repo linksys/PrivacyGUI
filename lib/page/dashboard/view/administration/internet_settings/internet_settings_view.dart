@@ -88,7 +88,7 @@ class _InternetSettingsContentViewState
       scrollable: true,
       title: getAppLocalizations(context).internet_settings,
       actions: [
-        AppTertiaryButton(
+        AppTextButton(
           getAppLocalizations(context).save,
           onTap: () {},
         ),

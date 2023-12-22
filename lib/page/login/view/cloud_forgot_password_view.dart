@@ -68,7 +68,7 @@ class _CloudForgotPasswordViewState
           children: [
             if (_hasPhoneNumber) _chooseMethodView(state),
             _hasPhoneNumber ? const AppGap.semiBig() : const AppGap.extraBig(),
-            AppPrimaryButton(
+            AppFilledButton(
               getAppLocalizations(context).send_link,
               onTap: () async {
                 setState(() {
@@ -139,7 +139,7 @@ class _CloudForgotPasswordViewState
         content: Column(
           children: [
             _sendLinkViaEmail ? const AppGap.extraBig() : const AppGap.big(),
-            AppPrimaryButton(
+            AppFilledButton(
               getAppLocalizations(context).back_to_login,
               onTap: () {
                 // Go Router

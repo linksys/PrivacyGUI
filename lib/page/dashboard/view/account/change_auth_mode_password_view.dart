@@ -74,7 +74,7 @@ class _ChangeAuthModePasswordViewState
             ],
           ),
           const AppGap.extraBig(),
-          AppPrimaryButton(
+          AppFilledButton(
             'Save',
             onTap: _applyPassword,
           ),

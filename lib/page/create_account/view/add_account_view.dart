@@ -153,7 +153,7 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
                     AppText.bodyMedium(
                       generalErrorCodeHandler(context, _errorCode),
                     ),
-                    AppTertiaryButton(
+                    AppTextButton(
                       getAppLocalizations(context).login_to_continue,
                       onTap: _goLogin,
                     ),
@@ -182,7 +182,7 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
               //     );
               //   },
               // ),
-              AppTertiaryButton(
+              AppTextButton(
                   getAppLocalizations(context).already_have_an_account,
                   onTap: _goLogin),
               const AppGap.big(),
@@ -194,7 +194,7 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
           ),
           footer: Column(
             children: [
-              AppPrimaryButton(
+              AppFilledButton(
                 getAppLocalizations(context).next,
                 onTap: _onNextAction,
               ),
@@ -202,7 +202,7 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
               widget.args['config'] != null &&
                       widget.args['config'] == 'LOCALAUTHCREATEACCOUNT'
                   ? Container()
-                  : AppTertiaryButton(
+                  : AppTextButton(
                       getAppLocalizations(context).use_router_password,
                       onTap: () {},
                     )

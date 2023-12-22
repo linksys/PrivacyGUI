@@ -101,7 +101,7 @@ class _EditWifiSecurityViewState extends ConsumerState<EditWifiSecurityView> {
                   );
                 },
               ),
-              footer: AppPrimaryButton(
+              footer: AppFilledButton(
                 getAppLocalizations(context).save,
                 onTap: _selectedType != _currentType ? _save : null,
               ),

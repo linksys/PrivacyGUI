@@ -31,7 +31,7 @@ class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
     return StyledAppPageView(
       title: getAppLocalizations(context).node_detail_label_node_name,
       actions: [
-        AppTertiaryButton(
+        AppTextButton(
           getAppLocalizations(context).save,
           onTap: () {
             final newLocation = _controller.text;

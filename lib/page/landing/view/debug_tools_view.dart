@@ -77,7 +77,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
           'Log:',
         ),
         const AppGap.regular(),
-        AppPrimaryButton(
+        AppFilledButton(
           'Export log file',
           onTap: () async {
             final file = File.fromUri(Storage.logFileUri);
@@ -141,7 +141,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
           });
         },
       ),
-      AppPrimaryButton(
+      AppFilledButton(
         'Raise an Exception!',
         onTap: () async {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -151,7 +151,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
           throw Exception('Test Exception!!!');
         },
       ),
-      AppPrimaryButton(
+      AppFilledButton(
         'Log a test event',
         onTap: () async {
           ScaffoldMessenger.of(context)
@@ -173,7 +173,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         children: [
           AppText.bodyMedium(appInfo),
           const AppGap.regular(),
-          AppPrimaryButton(
+          AppFilledButton(
             'More',
             onTap: () => _goToDeviceInfoPage(context),
           ),
@@ -211,7 +211,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
       children: [
         AppText.labelLarge('SmartDeviceId: ${smartDevice.id}'),
         AppText.labelLarge('SmartDevice Verified: ${smartDevice.isVerified}'),
-        AppPrimaryButton(
+        AppFilledButton(
           'Register Smartdevice',
           onTap: () {
             SharedPreferences.getInstance().then((prefs) {
@@ -224,7 +224,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
             });
           },
         ),
-        AppPrimaryButton(
+        AppFilledButton(
           'Test',
           onTap: () async {
             // ref.read(smartDeviceProvider.notifier).fetchEventSubscriptions();
@@ -312,7 +312,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         initiallyExpanded: true,
         title: const AppText.labelLarge('Biometrics'),
         children: [
-          AppPrimaryButton(
+          AppFilledButton(
             'Test Biometrics',
             onTap: () async {},
           )
@@ -326,7 +326,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
       AppExpansion(
         title: 'Bluetooth testing',
         children: [
-          AppPrimaryButton(
+          AppFilledButton(
             'Scan & connect',
             onTap: () async {
               await BluetoothManager().scan();
@@ -339,7 +339,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               }
             },
           ),
-          AppPrimaryButton(
+          AppFilledButton(
             'Test get Mac address',
             onTap: () async {
               final repository = ref.read(routerRepositoryProvider)
@@ -361,7 +361,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               repository.enableBTSetup = false;
             },
           ),
-          AppPrimaryButton(
+          AppFilledButton(
             'Disconnect',
             onTap: () {
               BluetoothManager().disconnect();
@@ -381,7 +381,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         initiallyExpanded: true,
         title: const AppText.bodyLarge('MDNS testing'),
         children: [
-          AppPrimaryButton(
+          AppFilledButton(
             'discover',
             onTap: () async {
               const String name = '_dartobservatory._tcp.local';

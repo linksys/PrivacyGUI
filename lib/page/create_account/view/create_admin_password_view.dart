@@ -70,7 +70,7 @@ class _CreateAdminPasswordViewState
         content: Column(
           children: [
             const AppGap.extraBig(),
-            AppPrimaryButton(
+            AppFilledButton(
               getAppLocalizations(context).go_to_dashboard,
               onTap: () {
                 context.goNamed(RouteNamed.dashboardHome);
@@ -112,7 +112,7 @@ class _CreateAdminPasswordViewState
             ),
             const AppGap.extraBig(),
             const AppGap.extraBig(),
-            AppTertiaryButton(
+            AppTextButton(
                 getAppLocalizations(context)
                     .create_router_password_how_to_access, onTap: () {
               MoabInAppBrowser.withDefaultOption().openUrlRequest(
@@ -123,7 +123,7 @@ class _CreateAdminPasswordViewState
         ),
         footer: Visibility(
           visible: _isValidData,
-          child: AppPrimaryButton(
+          child: AppFilledButton(
             getAppLocalizations(context).next,
             onTap: () {
               if (_type == AdminPasswordType.create) {

@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/base_components/input_fields/ip_form_field.dart';
 import 'package:linksys_app/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_app/provider/lan/_lan.dart';
 import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class LANView extends ArgumentsConsumerStatelessView {
@@ -63,7 +62,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
       scrollable: true,
       title: getAppLocalizations(context).lan,
       actions: [
-        AppTertiaryButton(
+        AppTextButton(
           getAppLocalizations(context).save,
           onTap: () {},
         )
@@ -129,7 +128,6 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                   const AppGap.semiBig(),
                   AppTextField(
                     controller: _maxNumUserController,
-                    width: 116,
                     headerText:
                         getAppLocalizations(context).max_number_of_users,
                     hintText: getAppLocalizations(context).max_number_of_users,
@@ -149,7 +147,6 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                   const AppGap.semiBig(),
                   AppTextField(
                     controller: _clientLeaseController,
-                    width: 116,
                     headerText: getAppLocalizations(context).client_lease_time,
                     hintText: getAppLocalizations(context).client_lease_time,
                     descriptionText: getAppLocalizations(context).minutes,
