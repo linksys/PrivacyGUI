@@ -73,14 +73,14 @@ abstract class PnpStep {
                 StepViewStatus.loading;
             return Row(
               children: [
-                AppTertiaryButton(
+                AppTextButton(
                   previousLable(context),
                   onTap: (currentIndex == 0 || status == StepViewStatus.loading)
                       ? null
                       : details.onStepCancel,
                 ),
                 const AppGap.regular(),
-                AppPrimaryButton(
+                AppFilledButton(
                   nextLable(context),
                   onTap: status != StepViewStatus.data
                       ? null

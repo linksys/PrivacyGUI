@@ -10,6 +10,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/firebase/analytics.dart';
 import 'package:linksys_app/firebase/notification_helper.dart';
 import 'package:linksys_app/app.dart';
 import 'package:linksys_app/provider/logger_observer.dart';
@@ -19,8 +20,6 @@ import 'package:linksys_app/core/utils/storage.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
-import 'route/router_provider.dart';
-import 'util/analytics.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 
 void main() async {

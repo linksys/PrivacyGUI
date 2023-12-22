@@ -85,7 +85,7 @@ class AccountStep extends PnpStep {
           ),
         ),
         const AppGap.regular(),
-        AppTertiaryButton.noPadding(
+        AppTextButton.noPadding(
           'Create a new account',
           onTap: () {
             update(ref, key: 'auth', value: 'create');
@@ -143,11 +143,11 @@ class AccountStep extends PnpStep {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            AppTertiaryButton.noPadding(
+            AppTextButton.noPadding(
               'Reset password',
               onTap: () {},
             ),
-            AppTertiaryButton.noPadding(
+            AppTextButton.noPadding(
               'Create a new account',
               onTap: () {
                 update(ref, key: 'auth', value: 'create');
@@ -185,7 +185,7 @@ class AccountStep extends PnpStep {
           ),
         ),
         const AppGap.semiSmall(),
-        AppTertiaryButton.noPadding(
+        AppTextButton.noPadding(
           'I already have an account',
           onTap: () {
             update(ref, key: 'auth', value: 'cloud');
@@ -239,7 +239,7 @@ class AccountStep extends PnpStep {
           ],
         ),
         const AppGap.big(),
-        AppTertiaryButton.noPadding(
+        AppTextButton.noPadding(
           'No thanks, use router password',
           onTap: () {
             update(ref, key: 'auth', value: 'local');
