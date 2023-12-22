@@ -85,6 +85,9 @@ class RoutePath {
   /// linkup
   static const linkup = 'linkup';
 
+  /// PnP
+  static const pnp = '/pnp';
+
   /// debug
   static const debug = 'debug';
 }
@@ -175,6 +178,9 @@ class RouteNamed {
 
   /// linkup
   static const linkup = 'linkup';
+
+  /// PnP
+  static const pnp = 'pnp';
 
   /// debug
   static const debug = 'debug';
