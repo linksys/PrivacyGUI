@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
@@ -23,9 +21,9 @@ import 'firebase_options.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 
 void main() async {
-  if (kIsWeb) {
-    usePathUrlStrategy();
-  }
+  // if (kIsWeb) {
+  //   usePathUrlStrategy();
+  // }
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await Storage.init();
