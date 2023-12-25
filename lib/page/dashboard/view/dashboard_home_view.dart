@@ -209,26 +209,29 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   }
 
   Widget _speedTestTile(DashboardHomeState state, bool isLoading) {
-    return SizedBox(
-      width: double.infinity,
-      height: 160,
-      child: Card(
-        elevation: 10,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-        child: AppPadding(
-          padding: const AppEdgeInsets.symmetric(
-              horizontal: AppGapSize.regular, vertical: AppGapSize.regular),
-          child: isLoading
-              ? Shimmer(
-                  gradient: _shimmerGradient,
-                  child: _speedResult(state),
-                )
-              : _speedResult(state),
-        ),
-      ),
-    );
+    return GestureDetector(
+        onTap: () => context.goNamed(RouteNamed.dashboardSpeedTest),
+        child: SizedBox(
+          width: double.infinity,
+          height: 160,
+          child: Card(
+            elevation: 10,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+            child: AppPadding(
+              padding: const AppEdgeInsets.symmetric(
+                  horizontal: AppGapSize.regular, vertical: AppGapSize.regular),
+              child: isLoading
+                  ? Shimmer(
+                      gradient: _shimmerGradient,
+                      child: _speedResult(state),
+                    )
+                  : _speedResult(state),
+            ),
+          ),
+        )
+        );
   }
 
   get _shimmerGradient => LinearGradient(

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/provider/health_check/health_check_provider.dart';
+import 'package:linksys_app/provider/health_check/health_check_state.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -28,7 +30,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
   void initState() {
     super.initState();
     _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 5));
+        AnimationController(vsync: this, duration: const Duration(seconds: 45));
     _animation = Tween(begin: 0.0, end: 1.0).animate(_controller)
       ..addListener(() {
         if (_controller.isCompleted) {
@@ -47,6 +49,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
 
   @override
   Widget build(BuildContext context) {
+    final healthCheck = ref.watch(healthCheckProvider);
     return StyledAppPageView(
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,12 +60,12 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
             fontWeight: FontWeight.w700,
           ),
         ),
-        content: _content(context),
+        content: _content(context, healthCheck),
       ),
     );
   }
 
-  Widget _content(BuildContext context) {
+  Widget _content(BuildContext context, HealthCheckState state) {
     return Container(
       decoration: BoxDecoration(
           image: DecorationImage(
@@ -78,12 +81,32 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
         ),
         Container(
             alignment: Alignment.center,
-            child: speedTestSection(context, _status))
+            child: speedTestSection(context, _status, state))
       ]),
     );
   }
 
-  Widget speedTestSection(BuildContext context, String status) {
+  Widget speedTestSection(
+      BuildContext context, String status, HealthCheckState state) {
+    var downloadBandWidth = '0';
+    if (state.result.isNotEmpty &&
+        state.result.first.speedTestResult?.downloadBandwidth != null) {
+      downloadBandWidth =
+          state.result.first.speedTestResult!.downloadBandwidth.toString();
+    }
+    downloadBandWidth = (int.parse(downloadBandWidth) ~/ 1000).toString();
+    var uploadBandWidth = '0';
+    if (state.result.isNotEmpty &&
+        state.result.first.speedTestResult?.uploadBandwidth != null) {
+      uploadBandWidth =
+          state.result.first.speedTestResult!.uploadBandwidth.toString();
+    }
+    uploadBandWidth = (int.parse(uploadBandWidth) ~/ 1000).toString();
+    var latency = '0';
+    if (state.result.isNotEmpty &&
+        state.result.first.speedTestResult?.latency != null) {
+      latency = state.result.first.speedTestResult!.latency.toString();
+    }
     switch (status) {
       case "IDLE":
         return TriLayerButton(
@@ -94,8 +117,10 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
                 _status = "RUNNING";
                 _controller.forward();
               });
-              //TODO: Build RunSpeedTest function
             });
+            ref
+                .read(healthCheckProvider.notifier)
+                .runHealthCheck(Module.speedtest);
           },
         );
       case "RUNNING":
@@ -110,11 +135,20 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
           },
         );
       case "COMPLETE":
-        return const Column(
+        return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const AppText.displaySmall("Latency"),
+                const AppGap.regular(),
+                AppText.displaySmall(latency),
+              ],
+            ),
+            const AppGap.regular(),
+            const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -122,13 +156,13 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
                 AppText.displaySmall('Download'),
               ],
             ),
-            AppGap.regular(),
+            const AppGap.regular(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                AppText.displaySmall('98Mbps'),
-                AppText.displaySmall('24Mpbs'),
+                AppText.displaySmall(uploadBandWidth),
+                AppText.displaySmall(downloadBandWidth),
               ],
             ),
           ],

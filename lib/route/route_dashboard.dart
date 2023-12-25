@@ -68,6 +68,11 @@ final dashboardRoute = ShellRoute(
               path: RoutePath.dashboardSettings,
               builder: (context, state) => DashboardSettingsView(),
               routes: settings),
+          GoRoute(
+            name: RouteNamed.dashboardSpeedTest,
+            path: RoutePath.dashboardSpeedTest,
+            builder: (context, state) => SpeedTestView(),
+          )
         ]),
   ],
 );

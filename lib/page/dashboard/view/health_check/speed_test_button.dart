@@ -168,7 +168,7 @@ class _TriLayerButtonState extends ConsumerState<TriLayerButton>
             ),
             const AppText.labelLarge(
               'START',
-              color: Colors.white,
+              color: Colors.amber,
             ),
           ],
         ),
