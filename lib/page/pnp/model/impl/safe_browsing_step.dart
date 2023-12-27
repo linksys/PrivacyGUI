@@ -11,6 +11,12 @@ class SafeBrowsingStep extends PnpStep {
   @override
   Future<void> onInit(WidgetRef ref) async {
     await super.onInit(ref);
+    final state = ref.read(pnpProvider).stepStateList[index];
+    if (state?.data['isEnabled'] == null) {
+      ref
+          .read(pnpProvider.notifier)
+          .setStepData(index, data: {'isEnabled': true, 'meta': 'fortinet'});
+    }
   }
 
   @override
@@ -41,7 +47,7 @@ class SafeBrowsingStep extends PnpStep {
           const AppText.bodyLarge(
               'Block malicious content such as phishing using DNS security. This will apply to all devices connected to your Wi-Fi.'),
           const AppGap.semiSmall(),
-          AppSwitch(
+          AppSwitch.withIcon(
             value: isEnabled,
             onChanged: (value) {
               update(ref, key: 'isEnabled', value: value);
@@ -49,12 +55,20 @@ class SafeBrowsingStep extends PnpStep {
           ),
           ...isEnabled
               ? [
-                  AppRadioList(items: [
-                    AppRadioListItem<String>(
-                        title: 'Secure DNS (Fortinet)', value: 'fortinet'),
-                    AppRadioListItem<String>(
-                        title: 'OpenDNS (Cisco)', value: 'cisco'),
-                  ])
+                  AppRadioList<String>(
+                    items: [
+                      AppRadioListItem<String>(
+                          title: 'Secure DNS (Fortinet)', value: 'fortinet'),
+                      AppRadioListItem<String>(
+                          title: 'OpenDNS (Cisco)', value: 'cisco'),
+                    ],
+                    onChanged: (int index, String? value) {
+                      ref
+                          .read(pnpProvider.notifier)
+                          .setStepData(this.index, data: {'meta': value});
+                    },
+                    initial: data['meta'],
+                  )
                 ]
               : []
         ],

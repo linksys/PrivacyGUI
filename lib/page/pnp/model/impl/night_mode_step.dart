@@ -10,6 +10,13 @@ class NightModeStep extends PnpStep {
   @override
   Future<void> onInit(WidgetRef ref) async {
     await super.onInit(ref);
+
+    final state = ref.read(pnpProvider).stepStateList[index];
+    if (state?.data['isEnabled'] == null) {
+      ref
+          .read(pnpProvider.notifier)
+          .setStepData(index, data: {'isEnabled': true});
+    }
   }
 
   @override
@@ -43,7 +50,7 @@ class NightModeStep extends PnpStep {
         children: [
           AppText.bodyLarge(desc),
           const AppGap.semiSmall(),
-          AppSwitch(
+          AppSwitch.withIcon(
             value: isEnabled,
             onChanged: (value) {
               update(ref, key: 'isEnabled', value: value);

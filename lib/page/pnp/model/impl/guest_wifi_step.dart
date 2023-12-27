@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
 import 'package:linksys_app/page/pnp/model/pnp_step.dart';
+import 'package:linksys_app/page/pnp/widgets/wifi_password_widget.dart';
+import 'package:linksys_app/page/pnp/widgets/wifi_ssid_widget.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class GuestWiFiStep extends PnpStep {
-  late final TextEditingController _ssidEditController;
-  late final TextEditingController _passwordEditController;
+  TextEditingController? _ssidEditController;
+  TextEditingController? _passwordEditController;
 
   GuestWiFiStep({required super.index});
 
@@ -14,15 +16,15 @@ class GuestWiFiStep extends PnpStep {
   Future<void> onInit(WidgetRef ref) async {
     await super.onInit(ref);
 
-   _ssidEditController = TextEditingController();
-   _passwordEditController = TextEditingController();
+    _ssidEditController = TextEditingController();
+    _passwordEditController = TextEditingController();
 
     final data = ref.read(pnpProvider).stepStateList[index]?.data ?? {};
-    final String ssid = data['ssid'];
-    final String password = data['password'];
+    final String ssid = data['ssid'] ?? '';
+    final String password = data['password'] ?? '';
 
-    _ssidEditController.text = ssid;
-    _passwordEditController.text = password;
+    _ssidEditController?.text = ssid;
+    _passwordEditController?.text = password;
   }
 
   @override
@@ -32,8 +34,8 @@ class GuestWiFiStep extends PnpStep {
 
   @override
   void onDispose() {
-    _passwordEditController.dispose();
-    _ssidEditController.dispose();
+    _passwordEditController?.dispose();
+    _ssidEditController?.dispose();
   }
 
   @override
@@ -68,17 +70,43 @@ class GuestWiFiStep extends PnpStep {
                 ? [
                     Container(
                       constraints: const BoxConstraints(maxWidth: 480),
-                      child: AppTextField(
-                        controller: _ssidEditController,
-                        headerText: 'SSID',
+                      child: WiFiSSIDField(
+                        controller: _ssidEditController!,
+                        label: 'SSID',
+                        hint: 'Guest WiFi SSID',
+                        onCheckInput: (isValid, input) {
+                          if (isValid) {
+                            ref
+                                .read(pnpProvider.notifier)
+                                .setStepData(index, data: {'ssid': input});
+                          } else {
+                            ref
+                                .read(pnpProvider.notifier)
+                                .setStepData(index, data: {'ssid': ''});
+                          }
+                          _check(ref);
+                        },
                       ),
                     ),
                     const AppGap.semiSmall(),
                     Container(
                       constraints: const BoxConstraints(maxWidth: 480),
-                      child: AppTextField(
-                        controller: _passwordEditController,
-                        headerText: 'Password',
+                      child: WiFiPasswordField(
+                        controller: _passwordEditController!,
+                        label: 'Password',
+                        hint: 'Guest WiFi Password',
+                        onCheckInput: (isValid, input) {
+                          if (isValid) {
+                            ref
+                                .read(pnpProvider.notifier)
+                                .setStepData(index, data: {'password': input});
+                          } else {
+                            ref
+                                .read(pnpProvider.notifier)
+                                .setStepData(index, data: {'password': ''});
+                          }
+                          _check(ref);
+                        },
                       ),
                     )
                   ]
@@ -100,5 +128,22 @@ class GuestWiFiStep extends PnpStep {
     ref
         .read(pnpProvider.notifier)
         .setStepData(index, data: Map.from(currentData)..[key] = value);
+    _check(ref);
+  }
+
+  void _check(WidgetRef ref) {
+    final state = ref.read(pnpProvider).stepStateList[index];
+    final isEnable = state?.data['isEnabled'] as bool? ?? false;
+    final ssid = state?.data['ssid'] as String? ?? '';
+    final password = state?.data['password'] as String? ?? '';
+    if (!isEnable || ssid.isNotEmpty && password.isNotEmpty) {
+      ref
+          .read(pnpProvider.notifier)
+          .setStepStatus(index, status: StepViewStatus.data);
+    } else {
+      ref
+          .read(pnpProvider.notifier)
+          .setStepStatus(index, status: StepViewStatus.error);
+    }
   }
 }

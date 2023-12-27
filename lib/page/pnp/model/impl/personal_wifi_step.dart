@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
 import 'package:linksys_app/page/pnp/model/pnp_step.dart';
+import 'package:linksys_app/page/pnp/widgets/wifi_password_widget.dart';
+import 'package:linksys_app/page/pnp/widgets/wifi_ssid_widget.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class PersonalWiFiStep extends PnpStep {
-  late final TextEditingController _ssidEditController;
-  late final TextEditingController _passwordEditController;
+  TextEditingController? _ssidEditController;
+  TextEditingController? _passwordEditController;
 
   PersonalWiFiStep({required super.index});
 
@@ -17,12 +19,7 @@ class PersonalWiFiStep extends PnpStep {
     _ssidEditController = TextEditingController();
     _passwordEditController = TextEditingController();
 
-    if (_ssidEditController.text.isEmpty ||
-        _passwordEditController.text.isEmpty) {
-      ref
-          .read(pnpProvider.notifier)
-          .setStepStatus(index, status: StepViewStatus.error);
-    }
+    _check(ref);
   }
 
   @override
@@ -32,8 +29,8 @@ class PersonalWiFiStep extends PnpStep {
 
   @override
   void onDispose() {
-    _passwordEditController.dispose();
-    _ssidEditController.dispose();
+    _passwordEditController?.dispose();
+    _ssidEditController?.dispose();
   }
 
   @override
@@ -48,40 +45,42 @@ class PersonalWiFiStep extends PnpStep {
         children: [
           Container(
             constraints: const BoxConstraints(maxWidth: 480),
-            child: AppTextField(
-              headerText: 'Wi-Fi Name',
-              hintText: 'Wi-Fi Name',
-              controller: _ssidEditController,
-              onChanged: (value) {
-                if (value.isEmpty) {
+            child: WiFiSSIDField(
+              controller: _ssidEditController!,
+              label: 'Wi-Fi Name',
+              hint: 'Wi-Fi Name',
+              onCheckInput: (isValid, input) {
+                if (isValid) {
                   ref
                       .read(pnpProvider.notifier)
-                      .setStepStatus(index, status: StepViewStatus.error);
+                      .setStepData(index, data: {'ssid': input});
                 } else {
                   ref
                       .read(pnpProvider.notifier)
-                      .setStepStatus(index, status: StepViewStatus.data);
+                      .setStepData(index, data: {'ssid': ''});
                 }
+                _check(ref);
               },
             ),
           ),
           const AppGap.semiSmall(),
           Container(
             constraints: const BoxConstraints(maxWidth: 480),
-            child: AppTextField(
-              headerText: 'Wi-Fi Password',
-              hintText: 'Wi-Fi Password',
-              controller: _passwordEditController,
-              onChanged: (value) {
-                if (value.isEmpty) {
+            child: WiFiPasswordField(
+              controller: _passwordEditController!,
+              label: 'Wi-Fi Password',
+              hint: 'Wi-Fi Password',
+              onCheckInput: (isValid, input) {
+                if (isValid) {
                   ref
                       .read(pnpProvider.notifier)
-                      .setStepStatus(index, status: StepViewStatus.error);
+                      .setStepData(index, data: {'password': input});
                 } else {
                   ref
                       .read(pnpProvider.notifier)
-                      .setStepStatus(index, status: StepViewStatus.data);
+                      .setStepData(index, data: {'password': ''});
                 }
+                _check(ref);
               },
             ),
           ),
@@ -91,4 +90,19 @@ class PersonalWiFiStep extends PnpStep {
   @override
   String title(BuildContext context) =>
       'Personalize your Wi-Fi name and password';
+
+  void _check(WidgetRef ref) {
+    final state = ref.read(pnpProvider).stepStateList[index];
+    final ssid = state?.data['ssid'] as String? ?? '';
+    final password = state?.data['password'] as String? ?? '';
+    if (ssid.isNotEmpty && password.isNotEmpty) {
+      ref
+          .read(pnpProvider.notifier)
+          .setStepStatus(index, status: StepViewStatus.data);
+    } else {
+      ref
+          .read(pnpProvider.notifier)
+          .setStepStatus(index, status: StepViewStatus.error);
+    }
+  }
 }

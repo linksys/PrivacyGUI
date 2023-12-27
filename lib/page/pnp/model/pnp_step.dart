@@ -54,7 +54,7 @@ abstract class PnpStep {
 
   /// Triggered when an error occurs during the next flow. (onNext, save)
   void onError(WidgetRef ref, Object? error, StackTrace stackTrace) {
-    logger.d('PNP:: $this.runtimeType: error $error');
+    logger.d('PNP:: $runtimeType: error $error \n$stackTrace');
     ref.read(pnpProvider.notifier).setStepError(index, error: error);
   }
 

@@ -72,7 +72,8 @@ class PnpNotifier extends Notifier<PnpState> {
     final stepStateData = Map<int, PnpStepState>.from(state.stepStateList);
     final target = stepStateData[index] ??
         const PnpStepState(status: StepViewStatus.loading, data: {});
-    stepStateData[index] = target.copyWith(data: data);
+    stepStateData[index] = target.copyWith(
+        data: Map.fromEntries(target.data.entries)..addAll(data));
     state = state.copyWith(stepStateList: stepStateData);
   }
 
