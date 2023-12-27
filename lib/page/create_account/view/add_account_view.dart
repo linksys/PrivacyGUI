@@ -151,7 +151,7 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
                 child: Wrap(
                   children: [
                     AppText.bodyMedium(
-                      generalErrorCodeHandler(context, _errorCode),
+                      generalErrorCodeHandler(context, _errorCode)??'',
                     ),
                     AppTextButton(
                       getAppLocalizations(context).login_to_continue,
