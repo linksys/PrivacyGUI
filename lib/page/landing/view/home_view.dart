@@ -38,7 +38,6 @@ class _HomeViewState extends ConsumerState<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    logger.d('home rebuild');
     return StyledAppPageView(
       backState: StyledBackState.none,
       child: _isLoading

@@ -133,7 +133,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
                 child: AppText.headlineMedium(
-                  generalErrorCodeHandler(context, _errorCode),
+                  generalErrorCodeHandler(context, _errorCode) ?? '',
                 ),
               ),
             const Spacer(),

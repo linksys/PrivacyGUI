@@ -21,7 +21,7 @@ class CloudPasswordValidationView extends ArgumentsConsumerStatefulView {
 class _CloudPasswordValidationViewState
     extends ConsumerState<CloudPasswordValidationView> {
   final TextEditingController passwordController = TextEditingController();
-  String _errorMessage = '';
+  String? _errorMessage;
 
   @override
   void initState() {

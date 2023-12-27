@@ -3,10 +3,10 @@ import 'package:linksys_app/constants/error_code.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 
-String generalErrorCodeHandler(BuildContext context, String code) {
+String? generalErrorCodeHandler(BuildContext context, String code) {
   switch (code) {
     case '':
-      return '';
+      return null;
     case errorUsernameExists:
       return getAppLocalizations(context).error_username_already_exist;
     case errorEmptyEmail:

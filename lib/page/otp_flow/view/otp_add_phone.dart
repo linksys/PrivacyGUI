@@ -204,7 +204,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
             Offstage(
               offstage: !isInputInvalid,
               child: AppText.bodyLarge(
-                generalErrorCodeHandler(context, errorInvalidPhone),
+                generalErrorCodeHandler(context, errorInvalidPhone) ?? '',
                 color: Theme.of(context).colorScheme.error,
               ),
             ),

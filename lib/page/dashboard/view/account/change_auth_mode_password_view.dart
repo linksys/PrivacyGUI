@@ -22,7 +22,7 @@ class ChangeAuthModePasswordView extends ArgumentsConsumerStatefulView {
 class _ChangeAuthModePasswordViewState
     extends ConsumerState<ChangeAuthModePasswordView> {
   final TextEditingController passwordController = TextEditingController();
-  String _errorMessage = '';
+  String? _errorMessage;
   String mode = '';
 
   @override

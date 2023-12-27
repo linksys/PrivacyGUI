@@ -20,7 +20,7 @@ class InputNewPasswordView extends ArgumentsConsumerStatefulView {
 
 class _InputNewPasswordViewState extends ConsumerState<InputNewPasswordView> {
   final TextEditingController passwordController = TextEditingController();
-  String _errorMessage = '';
+  String? _errorMessage;
 
   @override
   void initState() {
