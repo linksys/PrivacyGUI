@@ -18,9 +18,6 @@ abstract class RegExValidationRule extends ValidationRule {
 
 class EmailRule extends RegExValidationRule {
   @override
-  String get name => 'Email';
-
-  @override
   RegExp get _rule => RegExp(
       r"^[a-zA-Z0-9.!#$%&‘*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$");
 }
@@ -32,9 +29,6 @@ class LengthRule extends ValidationRule {
   LengthRule({this.min = 10, this.max = 0});
 
   @override
-  String get name => 'Length';
-
-  @override
   bool validate(String input) {
     return max > 0
         ? input.length >= min && input.length <= max
@@ -44,9 +38,6 @@ class LengthRule extends ValidationRule {
 
 class HybridCaseRule extends ValidationRule {
   @override
-  String get name => 'HybridCase';
-
-  @override
   bool validate(String input) {
     return input != input.toUpperCase() && input != input.toLowerCase();
   }
@@ -54,16 +45,10 @@ class HybridCaseRule extends ValidationRule {
 
 class DigitalCheckRule extends RegExValidationRule {
   @override
-  String get name => 'Digital';
-
-  @override
   RegExp get _rule => RegExp(r".*\d+.*");
 }
 
 class SpecialCharCheckRule extends RegExValidationRule {
-  @override
-  String get name => 'SpecialChar';
-
   @override
   RegExp get _rule => RegExp(r".*[^a-zA-Z0-9 ]+.*");
 // From current linksys app
@@ -72,25 +57,20 @@ class SpecialCharCheckRule extends RegExValidationRule {
 }
 
 class WiFiPasswordRule extends RegExValidationRule {
+  final bool ignoreLength;
+  WiFiPasswordRule({this.ignoreLength = false});
   @override
-  String get name => 'WiFiPassword';
-
-  @override
-  RegExp get _rule => RegExp(r"^(?! )[\x20-\x7e]{8,64}(?<! )$");
+  RegExp get _rule => RegExp(ignoreLength
+      ? r"^(?! )[\x20-\x7e]+(?<! )$"
+      : r"^(?! )[\x20-\x7e]{8,64}(?<! )$");
 }
 
 class WiFiSsidRule extends RegExValidationRule {
-  @override
-  String get name => 'WiFiSsid';
-
   @override
   RegExp get _rule => RegExp(r"^(?! ).{1,32}(?<! )$");
 }
 
 class IpAddressRule extends RegExValidationRule {
-  @override
-  String get name => 'IpAddress';
-
   @override
   RegExp get _rule => RegExp(
       r"^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
@@ -102,15 +82,9 @@ class NoSurroundWhitespaceRule extends RegExValidationRule {
 
   @override
   RegExp get _rule => RegExp(r'^\s+|\s+$');
-
-  @override
-  String get name => 'SurroundWhitespace';
 }
 
 class AndroidNameRule extends RegExValidationRule {
-  @override
-  String get name => 'AndroidName';
-
   @override
   RegExp get _rule =>
       RegExp(r"^Android$|^android-[a-fA-F0-9]{16}.*|^Android-[0-9]+");

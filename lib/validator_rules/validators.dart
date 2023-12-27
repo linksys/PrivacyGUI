@@ -1,5 +1,5 @@
+import 'package:collection/collection.dart';
 import 'package:linksys_app/validator_rules/_validator_rules.dart';
-
 import 'rules.dart';
 
 class InputValidator {
@@ -17,10 +17,16 @@ class InputValidator {
   }
 
   Map<String, bool> validateDetail(String input, {bool onlyFailed = false}) {
-    return rules
+    final results = rules
         .map((rule) => {rule.name: rule.validate(input)})
-        .where((pair) => onlyFailed ? !pair.values.first : true)
-        .reduce((value, element) => value..addAll(element));
+        .where((pair) => onlyFailed ? !pair.values.first : true);
+    return results.isEmpty
+        ? {}
+        : results.reduce((value, element) => value..addAll(element));
+  }
+
+  ValidationRule? getRule(String name) {
+    return rules.firstWhereOrNull((element) => element.name == name);
   }
 }
 
