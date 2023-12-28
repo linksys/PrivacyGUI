@@ -197,7 +197,7 @@ class AccountStep extends PnpStep {
         Row(
           children: [
             Image(
-              image: AppTheme.of(context).images.imgEllipseGreen,
+              image: AppTheme.of(context).images.iconEllipseGreen,
             ),
             const AppGap.semiSmall(),
             const AppText.bodySmall(
@@ -208,7 +208,7 @@ class AccountStep extends PnpStep {
         Row(
           children: [
             Image(
-              image: AppTheme.of(context).images.imgEllipseGreen,
+              image: AppTheme.of(context).images.iconEllipseGreen,
             ),
             const AppGap.semiSmall(),
             const AppText.bodySmall(
@@ -219,7 +219,7 @@ class AccountStep extends PnpStep {
         Row(
           children: [
             Image(
-              image: AppTheme.of(context).images.imgEllipseGreen,
+              image: AppTheme.of(context).images.iconEllipseGreen,
             ),
             const AppGap.semiSmall(),
             const AppText.bodySmall(
@@ -230,7 +230,7 @@ class AccountStep extends PnpStep {
         Row(
           children: [
             Image(
-              image: AppTheme.of(context).images.imgEllipseGreen,
+              image: AppTheme.of(context).images.iconEllipseGreen,
             ),
             const AppGap.semiSmall(),
             const AppText.bodySmall(

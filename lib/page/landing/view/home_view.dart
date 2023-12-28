@@ -9,7 +9,6 @@ import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/util/biometrics.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -60,7 +59,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
               _isOpenDebug = !_isOpenDebug;
             });
           },
-          child: SvgPicture(AppTheme.of(context).images.linksysBlackLogo)),
+          child: SvgPicture(AppTheme.of(context).images.linksysLogoBlack)),
     );
   }
 

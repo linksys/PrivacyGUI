@@ -83,3 +83,4 @@ plugins/connecting_wifi_plugin/example/pubspec.lock
 plugins/ios_push_notification_plugin/example/pubspec.lock
 plugins/sms_receiver_plugin/example/pubspec.lock
 plugins/universal_link_plugin/example/pubspec.lock
+artifacts/webApp

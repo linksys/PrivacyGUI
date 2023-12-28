@@ -129,7 +129,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   Widget _configView() => AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: SvgPicture(
-          AppTheme.of(context).images.linksysBlackLogo,
+          AppTheme.of(context).images.linksysLogoBlack,
           width: 32,
           height: 32,
           fit: BoxFit.cover,
@@ -222,7 +222,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             ),
             const AppGap.regular(),
             Center(
-                child: SvgPicture(AppTheme.of(context).images.pnpSetupDesktop)),
+                child: SvgPicture(AppTheme.of(context).images.pnpFinishDesktop)),
           ],
         ),
       ),

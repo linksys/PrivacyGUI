@@ -18,7 +18,6 @@ import 'package:linksys_app/core/utils/storage.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
-import 'package:flutter_web_plugins/url_strategy.dart';
 
 void main() async {
   // if (kIsWeb) {
