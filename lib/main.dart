@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
@@ -38,6 +40,9 @@ void main() async {
   container.read(linksysCacheManagerProvider);
   BuildConfig.load();
   initBetterActions();
+  if (!kIsWeb) {
+    HttpOverrides.global = MyHTTPOverrides();
+  }
   runApp(_app());
 }
 
@@ -95,4 +100,15 @@ Widget _app() {
     ],
     child: const LinksysApp(),
   );
+}
+
+class MyHTTPOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
+        // logger.d('cert:: issuer:${cert.issuer}, subject:${cert.subject}');
+        return true;
+      };
+  }
 }
