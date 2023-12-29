@@ -124,6 +124,7 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
               const AppGap.regular(),
               AppTextField(
                 key: const Key('login_view_input_field_email'),
+                autofocus: true,
                 headerText: getAppLocalizations(context).email,
                 hintText: getAppLocalizations(context).email,
                 controller: _accountController,
