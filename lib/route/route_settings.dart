@@ -1,34 +1,34 @@
 part of 'router_provider.dart';
 
 final settings = [
-  GoRoute(
+  LinksysRoute(
     name: RouteNamed.settingsNotification,
     path: RoutePath.settingsNotification,
     builder: (context, state) => NotificationSettingsView(),
   ),
-  GoRoute(
+  LinksysRoute(
       name: RouteNamed.settingsWifi,
       path: RoutePath.settingsWifi,
       builder: (context, state) => WifiSettingsView(),
       routes: [
-        GoRoute(
+        LinksysRoute(
           name: RouteNamed.wifiSettingsReview,
           path: RoutePath.wifiSettingsReview,
           builder: (context, state) => WifiSettingsReviewView(),
           routes: [
-            GoRoute(
+            LinksysRoute(
               name: RouteNamed.wifiEditSSID,
               path: RoutePath.wifiEditSSID,
               builder: (context, state) => EditWifiNamePasswordView(),
             ),
-            GoRoute(
+            LinksysRoute(
               name: RouteNamed.wifiEditSecurity,
               path: RoutePath.wifiEditSecurity,
               builder: (context, state) => EditWifiSecurityView(
                 args: state.uri.queryParameters,
               ),
             ),
-            GoRoute(
+            LinksysRoute(
               name: RouteNamed.wifiEditMode,
               path: RoutePath.wifiEditMode,
               builder: (context, state) => EditWifiModeView(),
@@ -36,78 +36,78 @@ final settings = [
           ],
         ),
       ]),
-  GoRoute(
+  LinksysRoute(
       name: RouteNamed.settingsNodes,
       path: RoutePath.settingsNodes,
       builder: (context, state) => TopologyView(
             args: state.uri.queryParameters,
           ),
       routes: [
-        GoRoute(
+        LinksysRoute(
           name: RouteNamed.nodeDetails,
           path: RoutePath.nodeDetails,
           builder: (context, state) => NodeDetailView(),
           routes: [
-            GoRoute(
+            LinksysRoute(
               name: RouteNamed.changeNodeName,
               path: RoutePath.changeNodeName,
               builder: (context, state) => const ChangeNodeNameView(),
             ),
-            GoRoute(
+            LinksysRoute(
               name: RouteNamed.nodeLightSettings,
               path: RoutePath.nodeLightSettings,
               builder: (context, state) => const NodeSwitchLightView(),
             ),
           ],
         ),
-        GoRoute(
+        LinksysRoute(
           name: RouteNamed.nodeOffline,
           path: RoutePath.nodeOffline,
           builder: (context, state) => NodeOfflineCheckView(),
         ),
-        GoRoute(
+        LinksysRoute(
           name: RouteNamed.nodeLight,
           path: RoutePath.nodeLight,
           builder: (context, state) => NodeLightGuideView(),
         ),
       ]),
-  GoRoute(
+  LinksysRoute(
     name: RouteNamed.settingsRouterPassword,
     path: RoutePath.settingsRouterPassword,
     builder: (context, state) => RouterPasswordView(),
   ),
-  GoRoute(
+  LinksysRoute(
     name: RouteNamed.settingsTimeZone,
     path: RoutePath.settingsTimeZone,
     builder: (context, state) => TimezoneView(),
   ),
-  GoRoute(
+  LinksysRoute(
       name: RouteNamed.settingsInternet,
       path: RoutePath.settingsInternet,
       builder: (context, state) => InternetSettingsView(),
       routes: [
-        GoRoute(
+        LinksysRoute(
           name: RouteNamed.itemPicker,
           path: RoutePath.itemPicker,
           builder: (context, state) => SimpleItemPickerView(
             args: state.uri.queryParameters,
           ),
         ),
-        GoRoute(
+        LinksysRoute(
           name: RouteNamed.mtuPicker,
           path: RoutePath.mtuPicker,
           builder: (context, state) => MTUPickerView(
             args: state.extra as Map<String, dynamic>? ?? {},
           ),
         ),
-        GoRoute(
+        LinksysRoute(
           name: RouteNamed.macClone,
           path: RoutePath.macClone,
           builder: (context, state) => MACCloneView(
             args: state.extra as Map<String, dynamic>? ?? {},
           ),
         ),
-        GoRoute(
+        LinksysRoute(
           name: RouteNamed.connectionType,
           path: RoutePath.connectionType,
           builder: (context, state) => ConnectionTypeSelectionView(
@@ -115,17 +115,17 @@ final settings = [
           ),
         ),
       ]),
-  GoRoute(
+  LinksysRoute(
     name: RouteNamed.settingsIpDetails,
     path: RoutePath.settingsIpDetails,
     builder: (context, state) => IpDetailsView(),
   ),
-  GoRoute(
+  LinksysRoute(
     name: RouteNamed.settingsLocalNetwork,
     path: RoutePath.settingsLocalNetwork,
     builder: (context, state) => LANView(),
     routes: [
-      GoRoute(
+      LinksysRoute(
         name: RouteNamed.dhcpReservation,
         path: RoutePath.dhcpReservation,
         builder: (context, state) => DHCPReservationsView(
@@ -134,12 +134,12 @@ final settings = [
       ),
     ],
   ),
-  GoRoute(
+  LinksysRoute(
     name: RouteNamed.settingsMacFiltering,
     path: RoutePath.settingsMacFiltering,
     builder: (context, state) => MacFilteringView(),
     routes: [
-      GoRoute(
+      LinksysRoute(
         name: RouteNamed.macFilteringInput,
         path: RoutePath.macFilteringInput,
         builder: (context, state) => MacFilteringEnterDeviceView(
@@ -148,40 +148,40 @@ final settings = [
       ),
     ],
   ),
-  GoRoute(
+  LinksysRoute(
     name: RouteNamed.settingsPort,
     path: RoutePath.settingsPort,
     builder: (context, state) => PortForwardingView(),
     routes: [
-      GoRoute(
+      LinksysRoute(
         name: RouteNamed.selectDevice,
         path: RoutePath.selectDevice,
         builder: (context, state) => SelectOnlineDeviceView(
           args: state.uri.queryParameters,
         ),
       ),
-      GoRoute(
+      LinksysRoute(
         name: RouteNamed.selectProtocol,
         path: RoutePath.selectProtocol,
         builder: (context, state) => SelectProtocolView(
           args: state.uri.queryParameters,
         ),
       ),
-      GoRoute(
+      LinksysRoute(
         name: RouteNamed.singlePortForwardingList,
         path: RoutePath.singlePortForwardingList,
         builder: (context, state) => SinglePortForwardingListView(
           args: state.uri.queryParameters,
         ),
       ),
-      GoRoute(
+      LinksysRoute(
         name: RouteNamed.portRangeForwardingList,
         path: RoutePath.portRangeForwardingList,
         builder: (context, state) => PortRangeForwardingListView(
           args: state.uri.queryParameters,
         ),
       ),
-      GoRoute(
+      LinksysRoute(
         name: RouteNamed.portRangeTriggeringList,
         path: RoutePath.portRangeTriggeringList,
         builder: (context, state) => PortRangeTriggeringListView(

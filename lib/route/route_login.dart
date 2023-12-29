@@ -1,11 +1,11 @@
 part of 'router_provider.dart';
 
-final loginRoute = GoRoute(
+final loginRoute = LinksysRoute(
   name: RouteNamed.cloudLoginAccount,
   path: RoutePath.cloudLoginAccount,
   builder: (context, state) => const CloudLoginAccountView(),
   routes: [
-    GoRoute(
+    LinksysRoute(
       name: RouteNamed.cloudLoginPassword,
       path: RoutePath.cloudLoginPassword,
       builder: (context, state) => CloudLoginPasswordView(
@@ -13,14 +13,14 @@ final loginRoute = GoRoute(
       ),
       routes: [
         ...otpRoutes,
-        GoRoute(
+        LinksysRoute(
           name: RouteNamed.cloudForgotPassword,
           path: RoutePath.cloudForgotPassword,
           builder: (context, state) => CloudForgotPasswordView(
             args: state.uri.queryParameters,
           ),
         ),
-        GoRoute(
+        LinksysRoute(
           name: RouteNamed.phoneRegionCode,
           path: RoutePath.phoneRegionCode,
           builder: (context, state) => RegionPickerView(

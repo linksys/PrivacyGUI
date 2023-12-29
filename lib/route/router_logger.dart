@@ -3,12 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 
 final routerLoggerProvider = Provider((ref) {
-  return RouterLogger(ref);
+  return RouterLogger();
 });
 
 class RouterLogger extends NavigatorObserver {
-  final Ref _ref;
-  RouterLogger(Ref ref) : _ref = ref;
 
   /// The [Navigator] pushed `route`.
   ///

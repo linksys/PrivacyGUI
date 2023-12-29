@@ -67,7 +67,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       homeRoute,
       // ref.read(otpRouteProvider),
-      GoRoute(
+      LinksysRoute(
         name: RouteNamed.prepareDashboard,
         path: RoutePath.prepareDashboard,
         builder: (context, state) => PrepareDashboardView(),
@@ -79,7 +79,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => SelectNetworkView(),
       ),
       dashboardRoute,
-      GoRoute(
+      LinksysRoute(
         name: RouteNamed.pnp,
         path: RoutePath.pnp,
         builder: (context, state) => const PnpSetupView(),
