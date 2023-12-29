@@ -7,6 +7,7 @@ import 'package:logger/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final logger = Logger(
     filter: ProductionFilter(),
@@ -31,6 +32,11 @@ class CustomOutput extends LogOutput {
           "${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(output.toString()))}\n"
               .codeUnits,
           mode: FileMode.writeOnlyAppend);
+    } else if (kIsWeb && output.isNotEmpty) {
+      final SharedPreferences sp = await SharedPreferences.getInstance();
+      String content = sp.getString('web_log') ?? '';
+      await sp.setString('web_log',
+          '$content\n${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(output.toString()))}\n');
     }
   }
 
