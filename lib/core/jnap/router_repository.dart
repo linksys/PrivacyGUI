@@ -230,6 +230,7 @@ class RouterRepository {
     if (record.$1 is JNAPSuccess || record.$1 is JNAPTransactionSuccess) {
       return record;
     }
+    LinksysHttpClient.onError?.call(record.$1 as JNAPError);
     throw (record.$1 as JNAPError);
   }
 

@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/constants/_constants.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_app/route/router_logger.dart';
+import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_app/util/biometrics.dart';
 import 'package:linksys_widgets/theme/theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -48,6 +51,11 @@ class _HomeViewState extends ConsumerState<HomeView> {
               footer: _footer(context),
             ),
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   Widget _content(BuildContext context) {

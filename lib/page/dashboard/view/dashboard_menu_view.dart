@@ -54,27 +54,36 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppGap.extraBig(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                AppCard(
-                  // Get image by master node's model number
-                  image: AppTheme.of(context).images.devices.getByName(
-                        routerIconTest(
-                          modelNumber: ref
-                                  .read(deviceManagerProvider)
-                                  .deviceList
-                                  .firstOrNull
-                                  ?.model
-                                  .modelNumber ??
-                              '',
-                        ),
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Container(
+                      constraints: const BoxConstraints(
+                          maxWidth: 120,
+                          maxHeight: 120,
+                          minHeight: 60,
+                          minWidth: 60),
+                      child: AppCard(
+                        // Get image by master node's model number
+                        image: AppTheme.of(context).images.devices.getByName(
+                              routerIconTest(
+                                modelNumber: ref
+                                        .read(deviceManagerProvider)
+                                        .deviceList
+                                        .firstOrNull
+                                        ?.model
+                                        .modelNumber ??
+                                    '',
+                              ),
+                            ),
                       ),
-                ),
-                const AppGap.regular(),
-                Expanded(
-                  child: InkWell(
+                    ),
+                  ),
+                  const AppGap.regular(),
+                  InkWell(
                     onTap: hasMultiNetworks
                         ? () {
                             ref
@@ -97,8 +106,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                       ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             const AppGap.regular(),
             AppSection.withList(

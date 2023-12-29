@@ -20,7 +20,7 @@ import 'client/get_client.dart'
     if (dart.library.io) 'client/mobile_client.dart'
     if (dart.library.html) 'client/web_client.dart';
 
-typedef HttpErrorResponseHandler = void Function(ErrorResponse error);
+typedef HttpErrorResponseHandler = void Function(dynamic error);
 
 ///
 /// timeout - will throw Timeout exception on ${timeout} seconds

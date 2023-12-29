@@ -5,15 +5,18 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_app/constants/default_country_codes.dart';
+import 'package:linksys_app/constants/error_code.dart';
 import 'package:linksys_app/constants/jnap_const.dart';
 import 'package:linksys_app/constants/pref_key.dart';
 import 'package:linksys_app/core/cloud/model/cloud_session_model.dart';
+import 'package:linksys_app/core/cloud/model/error_response.dart';
 import 'package:linksys_app/core/cloud/model/region_code.dart';
 import 'package:linksys_app/core/http/linksys_http_client.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/repository/router/extensions/core_extension.dart';
 import 'package:linksys_app/core/utils/logger.dart';
@@ -96,12 +99,23 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   AuthNotifier() : super() {
     LinksysHttpClient.onError = (error) async {
       logger.d('Http Response Error: $error');
-      if (error.code == 'INVALID_SESSION_TOKEN') {
-        final sessionToken =
-            await checkSessionToken().onError(handleSessionTokenError);
-        final invalidToken = error.errorMessage?.split(':')[1].trim() ?? '';
-        if (sessionToken == null || sessionToken.accessToken == invalidToken) {
-          logout();
+      if (error is ErrorResponse) {
+        if (error.code == 'INVALID_SESSION_TOKEN') {
+          final sessionToken =
+              await checkSessionToken().onError(handleSessionTokenError);
+          final invalidToken = error.errorMessage?.split(':')[1].trim() ?? '';
+          if (sessionToken == null ||
+              sessionToken.accessToken == invalidToken) {
+            logout();
+          }
+        }
+      } else if (error is JNAPError) {
+        if (error.result == errorJNAPUnauthorized) {
+          final sessionToken =
+              await checkSessionToken().onError(handleSessionTokenError);
+          if (sessionToken == null) {
+            logout();
+          }
         }
       }
     };

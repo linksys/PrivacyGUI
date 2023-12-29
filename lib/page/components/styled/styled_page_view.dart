@@ -1,14 +1,6 @@
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/page/components/customs/no_network_bottom_modal.dart';
-import 'package:linksys_app/page/components/styled/banner_info.dart';
-import 'package:linksys_app/page/components/styled/banner_provider.dart';
-import 'package:linksys_widgets/widgets/banner/banner_view.dart';
-import 'package:linksys_app/provider/connectivity/_connectivity.dart';
 
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/base/padding.dart';
@@ -61,8 +53,6 @@ class StyledAppPageView extends ConsumerWidget {
           bottomNavigationBar: bottomNavigationBar,
           child: child,
         ),
-        ..._handleBanner(ref),
-        ..._handleConnectivity(ref),
       ],
     );
   }
@@ -104,39 +94,5 @@ class StyledAppPageView extends ConsumerWidget {
       case AppBarStyle.none:
         return null;
     }
-  }
-
-  List<Widget> _handleBanner(WidgetRef ref) {
-    if (!handleBanner) {
-      return [];
-    }
-    final bannerInfo = ref.watch(bannerProvider);
-    if (bannerInfo.isDiaplay) {
-      return [
-        AppBanner(
-          style: bannerInfo.style,
-          text: bannerInfo.text,
-        )
-      ];
-    } else {
-      return [];
-    }
-  }
-
-  List<Widget> _handleConnectivity(WidgetRef ref) {
-    if (!kIsWeb && handleNoConnection) {
-      final connectivity = ref.watch(connectivityProvider);
-      if (!connectivity.hasInternet ||
-          connectivity.connectivityInfo.type == ConnectivityResult.none) {
-        logger.i(
-            'No internet access: ${connectivity.hasInternet}, ${connectivity.connectivityInfo.type}');
-        return [const NoInternetConnectionModal()];
-      } else if (!(connectivity.cloudAvailabilityInfo?.isCloudOk ?? false)) {
-        logger.i(
-            'cloud unavailable: ${connectivity.cloudAvailabilityInfo?.isCloudOk}');
-        return [const NoInternetConnectionModal()];
-      }
-    }
-    return [];
   }
 }

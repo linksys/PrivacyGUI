@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/firebase/notification_helper.dart';
-import 'package:linksys_app/page/dashboard/view/dashboard_menu_view.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
+import 'package:linksys_app/provider/layout/root_container.dart';
 import 'package:linksys_app/provider/smart_device_provider.dart';
+import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/theme_data.dart';
@@ -24,6 +25,7 @@ class LinksysApp extends ConsumerStatefulWidget {
 
 class _LinksysAppState extends ConsumerState<LinksysApp>
     with WidgetsBindingObserver {
+  LinksysRoute? _currentRoute;
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
@@ -40,48 +42,37 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     WidgetsBinding.instance.removeObserver(this);
     ref.read(connectivityProvider.notifier).stop();
     apnsStreamSubscription?.cancel();
+    ref
+        .read(routerProvider)
+        .routerDelegate
+        .removeListener(_onReceiveRouteChanged);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    logger.d('App:: build');
     ref.read(smartDeviceProvider.notifier).init();
     final router = ref.watch(routerProvider);
+    router.routerDelegate.removeListener(_onReceiveRouteChanged);
+    router.routerDelegate.addListener(_onReceiveRouteChanged);
+
     return MaterialApp.router(
       onGenerateTitle: (context) => getAppLocalizations(context).app_title,
       theme: linksysLightThemeData,
       darkTheme: linksysDarkThemeData,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      builder: (context, child) => Container(
-        color: Theme.of(context).colorScheme.shadow,
-        child: AppResponsiveTheme(child: _build(child ?? Center())),
+      builder: (context, child) => AppResponsiveTheme(
+        child: AppRootContainer(
+          routeConfig: _currentRoute?.config,
+          child: child,
+        ),
       ),
       routeInformationProvider: router.routeInformationProvider,
       routeInformationParser: router.routeInformationParser,
       routerDelegate: router.routerDelegate,
     );
-  }
-
-  Widget _build(Widget child) {
-    return LayoutBuilder(builder: ((context, constraints) {
-      final isDone = ref
-          .watch(deviceManagerProvider.select((value) => value.deviceList))
-          .isNotEmpty;
-            if (constraints.maxWidth > 768 && isDone) {
-        return Row(
-          children: [
-            const SizedBox(
-              width: 320,
-              child: DashboardMenuView(),
-            ),
-            Expanded(child: Container(child: child)),
-          ],
-        );
-      } else {
-        return child;
-      }
-    }));
   }
 
   @override
@@ -101,5 +92,23 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       logger.d('init auth finish');
       FlutterNativeSplash.remove();
     });
+  }
+
+  void _onReceiveRouteChanged() {
+    if (!mounted) return;
+    final router = ref.read(routerProvider);
+
+    final GoRoute? page =
+        router.routerDelegate.currentConfiguration.last.route as GoRoute?;
+    logger.d('Router Delegate Changed! ${page?.name}');
+    if (page is LinksysRoute) {
+      setState(() {
+        _currentRoute = page;
+      });
+    } else if (_currentRoute != null) {
+      setState(() {
+        _currentRoute = null;
+      });
+    }
   }
 }
