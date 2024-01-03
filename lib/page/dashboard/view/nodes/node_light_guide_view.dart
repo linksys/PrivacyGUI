@@ -6,8 +6,8 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/core/utils/nodes.dart';
 import 'package:linksys_app/provider/devices/node_detail_provider.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
 
 class NodeLightGuideView extends ConsumerWidget {
   const NodeLightGuideView({super.key});
@@ -36,12 +36,12 @@ class NodeLightGuideView extends ConsumerWidget {
           child: Column(
             children: [
               _buildLightInfo(
-                led: AppTheme.of(context).images.ledWhiteSolid,
+                led: CustomTheme.of(context).images.ledWhiteSolid,
                 title: 'White',
                 desc: 'Online, everything is good',
               ),
               _buildLightInfo(
-                led: AppTheme.of(context).images.ledRedSolid,
+                led: CustomTheme.of(context).images.ledRedSolid,
                 title: 'Red',
                 desc: 'No internet',
               ),
@@ -54,23 +54,22 @@ class NodeLightGuideView extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const AppPadding(
-                padding:
-                    AppEdgeInsets.symmetric(horizontal: AppGapSize.regular),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: Spacing.regular),
                 child: AppText.bodyLarge('During setup'),
               ),
               _buildLightInfo(
-                led: AppTheme.of(context).images.ledBlueBlink,
+                led: CustomTheme.of(context).images.ledBlueBlink,
                 title: 'Blue (blinking)',
                 desc: 'Powering on',
               ),
               _buildLightInfo(
-                led: AppTheme.of(context).images.ledBlueSolid,
+                led: CustomTheme.of(context).images.ledBlueSolid,
                 title: 'Blue',
                 desc: 'Ready for setup',
               ),
               _buildLightInfo(
-                led: AppTheme.of(context).images.ledWhiteBlink,
+                led: CustomTheme.of(context).images.ledWhiteBlink,
                 title: 'White (blinking)',
                 desc: 'Setup in progress',
               ),
@@ -89,22 +88,22 @@ class NodeLightGuideView extends ConsumerWidget {
           child: Column(
             children: [
               _buildLightInfo(
-                led: AppTheme.of(context).images.ledBlueSolid,
+                led: CustomTheme.of(context).images.ledBlueSolid,
                 title: 'Blue',
                 desc: 'Online, everything is good',
               ),
               _buildLightInfo(
-                led: AppTheme.of(context).images.ledYellowSolid,
+                led: CustomTheme.of(context).images.ledYellowSolid,
                 title: 'Yellow',
                 desc: 'Weak signal',
               ),
               _buildLightInfo(
-                led: AppTheme.of(context).images.ledRedSolid,
+                led: CustomTheme.of(context).images.ledRedSolid,
                 title: 'Red',
                 desc: 'No internet',
               ),
               _buildLightInfo(
-                led: AppTheme.of(context).images.ledRedBlink,
+                led: CustomTheme.of(context).images.ledRedBlink,
                 title: 'Red',
                 desc:
                     'Out of range. Move closer to another node. If it’s your parent node, make sure it’s connected to your modem.',
@@ -118,23 +117,22 @@ class NodeLightGuideView extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const AppPadding(
-                padding:
-                    AppEdgeInsets.symmetric(horizontal: AppGapSize.regular),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: Spacing.regular),
                 child: AppText.bodyLarge('During setup'),
               ),
               _buildLightInfo(
-                led: AppTheme.of(context).images.ledBlueBlink,
+                led: CustomTheme.of(context).images.ledBlueBlink,
                 title: 'Blue (blinking)',
                 desc: 'Powering on',
               ),
               _buildLightInfo(
-                led: AppTheme.of(context).images.ledPurpleSolid,
+                led: CustomTheme.of(context).images.ledPurpleSolid,
                 title: 'Purple',
                 desc: 'Ready for setup',
               ),
               _buildLightInfo(
-                led: AppTheme.of(context).images.ledPurpleBlink,
+                led: CustomTheme.of(context).images.ledPurpleBlink,
                 title: 'Purple (blinking)',
                 desc: 'Setup in progress',
               ),
@@ -150,7 +148,8 @@ class NodeLightGuideView extends ConsumerWidget {
     required Widget child,
   }) {
     return Card(
-      child: AppPadding.regular(child: child),
+      child: Padding(padding: const EdgeInsets.all(Spacing.regular),
+      child: child),
     );
   }
 
@@ -159,7 +158,8 @@ class NodeLightGuideView extends ConsumerWidget {
     required String title,
     required String desc,
   }) {
-    return AppPadding.regular(
+    return Padding(
+      padding: const EdgeInsets.all(Spacing.regular),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,

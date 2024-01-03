@@ -7,8 +7,9 @@ import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -70,9 +71,9 @@ class _WifiSettingsReviewViewState
                   const AppText.bodyMedium(
                     'Where most of your devices connect.',
                   ),
-                  const AppPadding(
-                    padding: AppEdgeInsets.only(
-                        top: AppGapSize.small, bottom: AppGapSize.regular),
+                  const Padding(
+                    padding: EdgeInsets.only(
+                        top: Spacing.small, bottom: Spacing.regular),
                     child: AppText.bodyMedium(
                       '6 GHz, 5 GHz, 2.4 GHz',
                       //TODO: Remove the dummy recent bands
@@ -121,9 +122,8 @@ class _WifiSettingsReviewViewState
       onTap: () => _onSettingTap(index, wifiItem),
       child: Row(
         children: [
-          AppPadding(
-              padding:
-                  const AppEdgeInsets.symmetric(vertical: AppGapSize.regular),
+          Padding(
+              padding: const EdgeInsets.symmetric(vertical: Spacing.regular),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

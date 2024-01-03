@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
 
 class SignalStrengthView extends ArgumentsConsumerStatefulView {
   const SignalStrengthView({
@@ -48,8 +48,8 @@ class _SignalStrengthViewState extends ConsumerState<SignalStrengthView> {
             children: [
               TableRow(
                 children: [
-                  AppPadding(
-                    padding: const AppEdgeInsets.only(bottom: AppGapSize.big),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: Spacing.big),
                     child: AppText.displayLarge(
                       getAppLocalizations(context).rssi_with_unit,
                     ),

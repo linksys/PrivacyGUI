@@ -8,8 +8,9 @@ import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -75,9 +76,9 @@ class _EditWifiSecurityViewState extends ConsumerState<EditWifiSecurityView> {
                 itemBuilder: (context, index) {
                   return GestureDetector(
                     onTap: () => _onTypeTapped(index),
-                    child: AppPadding(
-                      padding: const AppEdgeInsets.symmetric(
-                          vertical: AppGapSize.regular),
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.symmetric(vertical: Spacing.regular),
                       child: Row(
                         children: [
                           Expanded(

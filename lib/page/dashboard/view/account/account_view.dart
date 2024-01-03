@@ -9,8 +9,9 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/biometrics.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
 import 'package:styled_text/styled_text.dart';
 
@@ -54,8 +55,8 @@ class _AccountViewState extends ConsumerState<AccountView> {
       children: [
         const AppGap.regular(),
         _localLoginInformationSection(context),
-        const AppPadding(
-          padding: AppEdgeInsets.symmetric(vertical: AppGapSize.regular),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: Spacing.regular),
           child: Divider(),
         ),
         // _biometricsTile(state),
@@ -69,8 +70,8 @@ class _AccountViewState extends ConsumerState<AccountView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _informationSection(state),
-        const AppPadding(
-          padding: AppEdgeInsets.symmetric(vertical: AppGapSize.regular),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: Spacing.regular),
           child: Divider(),
         ),
         _securitySection(state),

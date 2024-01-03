@@ -14,9 +14,10 @@ import 'package:linksys_app/provider/devices/node_detail_state.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/profile_header_layout.dart';
 
 class NodeDetailView extends ArgumentsConsumerStatefulView {
@@ -101,7 +102,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     return AppDeviceAvatar.extraLarge(
       borderColor: Colors.transparent,
       backgroundColor: Colors.transparent,
-      image: AppTheme.of(context).images.devices.getByName(
+      image: CustomTheme.of(context).images.devices.getByName(
             routerIconTest(modelNumber: state.modelNumber),
           ),
     );
@@ -110,7 +111,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   Widget _getConnectionImage(NodeDetailState state) {
     return AppIcon.big(
       icon: state.isWiredConnection
-          ? AppTheme.of(context).icons.characters.ethernetDefault
+          ? CustomTheme.of(context).icons.characters.ethernetDefault
           : getWifiSignalIconData(
               context,
               state.signalStrength,
@@ -131,9 +132,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppPadding(
-                      padding: const AppEdgeInsets.symmetric(
-                        horizontal: AppGapSize.semiBig,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Spacing.semiBig,
                       ),
                       child: Column(
                         children: [
@@ -206,16 +207,16 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       final title = isSupportNodeLight ? 'Node Light' : 'Night Mode';
       return [
         const Divider(
-                  height: 8,
-                ),
-                AppPanelWithInfo(
-                  infoText: NodeLightStatus.getStatus(nodeLightSettings)
-                      .resolveString(context),
-                  title: title,
-                  onTap: () {
-                    context.pushNamed(RouteNamed.nodeLightSettings);
-                  },
-                ),
+          height: 8,
+        ),
+        AppPanelWithInfo(
+          infoText: NodeLightStatus.getStatus(nodeLightSettings)
+              .resolveString(context),
+          title: title,
+          onTap: () {
+            context.pushNamed(RouteNamed.nodeLightSettings);
+          },
+        ),
       ];
     }
   }

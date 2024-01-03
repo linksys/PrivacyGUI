@@ -7,8 +7,9 @@ import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/core/cloud/model/region_code.dart';
 import 'package:linksys_app/page/components/layouts/basic_header.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -41,9 +42,9 @@ class _RegionPickerViewState extends ConsumerState<RegionPickerView> {
                   ? ListView.builder(
                       itemCount: snapshot.data?.length,
                       itemBuilder: (context, index) => InkWell(
-                            child: AppPadding(
-                              padding: const AppEdgeInsets.symmetric(
-                                  vertical: AppGapSize.regular),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: Spacing.regular),
                               child: Row(
                                 children: [
                                   AppText.bodyLarge(

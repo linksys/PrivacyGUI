@@ -16,8 +16,9 @@ import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/extensions.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
 
@@ -43,45 +44,46 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
     final filteredChips =
         ref.watch(filteredDeviceListProvider.select((value) => value.$3));
     return StyledAppPageView(
-      padding: const AppEdgeInsets.zero(),
+      padding: const EdgeInsets.only(),
       child: AppBasicLayout(
-        header: AppPadding.regular(
+        header: Padding(
+            padding: const EdgeInsets.all(Spacing.regular),
             child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.headlineMedium('Devices'),
-                AppTextButton.noPadding(
-                  'Filters',
-                  icon: getCharactersIcons(context).filterDefault,
-                  onTap: () {
-                    showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) {
-                          return _buildFilterBottomSheet();
-                        });
-                  },
-                )
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    AppText.headlineMedium('Devices'),
+                    AppTextButton.noPadding(
+                      'Filters',
+                      icon: getCharactersIcons(context).filterDefault,
+                      onTap: () {
+                        showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) {
+                              return _buildFilterBottomSheet();
+                            });
+                      },
+                    )
+                  ],
+                ),
+                const AppGap.regular(),
+                Wrap(
+                  spacing: 16,
+                  children: filteredChips
+                      .map((e) => FilterChip(
+                            label: AppText.bodySmall(e ?? ''),
+                            selected: true,
+                            onSelected: (bool value) {},
+                          ))
+                      .toList(),
+                ),
               ],
-            ),
-            const AppGap.regular(),
-            Wrap(
-              spacing: 16,
-              children: filteredChips
-                  .map((e) => FilterChip(
-                        label: AppText.bodySmall(e ?? ''),
-                        selected: true,
-                        onSelected: (bool value) {},
-                      ))
-                  .toList(),
-            ),
-          ],
-        )),
+            )),
         content: ListView.separated(
           padding: EdgeInsets.zero,
           itemCount: filteredDeviceList.$2.length + 1,
@@ -115,15 +117,16 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
   }
 
   Widget _buildDeviceCell(DeviceListItem item) {
-    return AppPadding(
-      padding: const AppEdgeInsets.symmetric(horizontal: AppGapSize.regular),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.regular),
       child: Opacity(
         opacity: item.isOnline ? 1 : 0.3,
         child: AppDevicePanel.normal(
           title: item.name,
           place: item.upstreamDevice,
           band: item.band,
-          deviceImage: AppTheme.of(context).images.devices.getByName(item.icon),
+          deviceImage:
+              CustomTheme.of(context).images.devices.getByName(item.icon),
           rssiIcon: item.isOnline
               ? getWifiSignalIconData(
                   context, item.isWired ? null : item.signalStrength)
@@ -167,7 +170,8 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
                 topRight: Radius.circular(30),
               ),
             ),
-            child: AppPadding.regular(
+            child: Padding(
+              padding: const EdgeInsets.all(Spacing.regular),
               child: Column(
                 children: [
                   FilteredChipsWidget<LinksysDevice>(
@@ -218,7 +222,8 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
                     height: 8,
                   ),
                   const AppGap.semiBig(),
-                  AppPadding.regular(
+                  Padding(
+                    padding: const EdgeInsets.all(Spacing.regular),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [

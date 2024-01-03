@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 class DesktopLayout extends StatefulWidget {
   final Widget child;
@@ -19,7 +20,6 @@ class DesktopLayout extends StatefulWidget {
 
 class _DesktopLayoutState extends State<DesktopLayout> {
   double _subSize = 320;
-  double _dragAnchor = 0;
   late double _minWidth;
   late double _maxWidth;
 
@@ -45,6 +45,17 @@ class _DesktopLayoutState extends State<DesktopLayout> {
           MouseRegion(
             cursor: SystemMouseCursors.resizeColumn,
             child: GestureDetector(
+              onVerticalDragUpdate: (details) {
+                double xDelta = details.delta.dx;
+                if (xDelta < 0 && _subSize + xDelta < _minWidth) {
+                  xDelta = 0;
+                } else if (xDelta > 0 && _subSize + xDelta > _maxWidth) {
+                  xDelta = 0;
+                }
+                setState(() {
+                  _subSize += xDelta;
+                });
+              },
               onHorizontalDragUpdate: (details) {
                 double xDelta = details.delta.dx;
                 if (xDelta < 0 && _subSize + xDelta < _minWidth) {
@@ -65,7 +76,7 @@ class _DesktopLayoutState extends State<DesktopLayout> {
         Flexible(
           child: Center(
             child: Container(
-              constraints: BoxConstraints(maxWidth: 800),
+              constraints: BoxConstraints(maxWidth: ResponsiveLayout.tabletBreakpoint),
               child: widget.child,
             ),
           ),

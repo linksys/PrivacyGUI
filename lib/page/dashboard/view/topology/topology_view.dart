@@ -40,7 +40,7 @@ class TopologyView extends ArgumentsConsumerStatelessView {
                 itemBuilder: (index, node) {
                   return AppTreeNodeItem(
                     name: node.data.location,
-                    image: AppTheme.of(context)
+                    image: CustomTheme.of(context)
                         .images
                         .devices
                         .getByName(node.data.icon),

@@ -12,7 +12,7 @@ import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/panel/general_card.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
@@ -60,15 +60,9 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Flexible(
-                    child: Container(
-                      constraints: const BoxConstraints(
-                          maxWidth: 120,
-                          maxHeight: 120,
-                          minHeight: 60,
-                          minWidth: 60),
-                      child: AppCard(
+                    child: AppCard(
                         // Get image by master node's model number
-                        image: AppTheme.of(context).images.devices.getByName(
+                        image: CustomTheme.of(context).images.devices.getByName(
                               routerIconTest(
                                 modelNumber: ref
                                         .read(deviceManagerProvider)
@@ -79,8 +73,10 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                                     '',
                               ),
                             ),
-                      ),
-                    ),
+                        maxWidth: 120,
+                        maxHeight: 120,
+                        minHeight: 60,
+                        minWidth: 60),
                   ),
                   const AppGap.regular(),
                   InkWell(
@@ -111,7 +107,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             ),
             const AppGap.regular(),
             AppSection.withList(
-              contentPadding: const AppEdgeInsets.zero(),
+              contentPadding: const EdgeInsets.only(),
               items: [
                 AppSectionItemData(
                     title: 'Settings',

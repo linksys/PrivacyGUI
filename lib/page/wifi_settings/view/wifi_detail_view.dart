@@ -12,8 +12,9 @@ import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/util/wifi_credential.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -80,7 +81,8 @@ class _WifiDetailViewState extends ConsumerState<WifiDetailView> {
   }
 
   Widget _wifiInfoSection() {
-    return AppPadding.regular(
+    return Padding(
+      padding: const EdgeInsets.all(Spacing.regular),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -226,7 +228,7 @@ class _WifiDetailViewState extends ConsumerState<WifiDetailView> {
       appBarStyle: AppBarStyle.none,
       backState: StyledBackState.none,
       scrollable: true,
-      padding: const AppEdgeInsets.symmetric(horizontal: AppGapSize.semiBig),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.semiBig),
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

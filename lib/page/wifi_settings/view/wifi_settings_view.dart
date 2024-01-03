@@ -7,8 +7,9 @@ import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/provider/wifi_setting/wifi_list_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -51,9 +52,9 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          AppPadding(
-                            padding: const AppEdgeInsets.symmetric(
-                                vertical: AppGapSize.regular),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: Spacing.regular),
                             child: AppText.titleMedium(
                               state[index].wifiType.displayTitle,
                             ),
@@ -87,9 +88,9 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                         ],
                       ),
                     )
-                  : AppPadding(
-                      padding: const AppEdgeInsets.symmetric(
-                          vertical: AppGapSize.big),
+                  : Padding(
+                      padding:
+                          const EdgeInsets.symmetric(vertical: Spacing.big),
                       child: InkWell(
                         onTap: () {
                           //TODO: Go to next

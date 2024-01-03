@@ -2,8 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/constants/build_config.dart';
-import 'package:linksys_app/page/components/customs/debug_overlay_view.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
@@ -12,12 +10,9 @@ import 'package:linksys_app/route/router_provider.dart';
 
 import 'package:linksys_app/util/debug_mixin.dart';
 import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/theme/color_schemes_ext.dart';
-import 'package:linksys_widgets/theme/theme.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
 
 enum DashboardBottomItemType { more, home, devices, settings }
 
@@ -68,7 +63,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
       appBarStyle: AppBarStyle.none,
       handleNoConnection: true,
       handleBanner: true,
-      padding: const AppEdgeInsets.zero(),
+      padding: const EdgeInsets.only(),
       bottomNavigationBar: Offstage(
         offstage: width > 768,
         child: !showBottomSheetList.contains(lastPage)
@@ -79,7 +74,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
                     .extension<ColorSchemeExt>()
                     ?.surfaceContainer,
                 type: BottomNavigationBarType.fixed,
-                iconSize: AppTheme.of(context)
+                iconSize: CustomTheme.of(context)
                     .icons
                     .sizes
                     .resolve(AppIconSize.regular),
@@ -87,7 +82,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
                 //     AppTheme.of(context).icons.sizes.resolve(AppIconSize.small),
                 selectedIconTheme: IconThemeData(
                   color: Theme.of(context).colorScheme.onSurface,
-                  size: AppTheme.of(context)
+                  size: CustomTheme.of(context)
                       .icons
                       .sizes
                       .resolve(AppIconSize.regular),
@@ -119,21 +114,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
                 }
               },
               child: widget.child),
-          !showDebugPanel
-              ? const Center()
-              : Positioned(
-                  left: Utils.getScreenWidth(context) -
-                      Utils.getScreenWidth(context) / 2,
-                  child: IgnorePointer(
-                    ignoring: true,
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                          top: Utils.getTopSafeAreaPadding(context)),
-                      child: const OverlayInfoView(),
-                    ),
-                  ),
-                ),
-          // : Container(),
         ],
       ),
     );

@@ -16,8 +16,9 @@ import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/error_code_handler.dart';
 import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'dart:convert';
 import 'package:phone_number/phone_number.dart';
@@ -144,10 +145,10 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppPadding(
-              padding: const AppEdgeInsets.only(
-                top: AppGapSize.extraBig,
-                bottom: AppGapSize.semiSmall,
+            Padding(
+              padding: const EdgeInsets.only(
+                top: Spacing.extraBig,
+                bottom: Spacing.semiSmall,
               ),
               child: AppText.bodyLarge(getAppLocalizations(context).phone),
             ),

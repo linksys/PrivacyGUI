@@ -33,7 +33,7 @@ class _OverlayInfoViewState extends ConsumerState<OverlayInfoView>
     final state = ref.watch(connectivityProvider);
     return Container(
       padding: const EdgeInsets.all(12),
-      width: Utils.getScreenWidth(context) / 2,
+      width: Utils.getScreenWidth(context) / 3,
       height: 130,
       decoration: const BoxDecoration(
         color: Color(0x33000000),

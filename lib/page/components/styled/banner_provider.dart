@@ -23,10 +23,14 @@ class BannerNotifier extends Notifier<BannerInfo> {
     required BannerStyle style,
     required text,
   }) {
-    state = state.copyWith(isDiaplay: true, style: style, text: text);
+    if (!state.isDiaplay) {
+      state = state.copyWith(isDiaplay: true, style: style, text: text);
+    }
   }
 
   void hideBanner() {
-    state = state.copyWith(isDiaplay: false);
+    if (state.isDiaplay) {
+      state = state.copyWith(isDiaplay: false);
+    }
   }
 }

@@ -4,7 +4,7 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:linksys_app/page/dashboard/view/topology/_topology.dart';
 import 'package:linksys_app/provider/devices/topology_provider.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/theme/theme.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/topology/tree_item.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -60,13 +60,13 @@ void main() {
 
       expect(node1.name, 'Living room');
       expect(node1.count, 30);
-      expect(node1.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
       expect(node2.count, 20);
-      expect(node2.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
     testWidgets('topology view - 3 online nodes stars', (tester) async {
@@ -100,19 +100,19 @@ void main() {
 
       expect(node1.name, 'Living room');
       expect(node1.count, 30);
-      expect(node1.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
       expect(node2.count, 20);
-      expect(node2.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
       expect(node3.count, 17);
-      expect(node3.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
     testWidgets('topology view - 3 online nodes daisy', (tester) async {
@@ -146,19 +146,19 @@ void main() {
 
       expect(node1.name, 'Living room');
       expect(node1.count, 30);
-      expect(node1.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
       expect(node2.count, 20);
-      expect(node2.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
       expect(node3.count, 17);
-      expect(node3.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
     testWidgets('topology view - 6 online nodes stars', (tester) async {
@@ -192,38 +192,38 @@ void main() {
 
       expect(node1.name, 'Living room');
       expect(node1.count, 30);
-      expect(node1.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
       expect(node2.count, 20);
-      expect(node2.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
       expect(node3.count, 17);
-      expect(node3.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node4Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 1');
       final node4 = tester.firstWidget(node4Finder) as AppTreeNodeItem;
       expect(node4.name, 'Bed room 1');
       expect(node4.count, 7);
-      expect(node4.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node4.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node5Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 2');
       final node5 = tester.firstWidget(node5Finder) as AppTreeNodeItem;
       expect(node5.name, 'Bed room 2');
       expect(node5.count, 1);
-      expect(node5.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node5.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node6Finder = find.widgetWithText(
           AppTreeNodeItem, 'A super long long long long long long cool name');
       final node6 = tester.firstWidget(node6Finder) as AppTreeNodeItem;
       expect(node6.name, 'A super long long long long long long cool name');
       expect(node6.count, 11);
-      expect(node6.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node6.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
     testWidgets('topology view - 6 online nodes daisy', (tester) async {
@@ -257,38 +257,38 @@ void main() {
 
       expect(node1.name, 'Living room');
       expect(node1.count, 30);
-      expect(node1.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
       expect(node2.count, 20);
-      expect(node2.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
       expect(node3.count, 17);
-      expect(node3.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node4Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 1');
       final node4 = tester.firstWidget(node4Finder) as AppTreeNodeItem;
       expect(node4.name, 'Bed room 1');
       expect(node4.count, 7);
-      expect(node4.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node4.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node5Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 2');
       final node5 = tester.firstWidget(node5Finder) as AppTreeNodeItem;
       expect(node5.name, 'Bed room 2');
       expect(node5.count, 1);
-      expect(node5.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node5.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node6Finder = find.widgetWithText(
           AppTreeNodeItem, 'A super long long long long long long cool name');
       final node6 = tester.firstWidget(node6Finder) as AppTreeNodeItem;
       expect(node6.name, 'A super long long long long long long cool name');
       expect(node6.count, 11);
-      expect(node6.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node6.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
     testWidgets('topology view - 6 online nodes hybrid', (tester) async {
@@ -322,38 +322,38 @@ void main() {
 
       expect(node1.name, 'Living room');
       expect(node1.count, 30);
-      expect(node1.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
       expect(node2.count, 20);
-      expect(node2.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
       expect(node3.count, 17);
-      expect(node3.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node4Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 1');
       final node4 = tester.firstWidget(node4Finder) as AppTreeNodeItem;
       expect(node4.name, 'Bed room 1');
       expect(node4.count, 7);
-      expect(node4.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node4.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node5Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 2');
       final node5 = tester.firstWidget(node5Finder) as AppTreeNodeItem;
       expect(node5.name, 'Bed room 2');
       expect(node5.count, 1);
-      expect(node5.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node5.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node6Finder = find.widgetWithText(
           AppTreeNodeItem, 'A super long long long long long long cool name');
       final node6 = tester.firstWidget(node6Finder) as AppTreeNodeItem;
       expect(node6.name, 'A super long long long long long long cool name');
       expect(node6.count, 11);
-      expect(node6.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node6.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
   });
 
@@ -398,13 +398,13 @@ void main() {
 
       expect(node1.name, 'Living room');
       expect(node1.count, 30);
-      expect(node1.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
       expect(node2.count, null);
-      expect(node2.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
       expect(node2.status, 'Offline');
     });
 
@@ -445,21 +445,21 @@ void main() {
 
       expect(node1.name, 'Living room');
       expect(node1.count, 30);
-      expect(node1.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
       expect(node2.count, null);
       expect(node2.status, 'Offline');
-      expect(node2.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
       expect(node3.count, null);
       expect(node3.status, 'Offline');
-      expect(node3.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
     testWidgets('topology view - 3 online nodes daisy', (tester) async {
@@ -493,19 +493,19 @@ void main() {
 
       expect(node1.name, 'Living room');
       expect(node1.count, 30);
-      expect(node1.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
       expect(node2.count, 20);
-      expect(node2.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
       expect(node3.count, 17);
-      expect(node3.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
     testWidgets('topology view - 6 online nodes stars', (tester) async {
@@ -539,38 +539,38 @@ void main() {
 
       expect(node1.name, 'Living room');
       expect(node1.count, 30);
-      expect(node1.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
       expect(node2.count, 20);
-      expect(node2.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
       expect(node3.count, 17);
-      expect(node3.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node4Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 1');
       final node4 = tester.firstWidget(node4Finder) as AppTreeNodeItem;
       expect(node4.name, 'Bed room 1');
       expect(node4.count, 7);
-      expect(node4.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node4.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node5Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 2');
       final node5 = tester.firstWidget(node5Finder) as AppTreeNodeItem;
       expect(node5.name, 'Bed room 2');
       expect(node5.count, 1);
-      expect(node5.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node5.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node6Finder = find.widgetWithText(
           AppTreeNodeItem, 'A super long long long long long long cool name');
       final node6 = tester.firstWidget(node6Finder) as AppTreeNodeItem;
       expect(node6.name, 'A super long long long long long long cool name');
       expect(node6.count, 11);
-      expect(node6.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node6.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
     testWidgets('topology view - 6 online nodes daisy', (tester) async {
@@ -604,38 +604,38 @@ void main() {
 
       expect(node1.name, 'Living room');
       expect(node1.count, 30);
-      expect(node1.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
       expect(node2.count, 20);
-      expect(node2.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
       expect(node3.count, 17);
-      expect(node3.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node4Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 1');
       final node4 = tester.firstWidget(node4Finder) as AppTreeNodeItem;
       expect(node4.name, 'Bed room 1');
       expect(node4.count, 7);
-      expect(node4.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node4.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node5Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 2');
       final node5 = tester.firstWidget(node5Finder) as AppTreeNodeItem;
       expect(node5.name, 'Bed room 2');
       expect(node5.count, 1);
-      expect(node5.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node5.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node6Finder = find.widgetWithText(
           AppTreeNodeItem, 'A super long long long long long long cool name');
       final node6 = tester.firstWidget(node6Finder) as AppTreeNodeItem;
       expect(node6.name, 'A super long long long long long long cool name');
       expect(node6.count, 11);
-      expect(node6.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node6.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
     testWidgets('topology view - 6 online nodes hybrid', (tester) async {
@@ -669,38 +669,38 @@ void main() {
 
       expect(node1.name, 'Living room');
       expect(node1.count, 30);
-      expect(node1.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
       expect(node2.count, 20);
-      expect(node2.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
       expect(node3.count, 17);
-      expect(node3.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node4Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 1');
       final node4 = tester.firstWidget(node4Finder) as AppTreeNodeItem;
       expect(node4.name, 'Bed room 1');
       expect(node4.count, 7);
-      expect(node4.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node4.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node5Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 2');
       final node5 = tester.firstWidget(node5Finder) as AppTreeNodeItem;
       expect(node5.name, 'Bed room 2');
       expect(node5.count, 1);
-      expect(node5.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node5.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node6Finder = find.widgetWithText(
           AppTreeNodeItem, 'A super long long long long long long cool name');
       final node6 = tester.firstWidget(node6Finder) as AppTreeNodeItem;
       expect(node6.name, 'A super long long long long long long cool name');
       expect(node6.count, 11);
-      expect(node6.image, AppTheme.of(context).images.devices.routerMx6200);
+      expect(node6.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
   });
 

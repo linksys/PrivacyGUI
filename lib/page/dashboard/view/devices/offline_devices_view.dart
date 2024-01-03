@@ -12,8 +12,9 @@ import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/extensions.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -38,7 +39,7 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
     return _isLoading
         ? AppFullScreenSpinner()
         : StyledAppPageView(
-            padding: const AppEdgeInsets.zero(),
+            padding: const EdgeInsets.only(),
             child: AppBasicLayout(
               header: _buildHeader(offlineDeviceList),
               content: ListView.separated(
@@ -59,8 +60,8 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
   }
 
   Widget _buildDeviceCell(DeviceListItem item) {
-    return AppPadding(
-      padding: const AppEdgeInsets.symmetric(horizontal: AppGapSize.regular),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.regular),
       child: AppDevicePanel.offline(
         headerChecked: _removeIDs.contains(item.deviceId),
         onHeaderChecked: _isEdit
@@ -77,7 +78,8 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
               }
             : null,
         title: item.name,
-        deviceImage: AppTheme.of(context).images.devices.getByName(item.icon),
+        deviceImage:
+            CustomTheme.of(context).images.devices.getByName(item.icon),
         onTap: !item.isOnline
             ? null
             : () {
@@ -92,7 +94,8 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppPadding.regular(
+        Padding(
+          padding: const EdgeInsets.all(Spacing.regular),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -111,7 +114,8 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
             ],
           ),
         ),
-        AppPadding.regular(
+        Padding(
+          padding: const EdgeInsets.all(Spacing.regular),
             child: AppText.labelLarge('Offline (${offlineDeviceList.length})')),
         const Divider(
           height: 8,
@@ -121,7 +125,8 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
   }
 
   Widget _buildFooter(List<DeviceListItem> offlineDeviceList) {
-    return AppPadding.regular(
+    return Padding(
+      padding: const EdgeInsets.all(Spacing.regular),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

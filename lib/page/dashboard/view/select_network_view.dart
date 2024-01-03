@@ -13,9 +13,10 @@ import 'package:linksys_app/provider/network/_network.dart';
 import 'package:linksys_app/provider/select_network/select_network_provider.dart';
 import 'package:linksys_app/firebase/analytics.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/theme/theme.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class SelectNetworkView extends ArgumentsConsumerStatefulView {
@@ -151,14 +152,14 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
           : null,
       child: Opacity(
         opacity: network.isOnline ? 1 : 0.8,
-        child: AppPadding(
-          padding: const AppEdgeInsets.symmetric(
-            vertical: AppGapSize.regular,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: Spacing.regular,
           ),
           child: Row(
             children: [
               Image(
-                image: AppTheme.of(context).images.devices.getByName(
+                image: CustomTheme.of(context).images.devices.getByName(
                       routerIconTest(
                         modelNumber: network.network.routerModelNumber,
                         hardwareVersion: network.network.routerHardwareVersion,

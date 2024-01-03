@@ -2,18 +2,20 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
+import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_app/page/components/customs/debug_overlay_view.dart';
 import 'package:linksys_app/page/components/customs/no_network_bottom_modal.dart';
+import 'package:linksys_app/page/components/layouts/desktop_layout.dart';
+import 'package:linksys_app/page/components/layouts/mobile_layout.dart';
 import 'package:linksys_app/page/components/styled/banner_provider.dart';
 import 'package:linksys_app/page/dashboard/view/dashboard_menu_view.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
-import 'package:linksys_app/provider/layout/desktop_layout.dart';
-import 'package:linksys_app/provider/layout/mobile_layout.dart';
 import 'package:linksys_app/route/route_model.dart';
-import 'package:linksys_app/util/layout_helper.dart';
+import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/widgets/banner/banner_view.dart';
+import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 class AppRootContainer extends ConsumerStatefulWidget {
   final Widget? child;
@@ -29,41 +31,55 @@ class AppRootContainer extends ConsumerStatefulWidget {
 }
 
 class _AppRootContainerState extends ConsumerState<AppRootContainer> {
+  final _link = LayerLink();
+
   @override
   Widget build(BuildContext context) {
     logger.d('Root Container:: build: ${widget.routeConfig}');
     return LayoutBuilder(builder: ((context, constraints) {
-      LayoutHelper.canShowSub(context);
       return Container(
         color: Theme.of(context).colorScheme.background,
-        child: Stack(
-          children: [
-            _buildLayout(widget.child ?? const Center(), constraints),
-            ..._handleConnectivity(ref),
-            ..._handleBanner(ref),
-          ],
+        child: CompositedTransformTarget(
+          link: _link,
+          child: Stack(
+            children: [
+              _buildLayout(widget.child ?? const Center(), constraints),
+              ..._handleConnectivity(ref),
+              ..._handleBanner(ref),
+              !showDebugPanel
+                  ? const Center()
+                  : CompositedTransformFollower(
+                      link: _link,
+                      targetAnchor: Alignment.topRight,
+                      followerAnchor: Alignment.topRight,
+                      child: IgnorePointer(
+                        ignoring: true,
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                              top: Utils.getTopSafeAreaPadding(context)),
+                          child: const OverlayInfoView(),
+                        ),
+                      ),
+                    ),
+            ],
+          ),
         ),
       );
     }));
   }
 
   Widget _buildLayout(Widget child, BoxConstraints constraints) {
-    // final isDone = ref
-    //     .watch(deviceManagerProvider.select((value) => value.deviceList))
-    //     .isNotEmpty;
     final isLoggedIn =
         (ref.watch(authProvider).value?.loginType ?? LoginType.none) !=
             LoginType.none;
     final onlyMainView = widget.routeConfig?.onlyMainView ?? false;
     final showSub = isLoggedIn && !onlyMainView;
-    if (constraints.maxWidth > 768) {
-      return DesktopLayout(
-        sub: showSub ? const DashboardMenuView() : null,
-        child: child,
-      );
-    } else {
-      return MobileLayout(child: child);
-    }
+    return ResponsiveLayout(
+        desktop: DesktopLayout(
+          sub: showSub ? const DashboardMenuView() : null,
+          child: child,
+        ),
+        mobile: MobileLayout(child: child));
   }
 
   List<Widget> _handleBanner(WidgetRef ref) {

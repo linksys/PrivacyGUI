@@ -15,8 +15,9 @@ import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/smart_device_prefs_helper.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/panel/general_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
@@ -43,11 +44,11 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     return StyledAppPageView(
       scrollable: true,
       backState: StyledBackState.none,
-      padding: const AppEdgeInsets.only(
-        top: AppGapSize.big,
-        left: AppGapSize.regular,
-        right: AppGapSize.regular,
-        bottom: AppGapSize.regular,
+      padding: const EdgeInsets.only(
+        top: Spacing.big,
+        left: Spacing.regular,
+        right: Spacing.regular,
+        bottom: Spacing.regular,
       ),
       child: Stack(
         children: [
@@ -156,7 +157,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   Widget _nodesInfoTile(DashboardHomeState state, bool isLoading) {
     final image =
-        AppTheme.of(context).images.devices.getByName(state.masterIcon);
+        CustomTheme.of(context).images.devices.getByName(state.masterIcon);
     return _infoTile(
       image: image,
       text: 'Nodes ${state.numOfNodes}',
@@ -204,6 +205,10 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               iconData: iconData,
               image: image,
               title: text,
+              maxHeight: 240,
+              maxWidth: 240,
+              minWidth: 120,
+              minHeight: 120,
             ),
           );
   }
@@ -219,9 +224,9 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.0),
             ),
-            child: AppPadding(
-              padding: const AppEdgeInsets.symmetric(
-                  horizontal: AppGapSize.regular, vertical: AppGapSize.regular),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.regular, vertical: Spacing.regular),
               child: isLoading
                   ? Shimmer(
                       gradient: _shimmerGradient,
@@ -230,8 +235,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                   : _speedResult(state),
             ),
           ),
-        )
-        );
+        ));
   }
 
   get _shimmerGradient => LinearGradient(

@@ -4,8 +4,9 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/layouts/basic_header.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 
@@ -38,7 +39,7 @@ class _LocalResetRouterPasswordState
   }
 
   Widget _contentView() {
-    final theme = AppTheme.of(context);
+    final theme = CustomTheme.of(context);
     return StyledAppPageView(
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,9 +67,8 @@ class _LocalResetRouterPasswordState
             ),
             const AppGap.regular(),
             if (_errorReason.isNotEmpty)
-              AppPadding(
-                padding:
-                    const AppEdgeInsets.symmetric(vertical: AppGapSize.small),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: Spacing.small),
                 child: AppText.bodyMedium(
                   _errorReason,
                 ),

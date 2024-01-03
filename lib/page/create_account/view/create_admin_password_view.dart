@@ -9,8 +9,9 @@ import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/in_app_browser.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -95,8 +96,8 @@ class _CreateAdminPasswordViewState
         ),
         content: Column(
           children: [
-            AppPadding(
-              padding: const AppEdgeInsets.symmetric(vertical: AppGapSize.big),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: Spacing.big),
               child: AppPasswordField(
                 headerText: getAppLocalizations(context).password,
                 hintText: 'Enter Password',

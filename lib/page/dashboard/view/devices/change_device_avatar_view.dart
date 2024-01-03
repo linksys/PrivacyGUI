@@ -3,11 +3,12 @@ import 'dart:core';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/provider/devices/external_device_detail_provider.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/theme/theme.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -39,30 +40,38 @@ class __ChangeDeviceAvatarViewState
   Widget build(BuildContext context) {
     final state = ref.watch(externalDeviceDetailProvider);
     // avatars = getAllDeviceAvatars();
-    return StyledAppPageView(
-      title: getAppLocalizations(context).device_name,
-      child: AppBasicLayout(
-        content: Column(children: [
-          _deviceAvatar(state.item.icon),
-          const AppGap.big(),
-          _deviceAvatarGrid(),
-        ]),
-      ),
-    );
+    return LayoutBuilder(builder: (context, constraints) {
+      final width = constraints.maxWidth;
+      final crossAxisCount = width >= 700
+          ? 5
+          : width >= 500
+              ? 4
+              : 3;
+      return StyledAppPageView(
+        title: getAppLocalizations(context).device_name,
+        child: AppBasicLayout(
+          content: Column(children: [
+            _deviceAvatar(state.item.icon),
+            const AppGap.big(),
+            _deviceAvatarGrid(crossAxisCount: crossAxisCount),
+          ]),
+        ),
+      );
+    });
   }
 
   Widget _deviceAvatar(String iconName) {
     return AppDeviceAvatar.extraLarge(
-      image: AppTheme.of(context).images.devices.getByName(iconName),
+      image: CustomTheme.of(context).images.devices.getByName(iconName),
     );
   }
 
-  Widget _deviceAvatarGrid() {
+  Widget _deviceAvatarGrid({required int crossAxisCount}) {
     return Expanded(
         child: GridView.builder(
       physics: const ScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3, childAspectRatio: (3 / 2)),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount, childAspectRatio: (3 / 2)),
       itemCount: deviceAvatarNameList.length,
       itemBuilder: (context, index) {
         return GestureDetector(
@@ -70,7 +79,7 @@ class __ChangeDeviceAvatarViewState
             context.pop(deviceAvatarNameList[index]);
           },
           child: AppDeviceAvatar.large(
-              image: AppTheme.of(context)
+              image: CustomTheme.of(context)
                   .images
                   .devices
                   .getByName(deviceAvatarNameList[index])),
