@@ -5,8 +5,9 @@ import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/provider/devices/node_detail_provider.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 import '../../../components/views/arguments_view.dart';
@@ -38,8 +39,8 @@ class __ChangeNodeNameViewState extends ConsumerState<ChangeNodeNameView> {
     return StyledAppPageView(
       title: getAppLocalizations(context).node_detail_label_node_name,
       actions: [
-        AppPadding(
-          padding: const AppEdgeInsets.only(right: AppGapSize.regular),
+        Padding(
+          padding: const EdgeInsets.only(right: Spacing.regular),
           child: AppTextButton.noPadding(
             getAppLocalizations(context).save,
             onTap: isChanged ? _checkInputData : null,

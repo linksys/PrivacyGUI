@@ -6,14 +6,13 @@ import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/firebase/notification_helper.dart';
+import 'package:linksys_app/page/components/layouts/root_container.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
-import 'package:linksys_app/provider/layout/root_container.dart';
 import 'package:linksys_app/provider/smart_device_provider.dart';
 import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/theme/theme_data.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class LinksysApp extends ConsumerStatefulWidget {
@@ -51,7 +50,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
 
   @override
   Widget build(BuildContext context) {
-    logger.d('App:: build');
+    logger.d('App:: build: $_currentRoute');
     ref.read(smartDeviceProvider.notifier).init();
     final router = ref.watch(routerProvider);
     router.routerDelegate.removeListener(_onReceiveRouteChanged);
@@ -63,9 +62,9 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       darkTheme: linksysDarkThemeData,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      builder: (context, child) => AppResponsiveTheme(
+      builder: (context, child) => CustomResponsive(
         child: AppRootContainer(
-          routeConfig: _currentRoute?.config,
+          routeConfig: _currentRoute?.config ?? const LinksysRouteConfig(),
           child: child,
         ),
       ),
@@ -95,20 +94,24 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   }
 
   void _onReceiveRouteChanged() {
-    if (!mounted) return;
-    final router = ref.read(routerProvider);
+    Future.delayed(Duration.zero).then((_) {
+      if (!mounted) return;
+      final router = ref.read(routerProvider);
 
-    final GoRoute? page =
-        router.routerDelegate.currentConfiguration.last.route as GoRoute?;
-    logger.d('Router Delegate Changed! ${page?.name}');
-    if (page is LinksysRoute) {
-      setState(() {
-        _currentRoute = page;
-      });
-    } else if (_currentRoute != null) {
-      setState(() {
+      final GoRoute? page =
+          router.routerDelegate.currentConfiguration.last.route as GoRoute?;
+      logger.d('Router Delegate Changed! ${page?.name},');
+      if (page is LinksysRoute) {
+        setState(() {
+          _currentRoute = page;
+        });
+        logger.d('Router Delegate Changed! $_currentRoute');
+      } else if (_currentRoute != null) {
+        // setState(() {
+        //   _currentRoute = null;
+        // });
         _currentRoute = null;
-      });
-    }
+      }
+    });
   }
 }

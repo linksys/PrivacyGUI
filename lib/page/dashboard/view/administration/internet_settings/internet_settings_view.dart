@@ -11,8 +11,9 @@ import 'package:linksys_app/provider/dashboard/dashboard_home_provider.dart';
 import 'package:linksys_app/provider/internet_settings/_internet_settings.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/string_mapping.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 enum InternetSettingsViewType {
@@ -84,7 +85,7 @@ class _InternetSettingsContentViewState
     _isBehindRouter = connectivityState.connectivityInfo.routerType ==
         RouterType.behindManaged;
     return StyledAppPageView(
-      padding: const AppEdgeInsets.zero(),
+      padding: const EdgeInsets.only(),
       scrollable: true,
       title: getAppLocalizations(context).internet_settings,
       actions: [
@@ -109,8 +110,8 @@ class _InternetSettingsContentViewState
                   ),
                 ),
               ),
-            AppPadding(
-              padding: const AppEdgeInsets.semiBig(),
+            Padding(
+              padding: const EdgeInsets.all(Spacing.semiSmall),
               child: Stack(
                 children: [
                   Column(
@@ -156,10 +157,12 @@ class _InternetSettingsContentViewState
           }
         },
         children: {
-          InternetSettingsViewType.ipv4: AppPadding.semiSmall(
+          InternetSettingsViewType.ipv4: Padding(
+            padding: const EdgeInsets.all(Spacing.semiSmall),
             child: AppText.bodyLarge(getAppLocalizations(context).label_ipv4),
           ),
-          InternetSettingsViewType.ipv6: AppPadding.semiSmall(
+          InternetSettingsViewType.ipv6: Padding(
+            padding: const EdgeInsets.all(Spacing.semiSmall),
             child: AppText.bodyLarge(getAppLocalizations(context).label_ipv6),
           ),
         },

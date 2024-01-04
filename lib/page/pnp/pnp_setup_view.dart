@@ -13,6 +13,7 @@ import 'package:linksys_app/page/pnp/pnp_stepper.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 
@@ -36,9 +37,6 @@ class PnpSetupView extends ConsumerStatefulWidget {
 class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   late final List<PnpStep> steps;
   _PnpSetupStep _setupStep = _PnpSetupStep.init;
-  // bool _isLoading = false;
-  // bool _isAllDone = false;
-  // bool _isSaved = false;
   String _loadingMessage = '';
   String _loadingMessageSub = '';
 
@@ -82,30 +80,6 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
     return StyledAppPageView(
       backState: StyledBackState.none,
       child: _buildPnpSetupView(),
-      // child: _isLoading
-      //     ? _loadingSpinner()
-      //     : _isSaved
-      //         ? _showSaved()
-      //         : _isAllDone
-      //             ? _showAllDone()
-      //             : AppBasicLayout(
-      //                 crossAxisAlignment: CrossAxisAlignment.start,
-      //                 header: SvgPicture(
-      //                   AppTheme.of(context).images.linksysBlackLogo,
-      //                   width: 32,
-      //                   height: 32,
-      //                   fit: BoxFit.cover,
-      //                 ),
-      //                 content: LayoutBuilder(builder: (context, constraints) {
-      //                   return PnpStepper(
-      //                     steps: steps,
-      //                     stepperType: constraints.maxWidth <= 768
-      //                         ? StepperType.vertical
-      //                         : StepperType.horizontal,
-      //                     onLastStep: _saveChanges,
-      //                   );
-      //                 }),
-      //               ),
     );
   }
 
@@ -129,7 +103,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   Widget _configView() => AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: SvgPicture(
-          AppTheme.of(context).images.linksysLogoBlack,
+          CustomTheme.of(context).images.linksysLogoBlack,
           width: 32,
           height: 32,
           fit: BoxFit.cover,
@@ -137,7 +111,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         content: LayoutBuilder(builder: (context, constraints) {
           return PnpStepper(
             steps: steps,
-            stepperType: constraints.maxWidth <= 768
+            stepperType: ResponsiveLayout.isMobile(context)
                 ? StepperType.vertical
                 : StepperType.horizontal,
             onLastStep: _saveChanges,
@@ -222,7 +196,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             ),
             const AppGap.regular(),
             Center(
-                child: SvgPicture(AppTheme.of(context).images.pnpFinishDesktop)),
+                child: SvgPicture(
+                    CustomTheme.of(context).images.pnpFinishDesktop)),
           ],
         ),
       ),

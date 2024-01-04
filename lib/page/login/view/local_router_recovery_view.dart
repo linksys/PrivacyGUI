@@ -6,9 +6,8 @@ import 'package:linksys_app/page/components/layouts/basic_header.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/provider/router_password/_router_password.dart';
 import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 
@@ -63,9 +62,9 @@ class _LocalRouterRecoveryViewState
             ),
             const AppGap.regular(),
             if (state.remainingErrorAttempts != null)
-              AppPadding(
+              Padding(
                 padding:
-                    const AppEdgeInsets.symmetric(vertical: AppGapSize.small),
+                    const EdgeInsets.symmetric(vertical: Spacing.small),
                 child: AppText.bodyMedium(
                   'That key didn\'t work. Check it and try again.\nTries remaining: ${state.remainingErrorAttempts}',
                 ),

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 
 import 'consts.dart';
@@ -16,7 +16,7 @@ class StyledAppPageView extends ConsumerWidget {
   final VoidCallback? onBackTap;
   final StyledBackState backState;
   final List<Widget>? actions;
-  final AppEdgeInsets? padding;
+  final EdgeInsets? padding;
   final Widget? bottomSheet;
   final Widget? bottomNavigationBar;
   final bool? scrollable;
@@ -43,17 +43,13 @@ class StyledAppPageView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Stack(
-      children: [
-        AppPageView(
-          appBar: _buildAppBar(context, ref),
-          padding: padding,
-          scrollable: scrollable,
-          bottomSheet: bottomSheet,
-          bottomNavigationBar: bottomNavigationBar,
-          child: child,
-        ),
-      ],
+    return AppPageView(
+      appBar: _buildAppBar(context, ref),
+      padding: padding,
+      scrollable: scrollable,
+      bottomSheet: bottomSheet,
+      bottomNavigationBar: bottomNavigationBar,
+      child: child,
     );
   }
 

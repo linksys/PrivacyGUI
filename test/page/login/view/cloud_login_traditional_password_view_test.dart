@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:linksys_app/page/login/view/_view.dart';
-import 'package:linksys_widgets/theme/data/icons.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 

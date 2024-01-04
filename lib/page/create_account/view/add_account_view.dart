@@ -11,8 +11,9 @@ import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:linksys_app/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -65,14 +66,14 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
       getAppLocalizations(context).add_cloud_account_bullet_5,
     ];
 
-    return AppPadding(
-      padding: const AppEdgeInsets.symmetric(vertical: AppGapSize.semiBig),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: Spacing.semiBig),
       child: Column(
         children: List.generate(tips.length, (index) {
           return Row(
             children: [
               AppIcon.regular(
-                  icon: AppTheme.of(context).icons.characters.checkDefault),
+                  icon: CustomTheme.of(context).icons.characters.checkDefault),
               const AppGap.semiSmall(),
               AppText.bodyLarge(
                 tips[index],
@@ -151,7 +152,7 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
                 child: Wrap(
                   children: [
                     AppText.bodyMedium(
-                      generalErrorCodeHandler(context, _errorCode)??'',
+                      generalErrorCodeHandler(context, _errorCode) ?? '',
                     ),
                     AppTextButton(
                       getAppLocalizations(context).login_to_continue,

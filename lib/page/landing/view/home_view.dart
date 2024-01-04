@@ -4,18 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/constants/_constants.dart';
-import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_app/route/router_logger.dart';
-import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_app/util/biometrics.dart';
-import 'package:linksys_widgets/theme/theme.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -67,7 +65,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
               _isOpenDebug = !_isOpenDebug;
             });
           },
-          child: SvgPicture(AppTheme.of(context).images.linksysLogoBlack)),
+          child: SvgPicture(CustomTheme.of(context).images.linksysLogoBlack)),
     );
   }
 
@@ -89,19 +87,13 @@ class _HomeViewState extends ConsumerState<HomeView> {
         },
       ),
       AppFilledButton.fillWidth(
-        getAppLocalizations(context).login,
+        getAppLocalizations(context).local_login_title,
         key: const Key('home_view_button_local_login'),
         onTap: () async {
           // Local version flow
           goRouter.goNamed(RouteNamed.localLoginPassword);
         },
       ),
-      // AppSecondaryButton(
-      //   getAppLocalizations(context).setup_new_router,
-      //   key: const Key('home_view_button_setup'),
-      //   onTap: null,
-      // ),
-      // ...showDebugButton(),
       Stack(
         children: [
           Center(
@@ -160,7 +152,8 @@ class _HomeViewState extends ConsumerState<HomeView> {
     return StatefulBuilder(builder: (context, setState) {
       return isLoading
           ? AppFullScreenSpinner(text: getAppLocalizations(context).processing)
-          : AppPadding.regular(
+          : Padding(
+            padding: const EdgeInsets.all(Spacing.regular),
               child: Column(
                 children: [
                   ListView.builder(
@@ -168,9 +161,9 @@ class _HomeViewState extends ConsumerState<HomeView> {
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: CloudEnvironment.values.length,
                       itemBuilder: (context, index) => InkWell(
-                            child: AppPadding(
-                              padding: const AppEdgeInsets.symmetric(
-                                  horizontal: AppGapSize.regular),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: Spacing.regular),
                               child: AppPanelWithValueCheck(
                                 title: CloudEnvironment.values[index].name,
                                 valueText: '',

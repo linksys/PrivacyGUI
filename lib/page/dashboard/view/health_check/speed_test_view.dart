@@ -69,13 +69,13 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
     return Container(
       decoration: BoxDecoration(
           image: DecorationImage(
-              image: AppTheme.of(context).images.bgSpeedtestLight,
+              image: CustomTheme.of(context).images.bgSpeedtestLight,
               fit: BoxFit.fitWidth)),
       child: Stack(children: [
         Container(
           alignment: Alignment.bottomLeft,
           child: Image(
-            image: AppTheme.of(context).images.speedtestPowered,
+            image: CustomTheme.of(context).images.speedtestPowered,
             fit: BoxFit.fitWidth,
           ),
         ),

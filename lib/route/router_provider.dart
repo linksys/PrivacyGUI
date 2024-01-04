@@ -72,6 +72,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       LinksysRoute(
         name: RouteNamed.prepareDashboard,
         path: RoutePath.prepareDashboard,
+        config: const LinksysRouteConfig(onlyMainView: true),
         builder: (context, state) => PrepareDashboardView(),
       ),
       LinksysRoute(

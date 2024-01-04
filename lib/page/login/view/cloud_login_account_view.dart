@@ -11,8 +11,9 @@ import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/error_code_handler.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/validator_rules/_validator_rules.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -137,9 +138,9 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
                 },
               ),
               if (_errorCode == "RESOURCE_NOT_FOUND")
-                AppPadding(
-                  padding: const AppEdgeInsets.symmetric(
-                      vertical: AppGapSize.semiSmall),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: Spacing.semiSmall),
                   child: AppTextButton(
                       key: const Key(
                           'login_view_button_email_with_another_linksys_app'),

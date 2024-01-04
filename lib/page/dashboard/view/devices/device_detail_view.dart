@@ -10,9 +10,10 @@ import 'package:linksys_app/provider/devices/topology_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/profile_header_layout.dart';
 
 class DeviceDetailView extends ArgumentsConsumerStatefulView {
@@ -69,7 +70,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           BoxDecoration(color: Theme.of(context).colorScheme.background),
       child: Column(
         children: [
-          GestureDetector(
+          InkWell(
             onTap: () async {
               final result = await context
                   .pushNamed<String?>(RouteNamed.changeDeviceAvatar);
@@ -92,7 +93,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     return AppDeviceAvatar.extraLarge(
       borderColor: Colors.transparent,
       backgroundColor: Colors.transparent,
-      image: AppTheme.of(context).images.devices.getByName(iconName),
+      image: CustomTheme.of(context).images.devices.getByName(iconName),
     );
   }
 
@@ -103,11 +104,11 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         Column(
           children: [
             Container(
-              height: AppTheme.of(context).spacing.extraBig,
-              width: AppTheme.of(context).spacing.extraBig,
+              height: Spacing.extraBig,
+              width: Spacing.extraBig,
               alignment: Alignment.center,
               child: Image(
-                image: AppTheme.of(context).images.devices.getByName(
+                image: CustomTheme.of(context).images.devices.getByName(
                       state.item.upstreamIcon,
                     ),
                 height: 120 * 0.75,
@@ -131,8 +132,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           child: Column(
             children: [
               Container(
-                height: AppTheme.of(context).spacing.extraBig,
-                width: AppTheme.of(context).spacing.extraBig,
+                height: Spacing.extraBig,
+                width: Spacing.extraBig,
                 alignment: Alignment.center,
                 child: AppIcon.big(
                   icon: getWifiSignalIconData(
@@ -167,9 +168,9 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppPadding(
-                      padding: const AppEdgeInsets.symmetric(
-                        horizontal: AppGapSize.semiBig,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Spacing.semiBig,
                       ),
                       child: Column(
                         children: [

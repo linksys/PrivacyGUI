@@ -86,6 +86,7 @@ class LinksysHttpClient extends http.BaseClient
 
   /// The callback to call to indicate that a request is being retried.
   final FutureOr<void> Function(BaseRequest, http.BaseResponse?, int)? _onRetry;
+
   /// Custom host methodology
   final String? Function()? _getHost;
 
@@ -103,7 +104,8 @@ class LinksysHttpClient extends http.BaseClient
           "Access-Control-Allow-Methods": "POST, OPTIONS, DELETE, PUT, GET"
       };
 
-  String getHost() => _getHost?.call() ?? 'https://${cloudEnvironmentConfig[kCloudBase]}';
+  String getHost() =>
+      _getHost?.call() ?? 'https://${cloudEnvironmentConfig[kCloudBase]}';
 
   String wrapSessionToken(String token) =>
       'LinksysUserAuth session_token="$token"';

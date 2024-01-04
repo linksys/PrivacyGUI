@@ -55,7 +55,7 @@ class LocalLoginStep extends PnpStep {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Image(
-            image: AppTheme.of(context)
+            image: CustomTheme.of(context)
                 .images
                 .devices
                 .getByName(routerIconTest(modelNumber: 'LN11')),

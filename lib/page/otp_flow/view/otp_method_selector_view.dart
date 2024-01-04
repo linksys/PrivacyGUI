@@ -7,8 +7,9 @@ import 'package:linksys_app/core/cloud/model/cloud_communication_method.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class OTPMethodSelectorView extends ArgumentsConsumerStatefulView {
@@ -52,9 +53,9 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
                               CommunicationMethodType.email.name.toUpperCase()
                           ? 'otp_method_selector_view_button_email'
                           : 'otp_method_selector_view_button_sms'),
-                      child: AppPadding(
-                        padding: const AppEdgeInsets.symmetric(
-                            vertical: AppGapSize.small),
+                      child: Padding(
+                        padding:
+                            const EdgeInsets.symmetric(vertical: Spacing.small),
                         child: AppPanelWithValueCheck(
                           title: state.methods[index].method ==
                                   CommunicationMethodType.email.name

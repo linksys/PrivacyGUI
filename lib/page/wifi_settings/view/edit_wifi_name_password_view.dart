@@ -7,8 +7,9 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/base/padding.dart';
+
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -105,8 +106,8 @@ class _EditWifiNamePasswordViewState
         : StyledAppPageView(
             title: _title,
             actions: [
-              AppPadding(
-                padding: const AppEdgeInsets.only(right: AppGapSize.regular),
+              Padding(
+                padding: const EdgeInsets.only(right: Spacing.regular),
                 child: AppTextButton.noPadding(
                   getAppLocalizations(context).save,
                   onTap: isChanged ? _checkInputData : null,

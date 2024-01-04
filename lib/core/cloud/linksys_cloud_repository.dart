@@ -26,7 +26,7 @@ final cloudRepositoryProvider = Provider((ref) => LinksysCloudRepository(
         if (routerType == RouterType.others) {
           return null;
         } else {
-          return ref.read(connectivityProvider).connectivityInfo.gatewayIp;
+          return 'https://${ref.read(connectivityProvider).connectivityInfo.gatewayIp}';
         }
       }),
     ));

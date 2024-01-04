@@ -103,12 +103,12 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
           AppSectionItemData(
             title: 'Router Password and Hint',
             // iconData: getCharactersIcons(context).smsDefault,
-            onTap: () => context.goNamed('routerPassword'),
+            onTap: () => context.goNamed(RouteNamed.settingsRouterPassword),
           ),
           AppSectionItemData(
             title: 'Time Zone',
             // iconData: getCharactersIcons(context).smsDefault,
-            onTap: () => context.goNamed('timeZone'),
+            onTap: () => context.goNamed(RouteNamed.settingsTimeZone),
           ),
         ],
       );

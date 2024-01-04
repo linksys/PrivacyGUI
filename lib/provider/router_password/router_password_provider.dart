@@ -57,6 +57,7 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
         'adminPassword': password,
         'passwordHint': hint,
       },
+      type: CommandType.local,
       auth: true,
     )
         .then<void>((value) async {
@@ -92,7 +93,7 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
           final errorOutput = jsonDecode(error.error!) as Map<String, dynamic>;
           final remaining = errorOutput['attemptsRemaining'] as int;
           state = state.copyWith(remainingErrorAttempts: remaining);
-        }        
+        }
       }
       return false;
     });
