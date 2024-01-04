@@ -88,6 +88,7 @@ class RoutePath {
 
   /// PnP
   static const pnp = '/pnp';
+  static const pnpNoInternetConnection = 'noInternetConnection';
 
   /// debug
   static const debug = 'debug';
@@ -183,6 +184,7 @@ class RouteNamed {
 
   /// PnP
   static const pnp = 'pnp';
+  static const pnpNoInternetConnection = 'noInternetConnection';
 
   /// debug
   static const debug = 'debug';

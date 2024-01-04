@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
@@ -10,6 +11,7 @@ import 'package:linksys_app/page/pnp/model/impl/personal_wifi_step.dart';
 import 'package:linksys_app/page/pnp/model/impl/safe_browsing_step.dart';
 import 'package:linksys_app/page/pnp/model/pnp_step.dart';
 import 'package:linksys_app/page/pnp/pnp_stepper.dart';
+import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -102,11 +104,16 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
 
   Widget _configView() => AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: SvgPicture(
-          CustomTheme.of(context).images.linksysLogoBlack,
-          width: 32,
-          height: 32,
-          fit: BoxFit.cover,
+        header: InkWell(
+          onTap: () {
+            context.go(RouteNamed.pnpNoInternetConnection);
+          },
+          child: SvgPicture(
+            CustomTheme.of(context).images.linksysLogoBlack,
+            width: 32,
+            height: 32,
+            fit: BoxFit.cover,
+          ),
         ),
         content: LayoutBuilder(builder: (context, constraints) {
           return PnpStepper(
