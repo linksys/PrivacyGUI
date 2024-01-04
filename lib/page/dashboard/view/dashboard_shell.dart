@@ -108,7 +108,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
         children: [
           GestureDetector(
               onTap: () {
-                if (!kIsWeb && increase()) {
+                if (increase()) {
                   logger.d('Triggered!');
                   context.pushNamed(RouteNamed.debug);
                 }
