@@ -40,6 +40,7 @@ import 'package:linksys_app/page/dashboard/view/topology/topology_view.dart';
 import 'package:linksys_app/page/landing/view/_view.dart';
 import 'package:linksys_app/page/linkup/view/linkup_view.dart';
 import 'package:linksys_app/page/login/view/_view.dart';
+import 'package:linksys_app/page/login/view/local_reset_router_password_view.dart';
 import 'package:linksys_app/page/otp_flow/view/_view.dart';
 import 'package:linksys_app/page/pnp/pnp_setup_view.dart';
 import 'package:linksys_app/page/wifi_settings/view/_view.dart';
@@ -53,7 +54,8 @@ import '../page/dashboard/view/nodes/node_switch_light_view.dart';
 import 'constants.dart';
 
 part 'route_home.dart';
-part 'route_login.dart';
+part 'route_cloud_login.dart';
+part 'route_local_login.dart';
 part 'route_dashboard.dart';
 part 'route_settings.dart';
 part 'route_otp.dart';

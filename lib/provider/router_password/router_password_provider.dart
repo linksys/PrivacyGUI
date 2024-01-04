@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/constants/pref_key.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
@@ -65,6 +68,33 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
         // handle error
         state = state.copyWith(error: error.error);
       }
+    });
+  }
+
+  Future<bool> checkRecoveryCode(String code) async {
+    final repo = ref.read(routerRepositoryProvider);
+    return repo.send(
+      JNAPAction.verifyRouterResetCode,
+      data: {
+        'resetCode': code,
+      },
+    ).then((result) {
+      return true;
+    }).onError((error, stackTrace) {
+      if (error is JNAPError) {
+        // if (result.output.containsKey('attemptsRemaining')) {
+        //   final remaining = result.output['attemptsRemaining'] as int;
+        //   final errorCodePrompt =
+        //       'That key didn\'t work. Check it and try again.\nTries remaining $remaining';
+        //   state = state.copyWith(error: errorCodePrompt);
+        // }
+        if (error.result == errorInvalidResetCode) {
+          final errorOutput = jsonDecode(error.error!) as Map<String, dynamic>;
+          final remaining = errorOutput['attemptsRemaining'] as int;
+          state = state.copyWith(remainingErrorAttempts: remaining);
+        }        
+      }
+      return false;
     });
   }
 

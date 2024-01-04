@@ -79,18 +79,21 @@ class _HomeViewState extends ConsumerState<HomeView> {
         getAppLocalizations(context).login,
         key: const Key('home_view_button_login'),
         onTap: () async {
-          if (BuildConfig.forceCommandType == ForceCommand.local) {
-            // Local version flow
-            goRouter.goNamed(RouteNamed.localLoginPassword);
+          final list = await BiometricsHelp().getKeyList();
+          if (list.isNotEmpty) {
+            goRouter.goNamed(RouteNamed.cloudLoginPassword,
+                extra: {'username': list[0], 'enrolledBiometrics': true});
           } else {
-            final list = await BiometricsHelp().getKeyList();
-            if (list.isNotEmpty) {
-              goRouter.goNamed(RouteNamed.cloudLoginPassword,
-                  extra: {'username': list[0], 'enrolledBiometrics': true});
-            } else {
-              goRouter.pushNamed(RouteNamed.cloudLoginAccount);
-            }
+            goRouter.pushNamed(RouteNamed.cloudLoginAccount);
           }
+        },
+      ),
+      AppFilledButton.fillWidth(
+        getAppLocalizations(context).login,
+        key: const Key('home_view_button_local_login'),
+        onTap: () async {
+          // Local version flow
+          goRouter.goNamed(RouteNamed.localLoginPassword);
         },
       ),
       // AppSecondaryButton(

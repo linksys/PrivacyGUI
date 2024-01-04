@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
@@ -12,6 +13,7 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/page/components/customs/network_check_view.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/error_code_handler.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -134,10 +136,12 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
                 children: [Text(_hint)],
               ),
             ),
-          AppTextButton(getAppLocalizations(context).forgot_router_password,
-              onTap: () {
-            // Go Router
-          }),
+          AppTextButton(
+            getAppLocalizations(context).forgot_router_password,
+            onTap: () {
+              GoRouter.of(context).pushNamed(RouteNamed.localRouterRecovery);
+            },
+          ),
           const Spacer(),
           AppFilledButton.fillWidth(
             getAppLocalizations(context).text_continue,

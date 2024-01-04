@@ -1,6 +1,6 @@
 part of 'router_provider.dart';
 
-final loginRoute = LinksysRoute(
+final cloudLoginRoute = LinksysRoute(
   name: RouteNamed.cloudLoginAccount,
   path: RoutePath.cloudLoginAccount,
   builder: (context, state) => const CloudLoginAccountView(),
