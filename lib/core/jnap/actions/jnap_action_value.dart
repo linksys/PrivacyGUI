@@ -182,6 +182,7 @@ enum _JNAPActionValue {
   setWANSettings2(value: 'http://linksys.com/jnap/router/SetWANSettings2'),
   setWANSettings3(value: 'http://linksys.com/jnap/router/SetWANSettings3'),
   setWANSettings4(value: 'http://linksys.com/jnap/router/SetWANSettings4'),
+  setLANSettings(value: 'http://linksys.com/jnap/router/SetLANSettings'),
   renewDHCPWANLease(value: 'http://linksys.com/jnap/router/RenewDHCPWANLease'),
   renewDHCPIPv6Lease(
       value: 'http://linksys.com/jnap/router/RenewDHCPIPv6WANLease'),

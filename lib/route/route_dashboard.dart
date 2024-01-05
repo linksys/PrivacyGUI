@@ -27,6 +27,11 @@ final dashboardRoute = ShellRoute(
             name: RouteNamed.linkup,
             path: RoutePath.linkup,
             builder: (context, state) => LinkupView(),
+          ),
+          GoRoute(
+            name: RouteNamed.safeBrowsing,
+            path: RoutePath.safeBrowsing,
+            builder: (context, state) => const SafeBrowsingView(),
           )
         ]),
     LinksysRoute(

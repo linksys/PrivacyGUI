@@ -91,6 +91,9 @@ class RoutePath {
   /// PnP
   static const pnp = '/pnp';
 
+  /// Safe Browsing
+  static const safeBrowsing = 'safeBrowsing';
+
   /// debug
   static const debug = 'debug';
 }
@@ -187,6 +190,9 @@ class RouteNamed {
 
   /// PnP
   static const pnp = 'pnp';
+
+  /// Safe Browsing
+  static const safeBrowsing = 'safeBrowsing';
 
   /// debug
   static const debug = 'debug';

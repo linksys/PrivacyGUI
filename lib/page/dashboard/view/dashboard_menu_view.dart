@@ -115,6 +115,12 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                     onTap: () {
                       _navigateTo(RouteNamed.dashboardSettings);
                     }),
+                AppSectionItemData(
+                    title: 'Safe Browsing',
+                    iconData: getCharactersIcons(context).shieldDefault,
+                    onTap: () {
+                      _navigateTo(RouteNamed.safeBrowsing);
+                    }),
                 if (isCloudLogin)
                   AppSectionItemData(
                       title: 'Account',

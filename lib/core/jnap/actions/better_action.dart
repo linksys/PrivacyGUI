@@ -431,6 +431,8 @@ void initBetterActions() {
       _JNAPActionValue.setMACAddressCloneSettings.value;
   _betterActionMap[JNAPAction.setWANSettings] =
       _JNAPActionValue.setWANSettings.value;
+  _betterActionMap[JNAPAction.setLANSettings] =
+      _JNAPActionValue.setLANSettings.value;
   _betterActionMap[JNAPAction.getManagementSettings] =
       _JNAPActionValue.getManagementSettings.value;
   _betterActionMap[JNAPAction.setManagementSettings] =
