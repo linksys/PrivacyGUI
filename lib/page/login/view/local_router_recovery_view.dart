@@ -40,8 +40,8 @@ class _LocalRouterRecoveryViewState
     return StyledAppPageView(
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: BasicHeader(
-          title: getAppLocalizations(context).reset_router_password,
+        header: const BasicHeader(
+          title: 'Enter Recovery Key',
         ),
         content: Column(
           children: [
@@ -63,8 +63,7 @@ class _LocalRouterRecoveryViewState
             const AppGap.regular(),
             if (state.remainingErrorAttempts != null)
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: Spacing.small),
+                padding: const EdgeInsets.symmetric(vertical: Spacing.small),
                 child: AppText.bodyMedium(
                   'That key didn\'t work. Check it and try again.\nTries remaining: ${state.remainingErrorAttempts}',
                 ),
@@ -81,7 +80,10 @@ class _LocalRouterRecoveryViewState
           .read(routerPasswordProvider.notifier)
           .checkRecoveryCode(value);
       if (isCodeValid) {
-        goRouter.pushNamed(RouteNamed.localPasswordReset);
+        goRouter.pushNamed(
+          RouteNamed.localPasswordReset,
+          extra: {'code': value},
+        );
       }
     }
   }

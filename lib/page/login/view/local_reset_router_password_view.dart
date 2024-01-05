@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/components/layouts/basic_header.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/router_password/_router_password.dart';
+import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/validator_rules/rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -40,6 +43,9 @@ class _LocalResetRouterPasswordViewState
     final state = ref.watch(routerPasswordProvider);
     return StyledAppPageView(
       child: AppBasicLayout(
+        header: BasicHeader(
+          title: getAppLocalizations(context).reset_router_password,
+        ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -48,7 +54,7 @@ class _LocalResetRouterPasswordViewState
               withValidator: state.hasEdited,
               validations: validations,
               headerText: getAppLocalizations(context).router_password,
-              hintText: 'Router password',
+              hintText: 'New router password',
               controller: _newPasswordController,
               onFocusChanged: (hasFocus) {
                 ref.read(routerPasswordProvider.notifier).setEdited(hasFocus);
@@ -65,7 +71,7 @@ class _LocalResetRouterPasswordViewState
             ),
           ],
         ),
-        footer: AppFilledButton(
+        footer: AppFilledButton.fillWidth(
           getAppLocalizations(context).save,
           onTap: state.isValid ? _save : null,
         ),
@@ -74,9 +80,16 @@ class _LocalResetRouterPasswordViewState
   }
 
   void _save() {
-    ref.read(routerPasswordProvider.notifier).save(_newPasswordController.text, _hintController.text)
+    final code = widget.args['code'] ?? '';
+    ref
+        .read(routerPasswordProvider.notifier)
+        .setAdminPasswordWithResetCode(
+          _newPasswordController.text,
+          _hintController.text,
+          code,
+        )
         .then<void>((_) {
-      //
+      context.goNamed(RouteNamed.localLoginPassword);
     });
   }
 }

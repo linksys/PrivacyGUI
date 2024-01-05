@@ -15,7 +15,9 @@ final localLoginRoute = GoRoute(
         GoRoute(
           name: RouteNamed.localPasswordReset,
           path: RoutePath.localPasswordReset,
-          builder: (context, state) => LocalResetRouterPasswordView(),
+          builder: (context, state) => LocalResetRouterPasswordView(
+            args: state.extra as Map<String, dynamic>? ?? {},
+          ),
         ),
       ],
     ),
