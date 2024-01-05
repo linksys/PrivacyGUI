@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:linksys_app/constants/jnap_const.dart';
@@ -142,7 +144,7 @@ class JNAPError extends JNAPResult {
         if (response[keyJnapResult] != jnapResultOk) {
           return JNAPError(
             result: response[keyJnapResult],
-            error: response[keyJnapError],
+            error: response[keyJnapError] ?? jsonEncode(response[keyJnapOutput]),
           );
         }
       }
@@ -154,7 +156,7 @@ class JNAPError extends JNAPResult {
     // Otherwise, it's a general jnap
     return JNAPError(
       result: json[keyJnapResult],
-      error: json[keyJnapError],
+      error: json[keyJnapError] ?? jsonEncode(json[keyJnapOutput]),
     );
   }
 

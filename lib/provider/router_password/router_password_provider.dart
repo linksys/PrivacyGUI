@@ -1,6 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:linksys_app/constants/pref_key.dart';
+import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
@@ -44,7 +46,33 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
         hint: passwordHint);
   }
 
-  Future save(String password, String hint) async {
+  Future<void> setAdminPasswordWithResetCode(
+      String password, String hint, String code) async {
+    state = state.copyWith(isLoading: true);
+    final repo = ref.read(routerRepositoryProvider);
+    return repo
+        .send(
+      JNAPAction.setupSetAdminPassword,
+      data: {
+        'adminPassword': password,
+        'passwordHint': hint,
+        'resetCode': code,
+      },
+      type: CommandType.local,
+    )
+        .then<void>((value) async {
+      const storage = FlutterSecureStorage();
+      await storage.write(key: pLocalPassword, value: password);
+      await fetch();
+    }).onError((error, stackTrace) {
+      if (error is JNAPError) {
+        // handle error
+        state = state.copyWith(error: error.error);
+      }
+    });
+  }
+
+  Future setAdminPasswordWithCredentials(String password, String hint) async {
     state = state.copyWith(isLoading: true);
     final repo = ref.read(routerRepositoryProvider);
     return repo
@@ -54,6 +82,7 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
         'adminPassword': password,
         'passwordHint': hint,
       },
+      type: CommandType.local,
       auth: true,
     )
         .then<void>((value) async {
@@ -65,6 +94,27 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
         // handle error
         state = state.copyWith(error: error.error);
       }
+    });
+  }
+
+  Future<bool> checkRecoveryCode(String code) async {
+    final repo = ref.read(routerRepositoryProvider);
+    return repo.send(
+      JNAPAction.verifyRouterResetCode,
+      data: {
+        'resetCode': code,
+      },
+    ).then((result) {
+      return true;
+    }).onError((error, stackTrace) {
+      if (error is JNAPError) {
+        if (error.result == errorInvalidResetCode) {
+          final errorOutput = jsonDecode(error.error!) as Map<String, dynamic>;
+          final remaining = errorOutput['attemptsRemaining'] as int;
+          state = state.copyWith(remainingErrorAttempts: remaining);
+        }
+      }
+      return false;
     });
   }
 

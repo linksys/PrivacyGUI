@@ -9,6 +9,7 @@ class RouterPasswordState extends Equatable {
   final bool isSetByUser;
   final bool hasEdited;
   final String? error;
+  final int? remainingErrorAttempts;
 
   @override
   List<Object?> get props => [
@@ -19,7 +20,8 @@ class RouterPasswordState extends Equatable {
         isDefault,
         isSetByUser,
         hasEdited,
-        error
+        error,
+        remainingErrorAttempts,
       ];
 
   const RouterPasswordState({
@@ -31,6 +33,7 @@ class RouterPasswordState extends Equatable {
     required this.isSetByUser,
     required this.hasEdited,
     this.error,
+    this.remainingErrorAttempts,
   });
 
   factory RouterPasswordState.init() {
@@ -42,6 +45,7 @@ class RouterPasswordState extends Equatable {
       isSetByUser: false,
       hasEdited: false,
       error: null,
+      remainingErrorAttempts: null,
     );
   }
 
@@ -54,6 +58,7 @@ class RouterPasswordState extends Equatable {
     bool? isSetByUser,
     bool? hasEdited,
     String? error,
+    int? remainingErrorAttempts,
   }) {
     return RouterPasswordState(
       adminPassword: adminPassword ?? this.adminPassword,
@@ -64,6 +69,8 @@ class RouterPasswordState extends Equatable {
       isSetByUser: isSetByUser ?? this.isSetByUser,
       hasEdited: hasEdited ?? this.hasEdited,
       error: error ?? this.error,
+      remainingErrorAttempts:
+          remainingErrorAttempts ?? this.remainingErrorAttempts,
     );
   }
 }
