@@ -106,7 +106,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         header: InkWell(
           onTap: () {
-            context.go(RouteNamed.pnpNoInternetConnection);
+            context.goNamed(RouteNamed.pnpNoInternetConnection);
           },
           child: SvgPicture(
             CustomTheme.of(context).images.linksysLogoBlack,

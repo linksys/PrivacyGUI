@@ -1,21 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
-import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
-import 'package:linksys_app/page/pnp/model/impl/guest_wifi_step.dart';
-import 'package:linksys_app/page/pnp/model/impl/night_mode_step.dart';
-import 'package:linksys_app/page/pnp/model/impl/personal_wifi_step.dart';
-import 'package:linksys_app/page/pnp/model/impl/safe_browsing_step.dart';
-import 'package:linksys_app/page/pnp/model/pnp_step.dart';
-import 'package:linksys_app/page/pnp/pnp_stepper.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_widgets/widgets/panel/border_list_tile.dart';
 
 class PnpNoInternetConnectionView extends ConsumerStatefulWidget {
   const PnpNoInternetConnectionView({Key? key}) : super(key: key);
@@ -43,6 +36,32 @@ class _PnpNoInternetConnectionState
       backState: StyledBackState.none,
       child: AppBasicLayout(
         header: SvgPicture(CustomTheme.of(context).images.noInternetConnection),
+        content: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AppGap.big(),
+            const AppText.headlineMedium(
+              'No internet connection',
+            ),
+            const AppGap.big(),
+            const AppText.bodyMedium(
+                'Your internet might be down because of a logic power outage or issue with your ISP'),
+            const AppGap.big(),
+            BorderListTile(
+              title: 'Restart your modem',
+              subTitle: 'Some ISPs require this weh setting up a new router',
+              onTap: () {},
+            ),
+            const AppGap.semiBig(),
+            BorderListTile(
+              title: 'Enter ISP settings',
+              subTitle:
+                  'Enter Static IP or PPPoE settings provided by your ISP',
+              onTap: () {},
+            ),
+          ],
+        ),
       ),
     );
   }

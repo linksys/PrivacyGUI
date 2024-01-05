@@ -82,15 +82,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       dashboardRoute,
       LinksysRoute(
-        name: RouteNamed.pnp,
-        path: RoutePath.pnp,
-        builder: (context, state) => const PnpSetupView(),
-      ),
-      LinksysRoute(
-        name: RouteNamed.pnpNoInternetConnection,
-        path: RoutePath.pnpNoInternetConnection,
-        builder: (context, state) => const PnpNoInternetConnectionView(),
-      ),
+          name: RouteNamed.pnp,
+          path: RoutePath.pnp,
+          builder: (context, state) => const PnpSetupView(),
+          routes: [
+            LinksysRoute(
+              name: RouteNamed.pnpNoInternetConnection,
+              path: RoutePath.pnpNoInternetConnection,
+              builder: (context, state) => const PnpNoInternetConnectionView(),
+            ),
+          ]),
     ],
     redirect: (context, state) {
       return router._redirectLogic(state);
