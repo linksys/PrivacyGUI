@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
@@ -7,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/constants/_constants.dart';
@@ -20,7 +18,6 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/landing/view/debug_device_info_view.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_app/provider/smart_device_provider.dart';
 import 'package:linksys_app/firebase/analytics.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -28,7 +25,9 @@ import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/panel/general_expansion.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:html' as html;
+import 'export_log_base.dart'
+    if (dart.library.io) 'export_log_mobile.dart'
+    if (dart.library.html) 'export_log_web.dart';
 
 class DebugToolsView extends ConsumerStatefulWidget {
   const DebugToolsView({
@@ -82,50 +81,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         AppFilledButton(
           'Export log file',
           onTap: () async {
-            if (kIsWeb) {
-              final SharedPreferences sp =
-                  await SharedPreferences.getInstance();
-              final String content = sp.getString('web_log') ?? '';
-              List<int> utf8Bytes = utf8.encode(content);
-              var blob =
-                  html.Blob([Uint8List.fromList(utf8Bytes), 'text/plain']);
-              var anchor = html.AnchorElement(
-                  href: html.Url.createObjectUrlFromBlob(blob))
-                ..target = 'blank'
-                ..download = 'web-log.txt';
-              html.document.body!.append(anchor);
-              anchor.click();
-              anchor.remove();
-            } else {
-              final file = File.fromUri(Storage.logFileUri);
-              final appInfo = await getAppInfoLogs();
-              final screenInfo = getScreenInfo(context);
-              final String shareLogFilename =
-                  'log-${DateFormat("yyyy-MM-dd_HH_mm_ss").format(DateTime.now())}.txt';
-              final String shareLogPath =
-                  '${Storage.tempDirectory?.path}/$shareLogFilename';
-              final value = await file.readAsBytes();
-
-              String content =
-                  '$appInfo\n$screenInfo\n${String.fromCharCodes(value)}';
-              await Storage.saveFile(Uri.parse(shareLogPath), content);
-
-              Size size = MediaQuery.of(context).size;
-              final result = await Share.shareFilesWithResult(
-                [shareLogPath],
-                text: 'Linksys Log',
-                subject: 'Log file',
-                sharePositionOrigin:
-                    Rect.fromLTWH(0, 0, size.width, size.height / 2),
-              );
-              if (result.status == ShareResultStatus.success) {
-                Storage.deleteFile(Storage.logFileUri);
-                Storage.deleteFile(Uri.parse(shareLogPath));
-                Storage.createLoggerFile();
-              }
-              showSnackBar(context,
-                  content: Text("Share result: ${result.status}"));
-            }
+            exportLog(context);
           },
         ),
         const AppGap.regular(),
