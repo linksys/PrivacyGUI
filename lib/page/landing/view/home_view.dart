@@ -89,14 +89,16 @@ class _HomeViewState extends ConsumerState<HomeView> {
           }
         },
       ),
-      AppFilledButton.fillWidth(
-        getAppLocalizations(context).local_login_title,
-        key: const Key('home_view_button_local_login'),
-        onTap: () async {
-          // Local version flow
-          goRouter.goNamed(RouteNamed.localLoginPassword);
-        },
-      ),
+      const AppGap.small(),
+      if (!kIsWeb)
+        AppFilledButton.fillWidth(
+          'Local Log in',
+          key: const Key('home_view_button_local_login'),
+          onTap: () async {
+            // Local version flow
+            goRouter.goNamed(RouteNamed.localLoginPassword);
+          },
+        ),
       Stack(
         children: [
           Center(
