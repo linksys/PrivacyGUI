@@ -35,24 +35,14 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
   @override
   void initState() {
     super.initState();
-    final routerRepository = ref.read(routerRepositoryProvider);
-
-    routerRepository
-        .send(
-          JNAPAction.getDeviceInfo,
-          fetchRemote: true,
-          cacheLevel: CacheLevel.noCache,
-        )
-        .then<String>(
-            (value) => NodeDeviceInfo.fromJson(value.output).serialNumber)
-        .then(_checkSelfNetworks);
+    _checkSelfNetworks();
   }
 
   @override
   Widget build(BuildContext context) =>
       AppFullScreenSpinner(text: getAppLocalizations(context).processing);
 
-  _checkSelfNetworks(String newSerialNumber) async {
+  _checkSelfNetworks() async {
     final router = GoRouter.of(context);
     await ref.read(connectivityProvider.notifier).forceUpdate();
     final prefs = await SharedPreferences.getInstance();
@@ -76,6 +66,16 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
       }
     } else if (loginType == LoginType.local) {
       logger.i('PREPARE LOGIN:: local');
+      final routerRepository = ref.read(routerRepositoryProvider);
+
+      final newSerialNumber = await routerRepository
+          .send(
+            JNAPAction.getDeviceInfo,
+            fetchRemote: true,
+            cacheLevel: CacheLevel.noCache,
+          )
+          .then<String>(
+              (value) => NodeDeviceInfo.fromJson(value.output).serialNumber);
       await ref
           .read(dashboardManagerProvider.notifier)
           .saveSelectedNetwork(newSerialNumber, '');
