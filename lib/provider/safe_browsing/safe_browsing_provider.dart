@@ -86,10 +86,11 @@ class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {
             dnsServer3: openDNSSetting.dnsServer3,
           );
         case SafeBrowsingType.off:
-          dhcpSettings = lanSetting.dhcpSettings.copyWith(
-            dnsServer1: '',
-            dnsServer2: '',
-            dnsServer3: '',
+          dhcpSettings = DHCPSettings(
+            lastClientIPAddress: lanSetting.dhcpSettings.lastClientIPAddress,
+            leaseMinutes: lanSetting.dhcpSettings.leaseMinutes,
+            reservations: lanSetting.dhcpSettings.reservations,
+            firstClientIPAddress: lanSetting.dhcpSettings.firstClientIPAddress,
           );
       }
       final setLanSetting = SetRouterLANSettings(
