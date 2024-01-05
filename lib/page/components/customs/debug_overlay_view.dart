@@ -6,6 +6,7 @@ import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/util/permission.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 import '../../../constants/build_config.dart';
 
@@ -33,7 +34,9 @@ class _OverlayInfoViewState extends ConsumerState<OverlayInfoView>
     final state = ref.watch(connectivityProvider);
     return Container(
       padding: const EdgeInsets.all(12),
-      width: Utils.getScreenWidth(context) / 3,
+      width: ResponsiveLayout.isMobile(context)
+          ? Utils.getScreenWidth(context) / 2
+          : Utils.getScreenWidth(context) / 3,
       height: 130,
       decoration: const BoxDecoration(
         color: Color(0x33000000),

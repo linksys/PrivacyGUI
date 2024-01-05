@@ -36,11 +36,11 @@ class JNAPTransactionBuilder {
     );
   }
 
+  ///
+  /// Do not put un-auth JNAP command at the first.
   factory JNAPTransactionBuilder.coreTransactions() {
     return JNAPTransactionBuilder(
       commands: [
-        const MapEntry(JNAPAction.getDeviceInfo, {}),
-        const MapEntry(JNAPAction.getWANStatus, {}),
         const MapEntry(JNAPAction.getNodesWirelessNetworkConnections, {}),
         const MapEntry(JNAPAction.getNetworkConnections, {}),
         const MapEntry(JNAPAction.getRadioInfo, {}),
@@ -51,7 +51,8 @@ class JNAPTransactionBuilder {
             JNAPAction.getHealthCheckResults, {'includeModuleResults': true}),
         const MapEntry(JNAPAction.getSupportedHealthCheckModules, {}),
         const MapEntry(JNAPAction.getBackhaulInfo, {}),
-
+        const MapEntry(JNAPAction.getDeviceInfo, {}),
+        const MapEntry(JNAPAction.getWANStatus, {}),
         // ===========================
 
         // const MapEntry(JNAPAction.getOwnedNetworkID, {}),
