@@ -65,6 +65,9 @@ class _HomeViewState extends ConsumerState<HomeView> {
               _isOpenDebug = !_isOpenDebug;
             });
           },
+          onTap: () {
+            context.goNamed(RouteNamed.pnp);
+          },
           child: SvgPicture(CustomTheme.of(context).images.linksysLogoBlack)),
     );
   }
@@ -150,7 +153,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
       return isLoading
           ? AppFullScreenSpinner(text: getAppLocalizations(context).processing)
           : Padding(
-            padding: const EdgeInsets.all(Spacing.regular),
+              padding: const EdgeInsets.all(Spacing.regular),
               child: Column(
                 children: [
                   ListView.builder(

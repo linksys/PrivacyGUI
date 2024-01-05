@@ -14,8 +14,11 @@ import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/panel/custom_animated_box.dart';
+import 'package:linksys_widgets/widgets/panel/general_card.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class OfflineDevicesView extends ArgumentsConsumerStatefulView {
@@ -42,39 +45,65 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
             padding: const EdgeInsets.only(),
             child: AppBasicLayout(
               header: _buildHeader(offlineDeviceList),
-              content: ListView.separated(
-                padding: EdgeInsets.zero,
-                itemCount: offlineDeviceList.length,
-                itemBuilder: (context, index) {
-                  return _buildDeviceCell(offlineDeviceList[index]);
-                },
-                separatorBuilder: (BuildContext context, int index) {
-                  return const Divider(
-                    height: 8,
-                  );
-                },
-              ),
+              content: ResponsiveLayout.isDesktop(context)
+                  ? _buildDeviceGridView(offlineDeviceList)
+                  : _buildDeviceListView(offlineDeviceList),
               footer: _isEdit ? _buildFooter(offlineDeviceList) : null,
             ),
           );
   }
 
-  Widget _buildDeviceCell(DeviceListItem item) {
+  Widget _buildDeviceGridView(List<DeviceListItem> offlineDeviceList) {
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: (3 / 2),
+      ),
+      itemCount: offlineDeviceList.length,
+      itemBuilder: (context, index) {
+        return CustomAnimatedBox(
+            value: _removeIDs.contains(offlineDeviceList[index].deviceId),
+            selectable: _isEdit,
+            onChanged: (value) {
+              if (_isEdit) {
+                _checkedItem(offlineDeviceList[index].deviceId, value);
+              }
+            },
+            child: _buildDeviceGridCell(offlineDeviceList[index]));
+      },
+    );
+  }
+
+  Widget _buildDeviceGridCell(DeviceListItem item) {
+    return AppCard(
+      image: CustomTheme.of(context).images.devices.getByName(item.icon),
+      title: item.name,
+    );
+  }
+
+  Widget _buildDeviceListView(List<DeviceListItem> offlineDeviceList) {
+    return ListView.separated(
+      padding: EdgeInsets.zero,
+      itemCount: offlineDeviceList.length,
+      itemBuilder: (context, index) {
+        return _buildDeviceListCell(offlineDeviceList[index]);
+      },
+      separatorBuilder: (BuildContext context, int index) {
+        return const Divider(
+          height: 8,
+        );
+      },
+    );
+  }
+
+  Widget _buildDeviceListCell(DeviceListItem item) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Spacing.regular),
       child: AppDevicePanel.offline(
         headerChecked: _removeIDs.contains(item.deviceId),
         onHeaderChecked: _isEdit
             ? (value) {
-                setState(() {
-                  if (value == true) {
-                    _removeIDs
-                      ..add(item.deviceId)
-                      ..unique((x) => x);
-                  } else {
-                    _removeIDs.remove(item.deviceId);
-                  }
-                });
+                _checkedItem(item.deviceId, value);
               }
             : null,
         title: item.name,
@@ -104,10 +133,10 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
                 _isEdit ? 'Cancel' : 'Edit',
                 onTap: () {
                   setState(() {
-                    _isEdit = !_isEdit;
                     if (_isEdit) {
                       _removeIDs.clear();
                     }
+                    _isEdit = !_isEdit;
                   });
                 },
               )
@@ -115,7 +144,7 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(Spacing.regular),
+            padding: const EdgeInsets.all(Spacing.regular),
             child: AppText.labelLarge('Offline (${offlineDeviceList.length})')),
         const Divider(
           height: 8,
@@ -156,6 +185,18 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
         ],
       ),
     );
+  }
+
+  void _checkedItem(String deviceId, bool? value) {
+    setState(() {
+      if (value == true) {
+        _removeIDs
+          ..add(deviceId)
+          ..unique((x) => x);
+      } else {
+        _removeIDs.remove(deviceId);
+      }
+    });
   }
 
   void _showConfirmDialog() {

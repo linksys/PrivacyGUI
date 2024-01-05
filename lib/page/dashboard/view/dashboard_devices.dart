@@ -43,6 +43,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
     final filteredDeviceList = ref.watch(filteredDeviceListProvider);
     final filteredChips =
         ref.watch(filteredDeviceListProvider.select((value) => value.$3));
+    final count = filteredDeviceList.$2.length + 1;
     return StyledAppPageView(
       padding: const EdgeInsets.only(),
       child: AppBasicLayout(
@@ -86,7 +87,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
             )),
         content: ListView.separated(
           padding: EdgeInsets.zero,
-          itemCount: filteredDeviceList.$2.length + 1,
+          itemCount: count,
           itemBuilder: (context, index) {
             return _buildCell(index, filteredDeviceList.$2);
           },
