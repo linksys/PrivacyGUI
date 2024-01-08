@@ -75,10 +75,15 @@ final dashboardRoute = ShellRoute(
               builder: (context, state) => DashboardSettingsView(),
               routes: settings),
           LinksysRoute(
+            name: RouteNamed.speedTestSelection,
+            path: RoutePath.speedTestSelection,
+            builder: (context, state) => SpeedTestSelectionView(),
+          ),
+          LinksysRoute(
             name: RouteNamed.dashboardSpeedTest,
             path: RoutePath.dashboardSpeedTest,
             builder: (context, state) => SpeedTestView(),
-          )
+          ),
         ]),
   ],
 );

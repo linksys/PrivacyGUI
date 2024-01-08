@@ -190,6 +190,7 @@ final testTopologyState1 = TopologyState(
   onlineRoot: _onlineRoot
     ..children.add(
       _masterNode
+        ..children.clear()
         ..parent = _onlineRoot
         ..children.add(_slaveNode1..parent = _masterNode),
     ),
