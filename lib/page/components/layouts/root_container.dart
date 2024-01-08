@@ -10,11 +10,13 @@ import 'package:linksys_app/page/components/layouts/desktop_layout.dart';
 import 'package:linksys_app/page/components/layouts/mobile_layout.dart';
 import 'package:linksys_app/page/components/styled/banner_provider.dart';
 import 'package:linksys_app/page/dashboard/view/dashboard_menu_view.dart';
+import 'package:linksys_app/provider/app_settings/app_settings_provider.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/widgets/banner/banner_view.dart';
+import 'package:linksys_widgets/widgets/buttons/button.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 class AppRootContainer extends ConsumerStatefulWidget {
@@ -61,11 +63,37 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
                         ),
                       ),
                     ),
+              CompositedTransformFollower(
+                link: _link,
+                targetAnchor: Alignment.bottomLeft,
+                followerAnchor: Alignment.bottomLeft,
+                child: _buildAppSettings(),
+              )
             ],
           ),
         ),
       );
     }));
+  }
+
+  Widget _buildAppSettings() {
+    return AppIconButton(
+      icon: ref.read(appSettingsProvider).themeMode == ThemeMode.system
+          ? Icons.auto_awesome
+          : ref.read(appSettingsProvider).themeMode == ThemeMode.dark
+              ? Icons.dark_mode
+              : Icons.light_mode,
+      onTap: () {
+        final appSettings = ref.read(appSettingsProvider);
+        final nextThemeMode = appSettings.themeMode == ThemeMode.system
+            ? ThemeMode.dark
+            : appSettings.themeMode == ThemeMode.dark
+                ? ThemeMode.light
+                : ThemeMode.system;
+        ref.read(appSettingsProvider.notifier).state =
+            appSettings.copyWith(themeMode: nextThemeMode);
+      },
+    );
   }
 
   Widget _buildLayout(Widget child, BoxConstraints constraints) {

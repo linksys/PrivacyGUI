@@ -148,23 +148,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
               ],
             ),
             const Spacer(),
-            AppIconButton(
-              icon: ref.read(appSettingsProvider).themeMode == ThemeMode.system
-                  ? Icons.auto_awesome
-                  : ref.read(appSettingsProvider).themeMode == ThemeMode.dark
-                      ? Icons.dark_mode
-                      : Icons.light_mode,
-              onTap: () {
-                final appSettings = ref.read(appSettingsProvider);
-                final nextThemeMode = appSettings.themeMode == ThemeMode.system
-                    ? ThemeMode.dark
-                    : appSettings.themeMode == ThemeMode.dark
-                        ? ThemeMode.light
-                        : ThemeMode.system;
-                ref.read(appSettingsProvider.notifier).state =
-                    appSettings.copyWith(themeMode: nextThemeMode);
-              },
-            ),
+            
             const AppGap.semiBig(),
             AppTextButton.noPadding('Log out', onTap: () {
               ref.read(authProvider.notifier).logout();
