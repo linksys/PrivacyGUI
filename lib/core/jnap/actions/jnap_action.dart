@@ -104,6 +104,7 @@ enum JNAPAction {
   setIPv6Settings,
   setMACAddressCloneSettings,
   setWANSettings,
+  setLANSettings,
   renewDHCPWANLease,
   renewDHCPIPv6WANLease,
   // routerManagement

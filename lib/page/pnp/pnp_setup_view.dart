@@ -192,9 +192,12 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         child: Column(
           children: [
             const AppGap.regular(),
-            AppStyledText.bodyMedium(
+            AppStyledText.link(
               'To configure advanced settings, visit <link href="www.myrouter.info">www.myrouter.info</link> on a desktop computer',
-              tags: {
+              defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+              color: Theme.of(context).primaryColor,
+              tags: const ['link'],
+              callbackTags: {
                 'link': (String? text, Map<String?, String?> attrs) {
                   String? link = attrs['href'];
                   print('The "$link" link is tapped.');

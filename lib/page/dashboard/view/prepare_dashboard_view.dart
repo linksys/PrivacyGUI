@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
@@ -61,6 +64,21 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
               .saveSelectedNetwork(serialNumber, networkId);
         }
       }
+    } else if (loginType == LoginType.local) {
+      logger.i('PREPARE LOGIN:: local');
+      final routerRepository = ref.read(routerRepositoryProvider);
+
+      final newSerialNumber = await routerRepository
+          .send(
+            JNAPAction.getDeviceInfo,
+            fetchRemote: true,
+            cacheLevel: CacheLevel.noCache,
+          )
+          .then<String>(
+              (value) => NodeDeviceInfo.fromJson(value.output).serialNumber);
+      await ref
+          .read(dashboardManagerProvider.notifier)
+          .saveSelectedNetwork(newSerialNumber, '');
     }
     logger.d('Go to dashboard');
     await ProviderContainer()

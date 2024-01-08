@@ -31,6 +31,7 @@ import 'package:linksys_app/page/dashboard/view/devices/change_device_avatar_vie
 import 'package:linksys_app/page/dashboard/view/devices/change_device_name_view.dart';
 import 'package:linksys_app/page/dashboard/view/devices/device_detail_view.dart';
 import 'package:linksys_app/page/dashboard/view/devices/offline_devices_view.dart';
+import 'package:linksys_app/page/dashboard/view/health_check/speed_test_selection.dart';
 import 'package:linksys_app/page/dashboard/view/nodes/_nodes.dart';
 import 'package:linksys_app/page/dashboard/view/nodes/change_node_name_view.dart';
 import 'package:linksys_app/page/dashboard/view/nodes/node_light_guide_view.dart';
@@ -40,8 +41,14 @@ import 'package:linksys_app/page/dashboard/view/topology/topology_view.dart';
 import 'package:linksys_app/page/landing/view/_view.dart';
 import 'package:linksys_app/page/linkup/view/linkup_view.dart';
 import 'package:linksys_app/page/login/view/_view.dart';
+import 'package:linksys_app/page/login/view/local_reset_router_password_view.dart';
 import 'package:linksys_app/page/otp_flow/view/_view.dart';
 import 'package:linksys_app/page/pnp/pnp_setup_view.dart';
+import 'package:linksys_app/page/pnp/troubleshooter/pnp_lights_off.dart';
+import 'package:linksys_app/page/pnp/troubleshooter/pnp_plug_modem_back.dart';
+import 'package:linksys_app/page/pnp/troubleshooter/pnp_unplug_modem.dart';
+import 'package:linksys_app/page/pnp/troubleshooter/pnp_waiting_modem.dart';
+import 'package:linksys_app/page/safe_browsing/view/safe_browsing_view.dart';
 import 'package:linksys_app/page/pnp/troubleshooter/pnp_no_internet_connection.dart';
 import 'package:linksys_app/page/wifi_settings/view/_view.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
@@ -54,10 +61,12 @@ import '../page/dashboard/view/nodes/node_switch_light_view.dart';
 import 'constants.dart';
 
 part 'route_home.dart';
-part 'route_login.dart';
+part 'route_cloud_login.dart';
+part 'route_local_login.dart';
 part 'route_dashboard.dart';
 part 'route_settings.dart';
 part 'route_otp.dart';
+part 'route_pnp.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final router = RouterNotifier(ref);
@@ -81,17 +90,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => SelectNetworkView(),
       ),
       dashboardRoute,
-      LinksysRoute(
-          name: RouteNamed.pnp,
-          path: RoutePath.pnp,
-          builder: (context, state) => const PnpSetupView(),
-          routes: [
-            LinksysRoute(
-              name: RouteNamed.pnpNoInternetConnection,
-              path: RoutePath.pnpNoInternetConnection,
-              builder: (context, state) => const PnpNoInternetConnectionView(),
-            ),
-          ]),
+      pnpRoute,
     ],
     redirect: (context, state) {
       return router._redirectLogic(state);

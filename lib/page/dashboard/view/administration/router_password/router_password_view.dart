@@ -189,7 +189,10 @@ class _RouterPasswordContentViewState
   void _save() {
     FocusManager.instance.primaryFocus?.unfocus();
     _notifier
-        .save(_passwordController.text, _hintController.text)
+        .setAdminPasswordWithCredentials(
+      _passwordController.text,
+      _hintController.text,
+    )
         .then<void>((_) {
       _success();
     });

@@ -27,6 +27,11 @@ final dashboardRoute = ShellRoute(
             name: RouteNamed.linkup,
             path: RoutePath.linkup,
             builder: (context, state) => LinkupView(),
+          ),
+          GoRoute(
+            name: RouteNamed.safeBrowsing,
+            path: RoutePath.safeBrowsing,
+            builder: (context, state) => const SafeBrowsingView(),
           )
         ]),
     LinksysRoute(
@@ -70,10 +75,15 @@ final dashboardRoute = ShellRoute(
               builder: (context, state) => DashboardSettingsView(),
               routes: settings),
           LinksysRoute(
+            name: RouteNamed.speedTestSelection,
+            path: RoutePath.speedTestSelection,
+            builder: (context, state) => SpeedTestSelectionView(),
+          ),
+          LinksysRoute(
             name: RouteNamed.dashboardSpeedTest,
             path: RoutePath.dashboardSpeedTest,
             builder: (context, state) => SpeedTestView(),
-          )
+          ),
         ]),
   ],
 );

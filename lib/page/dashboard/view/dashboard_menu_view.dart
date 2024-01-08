@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
+import 'package:linksys_app/provider/app_settings/app_settings_provider.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/dashboard/dashboard_home_provider.dart';
 import 'package:linksys_app/provider/select_network/select_network_provider.dart';
@@ -115,6 +116,18 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                     onTap: () {
                       _navigateTo(RouteNamed.dashboardSettings);
                     }),
+                AppSectionItemData(
+                    title: 'Safe Browsing',
+                    iconData: getCharactersIcons(context).shieldDefault,
+                    onTap: () {
+                      _navigateTo(RouteNamed.safeBrowsing);
+                    }),
+                AppSectionItemData(
+                    title: 'Speed Test',
+                    iconData: getCharactersIcons(context).securityDefault,
+                    onTap: () {
+                      _navigateTo(RouteNamed.speedTestSelection);
+                    }),
                 if (isCloudLogin)
                   AppSectionItemData(
                       title: 'Account',
@@ -135,6 +148,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
               ],
             ),
             const Spacer(),
+            
             const AppGap.semiBig(),
             AppTextButton.noPadding('Log out', onTap: () {
               ref.read(authProvider.notifier).logout();

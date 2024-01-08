@@ -640,5 +640,10 @@
   "error_local_access_locked": "Access locked. Too many failed attempts to log in.",
   "local_how_to_regain_access": "How to regain access",
   "remove_node_from_network": "Remove node from network",
-  "internet": "Internet"
+  "internet": "Internet",
+  "safe_browsing": "Safe Browsing",
+  "safe_browsing_desc": "Protect your family and block pre-determined adult , illegal and malicious content with a single tap. Safe Browsing applies to all devices on your network.",
+  "secure_dns": "Secure DNS",
+  "fortinet_secure_dns": "Fortinet Secure DNS",
+  "opendns_by_cisco": "OpenDNS by Cisco"
 }

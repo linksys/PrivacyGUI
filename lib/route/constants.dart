@@ -10,13 +10,18 @@ class RoutePath {
   static const cloudForgotPassword = 'cloudForgotPassword';
   static const phoneRegionCode = 'phoneRegionCode';
   static const localLoginPassword = 'localLoginPassword';
+  static const localRouterRecovery = 'localRouterRecovery';
+  static const localPasswordReset = 'localPasswordReset';
 
   /// dashboard
   static const dashboardHome = '/dashboardHome';
   static const dashboardMenu = '/dashboardMenu';
   static const dashboardDevices = 'dashboardDevices';
   static const dashboardSettings = 'dashboardSettings';
+
+  /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';
+  static const speedTestSelection = 'speedTestSelection';
 
   /// settings
   static const settingsNotification = 'notificationSettings';
@@ -89,6 +94,12 @@ class RoutePath {
   /// PnP
   static const pnp = '/pnp';
   static const pnpNoInternetConnection = 'noInternetConnection';
+  static const pnpUnplugModem = 'unPlugModem';
+  static const pnpMakeSureLightOff = 'makeSureLightOff';
+  static const pnpWaitingModem = 'waitingModem';
+  
+  /// Safe Browsing
+  static const safeBrowsing = 'safeBrowsing';
 
   /// debug
   static const debug = 'debug';
@@ -106,13 +117,18 @@ class RouteNamed {
   static const cloudForgotPassword = 'cloudForgotPassword';
   static const phoneRegionCode = 'phoneRegionCode';
   static const localLoginPassword = 'localLoginPassword';
+  static const localRouterRecovery = 'localRouterRecovery';
+  static const localPasswordReset = 'localPasswordReset';
 
   /// dashboard
   static const dashboardMenu = 'dashboardMenu';
   static const dashboardHome = 'dashboardHome';
   static const dashboardDevices = 'dashboardDevices';
   static const dashboardSettings = 'dashboardSettings';
+
+  /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';
+  static const speedTestSelection = 'speedTestSelection';
 
   /// settings
   static const settingsNotification = 'notificationSettings';
@@ -185,6 +201,12 @@ class RouteNamed {
   /// PnP
   static const pnp = 'pnp';
   static const pnpNoInternetConnection = 'noInternetConnection';
+  static const pnpUnplugModem = 'unPlugModem';
+  static const pnpMakeSureLightOff = 'makeSureLightOff';
+  static const pnpWaitingModem = 'waitingModem';
+
+  /// Safe Browsing
+  static const safeBrowsing = 'safeBrowsing';
 
   /// debug
   static const debug = 'debug';

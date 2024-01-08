@@ -7,6 +7,7 @@ import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/firebase/notification_helper.dart';
 import 'package:linksys_app/page/components/layouts/root_container.dart';
+import 'package:linksys_app/provider/app_settings/app_settings_provider.dart';
 import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/provider/smart_device_provider.dart';
@@ -51,6 +52,9 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   @override
   Widget build(BuildContext context) {
     logger.d('App:: build: $_currentRoute');
+
+    final appSettings = ref.watch(appSettingsProvider);
+
     ref.read(smartDeviceProvider.notifier).init();
     final router = ref.watch(routerProvider);
     router.routerDelegate.removeListener(_onReceiveRouteChanged);
@@ -60,6 +64,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       onGenerateTitle: (context) => getAppLocalizations(context).app_title,
       theme: linksysLightThemeData,
       darkTheme: linksysDarkThemeData,
+      themeMode: appSettings.themeMode,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => CustomResponsive(

@@ -1,30 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/layouts/basic_header.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_app/provider/router_password/_router_password.dart';
+import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 
 import 'package:pin_code_fields/pin_code_fields.dart';
 
-class LocalRecoveryKeyView extends ArgumentsConsumerStatefulView {
-  const LocalRecoveryKeyView({Key? key, super.args}) : super(key: key);
+class LocalRouterRecoveryView extends ArgumentsConsumerStatefulView {
+  const LocalRouterRecoveryView({Key? key, super.args}) : super(key: key);
 
   @override
-  _LocalResetRouterPasswordState createState() =>
-      _LocalResetRouterPasswordState();
+  _LocalRouterRecoveryViewState createState() =>
+      _LocalRouterRecoveryViewState();
 }
 
-class _LocalResetRouterPasswordState
-    extends ConsumerState<LocalRecoveryKeyView> {
-  final bool _isLoading = false;
+class _LocalRouterRecoveryViewState
+    extends ConsumerState<LocalRouterRecoveryView> {
   final TextEditingController _otpController = TextEditingController();
-  String _errorReason = '';
 
   @override
   void initState() {
@@ -32,29 +31,25 @@ class _LocalResetRouterPasswordState
   }
 
   @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: AppText.bodyLarge('TBD'),
-    );
-  }
+  Widget build(BuildContext context) => _contentView();
 
   Widget _contentView() {
-    final theme = CustomTheme.of(context);
+    final state = ref.watch(routerPasswordProvider);
+    final goRouter = GoRouter.of(context);
+
     return StyledAppPageView(
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: BasicHeader(
-          title: getAppLocalizations(context).reset_router_password,
+        header: const BasicHeader(
+          title: 'Enter Recovery Key',
         ),
         content: Column(
           children: [
             PinCodeTextField(
               onChanged: (String value) {
-                setState(() {
-                  _errorReason = '';
-                });
+                // ref.read(routerPasswordProvider.notifier).clearErrorPrompt();
               },
-              onCompleted: (String? value) => _onNext(value),
+              onCompleted: (String? value) => _onNext(value, goRouter),
               length: 5,
               appContext: context,
               controller: _otpController,
@@ -66,11 +61,11 @@ class _LocalResetRouterPasswordState
               ),
             ),
             const AppGap.regular(),
-            if (_errorReason.isNotEmpty)
+            if (state.remainingErrorAttempts != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: Spacing.small),
                 child: AppText.bodyMedium(
-                  _errorReason,
+                  'That key didn\'t work. Check it and try again.\nTries remaining: ${state.remainingErrorAttempts}',
                 ),
               ),
           ],
@@ -79,7 +74,17 @@ class _LocalResetRouterPasswordState
     );
   }
 
-  _onNext(String? value) {
-    // Go Router
+  _onNext(String? value, GoRouter goRouter) async {
+    if (value != null) {
+      final isCodeValid = await ref
+          .read(routerPasswordProvider.notifier)
+          .checkRecoveryCode(value);
+      if (isCodeValid) {
+        goRouter.pushNamed(
+          RouteNamed.localPasswordReset,
+          extra: {'code': value},
+        );
+      }
+    }
   }
 }
