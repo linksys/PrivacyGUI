@@ -45,7 +45,6 @@ import 'package:linksys_app/page/login/view/local_reset_router_password_view.dar
 import 'package:linksys_app/page/otp_flow/view/_view.dart';
 import 'package:linksys_app/page/pnp/pnp_setup_view.dart';
 import 'package:linksys_app/page/pnp/troubleshooter/pnp_lights_off.dart';
-import 'package:linksys_app/page/pnp/troubleshooter/pnp_plug_modem_back.dart';
 import 'package:linksys_app/page/pnp/troubleshooter/pnp_unplug_modem.dart';
 import 'package:linksys_app/page/pnp/troubleshooter/pnp_waiting_modem.dart';
 import 'package:linksys_app/page/safe_browsing/view/safe_browsing_view.dart';
