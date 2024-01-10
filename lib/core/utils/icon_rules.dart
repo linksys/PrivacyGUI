@@ -151,31 +151,21 @@ const List<Map<String, dynamic>> iconRules = [
     'iconClass': 'routerMbe7000',
   },
   {
-    'description': 'Linksys Cherry (LN12/Cherry Variants; "LN12 Series")',
+    'description': 'Linksys MBE7100 (MBE71/Oak SP1 Variants; "MBE7100 Series")',
     'test': {
       'model': {
         'manufacturer': 'Linksys',
-        'modelNumber': '^ln12',
+        'modelNumber': '^mbe71',
       },
     },
-    'iconClass': 'routerLn12',
+    'iconClass': 'routerMbe7100',
   },
   {
-    'description': 'Linksys Elm (LN11/Elm Variants; "LN11 Series")',
-    'test': {
-      'model': {
-        'manufacturer': 'Linksys',
-        'modelNumber': '^ln11',
-      },
-    },
-    'iconClass': 'routerLn11',
-  },
-  {
-    'description': 'Linksys Router',
+    'description': 'Linksys Router (modelNumber passthrough)',
     'test': {
       'model': {
         'manufacturer': 'Cisco|Linksys|Belkin',
-        'modelNumber': '^(E|EA|WRT|XAC|MR|MX).+\$',
+        'modelNumber': '^(E|EA|WRT|XAC|MR|MX|LN|MBE).+\$',
         'deviceType': 'Infrastructure',
       },
     },
@@ -189,7 +179,7 @@ const List<Map<String, dynamic>> iconRules = [
     'test': {
       'model': {
         'manufacturer': 'Linksys|Belkin',
-        'modelNumber': ' /^(MR|MX).+\$',
+        'modelNumber': ' /^(MR|MX|LN|MBE).+\$',
       },
     },
     'iconClass': {
