@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
@@ -10,6 +11,7 @@ import 'package:linksys_app/page/pnp/model/impl/personal_wifi_step.dart';
 import 'package:linksys_app/page/pnp/model/impl/safe_browsing_step.dart';
 import 'package:linksys_app/page/pnp/model/pnp_step.dart';
 import 'package:linksys_app/page/pnp/pnp_stepper.dart';
+import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -102,11 +104,16 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
 
   Widget _configView() => AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: SvgPicture(
-          CustomTheme.of(context).images.linksysLogoBlack,
-          width: 32,
-          height: 32,
-          fit: BoxFit.cover,
+        header: InkWell(
+          onTap: () {
+            context.goNamed(RouteNamed.pnpNoInternetConnection);
+          },
+          child: SvgPicture(
+            CustomTheme.of(context).images.linksysLogoBlack,
+            width: 32,
+            height: 32,
+            fit: BoxFit.cover,
+          ),
         ),
         content: LayoutBuilder(builder: (context, constraints) {
           return PnpStepper(
@@ -185,9 +192,12 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         child: Column(
           children: [
             const AppGap.regular(),
-            AppStyledText.bodyMedium(
+            AppStyledText.link(
               'To configure advanced settings, visit <link href="www.myrouter.info">www.myrouter.info</link> on a desktop computer',
-              tags: {
+              defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+              color: Theme.of(context).primaryColor,
+              tags: const ['link'],
+              callbackTags: {
                 'link': (String? text, Map<String?, String?> attrs) {
                   String? link = attrs['href'];
                   print('The "$link" link is tapped.');

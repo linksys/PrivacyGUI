@@ -44,7 +44,11 @@ import 'package:linksys_app/page/login/view/_view.dart';
 import 'package:linksys_app/page/login/view/local_reset_router_password_view.dart';
 import 'package:linksys_app/page/otp_flow/view/_view.dart';
 import 'package:linksys_app/page/pnp/pnp_setup_view.dart';
+import 'package:linksys_app/page/pnp/troubleshooter/pnp_lights_off.dart';
+import 'package:linksys_app/page/pnp/troubleshooter/pnp_unplug_modem.dart';
+import 'package:linksys_app/page/pnp/troubleshooter/pnp_waiting_modem.dart';
 import 'package:linksys_app/page/safe_browsing/view/safe_browsing_view.dart';
+import 'package:linksys_app/page/pnp/troubleshooter/pnp_no_internet_connection.dart';
 import 'package:linksys_app/page/wifi_settings/view/_view.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
 import 'package:linksys_app/provider/otp/otp.dart';
@@ -61,6 +65,7 @@ part 'route_local_login.dart';
 part 'route_dashboard.dart';
 part 'route_settings.dart';
 part 'route_otp.dart';
+part 'route_pnp.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final router = RouterNotifier(ref);
@@ -84,11 +89,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => SelectNetworkView(),
       ),
       dashboardRoute,
-      LinksysRoute(
-        name: RouteNamed.pnp,
-        path: RoutePath.pnp,
-        builder: (context, state) => const PnpSetupView(),
-      ),
+      pnpRoute,
     ],
     redirect: (context, state) {
       return router._redirectLogic(state);

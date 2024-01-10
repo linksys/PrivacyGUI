@@ -93,7 +93,11 @@ class RoutePath {
 
   /// PnP
   static const pnp = '/pnp';
-
+  static const pnpNoInternetConnection = 'noInternetConnection';
+  static const pnpUnplugModem = 'unPlugModem';
+  static const pnpMakeSureLightOff = 'makeSureLightOff';
+  static const pnpWaitingModem = 'waitingModem';
+  
   /// Safe Browsing
   static const safeBrowsing = 'safeBrowsing';
 
@@ -196,6 +200,10 @@ class RouteNamed {
 
   /// PnP
   static const pnp = 'pnp';
+  static const pnpNoInternetConnection = 'noInternetConnection';
+  static const pnpUnplugModem = 'unPlugModem';
+  static const pnpMakeSureLightOff = 'makeSureLightOff';
+  static const pnpWaitingModem = 'waitingModem';
 
   /// Safe Browsing
   static const safeBrowsing = 'safeBrowsing';
