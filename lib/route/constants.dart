@@ -22,6 +22,7 @@ class RoutePath {
   /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';
   static const speedTestSelection = 'speedTestSelection';
+  static const speedTestExternal = 'speedTestExternal';
 
   /// settings
   static const settingsNotification = 'notificationSettings';
@@ -93,11 +94,12 @@ class RoutePath {
 
   /// PnP
   static const pnp = '/pnp';
+  static const pnpConfig = 'pnpConfig';
   static const pnpNoInternetConnection = 'noInternetConnection';
   static const pnpUnplugModem = 'unPlugModem';
   static const pnpMakeSureLightOff = 'makeSureLightOff';
   static const pnpWaitingModem = 'waitingModem';
-  
+
   /// Safe Browsing
   static const safeBrowsing = 'safeBrowsing';
 
@@ -129,6 +131,7 @@ class RouteNamed {
   /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';
   static const speedTestSelection = 'speedTestSelection';
+  static const speedTestExternal = 'speedTestExternal';
 
   /// settings
   static const settingsNotification = 'notificationSettings';
@@ -200,6 +203,7 @@ class RouteNamed {
 
   /// PnP
   static const pnp = 'pnp';
+  static const pnpConfig = 'pnpConfig';
   static const pnpNoInternetConnection = 'noInternetConnection';
   static const pnpUnplugModem = 'unPlugModem';
   static const pnpMakeSureLightOff = 'makeSureLightOff';

@@ -32,6 +32,7 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     Map<String, dynamic>? getRadioInfoData;
     Map<String, dynamic>? getGuestRadioSettingsData;
     Map<String, dynamic>? getHealthCheckResultsData;
+    Map<String, dynamic>? getHealthCheckModuleData;
 
     final result = pollingResult?.data;
     if (result != null) {
@@ -43,6 +44,10 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
           (result[JNAPAction.getGuestRadioSettings] as JNAPSuccess?)?.output;
       getHealthCheckResultsData =
           (result[JNAPAction.getHealthCheckResults] as JNAPSuccess?)?.output;
+      getHealthCheckModuleData =
+          (result[JNAPAction.getNodesSupportedHealthCheckModules]
+                  as JNAPSuccess?)
+              ?.output;
     }
 
     var newState = const DashboardManagerState();
@@ -57,6 +62,11 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     }
     if (getHealthCheckResultsData != null) {
       newState = _getSpeedTestResult(newState, getHealthCheckResultsData);
+    }
+
+    if (getHealthCheckModuleData != null) {
+      newState =
+          _getHealthCheckModuleResult(newState, getHealthCheckModuleData);
     }
     return newState;
   }
@@ -90,6 +100,10 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     buildBetterActions(nodeDeviceInfo.services);
     benchMark.end();
     return nodeDeviceInfo;
+  }
+
+  bool isHealthCheckModuleSupported(String module) {
+    return state.healthCheckModules.contains(module);
   }
 
   Future<NodeDeviceInfo?> _checkDeviceInfoFromCache(
@@ -161,6 +175,15 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     return state.copyWith(
       latestSpeedTest: historyResults.firstOrNull,
     );
+  }
+
+  DashboardManagerState _getHealthCheckModuleResult(
+    DashboardManagerState state,
+    Map<String, dynamic> data,
+  ) {
+    final supportedModules =
+        List<String>.from(data['supportedHealthCheckModules']);
+    return state.copyWith(healthCheckModules: supportedModules);
   }
 }
 

@@ -9,44 +9,14 @@ import 'package:linksys_app/page/pnp/data/pnp_step_state.dart';
 import 'package:linksys_app/page/pnp/model/pnp_step.dart';
 
 final pnpProvider =
-    NotifierProvider<PnpNotifier, PnpState>(() => PnpNotifier());
+    NotifierProvider<BasePnpNotifier, PnpState>(() => MockPnpNotifier());
 
-class PnpNotifier extends Notifier<PnpState> {
+abstract class BasePnpNotifier extends Notifier<PnpState> {
   @override
   PnpState build() => const PnpState(
         deviceInfo: null,
         password: '',
       );
-
-  Future fetchDeviceInfo() async {
-    final deviceInfo = await ref
-        .read(routerRepositoryProvider)
-        .send(
-          JNAPAction.getDeviceInfo,
-          cacheLevel: CacheLevel.noCache,
-          type: CommandType.local,
-          fetchRemote: true,
-        )
-        .then((result) => NodeDeviceInfo.fromJson(result.output));
-    state = state.copyWith(deviceInfo: deviceInfo);
-  }
-
-  Future checkAdminPassword(String password) async {
-    final response = await ref.read(routerRepositoryProvider).send(
-      JNAPAction.checkAdminPassword,
-      cacheLevel: CacheLevel.noCache,
-      type: CommandType.local,
-      fetchRemote: true,
-      data: {
-        'adminPassword': password,
-      },
-    );
-    if (response.result == jnapResultOk) {
-      state = state.copyWith(password: password);
-    } else {
-      throw response;
-    }
-  }
 
   ///
   PnpStepState getStepState(int index) {
@@ -83,5 +53,71 @@ class PnpNotifier extends Notifier<PnpState> {
         const PnpStepState(status: StepViewStatus.loading, data: {});
     stepStateData[index] = target.copyWith(error: error);
     state = state.copyWith(stepStateList: stepStateData);
+  }
+
+  // abstract functions
+
+  Future fetchDeviceInfo();
+  Future checkAdminPassword(String? password);
+  Future checkInternetConnection();
+}
+
+class MockPnpNotifier extends BasePnpNotifier {
+  @override
+  Future checkAdminPassword(String? password) {
+    return Future.delayed(const Duration(seconds: 3))
+        .then((value) => throw 'ErrorInvalidAdminPassword');
+  }
+
+  @override
+  Future checkInternetConnection() {
+    return Future.delayed(const Duration(seconds: 3));
+  }
+
+  @override
+  Future fetchDeviceInfo() {
+    return Future.delayed(const Duration(seconds: 3));
+  }
+}
+
+class PnpNotifier extends BasePnpNotifier {
+  @override
+  Future fetchDeviceInfo() async {
+    final deviceInfo = await ref
+        .read(routerRepositoryProvider)
+        .send(
+          JNAPAction.getDeviceInfo,
+          cacheLevel: CacheLevel.noCache,
+          type: CommandType.local,
+          fetchRemote: true,
+        )
+        .then((result) => NodeDeviceInfo.fromJson(result.output));
+    // Build/Update better actions
+    buildBetterActions(deviceInfo.services);
+    state = state.copyWith(deviceInfo: deviceInfo);
+  }
+
+  @override
+  Future checkAdminPassword(String? password) async {
+    final response = await ref.read(routerRepositoryProvider).send(
+      JNAPAction.checkAdminPassword,
+      cacheLevel: CacheLevel.noCache,
+      type: CommandType.local,
+      fetchRemote: true,
+      data: {
+        'adminPassword': password,
+      },
+    );
+    if (response.result == jnapResultOk) {
+      state = state.copyWith(password: password);
+    } else {
+      throw response;
+    }
+  }
+
+  /// check internet connection within 30 seconds
+  @override
+  Future checkInternetConnection() {
+    return Future.delayed(const Duration(seconds: 3));
   }
 }

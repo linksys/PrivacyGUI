@@ -14,7 +14,7 @@ final portRangeForwardingRuleProvider = NotifierProvider<
 
 class PortRangeForwardingRuleNotifier
     extends Notifier<PortRangeForwardingRuleState> {
-  late InputValidator _localIpValidator;
+  InputValidator? _localIpValidator;
 
   @override
   PortRangeForwardingRuleState build() => const PortRangeForwardingRuleState();
@@ -74,7 +74,7 @@ class PortRangeForwardingRuleNotifier
   }
 
   bool isDeviceIpValidate(String ipAddress) {
-    return _localIpValidator.validate(ipAddress);
+    return _localIpValidator?.validate(ipAddress) ?? false;
   }
 
   bool isEdit() {

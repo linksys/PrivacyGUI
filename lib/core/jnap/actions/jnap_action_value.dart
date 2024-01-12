@@ -50,6 +50,15 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/firewall/SetSinglePortForwardingRules'),
   getFirmwareUpdateStatus(
       value: 'http://linksys.com/jnap/firmwareupdate/GetFirmwareUpdateStatus'),
+  getNodesFirmwareUpdateStatus(
+      value:
+          'http://linksys.com/jnap/nodes/firmwareupdate/GetFirmwareUpdateStatus'),
+  getFirmwareUpdateSettings(
+      value:
+          'http://linksys.com/jnap/firmwareupdate/GetFirmwareUpdateSettings'),
+  setFirmwareUpdateSettings(
+      value:
+          'http://linksys.com/jnap/firmwareupdate/SetFirmwareUpdateSettings'),
   // TODO - Checking for the reference
   getGamingPrioritizationSettings(
       value:

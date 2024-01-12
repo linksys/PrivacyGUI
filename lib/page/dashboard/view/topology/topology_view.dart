@@ -9,6 +9,7 @@ import 'package:linksys_app/page/dashboard/view/topology/topology_model.dart';
 import 'package:linksys_app/provider/devices/device_detail_id_provider.dart';
 import 'package:linksys_app/provider/devices/topology_provider.dart';
 import 'package:linksys_app/provider/devices/topology_state.dart';
+import 'package:linksys_app/provider/root/root_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -80,7 +81,50 @@ class TopologyView extends ArgumentsConsumerStatelessView {
                 ),
               ),
             ),
-            // _buildOfflineNode(context, ref, topologyState.offlineRoot),
+          ],
+        ),
+        footer: Column(
+          children: [
+            AppOutlinedButton.fillWidth(
+              'Restart Network',
+              onTap: () {
+                showAdaptiveDialog(
+                  context: context,
+                  barrierDismissible: true,
+                  builder: (context) => AlertDialog.adaptive(
+                    title: AppText.labelLarge('Alert!'),
+                    content: AppText.bodyMedium(
+                        'Restart router will take some time'),
+                    actions: [
+                      AppFilledButton(
+                        'Ok',
+                        onTap: () {
+                          ref
+                              .read(rootProvider.notifier)
+                              .showSpinner(tag: 'reboot', force: true);
+
+                          context.pop();
+                          ref
+                              .read(topologyProvider.notifier)
+                              .reboot()
+                              .then((value) {
+                            ref
+                                .read(rootProvider.notifier)
+                                .hideSpinner(tag: 'reboot');
+                          });
+                        },
+                      ),
+                      AppFilledButton(
+                        'Cancel',
+                        onTap: () {
+                          context.pop();
+                        },
+                      )
+                    ],
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),

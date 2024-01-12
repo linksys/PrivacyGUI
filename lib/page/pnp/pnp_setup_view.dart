@@ -46,7 +46,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   void initState() {
     super.initState();
     setState(() {
-      _loadingMessage = 'Checking your internet...';
+      _loadingMessage = 'Collecting data...';
       _setupStep = _PnpSetupStep.init;
     });
     Future.doWhile(() => !mounted).then((_) async {
@@ -54,7 +54,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
       /// Check internet connection, isPasswordUserDefault, etc
 
       // await ref.read(pnpProvider.notifier).fetchDeviceInfo();
-      await Future.delayed(const Duration(seconds: 3));
+      await Future.delayed(const Duration(seconds: 1));
     }).then((_) {
       int index = 0;
       steps = [

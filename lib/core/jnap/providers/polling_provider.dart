@@ -9,6 +9,7 @@ import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/bench_mark.dart';
 import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_app/core/utils/nodes.dart';
 
 const int pollDurationInSec = 120;
 const int pollFirstDelayInSec = 1;
@@ -42,6 +43,7 @@ class CoreTransactionData extends Equatable {
 
 class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   static Timer? _timer;
+  List<MapEntry<JNAPAction, Map<String, dynamic>>> _coreTransactions = [];
 
   @override
   FutureOr<CoreTransactionData> build() {
@@ -50,78 +52,34 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
   fetchFirstLaunchedCacheData() {
     final cache = ref.read(linksysCacheManagerProvider).data;
-    if (BuildConfig.forceCommandType == ForceCommand.local) {
-      final firstCommands =
-          JNAPTransactionBuilder.firstCoreTransactions().commands;
-      final secondCommands =
-          JNAPTransactionBuilder.secondCoreTransactions().commands;
+    final commands = _coreTransactions;
+    final checkCacheDataList = commands
+        .where((command) => cache.keys.contains(command.key.actionValue));
+    // Have not done any polling yet
+    if (checkCacheDataList.length != commands.length) return;
 
-      // Have not done any polling yet
-      final checkFirstCacheDataList = firstCommands
-          .where((command) => cache.keys.contains(command.key.actionValue));
-      if (checkFirstCacheDataList.length != firstCommands.length) return;
-      final checkSecondCacheDataList = secondCommands
-          .where((command) => cache.keys.contains(command.key.actionValue));
-      if (checkSecondCacheDataList.length != firstCommands.length) return;
+    final cacheDataList = checkCacheDataList
+        .where((command) => cache[command.key.actionValue]['data'] != null)
+        .map((command) => MapEntry(command.key,
+            JNAPSuccess.fromJson(cache[command.key.actionValue]['data'])))
+        .toList();
 
-      final firstCacheDataList = checkFirstCacheDataList
-          .where((command) => cache[command.key.actionValue]['data'] != null)
-          .map((command) => MapEntry(command.key,
-              JNAPSuccess.fromJson(cache[command.key.actionValue]['data'])))
-          .toList();
-      final secondCacheDataList = checkSecondCacheDataList
-          .where((command) => cache[command.key.actionValue]['data'] != null)
-          .map((command) => MapEntry(command.key,
-              JNAPSuccess.fromJson(cache[command.key.actionValue]['data'])))
-          .toList();
-      firstCacheDataList.addAll(secondCacheDataList);
-      state = AsyncValue.data(CoreTransactionData(
-          lastUpdate: 0, data: Map.fromEntries(firstCacheDataList)));
-    } else {
-      final commands = JNAPTransactionBuilder.coreTransactions().commands;
-      final checkCacheDataList = commands
-          .where((command) => cache.keys.contains(command.key.actionValue));
-      // Have not done any polling yet
-      if (checkCacheDataList.length != commands.length) return;
-
-      final cacheDataList = checkCacheDataList
-          .where((command) => cache[command.key.actionValue]['data'] != null)
-          .map((command) => MapEntry(command.key,
-              JNAPSuccess.fromJson(cache[command.key.actionValue]['data'])))
-          .toList();
-
-      state = AsyncValue.data(CoreTransactionData(
-          lastUpdate: 0, data: Map.fromEntries(cacheDataList)));
-    }
+    state = AsyncValue.data(CoreTransactionData(
+        lastUpdate: 0, data: Map.fromEntries(cacheDataList)));
   }
 
   _polling(RouterRepository repository) async {
     final benchMark = BenchMarkLogger(name: 'Polling provider');
     benchMark.start();
     state = const AsyncValue.loading();
-    if (BuildConfig.forceCommandType == ForceCommand.local) {
-      final fetchFuture = repository
-          .transaction(JNAPTransactionBuilder.firstCoreTransactions())
-          .then((successWrap) async {
-        final secondSuccessWrap = await repository
-            .transaction(JNAPTransactionBuilder.secondCoreTransactions());
-        successWrap.data.addAll(secondSuccessWrap.data);
-        return successWrap.data;
-      }).then((data) => CoreTransactionData(
-              lastUpdate: DateTime.now().millisecondsSinceEpoch,
-              data: Map.fromEntries(data)));
+    final fetchFuture = repository
+        .transaction(JNAPTransactionBuilder(commands: _coreTransactions))
+        .then((successWrap) => successWrap.data)
+        .then((data) => CoreTransactionData(
+            lastUpdate: DateTime.now().millisecondsSinceEpoch,
+            data: Map.fromEntries(data)));
 
-      state = await AsyncValue.guard(() => fetchFuture);
-    } else {
-      final fetchFuture = repository
-          .transaction(JNAPTransactionBuilder.coreTransactions())
-          .then((successWrap) => successWrap.data)
-          .then((data) => CoreTransactionData(
-              lastUpdate: DateTime.now().millisecondsSinceEpoch,
-              data: Map.fromEntries(data)));
-
-      state = await AsyncValue.guard(() => fetchFuture);
-    }
+    state = await AsyncValue.guard(() => fetchFuture);
 
     logger.d('state: $state');
     benchMark.end();
@@ -129,6 +87,8 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
   startPolling() {
     logger.d('prepare start polling data');
+    _coreTransactions = _buildCoreTransaction();
+    fetchFirstLaunchedCacheData();
     final routerRepository = ref.read(routerRepositoryProvider);
     Future.delayed(const Duration(seconds: pollFirstDelayInSec), () {
       _polling(routerRepository);
@@ -145,5 +105,31 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     if ((_timer?.isActive ?? false)) {
       _timer?.cancel();
     }
+  }
+
+  List<MapEntry<JNAPAction, Map<String, dynamic>>> _buildCoreTransaction() {
+    List<MapEntry<JNAPAction, Map<String, dynamic>>> commands = [
+      const MapEntry(JNAPAction.getNodesWirelessNetworkConnections, {}),
+      const MapEntry(JNAPAction.getNetworkConnections, {}),
+      const MapEntry(JNAPAction.getRadioInfo, {}),
+      const MapEntry(JNAPAction.getGuestRadioSettings, {}),
+      const MapEntry(JNAPAction.getDevices, {}),
+      const MapEntry(JNAPAction.getFirmwareUpdateSettings, {}),
+      const MapEntry(
+          JNAPAction.getHealthCheckResults, {'includeModuleResults': true}),
+      const MapEntry(JNAPAction.getNodesSupportedHealthCheckModules, {}),
+      const MapEntry(JNAPAction.getBackhaulInfo, {}),
+      const MapEntry(JNAPAction.getWANStatus, {}),
+    ];
+    if (isServiceSupport(JNAPService.nodesFirmwareUpdate)) {
+      commands.add(
+        const MapEntry(JNAPAction.getNodesFirmwareUpdateStatus, {}),
+      );
+    } else {
+      commands.add(
+        const MapEntry(JNAPAction.getFirmwareUpdateStatus, {}),
+      );
+    }
+    return commands;
   }
 }

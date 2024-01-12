@@ -56,27 +56,30 @@ class NodeDetailState {
   final String serialNumber;
   final String modelNumber;
   final String firmwareVersion;
+  final String hardwareVersion;
   final String lanIpAddress;
   final String wanIpAddress;
   final NodeLightSettings? nodeLightSettings;
   final BlinkingStatus blinkingStatus;
 
-  const NodeDetailState(
-      {this.deviceId = '',
-      this.location = '',
-      this.isMaster = false,
-      this.isOnline = false,
-      this.connectedDevices = const [],
-      this.upstreamDevice = '',
-      this.isWiredConnection = false,
-      this.signalStrength = 0,
-      this.serialNumber = '',
-      this.modelNumber = '',
-      this.firmwareVersion = '',
-      this.lanIpAddress = '',
-      this.wanIpAddress = '',
-      this.nodeLightSettings,
-      this.blinkingStatus = BlinkingStatus.blinkNode});
+  const NodeDetailState({
+    this.deviceId = '',
+    this.location = '',
+    this.isMaster = false,
+    this.isOnline = false,
+    this.connectedDevices = const [],
+    this.upstreamDevice = '',
+    this.isWiredConnection = false,
+    this.signalStrength = 0,
+    this.serialNumber = '',
+    this.modelNumber = '',
+    this.firmwareVersion = '',
+    this.hardwareVersion = '',
+    this.lanIpAddress = '',
+    this.wanIpAddress = '',
+    this.nodeLightSettings,
+    this.blinkingStatus = BlinkingStatus.blinkNode,
+  });
 
   NodeDetailState copyWith({
     String? deviceId,
@@ -90,6 +93,7 @@ class NodeDetailState {
     String? serialNumber,
     String? modelNumber,
     String? firmwareVersion,
+    String? hardwareVersion,
     String? lanIpAddress,
     String? wanIpAddress,
     NodeLightSettings? nodeLightSettings,
@@ -107,6 +111,7 @@ class NodeDetailState {
       serialNumber: serialNumber ?? this.serialNumber,
       modelNumber: modelNumber ?? this.modelNumber,
       firmwareVersion: firmwareVersion ?? this.firmwareVersion,
+      hardwareVersion: hardwareVersion ?? this.hardwareVersion,
       lanIpAddress: lanIpAddress ?? this.lanIpAddress,
       wanIpAddress: wanIpAddress ?? this.wanIpAddress,
       nodeLightSettings: nodeLightSettings ?? this.nodeLightSettings,

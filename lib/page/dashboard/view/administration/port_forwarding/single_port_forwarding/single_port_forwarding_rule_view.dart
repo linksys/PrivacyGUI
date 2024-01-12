@@ -162,6 +162,7 @@ class _AddRuleContentViewState
           inputType: TextInputType.number,
           controller: _internalPortController),
       const AppGap.semiSmall(),
+      
       AppTextField(
         controller: _deviceIpAddressController,
         hintText: getAppLocalizations(context).device_ip_address,

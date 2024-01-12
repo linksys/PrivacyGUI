@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/jnap/models/firmware_update_settings.dart';
+import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/provider/devices/topology_provider.dart';
 import 'package:linksys_app/route/constants.dart';
@@ -8,6 +10,7 @@ import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
+import 'package:linksys_widgets/widgets/panel/switch_trigger_tile.dart';
 
 typedef OnMenuItemClick = void Function(int index, AppSectionItemData item);
 
@@ -27,6 +30,9 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
 
   @override
   Widget build(BuildContext context) {
+    final isFwAutoUpdate = ref.watch(firmwareUpdateProvider
+            .select((value) => value.settings.updatePolicy)) ==
+        FirmwareUpdateSettings.firmwareUpdatePolicyAuto;
     return StyledAppPageView(
       scrollable: true,
       child: SizedBox(
@@ -44,6 +50,23 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             const AppGap.semiBig(),
             _section(
               _advancedSettingsSection(),
+            ),
+            const AppGap.semiBig(),
+            AppSwitchTriggerTile(
+              value: isFwAutoUpdate,
+              title: AppText.bodyLarge('Auto Firmware Update'),
+              subtitle: AppText.bodySmall(
+                'Enable/Disable auto firmware update',
+                color: Colors.grey,
+              ),
+              onChanged: (value) {},
+              event: (value) async {
+                await ref
+                    .read(firmwareUpdateProvider.notifier)
+                    .setFirmwareUpdatePolicy(value
+                        ? FirmwareUpdateSettings.firmwareUpdatePolicyAuto
+                        : FirmwareUpdateSettings.firmwareUpdatePolicyManual);
+              },
             ),
           ],
         ),
@@ -83,11 +106,6 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
         title: 'GENERAL',
         items: [
           AppSectionItemData(
-            title: 'Notifications',
-            iconData: getCharactersIcons(context).smsDefault,
-            onTap: () => context.goNamed('notificationSettings'),
-          ),
-          AppSectionItemData(
             title: 'WiFi',
             iconData: getCharactersIcons(context).wifiDefault,
             onTap: () => context.goNamed('wifiSettings'),
@@ -120,18 +138,23 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
           AppSectionItemData(
             title: 'Internet Settings',
             // iconData: getCharactersIcons(context).profileDefault,
-            onTap: () => context.goNamed('internetSettings'),
+            onTap: () => context.goNamed(RouteNamed.settingsInternet),
           ),
           AppSectionItemData(
             title: 'IP Details',
             // iconData: getCharactersIcons(context).infoRound,
-            onTap: () => context.goNamed('ipDetails'),
+            onTap: () => context.goNamed(RouteNamed.settingsIpDetails),
           ),
           AppSectionItemData(
             title: 'Local Network Settings',
             // iconData: getCharactersIcons(context).nodesDefault,
-            onTap: () => context.goNamed('localNetworkSettings'),
+            onTap: () => context.goNamed(RouteNamed.settingsLocalNetwork),
           ),
+          // AppSectionItemData(
+          //   title: 'Port',
+          //   // iconData: getCharactersIcons(context).nodesDefault,
+          //   onTap: () => context.goNamed(RouteNamed.settingsPort),
+          // ),
         ],
       );
 }

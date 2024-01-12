@@ -1,10 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/page/dashboard/view/topology/topology_model.dart';
 import 'package:linksys_app/provider/devices/topology_state.dart';
+import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_widgets/widgets/topology/tree_node.dart';
 
 final topologySelectedIdProvider = StateProvider((ref) => '');
@@ -160,5 +164,13 @@ class TopologyNotifier extends Notifier<TopologyState> {
       connectedDeviceCount: device.connectedDevices.length,
     );
     return RouterTreeNode(data: data, children: [], type: type);
+  }
+
+  Future reboot() {
+    final routerRepository = ref.read(routerRepositoryProvider);
+    return routerRepository.send(
+      JNAPAction.reboot,
+      cacheLevel: CacheLevel.noCache,
+    );
   }
 }

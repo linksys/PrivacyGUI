@@ -96,7 +96,6 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
       await ref.read(connectivityProvider.notifier).forceUpdate();
       logger.d('Force update connectivity finish!');
 
-      ref.read(pollingProvider.notifier).fetchFirstLaunchedCacheData();
       ref.read(pollingProvider.notifier).stopPolling();
       ref.read(pollingProvider.notifier).startPolling();
       router.goNamed(RouteNamed.dashboardHome);

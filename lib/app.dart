@@ -84,7 +84,9 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     logger.v('didChangeAppLifecycleState: ${state.name}');
     if (state == AppLifecycleState.resumed) {
       ref.read(connectivityProvider.notifier).forceUpdate().then((_) {
-        ref.read(pollingProvider.notifier).startPolling();
+        if (ref.read(authProvider).value?.loginType != LoginType.none) {
+          ref.read(pollingProvider.notifier).startPolling();
+        }
       });
     } else if (state == AppLifecycleState.paused) {
       ref.read(pollingProvider.notifier).stopPolling();

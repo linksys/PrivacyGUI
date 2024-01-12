@@ -39,6 +39,9 @@ enum JNAPAction {
   setSinglePortForwardingRules,
   // firmwareUpdate
   getFirmwareUpdateStatus,
+  getNodesFirmwareUpdateStatus,
+  getFirmwareUpdateSettings,
+  setFirmwareUpdateSettings,
   // gamingPrioritization
   getGamingPrioritizationSettings,
   setGamingPrioritizationSettings,

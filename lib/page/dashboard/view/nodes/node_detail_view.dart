@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/models/node_light_settings.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
+import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/core/utils/nodes.dart';
 import 'package:linksys_app/core/utils/wifi.dart';
@@ -19,6 +20,8 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
 
 import 'package:linksys_widgets/widgets/page/layout/profile_header_layout.dart';
+
+import 'package:collection/collection.dart';
 
 class NodeDetailView extends ArgumentsConsumerStatefulView {
   const NodeDetailView({
@@ -222,6 +225,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   Widget _detailSection(NodeDetailState state) {
+    final updateInfo = ref.watch(firmwareUpdateProvider.select((value) => value
+        .nodesStatus
+        ?.firstWhereOrNull((element) => element.deviceUUID == state.deviceId)));
+    final isFwUpToDate = updateInfo?.availableUpdate == null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -241,7 +248,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         ),
         const Divider(height: 8),
         Visibility(
-          visible: ref.watch(deviceManagerProvider).isFirmwareUpToDate,
+          visible: isFwUpToDate,
           replacement: AppSimplePanel(
             title:
                 getAppLocalizations(context).node_detail_label_firmware_version,

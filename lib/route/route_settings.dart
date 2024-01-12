@@ -175,12 +175,27 @@ final settings = [
         ),
       ),
       LinksysRoute(
+        name: RouteNamed.singlePortForwardingRule,
+        path: RoutePath.singlePortForwardingRule,
+        builder: (context, state) => SinglePortForwardingRuleView(
+          args: state.uri.queryParameters,
+        ),
+      ),
+      LinksysRoute(
         name: RouteNamed.portRangeForwardingList,
         path: RoutePath.portRangeForwardingList,
         builder: (context, state) => PortRangeForwardingListView(
           args: state.uri.queryParameters,
         ),
       ),
+      LinksysRoute(
+        name: RouteNamed.portRangeForwardingRule,
+        path: RoutePath.portRangeForwardingRule,
+        builder: (context, state) => PortRangeForwardingRuleView(
+          args: state.uri.queryParameters,
+        ),
+      ),
+      
       LinksysRoute(
         name: RouteNamed.portRangeTriggeringList,
         path: RoutePath.portRangeTriggeringList,

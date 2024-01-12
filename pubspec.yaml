@@ -61,7 +61,7 @@ dependencies:
   package_info_plus: ^4.1.0
   phone_number: ^2.0.1
   uuid: ^3.0.6
-  flutter_inappwebview: 5.7.0
+  flutter_inappwebview: ^6.0.0
   shared_preferences: ^2.0.15
   qr_flutter: ^4.0.0
   url_launcher: ^6.1.5

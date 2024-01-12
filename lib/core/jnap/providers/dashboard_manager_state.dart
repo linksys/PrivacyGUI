@@ -8,26 +8,29 @@ class DashboardManagerState extends Equatable {
   final List<GuestRadioInfo> guestRadios;
   final bool isGuestNetworkEnabled;
   final HealthCheckResult? latestSpeedTest;
+  final List<String> healthCheckModules;
 
   const DashboardManagerState({
     this.mainRadios = const [],
     this.guestRadios = const [],
     this.isGuestNetworkEnabled = false,
     this.latestSpeedTest,
+    this.healthCheckModules = const [],
   });
 
-  DashboardManagerState copyWith({
-    List<RouterRadioInfo>? mainRadios,
-    List<GuestRadioInfo>? guestRadios,
-    bool? isGuestNetworkEnabled,
-    HealthCheckResult? latestSpeedTest,
-  }) {
+  DashboardManagerState copyWith(
+      {List<RouterRadioInfo>? mainRadios,
+      List<GuestRadioInfo>? guestRadios,
+      bool? isGuestNetworkEnabled,
+      HealthCheckResult? latestSpeedTest,
+      List<String>? healthCheckModules}) {
     return DashboardManagerState(
       mainRadios: mainRadios ?? this.mainRadios,
       guestRadios: guestRadios ?? this.guestRadios,
       isGuestNetworkEnabled:
           isGuestNetworkEnabled ?? this.isGuestNetworkEnabled,
       latestSpeedTest: latestSpeedTest ?? this.latestSpeedTest,
+      healthCheckModules: healthCheckModules ?? this.healthCheckModules,
     );
   }
 
@@ -37,5 +40,6 @@ class DashboardManagerState extends Equatable {
         guestRadios,
         isGuestNetworkEnabled,
         latestSpeedTest,
+        healthCheckModules,
       ];
 }

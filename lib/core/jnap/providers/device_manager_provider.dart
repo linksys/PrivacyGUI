@@ -30,7 +30,6 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     Map<String, dynamic>? getNetworkConnectionsData;
     Map<String, dynamic>? getDevicesData;
     Map<String, dynamic>? getWANStatusData;
-    Map<String, dynamic>? getFirmwareUpdateStatusData;
     Map<String, dynamic>? getBackHaulInfoData;
 
     final result = pollingResult?.data;
@@ -40,8 +39,6 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       getDevicesData = (result[JNAPAction.getDevices] as JNAPSuccess?)?.output;
       getWANStatusData =
           (result[JNAPAction.getWANStatus] as JNAPSuccess?)?.output;
-      getFirmwareUpdateStatusData =
-          (result[JNAPAction.getFirmwareUpdateStatus] as JNAPSuccess?)?.output;
       getBackHaulInfoData =
           (result[JNAPAction.getBackhaulInfo] as JNAPSuccess?)?.output;
     }
@@ -51,7 +48,6 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     // The data process of NetworkConnections MUST be done before building device list
     newState = _getDeviceListAndLocations(newState, getDevicesData);
     newState = _getWANStatusModel(newState, getWANStatusData);
-    newState = _getFirmwareStatus(newState, getFirmwareUpdateStatusData);
     newState = _getBackhaukInfoData(newState, getBackHaulInfoData);
     return newState.copyWith(
       lastUpdateTime: pollingResult?.lastUpdate,
@@ -155,15 +151,6 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   ) {
     return state.copyWith(
       wanStatus: data != null ? RouterWANStatus.fromJson(data) : null,
-    );
-  }
-
-  DeviceManagerState _getFirmwareStatus(
-    DeviceManagerState state,
-    Map<String, dynamic>? data,
-  ) {
-    return state.copyWith(
-      isFirmwareUpToDate: data?['availableUpdate'] == null,
     );
   }
 

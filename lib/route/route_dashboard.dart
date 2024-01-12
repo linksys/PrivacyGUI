@@ -84,6 +84,11 @@ final dashboardRoute = ShellRoute(
             path: RoutePath.dashboardSpeedTest,
             builder: (context, state) => SpeedTestView(),
           ),
+          LinksysRoute(
+            name: RouteNamed.speedTestExternal,
+            path: RoutePath.speedTestExternal,
+            builder: (context, state) => SpeedTestExternalView(),
+          ),
         ]),
   ],
 );

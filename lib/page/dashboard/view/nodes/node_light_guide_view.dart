@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/core/utils/nodes.dart';
@@ -14,18 +15,46 @@ class NodeLightGuideView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final node = ref.read(nodeDetailProvider);
     final isCognitive = isCognitiveMeshRouter(
-      modelNumber: ref.read(nodeDetailProvider).modelNumber,
-      hardwareVersion: ref.read(nodeDetailProvider).firmwareVersion,
+      modelNumber: node.modelNumber,
+      hardwareVersion: node.hardwareVersion,
     );
+    final isMixedNetwork =
+        ref.read(deviceManagerProvider).nodeDevices.length > 1 &&
+            ref.read(deviceManagerProvider).nodeDevices.any((node) =>
+                isCognitive !=
+                isCognitiveMeshRouter(
+                    modelNumber: node.model.modelNumber ?? '',
+                    hardwareVersion: node.model.hardwareVersion ?? ''));
     return StyledAppPageView(
       title: 'Light guide',
       appBarStyle: AppBarStyle.close,
       scrollable: true,
-      child: isCognitive
-          ? _buildCognitiveMeshLightGuide(context)
-          : _buildNodeMeshLightGuide(context),
+      child: _buildContent(context, isCognitive, isMixedNetwork),
     );
+  }
+
+  Widget _buildContent(
+      BuildContext context, bool isCognitive, bool isMixedNetwork) {
+    if (isMixedNetwork) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.labelMedium('Cognitive Mesh'),
+          _buildCognitiveMeshLightGuide(context),
+          AppText.labelMedium('Intelligent Mesh'),
+          _buildNodeMeshLightGuide(
+            context,
+          )
+        ],
+      );
+    } else if (isCognitive) {
+      return _buildCognitiveMeshLightGuide(context);
+    } else {
+      return _buildNodeMeshLightGuide(context);
+    }
   }
 
   Widget _buildCognitiveMeshLightGuide(BuildContext context) {
@@ -106,7 +135,7 @@ class NodeLightGuideView extends ConsumerWidget {
                 led: CustomTheme.of(context).images.ledRedBlink,
                 title: 'Red',
                 desc:
-                    'Out of range. Move closer to another node. If it’s your parent node, make sure it’s connected to your modem.',
+                    'Out of range. Move closer to another node. If it\'s your parent node, make sure it\'s connected to your modem.',
               ),
             ],
           ),
@@ -148,8 +177,8 @@ class NodeLightGuideView extends ConsumerWidget {
     required Widget child,
   }) {
     return Card(
-      child: Padding(padding: const EdgeInsets.all(Spacing.regular),
-      child: child),
+      child:
+          Padding(padding: const EdgeInsets.all(Spacing.regular), child: child),
     );
   }
 

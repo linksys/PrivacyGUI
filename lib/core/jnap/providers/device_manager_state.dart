@@ -125,7 +125,6 @@ class DeviceManagerState {
   final List<LinksysDevice> deviceList;
   final RouterWANStatus? wanStatus;
   final List<BackHaulInfoData> backhaulInfoData;
-  final bool isFirmwareUpToDate;
   final int lastUpdateTime;
   // Calculated properties
   List<LinksysDevice> get nodeDevices {
@@ -153,7 +152,6 @@ class DeviceManagerState {
     this.deviceList = const [],
     this.wanStatus,
     this.backhaulInfoData = const [],
-    this.isFirmwareUpToDate = false,
     this.lastUpdateTime = 0,
   });
 
@@ -170,7 +168,6 @@ class DeviceManagerState {
       deviceList: deviceList ?? this.deviceList,
       wanStatus: wanStatus ?? this.wanStatus,
       backhaulInfoData: backhaulInfoData ?? this.backhaulInfoData,
-      isFirmwareUpToDate: isFirmwareUpToDate ?? this.isFirmwareUpToDate,
       lastUpdateTime: lastUpdateTime ?? this.lastUpdateTime,
     );
   }

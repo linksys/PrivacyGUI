@@ -72,6 +72,7 @@ enum JNAPService {
   nodesNetworkConnections(
       value:
           'http://linksys.com/jnap/nodes/networkconnections/NodesNetworkConnections'),
+  nodesFirmwareUpdate(value: 'http://linksys.com/jnap/nodes/firmwareupdate/FirmwareUpdate'),
   ownedNetwork(value: 'http://linksys.com/jnap/ownednetwork/OwnedNetwork'),
   ownedNetwork2(value: 'http://linksys.com/jnap/ownednetwork/OwnedNetwork2'),
   ownedNetwork3(value: 'http://linksys.com/jnap/ownednetwork/OwnedNetwork3'),

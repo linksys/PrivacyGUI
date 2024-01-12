@@ -53,6 +53,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     var firmwareVersion = '';
     var lanIpAddress = '';
     var wanIpAddress = '';
+    var hardwareVersion = '';
 
     RawDevice? master = deviceManagerState.deviceList
         .firstWhereOrNull((element) => element.isAuthority);
@@ -77,6 +78,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
         serialNumber = device.unit.serialNumber ?? '';
         modelNumber = device.model.modelNumber ?? '';
         firmwareVersion = device.unit.firmwareVersion ?? '';
+        hardwareVersion = device.model.hardwareVersion ?? '';
         lanIpAddress = device.connections.firstOrNull?.ipAddress ?? '';
         final wanStatusModel = deviceManagerState.wanStatus;
         wanIpAddress = wanStatusModel?.wanConnection?.ipAddress ?? '';
@@ -96,6 +98,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       serialNumber: serialNumber,
       modelNumber: modelNumber,
       firmwareVersion: firmwareVersion,
+      hardwareVersion: hardwareVersion,
       lanIpAddress: lanIpAddress,
       wanIpAddress: wanIpAddress,
     );

@@ -287,7 +287,6 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.wirelessScheduler2:
       break;
     case JNAPService.nodeHealthCheck:
-      // TODO: Handle this case.
       break;
     case JNAPService.routerLEDs:
       break;
@@ -298,6 +297,8 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.routerLEDs4:
       _betterActionMap[JNAPAction.setLedNightModeSetting] =
           _JNAPActionValue.setLedNightModeSetting2.value;
+      break;
+    case JNAPService.nodesFirmwareUpdate:
       break;
   }
 }
@@ -349,6 +350,12 @@ void initBetterActions() {
       _JNAPActionValue.setSinglePortForwardingRules.value;
   _betterActionMap[JNAPAction.getFirmwareUpdateStatus] =
       _JNAPActionValue.getFirmwareUpdateStatus.value;
+  _betterActionMap[JNAPAction.getNodesFirmwareUpdateStatus] =
+      _JNAPActionValue.getNodesFirmwareUpdateStatus.value;
+  _betterActionMap[JNAPAction.getFirmwareUpdateSettings] =
+      _JNAPActionValue.getFirmwareUpdateSettings.value;
+  _betterActionMap[JNAPAction.setFirmwareUpdateSettings] =
+      _JNAPActionValue.setFirmwareUpdateSettings.value;
   _betterActionMap[JNAPAction.getGuestNetworkClients] =
       _JNAPActionValue.getGuestNetworkClients.value;
   _betterActionMap[JNAPAction.getGuestNetworkSettings] =

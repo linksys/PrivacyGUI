@@ -1,7 +1,18 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:convert';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
+import 'package:linksys_app/provider/root/root_config.dart';
+import 'package:linksys_app/provider/root/root_provider.dart';
+import 'package:linksys_widgets/widgets/banner/banner_view.dart';
+import 'package:linksys_widgets/widgets/buttons/button.dart';
+import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
+
 import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/customs/debug_overlay_view.dart';
@@ -15,9 +26,7 @@ import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/utils.dart';
-import 'package:linksys_widgets/widgets/banner/banner_view.dart';
-import 'package:linksys_widgets/widgets/buttons/button.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class AppRootContainer extends ConsumerStatefulWidget {
   final Widget? child;
@@ -38,6 +47,8 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
   @override
   Widget build(BuildContext context) {
     logger.d('Root Container:: build: ${widget.routeConfig}');
+    final fwUpdate = ref.watch(firmwareUpdateProvider);
+    final rootConfig = ref.watch(rootProvider);
     return LayoutBuilder(builder: ((context, constraints) {
       return Container(
         color: Theme.of(context).colorScheme.background,
@@ -48,6 +59,7 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
               _buildLayout(widget.child ?? const Center(), constraints),
               ..._handleConnectivity(ref),
               ..._handleBanner(ref),
+              _handleSpinner(rootConfig),
               !showDebugPanel
                   ? const Center()
                   : CompositedTransformFollower(
@@ -94,6 +106,14 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
             appSettings.copyWith(themeMode: nextThemeMode);
       },
     );
+  }
+
+  Widget _handleSpinner(AppRootConfig config) {
+    if (config.spinnerTag != null) {
+      return AppFullScreenSpinner();
+    } else {
+      return Center();
+    }
   }
 
   Widget _buildLayout(Widget child, BoxConstraints constraints) {
