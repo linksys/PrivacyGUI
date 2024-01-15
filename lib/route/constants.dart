@@ -50,6 +50,7 @@ class RoutePath {
   static const wifiEditSecurity = 'wifiEditSecurity';
   static const wifiEditMode = 'wifiEditMode';
   static const wifiEditSSID = 'wifiEditSSID';
+  static const wifiAdvancedSettings = 'wifiSettingsAdvanced';
 
   /// node
   static const nodeDetails = 'nodeDetails';
@@ -159,6 +160,7 @@ class RouteNamed {
   static const wifiEditSecurity = 'wifiEditSecurity';
   static const wifiEditMode = 'wifiEditMode';
   static const wifiEditSSID = 'wifiEditSSID';
+  static const wifiAdvancedSettings = 'wifiSettingsAdvanced';
 
   /// node
   static const nodeDetails = 'nodeDetails';

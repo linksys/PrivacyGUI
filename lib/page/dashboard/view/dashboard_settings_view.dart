@@ -108,7 +108,12 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
           AppSectionItemData(
             title: 'WiFi',
             iconData: getCharactersIcons(context).wifiDefault,
-            onTap: () => context.goNamed('wifiSettings'),
+            onTap: () => context.goNamed(RouteNamed.settingsWifi),
+          ),
+          AppSectionItemData(
+            title: 'WiFi Advanced',
+            iconData: getCharactersIcons(context).wifiDefault,
+            onTap: () => context.goNamed(RouteNamed.wifiAdvancedSettings),
           ),
           AppSectionItemData(
             title: 'Nodes',

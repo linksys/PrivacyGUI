@@ -300,6 +300,26 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.nodesFirmwareUpdate:
       break;
+    case JNAPService.nodesTopologyOptimization:
+      _betterActionMap[JNAPAction.getTopologyOptimizationSettings] =
+          _JNAPActionValue.getTopologyOptimizationSettings.value;
+      _betterActionMap[JNAPAction.setTopologyOptimizationSettings] =
+          _JNAPActionValue.setTopologyOptimizationSettings.value;
+      break;
+    case JNAPService.nodesTopologyOptimization2:
+      _betterActionMap[JNAPAction.getTopologyOptimizationSettings] =
+          _JNAPActionValue.getTopologyOptimizationSettings2.value;
+      _betterActionMap[JNAPAction.setTopologyOptimizationSettings] =
+          _JNAPActionValue.setTopologyOptimizationSettings2.value;
+      break;
+    case JNAPService.iptv:
+      break;
+    case JNAPService.mlo:
+      break;
+    case JNAPService.dfs:
+      break;
+    case JNAPService.airtimeFairness:
+      break;
   }
 }
 
@@ -356,6 +376,8 @@ void initBetterActions() {
       _JNAPActionValue.getFirmwareUpdateSettings.value;
   _betterActionMap[JNAPAction.setFirmwareUpdateSettings] =
       _JNAPActionValue.setFirmwareUpdateSettings.value;
+  _betterActionMap[JNAPAction.updateFirmwareNow] =
+      _JNAPActionValue.updateFirmwareNow.value;
   _betterActionMap[JNAPAction.getGuestNetworkClients] =
       _JNAPActionValue.getGuestNetworkClients.value;
   _betterActionMap[JNAPAction.getGuestNetworkSettings] =
@@ -508,6 +530,26 @@ void initBetterActions() {
       _JNAPActionValue.startBlinkingNodeLed.value;
   _betterActionMap[JNAPAction.stopBlinkingNodeLed] =
       _JNAPActionValue.stopBlinkingNodeLed.value;
+  _betterActionMap[JNAPAction.getTopologyOptimizationSettings] =
+      _JNAPActionValue.getTopologyOptimizationSettings.value;
+  _betterActionMap[JNAPAction.setTopologyOptimizationSettings] =
+      _JNAPActionValue.setTopologyOptimizationSettings.value;
+  _betterActionMap[JNAPAction.getIptvSettings] =
+      _JNAPActionValue.getIptvSettings.value;
+  _betterActionMap[JNAPAction.setIptvSettings] =
+      _JNAPActionValue.setIptvSettings.value;
+  _betterActionMap[JNAPAction.getMLOSettings] =
+      _JNAPActionValue.getMLOSettings.value;
+  _betterActionMap[JNAPAction.setMLOSettings] =
+      _JNAPActionValue.setMLOSettings.value;
+  _betterActionMap[JNAPAction.getDFSSettings] =
+      _JNAPActionValue.getDFSSettings.value;
+  _betterActionMap[JNAPAction.setDFSSettings] =
+      _JNAPActionValue.setDFSSettings.value;
+  _betterActionMap[JNAPAction.getAirtimeFairnessSettings] =
+      _JNAPActionValue.getAirtimeFairnessSettings.value;
+  _betterActionMap[JNAPAction.setAirtimeFairnessSettings] =
+      _JNAPActionValue.setAirtimeFairnessSettings.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

@@ -71,7 +71,7 @@ class _PortRangeTriggeringContentViewState
                 getAppLocalizations(context).add_rule,
                 onTap: () {
                   context.pushNamed<bool?>(
-                    RouteNamed.portRangeForwardingRule,
+                    RouteNamed.protRangeTriggeringRule,
                     queryParameters: {'rules': state.rules},
                   ).then((value) {
                     if (value ?? false) {

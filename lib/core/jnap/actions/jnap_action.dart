@@ -42,6 +42,7 @@ enum JNAPAction {
   getNodesFirmwareUpdateStatus,
   getFirmwareUpdateSettings,
   setFirmwareUpdateSettings,
+  updateFirmwareNow,
   // gamingPrioritization
   getGamingPrioritizationSettings,
   setGamingPrioritizationSettings,
@@ -87,6 +88,9 @@ enum JNAPAction {
   getNodesSupportedHealthCheckModules,
   // nodes networkConnections
   getNodesWirelessNetworkConnections,
+  // nodes optimization
+  setTopologyOptimizationSettings,
+  getTopologyOptimizationSettings,
   // ownedNetwork
   getOwnedNetworkID,
   isOwnedNetwork,
@@ -148,7 +152,20 @@ enum JNAPAction {
   getLedNightModeSetting,
   setLedNightModeSetting,
   startBlinkingNodeLed,
-  stopBlinkingNodeLed;
+  stopBlinkingNodeLed,
+  //iptv
+  getIptvSettings,
+  setIptvSettings,
+  //mlo
+  getMLOSettings,
+  setMLOSettings,
+  //dfs
+  getDFSSettings,
+  setDFSSettings,
+  //airtime fairness
+  getAirtimeFairnessSettings,
+  setAirtimeFairnessSettings,
+  ;
 
   String get actionValue {
     return _betterActionMap[this]!;

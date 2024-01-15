@@ -72,7 +72,15 @@ enum JNAPService {
   nodesNetworkConnections(
       value:
           'http://linksys.com/jnap/nodes/networkconnections/NodesNetworkConnections'),
-  nodesFirmwareUpdate(value: 'http://linksys.com/jnap/nodes/firmwareupdate/FirmwareUpdate'),
+  nodesFirmwareUpdate(
+      value: 'http://linksys.com/jnap/nodes/firmwareupdate/FirmwareUpdate'),
+  nodesTopologyOptimization(
+      value:
+          'http://linksys.com/jnap/nodes/topologyoptimization/TopologyOptimization'),
+  nodesTopologyOptimization2(
+      value:
+          'http://linksys.com/jnap/nodes/topologyoptimization/TopologyOptimization2'),
+
   ownedNetwork(value: 'http://linksys.com/jnap/ownednetwork/OwnedNetwork'),
   ownedNetwork2(value: 'http://linksys.com/jnap/ownednetwork/OwnedNetwork2'),
   ownedNetwork3(value: 'http://linksys.com/jnap/ownednetwork/OwnedNetwork3'),
@@ -133,6 +141,14 @@ enum JNAPService {
   routerLEDs2(value: 'http://linksys.com/jnap/routerleds/RouterLEDs2'),
   routerLEDs3(value: 'http://linksys.com/jnap/routerleds/RouterLEDs3'),
   routerLEDs4(value: 'http://linksys.com/jnap/routerleds/RouterLEDs4'),
+  // iptv
+  iptv(value: 'http://linksys.com/jnap/iptv/IPTV'),
+  // mlo
+  mlo(value: 'http://linksys.com/jnap/wirelessap/MultiLinkOperation'),
+  // dfs
+  dfs(value: 'http://linksys.com/jnap/wirelessap/DynamicFrequencySelection'),
+  // airtime fairness
+  airtimeFairness(value: 'http://linksys.com/jnap/wirelessap/AirtimeFairness'),
   ;
 
   const JNAPService({required this.value});

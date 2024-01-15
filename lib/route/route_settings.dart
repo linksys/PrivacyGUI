@@ -7,35 +7,41 @@ final settings = [
     builder: (context, state) => NotificationSettingsView(),
   ),
   LinksysRoute(
-      name: RouteNamed.settingsWifi,
-      path: RoutePath.settingsWifi,
-      builder: (context, state) => WifiSettingsView(),
-      routes: [
-        LinksysRoute(
-          name: RouteNamed.wifiSettingsReview,
-          path: RoutePath.wifiSettingsReview,
-          builder: (context, state) => WifiSettingsReviewView(),
-          routes: [
-            LinksysRoute(
-              name: RouteNamed.wifiEditSSID,
-              path: RoutePath.wifiEditSSID,
-              builder: (context, state) => EditWifiNamePasswordView(),
+    name: RouteNamed.settingsWifi,
+    path: RoutePath.settingsWifi,
+    builder: (context, state) => WifiSettingsView(),
+    routes: [
+      LinksysRoute(
+        name: RouteNamed.wifiSettingsReview,
+        path: RoutePath.wifiSettingsReview,
+        builder: (context, state) => WifiSettingsReviewView(),
+        routes: [
+          LinksysRoute(
+            name: RouteNamed.wifiEditSSID,
+            path: RoutePath.wifiEditSSID,
+            builder: (context, state) => EditWifiNamePasswordView(),
+          ),
+          LinksysRoute(
+            name: RouteNamed.wifiEditSecurity,
+            path: RoutePath.wifiEditSecurity,
+            builder: (context, state) => EditWifiSecurityView(
+              args: state.uri.queryParameters,
             ),
-            LinksysRoute(
-              name: RouteNamed.wifiEditSecurity,
-              path: RoutePath.wifiEditSecurity,
-              builder: (context, state) => EditWifiSecurityView(
-                args: state.uri.queryParameters,
-              ),
-            ),
-            LinksysRoute(
-              name: RouteNamed.wifiEditMode,
-              path: RoutePath.wifiEditMode,
-              builder: (context, state) => EditWifiModeView(),
-            ),
-          ],
-        ),
-      ]),
+          ),
+          LinksysRoute(
+            name: RouteNamed.wifiEditMode,
+            path: RoutePath.wifiEditMode,
+            builder: (context, state) => EditWifiModeView(),
+          ),
+        ],
+      ),
+    ],
+  ),
+  LinksysRoute(
+    name: RouteNamed.wifiAdvancedSettings,
+    path: RoutePath.wifiAdvancedSettings,
+    builder: (context, state) => WifiAdvancedSettingsView(),
+  ),
   LinksysRoute(
       name: RouteNamed.settingsNodes,
       path: RoutePath.settingsNodes,
@@ -195,7 +201,6 @@ final settings = [
           args: state.uri.queryParameters,
         ),
       ),
-      
       LinksysRoute(
         name: RouteNamed.portRangeTriggeringList,
         path: RoutePath.portRangeTriggeringList,

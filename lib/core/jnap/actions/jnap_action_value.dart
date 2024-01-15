@@ -59,6 +59,8 @@ enum _JNAPActionValue {
   setFirmwareUpdateSettings(
       value:
           'http://linksys.com/jnap/firmwareupdate/SetFirmwareUpdateSettings'),
+  updateFirmwareNow(
+      value: 'http://linksys.com/jnap/nodes/firmwareupdate/UpdateFirmwareNow'),
   // TODO - Checking for the reference
   getGamingPrioritizationSettings(
       value:
@@ -151,6 +153,19 @@ enum _JNAPActionValue {
   getNodesWirelessNetworkConnections(
       value:
           'http://linksys.com/jnap/nodes/networkconnections/GetNodesWirelessNetworkConnections'),
+  // nodes optimization
+  setTopologyOptimizationSettings(
+      value:
+          'http://linksys.com/jnap/nodes/topologyoptimization/SetTopologyOptimizationSettings'),
+  setTopologyOptimizationSettings2(
+      value:
+          'http://linksys.com/jnap/nodes/topologyoptimization/SetTopologyOptimizationSettings2'),
+  getTopologyOptimizationSettings(
+      value:
+          'http://linksys.com/jnap/nodes/topologyoptimization/GetTopologyOptimizationSettings'),
+  getTopologyOptimizationSettings2(
+      value:
+          'http://linksys.com/jnap/nodes/topologyoptimization/GetTopologyOptimizationSettings2'),
   getOwnedNetworkID(
       value: 'http://linksys.com/jnap/ownednetwork/GetOwnedNetworkID'),
   isOwnedNetwork(value: 'http://linksys.com/jnap/ownednetwork/IsOwnedNetwork'),
@@ -283,6 +298,17 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/routerleds/SetLedNightModeSetting'),
   setLedNightModeSetting2(
       value: 'http://linksys.com/jnap/routerleds/SetLedNightModeSetting2'),
+  getIptvSettings(value: 'http://linksys.com/jnap/iptv/GetIPTVSettings'),
+  setIptvSettings(value: 'http://linksys.com/jnap/iptv/SetIPTVSettings'),
+    //mlo
+  getMLOSettings(value: 'http://linksys.com/jnap/wirelessap/GetMLOSettings'),
+  setMLOSettings(value: 'http://linksys.com/jnap/wirelessap/SetMLOSettings'),
+  //dfs
+  getDFSSettings(value: 'http://linksys.com/jnap/wirelessap/GetDFSSettings'),
+  setDFSSettings(value: 'http://linksys.com/jnap/wirelessap/SetDFSSettings'),
+  //airtime fairness
+  getAirtimeFairnessSettings(value: 'http://linksys.com/jnap/wirelessap/GetAirtimeFairnessSettings'),
+  setAirtimeFairnessSettings(value: 'http://linksys.com/jnap/wirelessap/SetAirtimeFairnessSettings'),
   ;
 
   const _JNAPActionValue({required this.value});

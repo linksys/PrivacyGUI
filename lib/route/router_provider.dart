@@ -55,6 +55,7 @@ import 'package:linksys_app/page/pnp/troubleshooter/pnp_waiting_modem.dart';
 import 'package:linksys_app/page/safe_browsing/view/safe_browsing_view.dart';
 import 'package:linksys_app/page/pnp/troubleshooter/pnp_no_internet_connection.dart';
 import 'package:linksys_app/page/wifi_settings/view/_view.dart';
+import 'package:linksys_app/page/wifi_settings/view/wifi_advanced_settings_view.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
 import 'package:linksys_app/provider/otp/otp.dart';
 import 'package:linksys_app/route/route_model.dart';
