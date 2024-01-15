@@ -173,7 +173,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         const Divider(height: 8),
         AppPanelWithTrailWidget(
           title: getAppLocalizations(context).node_detail_label_connected_to,
-          description: state.upstreamDevice,
+          description: '${state.upstreamDevice} [${state.signalStrength}]',
           trailing: _getConnectionImage(state),
         ),
         const Divider(height: 8),

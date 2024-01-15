@@ -152,6 +152,10 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.nodesDiagnostics5:
       break;
+    case JNAPService.nodesDiagnostics6:
+      _betterActionMap[JNAPAction.getBackhaulInfo] =
+          _JNAPActionValue.getBackhaulInfo2.value;
+      break;
     case JNAPService.nodesNetworkConnections:
       break;
     case JNAPService.ownedNetwork:

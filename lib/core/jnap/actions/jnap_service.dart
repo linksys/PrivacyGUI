@@ -67,6 +67,8 @@ enum JNAPService {
       value: 'http://linksys.com/jnap/nodes/diagnostics/Diagnostics3'),
   nodesDiagnostics5(
       value: 'http://linksys.com/jnap/nodes/diagnostics/Diagnostics5'),
+  nodesDiagnostics6(
+      value: 'http://linksys.com/jnap/nodes/diagnostics/Diagnostics6'),
   nodeHealthCheck(
       value: 'http://linksys.com/jnap/nodes/healthcheck/HealthCheckManager'),
   nodesNetworkConnections(

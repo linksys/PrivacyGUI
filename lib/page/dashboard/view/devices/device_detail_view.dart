@@ -207,7 +207,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         const Divider(height: 8),
         AppSimplePanel(
           title: getAppLocalizations(context).node_detail_label_connected_to,
-          description: state.item.upstreamDevice,
+          description: '${state.item.upstreamDevice} [${state.item.signalStrength}]',
           onTap: () {
             ref.read(topologySelectedIdProvider.notifier).state =
                 state.item.deviceId;

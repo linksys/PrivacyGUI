@@ -131,6 +131,8 @@ enum _JNAPActionValue {
           'http://linksys.com/jnap/networksecurity/SetNetworkSecuritySettings2'),
   getBackhaulInfo(
       value: 'http://linksys.com/jnap/nodes/diagnostics/GetBackhaulInfo'),
+  getBackhaulInfo2(
+      value: 'http://linksys.com/jnap/nodes/diagnostics/GetBackhaulInfo2'),
   getNodeNeighborInfo(
       value: 'http://linksys.com/jnap/nodes/diagnostics/GetNodeNeighborInfo'),
   getSlaveBackhaulStatus(
@@ -300,15 +302,17 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/routerleds/SetLedNightModeSetting2'),
   getIptvSettings(value: 'http://linksys.com/jnap/iptv/GetIPTVSettings'),
   setIptvSettings(value: 'http://linksys.com/jnap/iptv/SetIPTVSettings'),
-    //mlo
+  //mlo
   getMLOSettings(value: 'http://linksys.com/jnap/wirelessap/GetMLOSettings'),
   setMLOSettings(value: 'http://linksys.com/jnap/wirelessap/SetMLOSettings'),
   //dfs
   getDFSSettings(value: 'http://linksys.com/jnap/wirelessap/GetDFSSettings'),
   setDFSSettings(value: 'http://linksys.com/jnap/wirelessap/SetDFSSettings'),
   //airtime fairness
-  getAirtimeFairnessSettings(value: 'http://linksys.com/jnap/wirelessap/GetAirtimeFairnessSettings'),
-  setAirtimeFairnessSettings(value: 'http://linksys.com/jnap/wirelessap/SetAirtimeFairnessSettings'),
+  getAirtimeFairnessSettings(
+      value: 'http://linksys.com/jnap/wirelessap/GetAirtimeFairnessSettings'),
+  setAirtimeFairnessSettings(
+      value: 'http://linksys.com/jnap/wirelessap/SetAirtimeFairnessSettings'),
   ;
 
   const _JNAPActionValue({required this.value});

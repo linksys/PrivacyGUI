@@ -40,7 +40,7 @@ class TopologyView extends ArgumentsConsumerStatelessView {
                 roots: _getNodes(topologyState, !isShowingDeviceChain),
                 itemBuilder: (index, node) {
                   return AppTreeNodeItem(
-                    name: node.data.location,
+                    name: '${node.data.location} [${node.data.signalStrength}]',
                     image: CustomTheme.of(context)
                         .images
                         .devices

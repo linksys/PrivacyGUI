@@ -123,7 +123,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
       child: Opacity(
         opacity: item.isOnline ? 1 : 0.3,
         child: AppDevicePanel.normal(
-          title: item.name,
+          title: '${item.name} [${item.signalStrength}]',
           place: item.upstreamDevice,
           band: item.band,
           deviceImage:
