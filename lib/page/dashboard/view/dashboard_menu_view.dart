@@ -128,6 +128,12 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                     onTap: () {
                       _navigateTo(RouteNamed.speedTestSelection);
                     }),
+                 AppSectionItemData(
+                    title: 'Troubleshooting',
+                    iconData: getCharactersIcons(context).healthDefault,
+                    onTap: () {
+                      _navigateTo(RouteNamed.troubleshooting);
+                    }),   
                 if (isCloudLogin)
                   AppSectionItemData(
                       title: 'Account',

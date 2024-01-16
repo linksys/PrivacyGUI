@@ -67,9 +67,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
         upstreamDevice = isMaster
             ? 'INTERNET'
             : (_getUpstream(device) ?? master?.getDeviceLocation() ?? '');
-        isWired = ref
-            .read(deviceManagerProvider.notifier)
-            .checkIsWiredConnection(device);
+        isWired = device.isWiredConnection();
         signalStrength = isWired
             ? 0
             : ref

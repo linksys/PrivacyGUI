@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 
 extension DeviceUtil on RawDevice {
@@ -54,5 +55,43 @@ extension DeviceUtil on RawDevice {
       final isGuest = connections.firstOrNull?.isGuest ?? false;
       return isGuest ? 'Guest Network Device' : 'Network Device';
     }
+  }
+
+  String getMacAddress() {
+    var macAddress = '';
+    if (knownInterfaces != null) {
+      final knownInterface = knownInterfaces!.firstWhereOrNull((element) =>
+          element.band != null || element.interfaceType != 'Unknown');
+      macAddress = knownInterface?.macAddress ?? '';
+    } else if (knownMACAddresses != null) {
+      // This case is only for a part of old routers that does not support 'GetDevices3' action
+      macAddress = knownMACAddresses!.firstOrNull ?? '';
+    }
+    return macAddress;
+  }
+
+  bool containsMacAddress(String mac) {
+    if (knownInterfaces != null) {
+      return knownInterfaces!.any((element) => element.macAddress == mac);
+    } else if (knownMACAddresses != null) {
+      return knownMACAddresses!.contains(mac);
+    } else {
+      return false;
+    }
+  }
+
+  bool containsIpAddress(String ip) {
+    return connections.any((element) => element.ipAddress == ip);
+  }
+
+  bool containsIpv6Address(String ip) {
+    return connections.any((element) => element.ipv6Address == ip);
+  }
+
+  bool isWiredConnection() {
+    final interfaces = knownInterfaces;
+    return interfaces
+            ?.firstWhereOrNull((element) => element.interfaceType == 'Wired') !=
+        null;
   }
 }

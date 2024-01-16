@@ -113,12 +113,10 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     upstreamDeviceID = upstream.deviceID;
     upstreamIcon = iconTest(upstream.toMap());
     isOnline = device.connections.isNotEmpty;
-    isWired =
-        ref.read(deviceManagerProvider.notifier).checkIsWiredConnection(device);
+    isWired = device.isWiredConnection();
     ipv4Address = isOnline ? (device.connections.first.ipAddress ?? '') : '';
     ipv6Address = isOnline ? (device.connections.first.ipv6Address ?? '') : '';
-    macAddress =
-        ref.read(deviceManagerProvider.notifier).getDeviceMacAddress(device);
+    macAddress = device.getMacAddress();
     manufacturer = device.manufacturer ?? '';
     model = device.modelNumber ?? '';
     operatingSystem = device.operatingSystem ?? '';

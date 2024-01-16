@@ -31,3 +31,13 @@ extension Unique<E, Id> on List<E> {
     return list;
   }
 }
+
+extension DurationExt on Duration {
+  String convertToHMS() {
+    String negativeSign = isNegative ? '-' : '';
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String twoDigitMinutes = twoDigits(inMinutes.remainder(60).abs());
+    String twoDigitSeconds = twoDigits(inSeconds.remainder(60).abs());
+    return "$negativeSign${twoDigits(inHours)}:$twoDigitMinutes:$twoDigitSeconds";
+  }
+}

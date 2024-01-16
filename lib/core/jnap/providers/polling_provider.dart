@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/actions/jnap_transaction.dart';
@@ -68,12 +67,12 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         lastUpdate: 0, data: Map.fromEntries(cacheDataList)));
   }
 
-  _polling(RouterRepository repository) async {
+  _polling(RouterRepository repository, {bool force = false}) async {
     final benchMark = BenchMarkLogger(name: 'Polling provider');
     benchMark.start();
     state = const AsyncValue.loading();
     final fetchFuture = repository
-        .transaction(JNAPTransactionBuilder(commands: _coreTransactions))
+        .transaction(JNAPTransactionBuilder(commands: _coreTransactions), fetchRemote: force)
         .then((successWrap) => successWrap.data)
         .then((data) => CoreTransactionData(
             lastUpdate: DateTime.now().millisecondsSinceEpoch,
@@ -83,6 +82,11 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
     logger.d('state: $state');
     benchMark.end();
+  }
+
+  Future forcePolling() {
+    final routerRepository = ref.read(routerRepositoryProvider);
+    return _polling(routerRepository, force: true);
   }
 
   startPolling() {

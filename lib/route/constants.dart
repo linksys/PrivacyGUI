@@ -104,6 +104,9 @@ class RoutePath {
   /// Safe Browsing
   static const safeBrowsing = 'safeBrowsing';
 
+  /// Troubleshooting
+  static const troubleshooting = 'troubleshooting';
+
   /// debug
   static const debug = 'debug';
 }
@@ -213,6 +216,9 @@ class RouteNamed {
 
   /// Safe Browsing
   static const safeBrowsing = 'safeBrowsing';
+
+  /// Troubleshooting
+  static const troubleshooting = 'troubleshooting';
 
   /// debug
   static const debug = 'debug';

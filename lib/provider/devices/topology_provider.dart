@@ -148,8 +148,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
     bool isMaster = device.isAuthority || device.nodeType == 'Master';
     bool isOnline = device.connections.isNotEmpty;
     bool isRouter = device.isAuthority || device.nodeType != null;
-    bool isWiredConnection =
-        ref.read(deviceManagerProvider.notifier).checkIsWiredConnection(device);
+    bool isWiredConnection = device.isWiredConnection();
     int signalStrength =
         ref.read(deviceManagerProvider.notifier).getWirelessSignal(device);
     final data = TopologyModel(

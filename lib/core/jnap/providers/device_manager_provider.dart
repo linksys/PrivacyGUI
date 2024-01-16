@@ -5,12 +5,15 @@ import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
 import 'package:linksys_app/core/jnap/models/back_haul_info.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
+import 'package:linksys_app/core/jnap/models/layer2_connection.dart';
 import 'package:linksys_app/core/jnap/models/node_light_settings.dart';
+import 'package:linksys_app/core/jnap/models/node_wireless_connection.dart';
 import 'package:linksys_app/core/jnap/models/wan_status.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/provider/devices/device_detail_id_provider.dart';
 
 final deviceManagerProvider =
@@ -48,23 +51,22 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       getBackHaulInfoData =
           (result[JNAPAction.getBackhaulInfo] as JNAPSuccess?)?.output;
     }
-    Map<String, dynamic>? connectionData;
+    final List<Layer2Connection> connectionData;
     if (getNodesNetworkConnectionsData != null) {
-      final nodeWirelessConnections =
-          getNodesNetworkConnectionsData['nodeWirelessConnections'];
-      connectionData = List.from(nodeWirelessConnections)
-          .fold<Map<String, dynamic>>({}, (previousValue, element) {
-        if (!previousValue.containsKey('connections')) {
-          previousValue['connections'] = <Map<String, dynamic>>[];
-        }
-        List<Map<String, dynamic>> connections =
-            previousValue['connections'] ?? <Map<String, dynamic>>[];
-        connections.addAll(List.from(element['connections']));
-        previousValue['connections'] = connections;
+      final nodeWirelessConnections = List.from(
+          getNodesNetworkConnectionsData['nodeWirelessConnections'] ?? []);
+      connectionData = nodeWirelessConnections.fold<List<Layer2Connection>>([],
+          (previousValue, element) {
+        final nodeWirelessConnection = NodeWirelessConnections.fromMap(element);
+
+        previousValue.addAll(nodeWirelessConnection.connections);
         return previousValue;
       });
     } else {
-      connectionData = getNetworkConnectionsData;
+      connectionData =
+          List.from(getNetworkConnectionsData?['connections'] ?? [])
+              .map((e) => Layer2Connection.fromMap(e))
+              .toList();
     }
 
     var newState = const DeviceManagerState();
@@ -80,20 +82,18 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
 
   DeviceManagerState _getWirelessConnections(
     DeviceManagerState state,
-    Map<String, dynamic>? data,
+    List<Layer2Connection>? data,
   ) {
     var connectionsMap = <String, Map<String, dynamic>>{};
     if (data != null) {
-      final connections = data['connections'] as List;
-      for (final connection in connections) {
-        final connectionData = connection as Map<String, dynamic>;
-        final macAddress = connectionData['macAddress'];
-        final wirelessData =
-            connectionData['wireless'] as Map<String, dynamic>?;
+      final connections = data;
+      for (final connectionData in connections) {
+        final macAddress = connectionData.macAddress;
+        final wirelessData = connectionData.wireless;
         if (wirelessData != null) {
-          final band = wirelessData['band'];
-          final signalDecibels = wirelessData['signalDecibels'];
-          final isGuest = wirelessData['isGuest'];
+          final band = wirelessData.band;
+          final signalDecibels = wirelessData.signalDecibels;
+          final isGuest = wirelessData.isGuest;
           connectionsMap[macAddress] = {
             'signalDecibels': signalDecibels,
             'band': band,
@@ -156,7 +156,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     // Determine connected Wi-Fi network for each external deivce
     final wirelessConnections = state.wirelessConnections;
     externalDevices = externalDevices.map((device) {
-      final wirelessData = wirelessConnections[getDeviceMacAddress(device)];
+      final wirelessData = wirelessConnections[device.getMacAddress()];
       final isGuestDevice = (wirelessData?['isGuest'] as bool?) ?? false;
       return device.copyWith(
         connectedWifiType:
@@ -231,33 +231,19 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   // Used in cases where the watched DeviceManager is still empty at very beginning stage
   bool isEmptyState() => state.deviceList.isEmpty;
 
-  String getDeviceMacAddress(RawDevice device) {
-    var macAddress = '';
-    if (device.knownInterfaces != null) {
-      final knownInterface = device.knownInterfaces!.firstWhereOrNull(
-          (element) =>
-              element.band != null || element.interfaceType != 'Unknown');
-      macAddress = knownInterface?.macAddress ?? '';
-    } else if (device.knownMACAddresses != null) {
-      // This case is only for a part of old routers that does not support 'GetDevices3' action
-      macAddress = device.knownMACAddresses!.firstOrNull ?? '';
-    }
-    return macAddress;
-  }
-
   int getWirelessSignal(RawDevice device) {
     final wirelessConnections = state.wirelessConnections;
-    final wirelessData = wirelessConnections[getDeviceMacAddress(device)];
+    final wirelessData = wirelessConnections[device.getMacAddress()];
     final signalDecibels = wirelessData?['signalDecibels'] as int?;
     return signalDecibels ?? -1;
   }
 
   String getWirelessBand(RawDevice device) {
     final wirelessConnections = state.wirelessConnections;
-    final wirelessData = wirelessConnections[getDeviceMacAddress(device)];
+    final wirelessData = wirelessConnections[device.getMacAddress()];
     final band = (wirelessData?['band'] ?? _getWirelessBandFromDevices(device))
         as String?;
-    return band ?? (checkIsWiredConnection(device) ? 'Ethernet' : '');
+    return band ?? (device.isWiredConnection() ? 'Ethernet' : '');
   }
 
   String? _getWirelessBandFromDevices(RawDevice device) {
@@ -265,13 +251,6 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
         ?.firstWhereOrNull(
             (knownInterface) => knownInterface.interfaceType == 'Wireless')
         ?.band;
-  }
-
-  bool checkIsWiredConnection(RawDevice device) {
-    final interfaces = device.knownInterfaces;
-    return interfaces
-            ?.firstWhereOrNull((element) => element.interfaceType == 'Wired') !=
-        null;
   }
 
   RawDevice? findParent(String deviceID) {
