@@ -10,6 +10,7 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
+import 'package:linksys_app/provider/wifi_setting/wifi_item.dart';
 import 'package:linksys_app/util/wifi_credential.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
@@ -34,7 +35,7 @@ enum ShareWifiOption {
 }
 
 class WifiDetailView extends ConsumerStatefulWidget {
-  final WifiListItem item;
+  final WifiItem item;
   const WifiDetailView({Key? key, required this.item}) : super(key: key);
 
   @override
@@ -91,7 +92,7 @@ class _WifiDetailViewState extends ConsumerState<WifiDetailView> {
             child: AbsorbPointer(
               absorbing: true,
               child: AppSwitch(
-                value: widget.item.isWifiEnabled,
+                value: widget.item.isEnabled,
                 onChanged: (value) {},
               ),
             ),

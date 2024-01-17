@@ -70,7 +70,7 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                               ),
                               const Spacer(),
                               AppText.bodyMedium(
-                                state[index].isWifiEnabled
+                                state[index].isEnabled
                                     ? getAppLocalizations(context)
                                         .on
                                         .toUpperCase()

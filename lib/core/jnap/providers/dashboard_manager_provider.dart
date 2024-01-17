@@ -142,11 +142,9 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     DashboardManagerState state,
     Map<String, dynamic> data,
   ) {
-    final radios = List.from(data['radios'])
-        .map((radioInfo) => RouterRadioInfo.fromJson(radioInfo))
-        .toList();
+    final getRadioInfoData = GetRadioInfo.fromMap(data);
     return state.copyWith(
-      mainRadios: radios,
+      mainRadios: getRadioInfoData.radios,
     );
   }
 

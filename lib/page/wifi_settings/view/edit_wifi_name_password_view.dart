@@ -31,7 +31,7 @@ class _EditWifiNamePasswordViewState
   final TextEditingController passwordController = TextEditingController();
   bool isPasswordInvalid = false;
   late String _title;
-  late WifiType _wifiType;
+  // late WifiType _wifiType;
   late bool isChanged = false;
   late String _oriSSID;
   late String _oriPassword;
@@ -44,7 +44,7 @@ class _EditWifiNamePasswordViewState
     _title = wifiItem.ssid;
     _oriSSID = wifiItem.ssid;
     _oriPassword = wifiItem.password;
-    _wifiType = wifiItem.wifiType;
+    // _wifiType = wifiItem.wifiType;
     nameController.text = wifiItem.ssid;
     passwordController.text = wifiItem.password;
   }
@@ -75,23 +75,23 @@ class _EditWifiNamePasswordViewState
       ).then((result) {
         // If users confirm the change, update the information. Otherwise, do nothing.
         if (result == OkCancelResult.ok) {
-          // Update the name and the password
-          setState(() => isLoading = true);
-          ref
-              .read(wifiSettingProvider.notifier)
-              .updateWifiNameAndPassword(
-                  nameController.text, passwordController.text, _wifiType)
-              .then((value) {
-            setState(() => isLoading = false);
-            context.pop();
-          }).onError((error, stackTrace) {
-            setState(() => isLoading = false);
-            showOkCancelAlertDialog(
-              context: context,
-              title: "Saving error",
-              message: '',
-            );
-          });
+          // // Update the name and the password
+          // setState(() => isLoading = true);
+          // ref
+          //     .read(wifiSettingProvider.notifier)
+          //     .updateWifiNameAndPassword(
+          //         nameController.text, passwordController.text, _wifiType)
+          //     .then((value) {
+          //   setState(() => isLoading = false);
+          //   context.pop();
+          // }).onError((error, stackTrace) {
+          //   setState(() => isLoading = false);
+          //   showOkCancelAlertDialog(
+          //     context: context,
+          //     title: "Saving error",
+          //     message: '',
+          //   );
+          // });
         }
       });
     } else {

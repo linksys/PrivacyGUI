@@ -1,72 +1,71 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
-import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
+import 'package:linksys_app/provider/wifi_setting/wifi_item.dart';
 
-final wifiListProvider = NotifierProvider<WifiListNotifier, List<WifiListItem>>(
+final wifiListProvider = NotifierProvider<WifiListNotifier, List<WifiItem>>(
   () => WifiListNotifier(),
 );
 
-class WifiListNotifier extends Notifier<List<WifiListItem>> {
+class WifiListNotifier extends Notifier<List<WifiItem>> {
   @override
-  List<WifiListItem> build() {
+  List<WifiItem> build() {
     final dashboardManagerState = ref.watch(dashboardManagerProvider);
     final deviceManagerState = ref.watch(deviceManagerProvider);
-    return _getWifiInfo(deviceManagerState, dashboardManagerState);
+    return _getWifiList(deviceManagerState, dashboardManagerState);
   }
 
-  List<WifiListItem> _getWifiInfo(
+  List<WifiItem> _getWifiList(
     DeviceManagerState deviceManagerState,
     DashboardManagerState dashboardManagerState,
   ) {
-    List<WifiListItem> items = [];
-    final mainRadios = dashboardManagerState.mainRadios;
-    Map<String, RouterRadioInfo> infoMap =
-        Map.fromEntries(mainRadios.map((e) => MapEntry(e.settings.ssid, e)));
-    items = List.from(infoMap.values).map((e) {
-      RouterRadioInfo info = e as RouterRadioInfo;
-      return WifiListItem(
-        wifiType: WifiType.main,
-        ssid: info.settings.ssid,
-        password: info.settings.wpaPersonalSettings.passphrase,
-        securityType:
-            WifiListItem.convertToWifiSecurityType(info.settings.security),
-        mode: WifiListItem.convertToWifiMode(info.settings.mode),
-        band: info.band,
-        isWifiEnabled: info.settings.isEnabled,
-        numOfDevices: deviceManagerState.mainWifiDevices
-            .where((device) =>
-                device.connections.isNotEmpty &&
-                ref
-                        .read(deviceManagerProvider.notifier)
-                        .getWirelessBand(device) ==
-                    info.band)
-            .length,
-        signal: 0,
-      );
-    }).toList();
+    final wifiItems = dashboardManagerState.mainRadios
+        .map((radio) => WifiItem(
+              wifiType: WifiType.main,
+              radioID: RadioID.getByValue(radio.radioID),
+              ssid: radio.settings.ssid,
+              password: radio.settings.wpaPersonalSettings?.passphrase ?? '',
+              securityType:
+                  WifiSecurityType.getByValue(radio.settings.security),
+              wirelessMode: WifiWirelessMode.getByValue(radio.settings.mode),
+              channelWidth:
+                  WifiChannelWidth.getByValue(radio.settings.channelWidth),
+              channel: radio.settings.channel,
+              isBroadcast: radio.settings.broadcastSSID,
+              isEnabled: radio.settings.isEnabled,
+              numOfDevices: deviceManagerState.mainWifiDevices
+                  .where((device) =>
+                      device.connections.isNotEmpty &&
+                      ref
+                              .read(deviceManagerProvider.notifier)
+                              .getWirelessBand(device) ==
+                          radio.band)
+                  .length,
+            ))
+        .toList();
+
     final guestRadio = dashboardManagerState.guestRadios.firstOrNull;
     if (guestRadio != null) {
-      items.add(
-        WifiListItem(
+      wifiItems.add(
+        WifiItem(
           wifiType: WifiType.guest,
+          radioID: RadioID.radio_24,
           ssid: guestRadio.guestSSID,
           password: guestRadio.guestWPAPassphrase ?? '',
-          securityType: items.isNotEmpty
-              ? items.first.securityType
-              : WifiSecurityType.wpa2Wpa3Mixed,
-          mode: items.isNotEmpty ? items.first.mode : WifiMode.mixed,
-          isWifiEnabled: dashboardManagerState.isGuestNetworkEnabled,
+          securityType: WifiSecurityType.wpaPersonal,
+          wirelessMode: WifiWirelessMode.mixed,
+          channelWidth: WifiChannelWidth.auto,
+          channel: 0,
+          isBroadcast: guestRadio.broadcastGuestSSID,
+          isEnabled: dashboardManagerState.isGuestNetworkEnabled,
           numOfDevices: deviceManagerState.guestWifiDevices
               .where((device) => device.connections.isNotEmpty)
               .length,
-          signal: 0,
         ),
       );
     }
-    return items;
+    return wifiItems;
   }
 }

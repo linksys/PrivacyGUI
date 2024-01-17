@@ -6,6 +6,7 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/channelfinder/channelfinder_provider.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
+import 'package:linksys_app/provider/wifi_setting/wifi_item.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
@@ -52,20 +53,20 @@ class _WifiSettingsReviewViewState
                       ),
                       const Spacer(),
                       AppSwitch(
-                          value: state.selectedWifiItem.isWifiEnabled,
+                          value: state.selectedWifiItem.isEnabled,
                           onChanged: (enabled) {
-                            setState(() {
-                              isLoading = true;
-                            });
-                            final wifiType = state.selectedWifiItem.wifiType;
-                            ref
-                                .read(wifiSettingProvider.notifier)
-                                .enableWifi(enabled, wifiType)
-                                .then((value) {
-                              setState(() {
-                                isLoading = false;
-                              });
-                            });
+                            // setState(() {
+                            //   isLoading = true;
+                            // });
+                            // final wifiType = state.selectedWifiItem.wifiType;
+                            // ref
+                            //     .read(wifiSettingProvider.notifier)
+                            //     .enableWifi(enabled, wifiType)
+                            //     .then((value) {
+                            //   setState(() {
+                            //     isLoading = false;
+                            //   });
+                            // });
                           })
                     ],
                   ),
@@ -80,46 +81,46 @@ class _WifiSettingsReviewViewState
                       //TODO: Remove the dummy recent bands
                     ),
                   ),
-                  Expanded(
-                    child: ListView.builder(
-                      physics: const ClampingScrollPhysics(),
-                      itemCount:
-                          state.selectedWifiItem.wifiType.settingOptions.length,
-                      itemBuilder: (context, index) =>
-                          _buildListCell(index, state.selectedWifiItem),
-                    ),
-                  ),
+                  // Expanded(
+                  //   child: ListView.builder(
+                  //     physics: const ClampingScrollPhysics(),
+                  //     itemCount:
+                  //         state.selectedWifiItem.wifiType.settingOptions.length,
+                  //     itemBuilder: (context, index) =>
+                  //         _buildListCell(index, state.selectedWifiItem),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
           );
   }
 
-  Widget _buildListCell(int index, WifiListItem wifiItem) {
-    String content;
+  Widget _buildListCell(int index, WifiItem wifiItem) {
+    String content = 'XXXX';
 
-    final currentOption = wifiItem.wifiType.settingOptions[index];
-    switch (currentOption) {
-      case WifiSettingOption.nameAndPassword:
-        content = wifiItem.ssid;
-        break;
-      case WifiSettingOption.securityType6G:
-        content = wifiItem.security6GType?.displayTitle ??
-            wifiItem.securityType.displayTitle;
-        break;
-      case WifiSettingOption.securityTypeBelow6G:
-        content = wifiItem.securityType.displayTitle;
-        break;
-      case WifiSettingOption.securityType:
-        content = wifiItem.securityType.displayTitle;
-        break;
-      case WifiSettingOption.mode:
-        content = wifiItem.mode.value;
-        break;
-      case WifiSettingOption.channelFinder:
-        content = '';
-        break;
-    }
+    // final currentOption = wifiItem.wifiType.settingOptions[index];
+    // switch (currentOption) {
+    //   case WifiSettingOption.nameAndPassword:
+    //     content = wifiItem.ssid;
+    //     break;
+    //   case WifiSettingOption.securityType6G:
+    //     content = wifiItem.security6GType?.displayTitle ??
+    //         wifiItem.securityType.displayTitle;
+    //     break;
+    //   case WifiSettingOption.securityTypeBelow6G:
+    //     content = wifiItem.securityType.displayTitle;
+    //     break;
+    //   case WifiSettingOption.securityType:
+    //     content = wifiItem.securityType.displayTitle;
+    //     break;
+    //   case WifiSettingOption.mode:
+    //     content = wifiItem.mode.value;
+    //     break;
+    //   case WifiSettingOption.channelFinder:
+    //     content = '';
+    //     break;
+    // }
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -132,7 +133,8 @@ class _WifiSettingsReviewViewState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.bodyMedium(
-                    currentOption.displayTitle,
+                    // currentOption.displayTitle,
+                    'currentOptionXXXX'
                   ),
                   const AppGap.small(),
                   AppText.bodyMedium(
@@ -149,32 +151,31 @@ class _WifiSettingsReviewViewState
     );
   }
 
-  void _onSettingTap(int index, WifiListItem wifiItem) {
-    final currentOption = wifiItem.wifiType.settingOptions[index];
-    switch (currentOption) {
-      case WifiSettingOption.nameAndPassword:
-        // ref.read(navigationsProvider.notifier).push(EditWifiNamePasswordPath());
-        context.pushNamed(RouteNamed.wifiEditSSID);
-        break;
-      case WifiSettingOption.securityType6G:
-      case WifiSettingOption.securityTypeBelow6G:
-      case WifiSettingOption.securityType:
-        // ref.read(navigationsProvider.notifier).pushAndWait(
-        //     EditWifiSecurityPath()
-        //       ..args = {'wifiSettingOption': currentOption});
-        context.pushNamed(RouteNamed.wifiEditSecurity, queryParameters: {
-          'wifiSettingOption': currentOption.name,
-        });
+  void _onSettingTap(int index, WifiItem wifiItem) {
+    // final currentOption = wifiItem.wifiType.settingOptions[index];
+    // switch (currentOption) {
+    //   case WifiSettingOption.nameAndPassword:
+    //     // ref.read(navigationsProvider.notifier).push(EditWifiNamePasswordPath());
+    //     context.pushNamed(RouteNamed.wifiEditSSID);
+    //     break;
+    //   case WifiSettingOption.securityType6G:
+    //   case WifiSettingOption.securityTypeBelow6G:
+    //   case WifiSettingOption.securityType:
+    //     // ref.read(navigationsProvider.notifier).pushAndWait(
+    //     //     EditWifiSecurityPath()
+    //     //       ..args = {'wifiSettingOption': currentOption});
+    //     context.pushNamed(RouteNamed.wifiEditSecurity, queryParameters: {
+    //       'wifiSettingOption': currentOption.name,
+    //     });
 
-        break;
-      case WifiSettingOption.mode:
-        // ref.read(navigationsProvider.notifier).push(EditWifiModePath());
-        context.pushNamed(RouteNamed.wifiEditMode);
-
-        break;
-      case WifiSettingOption.channelFinder:
-        context.pushNamed(RouteNamed.channelFinderOptimize);
-        break;
-    }
+    //     break;
+    //   case WifiSettingOption.mode:
+    //     // ref.read(navigationsProvider.notifier).push(EditWifiModePath());
+    //     context.pushNamed(RouteNamed.wifiEditMode);
+    //     break;
+    //   case WifiSettingOption.channelFinder:
+    //     context.pushNamed(RouteNamed.channelFinderOptimize);
+    //     break;
+    // }
   }
 }

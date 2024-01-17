@@ -207,7 +207,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
                         ref.read(connectionFilterProvider.notifier).state =
                             data ?? '';
                       }),
-                  FilteredChipsWidget<RouterRadioInfo>(
+                  FilteredChipsWidget<RouterRadio>(
                       title: 'Band',
                       dataList: radios,
                       chipName: ({data}) => data?.band ?? '',

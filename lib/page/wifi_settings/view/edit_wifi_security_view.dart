@@ -7,6 +7,7 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
+import 'package:linksys_app/provider/wifi_setting/wifi_item.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -27,7 +28,7 @@ class EditWifiSecurityView extends ArgumentsConsumerStatefulView {
 
 class _EditWifiSecurityViewState extends ConsumerState<EditWifiSecurityView> {
   bool isLoading = false;
-  late WifiSettingOption _wifiSettingOption;
+  // late WifiSettingOption _wifiSettingOption;
   late List<WifiSecurityType> _typeList;
   late WifiSecurityType _selectedType;
   late WifiSecurityType _currentType;
@@ -43,26 +44,26 @@ class _EditWifiSecurityViewState extends ConsumerState<EditWifiSecurityView> {
         .securityType;
     _selectedType = currentType;
     _currentType = currentType;
-    _typeList = WifiSecurityType.allTypes;
-    _wifiSettingOption = WifiSettingOption.securityTypeBelow6G;
-    if (widget.args.containsKey('wifiSettingOption')) {
-      _wifiSettingOption = WifiSettingOption.values.firstWhereOrNull(
-              (element) => element.name == widget.args['wifiSettingOption']) ??
-          WifiSettingOption.securityType;
-    }
-    if (_wifiSettingOption == WifiSettingOption.securityType6G) {
-      _typeList = [
-        WifiSecurityType.wpa3,
-        WifiSecurityType.enhancedOpen,
-      ];
-      currentType = ref
-          .read(wifiSettingProvider.notifier)
-          .state
-          .selectedWifiItem
-          .security6GType!;
-      _selectedType = currentType;
-      _currentType = currentType;
-    }
+    _typeList = WifiSecurityType.values;
+    // _wifiSettingOption = WifiSettingOption.securityTypeBelow6G;
+    // if (widget.args.containsKey('wifiSettingOption')) {
+    //   _wifiSettingOption = WifiSettingOption.values.firstWhereOrNull(
+    //           (element) => element.name == widget.args['wifiSettingOption']) ??
+    //       WifiSettingOption.securityType;
+    // }
+    // if (_wifiSettingOption == WifiSettingOption.securityType6G) {
+    //   _typeList = [
+    //     WifiSecurityType.wpa3,
+    //     WifiSecurityType.enhancedOpen,
+    //   ];
+    //   currentType = ref
+    //       .read(wifiSettingProvider.notifier)
+    //       .state
+    //       .selectedWifiItem
+    //       .security6GType!;
+    //   _selectedType = currentType;
+    //   _currentType = currentType;
+    // }
   }
 
   @override
@@ -131,26 +132,26 @@ class _EditWifiSecurityViewState extends ConsumerState<EditWifiSecurityView> {
   }
 
   void _save() {
-    final wifiType = ref.read(wifiSettingProvider).selectedWifiItem.wifiType;
-    ref
-        .read(wifiSettingProvider.notifier)
-        .updateSecurityType(_wifiSettingOption, _selectedType, wifiType)
-        .then((value) {
-      setState(() {
-        isLoading = false;
-        _currentType = _selectedType;
-      });
-      context.pop();
-    }).onError((error, stackTrace) {
-      setState(() => isLoading = false);
-      showOkCancelAlertDialog(
-        context: context,
-        title: "Saving error",
-        message: '',
-      );
-    });
-    setState(() {
-      isLoading = true;
-    });
+  //   final wifiType = ref.read(wifiSettingProvider).selectedWifiItem.wifiType;
+  //   ref
+  //       .read(wifiSettingProvider.notifier)
+  //       .updateSecurityType(_wifiSettingOption, _selectedType, wifiType)
+  //       .then((value) {
+  //     setState(() {
+  //       isLoading = false;
+  //       _currentType = _selectedType;
+  //     });
+  //     context.pop();
+  //   }).onError((error, stackTrace) {
+  //     setState(() => isLoading = false);
+  //     showOkCancelAlertDialog(
+  //       context: context,
+  //       title: "Saving error",
+  //       message: '',
+  //     );
+  //   });
+  //   setState(() {
+  //     isLoading = true;
+  //   });
   }
 }

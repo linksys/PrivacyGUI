@@ -4,7 +4,7 @@ import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/jnap/models/guest_radio_settings.dart';
 
 class DashboardManagerState extends Equatable {
-  final List<RouterRadioInfo> mainRadios;
+  final List<RouterRadio> mainRadios;
   final List<GuestRadioInfo> guestRadios;
   final bool isGuestNetworkEnabled;
   final HealthCheckResult? latestSpeedTest;
@@ -19,7 +19,7 @@ class DashboardManagerState extends Equatable {
   });
 
   DashboardManagerState copyWith(
-      {List<RouterRadioInfo>? mainRadios,
+      {List<RouterRadio>? mainRadios,
       List<GuestRadioInfo>? guestRadios,
       bool? isGuestNetworkEnabled,
       HealthCheckResult? latestSpeedTest,

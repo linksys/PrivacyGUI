@@ -8,6 +8,7 @@ import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_app/provider/wifi_setting/wifi_item.dart';
 import 'package:linksys_app/provider/wifi_setting/wifi_setting_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -17,12 +18,27 @@ final wifiSettingProvider =
 
 class WifiSettingNotifier extends Notifier<WifiSettingState> {
   @override
-  WifiSettingState build() => const WifiSettingState();
+  WifiSettingState build() => const WifiSettingState(
+        selectedWifiItem: WifiItem(
+          wifiType: WifiType.main,
+          radioID: RadioID.radio_24,
+          ssid: '',
+          password: '',
+          securityType: WifiSecurityType.wpaPersonal,
+          wirelessMode: WifiWirelessMode.mixed,
+          channelWidth: WifiChannelWidth.auto,
+          channel: 0,
+          isBroadcast: false,
+          isEnabled: false,
+          numOfDevices: 0,
+        ),
+      );
 
-  void selectWifi(WifiListItem wifiItem) {
+  void selectWifi(WifiItem wifiItem) {
     state = state.copyWith(selectedWifiItem: wifiItem);
   }
 
+/*
   Future<void> enableWifi(bool enable, WifiType wifiType) async {
     final repo = ref.read(routerRepositoryProvider);
     switch (wifiType) {
@@ -232,4 +248,5 @@ class WifiSettingNotifier extends Notifier<WifiSettingState> {
         break;
     }
   }
+  */
 }

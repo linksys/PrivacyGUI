@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
+import 'package:linksys_app/provider/wifi_setting/wifi_item.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -19,8 +20,8 @@ class EditWifiModeView extends ArgumentsConsumerStatefulView {
 }
 
 class _EditWifiModeViewState extends ConsumerState<EditWifiModeView> {
-  final List<WifiMode> _modeList = [WifiMode.mixed];
-  late WifiListItem _wifiItem;
+  //// final List<WifiMode> _modeList = [WifiMode.mixed];
+  late WifiItem _wifiItem;
 
   @override
   initState() {
@@ -38,7 +39,7 @@ class _EditWifiModeViewState extends ConsumerState<EditWifiModeView> {
     return StyledAppPageView(
       child: AppBasicLayout(
         content: ListView.builder(
-          itemCount: _modeList.length,
+          itemCount: 0,//_modeList.length,
           itemBuilder: (context, index) {
             return GestureDetector(
               onTap: () {
@@ -51,7 +52,7 @@ class _EditWifiModeViewState extends ConsumerState<EditWifiModeView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         AppText.bodyLarge(
-                          _modeList[index].value,
+                          'XXXXX',//_modeList[index].value,
                         ),
                         const AppGap.small(),
                         const AppText.bodyMedium(
@@ -65,7 +66,7 @@ class _EditWifiModeViewState extends ConsumerState<EditWifiModeView> {
                     maintainAnimation: true,
                     maintainState: true,
                     maintainSize: true,
-                    visible: _modeList[index] == _wifiItem.mode,
+                    visible: false,////_modeList[index] == _wifiItem.mode,
                     child:
                         AppIcon(icon: getCharactersIcons(context).checkDefault),
                   ),
