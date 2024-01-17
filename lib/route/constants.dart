@@ -111,6 +111,9 @@ class RoutePath {
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
 
+  ///Channel Finder
+  static const channelFinderOptimize = 'channelFinderOptimize';
+
   /// debug
   static const debug = 'debug';
 }
@@ -227,6 +230,9 @@ class RouteNamed {
 
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
+  
+  ///Channel Finder
+  static const channelFinderOptimize = 'channelFinderOptimize';
 
   /// debug
   static const debug = 'debug';

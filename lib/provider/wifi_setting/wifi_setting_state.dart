@@ -150,6 +150,7 @@ enum WifiType {
         WifiSettingOption.securityType6G,
         WifiSettingOption.securityTypeBelow6G,
         WifiSettingOption.mode,
+        WifiSettingOption.channelFinder
       ]);
     }
 
@@ -162,7 +163,8 @@ enum WifiSettingOption {
   securityType(displayTitle: 'Security type'),
   securityType6G(displayTitle: 'Security type (6GHz)'),
   securityTypeBelow6G(displayTitle: 'Security type (5GHz, 2.4GHz)'),
-  mode(displayTitle: 'WiFi mode');
+  mode(displayTitle: 'WiFi mode'),
+  channelFinder(displayTitle: 'Channel Finder');
 
   const WifiSettingOption({required this.displayTitle});
 

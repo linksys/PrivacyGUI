@@ -1,0 +1,76 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/src/consumer.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/provider/channelfinder/channelfinder_info.dart';
+import 'package:linksys_app/provider/channelfinder/channelfinder_provider.dart';
+import 'package:linksys_app/provider/channelfinder/channelfinder_state.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/widgets/base/gap.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+
+class WifiSettingsChannelFinderView extends ArgumentsConsumerStatefulView {
+  const WifiSettingsChannelFinderView({Key? key, super.args}) : super(key: key);
+
+  @override
+  ConsumerState<ConsumerStatefulWidget> createState() =>
+      _WifiSettingsChannelFinderViewState();
+}
+
+class _WifiSettingsChannelFinderViewState
+    extends ConsumerState<WifiSettingsChannelFinderView> {
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    setState(() {
+      isLoading = true;
+    });
+    ref.read(channelFinderProvider.notifier).optimizeChannels().then((value) {
+      setState(() {
+        isLoading = false;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(channelFinderProvider);
+    return isLoading
+        ? const AppFullScreenSpinner()
+        : StyledAppPageView(
+            title: 'Channel Finder',
+            child: AppBasicLayout(
+              content: _ChannelFinderResult(state),
+            ),
+          );
+  }
+
+  Widget _ChannelFinderResult(ChannelFinderState state) {
+    if (state.result.isNotEmpty) {
+      return ListView.builder(
+        itemCount: state.result.length,
+        itemBuilder: (context, index) => _ListCell(state.result[index]),
+      );
+    } else {
+      return const Text('Your wifi already at the best performance');
+    }
+  }
+
+  Widget _ListCell(OptimizedSelectedChannel channel) {
+    return Row(
+      children: [
+        Image(
+            image: CustomTheme.of(context)
+                .images
+                .devices
+                .getByName(channel.deviceIcon!)),
+        const AppGap.regular(),
+        Text(channel.deviceName!)
+      ],
+    );
+  }
+}

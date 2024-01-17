@@ -592,6 +592,10 @@ void initBetterActions() {
       _JNAPActionValue.getAirtimeFairnessSettings.value;
   _betterActionMap[JNAPAction.setAirtimeFairnessSettings] =
       _JNAPActionValue.setAirtimeFairnessSettings.value;
+  _betterActionMap[JNAPAction.getSelectedChannels] =
+      _JNAPActionValue.getSelectedChannels.value;
+  _betterActionMap[JNAPAction.startAutoChannelSelection] =
+      _JNAPActionValue.startAutoChannelSelection.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

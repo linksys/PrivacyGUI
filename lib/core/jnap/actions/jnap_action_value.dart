@@ -340,7 +340,10 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/wirelessap/GetAirtimeFairnessSettings'),
   setAirtimeFairnessSettings(
       value: 'http://linksys.com/jnap/wirelessap/SetAirtimeFairnessSettings'),
-  ;
+  getSelectedChannels(
+      value: 'http://linksys.com/jnap/nodes/setup/GetSelectedChannels'),
+  startAutoChannelSelection(
+      value: 'http://linksys.com/jnap/nodes/setup/StartAutoChannelSelection');
 
   const _JNAPActionValue({required this.value});
 
