@@ -65,6 +65,7 @@ import 'package:linksys_app/route/router_logger.dart';
 
 import '../page/dashboard/view/administration/lan/lan_view.dart';
 import '../page/dashboard/view/nodes/node_switch_light_view.dart';
+import '../page/wifi_settings/view/wifi_settings_channel_finder_view.dart';
 import 'constants.dart';
 
 part 'route_home.dart';

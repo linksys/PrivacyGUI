@@ -147,6 +147,14 @@ class DeviceManagerState {
         .toList();
   }
 
+  LinksysDevice get masterDevice {
+    return nodeDevices.firstWhere((device) => device.isAuthority == true);
+  }
+
+  List<LinksysDevice> get slaveDevices {
+    return nodeDevices.where((device) => device.isAuthority == false).toList();
+  }
+
   const DeviceManagerState({
     this.wirelessConnections = const {},
     this.deviceList = const [],

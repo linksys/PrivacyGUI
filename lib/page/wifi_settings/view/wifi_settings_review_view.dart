@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/provider/channelfinder/channelfinder_provider.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -115,6 +116,9 @@ class _WifiSettingsReviewViewState
       case WifiSettingOption.mode:
         content = wifiItem.mode.value;
         break;
+      case WifiSettingOption.channelFinder:
+        content = '';
+        break;
     }
 
     return GestureDetector(
@@ -167,6 +171,9 @@ class _WifiSettingsReviewViewState
         // ref.read(navigationsProvider.notifier).push(EditWifiModePath());
         context.pushNamed(RouteNamed.wifiEditMode);
 
+        break;
+      case WifiSettingOption.channelFinder:
+        context.pushNamed(RouteNamed.channelFinderOptimize);
         break;
     }
   }

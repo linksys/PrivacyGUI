@@ -33,6 +33,11 @@ final settings = [
             path: RoutePath.wifiEditMode,
             builder: (context, state) => EditWifiModeView(),
           ),
+          LinksysRoute(
+            name: RouteNamed.channelFinderOptimize,
+            path: RoutePath.channelFinderOptimize,
+            builder: (context, state) => WifiSettingsChannelFinderView(),
+          )
         ],
       ),
     ],
