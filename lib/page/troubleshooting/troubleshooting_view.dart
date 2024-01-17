@@ -5,6 +5,7 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/troubleshooting/device_status.dart';
 import 'package:linksys_app/provider/troubleshooting/troubleshooting_provider.dart';
+import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -135,6 +136,15 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
                           ),
                     ],
                   ),
+                  const AppGap.big(),
+                  Align(
+                      alignment: Alignment.centerLeft,
+                      child: AppTextButton(
+                        'Ping',
+                        onTap: () {
+                          context.pushNamed(RouteNamed.troubleshootingPing);
+                        },
+                      )),
                   const AppGap.big(),
                   Align(
                     alignment: Alignment.centerLeft,

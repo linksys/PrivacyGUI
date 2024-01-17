@@ -202,26 +202,33 @@ class RouterRepository {
     }
   }
 
+  ///
+  /// Scheduling polling a SINGLE JNAP remotely
+  ///
   Stream<JNAPResult> scheduledCommand({
     required JNAPAction action,
-    int retryDelayInSec = 5,
+    int retryDelayInMilliSec = 5000,
     int maxRetry = 10,
     Map<String, dynamic> data = const {},
-    bool Function()? condition,
+    bool Function(JNAPSuccess)? condition,
+    bool auth = false,
   }) async* {
     int retry = 0;
-    while (++retry <= maxRetry) {
-      final command = await createCommand(action.actionValue, data: data);
+    while (++retry <= maxRetry || maxRetry == -1) {
       logger.d('publish command {$action: $retry times');
       // TODO #ERRORHANDLING handle other errors - timeout error, etc...
-      yield await CommandQueue()
-          .enqueue(command)
-          .then((record) => handleJNAPResult(record))
-          .then((record) => record.$1);
-      if (condition?.call() ?? false) {
+      final result = await send(
+        action,
+        data: data,
+        auth: auth,
+        fetchRemote: true,
+        cacheLevel: CacheLevel.noCache,
+      );
+      yield result;
+      if (condition?.call(result) ?? false) {
         break;
       }
-      await Future.delayed(Duration(seconds: retryDelayInSec));
+      await Future.delayed(Duration(milliseconds: retryDelayInMilliSec));
     }
   }
 

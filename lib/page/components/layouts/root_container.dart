@@ -1,12 +1,11 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
-import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
+import 'package:linksys_app/page/components/layouts/idle_checker.dart';
 import 'package:linksys_app/provider/root/root_config.dart';
 import 'package:linksys_app/provider/root/root_provider.dart';
 import 'package:linksys_widgets/widgets/banner/banner_view.dart';
@@ -50,38 +49,44 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
     final fwUpdate = ref.watch(firmwareUpdateProvider);
     final rootConfig = ref.watch(rootProvider);
     return LayoutBuilder(builder: ((context, constraints) {
-      return Container(
-        color: Theme.of(context).colorScheme.background,
-        child: CompositedTransformTarget(
-          link: _link,
-          child: Stack(
-            children: [
-              _buildLayout(widget.child ?? const Center(), constraints),
-              ..._handleConnectivity(ref),
-              ..._handleBanner(ref),
-              _handleSpinner(rootConfig),
-              !showDebugPanel
-                  ? const Center()
-                  : CompositedTransformFollower(
-                      link: _link,
-                      targetAnchor: Alignment.topRight,
-                      followerAnchor: Alignment.topRight,
-                      child: IgnorePointer(
-                        ignoring: true,
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                              top: Utils.getTopSafeAreaPadding(context)),
-                          child: const OverlayInfoView(),
+      return IdleChecker(
+        idleTime: const Duration(minutes: 5),
+        onIdle: () {
+          logger.d('Idled!');
+        },
+        child: Container(
+          color: Theme.of(context).colorScheme.background,
+          child: CompositedTransformTarget(
+            link: _link,
+            child: Stack(
+              children: [
+                _buildLayout(widget.child ?? const Center(), constraints),
+                ..._handleConnectivity(ref),
+                ..._handleBanner(ref),
+                _handleSpinner(rootConfig),
+                !showDebugPanel
+                    ? const Center()
+                    : CompositedTransformFollower(
+                        link: _link,
+                        targetAnchor: Alignment.topRight,
+                        followerAnchor: Alignment.topRight,
+                        child: IgnorePointer(
+                          ignoring: true,
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                                top: Utils.getTopSafeAreaPadding(context)),
+                            child: const OverlayInfoView(),
+                          ),
                         ),
                       ),
-                    ),
-              CompositedTransformFollower(
-                link: _link,
-                targetAnchor: Alignment.bottomLeft,
-                followerAnchor: Alignment.bottomLeft,
-                child: _buildAppSettings(),
-              )
-            ],
+                CompositedTransformFollower(
+                  link: _link,
+                  targetAnchor: Alignment.bottomLeft,
+                  followerAnchor: Alignment.bottomLeft,
+                  child: _buildAppSettings(),
+                )
+              ],
+            ),
           ),
         ),
       );

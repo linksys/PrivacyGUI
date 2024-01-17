@@ -324,6 +324,18 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.airtimeFairness:
       break;
+    case JNAPService.diagnostics:
+      break;
+    case JNAPService.diagnostics2:
+      break;
+    case JNAPService.diagnostics3:
+      break;
+    case JNAPService.diagnostics7:
+      break;
+    case JNAPService.diagnostics8:
+      break;
+    case JNAPService.diagnostics9:
+      break;
   }
 }
 
@@ -357,7 +369,7 @@ void initBetterActions() {
       _JNAPActionValue.getDDNSStatus.value;
   _betterActionMap[JNAPAction.getSupportedDDNSProviders] =
       _JNAPActionValue.getSupportedDDNSProviders.value;
-        _betterActionMap[JNAPAction.setDDNSSetting] =
+  _betterActionMap[JNAPAction.setDDNSSetting] =
       _JNAPActionValue.setDDNSSetting.value;
   _betterActionMap[JNAPAction.getDevices] = _JNAPActionValue.getDevices.value;
   _betterActionMap[JNAPAction.getLocalDevice] =
@@ -366,6 +378,26 @@ void initBetterActions() {
       _JNAPActionValue.setDeviceProperties.value;
   _betterActionMap[JNAPAction.deleteDevice] =
       _JNAPActionValue.deleteDevice.value;
+  _betterActionMap[JNAPAction.execSysCommand] =
+      _JNAPActionValue.execSysCommand.value;
+  _betterActionMap[JNAPAction.getPinStatus] =
+      _JNAPActionValue.getPinStatus.value;
+  _betterActionMap[JNAPAction.getSysInfoData] =
+      _JNAPActionValue.getSysInfoData.value;
+  _betterActionMap[JNAPAction.getSystemStats] =
+      _JNAPActionValue.getSystemStats.value;
+  _betterActionMap[JNAPAction.getTracerouteStatus] =
+      _JNAPActionValue.getTracerouteStatus.value;
+  _betterActionMap[JNAPAction.restorePreviousFirmware] =
+      _JNAPActionValue.restorePreviousFirmware.value;
+  _betterActionMap[JNAPAction.sendSysinfoEmail] =
+      _JNAPActionValue.sendSysinfoEmail.value;
+  _betterActionMap[JNAPAction.startPing] = _JNAPActionValue.startPing.value;
+  _betterActionMap[JNAPAction.startTracroute] =
+      _JNAPActionValue.startTracroute.value;
+  _betterActionMap[JNAPAction.stopPing] = _JNAPActionValue.stopPing.value;
+  _betterActionMap[JNAPAction.stopTracroute] =
+      _JNAPActionValue.stopTracroute.value;
   _betterActionMap[JNAPAction.getPortRangeForwardingRules] =
       _JNAPActionValue.getPortRangeForwardingRules.value;
   _betterActionMap[JNAPAction.getPortRangeTriggeringRules] =

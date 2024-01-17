@@ -33,6 +33,18 @@ enum JNAPAction {
   getLocalDevice,
   setDeviceProperties,
   deleteDevice,
+  // diagnostics
+  execSysCommand,
+  getPinStatus,
+  getSysInfoData,
+  getSystemStats,
+  getTracerouteStatus,
+  restorePreviousFirmware,
+  sendSysinfoEmail,
+  startPing,
+  startTracroute,
+  stopPing,
+  stopTracroute,
   // firewall
   getPortRangeForwardingRules,
   getPortRangeTriggeringRules,

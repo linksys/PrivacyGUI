@@ -39,6 +39,30 @@ enum _JNAPActionValue {
   setDeviceProperties(
       value: 'http://linksys.com/jnap/devicelist/SetDeviceProperties'),
   deleteDevice(value: 'http://linksys.com/jnap/devicelist/DeleteDevice'),
+  ///
+  execSysCommand(
+      value: 'http://linksys.com/jnap/diagnostics/ExecSysCommand'),
+  getPinStatus(
+      value: 'http://linksys.com/jnap/diagnostics/GetPingStatus'),
+  getSysInfoData(
+      value: 'http://linksys.com/jnap/diagnostics/GetSysinfoData'),
+  getSystemStats(
+      value: 'http://linksys.com/jnap/diagnostics/GetSystemStats'),
+  getTracerouteStatus(
+      value: 'http://linksys.com/jnap/diagnostics/GetTracerouteStatus'),
+  restorePreviousFirmware(
+      value: 'http://linksys.com/jnap/diagnostics/RestorePreviousFirmware'),
+  sendSysinfoEmail(
+      value: 'http://linksys.com/jnap/diagnostics/SendSysinfoEmail'),
+  startPing(
+      value: 'http://linksys.com/jnap/diagnostics/StartPing'),
+  startTracroute(
+      value: 'http://linksys.com/jnap/diagnostics/StartTraceroute'),
+  stopPing(
+      value: 'http://linksys.com/jnap/diagnostics/StopPing'),
+  stopTracroute(
+      value: 'http://linksys.com/jnap/diagnostics/StopTraceroute'),
+  ///
   getPortRangeForwardingRules(
       value: 'http://linksys.com/jnap/firewall/GetPortRangeForwardingRules'),
   getPortRangeTriggeringRules(

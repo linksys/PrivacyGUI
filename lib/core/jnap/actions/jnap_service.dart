@@ -23,6 +23,12 @@ enum JNAPService {
   deviceList5(value: 'http://linksys.com/jnap/devicelist/DeviceList5'),
   deviceList6(value: 'http://linksys.com/jnap/devicelist/DeviceList6'),
   deviceList7(value: 'http://linksys.com/jnap/devicelist/DeviceList7'),
+  diagnostics(value: 'http://linksys.com/jnap/diagnostics/Diagnostics'),
+  diagnostics2(value: 'http://linksys.com/jnap/diagnostics/Diagnostics2'),
+  diagnostics3(value: 'http://linksys.com/jnap/diagnostics/Diagnostics3'),
+  diagnostics7(value: 'http://linksys.com/jnap/diagnostics/Diagnostics7'),
+  diagnostics8(value: 'http://linksys.com/jnap/diagnostics/Diagnostics8'),
+  diagnostics9(value: 'http://linksys.com/jnap/diagnostics/Diagnostics9'),
   firewall(value: 'http://linksys.com/jnap/firewall/Firewall'),
   firewall2(value: 'http://linksys.com/jnap/firewall/Firewall2'),
   firmwareUpdate(

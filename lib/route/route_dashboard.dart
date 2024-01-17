@@ -93,6 +93,12 @@ final dashboardRoute = ShellRoute(
             name: RouteNamed.troubleshooting,
             path: RoutePath.troubleshooting,
             builder: (context, state) => TroubleshootingView(),
+            routes: [
+              LinksysRoute(
+                  name: RouteNamed.troubleshootingPing,
+                  path: RoutePath.troubleshootingPing,
+                  builder: (context, state) => TroubleshootingPingView()),
+            ],
           ),
           LinksysRoute(
             name: RouteNamed.settingsDDNS,

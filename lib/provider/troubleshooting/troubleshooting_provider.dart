@@ -2,10 +2,12 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/actions/jnap_transaction.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/models/back_haul_info.dart';
 import 'package:linksys_app/core/jnap/models/dhcp_lease.dart';
 import 'package:linksys_app/core/jnap/models/layer2_connection.dart';
 import 'package:linksys_app/core/jnap/models/node_wireless_connection.dart';
+import 'package:linksys_app/core/jnap/models/ping_status.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
@@ -128,6 +130,33 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
         ..sort((a, b) => a.interface.compareTo(b.interface));
       state = state.copyWith(
           deviceStatusList: deviceStatusList, dhchClientList: dhcpList);
+    });
+  }
+
+  Future ping({required String host, required int? pingCount}) {
+    return ref.read(routerRepositoryProvider).send(JNAPAction.startPing,
+        fetchRemote: true,
+        cacheLevel: CacheLevel.noCache,
+        data: {'host': host, 'packetSizeBytes': 32, 'pingCount': pingCount}
+          ..removeWhere((key, value) => value == null));
+  }
+
+  Stream<PingStatus> getPingStatus() {
+    return ref
+        .read(routerRepositoryProvider)
+        .scheduledCommand(
+            action: JNAPAction.getPinStatus,
+            retryDelayInMilliSec: 10,
+            condition: (result) {
+              final status = PingStatus.fromMap(result.output);
+              return !status.isRunning;
+            })
+        .map((event) {
+      if (event is JNAPSuccess) {
+        return PingStatus.fromMap(event.output);
+      } else {
+        throw event;
+      }
     });
   }
 
