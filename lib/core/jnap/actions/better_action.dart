@@ -351,8 +351,14 @@ void initBetterActions() {
   _betterActionMap[JNAPAction.isServiceSupported] =
       _JNAPActionValue.isServiceSupported.value;
   _betterActionMap[JNAPAction.reboot] = _JNAPActionValue.reboot.value;
+  _betterActionMap[JNAPAction.getDDNSSettings] =
+      _JNAPActionValue.getDDNSSettings.value;
   _betterActionMap[JNAPAction.getDDNSStatus] =
       _JNAPActionValue.getDDNSStatus.value;
+  _betterActionMap[JNAPAction.getSupportedDDNSProviders] =
+      _JNAPActionValue.getSupportedDDNSProviders.value;
+        _betterActionMap[JNAPAction.setDDNSSetting] =
+      _JNAPActionValue.setDDNSSetting.value;
   _betterActionMap[JNAPAction.getDevices] = _JNAPActionValue.getDevices.value;
   _betterActionMap[JNAPAction.getLocalDevice] =
       _JNAPActionValue.getLocalDevice.value;

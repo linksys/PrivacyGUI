@@ -24,7 +24,10 @@ enum JNAPAction {
   isServiceSupported,
   reboot,
   // ddns
+  getDDNSSettings,
   getDDNSStatus,
+  getSupportedDDNSProviders,
+  setDDNSSetting,
   // deviceList
   getDevices,
   getLocalDevice,
@@ -165,6 +168,7 @@ enum JNAPAction {
   //airtime fairness
   getAirtimeFairnessSettings,
   setAirtimeFairnessSettings,
+
   ;
 
   String get actionValue {

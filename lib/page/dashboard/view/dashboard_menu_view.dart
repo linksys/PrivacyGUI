@@ -128,12 +128,18 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                     onTap: () {
                       _navigateTo(RouteNamed.speedTestSelection);
                     }),
-                 AppSectionItemData(
+                AppSectionItemData(
                     title: 'Troubleshooting',
                     iconData: getCharactersIcons(context).healthDefault,
                     onTap: () {
                       _navigateTo(RouteNamed.troubleshooting);
-                    }),   
+                    }),
+                AppSectionItemData(
+                    title: 'DDNS Settings',
+                    iconData: getCharactersIcons(context).healthDefault,
+                    onTap: () {
+                      _navigateTo(RouteNamed.settingsDDNS);
+                    }),
                 if (isCloudLogin)
                   AppSectionItemData(
                       title: 'Account',
@@ -154,7 +160,6 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
               ],
             ),
             const Spacer(),
-            
             const AppGap.semiBig(),
             AppTextButton.noPadding('Log out', onTap: () {
               ref.read(authProvider.notifier).logout();

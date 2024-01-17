@@ -91,7 +91,9 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
 
       //
 
-      final dhcpList = dhcpLeases.map((e) {
+      final dhcpList = dhcpLeases.where((e) {
+        return devices.any((device) => device.containsMacAddress(e.macAddress));
+      }).map((e) {
         final device = devices.firstWhereOrNull(
             (element) => element.containsMacAddress(e.macAddress));
         final name = e.hostName ?? device?.getDeviceLocation() ?? 'Unknown';
@@ -105,7 +107,8 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
             ? 'LAN'
             : 'Wireless';
         final isOnline = devices
-                .firstWhereOrNull((element) => element.getMacAddress() == mac)
+                .firstWhereOrNull(
+                    (device) => device.containsMacAddress(e.macAddress))
                 ?.connections
                 .isNotEmpty ??
             false;

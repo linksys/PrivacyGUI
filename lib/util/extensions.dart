@@ -41,3 +41,9 @@ extension DurationExt on Duration {
     return "$negativeSign${twoDigits(inHours)}:$twoDigitMinutes:$twoDigitSeconds";
   }
 }
+
+extension JsonTransfrom on Map<String, dynamic> {
+  T? transform<T> () {
+      
+  }
+}
