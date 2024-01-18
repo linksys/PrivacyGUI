@@ -3,7 +3,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 class MoabInAppBrowser extends InAppBrowser {
   MoabInAppBrowser();
   MoabInAppBrowser.withDefaultOption() {
-    setSettings(settings: InAppBrowserClassSettings());
+    // setSettings(settings: InAppBrowserClassSettings());
   }
 
   @override

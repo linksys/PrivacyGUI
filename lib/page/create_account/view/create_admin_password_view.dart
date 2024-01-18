@@ -118,7 +118,7 @@ class _CreateAdminPasswordViewState
                     .create_router_password_how_to_access, onTap: () {
               MoabInAppBrowser.withDefaultOption().openUrlRequest(
                   urlRequest: URLRequest(
-                      url: WebUri.uri(Uri.parse('https://www.linksys.com/us/'))));
+                      url: Uri.parse('https://www.linksys.com/us/')));
             })
           ],
         ),
