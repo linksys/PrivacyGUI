@@ -65,8 +65,7 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
 class MockPnpNotifier extends BasePnpNotifier {
   @override
   Future checkAdminPassword(String? password) {
-    return Future.delayed(const Duration(seconds: 3))
-        .then((value) => throw 'ErrorInvalidAdminPassword');
+    return Future.delayed(const Duration(seconds: 3));
   }
 
   @override
