@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
@@ -316,6 +317,15 @@ class Utils {
     }
 
     return true;
+  }
+
+  static String getIpPrefix(String ipAddress, String subnetMask) {
+    final subnetMaskToken = subnetMask.split('.');
+    return ipAddress
+        .split('.')
+        .mapIndexed(
+            (index, e) => int.parse(e) & int.parse(subnetMaskToken[index]))
+        .join('.');
   }
 
   static String prefixLengthToSubnetMask(int prefixLength) {

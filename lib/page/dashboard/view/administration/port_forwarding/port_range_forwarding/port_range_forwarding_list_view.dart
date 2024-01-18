@@ -71,7 +71,7 @@ class _PortRangeForwardingContentViewState
                 getAppLocalizations(context).add_rule,
                 onTap: () {
                   context.pushNamed<bool?>(RouteNamed.portRangeForwardingRule,
-                      queryParameters: {'rules': state.rules}).then((value) {
+                      extra: {'rules': state.rules}).then((value) {
                     if (value ?? false) {
                       _notifier.fetch();
                     }
@@ -81,12 +81,8 @@ class _PortRangeForwardingContentViewState
             const AppGap.semiBig(),
             ...state.rules.map((e) => AppPanelWithInfo(
                   onTap: () {
-                    context.pushNamed<bool?>(
-                        RouteNamed.singlePortForwardingRule,
-                        queryParameters: {
-                          'rules': state.rules,
-                          'edit': e
-                        }).then((value) {
+                    context.pushNamed<bool?>(RouteNamed.portRangeForwardingRule,
+                        extra: {'rules': state.rules, 'edit': e}).then((value) {
                       if (value ?? false) {
                         _notifier.fetch();
                       }

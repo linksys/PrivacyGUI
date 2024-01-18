@@ -20,6 +20,7 @@ class SinglePortForwardingListNotifier
     repo
         .send(
       JNAPAction.getSinglePortForwardingRules,
+      fetchRemote: true,
       auth: true,
     )
         .then<JNAPSuccess?>((value) {

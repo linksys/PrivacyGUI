@@ -5,10 +5,10 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/jnap/models/port_range_triggering_rule.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_app/provider/port_forwarding/port_range_triggering_rule/_port_range_triggering.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/panel/general_section.dart';
 
 class PortRangeTriggeringRuleView extends ArgumentsConsumerStatelessView {
   const PortRangeTriggeringRuleView({super.key, super.args});
@@ -156,43 +156,53 @@ class _AddRuleContentViewState
           headerText: getAppLocalizations(context).rule_name,
           hintText: getAppLocalizations(context).rule_name,
           controller: _ruleNameController),
-      const AppGap.semiSmall(),
-      administrationSection(
+      const AppGap.extraBig(),
+      AppSection.withLabel(
         title: getAppLocalizations(context).triggered_range,
         content: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            AppTextField.minMaxNumber(
+              headerText: getAppLocalizations(context).start_port,
+              hintText: getAppLocalizations(context).end_port,
+              inputType: TextInputType.number,
+              controller: _firstTriggerPortController,
+              max: 65535,
+            ),
             const AppGap.regular(),
-            AppTextField(
-                headerText: getAppLocalizations(context).start_port,
-                hintText: getAppLocalizations(context).end_port,
-                inputType: TextInputType.number,
-                controller: _firstTriggerPortController),
-            const AppGap.regular(),
-            AppTextField(
-                headerText: getAppLocalizations(context).start_port,
-                hintText: getAppLocalizations(context).end_port,
-                inputType: TextInputType.number,
-                controller: _lastTriggerPortController),
+            AppTextField.minMaxNumber(
+              headerText: getAppLocalizations(context).end_port,
+              hintText: getAppLocalizations(context).end_port,
+              inputType: TextInputType.number,
+              controller: _lastTriggerPortController,
+              max: 65535,
+            ),
             const AppGap.regular(),
           ],
         ),
       ),
-      administrationSection(
+      AppSection.withLabel(
         title: getAppLocalizations(context).forwarded_range,
         content: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            AppTextField.minMaxNumber(
+              headerText: getAppLocalizations(context).start_port,
+              hintText: getAppLocalizations(context).end_port,
+              inputType: TextInputType.number,
+              controller: _firstForwardedPortController,
+              max: 65535,
+            ),
             const AppGap.regular(),
-            AppTextField(
-                headerText: getAppLocalizations(context).start_port,
-                hintText: getAppLocalizations(context).end_port,
-                inputType: TextInputType.number,
-                controller: _firstForwardedPortController),
-            const AppGap.regular(),
-            AppTextField(
-                headerText: getAppLocalizations(context).start_port,
-                hintText: getAppLocalizations(context).end_port,
-                inputType: TextInputType.number,
-                controller: _lastForwardedPortController),
+            AppTextField.minMaxNumber(
+              headerText: getAppLocalizations(context).end_port,
+              hintText: getAppLocalizations(context).end_port,
+              inputType: TextInputType.number,
+              controller: _lastForwardedPortController,
+              max: 65535,
+            ),
             const AppGap.regular(),
           ],
         ),

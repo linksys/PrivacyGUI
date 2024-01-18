@@ -80,7 +80,7 @@ class _MacFilteringContentViewState
               onTap: () async {
                 final String? selected = await context.pushNamed(
                   RouteNamed.itemPicker,
-                  queryParameters: {
+                  extra: {
                     'items': [
                       Item(
                         title: getAppLocalizations(context).allow_access,

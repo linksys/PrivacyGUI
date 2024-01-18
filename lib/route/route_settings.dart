@@ -140,7 +140,7 @@ final settings = [
         name: RouteNamed.dhcpReservation,
         path: RoutePath.dhcpReservation,
         builder: (context, state) => DHCPReservationsView(
-          args: state.uri.queryParameters,
+          args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
     ],
@@ -154,7 +154,7 @@ final settings = [
         name: RouteNamed.macFilteringInput,
         path: RoutePath.macFilteringInput,
         builder: (context, state) => MacFilteringEnterDeviceView(
-          args: state.uri.queryParameters,
+          args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
     ],
@@ -168,49 +168,56 @@ final settings = [
         name: RouteNamed.selectDevice,
         path: RoutePath.selectDevice,
         builder: (context, state) => SelectOnlineDeviceView(
-          args: state.uri.queryParameters,
+          args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
       LinksysRoute(
         name: RouteNamed.selectProtocol,
         path: RoutePath.selectProtocol,
         builder: (context, state) => SelectProtocolView(
-          args: state.uri.queryParameters,
+          args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
       LinksysRoute(
         name: RouteNamed.singlePortForwardingList,
         path: RoutePath.singlePortForwardingList,
         builder: (context, state) => SinglePortForwardingListView(
-          args: state.uri.queryParameters,
+          args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
       LinksysRoute(
         name: RouteNamed.singlePortForwardingRule,
         path: RoutePath.singlePortForwardingRule,
         builder: (context, state) => SinglePortForwardingRuleView(
-          args: state.uri.queryParameters,
+          args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
       LinksysRoute(
         name: RouteNamed.portRangeForwardingList,
         path: RoutePath.portRangeForwardingList,
         builder: (context, state) => PortRangeForwardingListView(
-          args: state.uri.queryParameters,
+          args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
       LinksysRoute(
         name: RouteNamed.portRangeForwardingRule,
         path: RoutePath.portRangeForwardingRule,
         builder: (context, state) => PortRangeForwardingRuleView(
-          args: state.uri.queryParameters,
+          args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
       LinksysRoute(
         name: RouteNamed.portRangeTriggeringList,
         path: RoutePath.portRangeTriggeringList,
         builder: (context, state) => PortRangeTriggeringListView(
-          args: state.uri.queryParameters,
+          args: state.extra as Map<String, dynamic>? ?? {},
+        ),
+      ),
+      LinksysRoute(
+        name: RouteNamed.protRangeTriggeringRule,
+        path: RoutePath.protRangeTriggeringRule,
+        builder: (context, state) => PortRangeTriggeringRuleView(
+          args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
     ],

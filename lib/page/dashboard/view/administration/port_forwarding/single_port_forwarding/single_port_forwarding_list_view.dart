@@ -72,7 +72,7 @@ class _SinglePortForwardingContentViewState
                 getAppLocalizations(context).add_rule,
                 onTap: () {
                   context.pushNamed<bool?>(RouteNamed.singlePortForwardingRule,
-                      queryParameters: {'rules': state.rules}).then((value) {
+                      extra: {'rules': state.rules}).then((value) {
                     if (value ?? false) {
                       _notifier.fetch();
                     }
@@ -89,7 +89,7 @@ class _SinglePortForwardingContentViewState
                 forcedHidingAccessory: true,
                 onTap: () {
                   context.pushNamed<bool?>(RouteNamed.singlePortForwardingRule,
-                      queryParameters: {
+                      extra: {
                         'rules': state.rules,
                         'edit': e
                       }).then((value) {

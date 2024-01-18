@@ -14,18 +14,21 @@ final singlePortForwardingRuleProvider = NotifierProvider<
 class SinglePortForwardingRuleNotifier
     extends Notifier<SinglePortForwardingRuleState> {
   InputValidator? _localIpValidator;
+  String _subnetMask = '255.255.0.0';
+  String _ipAddress = '192.168.1.1';
 
   @override
   SinglePortForwardingRuleState build() =>
       const SinglePortForwardingRuleState();
 
-  goAdd(List<SinglePortForwardingRule> rules) {
-    fetch().then((value) => state = state.copyWith(
+  Future goAdd(List<SinglePortForwardingRule> rules) {
+    return fetch().then((value) => state = state.copyWith(
         mode: SinglePortForwardingRuleMode.adding, rules: rules));
   }
 
-  goEdit(List<SinglePortForwardingRule> rules, SinglePortForwardingRule rule) {
-    fetch().then((value) => state.copyWith(
+  Future goEdit(
+      List<SinglePortForwardingRule> rules, SinglePortForwardingRule rule) {
+    return fetch().then((value) => state.copyWith(
         mode: SinglePortForwardingRuleMode.editing, rules: rules, rule: rule));
   }
 
@@ -37,8 +40,8 @@ class SinglePortForwardingRuleNotifier
           auth: true,
         )
         .then((value) => RouterLANSettings.fromJson(value.output));
-    final ipAddress = lanSettings.ipAddress;
-    final subnetMask =
+    _ipAddress = lanSettings.ipAddress;
+    _subnetMask =
         Utils.prefixLengthToSubnetMask(lanSettings.networkPrefixLength);
     _localIpValidator = IpAddressLocalValidator(ipAddress, subnetMask);
   }
@@ -94,4 +97,7 @@ class SinglePortForwardingRuleNotifier
   bool isEdit() {
     return state.mode == SinglePortForwardingRuleMode.editing;
   }
+
+  String get subnetMask => _subnetMask;
+  String get ipAddress => _ipAddress;
 }

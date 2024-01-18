@@ -5,8 +5,11 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/jnap/models/single_port_forwarding_rule.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/page/dashboard/view/administration/port_forwarding/ip_field_with_device_picker.dart';
+import 'package:linksys_app/provider/devices/device_list_provider.dart';
 import 'package:linksys_app/provider/port_forwarding/single_port_forwarding_rule/_single_port_forwarding_rule.dart';
 import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -46,15 +49,20 @@ class _AddRuleContentViewState
   void initState() {
     _notifier = ref.read(singlePortForwardingRuleProvider.notifier);
     _rules = widget.args['rules'] ?? [];
-    final rule = widget.args['edit'];
+    final rule = widget.args['edit'] as SinglePortForwardingRule?;
     if (rule != null) {
-      _ruleNameController.text = rule.description;
-      _externalPortController.text = '${rule.externalPort}';
-      _internalPortController.text = '${rule.internalPort}';
-      _deviceIpAddressController.text = rule.internalServerIPAddress;
-      _notifier.goEdit(_rules, rule);
+      _notifier.goEdit(_rules, rule).then((_) {
+        _ruleNameController.text = rule.description;
+        _externalPortController.text = '${rule.externalPort}';
+        _internalPortController.text = '${rule.internalPort}';
+        _deviceIpAddressController.text = rule.internalServerIPAddress;
+      });
     } else {
-      _notifier.goAdd(_rules);
+      _notifier.goAdd(_rules).then((_) {
+        final prefixIp =
+            Utils.getIpPrefix(_notifier.ipAddress, _notifier.subnetMask);
+        _deviceIpAddressController.text = prefixIp;
+      });
     }
     super.initState();
   }
@@ -144,32 +152,43 @@ class _AddRuleContentViewState
   }
 
   List<Widget> buildInputForms() {
+    final submaskToken = _notifier.subnetMask.split('.');
     return [
       AppTextField(
           headerText: getAppLocalizations(context).rule_name,
           hintText: getAppLocalizations(context).rule_name,
           controller: _ruleNameController),
       const AppGap.semiSmall(),
-      AppTextField(
-          headerText: getAppLocalizations(context).external_port,
-          hintText: getAppLocalizations(context).external_port,
-          inputType: TextInputType.number,
-          controller: _externalPortController),
+      AppTextField.minMaxNumber(
+        headerText: getAppLocalizations(context).external_port,
+        hintText: getAppLocalizations(context).external_port,
+        inputType: TextInputType.number,
+        controller: _externalPortController,
+        max: 65535,
+        min: 0,
+      ),
       const AppGap.semiSmall(),
-      AppTextField(
-          headerText: getAppLocalizations(context).internal_port,
-          hintText: getAppLocalizations(context).internal_port,
-          inputType: TextInputType.number,
-          controller: _internalPortController),
+      AppTextField.minMaxNumber(
+        headerText: getAppLocalizations(context).internal_port,
+        hintText: getAppLocalizations(context).internal_port,
+        inputType: TextInputType.number,
+        controller: _internalPortController,
+        max: 65535,
+        min: 0,
+      ),
       const AppGap.semiSmall(),
-      
-      AppTextField(
+      AppText.labelMedium(getAppLocalizations(context).device_ip_address),
+      AppIpFieldWithDevicePicker(
         controller: _deviceIpAddressController,
-        hintText: getAppLocalizations(context).device_ip_address,
-        headerText: getAppLocalizations(context).device_ip_address,
-        // TODO: need to fix
-        textValidator: () =>
-            _notifier.isDeviceIpValidate(_deviceIpAddressController.text),
+        deviceList: ref
+            .read(deviceListProvider)
+            .devices
+            .where((element) => element.isOnline)
+            .toList(),
+        octet1ReadOnly: submaskToken[0] == '255',
+        octet2ReadOnly: submaskToken[1] == '255',
+        octet3ReadOnly: submaskToken[2] == '255',
+        octet4ReadOnly: submaskToken[3] == '255',
       ),
       const AppGap.semiSmall(),
       AppPanelWithInfo(
@@ -178,7 +197,7 @@ class _AddRuleContentViewState
         onTap: () async {
           String? protocol = await context.pushNamed(
             RouteNamed.selectProtocol,
-            queryParameters: {'selected': _protocol},
+            extra: {'selected': _protocol},
           );
           if (protocol != null) {
             setState(() {

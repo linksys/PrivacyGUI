@@ -124,7 +124,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           onTap: () {
             context.pushNamed(
               RouteNamed.settingsNodes,
-              queryParameters: {
+              extra: {
                 'selectedDeviceId': state.item.deviceId,
               },
             );
@@ -207,7 +207,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         const Divider(height: 8),
         AppSimplePanel(
           title: getAppLocalizations(context).node_detail_label_connected_to,
-          description: '${state.item.upstreamDevice} [${state.item.signalStrength}]',
+          description:
+              '${state.item.upstreamDevice} [${state.item.signalStrength}]',
           onTap: () {
             ref.read(topologySelectedIdProvider.notifier).state =
                 state.item.deviceId;

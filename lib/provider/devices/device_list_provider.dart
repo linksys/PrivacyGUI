@@ -7,12 +7,12 @@ import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/provider/devices/device_list_state.dart';
 
 final offlineDeviceListProvider = Provider((ref) {
-  final deviceListState = ref.watch(_deviceListProvider);
+  final deviceListState = ref.watch(deviceListProvider);
   return deviceListState.devices.where((device) => !device.isOnline).toList();
 });
 final filteredDeviceListProvider = Provider((ref) {
   final ssidFilter = ref.watch(ssidFilterProvider);
-  final deviceListState = ref.watch(_deviceListProvider);
+  final deviceListState = ref.watch(deviceListProvider);
   final nodeId = ref.watch(nodeIdFilterProvider);
   final band = ref.watch(bandFilterProvider);
   final connection = ref.watch(connectionFilterProvider);
@@ -62,7 +62,7 @@ final nodeIdFilterProvider = StateProvider((ref) {
 final bandFilterProvider = StateProvider((ref) => '');
 final connectionFilterProvider = StateProvider((ref) => '');
 
-final _deviceListProvider =
+final deviceListProvider =
     NotifierProvider<DeviceListNotifier, DeviceListState>(
   () => DeviceListNotifier(),
 );

@@ -72,7 +72,7 @@ class _PortRangeTriggeringContentViewState
                 onTap: () {
                   context.pushNamed<bool?>(
                     RouteNamed.protRangeTriggeringRule,
-                    queryParameters: {'rules': state.rules},
+                    extra: {'rules': state.rules},
                   ).then((value) {
                     if (value ?? false) {
                       _notifier.fetch();
@@ -90,8 +90,8 @@ class _PortRangeTriggeringContentViewState
                 forcedHidingAccessory: true,
                 onTap: () {
                   context.pushNamed<bool?>(
-                    RouteNamed.singlePortForwardingRule,
-                    queryParameters: {'rules': state.rules, 'edit': e},
+                    RouteNamed.protRangeTriggeringRule,
+                    extra: {'rules': state.rules, 'edit': e},
                   ).then((value) {
                     if (value ?? false) {
                       _notifier.fetch();

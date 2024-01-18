@@ -15,17 +15,20 @@ final portRangeForwardingRuleProvider = NotifierProvider<
 class PortRangeForwardingRuleNotifier
     extends Notifier<PortRangeForwardingRuleState> {
   InputValidator? _localIpValidator;
+  String _subnetMask = '255.255.0.0';
+  String _ipAddress = '192.168.1.1';
 
   @override
   PortRangeForwardingRuleState build() => const PortRangeForwardingRuleState();
 
-  goAdd(List<PortRangeForwardingRule> rules) {
-    fetch().then((value) => state =
+  Future goAdd(List<PortRangeForwardingRule> rules) {
+    return fetch().then((value) => state =
         state.copyWith(mode: PortRangeForwardingRuleMode.adding, rules: rules));
   }
 
-  goEdit(List<PortRangeForwardingRule> rules, PortRangeForwardingRule rule) {
-    fetch().then((value) => state = state.copyWith(
+  Future goEdit(
+      List<PortRangeForwardingRule> rules, PortRangeForwardingRule rule) {
+    return fetch().then((value) => state = state.copyWith(
         mode: PortRangeForwardingRuleMode.editing, rules: rules, rule: rule));
   }
 
@@ -34,8 +37,8 @@ class PortRangeForwardingRuleNotifier
     final lanSettings = await repo
         .send(JNAPAction.getLANSettings)
         .then((value) => RouterLANSettings.fromJson(value.output));
-    final ipAddress = lanSettings.ipAddress;
-    final subnetMask =
+    _ipAddress = lanSettings.ipAddress;
+    _subnetMask =
         Utils.prefixLengthToSubnetMask(lanSettings.networkPrefixLength);
     _localIpValidator = IpAddressLocalValidator(ipAddress, subnetMask);
   }
@@ -51,7 +54,13 @@ class PortRangeForwardingRuleNotifier
     }
     final repo = ref.read(routerRepositoryProvider);
     final result = await repo
-        .setPortRangeForwardingRules(rules)
+        .send(
+          JNAPAction.setPortRangeForwardingRules,
+          auth: true,
+          data: {
+            'rules': rules.map((e) => e.toJson()).toList(),
+          },
+        )
         .then((value) => true)
         .onError((error, stackTrace) => false);
     return result;
@@ -64,7 +73,13 @@ class PortRangeForwardingRuleNotifier
         ..removeWhere((element) => element == state.rule);
       final repo = ref.read(routerRepositoryProvider);
       final result = await repo
-          .setPortRangeForwardingRules(rules)
+          .send(
+            JNAPAction.setPortRangeForwardingRules,
+            auth: true,
+            data: {
+              'rules': rules.map((e) => e.toJson()).toList(),
+            },
+          )
           .then((value) => true)
           .onError((error, stackTrace) => false);
       return result;
@@ -80,4 +95,7 @@ class PortRangeForwardingRuleNotifier
   bool isEdit() {
     return state.mode == PortRangeForwardingRuleMode.editing;
   }
+
+  String get subnetMask => _subnetMask;
+  String get ipAddress => _ipAddress;
 }

@@ -155,11 +155,11 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             // iconData: getCharactersIcons(context).nodesDefault,
             onTap: () => context.goNamed(RouteNamed.settingsLocalNetwork),
           ),
-          // AppSectionItemData(
-          //   title: 'Port',
-          //   // iconData: getCharactersIcons(context).nodesDefault,
-          //   onTap: () => context.goNamed(RouteNamed.settingsPort),
-          // ),
+          AppSectionItemData(
+            title: 'Port',
+            // iconData: getCharactersIcons(context).nodesDefault,
+            onTap: () => context.goNamed(RouteNamed.settingsPort),
+          ),
         ],
       );
 }

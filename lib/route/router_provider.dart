@@ -23,6 +23,7 @@ import 'package:linksys_app/page/dashboard/view/administration/port_forwarding/p
 import 'package:linksys_app/page/dashboard/view/administration/port_forwarding/port_range_forwarding/port_range_forwarding_list_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/port_forwarding/port_range_forwarding/port_range_forwarding_rule_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/port_forwarding/port_range_triggering/port_range_triggering_list_view.dart';
+import 'package:linksys_app/page/dashboard/view/administration/port_forwarding/port_range_triggering/port_range_triggering_rule_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/port_forwarding/select_online_device_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/port_forwarding/select_protocol_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/port_forwarding/single_port_forwarding/single_port_forwarding_list_view.dart';
