@@ -57,18 +57,28 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   Widget _content(BuildContext context) {
-    return Container(
-      alignment: Alignment.topRight,
-      child: GestureDetector(
-          onLongPress: () {
-            setState(() {
-              _isOpenDebug = !_isOpenDebug;
-            });
-          },
-          onTap: () {
-            context.goNamed(RouteNamed.pnp);
-          },
-          child: SvgPicture(CustomTheme.of(context).images.linksysLogoBlack)),
+    return Stack(
+      children: [
+        Align(
+          alignment: Alignment.topLeft,
+          child: GestureDetector(
+              onLongPress: () {
+                setState(() {
+                  _isOpenDebug = !_isOpenDebug;
+                });
+              },
+              onTap: () {
+                context.goNamed(RouteNamed.pnp);
+              },
+              child: SvgPicture(
+                CustomTheme.of(context).images.linksysLogoBlack,
+                width: 32,
+                height: 32,
+              )),
+        ),
+        Center(
+            child: SvgPicture(CustomTheme.of(context).images.linksysWordmark)),
+      ],
     );
   }
 
