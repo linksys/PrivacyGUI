@@ -74,7 +74,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
               title: getAppLocalizations(context).router_details,
               content: Column(
                 children: [
-                  IPFormField(
+                  AppIPFormField(
                     header: AppText.bodyLarge(
                       getAppLocalizations(context).ip_address,
                     ),
@@ -87,7 +87,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                     isError: state.errors['ipAddress'] != null,
                   ),
                   const AppGap.semiBig(),
-                  IPFormField(
+                  AppIPFormField(
                     header: AppText.bodyLarge(
                       getAppLocalizations(context).subnet_mask,
                     ),
@@ -113,7 +113,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
                     title: getAppLocalizations(context).dhcp_server,
                     onChangedEvent: (value) {},
                   ),
-                  IPFormField(
+                  AppIPFormField(
                     header: AppText.bodyLarge(
                       getAppLocalizations(context).start_ip_address,
                     ),
@@ -211,7 +211,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
       return [];
     } else {
       return [
-        IPFormField(
+        AppIPFormField(
           header: AppText.bodyLarge(
             getAppLocalizations(context).static_dns1,
           ),
@@ -224,7 +224,7 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
           isError: state.errors['dns1'] != null,
         ),
         const AppGap.semiBig(),
-        IPFormField(
+        AppIPFormField(
           header: AppText.bodyLarge(
             getAppLocalizations(context).static_dns2_optional,
           ),

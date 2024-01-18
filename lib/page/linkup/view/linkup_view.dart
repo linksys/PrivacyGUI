@@ -96,7 +96,7 @@ class _LinkupViewState extends ConsumerState<LinkupView> {
                     child: AppText.titleLarge('Linksys linkup'),
                   ),
                   const AppGap.regular(),
-                  AppText.bodyLarge(data.subject ?? ''),
+                  AppText.bodyLarge(data.subject),
                   const AppGap.big(),
                   ...data.contents.map((content) {
                     return AppExpansion(
