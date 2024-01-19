@@ -22,18 +22,11 @@ class WifiSettingsChannelFinderView extends ArgumentsConsumerStatefulView {
 class _WifiSettingsChannelFinderViewState
     extends ConsumerState<WifiSettingsChannelFinderView> {
   bool isLoading = false;
+  bool isShowButton = true;
 
   @override
   void initState() {
     super.initState();
-    setState(() {
-      isLoading = true;
-    });
-    ref.read(channelFinderProvider.notifier).optimizeChannels().then((value) {
-      setState(() {
-        isLoading = false;
-      });
-    });
   }
 
   @override
@@ -44,23 +37,47 @@ class _WifiSettingsChannelFinderViewState
         : StyledAppPageView(
             title: 'Channel Finder',
             child: AppBasicLayout(
-              content: _ChannelFinderResult(state),
+              content: isShowButton
+                  ? _channelFinderButton()
+                  : _channelFinderResult(state),
             ),
           );
   }
 
-  Widget _ChannelFinderResult(ChannelFinderState state) {
+  Widget _channelFinderButton() {
+    return Center(
+      child: TextButton(
+        onPressed: () {
+          setState(() {
+            isLoading = true;
+            isShowButton = false;
+          });
+          ref
+              .read(channelFinderProvider.notifier)
+              .optimizeChannels()
+              .then((value) {
+            setState(() {
+              isLoading = false;
+            });
+          });
+        },
+        child: const Text('Start Channel Finder'),
+      ),
+    );
+  }
+
+  Widget _channelFinderResult(ChannelFinderState state) {
     if (state.result.isNotEmpty) {
       return ListView.builder(
         itemCount: state.result.length,
-        itemBuilder: (context, index) => _ListCell(state.result[index]),
+        itemBuilder: (context, index) => _listCell(state.result[index]),
       );
     } else {
       return const Text('Your wifi already at the best performance');
     }
   }
 
-  Widget _ListCell(OptimizedSelectedChannel channel) {
+  Widget _listCell(OptimizedSelectedChannel channel) {
     return Row(
       children: [
         Image(
