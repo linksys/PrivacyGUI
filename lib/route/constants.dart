@@ -90,6 +90,10 @@ class RoutePath {
   static const selectDevice = 'selectDevice';
   static const selectProtocol = 'selectProtocol';
 
+  /// Ipv6 port service
+  static const ipv6PortServiceList = 'ipv6PortServiceList';
+  static const ipv6PortServiceRule = 'ipv6PortServiceRule';
+
   /// linkup
   static const linkup = 'linkup';
 
@@ -210,6 +214,10 @@ class RouteNamed {
   static const selectDevice = 'selectDevice';
   static const selectProtocol = 'selectProtocol';
 
+  /// Ipv6 port service
+  static const ipv6PortServiceList = 'ipv6PortServiceList';
+  static const ipv6PortServiceRule = 'ipv6PortServiceRule';
+
   /// linkup
   static const linkup = 'linkup';
 
@@ -230,7 +238,7 @@ class RouteNamed {
 
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
-  
+
   ///Channel Finder
   static const channelFinderOptimize = 'channelFinderOptimize';
 

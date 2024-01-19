@@ -220,6 +220,20 @@ final settings = [
           args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
+      LinksysRoute(
+        name: RouteNamed.ipv6PortServiceList,
+        path: RoutePath.ipv6PortServiceList,
+        builder: (context, state) => Ipv6PortServiceListView(
+          args: state.extra as Map<String, dynamic>? ?? {},
+        ),
+      ),
+      LinksysRoute(
+        name: RouteNamed.ipv6PortServiceRule,
+        path: RoutePath.ipv6PortServiceRule,
+        builder: (context, state) => Ipv6PortServiceRuleView(
+          args: state.extra as Map<String, dynamic>? ?? {},
+        ),
+      ),
     ],
   ),
 ];

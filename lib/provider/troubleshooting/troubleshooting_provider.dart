@@ -160,6 +160,11 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
     });
   }
 
+  Future factoryReset() {
+    return ref.read(routerRepositoryProvider).send(JNAPAction.factoryReset,
+        fetchRemote: true, cacheLevel: CacheLevel.noCache);
+  }
+
   List<LinksysDevice> _handleDeviceData(JNAPSuccess? data) {
     if (data == null) {
       return [];

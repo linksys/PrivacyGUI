@@ -23,6 +23,7 @@ enum JNAPAction {
   isAdminPasswordDefault,
   isServiceSupported,
   reboot,
+  factoryReset,
   // ddns
   getDDNSSettings,
   getDDNSStatus,
@@ -52,6 +53,8 @@ enum JNAPAction {
   setPortRangeForwardingRules,
   setPortRangeTriggeringRules,
   setSinglePortForwardingRules,
+  getIPv6FirewallRules,
+  setIPv6FirewallRules,
   // firmwareUpdate
   getFirmwareUpdateStatus,
   getNodesFirmwareUpdateStatus,

@@ -28,10 +28,12 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/core/IsAdminPasswordDefault'),
   isServiceSupported(value: 'http://linksys.com/jnap/core/IsServiceSupported'),
   reboot(value: 'http://linksys.com/jnap/core/Reboot'),
+  factoryReset(value: 'http://linksys.com/jnap/core/FactoryReset'),
   getDDNSSettings(value: 'http://linksys.com/jnap/ddns/GetDDNSSettings'),
   getDDNSStatus(value: 'http://linksys.com/jnap/ddns/GetDDNSStatus'),
   getDDNSStatus2(value: 'http://linksys.com/jnap/ddns/GetDDNSStatus2'),
-  getSupportedDDNSProviders(value: 'http://linksys.com/jnap/ddns/GetSupportedDDNSProviders'),
+  getSupportedDDNSProviders(
+      value: 'http://linksys.com/jnap/ddns/GetSupportedDDNSProviders'),
   setDDNSSetting(value: 'http://linksys.com/jnap/ddns/SetDDNSSettings'),
   getDevices(value: 'http://linksys.com/jnap/devicelist/GetDevices'),
   getDevices3(value: 'http://linksys.com/jnap/devicelist/GetDevices3'),
@@ -39,29 +41,23 @@ enum _JNAPActionValue {
   setDeviceProperties(
       value: 'http://linksys.com/jnap/devicelist/SetDeviceProperties'),
   deleteDevice(value: 'http://linksys.com/jnap/devicelist/DeleteDevice'),
+
   ///
-  execSysCommand(
-      value: 'http://linksys.com/jnap/diagnostics/ExecSysCommand'),
-  getPinStatus(
-      value: 'http://linksys.com/jnap/diagnostics/GetPingStatus'),
-  getSysInfoData(
-      value: 'http://linksys.com/jnap/diagnostics/GetSysinfoData'),
-  getSystemStats(
-      value: 'http://linksys.com/jnap/diagnostics/GetSystemStats'),
+  execSysCommand(value: 'http://linksys.com/jnap/diagnostics/ExecSysCommand'),
+  getPinStatus(value: 'http://linksys.com/jnap/diagnostics/GetPingStatus'),
+  getSysInfoData(value: 'http://linksys.com/jnap/diagnostics/GetSysinfoData'),
+  getSystemStats(value: 'http://linksys.com/jnap/diagnostics/GetSystemStats'),
   getTracerouteStatus(
       value: 'http://linksys.com/jnap/diagnostics/GetTracerouteStatus'),
   restorePreviousFirmware(
       value: 'http://linksys.com/jnap/diagnostics/RestorePreviousFirmware'),
   sendSysinfoEmail(
       value: 'http://linksys.com/jnap/diagnostics/SendSysinfoEmail'),
-  startPing(
-      value: 'http://linksys.com/jnap/diagnostics/StartPing'),
-  startTracroute(
-      value: 'http://linksys.com/jnap/diagnostics/StartTraceroute'),
-  stopPing(
-      value: 'http://linksys.com/jnap/diagnostics/StopPing'),
-  stopTracroute(
-      value: 'http://linksys.com/jnap/diagnostics/StopTraceroute'),
+  startPing(value: 'http://linksys.com/jnap/diagnostics/StartPing'),
+  startTracroute(value: 'http://linksys.com/jnap/diagnostics/StartTraceroute'),
+  stopPing(value: 'http://linksys.com/jnap/diagnostics/StopPing'),
+  stopTracroute(value: 'http://linksys.com/jnap/diagnostics/StopTraceroute'),
+
   ///
   getPortRangeForwardingRules(
       value: 'http://linksys.com/jnap/firewall/GetPortRangeForwardingRules'),
@@ -75,8 +71,13 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/firewall/SetPortRangeTriggeringRules'),
   setSinglePortForwardingRules(
       value: 'http://linksys.com/jnap/firewall/SetSinglePortForwardingRules'),
+  getIPv6FirewallRules(
+      value: 'http://linksys.com/jnap/firewall/GetIPv6FirewallRules'),
+  setIPv6FirewallRules(
+      value: 'http://linksys.com/jnap/firewall/SetIPv6FirewallRules'),
   getFirmwareUpdateStatus(
       value: 'http://linksys.com/jnap/firmwareupdate/GetFirmwareUpdateStatus'),
+
   getNodesFirmwareUpdateStatus(
       value:
           'http://linksys.com/jnap/nodes/firmwareupdate/GetFirmwareUpdateStatus'),

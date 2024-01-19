@@ -189,6 +189,7 @@ class _AddRuleContentViewState
         octet2ReadOnly: submaskToken[1] == '255',
         octet3ReadOnly: submaskToken[2] == '255',
         octet4ReadOnly: submaskToken[3] == '255',
+        selectedResult: (item) => item.ipv4Address,
       ),
       const AppGap.semiSmall(),
       AppPanelWithInfo(

@@ -12,6 +12,8 @@ import 'package:linksys_app/page/dashboard/view/_view.dart';
 import 'package:linksys_app/page/dashboard/view/account/_account.dart';
 import 'package:linksys_app/page/dashboard/view/account/two_step_verification_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/_administration.dart';
+import 'package:linksys_app/page/dashboard/view/administration/firewall/ipv6_port_service_list_view.dart';
+import 'package:linksys_app/page/dashboard/view/administration/firewall/ipv6_port_service_rule_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/internet_settings/connection_type_selection_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/internet_settings/internet_settings_mac_clone_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/internet_settings/internet_settings_mtu_picker.dart';

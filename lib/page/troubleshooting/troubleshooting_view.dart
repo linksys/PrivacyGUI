@@ -1,8 +1,11 @@
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/troubleshooting/device_status.dart';
 import 'package:linksys_app/provider/troubleshooting/troubleshooting_provider.dart';
 import 'package:linksys_app/route/constants.dart';
@@ -229,6 +232,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
                       },
                     ),
                   ),
+                  ..._attachFatoryResetButton(),
                 ],
               ),
             ),
@@ -240,5 +244,41 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
       padding: const EdgeInsets.all(Spacing.semiSmall),
       child: child,
     );
+  }
+
+  List<Widget> _attachFatoryResetButton() {
+    if (ref.read(authProvider).value?.loginType == LoginType.local ||
+        BuildConfig.forceCommandType == ForceCommand.local) {
+      return [
+        const AppGap.big(),
+        Align(
+            alignment: Alignment.centerLeft,
+            child: AppTextButton(
+              'Factory Reset',
+              onTap: () {
+                showAlertDialog<bool>(
+                    context: context,
+                    title: 'Important',
+                    message:
+                        'When you reset your router, it reboots, disconnects from the internet and clears all current settings. All devices connected to the router will also be disconnected. When the reset completes, the router will need to be set up again and then all devices will have to reconnect using the new settings.\n\nDo you want to continue?',
+                    actions: [
+                      const AlertDialogAction<bool>(key: true, label: 'Yes'),
+                      const AlertDialogAction<bool>(key: false, label: 'No'),
+                    ]).then((value) {
+                  if ((value ?? false)) {
+                    ref
+                        .read(troubleshootingProvider.notifier)
+                        .factoryReset()
+                        .then((value) {
+                      ref.read(authProvider.notifier).logout();
+                    });
+                  } else {}
+                });
+              },
+            )),
+      ];
+    } else {
+      return [];
+    }
   }
 }

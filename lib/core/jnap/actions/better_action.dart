@@ -363,6 +363,8 @@ void initBetterActions() {
   _betterActionMap[JNAPAction.isServiceSupported] =
       _JNAPActionValue.isServiceSupported.value;
   _betterActionMap[JNAPAction.reboot] = _JNAPActionValue.reboot.value;
+  _betterActionMap[JNAPAction.factoryReset] =
+      _JNAPActionValue.factoryReset.value;
   _betterActionMap[JNAPAction.getDDNSSettings] =
       _JNAPActionValue.getDDNSSettings.value;
   _betterActionMap[JNAPAction.getDDNSStatus] =
@@ -410,6 +412,10 @@ void initBetterActions() {
       _JNAPActionValue.setPortRangeTriggeringRules.value;
   _betterActionMap[JNAPAction.setSinglePortForwardingRules] =
       _JNAPActionValue.setSinglePortForwardingRules.value;
+  _betterActionMap[JNAPAction.getIPv6FirewallRules] =
+      _JNAPActionValue.getIPv6FirewallRules.value;
+  _betterActionMap[JNAPAction.setIPv6FirewallRules] =
+      _JNAPActionValue.setIPv6FirewallRules.value;
   _betterActionMap[JNAPAction.getFirmwareUpdateStatus] =
       _JNAPActionValue.getFirmwareUpdateStatus.value;
   _betterActionMap[JNAPAction.getNodesFirmwareUpdateStatus] =
