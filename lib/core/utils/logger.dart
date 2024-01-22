@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:linksys_app/constants/_constants.dart';
 import 'package:logger/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_app/utils.dart';
@@ -34,8 +35,8 @@ class CustomOutput extends LogOutput {
           mode: FileMode.writeOnlyAppend);
     } else if (kIsWeb && output.isNotEmpty) {
       final SharedPreferences sp = await SharedPreferences.getInstance();
-      String content = sp.getString('web_log') ?? '';
-      await sp.setString('web_log',
+      String content = sp.getString(pWebLog) ?? '';
+      await sp.setString(pWebLog,
           '$content\n${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(output.toString()))}\n');
     }
   }
@@ -50,6 +51,11 @@ class CustomOutput extends LogOutput {
 initLog() async {
   if (kDebugMode && !kIsWeb) {
     print(await getAppInfoLogs());
+  }
+  if (kIsWeb) {
+    print('Init logs');
+    final SharedPreferences sp = await SharedPreferences.getInstance();
+    await sp.remove(pWebLog);
   }
 }
 
