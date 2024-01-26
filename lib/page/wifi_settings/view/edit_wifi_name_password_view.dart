@@ -40,7 +40,7 @@ class _EditWifiNamePasswordViewState
   initState() {
     super.initState();
 
-    final wifiItem = ref.read(wifiSettingProvider).selectedWifiItem;
+    final wifiItem = ref.read(wifiSettingProvider);
     _title = wifiItem.ssid;
     _oriSSID = wifiItem.ssid;
     _oriPassword = wifiItem.password;

@@ -1,12 +1,8 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
-import 'dart:convert';
-import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
-import 'package:linksys_app/core/utils/logger.dart';
 
 class WifiItem extends Equatable {
   final WifiType wifiType;
-  final RadioID radioID;
+  final WifiRadioBand radioID;
   final String ssid;
   final String password;
   final WifiSecurityType securityType;
@@ -15,6 +11,9 @@ class WifiItem extends Equatable {
   final int channel;
   final bool isBroadcast;
   final bool isEnabled;
+  final List<WifiSecurityType> availableSecurityTypes;
+  final List<WifiWirelessMode> availableWirelessModes;
+  final Map<WifiChannelWidth, List<int>> availableChannels;
   final int numOfDevices;
 
   const WifiItem({
@@ -28,12 +27,15 @@ class WifiItem extends Equatable {
     required this.channel,
     required this.isBroadcast,
     required this.isEnabled,
+    required this.availableSecurityTypes,
+    required this.availableWirelessModes,
+    required this.availableChannels,
     required this.numOfDevices,
   });
 
   WifiItem copyWith({
     WifiType? wifiType,
-    RadioID? radioID,
+    WifiRadioBand? radioID,
     String? ssid,
     String? password,
     WifiSecurityType? securityType,
@@ -42,6 +44,9 @@ class WifiItem extends Equatable {
     int? channel,
     bool? isBroadcast,
     bool? isEnabled,
+    List<WifiSecurityType>? availableSecurityTypes,
+    List<WifiWirelessMode>? availableWirelessModes,
+    Map<WifiChannelWidth, List<int>>? availableChannels,
     int? numOfDevices,
   }) {
     return WifiItem(
@@ -55,6 +60,11 @@ class WifiItem extends Equatable {
       channel: channel ?? this.channel,
       isBroadcast: isBroadcast ?? this.isBroadcast,
       isEnabled: isEnabled ?? this.isEnabled,
+      availableSecurityTypes:
+          availableSecurityTypes ?? this.availableSecurityTypes,
+      availableWirelessModes:
+          availableWirelessModes ?? this.availableWirelessModes,
+      availableChannels: availableChannels ?? this.availableChannels,
       numOfDevices: numOfDevices ?? this.numOfDevices,
     );
   }
@@ -75,18 +85,23 @@ class WifiItem extends Equatable {
       channel,
       isBroadcast,
       isEnabled,
+      availableSecurityTypes,
+      availableWirelessModes,
+      availableChannels,
       numOfDevices,
     ];
   }
 }
 
 enum WifiType {
-  main(displayTitle: 'MAIN'),
-  guest(displayTitle: 'GUEST');
+  main,
+  guest;
 
-  const WifiType({required this.displayTitle});
+  // const WifiType({
+  //   required this.value,
+  // });
 
-  final String displayTitle;
+  // final String value;
 
   // List<WifiSettingOption> get settingOptions {
   //   List<WifiSettingOption> options = [
@@ -119,171 +134,87 @@ enum WifiType {
 //   final String displayTitle;
 // }
 
-enum RadioID {
+enum WifiRadioBand {
   radio_24(value: 'RADIO_2.4GHz'),
   radio_5_1(value: 'RADIO_5GHz'),
   radio_5_2(value: 'RADIO_5GHz_2'),
   radio_6(value: 'RADIO_6GHz');
 
-  const RadioID({
+  const WifiRadioBand({
     required this.value,
   });
 
   final String value;
 
-  static RadioID getByValue(String value) {
-    return RadioID.values.firstWhere((item) => item.value == value);
+  static WifiRadioBand getByValue(String value) {
+    return WifiRadioBand.values.firstWhere((item) => item.value == value);
   }
 }
 
 enum WifiSecurityType {
-  open(
-    value: 'None',
-    displayTitle: 'Open',
-  ),
-  wep(
-    value: 'WEP',
-    displayTitle: 'WEP',
-  ),
-  wpaPersonal(
-    value: 'WPA-Personal',
-    displayTitle: 'WPA Personal',
-  ),
-  wpaEnterprise(
-    value: 'WPA-Enterprise',
-    displayTitle: 'WPA Enterprise',
-  ),
-  wpa2Personal(
-    value: 'WPA2-Personal',
-    displayTitle: 'WPA2 Personal',
-  ),
-  wpa2Enterprise(
-    value: 'WPA2-Enterprise',
-    displayTitle: 'WPA2 Enterprise',
-  ),
-  wpa1Or2MixedPersonal(
-    value: 'WPA-Mixed-Personal',
-    displayTitle: 'WPA/WPA2 Mixed Personal',
-  ),
-  wpa1Or2MixedEnterprise(
-    value: 'WPA-Mixed-Enterprise',
-    displayTitle: 'WPA/WPA2 Mixed Enterprise',
-  ),
-  wpa2Or3MixedPersonal(
-    value: 'WPA2/WPA3-Mixed-Personal',
-    displayTitle: 'WPA2/WPA3 Mixed Personal',
-  ),
-  wpa3Personal(
-    value: 'WPA3-Personal',
-    displayTitle: 'WPA3 Personal',
-  ),
-  wpa3Enterprise(
-    value: 'WPA3-Enterprise',
-    displayTitle: 'WPA3 Enterprise',
-  ),
-  enhancedOpenNone(
-    value: 'Enhanced-Open+None',
-    displayTitle: 'Open and Enhanced Open',
-  ),
-  enhancedOpenOnly(
-    value: 'Enhanced-Open-Only',
-    displayTitle: 'Enhanced Open Only',
-  );
+  open(value: 'None'),
+  wep(value: 'WEP'),
+  wpaPersonal(value: 'WPA-Personal'),
+  wpaEnterprise(value: 'WPA-Enterprise'),
+  wpa2Personal(value: 'WPA2-Personal'),
+  wpa2Enterprise(value: 'WPA2-Enterprise'),
+  wpa1Or2MixedPersonal(value: 'WPA-Mixed-Personal'),
+  wpa1Or2MixedEnterprise(value: 'WPA-Mixed-Enterprise'),
+  wpa2Or3MixedPersonal(value: 'WPA2/WPA3-Mixed-Personal'),
+  wpa3Personal(value: 'WPA3-Personal'),
+  wpa3Enterprise(value: 'WPA3-Enterprise'),
+  enhancedOpenNone(value: 'Enhanced-Open+None'),
+  enhancedOpenOnly(value: 'Enhanced-Open-Only');
 
   const WifiSecurityType({
     required this.value,
-    required this.displayTitle,
   });
 
   final String value;
-  final String displayTitle;
 
   static WifiSecurityType getByValue(String value) {
     return WifiSecurityType.values.firstWhere((item) => item.value == value);
   }
+
+  bool get isWpaPersonalVariant =>
+      this == WifiSecurityType.wpaPersonal ||
+      this == WifiSecurityType.wpa2Personal ||
+      this == WifiSecurityType.wpa1Or2MixedPersonal ||
+      this == WifiSecurityType.wpa2Or3MixedPersonal ||
+      this == wpa3Personal;
+
+  bool get isWpaEnterpriseVariant =>
+      this == WifiSecurityType.wpaEnterprise ||
+      this == WifiSecurityType.wpa2Enterprise ||
+      this == WifiSecurityType.wpa1Or2MixedEnterprise ||
+      this == WifiSecurityType.wpa3Enterprise;
 }
 
 enum WifiWirelessMode {
-  a(
-    value: '802.11a',
-    displayTitle: '802.11a Only',
-  ),
-  b(
-    value: '802.11b',
-    displayTitle: '802.11b Only',
-  ),
-  g(
-    value: '802.11g',
-    displayTitle: '802.11g Only',
-  ),
-  n(
-    value: '802.11n',
-    displayTitle: '802.11n Only',
-  ),
-  ac(
-    value: '802.11ac',
-    displayTitle: '802.11ac Only',
-  ),
-  ax(
-    value: '802.11ax',
-    displayTitle: '802.11ax Only',
-  ),
-  an(
-    value: '802.11an',
-    displayTitle: '802.11a/n Only',
-  ),
-  bg(
-    value: '802.11bg',
-    displayTitle: '802.11b/g Only',
-  ),
-  bn(
-    value: '802.11bn',
-    displayTitle: '802.11b/n Only',
-  ),
-  gn(
-    value: '802.11gn',
-    displayTitle: '802.11g/n Only',
-  ),
-  anac(
-    value: '802.11anac',
-    displayTitle: '802.11a/n/ac Only',
-  ),
-  anacax(
-    value: '802.11anacax',
-    displayTitle: '802.11a/n/ac/ax Only',
-  ),
-  anacaxbe(
-    value: '802.11anacaxbe',
-    displayTitle: '802.11a/n/ac/ax/be Only',
-  ),
-  bgn(
-    value: '802.11bgn',
-    displayTitle: '802.11b/g/n Only',
-  ),
-  bgnac(
-    value: '802.11bgnac',
-    displayTitle: '802.11b/g/n/ac Only',
-  ),
-  bgnax(
-    value: '802.11bgnax',
-    displayTitle: '802.11b/g/n/ax Only',
-  ),
-  axbe(
-    value: '802.11axbe',
-    displayTitle: '802.11ax/be Only',
-  ),
-  mixed(
-    value: '802.11mixed',
-    displayTitle: 'Mixed',
-  );
+  a(value: '802.11a'),
+  b(value: '802.11b'),
+  g(value: '802.11g'),
+  n(value: '802.11n'),
+  ac(value: '802.11ac'),
+  ax(value: '802.11ax'),
+  an(value: '802.11an'),
+  bg(value: '802.11bg'),
+  bn(value: '802.11bn'),
+  gn(value: '802.11gn'),
+  anac(value: '802.11anac'),
+  anacax(value: '802.11anacax'),
+  anacaxbe(value: '802.11anacaxbe'),
+  bgn(value: '802.11bgn'),
+  bgnac(value: '802.11bgnac'),
+  bgnax(value: '802.11bgnax'),
+  axbe(value: '802.11axbe'),
+  mixed(value: '802.11mixed');
 
   const WifiWirelessMode({
     required this.value,
-    required this.displayTitle,
   });
 
   final String value;
-  final String displayTitle;
 
   static WifiWirelessMode getByValue(String value) {
     return WifiWirelessMode.values.firstWhere((item) => item.value == value);
@@ -291,38 +222,18 @@ enum WifiWirelessMode {
 }
 
 enum WifiChannelWidth {
-  auto(
-    value: 'Auto',
-    displayTitle: 'Auto',
-  ),
-  wide20(
-    value: 'Standard',
-    displayTitle: '20 MHz Only',
-  ),
-  wide40(
-    value: 'Wide',
-    displayTitle: 'Up to 40 MHz',
-  ),
-  wide80(
-    value: 'Wide80',
-    displayTitle: 'Up to 80 MHz',
-  ),
-  wide160c(
-    value: 'Wide160c',
-    displayTitle: 'Contiguous 160 MHz',
-  ),
-  wide160nc(
-    value: 'Wide160nc',
-    displayTitle: 'Non-contiguous 160 MHz',
-  );
+  auto(value: 'Auto'),
+  wide20(value: 'Standard'),
+  wide40(value: 'Wide'),
+  wide80(value: 'Wide80'),
+  wide160c(value: 'Wide160c'),
+  wide160nc(value: 'Wide160nc');
 
   const WifiChannelWidth({
     required this.value,
-    required this.displayTitle,
   });
 
   final String value;
-  final String displayTitle;
 
   static WifiChannelWidth getByValue(String value) {
     return WifiChannelWidth.values.firstWhere((item) => item.value == value);

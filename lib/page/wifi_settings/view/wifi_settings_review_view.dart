@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/provider/channelfinder/channelfinder_provider.dart';
+import 'package:linksys_app/page/wifi_settings/wifi_term_titles.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/provider/wifi_setting/wifi_item.dart';
-import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/theme/const/spacing.dart';
+import 'package:linksys_app/validator_rules/rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-
+import 'package:linksys_widgets/widgets/dropdown/dropdown_menu.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -28,154 +26,206 @@ class WifiSettingsReviewView extends ArgumentsConsumerStatefulView {
 
 class _WifiSettingsReviewViewState
     extends ConsumerState<WifiSettingsReviewView> {
-  bool isLoading = false;
+  late WifiItem currentSettings;
+  final _wifiNameController = TextEditingController();
+  final _wifiPasswordController = TextEditingController();
+  bool _isLoading = false;
+  bool _isSSIDValid = true;
+  bool _isPasswordValid = true;
+  bool _isOptionsValid = true;
 
   @override
   initState() {
     super.initState();
+    currentSettings = ref.read(wifiSettingProvider.notifier).currentSettings();
+    _wifiNameController.text = currentSettings.ssid;
+    _wifiPasswordController.text = currentSettings.password;
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(wifiSettingProvider);
-    return isLoading
+    return _isLoading
         ? AppFullScreenSpinner(text: getAppLocalizations(context).processing)
         : StyledAppPageView(
-            title: state.selectedWifiItem.ssid,
+            scrollable: true,
+            title: getWifiTypeTitle(context, currentSettings.wifiType),
             child: AppBasicLayout(
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      AppText.bodyLarge(
-                        state.selectedWifiItem.wifiType.displayTitle,
-                      ),
-                      const Spacer(),
-                      AppSwitch(
-                          value: state.selectedWifiItem.isEnabled,
-                          onChanged: (enabled) {
-                            // setState(() {
-                            //   isLoading = true;
-                            // });
-                            // final wifiType = state.selectedWifiItem.wifiType;
-                            // ref
-                            //     .read(wifiSettingProvider.notifier)
-                            //     .enableWifi(enabled, wifiType)
-                            //     .then((value) {
-                            //   setState(() {
-                            //     isLoading = false;
-                            //   });
-                            // });
-                          })
-                    ],
-                  ),
-                  const AppText.bodyMedium(
-                    'Where most of your devices connect.',
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.only(
-                        top: Spacing.small, bottom: Spacing.regular),
-                    child: AppText.bodyMedium(
-                      '6 GHz, 5 GHz, 2.4 GHz',
-                      //TODO: Remove the dummy recent bands
-                    ),
-                  ),
-                  // Expanded(
-                  //   child: ListView.builder(
-                  //     physics: const ClampingScrollPhysics(),
-                  //     itemCount:
-                  //         state.selectedWifiItem.wifiType.settingOptions.length,
-                  //     itemBuilder: (context, index) =>
-                  //         _buildListCell(index, state.selectedWifiItem),
-                  //   ),
-                  // ),
-                ],
+              content: settingsView(context),
+              footer: AppFilledButton.fillWidth(
+                'Save',
+                onTap: _isNewSettingValid() ? _saveSettings : null,
               ),
             ),
           );
   }
 
-  Widget _buildListCell(int index, WifiItem wifiItem) {
-    String content = 'XXXX';
-
-    // final currentOption = wifiItem.wifiType.settingOptions[index];
-    // switch (currentOption) {
-    //   case WifiSettingOption.nameAndPassword:
-    //     content = wifiItem.ssid;
-    //     break;
-    //   case WifiSettingOption.securityType6G:
-    //     content = wifiItem.security6GType?.displayTitle ??
-    //         wifiItem.securityType.displayTitle;
-    //     break;
-    //   case WifiSettingOption.securityTypeBelow6G:
-    //     content = wifiItem.securityType.displayTitle;
-    //     break;
-    //   case WifiSettingOption.securityType:
-    //     content = wifiItem.securityType.displayTitle;
-    //     break;
-    //   case WifiSettingOption.mode:
-    //     content = wifiItem.mode.value;
-    //     break;
-    //   case WifiSettingOption.channelFinder:
-    //     content = '';
-    //     break;
-    // }
-
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: () => _onSettingTap(index, wifiItem),
-      child: Row(
-        children: [
-          Padding(
-              padding: const EdgeInsets.symmetric(vertical: Spacing.regular),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.bodyMedium(
-                    // currentOption.displayTitle,
-                    'currentOptionXXXX'
-                  ),
-                  const AppGap.small(),
-                  AppText.bodyMedium(
-                    content,
-                  ),
-                ],
-              )),
-          const Spacer(),
-          AppIcon(
-            icon: getCharactersIcons(context).chevronRight,
-          ),
-        ],
-      ),
+  Widget settingsView(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            AppText.bodyLarge(
+              getWifiRadioBandTitle(context, currentSettings.radioID),
+            ),
+            const Spacer(),
+            AppSwitch(
+              value: currentSettings.isEnabled,
+              onChanged: (enabled) {
+                setState(() {
+                  currentSettings = currentSettings.copyWith(
+                    isEnabled: enabled,
+                  );
+                });
+              },
+            ),
+          ],
+        ),
+        const AppGap.regular(),
+        const AppText.bodyLarge(
+          'Wi-Fi name',
+        ),
+        const AppGap.small(),
+        AppTextField.outline(
+          controller: _wifiNameController,
+          hintText: 'SSID',
+          onChanged: (text) {
+            setState(() {
+              _isSSIDValid = text.isNotEmpty;
+            });
+          },
+        ),
+        const AppGap.regular(),
+        const AppText.bodyLarge(
+          'Wi-Fi password',
+        ),
+        const AppGap.small(),
+        AppPasswordField.withValidator(
+          controller: _wifiPasswordController,
+          border: const OutlineInputBorder(),
+          validationLabel: 'Password must have',
+          validations: [
+            Validation(
+              description: '8 - 64 characters',
+              validator: ((text) => LengthRule(min: 8, max: 64).validate(text)),
+            ),
+          ],
+          onValidationChanged: (isValid) => setState(() {
+            _isPasswordValid = isValid;
+          }),
+        ),
+        const AppGap.regular(),
+        const AppText.bodyLarge(
+          'Security mode',
+        ),
+        const AppGap.small(),
+        AppDropdownMenu<WifiSecurityType>(
+          items: currentSettings.availableSecurityTypes,
+          initial: currentSettings.securityType,
+          label: (item) {
+            return getWifiSecurityTypeTitle(context, item);
+          },
+          onChanged: (newValue) {
+            currentSettings = currentSettings.copyWith(
+              securityType: newValue,
+            );
+          },
+        ),
+        const AppGap.regular(),
+        const AppText.bodyLarge(
+          'Wi-Fi mode',
+        ),
+        const AppGap.small(),
+        AppDropdownMenu<WifiWirelessMode>(
+          items: currentSettings.availableWirelessModes,
+          initial: currentSettings.wirelessMode,
+          label: (item) {
+            return getWifiWirelessModeTitle(context, item);
+          },
+          onChanged: (newValue) {
+            currentSettings = currentSettings.copyWith(
+              wirelessMode: newValue,
+            );
+          },
+        ),
+        const AppGap.regular(),
+        const AppText.bodyLarge(
+          'Channel Width',
+        ),
+        const AppGap.small(),
+        AppDropdownMenu<WifiChannelWidth>(
+          items: currentSettings.availableChannels.keys.toList(),
+          initial: currentSettings.channelWidth,
+          label: (item) {
+            return getWifiChannelWidthTitle(context, item);
+          },
+          onChanged: (newValue) {
+            currentSettings = currentSettings.copyWith(
+              channelWidth: newValue,
+            );
+          },
+        ),
+        const AppGap.regular(),
+        const AppText.bodyLarge(
+          'Channel',
+        ),
+        const AppGap.small(),
+        AppDropdownMenu<int>(
+          items:
+              currentSettings.availableChannels[currentSettings.channelWidth] ??
+                  [],
+          initial: currentSettings.channel,
+          label: (item) {
+            return getWifiChannelTitle(context, item, currentSettings.radioID);
+          },
+          onChanged: (newValue) {
+            currentSettings = currentSettings.copyWith(
+              channel: newValue,
+            );
+          },
+        ),
+        const AppGap.regular(),
+        const AppText.bodyLarge(
+          'Broadcast SSID',
+        ),
+        const AppGap.small(),
+        AppDropdownMenu<bool>(
+          items: const [true, false],
+          initial: currentSettings.isBroadcast,
+          label: (item) => item ? 'YES' : 'NO',
+          onChanged: (newValue) {
+            currentSettings = currentSettings.copyWith(
+              isBroadcast: newValue,
+            );
+          },
+        ),
+        const AppGap.extraBig(),
+      ],
     );
   }
 
-  void _onSettingTap(int index, WifiItem wifiItem) {
-    // final currentOption = wifiItem.wifiType.settingOptions[index];
-    // switch (currentOption) {
-    //   case WifiSettingOption.nameAndPassword:
-    //     // ref.read(navigationsProvider.notifier).push(EditWifiNamePasswordPath());
-    //     context.pushNamed(RouteNamed.wifiEditSSID);
-    //     break;
-    //   case WifiSettingOption.securityType6G:
-    //   case WifiSettingOption.securityTypeBelow6G:
-    //   case WifiSettingOption.securityType:
-    //     // ref.read(navigationsProvider.notifier).pushAndWait(
-    //     //     EditWifiSecurityPath()
-    //     //       ..args = {'wifiSettingOption': currentOption});
-    //     context.pushNamed(RouteNamed.wifiEditSecurity, queryParameters: {
-    //       'wifiSettingOption': currentOption.name,
-    //     });
+  bool _isNewSettingValid() =>
+      _isSSIDValid && _isPasswordValid && _isOptionsValid;
 
-    //     break;
-    //   case WifiSettingOption.mode:
-    //     // ref.read(navigationsProvider.notifier).push(EditWifiModePath());
-    //     context.pushNamed(RouteNamed.wifiEditMode);
-    //     break;
-    //   case WifiSettingOption.channelFinder:
-    //     context.pushNamed(RouteNamed.channelFinderOptimize);
-    //     break;
-    // }
+  void _saveSettings() {
+    currentSettings = currentSettings.copyWith(
+      ssid: _wifiNameController.text,
+      password: _wifiPasswordController.text,
+    );
+    setState(() {
+      _isLoading = true;
+    });
+    ref
+        .read(wifiSettingProvider.notifier)
+        .saveWiFiSettings(currentSettings)
+        .then((value) {
+      setState(() {
+        _isLoading = false;
+      });
+      showSuccessSnackBar(context, 'Success!');
+    }).onError((error, stackTrace) {
+      _isLoading = false;
+      showFailedSnackBar(context, 'Failed!');
+    });
   }
 }

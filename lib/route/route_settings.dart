@@ -9,7 +9,7 @@ final settings = [
   LinksysRoute(
     name: RouteNamed.settingsWifi,
     path: RoutePath.settingsWifi,
-    builder: (context, state) => WifiSettingsView(),
+    builder: (context, state) => WifiSelectSettingsView(),
     routes: [
       LinksysRoute(
         name: RouteNamed.wifiSettingsReview,

@@ -3,28 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/page/wifi_settings/wifi_term_titles.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/provider/wifi_setting/wifi_list_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-class WifiSettingsView extends ConsumerStatefulWidget {
-  const WifiSettingsView({Key? key}) : super(key: key);
+class WifiSelectSettingsView extends ConsumerStatefulWidget {
+  const WifiSelectSettingsView({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<WifiSettingsView> createState() => _WifiSettingsViewState();
+  ConsumerState<WifiSelectSettingsView> createState() => _WifiSelectSettingsViewState();
 }
 
-class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
-  @override
-  void initState() {
-    super.initState();
-  }
+class _WifiSelectSettingsViewState extends ConsumerState<WifiSelectSettingsView> {
 
   @override
   Widget build(BuildContext context) {
@@ -56,15 +52,11 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                             padding: const EdgeInsets.symmetric(
                                 vertical: Spacing.regular),
                             child: AppText.titleMedium(
-                              state[index].wifiType.displayTitle,
+                              getWifiTypeTitle(context, state[index].wifiType),
                             ),
                           ),
                           Row(
                             children: [
-                              AppIcon.regular(
-                                icon: getCharactersIcons(context).wifiDefault,
-                              ),
-                              const AppGap.semiSmall(),
                               AppText.bodyMedium(
                                 state[index].ssid,
                               ),
@@ -88,14 +80,12 @@ class _WifiSettingsViewState extends ConsumerState<WifiSettingsView> {
                         ],
                       ),
                     )
-                  : Padding(
+                  : const Padding(
                       padding:
-                          const EdgeInsets.symmetric(vertical: Spacing.big),
+                          EdgeInsets.symmetric(vertical: Spacing.big),
                       child: InkWell(
-                        onTap: () {
-                          //TODO: Go to next
-                        },
-                        child: const AppText.labelLarge(
+                        onTap: null,
+                        child: AppText.labelLarge(
                           'Learn more about WiFi networks and settings',
                         ),
                       ),

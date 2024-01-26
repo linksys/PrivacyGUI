@@ -6,6 +6,7 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:adaptive_dialog/adaptive_dialog.dart';
+import 'package:linksys_app/page/wifi_settings/wifi_term_titles.dart';
 import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/provider/wifi_setting/wifi_item.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -37,11 +38,7 @@ class _EditWifiSecurityViewState extends ConsumerState<EditWifiSecurityView> {
   initState() {
     super.initState();
 
-    WifiSecurityType currentType = ref
-        .read(wifiSettingProvider.notifier)
-        .state
-        .selectedWifiItem
-        .securityType;
+    WifiSecurityType currentType = ref.read(wifiSettingProvider).securityType;
     _selectedType = currentType;
     _currentType = currentType;
     _typeList = WifiSecurityType.values;
@@ -84,7 +81,10 @@ class _EditWifiSecurityViewState extends ConsumerState<EditWifiSecurityView> {
                         children: [
                           Expanded(
                             child: AppText.headlineSmall(
-                              _typeList[index].displayTitle,
+                              getWifiSecurityTypeTitle(
+                                context,
+                                _typeList[index],
+                              ),
                             ),
                           ),
                           const AppGap.regular(),
@@ -132,26 +132,26 @@ class _EditWifiSecurityViewState extends ConsumerState<EditWifiSecurityView> {
   }
 
   void _save() {
-  //   final wifiType = ref.read(wifiSettingProvider).selectedWifiItem.wifiType;
-  //   ref
-  //       .read(wifiSettingProvider.notifier)
-  //       .updateSecurityType(_wifiSettingOption, _selectedType, wifiType)
-  //       .then((value) {
-  //     setState(() {
-  //       isLoading = false;
-  //       _currentType = _selectedType;
-  //     });
-  //     context.pop();
-  //   }).onError((error, stackTrace) {
-  //     setState(() => isLoading = false);
-  //     showOkCancelAlertDialog(
-  //       context: context,
-  //       title: "Saving error",
-  //       message: '',
-  //     );
-  //   });
-  //   setState(() {
-  //     isLoading = true;
-  //   });
+    //   final wifiType = ref.read(wifiSettingProvider).selectedWifiItem.wifiType;
+    //   ref
+    //       .read(wifiSettingProvider.notifier)
+    //       .updateSecurityType(_wifiSettingOption, _selectedType, wifiType)
+    //       .then((value) {
+    //     setState(() {
+    //       isLoading = false;
+    //       _currentType = _selectedType;
+    //     });
+    //     context.pop();
+    //   }).onError((error, stackTrace) {
+    //     setState(() => isLoading = false);
+    //     showOkCancelAlertDialog(
+    //       context: context,
+    //       title: "Saving error",
+    //       message: '',
+    //     );
+    //   });
+    //   setState(() {
+    //     isLoading = true;
+    //   });
   }
 }

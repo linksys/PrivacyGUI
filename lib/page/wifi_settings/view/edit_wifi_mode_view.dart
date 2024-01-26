@@ -27,7 +27,7 @@ class _EditWifiModeViewState extends ConsumerState<EditWifiModeView> {
   initState() {
     super.initState();
 
-    _wifiItem = ref.read(wifiSettingProvider).selectedWifiItem;
+    _wifiItem = ref.read(wifiSettingProvider);
   }
 
   void _save() {

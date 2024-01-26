@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
@@ -24,7 +25,7 @@ class WifiListNotifier extends Notifier<List<WifiItem>> {
     final wifiItems = dashboardManagerState.mainRadios
         .map((radio) => WifiItem(
               wifiType: WifiType.main,
-              radioID: RadioID.getByValue(radio.radioID),
+              radioID: WifiRadioBand.getByValue(radio.radioID),
               ssid: radio.settings.ssid,
               password: radio.settings.wpaPersonalSettings?.passphrase ?? '',
               securityType:
@@ -35,6 +36,20 @@ class WifiListNotifier extends Notifier<List<WifiItem>> {
               channel: radio.settings.channel,
               isBroadcast: radio.settings.broadcastSSID,
               isEnabled: radio.settings.isEnabled,
+              availableSecurityTypes: radio.supportedSecurityTypes
+                  .map((e) => WifiSecurityType.getByValue(e))
+                  .toList(),
+              availableWirelessModes: radio.supportedModes
+                  .map((e) => WifiWirelessMode.getByValue(e))
+                  .toList(),
+              availableChannels: Map.fromIterable(
+                  radio.supportedChannelsForChannelWidths, key: (e) {
+                final channelWidth =
+                    (e as SupportedChannelsForChannelWidths).channelWidth;
+                return WifiChannelWidth.getByValue(channelWidth);
+              }, value: ((e) {
+                return (e as SupportedChannelsForChannelWidths).channels;
+              })),
               numOfDevices: deviceManagerState.mainWifiDevices
                   .where((device) =>
                       device.connections.isNotEmpty &&
@@ -51,7 +66,7 @@ class WifiListNotifier extends Notifier<List<WifiItem>> {
       wifiItems.add(
         WifiItem(
           wifiType: WifiType.guest,
-          radioID: RadioID.radio_24,
+          radioID: WifiRadioBand.radio_24,
           ssid: guestRadio.guestSSID,
           password: guestRadio.guestWPAPassphrase ?? '',
           securityType: WifiSecurityType.wpaPersonal,
@@ -60,6 +75,9 @@ class WifiListNotifier extends Notifier<List<WifiItem>> {
           channel: 0,
           isBroadcast: guestRadio.broadcastGuestSSID,
           isEnabled: dashboardManagerState.isGuestNetworkEnabled,
+          availableSecurityTypes: const [],
+          availableWirelessModes: const [],
+          availableChannels: const {},
           numOfDevices: deviceManagerState.guestWifiDevices
               .where((device) => device.connections.isNotEmpty)
               .length,
