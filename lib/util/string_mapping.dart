@@ -46,6 +46,13 @@ ConnectionTypeData toConnectionTypeData(BuildContext context, String type) {
         description:
             getAppLocalizations(context).connection_type_automatic_desc,
       );
+    case 'Pass-through':
+      return ConnectionTypeData(
+        type: type,
+        title: getAppLocalizations(context).connection_type_pass_through,
+        description:
+            getAppLocalizations(context).connection_type_pass_through_desc,
+      );
     default:
       return ConnectionTypeData(type: type, title: ' ', description: ' ');
   }

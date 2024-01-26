@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/provider/internet_settings/_internet_settings.dart';
 import 'package:linksys_app/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -22,12 +23,15 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
   final InputValidator _macValidator = InputValidator([MACAddressRule()]);
   bool _isValid = false;
   bool _isEnabled = false;
+  late InternetSettingsState state;
 
   @override
   void initState() {
+    state = ref.read(internetSettingsProvider);
     _isEnabled = widget.args['enabled'] ?? false;
     String macAddress = widget.args['macAddress'] ?? '';
     _valueController.text = macAddress;
+    _isValid = _macValidator.validate(macAddress);
     super.initState();
   }
 
@@ -38,10 +42,12 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
       actions: [
         AppTextButton(
           getAppLocalizations(context).save,
-          onTap: _isValid
+          onTap: _isValid &&
+                  ((_isEnabled != state.macClone) ||
+                      (_valueController.text != state.macCloneAddress))
               ? () {
                   FocusManager.instance.primaryFocus?.unfocus();
-                  context.pop(_isEnabled ? _valueController.value : '');
+                  context.pop(_isEnabled ? _valueController.text : '');
                 }
               : null,
         ),

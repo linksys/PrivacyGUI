@@ -157,6 +157,10 @@ enum JNAPService {
   dfs(value: 'http://linksys.com/jnap/wirelessap/DynamicFrequencySelection'),
   // airtime fairness
   airtimeFairness(value: 'http://linksys.com/jnap/wirelessap/AirtimeFairness'),
+  //ui
+  settings(value: 'http://linksys.com/jnap/ui/Settings'),
+  settings2(value: 'http://linksys.com/jnap/ui/Settings2'),
+  settings3(value: 'http://linksys.com/jnap/ui/Settings3'),
   ;
 
   const JNAPService({required this.value});

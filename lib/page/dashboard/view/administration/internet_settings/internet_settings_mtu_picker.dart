@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/provider/internet_settings/internet_settings_state.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -18,9 +19,11 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
   final _valueController = TextEditingController();
   late final List<String> _items = ['Auto', 'Manual'];
   String _selected = '';
+  String _wanType = '';
 
   @override
   void initState() {
+    _wanType = widget.args['wanType'] ?? '';
     int value = widget.args['selected'] ?? 0;
     if (value > 0) {
       _valueController.text = '$value';
@@ -74,11 +77,13 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
 
   Widget _buildManualInput() {
     if (_selected == _items[1]) {
-      return AppTextField(
+      return AppTextField.minMaxNumber(
         controller: _valueController,
         headerText: getAppLocalizations(context).mtu_size,
         hintText: getAppLocalizations(context).mtu_size,
         inputType: TextInputType.number,
+        min: 0,
+        max: _getMaxMtu(_wanType),
       );
     } else {
       return const Center();
@@ -90,6 +95,23 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
       return getAppLocalizations(context).auto;
     } else {
       return getAppLocalizations(context).manual;
+    }
+  }
+
+  int _getMaxMtu(String wanType) {
+    switch (WanType.resolve(wanType)) {
+      case WanType.dhcp:
+        return 1500;
+      case WanType.pppoe:
+        return 1492;
+      case WanType.static:
+        return 1500;
+      case WanType.pptp:
+        return 1460;
+      case WanType.l2tp:
+        return 1460;
+      default:
+        return 0;
     }
   }
 }

@@ -1,3 +1,5 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+
 import 'package:equatable/equatable.dart';
 
 class RouterWANSettings extends Equatable {
@@ -80,8 +82,7 @@ class RouterWANSettings extends Equatable {
       'domainName': domainName,
       'mtu': mtu,
       'wanTaggingSettings': wanTaggingSettings,
-    }
-      ..removeWhere((key, value) => value == null);
+    }..removeWhere((key, value) => value == null);
   }
 
   factory RouterWANSettings.fromJson(Map<String, dynamic> json) {
@@ -110,14 +111,14 @@ class RouterWANSettings extends Equatable {
           : WirelessModeSettings.fromJson(json['wirelessModeSettings']),
       domainName: json['domainName'],
       mtu: json['mtu'],
-      wanTaggingSettings:
-      json['wanTaggingSettings'] as SinglePortVLANTaggingSettings,
+      wanTaggingSettings: json['wanTaggingSettings'] == null
+          ? null
+          : SinglePortVLANTaggingSettings.fromJson(json['wanTaggingSettings']),
     );
   }
 
   @override
-  List<Object?> get props =>
-      [
+  List<Object?> get props => [
         wanType,
         pppoeSettings,
         tpSettings,
@@ -180,8 +181,7 @@ class StaticSettings {
       'dnsServer2': dnsServer2,
       'dnsServer3': dnsServer3,
       'domainName': domainName,
-    }
-      ..removeWhere((key, value) => value == null);
+    }..removeWhere((key, value) => value == null);
   }
 
   factory StaticSettings.fromJson(Map<String, dynamic> json) {
@@ -231,7 +231,7 @@ class PPPoESettings {
       behavior: behavior ?? this.behavior,
       maxIdleMinutes: maxIdleMinutes ?? this.maxIdleMinutes,
       reconnectAfterSeconds:
-      reconnectAfterSeconds ?? this.reconnectAfterSeconds,
+          reconnectAfterSeconds ?? this.reconnectAfterSeconds,
     );
   }
 
@@ -243,8 +243,7 @@ class PPPoESettings {
       'behavior': behavior,
       'maxIdleMinutes': maxIdleMinutes,
       'reconnectAfterSeconds': reconnectAfterSeconds,
-    }
-      ..removeWhere((key, value) => value == null);
+    }..removeWhere((key, value) => value == null);
   }
 
   factory PPPoESettings.fromJson(Map<String, dynamic> json) {
@@ -266,7 +265,7 @@ class TPSettings extends Equatable {
   final String username;
   final String password;
   final String behavior;
-  final int? maxIdleMinute;
+  final int? maxIdleMinutes;
   final int? reconnectAfterSeconds;
 
   const TPSettings({
@@ -276,7 +275,7 @@ class TPSettings extends Equatable {
     required this.username,
     required this.password,
     required this.behavior,
-    this.maxIdleMinute,
+    this.maxIdleMinutes,
     this.reconnectAfterSeconds,
   });
 
@@ -287,7 +286,7 @@ class TPSettings extends Equatable {
     String? username,
     String? password,
     String? behavior,
-    int? maxIdleMinute,
+    int? maxIdleMinutes,
     int? reconnectAfterSeconds,
   }) {
     return TPSettings(
@@ -297,9 +296,9 @@ class TPSettings extends Equatable {
       username: username ?? this.username,
       password: password ?? this.password,
       behavior: behavior ?? this.behavior,
-      maxIdleMinute: maxIdleMinute ?? this.maxIdleMinute,
+      maxIdleMinutes: maxIdleMinutes ?? this.maxIdleMinutes,
       reconnectAfterSeconds:
-      reconnectAfterSeconds ?? this.reconnectAfterSeconds,
+          reconnectAfterSeconds ?? this.reconnectAfterSeconds,
     );
   }
 
@@ -311,10 +310,9 @@ class TPSettings extends Equatable {
       'username': username,
       'password': password,
       'behavior': behavior,
-      'maxIdleMinute': maxIdleMinute,
+      'maxIdleMinutes': maxIdleMinutes,
       'reconnectAfterSeconds': reconnectAfterSeconds,
-    }
-      ..removeWhere((key, value) => value == null);
+    }..removeWhere((key, value) => value == null);
   }
 
   factory TPSettings.fromJson(Map<String, dynamic> json) {
@@ -327,21 +325,20 @@ class TPSettings extends Equatable {
       username: json['username'],
       password: json['password'],
       behavior: json['behavior'],
-      maxIdleMinute: json['maxIdleMinute'],
+      maxIdleMinutes: json['maxIdleMinutes'],
       reconnectAfterSeconds: json['reconnectAfterSeconds'],
     );
   }
 
   @override
-  List<Object?> get props =>
-      [
+  List<Object?> get props => [
         useStaticSettings,
         staticSettings,
         server,
         username,
         password,
         behavior,
-        maxIdleMinute,
+        maxIdleMinutes,
         reconnectAfterSeconds,
       ];
 }
@@ -374,7 +371,7 @@ class TelstraSettings extends Equatable {
       'server': server,
       'username': username,
       'password': password,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory TelstraSettings.fromJson(Map<String, dynamic> json) {
@@ -412,8 +409,7 @@ class BridgeSettings extends Equatable {
     return {
       'useStaticSettings': useStaticSettings,
       'staticSettings': staticSettings,
-    }
-      ..removeWhere((key, value) => value == null);
+    }..removeWhere((key, value) => value == null);
   }
 
   factory BridgeSettings.fromJson(Map<String, dynamic> json) {
@@ -452,8 +448,7 @@ class DSLiteSettings extends Equatable {
     return {
       'useManualSettings': useManualSettings,
       'manualSettings': manualSettings,
-    }
-      ..removeWhere((key, value) => value == null);
+    }..removeWhere((key, value) => value == null);
   }
 
   factory DSLiteSettings.fromJson(Map<String, dynamic> json) {
@@ -507,7 +502,7 @@ class WirelessModeSettings extends Equatable {
       'band': band,
       'security': security,
       'password': password,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory WirelessModeSettings.fromJson(Map<String, dynamic> json) {
@@ -547,7 +542,7 @@ class AFTRSettings extends Equatable {
     return {
       'aftrURL': aftrURL,
       'afterAddress': afterAddress,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory AFTRSettings.fromJson(Map<String, dynamic> json) {
@@ -564,44 +559,57 @@ class AFTRSettings extends Equatable {
 class SinglePortVLANTaggingSettings {
   final bool isEnabled;
   final PortTaggingSettings? vlanTaggingSettings;
+  final int? vlanLowerLimit;
+  final int? vlanUpperLimit;
 
   const SinglePortVLANTaggingSettings({
     required this.isEnabled,
     this.vlanTaggingSettings,
+    this.vlanLowerLimit,
+    this.vlanUpperLimit,
   });
 
   SinglePortVLANTaggingSettings copyWith({
     bool? isEnabled,
     PortTaggingSettings? vlanTaggingSettings,
+    int? vlanLowerLimit,
+    int? vlanUpperLimit,
   }) {
     return SinglePortVLANTaggingSettings(
       isEnabled: isEnabled ?? this.isEnabled,
       vlanTaggingSettings: vlanTaggingSettings ?? this.vlanTaggingSettings,
+      vlanLowerLimit: vlanLowerLimit ?? this.vlanLowerLimit,
+      vlanUpperLimit: vlanUpperLimit ?? this.vlanUpperLimit,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    return <String, dynamic>{
       'isEnabled': isEnabled,
       'vlanTaggingSettings': vlanTaggingSettings?.toJson(),
-    }
-      ..removeWhere((key, value) => value == null);
+      'vlanLowerLimit': vlanLowerLimit,
+      'vlanUpperLimit': vlanUpperLimit,
+    }..removeWhere((key, value) => value == null);
   }
 
-  factory SinglePortVLANTaggingSettings.fromJson(Map<String, dynamic> json) {
+  factory SinglePortVLANTaggingSettings.fromJson(Map<String, dynamic> map) {
     return SinglePortVLANTaggingSettings(
-      isEnabled: json['isEnabled'],
-      vlanTaggingSettings: json['vlanTaggingSettings'] == null
-          ? null
-          : PortTaggingSettings.fromJson(json['vlanTaggingSettings']),
+      isEnabled: map['isEnabled'],
+      vlanTaggingSettings: map['vlanTaggingSettings'] != null
+          ? PortTaggingSettings.fromJson(
+              map['vlanTaggingSettings'] as Map<String, dynamic>)
+          : null,
+      vlanLowerLimit:
+          map['vlanLowerLimit'] != null ? map['vlanLowerLimit'] as int : null,
+      vlanUpperLimit:
+          map['vlanUpperLimit'] != null ? map['vlanUpperLimit'] as int : null,
     );
   }
 }
 
 class PortTaggingSettings {
   final int vlanID;
-  final int vlanLowerLimit;
-  final int vlanUpperLimit;
+  final int? vlanPriority;
 
   ///
   /// Tagged/Untagged
@@ -610,40 +618,36 @@ class PortTaggingSettings {
 
   const PortTaggingSettings({
     required this.vlanID,
-    required this.vlanLowerLimit,
-    required this.vlanUpperLimit,
+    this.vlanPriority,
     required this.vlanStatus,
   });
 
   PortTaggingSettings copyWith({
     int? vlanID,
-    int? vlanLowerLimit,
-    int? vlanUpperLimit,
+    int? vlanPriority,
     String? vlanStatus,
   }) {
     return PortTaggingSettings(
       vlanID: vlanID ?? this.vlanID,
-      vlanLowerLimit: vlanLowerLimit ?? this.vlanLowerLimit,
-      vlanUpperLimit: vlanUpperLimit ?? this.vlanUpperLimit,
+      vlanPriority: vlanPriority ?? this.vlanPriority,
       vlanStatus: vlanStatus ?? this.vlanStatus,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    return <String, dynamic>{
       'vlanID': vlanID,
-      'vlanLowerLimit': vlanLowerLimit,
-      'vlanUpperLimit': vlanUpperLimit,
+      'vlanPriority': vlanPriority,
       'vlanStatus': vlanStatus,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
-  factory PortTaggingSettings.fromJson(Map<String, dynamic> json) {
+  factory PortTaggingSettings.fromJson(Map<String, dynamic> map) {
     return PortTaggingSettings(
-      vlanID: json['vlanID'],
-      vlanLowerLimit: json['vlanLowerLimit'],
-      vlanUpperLimit: json['vlanUpperLimit'],
-      vlanStatus: json['vlanStatus'],
+      vlanID: map['vlanID'] as int,
+      vlanPriority:
+          map['vlanPriority'] != null ? map['vlanPriority'] as int : null,
+      vlanStatus: map['vlanStatus'] as String,
     );
   }
 }

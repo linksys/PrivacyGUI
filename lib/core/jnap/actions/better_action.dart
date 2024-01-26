@@ -336,6 +336,14 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.diagnostics9:
       break;
+    case JNAPService.settings:
+      break;
+    case JNAPService.settings2:
+      // _betterActionMap[JNAPAction.getCloudServerStatus] =
+      //     _JNAPActionValue.getCloudServerStatus.value;
+      break;
+    case JNAPService.settings3:
+      break;
   }
 }
 
@@ -602,6 +610,10 @@ void initBetterActions() {
       _JNAPActionValue.getSelectedChannels.value;
   _betterActionMap[JNAPAction.startAutoChannelSelection] =
       _JNAPActionValue.startAutoChannelSelection.value;
+  _betterActionMap[JNAPAction.getRemoteSetting] =
+      _JNAPActionValue.getRemoteSetting.value;
+  _betterActionMap[JNAPAction.setRemoteSetting] =
+      _JNAPActionValue.setRemoteSetting.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

@@ -5,6 +5,18 @@ import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 
 extension BatchCommands on RouterRepository {
+  Future<List<MapEntry<JNAPAction, JNAPResult>>> doTransaction(
+      List<MapEntry<JNAPAction, Map<String, dynamic>>> transactionList,
+      {bool fetchRemote = false}) async {
+    return transaction(
+      fetchRemote: fetchRemote,
+      JNAPTransactionBuilder(
+        commands: transactionList,
+        auth: true,
+      ),
+    ).then((successWrap) => successWrap.data);
+  }
+
   Future<List<MapEntry<JNAPAction, JNAPResult>>> fetchIsConfigured() async {
     return transaction(
       JNAPTransactionBuilder(commands: [
@@ -23,8 +35,10 @@ extension BatchCommands on RouterRepository {
     ).then((successWrap) => successWrap.data);
   }
 
-  Future<List<MapEntry<JNAPAction, JNAPResult>>> fetchInternetSettings() async {
+  Future<List<MapEntry<JNAPAction, JNAPResult>>> fetchInternetSettings(
+      {bool fetchRemote = false}) async {
     return transaction(
+      fetchRemote: fetchRemote,
       JNAPTransactionBuilder(commands: [
         const MapEntry(JNAPAction.getIPv6Settings, {}),
         const MapEntry(JNAPAction.getWANSettings, {}),

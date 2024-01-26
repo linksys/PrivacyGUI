@@ -51,11 +51,14 @@ class _ConnectionTypeSelectionViewState
                         });
                         context.pop(_selected);
                       },
-                child: AppPanelWithValueCheck(
-                  title: connectionType.title,
-                  description: connectionType.description,
-                  valueText: '',
-                  isChecked: connectionType.type == _selected,
+                child: Opacity(
+                  opacity: _disabled.contains(connectionType.type) ? 0.5 : 1.0,
+                  child: AppPanelWithValueCheck(
+                    title: connectionType.title,
+                    description: connectionType.description,
+                    valueText: '',
+                    isChecked: connectionType.type == _selected,
+                  ),
                 ),
               );
             }).toList(),

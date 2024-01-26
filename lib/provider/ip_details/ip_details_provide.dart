@@ -52,22 +52,13 @@ class IpDetailsNotifier extends Notifier<IpDetailsState> {
       await repo.send(
         JNAPAction.renewDHCPIPv6WANLease,
         auth: true,
-      );
+      ).then((value) => state = state.copyWith(ipv6Renewing: false));
     } else {
       state = state.copyWith(ipv4Renewing: true);
       await repo.send(
         JNAPAction.renewDHCPWANLease,
         auth: true,
-      );
-    }
-    // TODO #SIDEEFFECT WANInterruption
-    await Future.delayed(const Duration(seconds: 20));
-    // await repo.connectToBroker();
-    await fetch();
-    if (isIPv6) {
-      state = state.copyWith(ipv6Renewing: false);
-    } else {
-      state = state.copyWith(ipv4Renewing: false);
+      ).then((value) => state = state.copyWith(ipv4Renewing: false));
     }
   }
 }

@@ -295,9 +295,9 @@ enum _JNAPActionValue {
       value:
           'http://linksys.com/jnap/wirelessscheduler/GetWirelessSchedulerSettings'),
   getPortConnectionStatus(
-      value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings3'),
-  getWANPort(value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings3'),
-  setWANPort(value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings3'),
+      value: 'http://linksys.com/jnap/nodes/setup/GetPortConnectionStatus'),
+  getWANPort(value: 'http://linksys.com/jnap/nodes/setup/GetWANPort'),
+  setWANPort(value: 'http://linksys.com/jnap/nodes/setup/SetWANPort'),
   getInternetConnectionStatus(
       value: 'http://linksys.com/jnap/nodes/setup/GetInternetConnectionStatus'),
   setSimpleWiFiSettings(
@@ -344,7 +344,11 @@ enum _JNAPActionValue {
   getSelectedChannels(
       value: 'http://linksys.com/jnap/nodes/setup/GetSelectedChannels'),
   startAutoChannelSelection(
-      value: 'http://linksys.com/jnap/nodes/setup/StartAutoChannelSelection');
+      value: 'http://linksys.com/jnap/nodes/setup/StartAutoChannelSelection'),
+  //ui
+  getRemoteSetting(value: 'http://linksys.com/jnap/ui/GetRemoteSetting'),
+  setRemoteSetting(value: 'http://linksys.com/jnap/ui/SetRemoteSetting'),
+  ;
 
   const _JNAPActionValue({required this.value});
 

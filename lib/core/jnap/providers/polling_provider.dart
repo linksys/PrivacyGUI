@@ -72,7 +72,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     benchMark.start();
     state = const AsyncValue.loading();
     final fetchFuture = repository
-        .transaction(JNAPTransactionBuilder(commands: _coreTransactions), fetchRemote: force)
+        .transaction(JNAPTransactionBuilder(commands: _coreTransactions, auth: true), fetchRemote: force)
         .then((successWrap) => successWrap.data)
         .then((data) => CoreTransactionData(
             lastUpdate: DateTime.now().millisecondsSinceEpoch,
@@ -126,13 +126,13 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       const MapEntry(JNAPAction.getWANStatus, {}),
     ];
     if (isServiceSupport(JNAPService.nodesFirmwareUpdate)) {
-      commands.add(
-        const MapEntry(JNAPAction.getNodesFirmwareUpdateStatus, {}),
-      );
+    commands.add(
+    const MapEntry(JNAPAction.getNodesFirmwareUpdateStatus, {}),
+    );
     } else {
-      commands.add(
-        const MapEntry(JNAPAction.getFirmwareUpdateStatus, {}),
-      );
+    commands.add(
+    const MapEntry(JNAPAction.getFirmwareUpdateStatus, {}),
+    );
     }
     return commands;
   }

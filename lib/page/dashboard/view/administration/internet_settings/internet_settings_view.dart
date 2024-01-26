@@ -6,19 +6,27 @@ import 'package:linksys_app/provider/connectivity/_connectivity.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_app/provider/dashboard/dashboard_home_provider.dart';
 import 'package:linksys_app/provider/internet_settings/_internet_settings.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/string_mapping.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/input_field/ip_form_field.dart';
 
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/panel/general_section.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:linksys_widgets/widgets/radios/radio_list.dart';
 
 enum InternetSettingsViewType {
   ipv4,
   ipv6,
+}
+
+enum PPTPIpAddressMode {
+  dhcp,
+  specify,
 }
 
 class InternetSettingsView extends ArgumentsConsumerStatelessView {
@@ -42,33 +50,47 @@ class InternetSettingsContentView extends ArgumentsConsumerStatefulView {
 
 class _InternetSettingsContentViewState
     extends ConsumerState<InternetSettingsContentView> {
-  late final InternetSettingsNotifier _notifier;
-
   final TextEditingController _pppoeUsernameController =
       TextEditingController();
   final TextEditingController _pppoePasswordController =
       TextEditingController();
   final TextEditingController _pppoeVLANIDController = TextEditingController();
+  final TextEditingController _pppoeServiceNameController =
+      TextEditingController();
   final TextEditingController _staticIpAddressController =
       TextEditingController();
   final TextEditingController _staticSubnetController = TextEditingController();
   final TextEditingController _staticGatewayController =
       TextEditingController();
   final TextEditingController _staticDns1Controller = TextEditingController();
+  final TextEditingController _staticDns2Controller = TextEditingController();
+  final TextEditingController _staticDns3Controller = TextEditingController();
   final TextEditingController _pptpUsernameController = TextEditingController();
   final TextEditingController _pptpPasswordController = TextEditingController();
   final TextEditingController _pptpServerIpController = TextEditingController();
   final TextEditingController _l2tpUsernameController = TextEditingController();
   final TextEditingController _l2tpPasswordController = TextEditingController();
   final TextEditingController _l2tpServerIpController = TextEditingController();
+  final TextEditingController _idleTimeController = TextEditingController();
+  final TextEditingController _redialPeriodController = TextEditingController();
 
+  bool isLoading = true;
   InternetSettingsViewType _selected = InternetSettingsViewType.ipv4;
+  PPPConnectionBehavior _selectedConnectionMode =
+      PPPConnectionBehavior.keepAlive;
+  PPTPIpAddressMode _selectedPPTPIpAddressMode = PPTPIpAddressMode.dhcp;
   bool _isBehindRouter = false;
+  late InternetSettingsState state;
 
   @override
   void initState() {
-    _notifier = ref.read(internetSettingsProvider.notifier);
-    _notifier.fetch();
+    ref.read(internetSettingsProvider.notifier).fetch().then((value) {
+      setState(() {
+        state = value.copyWith();
+        initUI();
+        isLoading = false;
+      });
+    });
 
     super.initState();
   }
@@ -78,65 +100,153 @@ class _InternetSettingsContentViewState
     super.dispose();
   }
 
+  void initUI() {
+    switch (WanType.resolve(state.ipv4ConnectionType)) {
+      case WanType.dhcp:
+        break;
+      case WanType.pppoe:
+        _pppoeUsernameController.text = state.username ?? '';
+        _pppoePasswordController.text = state.password ?? '';
+        _pppoeServiceNameController.text = state.serviceName ?? '';
+        _pppoeVLANIDController.text =
+            state.vlanId != null ? '${state.vlanId}' : '5';
+        break;
+      case WanType.pptp:
+        _pptpUsernameController.text = state.username ?? '';
+        _pptpPasswordController.text = state.password ?? '';
+        _pptpServerIpController.text = state.serverIp ?? '';
+        _selectedPPTPIpAddressMode = (state.useStaticSettings ?? false)
+            ? PPTPIpAddressMode.specify
+            : PPTPIpAddressMode.dhcp;
+        if (_selectedPPTPIpAddressMode == PPTPIpAddressMode.specify) {
+          _staticIpAddressController.text = state.staticIpAddress ?? '';
+          _staticGatewayController.text = state.staticGateway ?? '';
+          _staticDns1Controller.text = state.staticDns1 ?? '';
+          _staticDns2Controller.text = state.staticDns2 ?? '';
+          _staticDns3Controller.text = state.staticDns3 ?? '';
+        }
+        break;
+      case WanType.l2tp:
+        _l2tpUsernameController.text = state.username ?? '';
+        _l2tpPasswordController.text = state.password ?? '';
+        _l2tpServerIpController.text = state.serverIp ?? '';
+        break;
+      case WanType.static:
+        _staticIpAddressController.text = state.staticIpAddress ?? '';
+        _staticGatewayController.text = state.staticGateway ?? '';
+        _staticDns1Controller.text = state.staticDns1 ?? '';
+        _staticDns2Controller.text = state.staticDns2 ?? '';
+        _staticDns3Controller.text = state.staticDns3 ?? '';
+        break;
+      case WanType.bridge:
+        break;
+      default:
+        break;
+    }
+
+    _selectedConnectionMode = state.behavior ?? _selectedConnectionMode;
+    _idleTimeController.text =
+        state.maxIdleMinutes != null ? '${state.maxIdleMinutes}' : '15';
+    _redialPeriodController.text = state.reconnectAfterSeconds != null
+        ? '${state.reconnectAfterSeconds}'
+        : '30';
+  }
+
+  Future save() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      isLoading = true;
+    });
+    if (_selected == InternetSettingsViewType.ipv4) {
+      await ref
+          .read(internetSettingsProvider.notifier)
+          .saveIpv4(state)
+          .then((value) {
+        setState(() {
+          isLoading = false;
+        });
+      }).onError((error, stackTrace) {
+        setState(() {
+          isLoading = false;
+        });
+      });
+    } else {
+      await ref.read(internetSettingsProvider.notifier).saveIpv6(state);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(internetSettingsProvider);
     final connectivityState = ref.watch(connectivityProvider);
     _isBehindRouter = connectivityState.connectivityInfo.routerType ==
         RouterType.behindManaged;
-    return StyledAppPageView(
-      padding: const EdgeInsets.only(),
-      scrollable: true,
-      title: getAppLocalizations(context).internet_settings,
-      actions: [
-        AppTextButton(
-          getAppLocalizations(context).save,
-          onTap: () {},
-        ),
-      ],
-      child: AppBasicLayout(
-        content: Column(
-          children: [
-            if (!_isBehindRouter)
-              Container(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                width: double.infinity,
-                height: 100,
-                alignment: Alignment.center,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: AppText.bodyLarge(
-                    'To change these settings. connect to ${ref.read(dashboardHomeProvider).mainWifiSsid}',
-                  ),
-                ),
+    return isLoading
+        ? const AppFullScreenSpinner()
+        : StyledAppPageView(
+            padding: const EdgeInsets.only(),
+            scrollable: true,
+            title: getAppLocalizations(context).internet_settings,
+            actions: [
+              AppTextButton(
+                getAppLocalizations(context).save,
+                onTap: _isBehindRouter
+                    ? () async {
+                        setState(() {
+                          isLoading = true;
+                        });
+                        await save().then((_) {
+                          setState(() {
+                            isLoading = false;
+                          });
+                        });
+                      }
+                    : null,
               ),
-            Padding(
-              padding: const EdgeInsets.all(Spacing.semiSmall),
-              child: Stack(
+            ],
+            child: AppBasicLayout(
+              content: Column(
                 children: [
-                  Column(
-                    children: [
-                      _buildSegmentController(state),
-                      const AppGap.semiBig(),
-                      _buildSegment(state),
-                      const AppGap.semiBig(),
-                      _buildAdditionalSettings(state),
-                    ],
-                  ),
                   if (!_isBehindRouter)
                     Container(
-                      decoration: const BoxDecoration(color: Color(0x88aaaaaa)),
-                    )
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      width: double.infinity,
+                      height: 100,
+                      alignment: Alignment.center,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: AppText.bodyLarge(
+                          'To change these settings. connect to ${ref.read(dashboardHomeProvider).mainWifiSsid}',
+                        ),
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.all(Spacing.semiSmall),
+                    child: Stack(
+                      children: [
+                        Column(
+                          children: [
+                            _buildSegmentController(),
+                            const AppGap.semiBig(),
+                            _buildSegment(),
+                            const AppGap.semiBig(),
+                            _buildAdditionalSettings(),
+                          ],
+                        ),
+                        if (!_isBehindRouter)
+                          Container(
+                            decoration:
+                                const BoxDecoration(color: Color(0x88aaaaaa)),
+                          )
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
+          );
   }
 
-  Widget _buildSegmentController(InternetSettingsState state) {
+  Widget _buildSegmentController() {
     return SizedBox(
       width: double.infinity,
       child: CupertinoSlidingSegmentedControl<InternetSettingsViewType>(
@@ -170,16 +280,17 @@ class _InternetSettingsContentViewState
     );
   }
 
-  Widget _buildSegment(InternetSettingsState state) {
+  Widget _buildSegment() {
     return _selected == InternetSettingsViewType.ipv4
-        ? _buildIPv4Segment(state)
-        : _buildIPv6Segment(state);
+        ? _buildIPv4Segment()
+        : _buildIPv6Segment();
   }
 
-  Widget _buildAdditionalSettings(InternetSettingsState state) {
-    return administrationSection(
-      title: getAppLocalizations(context).additional_setting,
-      content: Column(
+  Widget _buildAdditionalSettings() {
+    return AppSection(
+      header:
+          AppText.labelLarge(getAppLocalizations(context).additional_setting),
+      child: Column(
         children: [
           AppPanelWithInfo(
             title: getAppLocalizations(context).mtu,
@@ -187,17 +298,22 @@ class _InternetSettingsContentViewState
                 ? getAppLocalizations(context).auto
                 : getAppLocalizations(context).manual,
             infoText: ' ',
-            onTap: () async {
-              int? value = await context.pushNamed(
-                RouteNamed.mtuPicker,
-                extra: {
-                  'selected': state.mtu,
-                },
-              );
-              if (value != null) {
-                _notifier.setMtu(value);
-              }
-            },
+            onTap: state.ipv4ConnectionType == WanType.bridge.type
+                ? null
+                : () async {
+                    int? value = await context.pushNamed(
+                      RouteNamed.mtuPicker,
+                      extra: {
+                        'selected': state.mtu,
+                        'wanType': state.ipv4ConnectionType
+                      },
+                    );
+                    if (value != null) {
+                      setState(() {
+                        state = state.copyWith(mtu: value);
+                      });
+                    }
+                  },
           ),
           AppPanelWithInfo(
             title: getAppLocalizations(context).mac_address_clone,
@@ -205,24 +321,29 @@ class _InternetSettingsContentViewState
                 ? getAppLocalizations(context).on
                 : getAppLocalizations(context).off,
             infoText: ' ',
-            onTap: () async {
-              String? mac = await context.pushNamed(RouteNamed.macClone,
-                  extra: {
-                    'enabled': state.macClone,
-                    'macAddress': state.macCloneAddress
-                  });
-              if (mac != null) {
-                final enabled = mac.isEmpty;
-                final macAddress = mac;
-              }
-            },
+            onTap: state.ipv4ConnectionType == WanType.bridge.type
+                ? null
+                : () async {
+                    String? macAddress = await context
+                        .pushNamed(RouteNamed.macClone, extra: {
+                      'enabled': state.macClone,
+                      'macAddress': state.macCloneAddress
+                    });
+                    if (macAddress != null) {
+                      setState(() {
+                        state = state.copyWith(
+                            macClone: macAddress.isNotEmpty,
+                            macCloneAddress: macAddress);
+                      });
+                    }
+                  },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildIPv4Segment(InternetSettingsState state) {
+  Widget _buildIPv4Segment() {
     return Column(
       children: [
         AppPanelWithInfo(
@@ -237,39 +358,42 @@ class _InternetSettingsContentViewState
               'selected': state.ipv4ConnectionType,
             });
             if (select != null) {
-              _notifier.setIPv4ConnectionType(select);
+              setState(() {
+                state = state.copyWith(ipv4ConnectionType: select);
+              });
             }
           },
         ),
-        _buildIPv4SettingsByConnectionType(state),
+        _buildIPv4SettingsByConnectionType(),
       ],
     );
   }
 
-  Widget _buildIPv4SettingsByConnectionType(InternetSettingsState state) {
-    String type = state.ipv4ConnectionType;
-    if (type == 'DHCP') {
-      return _buildDHCPSettings(state);
-    } else if (type == 'PPPoE') {
-      return _buildPPPoESettings(state);
-    } else if (type == 'Static') {
-      return _buildStaticSettings(state);
-    } else if (type == 'PPTP') {
-      return _buildPPTPSettings(state);
-    } else if (type == 'L2TP') {
-      return _buildL2TPSettings(state);
-    } else if (type == 'Bridge') {
-      return _buildBridgeModeSettings(state);
-    } else {
-      return const Center();
+  Widget _buildIPv4SettingsByConnectionType() {
+    final type = WanType.resolve(state.ipv4ConnectionType);
+    switch (type) {
+      case WanType.dhcp:
+        return _buildDHCPSettings();
+      case WanType.pppoe:
+        return _buildPPPoESettings();
+      case WanType.static:
+        return _buildStaticSettings();
+      case WanType.pptp:
+        return _buildPPTPSettings();
+      case WanType.l2tp:
+        return _buildL2TPSettings();
+      case WanType.bridge:
+        return _buildBridgeModeSettings();
+      default:
+        return const Center();
     }
   }
 
-  Widget _buildDHCPSettings(InternetSettingsState state) {
+  Widget _buildDHCPSettings() {
     return const Center();
   }
 
-  Widget _buildPPPoESettings(InternetSettingsState state) {
+  Widget _buildPPPoESettings() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -277,108 +401,256 @@ class _InternetSettingsContentViewState
           headerText: getAppLocalizations(context).username,
           hintText: getAppLocalizations(context).username,
           controller: _pppoeUsernameController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(username: _pppoeUsernameController.text);
+              });
+            }
+          },
         ),
         const AppGap.semiSmall(),
         AppPasswordField(
           headerText: getAppLocalizations(context).password,
           hintText: getAppLocalizations(context).password,
           controller: _pppoePasswordController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(password: _pppoePasswordController.text);
+              });
+            }
+          },
         ),
         const AppGap.semiSmall(),
         AppTextField(
+          headerText: 'Service Name (Optional)',
+          hintText: 'Service Name (Optional)',
+          controller: _pppoeServiceNameController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(
+                    serviceName: _pppoeServiceNameController.text);
+              });
+            }
+          },
+        ),
+        const AppGap.semiSmall(),
+        AppTextField.minMaxNumber(
+          min: 5,
+          max: 4094,
           headerText: getAppLocalizations(context).vlan_id,
           hintText: getAppLocalizations(context).vlan_id,
           controller: _pppoeVLANIDController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(
+                    vlanId: int.parse(_pppoeVLANIDController.text));
+              });
+            }
+          },
         ),
         const AppGap.semiSmall(),
         AppText.bodyMedium(getAppLocalizations(context).vlan_id_desc),
+        const AppGap.regular(),
+        _buildConnectionModeSection(),
       ],
     );
   }
 
-  Widget _buildStaticSettings(InternetSettingsState state) {
+  Widget _buildStaticSettings() {
     return Column(
       children: [
-        AppTextField(
-          headerText: getAppLocalizations(context).internet_ipv4_address,
-          hintText: getAppLocalizations(context).internet_ipv4_address,
+        AppIPFormField(
+          header: AppText.bodyLarge(
+            getAppLocalizations(context).internet_ipv4_address,
+          ),
           controller: _staticIpAddressController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(
+                    staticIpAddress: _staticIpAddressController.text);
+              });
+            }
+          },
         ),
         const AppGap.semiSmall(),
-        AppTextField(
-          headerText: getAppLocalizations(context).subnet_mask,
-          hintText: getAppLocalizations(context).subnet_mask,
+        AppIPFormField(
+          header: AppText.bodyLarge(
+            getAppLocalizations(context).subnet_mask,
+          ),
           controller: _staticSubnetController,
+          onFocusChanged: (focused) {},
         ),
         const AppGap.semiSmall(),
-        AppTextField(
-          headerText: getAppLocalizations(context).default_gateway,
-          hintText: getAppLocalizations(context).default_gateway,
+        AppIPFormField(
+          header: AppText.bodyLarge(
+            getAppLocalizations(context).default_gateway,
+          ),
           controller: _staticGatewayController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(
+                    staticGateway: _staticGatewayController.text);
+              });
+            }
+          },
         ),
         const AppGap.semiSmall(),
-        AppTextField(
-          headerText: getAppLocalizations(context).dns1,
-          hintText: getAppLocalizations(context).dns1,
+        AppIPFormField(
+          header: AppText.bodyLarge(
+            getAppLocalizations(context).dns1,
+          ),
           controller: _staticDns1Controller,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(staticDns1: _staticDns1Controller.text);
+              });
+            }
+          },
+        ),
+        const AppGap.semiSmall(),
+        AppIPFormField(
+          header: const AppText.bodyLarge(
+            'DNS 2 (Optional)',
+          ),
+          controller: _staticDns2Controller,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(staticDns2: _staticDns2Controller.text);
+              });
+            }
+          },
+        ),
+        const AppGap.semiSmall(),
+        AppIPFormField(
+          header: const AppText.bodyLarge(
+            'DNS 3 (Optional)',
+          ),
+          controller: _staticDns3Controller,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(staticDns3: _staticDns3Controller.text);
+              });
+            }
+          },
         ),
       ],
     );
   }
 
-  Widget _buildPPTPSettings(InternetSettingsState state) {
+  Widget _buildPPTPSettings() {
     return Column(
       children: [
         AppTextField(
           headerText: getAppLocalizations(context).username,
           hintText: getAppLocalizations(context).username,
           controller: _pptpUsernameController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(username: _pptpUsernameController.text);
+              });
+            }
+          },
         ),
         const AppGap.semiSmall(),
         AppPasswordField(
           headerText: getAppLocalizations(context).password,
           hintText: getAppLocalizations(context).password,
           controller: _pptpPasswordController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(password: _pptpPasswordController.text);
+              });
+            }
+          },
         ),
         const AppGap.semiSmall(),
-        AppTextField(
-          headerText: getAppLocalizations(context).server_ipv4_address,
-          hintText: getAppLocalizations(context).server_ipv4_address,
+        AppIPFormField(
+          header: AppText.bodyLarge(
+            getAppLocalizations(context).server_ipv4_address,
+          ),
           controller: _pptpServerIpController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(serverIp: _pptpServerIpController.text);
+              });
+            }
+          },
         ),
+        const AppGap.regular(),
+        _pptpIpAddressModeSection(),
+        if (_selectedPPTPIpAddressMode == PPTPIpAddressMode.specify)
+          _buildStaticSettings(),
+        const AppGap.regular(),
+        _buildConnectionModeSection(),
       ],
     );
   }
 
-  Widget _buildL2TPSettings(InternetSettingsState state) {
+  Widget _buildL2TPSettings() {
     return Column(
       children: [
         AppTextField(
           headerText: getAppLocalizations(context).username,
           hintText: getAppLocalizations(context).username,
           controller: _l2tpUsernameController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(username: _l2tpUsernameController.text);
+              });
+            }
+          },
         ),
         const AppGap.semiSmall(),
         AppPasswordField(
           headerText: getAppLocalizations(context).password,
           hintText: getAppLocalizations(context).password,
           controller: _l2tpPasswordController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(password: _l2tpPasswordController.text);
+              });
+            }
+          },
         ),
         const AppGap.semiSmall(),
-        AppTextField(
-          headerText: getAppLocalizations(context).server_ipv4_address,
-          hintText: getAppLocalizations(context).server_ipv4_address,
+        AppIPFormField(
+          header: AppText.bodyLarge(
+            getAppLocalizations(context).server_ipv4_address,
+          ),
           controller: _l2tpServerIpController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(serverIp: _l2tpServerIpController.text);
+              });
+            }
+          },
         ),
+        const AppGap.regular(),
+        _buildConnectionModeSection(),
       ],
     );
   }
 
-  Widget _buildBridgeModeSettings(InternetSettingsState state) {
+  Widget _buildBridgeModeSettings() {
     return const Center();
   }
 
-  Widget _buildIPv6Segment(InternetSettingsState state) {
+  Widget _buildIPv6Segment() {
     return Column(
       children: [
         AppPanelWithInfo(
@@ -393,14 +665,18 @@ class _InternetSettingsContentViewState
                         combine.wanType == state.ipv4ConnectionType &&
                         combine.wanIPv6Type == ipv6))
                 .toList();
-            String? select =
-                await context.pushNamed(RouteNamed.connectionType, extra: {
-              'supportedList': state.supportedIPv6ConnectionType,
-              'selected': state.ipv6ConnectionType,
-              'disabled': disabled
-            });
+            String? select = await context.pushNamed(
+              RouteNamed.connectionType,
+              extra: {
+                'supportedList': state.supportedIPv6ConnectionType,
+                'selected': state.ipv6ConnectionType,
+                'disabled': disabled
+              },
+            );
             if (select != null) {
-              _notifier.setIPv6ConnectionType(select);
+              setState(() {
+                state = state.copyWith(ipv6ConnectionType: select);
+              });
             }
           },
         ),
@@ -425,6 +701,116 @@ class _InternetSettingsContentViewState
           onTap: () {},
         ),
       ],
+    );
+  }
+
+  Widget _buildConnectionModeSection() {
+    return AppSection(
+      header: const AppText.titleMedium('Connection Mode'),
+      child: SizedBox(
+        height: 180,
+        child: AppRadioList(
+          initial: _selectedConnectionMode,
+          items: [
+            AppRadioListItem(
+              title: 'Connect on demand',
+              value: PPPConnectionBehavior.connectOnDemand,
+              subtitleWidget: Row(
+                children: [
+                  const AppText.bodyMedium('Max Idle Time: '),
+                  const AppGap.semiSmall(),
+                  SizedBox(
+                    width: 70,
+                    child: AppTextField.minMaxNumber(
+                      max: 9999,
+                      min: 1,
+                      controller: _idleTimeController,
+                      onFocusChanged: (focused) {
+                        if (!focused) {
+                          setState(() {
+                            state = state.copyWith(
+                                maxIdleMinutes:
+                                    int.parse(_idleTimeController.text));
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                  const AppGap.semiSmall(),
+                  const AppText.bodyMedium('Minutes'),
+                ],
+              ),
+            ),
+            AppRadioListItem(
+              title: 'Keep alive',
+              value: PPPConnectionBehavior.keepAlive,
+              subtitleWidget: Row(
+                children: [
+                  const AppText.bodyMedium('Redial Period: '),
+                  const AppGap.semiSmall(),
+                  SizedBox(
+                    width: 70,
+                    child: AppTextField.minMaxNumber(
+                      max: 180,
+                      min: 20,
+                      controller: _redialPeriodController,
+                      onFocusChanged: (focused) {
+                        if (!focused) {
+                          setState(() {
+                            state = state.copyWith(
+                                reconnectAfterSeconds:
+                                    int.parse(_redialPeriodController.text));
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                  const AppGap.semiSmall(),
+                  const AppText.bodyMedium('Seconds'),
+                ],
+              ),
+            ),
+          ],
+          onChanged: (index, type) {
+            setState(() {
+              if (type != null) {
+                _selectedConnectionMode = type;
+              }
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _pptpIpAddressModeSection() {
+    return AppSection(
+      header: const AppText.titleMedium('IP Address'),
+      child: SizedBox(
+        // height: 100,
+        child: AppRadioList(
+          initial: _selectedPPTPIpAddressMode,
+          items: [
+            AppRadioListItem(
+              title: 'Obtain an IPv4 address automatically (DHCP)',
+              value: PPTPIpAddressMode.dhcp,
+            ),
+            AppRadioListItem(
+              title: 'Specify an IPv4 address',
+              value: PPTPIpAddressMode.specify,
+            ),
+          ],
+          onChanged: (index, type) {
+            setState(() {
+              if (type != null) {
+                _selectedPPTPIpAddressMode = type;
+                state = state.copyWith(
+                    useStaticSettings: type == PPTPIpAddressMode.specify);
+              }
+            });
+          },
+        ),
+      ),
     );
   }
 }

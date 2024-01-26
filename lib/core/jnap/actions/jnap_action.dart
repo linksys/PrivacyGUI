@@ -183,10 +183,13 @@ enum JNAPAction {
   //airtime fairness
   getAirtimeFairnessSettings,
   setAirtimeFairnessSettings,
-
+  //ui
+  getRemoteSetting,
+  setRemoteSetting,
   //channelFinder
   getSelectedChannels,
-  startAutoChannelSelection;
+  startAutoChannelSelection,
+  ;
 
   String get actionValue {
     return _betterActionMap[this]!;
