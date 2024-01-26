@@ -140,12 +140,18 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                     onTap: () {
                       _navigateTo(RouteNamed.settingsDDNS);
                     }),
-                    AppSectionItemData(
+                AppSectionItemData(
                     title: 'Ipv6 Port Service',
                     iconData: getCharactersIcons(context).healthDefault,
                     onTap: () {
                       _navigateTo(RouteNamed.ipv6PortServiceList);
                     }),
+                AppSectionItemData(
+                    title: 'Channel Finder',
+                    iconData: getCharactersIcons(context).healthDefault,
+                    onTap: () {
+                      _navigateTo(RouteNamed.channelFinderOptimize);
+                    }),                
                 if (isCloudLogin)
                   AppSectionItemData(
                       title: 'Account',
