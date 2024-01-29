@@ -11,7 +11,6 @@ import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/firebase/analytics.dart';
-import 'package:linksys_app/firebase/notification_helper.dart';
 import 'package:linksys_app/app.dart';
 import 'package:linksys_app/providers/logger_observer.dart';
 
@@ -62,33 +61,31 @@ initErrorHandler() {
   // Pass all uncaught errors from the framework to Crashlytics.
   FlutterError.onError = (FlutterErrorDetails details) {
     logger.e('Uncaught Flutter Error:\n', error: details);
-    if (!kIsWeb) {
+    // if (!kIsWeb) {
       FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-    }
+    // }
   };
   PlatformDispatcher.instance.onError = (error, stack) {
     logger.e('Uncaught Error:\n', error: error, stackTrace: stack);
     logger.e(stack.toString());
-    if (!kIsWeb) {
+    // if (!kIsWeb) {
       FirebaseCrashlytics.instance.recordError(error, stack);
-    }
+    // }
     return true;
   };
 }
 
 initFirebase() async {
-  if (!kIsWeb) {
-    logger.d('Start to init Firebase Core');
-    final appConst = await PackageInfo.fromPlatform();
-    await Firebase.initializeApp(
-      options: appConst.appName.endsWith('ee')
-          ? DefaultFirebaseOptions.iosEE
-          : DefaultFirebaseOptions.currentPlatform,
-    );
-    await initAnalyticsDefault();
-    logger.d('Done for init Firebase Core');
-    initCloudMessage();
-  }
+  logger.d('Start to init Firebase Core');
+  final appConst = await PackageInfo.fromPlatform();
+  await Firebase.initializeApp(
+    options: appConst.appName.endsWith('ee')
+        ? DefaultFirebaseOptions.iosEE
+        : DefaultFirebaseOptions.currentPlatform,
+  );
+  await initAnalyticsDefault();
+  // await initCloudMessage();
+  logger.d('Done for init Firebase Core');
 }
 
 final container = ProviderContainer();

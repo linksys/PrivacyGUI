@@ -1,8 +1,11 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/constants/pref_key.dart';
 import 'package:linksys_app/core/jnap/models/firmware_update_settings.dart';
 import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
+import 'package:linksys_app/firebase/notification_helper.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/topology/_topology.dart';
 import 'package:linksys_app/route/constants.dart';
@@ -11,6 +14,7 @@ import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
 import 'package:linksys_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 typedef OnMenuItemClick = void Function(int index, AppSectionItemData item);
 
@@ -23,9 +27,17 @@ class DashboardSettingsView extends ConsumerStatefulWidget {
 }
 
 class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
+  bool _pushEnabled = false;
+
   @override
   void initState() {
     super.initState();
+
+    SharedPreferences.getInstance().then((prefs) {
+      setState(() {
+        _pushEnabled = prefs.getString(pDeviceToken) != null;
+      });
+    });
   }
 
   @override
@@ -54,6 +66,29 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             const AppGap.semiBig(),
             _section(
               _othersSettingsSection(),
+            ),
+            const AppGap.semiBig(),
+            AppSwitchTriggerTile(
+              value: _pushEnabled,
+              title: AppText.bodyLarge('Enable Push Notification'),
+              subtitle: AppText.bodySmall(
+                'Experiential',
+                color: Colors.grey,
+              ),
+              onChanged: (value) {},
+              event: (value) async {
+                if (value) {
+                  
+                  await initCloudMessage();
+                } else {
+                  await removeCloudMessage();
+                }
+                SharedPreferences.getInstance().then((prefs) {
+                  setState(() {
+                    _pushEnabled = prefs.getString(pDeviceToken) != null;
+                  });
+                });
+              },
             ),
             const AppGap.semiBig(),
             AppSwitchTriggerTile(

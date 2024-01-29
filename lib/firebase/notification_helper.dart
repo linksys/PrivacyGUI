@@ -26,8 +26,50 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 late AndroidNotificationChannel channel;
 late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
-/// Push notification initialize
-void initCloudMessage() async {
+///
+Future initCloudMessage() async {
+  if (kIsWeb) {
+    await _initCloudMessageWeb();
+  } else {
+    await _initCloudMessageMobile();
+  }
+}
+
+/// Web Push notification initialize
+Future _initCloudMessageWeb() async {
+  NotificationSettings newSettings =
+      await FirebaseMessaging.instance.requestPermission(
+    alert: true,
+    announcement: false,
+    badge: true,
+    carPlay: false,
+    criticalAlert: false,
+    provisional: false,
+    sound: true,
+  );
+  if (newSettings.authorizationStatus != AuthorizationStatus.authorized) {
+    return;
+  }
+  final token = await FirebaseMessaging.instance.getToken(
+      vapidKey:
+          'BFSsxlFG5VQ5j1S99weYRQa12vmH9h1AL888jUgrLrNjKegy6MwB0_EJ9yoLs1Znfc3oizB0RNOTqdbg8T4GV88');
+  if (token != null) {
+    (await SharedPreferences.getInstance()).setString(pDeviceToken, token);
+  }
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    logger.d('Got a message whilst in the foreground!');
+    logger.d('Message data: ${message.data}');
+
+    if (message.notification != null) {
+      logger
+          .d('Message also contained a notification: ${message.notification}');
+    }
+  });
+  logger.i('Web FCM Token: $token');
+}
+
+/// Mobile Push notification initialize
+Future _initCloudMessageMobile() async {
   if (Platform.isIOS) {
     // Get the device token from the native
     final token = await IosPushNotificationPlugin().readApnsToken();
@@ -50,8 +92,9 @@ void initCloudMessage() async {
         'APNS token back: ${(await SharedPreferences.getInstance()).getString(pDeviceToken)}');
     return;
   }
+
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  if (!kIsWeb) {
+  if (Platform.isAndroid) {
     channel = const AndroidNotificationChannel(
         'high_importance_channel', 'High Importance Notifications',
         description: 'This channel is used for important notifications.',
@@ -96,9 +139,22 @@ void initCloudMessage() async {
       pushNotificationHandler(message.data);
     }
   });
+
   final token = await FirebaseMessaging.instance.getToken();
   if (token != null) {
     (await SharedPreferences.getInstance()).setString(pDeviceToken, token);
   }
-  logger.i('FCM Token: $token');
+  logger.i('Mobile FCM Token: $token');
+}
+
+///
+Future removeCloudMessage() {
+  return FirebaseMessaging.instance
+      .deleteToken()
+      .then((_) => SharedPreferences.getInstance())
+      .then((prefs) {
+    prefs.remove(pDeviceToken);
+  }).onError((error, stackTrace) async {
+    (await SharedPreferences.getInstance()).remove(pDeviceToken);
+  });
 }
