@@ -100,43 +100,7 @@ class WifiItem extends Equatable {
 enum WifiType {
   main,
   guest;
-
-  // const WifiType({
-  //   required this.value,
-  // });
-
-  // final String value;
-
-  // List<WifiSettingOption> get settingOptions {
-  //   List<WifiSettingOption> options = [
-  //     WifiSettingOption.nameAndPassword,
-  //   ];
-
-  //   if (this == WifiType.main) {
-  //     options.addAll([
-  //       WifiSettingOption.securityType6G,
-  //       WifiSettingOption.securityTypeBelow6G,
-  //       WifiSettingOption.mode,
-  //       WifiSettingOption.channelFinder
-  //     ]);
-  //   }
-
-  //   return options;
-  // }
 }
-
-// enum WifiSettingOption {
-//   nameAndPassword(displayTitle: 'WiFi name and password'),
-//   securityType(displayTitle: 'Security type'),
-//   securityType6G(displayTitle: 'Security type (6GHz)'),
-//   securityTypeBelow6G(displayTitle: 'Security type (5GHz, 2.4GHz)'),
-//   mode(displayTitle: 'WiFi mode'),
-//   channelFinder(displayTitle: 'Channel Finder');
-
-//   const WifiSettingOption({required this.displayTitle});
-
-//   final String displayTitle;
-// }
 
 enum WifiRadioBand {
   radio_24(value: 'RADIO_2.4GHz'),

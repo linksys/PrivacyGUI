@@ -9,7 +9,6 @@ import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
-import 'package:linksys_app/provider/wifi_setting/_wifi_setting.dart';
 import 'package:linksys_app/provider/wifi_setting/wifi_item.dart';
 import 'package:linksys_app/util/wifi_credential.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';

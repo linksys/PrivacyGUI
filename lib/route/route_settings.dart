@@ -17,23 +17,6 @@ final settings = [
         builder: (context, state) => WifiSettingsReviewView(),
         routes: [
           LinksysRoute(
-            name: RouteNamed.wifiEditSSID,
-            path: RoutePath.wifiEditSSID,
-            builder: (context, state) => EditWifiNamePasswordView(),
-          ),
-          LinksysRoute(
-            name: RouteNamed.wifiEditSecurity,
-            path: RoutePath.wifiEditSecurity,
-            builder: (context, state) => EditWifiSecurityView(
-              args: state.uri.queryParameters,
-            ),
-          ),
-          LinksysRoute(
-            name: RouteNamed.wifiEditMode,
-            path: RoutePath.wifiEditMode,
-            builder: (context, state) => EditWifiModeView(),
-          ),
-          LinksysRoute(
             name: RouteNamed.channelFinderOptimize,
             path: RoutePath.channelFinderOptimize,
             builder: (context, state) => WifiSettingsChannelFinderView(),

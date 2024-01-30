@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/jnap/models/single_port_forwarding_rule.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/picker/region_picker_view.dart';
@@ -60,8 +59,7 @@ import 'package:linksys_app/page/safe_browsing/view/safe_browsing_view.dart';
 import 'package:linksys_app/page/pnp/troubleshooter/pnp_no_internet_connection.dart';
 import 'package:linksys_app/page/troubleshooting/troubleshooting_ping_view.dart';
 import 'package:linksys_app/page/troubleshooting/troubleshooting_view.dart';
-import 'package:linksys_app/page/wifi_settings/view/_view.dart';
-import 'package:linksys_app/page/wifi_settings/view/wifi_advanced_settings_view.dart';
+import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
 import 'package:linksys_app/provider/otp/otp.dart';
 import 'package:linksys_app/route/route_model.dart';
@@ -69,7 +67,6 @@ import 'package:linksys_app/route/router_logger.dart';
 
 import '../page/dashboard/view/administration/lan/lan_view.dart';
 import '../page/dashboard/view/nodes/node_switch_light_view.dart';
-import '../page/wifi_settings/view/wifi_settings_channel_finder_view.dart';
 import 'constants.dart';
 
 part 'route_home.dart';

@@ -47,9 +47,6 @@ class RoutePath {
   static const wifiSettingsReview = 'wifiSettingsReview';
   static const wifiShare = 'wifiShare';
   static const wifiShareDetails = 'wifiShareDetails';
-  static const wifiEditSecurity = 'wifiEditSecurity';
-  static const wifiEditMode = 'wifiEditMode';
-  static const wifiEditSSID = 'wifiEditSSID';
   static const wifiAdvancedSettings = 'wifiSettingsAdvanced';
 
   /// node
@@ -171,9 +168,6 @@ class RouteNamed {
   static const wifiSettingsReview = 'wifiSettingsReview';
   static const wifiShare = 'wifiShare';
   static const wifiShareDetails = 'wifiShareDetails';
-  static const wifiEditSecurity = 'wifiEditSecurity';
-  static const wifiEditMode = 'wifiEditMode';
-  static const wifiEditSSID = 'wifiEditSSID';
   static const wifiAdvancedSettings = 'wifiSettingsAdvanced';
 
   /// node
