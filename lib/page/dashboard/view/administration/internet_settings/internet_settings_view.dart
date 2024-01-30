@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/provider/connectivity/_connectivity.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
@@ -12,6 +13,7 @@ import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/string_mapping.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/dropdown/dropdown_menu.dart';
 import 'package:linksys_widgets/widgets/input_field/ip_form_field.dart';
 
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -73,6 +75,13 @@ class _InternetSettingsContentViewState
   final TextEditingController _l2tpServerIpController = TextEditingController();
   final TextEditingController _idleTimeController = TextEditingController();
   final TextEditingController _redialPeriodController = TextEditingController();
+  final TextEditingController _ipv6PrefixController = TextEditingController();
+  final TextEditingController _ipv6PrefixLengthController =
+      TextEditingController();
+  final TextEditingController _ipv6BorderRelayController =
+      TextEditingController();
+  final TextEditingController _ipv6BorderRelayPrefixLengthController =
+      TextEditingController();
 
   bool isLoading = true;
   InternetSettingsViewType _selected = InternetSettingsViewType.ipv4;
@@ -101,6 +110,7 @@ class _InternetSettingsContentViewState
   }
 
   void initUI() {
+    // IPv4 setup
     switch (WanType.resolve(state.ipv4ConnectionType)) {
       case WanType.dhcp:
         break;
@@ -143,6 +153,25 @@ class _InternetSettingsContentViewState
       default:
         break;
     }
+    // IPv6 setup
+    switch (WanIPv6Type.resolve(state.ipv6ConnectionType)) {
+      case WanIPv6Type.automatic:
+        _ipv6PrefixController.text = state.ipv6Prefix ?? '';
+        _ipv6PrefixLengthController.text =
+            state.ipv6PrefixLength != null ? '${state.ipv6PrefixLength}' : '';
+        _ipv6BorderRelayController.text = state.ipv6BorderRelay ?? '';
+        _ipv6BorderRelayPrefixLengthController.text =
+            state.ipv6BorderRelayPrefixLength != null
+                ? '${state.ipv6BorderRelayPrefixLength}'
+                : '';
+        break;
+      case WanIPv6Type.pppoe:
+        break;
+      case WanIPv6Type.passThrough:
+        break;
+      default:
+        break;
+    }
 
     _selectedConnectionMode = state.behavior ?? _selectedConnectionMode;
     _idleTimeController.text =
@@ -158,18 +187,7 @@ class _InternetSettingsContentViewState
       isLoading = true;
     });
     if (_selected == InternetSettingsViewType.ipv4) {
-      await ref
-          .read(internetSettingsProvider.notifier)
-          .saveIpv4(state)
-          .then((value) {
-        setState(() {
-          isLoading = false;
-        });
-      }).onError((error, stackTrace) {
-        setState(() {
-          isLoading = false;
-        });
-      });
+      await ref.read(internetSettingsProvider.notifier).saveIpv4(state);
     } else {
       await ref.read(internetSettingsProvider.notifier).saveIpv6(state);
     }
@@ -194,10 +212,21 @@ class _InternetSettingsContentViewState
                         setState(() {
                           isLoading = true;
                         });
-                        await save().then((_) {
+                        await save().onError((error, stackTrace) {
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(AppToastHelp.negativeToast(
+                            context,
+                            text: (error as JNAPError).result,
+                          ));
+                        }).whenComplete(() {
                           setState(() {
                             isLoading = false;
                           });
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(AppToastHelp.positiveToast(
+                            context,
+                            text: 'Saved',
+                          ));
                         });
                       }
                     : null,
@@ -229,7 +258,8 @@ class _InternetSettingsContentViewState
                             const AppGap.semiBig(),
                             _buildSegment(),
                             const AppGap.semiBig(),
-                            _buildAdditionalSettings(),
+                            if (_selected == InternetSettingsViewType.ipv4)
+                              _buildAdditionalSettings(),
                           ],
                         ),
                         if (!_isBehindRouter)
@@ -680,25 +710,140 @@ class _InternetSettingsContentViewState
             }
           },
         ),
-        AppPanelWithInfo(
-          title: getAppLocalizations(context).ipv6_automatic,
-          description: state.isIPv6AutomaticEnabled
-              ? getAppLocalizations(context).enabled
-              : getAppLocalizations(context).disabled,
-          infoText: ' ',
-          onTap: () {},
+        _buildIPv6SettingsByConnectionType(),
+      ],
+    );
+  }
+
+  Widget _buildIPv6SettingsByConnectionType() {
+    final type = WanIPv6Type.resolve(state.ipv6ConnectionType);
+    switch (type) {
+      case WanIPv6Type.automatic:
+        return _buildIpv6AutomaticSettings();
+      case WanIPv6Type.passThrough:
+        return const Center();
+      case WanIPv6Type.pppoe:
+        return const Center();
+      default:
+        return const Center();
+    }
+  }
+
+  Widget _buildIpv6AutomaticSettings() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            AppText.bodyLarge(getAppLocalizations(context).ipv6_automatic),
+            const Spacer(),
+            AppSwitch(
+              value: state.isIPv6AutomaticEnabled,
+              onChanged: (value) {
+                setState(() {
+                  state = state.copyWith(isIPv6AutomaticEnabled: value);
+                });
+              },
+            ),
+          ],
         ),
         AppPanelWithInfo(
           title: getAppLocalizations(context).duid,
           description: state.duid,
           infoText: ' ',
-          onTap: () {},
+          forcedHidingAccessory: true,
         ),
-        AppPanelWithInfo(
-          title: getAppLocalizations(context).sixth_tunnel,
-          description: 'Disabled',
-          infoText: ' ',
-          onTap: () {},
+        if (!state.isIPv6AutomaticEnabled) _sixrdTunnel(),
+      ],
+    );
+  }
+
+  Widget _sixrdTunnel() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            AppText.bodyLarge(getAppLocalizations(context).sixth_tunnel),
+            const Spacer(),
+            AppDropdownMenu<IPv6rdTunnelMode>(
+              items: const [
+                IPv6rdTunnelMode.disabled,
+                IPv6rdTunnelMode.automatic,
+                IPv6rdTunnelMode.manual,
+              ],
+              initial: state.ipv6rdTunnelMode,
+              label: (item) => item.value,
+              onChanged: (value) {
+                setState(() {
+                  state = state.copyWith(ipv6rdTunnelMode: value);
+                });
+              },
+            ),
+          ],
+        ),
+        if (state.ipv6rdTunnelMode == IPv6rdTunnelMode.manual)
+          _manualSixrdTunnel(),
+      ],
+    );
+  }
+
+  Widget _manualSixrdTunnel() {
+    return Column(
+      children: [
+        AppTextField(
+          headerText: 'Prefix',
+          hintText: '',
+          controller: _ipv6PrefixController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(ipv6Prefix: _ipv6PrefixController.text);
+              });
+            }
+          },
+        ),
+        AppTextField.minMaxNumber(
+          headerText: 'Prefix length',
+          hintText: '',
+          max: 64,
+          controller: _ipv6PrefixLengthController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(
+                    ipv6PrefixLength:
+                        int.parse(_ipv6PrefixLengthController.text));
+              });
+            }
+          },
+        ),
+        AppIPFormField(
+          header: const AppText.bodyLarge(
+            'Border relay',
+          ),
+          controller: _ipv6BorderRelayController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(
+                    ipv6BorderRelay: _ipv6BorderRelayController.text);
+              });
+            }
+          },
+        ),
+        AppTextField.minMaxNumber(
+          headerText: 'Border relay length',
+          hintText: '',
+          max: 32,
+          controller: _ipv6BorderRelayPrefixLengthController,
+          onFocusChanged: (focused) {
+            if (!focused) {
+              setState(() {
+                state = state.copyWith(
+                    ipv6BorderRelayPrefixLength:
+                        int.parse(_ipv6BorderRelayPrefixLengthController.text));
+              });
+            }
+          },
         ),
       ],
     );

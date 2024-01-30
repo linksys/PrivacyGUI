@@ -3,31 +3,31 @@ import 'package:equatable/equatable.dart';
 class IPv6AutomaticSettings extends Equatable {
   final bool isIPv6AutomaticEnabled;
   final String? ipv6rdTunnelMode;
-  final IPv6rdTunnelSettings? iPv6rdTunnelSettings;
+  final IPv6rdTunnelSettings? ipv6rdTunnelSettings;
 
   @override
   List<Object?> get props => [
         isIPv6AutomaticEnabled,
         ipv6rdTunnelMode,
-        iPv6rdTunnelSettings,
+        ipv6rdTunnelSettings,
       ];
 
   const IPv6AutomaticSettings({
     required this.isIPv6AutomaticEnabled,
     this.ipv6rdTunnelMode,
-    this.iPv6rdTunnelSettings,
+    this.ipv6rdTunnelSettings,
   });
 
   IPv6AutomaticSettings copyWith({
     bool? isIPv6AutomaticEnabled,
     String? ipv6rdTunnelMode,
-    IPv6rdTunnelSettings? iPv6rdTunnelSettings,
+    IPv6rdTunnelSettings? ipv6rdTunnelSettings,
   }) {
     return IPv6AutomaticSettings(
       isIPv6AutomaticEnabled:
           isIPv6AutomaticEnabled ?? this.isIPv6AutomaticEnabled,
       ipv6rdTunnelMode: ipv6rdTunnelMode ?? this.ipv6rdTunnelMode,
-      iPv6rdTunnelSettings: iPv6rdTunnelSettings ?? this.iPv6rdTunnelSettings,
+      ipv6rdTunnelSettings: ipv6rdTunnelSettings ?? this.ipv6rdTunnelSettings,
     );
   }
 
@@ -35,7 +35,7 @@ class IPv6AutomaticSettings extends Equatable {
     return {
       'isIPv6AutomaticEnabled': isIPv6AutomaticEnabled,
       'ipv6rdTunnelMode': ipv6rdTunnelMode,
-      'iPv6rdTunnelSettings': iPv6rdTunnelSettings,
+      'ipv6rdTunnelSettings': ipv6rdTunnelSettings,
     }..removeWhere((key, value) => value == null);
   }
 
@@ -43,7 +43,7 @@ class IPv6AutomaticSettings extends Equatable {
     return IPv6AutomaticSettings(
       isIPv6AutomaticEnabled: json['isIPv6AutomaticEnabled'],
       ipv6rdTunnelMode: json['ipv6rdTunnelMode'],
-      iPv6rdTunnelSettings: json['ipv6rdTunnelSettings'] == null
+      ipv6rdTunnelSettings: json['ipv6rdTunnelSettings'] == null
           ? null
           : IPv6rdTunnelSettings.fromJson(
               json['ipv6rdTunnelSettings'],
@@ -94,7 +94,7 @@ class IPv6rdTunnelSettings extends Equatable {
       'prefixLength': prefixLength,
       'borderRelay': borderRelay,
       'borderRelayPrefixLength': borderRelayPrefixLength,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory IPv6rdTunnelSettings.fromJson(Map<String, dynamic> json) {

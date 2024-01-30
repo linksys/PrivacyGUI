@@ -27,6 +27,41 @@ enum WanType {
   }
 }
 
+enum WanIPv6Type {
+  automatic(type: 'Automatic'),
+  static(type: 'Static'),
+  bridge(type: 'Bridge'),
+  sixRdTunnel(type: '6rd Tunnel'),
+  slaac(type: 'SLAAC'),
+  dhcpv6(type: 'DHCPv6'),
+  pppoe(type: 'PPPoE'),
+  passThrough(type: 'Pass-through'),
+  ;
+
+  const WanIPv6Type({required this.type});
+
+  final String type;
+
+  static WanIPv6Type? resolve(String type) {
+    return WanIPv6Type.values.firstWhereOrNull((element) => element.type == type);
+  }
+}
+
+enum IPv6rdTunnelMode {
+  disabled(value: 'Disabled'),
+  automatic(value: 'Automatic'),
+  manual(value: 'Manual'),
+  ;
+
+  const IPv6rdTunnelMode({required this.value});
+
+  final String value;
+
+  static IPv6rdTunnelMode? resolve(String value) {
+    return IPv6rdTunnelMode.values.firstWhereOrNull((element) => element.value == value);
+  }
+}
+
 enum TaggingStatus {
   tagged(value: 'Tagged'),
   untagged(value: 'Untagged'),
@@ -61,27 +96,38 @@ class InternetSettingsState extends Equatable {
   final List<String> supportedIPv4ConnectionType;
   final List<String> supportedIPv6ConnectionType;
   final List<SupportedWANCombination> supportedWANCombinations;
-  final Map<String, Map> connectionData;
+  final int mtu;
+  // IPv6
   final String duid;
   final bool isIPv6AutomaticEnabled;
-  final int mtu;
+  final IPv6rdTunnelMode? ipv6rdTunnelMode;
+  final String? ipv6Prefix;
+  final int? ipv6PrefixLength;
+  final String? ipv6BorderRelay;
+  final int? ipv6BorderRelayPrefixLength;
+  // MAC Clone
   final bool macClone;
   final String macCloneAddress;
-  final String? error;
+  // PPPConnection
   final PPPConnectionBehavior? behavior;
   final int? maxIdleMinutes;
   final int? reconnectAfterSeconds;
+  // Static Settings
   final String? staticIpAddress;
   final String? staticGateway;
   final String? staticDns1;
   final String? staticDns2;
   final String? staticDns3;
+  // PPPoE & TP (PPTP/L2TP) Settings
   final String? username;
   final String? password;
   final String? serviceName;
-  final int? vlanId;
   final String? serverIp;
   final bool? useStaticSettings;
+  // Wan Tagging Settings
+  final int? vlanId;
+  
+  final String? error;
 
   @override
   List<Object?> get props {
@@ -91,13 +137,16 @@ class InternetSettingsState extends Equatable {
       supportedIPv4ConnectionType,
       supportedIPv6ConnectionType,
       supportedWANCombinations,
-      connectionData,
+      mtu,
       duid,
       isIPv6AutomaticEnabled,
-      mtu,
+      ipv6rdTunnelMode,
+      ipv6Prefix,
+      ipv6PrefixLength,
+      ipv6BorderRelay,
+      ipv6BorderRelayPrefixLength,
       macClone,
       macCloneAddress,
-      error,
       behavior,
       maxIdleMinutes,
       reconnectAfterSeconds,
@@ -109,9 +158,10 @@ class InternetSettingsState extends Equatable {
       username,
       password,
       serviceName,
-      vlanId,
       serverIp,
       useStaticSettings,
+      vlanId,
+      error,
     ];
   }
 
@@ -121,13 +171,16 @@ class InternetSettingsState extends Equatable {
     required this.supportedIPv4ConnectionType,
     required this.supportedIPv6ConnectionType,
     required this.supportedWANCombinations,
-    required this.connectionData,
+    required this.mtu,
     required this.duid,
     required this.isIPv6AutomaticEnabled,
-    required this.mtu,
+    this.ipv6rdTunnelMode,
+    this.ipv6Prefix,
+    this.ipv6PrefixLength,
+    this.ipv6BorderRelay,
+    this.ipv6BorderRelayPrefixLength,
     required this.macClone,
     required this.macCloneAddress,
-    this.error,
     this.behavior,
     this.maxIdleMinutes,
     this.reconnectAfterSeconds,
@@ -139,9 +192,10 @@ class InternetSettingsState extends Equatable {
     this.username,
     this.password,
     this.serviceName,
-    this.vlanId,
     this.serverIp,
     this.useStaticSettings,
+    this.vlanId,
+    this.error,
   });
 
   factory InternetSettingsState.init() {
@@ -151,7 +205,6 @@ class InternetSettingsState extends Equatable {
       supportedIPv4ConnectionType: [],
       supportedIPv6ConnectionType: [],
       supportedWANCombinations: [],
-      connectionData: {},
       duid: '',
       isIPv6AutomaticEnabled: false,
       mtu: 0,
@@ -170,13 +223,16 @@ class InternetSettingsState extends Equatable {
     List<String>? supportedIPv4ConnectionType,
     List<String>? supportedIPv6ConnectionType,
     List<SupportedWANCombination>? supportedWANCombinations,
-    Map<String, Map>? connectionData,
+    int? mtu,
     String? duid,
     bool? isIPv6AutomaticEnabled,
-    int? mtu,
+    IPv6rdTunnelMode? ipv6rdTunnelMode,
+    String? ipv6Prefix,
+    int? ipv6PrefixLength,
+    String? ipv6BorderRelay,
+    int? ipv6BorderRelayPrefixLength,
     bool? macClone,
     String? macCloneAddress,
-    String? error,
     PPPConnectionBehavior? behavior,
     int? maxIdleMinutes,
     int? reconnectAfterSeconds,
@@ -188,9 +244,10 @@ class InternetSettingsState extends Equatable {
     String? username,
     String? password,
     String? serviceName,
-    int? vlanId,
     String? serverIp,
     bool? useStaticSettings,
+    int? vlanId,
+    String? error,
   }) {
     return InternetSettingsState(
       ipv4ConnectionType: ipv4ConnectionType ?? this.ipv4ConnectionType,
@@ -198,13 +255,16 @@ class InternetSettingsState extends Equatable {
       supportedIPv4ConnectionType: supportedIPv4ConnectionType ?? this.supportedIPv4ConnectionType,
       supportedIPv6ConnectionType: supportedIPv6ConnectionType ?? this.supportedIPv6ConnectionType,
       supportedWANCombinations: supportedWANCombinations ?? this.supportedWANCombinations,
-      connectionData: connectionData ?? this.connectionData,
+      mtu: mtu ?? this.mtu,
       duid: duid ?? this.duid,
       isIPv6AutomaticEnabled: isIPv6AutomaticEnabled ?? this.isIPv6AutomaticEnabled,
-      mtu: mtu ?? this.mtu,
+      ipv6rdTunnelMode: ipv6rdTunnelMode ?? this.ipv6rdTunnelMode,
+      ipv6Prefix: ipv6Prefix ?? this.ipv6Prefix,
+      ipv6PrefixLength: ipv6PrefixLength ?? this.ipv6PrefixLength,
+      ipv6BorderRelay: ipv6BorderRelay ?? this.ipv6BorderRelay,
+      ipv6BorderRelayPrefixLength: ipv6BorderRelayPrefixLength ?? this.ipv6BorderRelayPrefixLength,
       macClone: macClone ?? this.macClone,
       macCloneAddress: macCloneAddress ?? this.macCloneAddress,
-      error: error ?? this.error,
       behavior: behavior ?? this.behavior,
       maxIdleMinutes: maxIdleMinutes ?? this.maxIdleMinutes,
       reconnectAfterSeconds: reconnectAfterSeconds ?? this.reconnectAfterSeconds,
@@ -216,9 +276,10 @@ class InternetSettingsState extends Equatable {
       username: username ?? this.username,
       password: password ?? this.password,
       serviceName: serviceName ?? this.serviceName,
-      vlanId: vlanId ?? this.vlanId,
       serverIp: serverIp ?? this.serverIp,
       useStaticSettings: useStaticSettings ?? this.useStaticSettings,
+      vlanId: vlanId ?? this.vlanId,
+      error: error ?? this.error,
     );
   }
 
