@@ -33,6 +33,14 @@ class WifiSettingNotifier extends Notifier<WifiItem> {
 
   WifiItem currentSettings() => state.copyWith();
 
+  int? checkIfChannelLegalWithWidth({
+    required int channel,
+    required WifiChannelWidth channelWidth,
+  }) {
+    final newChannelList = state.availableChannels[channelWidth] ?? [];
+    return !newChannelList.contains(channel) ? newChannelList.first : null;
+  }
+
   Future<void> saveWiFiSettings(WifiItem wifiItem) {
     final newSettings = SetRadioSettings(radios: [
       NewRadioSettings(

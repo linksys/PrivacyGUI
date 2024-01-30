@@ -31,6 +31,9 @@ class WifiListNotifier extends Notifier<List<WifiItem>> {
               securityType:
                   WifiSecurityType.getByValue(radio.settings.security),
               wirelessMode: WifiWirelessMode.getByValue(radio.settings.mode),
+              defaultMixedMode: radio.defaultMixedMode != null
+                  ? WifiWirelessMode.getByValue(radio.defaultMixedMode!)
+                  : null,
               channelWidth:
                   WifiChannelWidth.getByValue(radio.settings.channelWidth),
               channel: radio.settings.channel,
@@ -38,6 +41,8 @@ class WifiListNotifier extends Notifier<List<WifiItem>> {
               isEnabled: radio.settings.isEnabled,
               availableSecurityTypes: radio.supportedSecurityTypes
                   .map((e) => WifiSecurityType.getByValue(e))
+                  //Remove "WEP" and "WPA-Enterprise" types from UI for now
+                  .where((e) => e.isOpenVariant || e.isWpaPersonalVariant)
                   .toList(),
               availableWirelessModes: radio.supportedModes
                   .map((e) => WifiWirelessMode.getByValue(e))

@@ -7,6 +7,7 @@ class WifiItem extends Equatable {
   final String password;
   final WifiSecurityType securityType;
   final WifiWirelessMode wirelessMode;
+  final WifiWirelessMode? defaultMixedMode;
   final WifiChannelWidth channelWidth;
   final int channel;
   final bool isBroadcast;
@@ -23,6 +24,7 @@ class WifiItem extends Equatable {
     required this.password,
     required this.securityType,
     required this.wirelessMode,
+    this.defaultMixedMode,
     required this.channelWidth,
     required this.channel,
     required this.isBroadcast,
@@ -40,6 +42,7 @@ class WifiItem extends Equatable {
     String? password,
     WifiSecurityType? securityType,
     WifiWirelessMode? wirelessMode,
+    WifiWirelessMode? defaultMixedMode,
     WifiChannelWidth? channelWidth,
     int? channel,
     bool? isBroadcast,
@@ -56,6 +59,7 @@ class WifiItem extends Equatable {
       password: password ?? this.password,
       securityType: securityType ?? this.securityType,
       wirelessMode: wirelessMode ?? this.wirelessMode,
+      defaultMixedMode: defaultMixedMode ?? this.defaultMixedMode,
       channelWidth: channelWidth ?? this.channelWidth,
       channel: channel ?? this.channel,
       isBroadcast: isBroadcast ?? this.isBroadcast,
@@ -188,6 +192,11 @@ enum WifiSecurityType {
       this == WifiSecurityType.wpa2Enterprise ||
       this == WifiSecurityType.wpa1Or2MixedEnterprise ||
       this == WifiSecurityType.wpa3Enterprise;
+
+  bool get isOpenVariant =>
+      this == WifiSecurityType.open ||
+      this == WifiSecurityType.enhancedOpenNone ||
+      this == WifiSecurityType.enhancedOpenOnly;
 }
 
 enum WifiWirelessMode {

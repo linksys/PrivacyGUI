@@ -60,8 +60,15 @@ String getWifiSecurityTypeTitle(BuildContext context, WifiSecurityType type) {
   }
 }
 
-String getWifiWirelessModeTitle(BuildContext context, WifiWirelessMode value) {
-  switch (value) {
+String getWifiWirelessModeTitle(
+  BuildContext context,
+  WifiWirelessMode mode,
+  WifiWirelessMode? defaultMixedMode,
+) {
+  if (mode == defaultMixedMode) {
+    return 'Mixed';
+  }
+  switch (mode) {
     case WifiWirelessMode.a:
       return '802.11a Only';
     case WifiWirelessMode.b:
@@ -129,7 +136,7 @@ String getWifiChannelTitle(
 ) {
   switch (channel) {
     case 0:
-      return '0';
+      return 'Auto';
     case 1:
       if (radio == WifiRadioBand.radio_24) {
         return '1 - 2.412 GHZ';

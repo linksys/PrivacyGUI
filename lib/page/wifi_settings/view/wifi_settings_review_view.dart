@@ -100,19 +100,24 @@ class _WifiSettingsReviewViewState
           'Wi-Fi password',
         ),
         const AppGap.small(),
-        AppPasswordField.withValidator(
-          controller: _wifiPasswordController,
-          border: const OutlineInputBorder(),
-          validationLabel: 'Password must have',
-          validations: [
-            Validation(
-              description: '8 - 64 characters',
-              validator: ((text) => LengthRule(min: 8, max: 64).validate(text)),
-            ),
-          ],
-          onValidationChanged: (isValid) => setState(() {
-            _isPasswordValid = isValid;
-          }),
+        Visibility(
+          visible: currentSettings.securityType.isWpaPersonalVariant,
+          replacement: const AppText.labelSmall('None'),
+          child: AppPasswordField.withValidator(
+            controller: _wifiPasswordController,
+            border: const OutlineInputBorder(),
+            validationLabel: 'Password must have',
+            validations: [
+              Validation(
+                description: '8 - 64 characters',
+                validator: ((text) =>
+                    LengthRule(min: 8, max: 64).validate(text)),
+              ),
+            ],
+            onValidationChanged: (isValid) => setState(() {
+              _isPasswordValid = isValid;
+            }),
+          ),
         ),
         const AppGap.regular(),
         const AppText.bodyLarge(
@@ -126,9 +131,11 @@ class _WifiSettingsReviewViewState
             return getWifiSecurityTypeTitle(context, item);
           },
           onChanged: (newValue) {
-            currentSettings = currentSettings.copyWith(
-              securityType: newValue,
-            );
+            setState(() {
+              currentSettings = currentSettings.copyWith(
+                securityType: newValue,
+              );
+            });
           },
         ),
         const AppGap.regular(),
@@ -140,7 +147,8 @@ class _WifiSettingsReviewViewState
           items: currentSettings.availableWirelessModes,
           initial: currentSettings.wirelessMode,
           label: (item) {
-            return getWifiWirelessModeTitle(context, item);
+            return getWifiWirelessModeTitle(
+                context, item, currentSettings.defaultMixedMode);
           },
           onChanged: (newValue) {
             currentSettings = currentSettings.copyWith(
@@ -160,9 +168,25 @@ class _WifiSettingsReviewViewState
             return getWifiChannelWidthTitle(context, item);
           },
           onChanged: (newValue) {
-            currentSettings = currentSettings.copyWith(
-              channelWidth: newValue,
-            );
+            setState(() {
+              // Update the selected channel width
+              currentSettings = currentSettings.copyWith(
+                channelWidth: newValue,
+              );
+              // Check if the current selected channel is available within
+              // the new channel width
+              final newChannel = ref
+                  .read(wifiSettingProvider.notifier)
+                  .checkIfChannelLegalWithWidth(
+                    channel: currentSettings.channel,
+                    channelWidth: newValue,
+                  );
+              if (newChannel != null) {
+                currentSettings = currentSettings.copyWith(
+                  channel: newChannel,
+                );
+              }
+            });
           },
         ),
         const AppGap.regular(),
