@@ -234,14 +234,19 @@ class Utils {
   }
 
   static String replaceHttpScheme(String raw) {
-    const pattern = '(^https?:)//';
+    const pattern =
+        r'(https?:\/\/)((www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b)([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)';
     RegExp regex = RegExp(pattern, multiLine: true);
     String result = raw;
-    regex.allMatches(raw).forEach((element) {
-      final target = element.group(1);
-      if (element.groupCount > 0 && target != null) {
-        result = raw.replaceFirst(target, target.replaceFirst(':', '-'));
-      }
+    int idx = 0;
+    regex.allMatches(result).forEach((element) {
+      element.groups([1, 2, 4]).whereNotNull().forEach((group) {
+            int start = raw.indexOf(group, idx);
+            int end = start + group.length;
+            final replaced = group.replaceAll(':', '-').replaceAll('.', '-');
+            result = result.replaceRange(start, end, replaced);
+            idx = end;
+          });
     });
     return result;
   }
