@@ -8,7 +8,6 @@ import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/page/dashboard/view/topology/topology_model.dart';
 import 'package:linksys_app/provider/devices/topology_state.dart';
-import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_widgets/widgets/topology/tree_node.dart';
 
 final topologySelectedIdProvider = StateProvider((ref) => '');

@@ -203,33 +203,58 @@ class RouterRepository {
   }
 
   ///
-  /// Scheduling polling a SINGLE JNAP remotely
+  /// Scheduling polling a SINGLE JNAP without caching
   ///
   Stream<JNAPResult> scheduledCommand({
     required JNAPAction action,
     int retryDelayInMilliSec = 5000,
     int maxRetry = 10,
+    int firstDelayInMilliSec = 3000,
     Map<String, dynamic> data = const {},
-    bool Function(JNAPSuccess)? condition,
+    bool Function(JNAPResult)? condition,
+    Function()? onCompleted,
     bool auth = false,
   }) async* {
     int retry = 0;
     while (++retry <= maxRetry || maxRetry == -1) {
-      logger.d('publish command {$action: $retry times');
-      // TODO #ERRORHANDLING handle other errors - timeout error, etc...
-      final result = await send(
-        action,
-        data: data,
-        auth: auth,
-        fetchRemote: true,
-        cacheLevel: CacheLevel.noCache,
-      );
+      logger.d('SCHEDULED COMMAND: publish command {$action}: $retry times');
+
+      if (retry <= 1) {
+        await Future.delayed(Duration(milliseconds: firstDelayInMilliSec));
+      }
+      late JNAPResult result;
+      try {
+        result = await send(
+          action,
+          data: data,
+          auth: auth,
+          fetchRemote: true,
+          cacheLevel: CacheLevel.noCache,
+        );
+      } on JNAPError catch (e) {
+        // JNAP error
+        logger.d('SCHEDULED COMMAND: error catched $e, from command {$action}');
+        result = e;
+      } on TimeoutException catch (e) {
+        // Timeout exception
+        result = JNAPError(result: e.runtimeType.toString());
+      } catch (e) {
+        // Unknown Exception
+        result = JNAPError(
+          result: 'UNKNOWN',
+          error: e.runtimeType.toString(),
+        );
+      }
       yield result;
+
       if (condition?.call(result) ?? false) {
+        logger.d(
+            'SCHEDULED COMMAND: command {$action}: $retry times: satisfy condition, STOP!');
         break;
       }
       await Future.delayed(Duration(milliseconds: retryDelayInMilliSec));
     }
+    onCompleted?.call();
   }
 
   (JNAPResult result, DataSource ds) handleJNAPResult(

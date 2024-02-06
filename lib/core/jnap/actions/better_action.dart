@@ -434,6 +434,8 @@ void initBetterActions() {
       _JNAPActionValue.setFirmwareUpdateSettings.value;
   _betterActionMap[JNAPAction.updateFirmwareNow] =
       _JNAPActionValue.updateFirmwareNow.value;
+  _betterActionMap[JNAPAction.nodesUpdateFirmwareNow] =
+      _JNAPActionValue.nodesUpdateFirmwareNow.value;
   _betterActionMap[JNAPAction.getGuestNetworkClients] =
       _JNAPActionValue.getGuestNetworkClients.value;
   _betterActionMap[JNAPAction.getGuestNetworkSettings] =

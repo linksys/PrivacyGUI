@@ -89,6 +89,9 @@ enum _JNAPActionValue {
           'http://linksys.com/jnap/firmwareupdate/SetFirmwareUpdateSettings'),
   updateFirmwareNow(
       value: 'http://linksys.com/jnap/nodes/firmwareupdate/UpdateFirmwareNow'),
+  nodesUpdateFirmwareNow(
+      value: 'http://linksys.com/jnap/nodes/firmwareupdate/UpdateFirmwareNow'),
+
   // TODO - Checking for the reference
   getGamingPrioritizationSettings(
       value:

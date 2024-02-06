@@ -1,22 +1,20 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
-import 'package:equatable/equatable.dart';
+import 'package:linksys_app/core/jnap/models/firmware_update_status.dart';
 
-class NodesFirmwareUpdateStatus extends Equatable {
+class NodesFirmwareUpdateStatus extends FirmwareUpdateStatus {
   final String deviceUUID;
-  final String lastSuccessfulCheckTime;
-  final FirmwareUpdateData? availableUpdate;
-  final FirmwareUpdateOperationStatus? pendingOperation;
-  final String? lastOperationFailure;
+
   const NodesFirmwareUpdateStatus({
     required this.deviceUUID,
-    required this.lastSuccessfulCheckTime,
-    this.availableUpdate,
-    this.pendingOperation,
-    this.lastOperationFailure,
+    required super.lastSuccessfulCheckTime,
+    super.availableUpdate,
+    super.pendingOperation,
+    super.lastOperationFailure,
   });
 
+  @override
   NodesFirmwareUpdateStatus copyWith({
     String? deviceUUID,
     String? lastSuccessfulCheckTime,
@@ -27,146 +25,48 @@ class NodesFirmwareUpdateStatus extends Equatable {
     return NodesFirmwareUpdateStatus(
       deviceUUID: deviceUUID ?? this.deviceUUID,
       lastSuccessfulCheckTime:
-          lastSuccessfulCheckTime ?? this.lastSuccessfulCheckTime,
-      availableUpdate: availableUpdate ?? this.availableUpdate,
-      pendingOperation: pendingOperation ?? this.pendingOperation,
-      lastOperationFailure: lastOperationFailure ?? this.lastOperationFailure,
+          lastSuccessfulCheckTime ?? super.lastSuccessfulCheckTime,
+      availableUpdate: availableUpdate ?? super.availableUpdate,
+      pendingOperation: pendingOperation ?? super.pendingOperation,
+      lastOperationFailure: lastOperationFailure ?? super.lastOperationFailure,
     );
   }
 
+  @override
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'deviceUUID': deviceUUID,
-      'lastSuccessfulCheckTime': lastSuccessfulCheckTime,
-      'availableUpdate': availableUpdate?.toMap(),
-      'pendingOperation': pendingOperation?.toMap(),
-      'lastOperationFailure': lastOperationFailure,
-    };
+    return super.toMap()
+      ..addAll({
+        'deviceUUID': deviceUUID,
+      });
   }
 
   factory NodesFirmwareUpdateStatus.fromMap(Map<String, dynamic> map) {
     return NodesFirmwareUpdateStatus(
       deviceUUID: map['deviceUUID'] as String,
       lastSuccessfulCheckTime: map['lastSuccessfulCheckTime'] as String,
-      availableUpdate: map['availableUpdate'] != null ? FirmwareUpdateData.fromMap(map['availableUpdate'] as Map<String,dynamic>) : null,
-      pendingOperation: map['pendingOperation'] != null ? FirmwareUpdateOperationStatus.fromMap(map['pendingOperation'] as Map<String,dynamic>) : null,
-      lastOperationFailure: map['lastOperationFailure'] != null ? map['lastOperationFailure'] as String : null,
+      availableUpdate: map['availableUpdate'] != null
+          ? FirmwareUpdateData.fromMap(
+              map['availableUpdate'] as Map<String, dynamic>)
+          : null,
+      pendingOperation: map['pendingOperation'] != null
+          ? FirmwareUpdateOperationStatus.fromMap(
+              map['pendingOperation'] as Map<String, dynamic>)
+          : null,
+      lastOperationFailure: map['lastOperationFailure'] != null
+          ? map['lastOperationFailure'] as String
+          : null,
     );
   }
-
-  String toJson() => json.encode(toMap());
 
   factory NodesFirmwareUpdateStatus.fromJson(String source) =>
       NodesFirmwareUpdateStatus.fromMap(
           json.decode(source) as Map<String, dynamic>);
 
   @override
-  bool get stringify => true;
-
-  @override
   List<Object?> get props {
     return [
       deviceUUID,
-      lastSuccessfulCheckTime,
-      availableUpdate,
-      pendingOperation,
-      lastOperationFailure,
+      ...super.props,
     ];
   }
-}
-
-class FirmwareUpdateData extends Equatable {
-  final String firmwareVersion;
-  final String firmwareDate;
-  final String? description;
-  const FirmwareUpdateData({
-    required this.firmwareVersion,
-    required this.firmwareDate,
-    this.description,
-  });
-
-  FirmwareUpdateData copyWith({
-    String? firmwareVersion,
-    String? firmwareDate,
-    String? description,
-  }) {
-    return FirmwareUpdateData(
-      firmwareVersion: firmwareVersion ?? this.firmwareVersion,
-      firmwareDate: firmwareDate ?? this.firmwareDate,
-      description: description ?? this.description,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'firmwareVersion': firmwareVersion,
-      'firmwareDate': firmwareDate,
-      'description': description,
-    };
-  }
-
-  factory FirmwareUpdateData.fromMap(Map<String, dynamic> map) {
-    return FirmwareUpdateData(
-      firmwareVersion: map['firmwareVersion'] as String,
-      firmwareDate: map['firmwareDate'] as String,
-      description:
-          map['description'] != null ? map['description'] as String : null,
-    );
-  }
-
-  String toJson() => json.encode(toMap());
-
-  factory FirmwareUpdateData.fromJson(String source) =>
-      FirmwareUpdateData.fromMap(json.decode(source) as Map<String, dynamic>);
-
-  @override
-  bool get stringify => true;
-
-  @override
-  List<Object?> get props => [firmwareVersion, firmwareDate, description];
-}
-
-class FirmwareUpdateOperationStatus extends Equatable {
-  final String operation;
-  final int progressPercent;
-  const FirmwareUpdateOperationStatus({
-    required this.operation,
-    required this.progressPercent,
-  });
-
-  FirmwareUpdateOperationStatus copyWith({
-    String? operation,
-    int? progressPercent,
-  }) {
-    return FirmwareUpdateOperationStatus(
-      operation: operation ?? this.operation,
-      progressPercent: progressPercent ?? this.progressPercent,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'operation': operation,
-      'progressPercent': progressPercent,
-    };
-  }
-
-  factory FirmwareUpdateOperationStatus.fromMap(Map<String, dynamic> map) {
-    return FirmwareUpdateOperationStatus(
-      operation: map['operation'] as String,
-      progressPercent: map['progressPercent'] as int,
-    );
-  }
-
-  String toJson() => json.encode(toMap());
-
-  factory FirmwareUpdateOperationStatus.fromJson(String source) =>
-      FirmwareUpdateOperationStatus.fromMap(
-          json.decode(source) as Map<String, dynamic>);
-
-  @override
-  bool get stringify => true;
-
-  @override
-  List<Object> get props => [operation, progressPercent];
 }

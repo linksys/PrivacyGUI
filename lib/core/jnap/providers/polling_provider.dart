@@ -80,7 +80,6 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
     state = await AsyncValue.guard(() => fetchFuture);
 
-    logger.d('state: $state');
     benchMark.end();
   }
 

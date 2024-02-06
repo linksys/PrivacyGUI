@@ -171,8 +171,12 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
             action: JNAPAction.getPinStatus,
             retryDelayInMilliSec: 10,
             condition: (result) {
-              final status = PingStatus.fromMap(result.output);
-              return !status.isRunning;
+              if (result is JNAPSuccess) {
+                final status = PingStatus.fromMap(result.output);
+                return !status.isRunning;
+              } else {
+                return false;
+              }
             })
         .map((event) {
       if (event is JNAPSuccess) {

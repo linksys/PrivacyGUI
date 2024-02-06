@@ -4,7 +4,7 @@ class ProviderLogger extends ProviderObserver {
   @override
   void didUpdateProvider(ProviderBase<Object?> provider, Object? previousValue,
       Object? newValue, ProviderContainer container) {
-    print(
-        'provider=$provider, preValue=$previousValue, newValue=$newValue, container=$container');
+    // print(
+    //     'provider=$provider, preValue=$previousValue, newValue=$newValue, container=$container');
   }
 }

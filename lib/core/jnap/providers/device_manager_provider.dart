@@ -362,26 +362,4 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       );
     });
   }
-
-  //TODO: Reboot mesh system function
-  // Future rebootMeshSystem() async {
-  // emit(state.copyWith(
-  //   isSystemRestarting: true,
-  // ));
-  // final results = await _repository.send(
-  //   JNAPAction.reboot,
-  //   auth: true,
-  // );
-  // if (results.result == 'OK') {
-  //   Future.delayed(const Duration(seconds: 130), () {
-  //     emit(state.copyWith(
-  //       isSystemRestarting: false,
-  //     ));
-  //   });
-  // } else {
-  //   emit(state.copyWith(
-  //     isSystemRestarting: false,
-  //   ));
-  // }
-  // }
 }

@@ -9,39 +9,44 @@ import 'package:linksys_app/core/jnap/models/firmware_update_status_nodes.dart';
 
 class FirmwareUpdateState extends Equatable {
   final FirmwareUpdateSettings settings;
-  final FirmwareUpdateStatus? status;
-  final List<NodesFirmwareUpdateStatus>? nodesStatus;
+  final List<FirmwareUpdateStatus>? nodesStatus;
+  final bool isUpdating;
+  final bool isChecking;
 
   const FirmwareUpdateState({
     required this.settings,
-    required this.status,
     required this.nodesStatus,
+    this.isUpdating = false,
+    this.isChecking = false,
   });
 
   factory FirmwareUpdateState.empty() => FirmwareUpdateState(
       settings: FirmwareUpdateSettings(
           updatePolicy: FirmwareUpdateSettings.firmwareUpdatePolicyAuto,
           autoUpdateWindow: FirmwareAutoUpdateWindow.simple()),
-      status: const FirmwareUpdateStatus(lastSuccessfulCheckTime: '0'),
       nodesStatus: const []);
 
   FirmwareUpdateState copyWith({
     FirmwareUpdateSettings? settings,
     FirmwareUpdateStatus? status,
-    List<NodesFirmwareUpdateStatus>? nodeStatus,
+    List<FirmwareUpdateStatus>? nodesStatus,
+    bool? isUpdating,
+    bool? isChecking,
   }) {
     return FirmwareUpdateState(
       settings: settings ?? this.settings,
-      status: status ?? this.status,
-      nodesStatus: nodeStatus ?? this.nodesStatus,
+      nodesStatus: nodesStatus ?? this.nodesStatus,
+      isUpdating: isUpdating ?? this.isUpdating,
+      isChecking: isChecking ?? this.isChecking,
     );
   }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'settings': settings.toMap(),
-      'status': status?.toMap(),
-      'nodeStatus': nodesStatus?.map((x) => x.toMap()).toList(),
+      'nodesStatus': nodesStatus?.map((x) => x.toMap()).toList(),
+      'isUpdating': isUpdating,
+      'isChecking': isChecking,
     };
   }
 
@@ -49,17 +54,17 @@ class FirmwareUpdateState extends Equatable {
     return FirmwareUpdateState(
       settings: FirmwareUpdateSettings.fromMap(
           map['settings'] as Map<String, dynamic>),
-      status: map['status'] != null
-          ? FirmwareUpdateStatus.fromMap(map['status'] as Map<String, dynamic>)
-          : null,
-      nodesStatus: map['nodeStatus'] != null
-          ? List<NodesFirmwareUpdateStatus>.from(
-              (map['nodeStatus'] as List<int>).map<NodesFirmwareUpdateStatus?>(
-                (x) => NodesFirmwareUpdateStatus.fromMap(
-                    x as Map<String, dynamic>),
+      nodesStatus: map['nodesStatus'] != null
+          ? List<FirmwareUpdateStatus>.from(
+              map['nodesStatus'].map<FirmwareUpdateStatus?>(
+                (x) => x['deviceUUID'] == null
+                    ? FirmwareUpdateStatus.fromMap(x)
+                    : NodesFirmwareUpdateStatus.fromMap(x),
               ),
             )
           : null,
+      isUpdating: map['isUpdating'] as bool,
+      isChecking: map['isChecking'] as bool,
     );
   }
 
@@ -72,5 +77,12 @@ class FirmwareUpdateState extends Equatable {
   bool get stringify => true;
 
   @override
-  List<Object?> get props => [settings, status, nodesStatus];
+  List<Object?> get props {
+    return [
+      settings,
+      nodesStatus,
+      isUpdating,
+      isChecking,
+    ];
+  }
 }

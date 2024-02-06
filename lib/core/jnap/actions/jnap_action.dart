@@ -61,6 +61,7 @@ enum JNAPAction {
   getFirmwareUpdateSettings,
   setFirmwareUpdateSettings,
   updateFirmwareNow,
+  nodesUpdateFirmwareNow,
   // gamingPrioritization
   getGamingPrioritizationSettings,
   setGamingPrioritizationSettings,

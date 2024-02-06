@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
+import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
 import 'package:linksys_app/core/jnap/providers/node_wan_status_provider.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/page/dashboard/view/firmware_update/firmware_update_detail_view.dart';
 import 'package:linksys_app/provider/dashboard/dashboard_home_provider.dart';
 import 'package:linksys_app/provider/dashboard/dashboard_home_state.dart';
 import 'package:linksys_app/provider/devices/topology_provider.dart';
@@ -34,6 +37,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   void initState() {
     super.initState();
     _pushNotificationCheck();
+    _firmwareUpdateCheck();
   }
 
   @override
@@ -110,6 +114,18 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             ),
           ],
         ),
+        hasNewFirmware()
+            ? AppTextButton(
+                'New Firmware Availiable',
+                onTap: () {
+                  showAdaptiveDialog(
+                      context: context,
+                      builder: (context) {
+                        return FirmwareUpdateDetailView();
+                      });
+                },
+              )
+            : Center(),
       ],
     );
   }
@@ -307,6 +323,12 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
+  void _firmwareUpdateCheck() {
+    Future.doWhile(() => !mounted).then((_) {
+          ref.read(firmwareUpdateProvider.notifier).checkFirmwareUpdateStatus();
+    });
+  }
+
   void _pushNotificationCheck() {
     if (kIsWeb) {
       return;
@@ -353,5 +375,12 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         );
       }
     });
+  }
+
+  bool hasNewFirmware() {
+    final nodesStatus =
+        ref.watch(firmwareUpdateProvider.select((value) => value.nodesStatus));
+    return nodesStatus?.any((element) => element.availableUpdate != null) ??
+        false;
   }
 }
