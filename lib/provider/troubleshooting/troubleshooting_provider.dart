@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/actions/jnap_transaction.dart';
@@ -8,6 +9,7 @@ import 'package:linksys_app/core/jnap/models/dhcp_lease.dart';
 import 'package:linksys_app/core/jnap/models/layer2_connection.dart';
 import 'package:linksys_app/core/jnap/models/node_wireless_connection.dart';
 import 'package:linksys_app/core/jnap/models/ping_status.dart';
+import 'package:linksys_app/core/jnap/models/send_sysinfo_email.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
@@ -139,6 +141,27 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
         cacheLevel: CacheLevel.noCache,
         data: {'host': host, 'packetSizeBytes': 32, 'pingCount': pingCount}
           ..removeWhere((key, value) => value == null));
+  }
+
+  Future sendRouterInfo({required String userEmailList}) {
+    if (kDebugMode) {}
+    List<String> emailList = [
+      kDebugMode
+          ? 'routerinfo-internal@integrationtests.linksys.com'
+          : 'routerinfo@linksys.com'
+    ];
+    userEmailList = userEmailList.replaceAll(RegExp(r' '), '');
+    if (userEmailList.contains(',')) {
+      emailList.addAll(userEmailList.split(','));
+    } else if (userEmailList.isNotEmpty) {
+      emailList.add(userEmailList);
+    }
+
+    return ref.read(routerRepositoryProvider).send(
+          JNAPAction.sendSysinfoEmail,
+          auth: true,
+          data: SendSysinfoEmail(addressList: emailList).toJson(),
+        );
   }
 
   Stream<PingStatus> getPingStatus() {
