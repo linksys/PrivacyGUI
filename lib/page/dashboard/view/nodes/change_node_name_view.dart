@@ -4,13 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/provider/devices/node_detail_provider.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-
-import '../../../components/views/arguments_view.dart';
 
 class ChangeNodeNameView extends ArgumentsConsumerStatefulView {
   const ChangeNodeNameView({
@@ -32,6 +31,13 @@ class __ChangeNodeNameViewState extends ConsumerState<ChangeNodeNameView> {
     super.initState();
     final nodeDetail = ref.read(nodeDetailProvider);
     nameController.text = nodeDetail.location;
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    nameController.dispose();
   }
 
   @override

@@ -56,6 +56,19 @@ class _LANContentViewState extends ConsumerState<LANContentView> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+
+    _ipAddressController.dispose();
+    _subnetMaskController.dispose();
+    _firstIPController.dispose();
+    _maxNumUserController.dispose();
+    _clientLeaseController.dispose();
+    _dns1Controller.dispose();
+    _dns2Controller.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = ref.watch(lanProvider);
     return StyledAppPageView(

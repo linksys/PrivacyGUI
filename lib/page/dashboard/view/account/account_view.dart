@@ -25,6 +25,7 @@ class AccountView extends ConsumerStatefulWidget {
 class _AccountViewState extends ConsumerState<AccountView> {
   late final TextEditingController _passwordController;
   final String _displayPhoneNumber = '';
+
   @override
   void initState() {
     super.initState();
@@ -35,6 +36,13 @@ class _AccountViewState extends ConsumerState<AccountView> {
         _passwordController.text = ref.read(accountProvider).password;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    _passwordController.dispose();
   }
 
   @override

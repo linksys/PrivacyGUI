@@ -30,6 +30,8 @@ class _MacFilteringEnterDeviceViewState
   @override
   void dispose() {
     super.dispose();
+
+    _macController.dispose();
   }
 
   @override

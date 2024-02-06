@@ -41,6 +41,13 @@ class _CreateAccountPasswordViewState
   }
 
   @override
+  void dispose() {
+    super.dispose();
+
+    passwordController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     // TODO
     final data = ref.watch(authProvider);

@@ -36,6 +36,13 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+
+    _valueController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
       title: getAppLocalizations(context).mac_address_clone,

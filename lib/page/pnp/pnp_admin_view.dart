@@ -68,6 +68,13 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+
+    _textEditController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return _internetChecked ? _adminPasswordView() : _checkInternetView();
   }

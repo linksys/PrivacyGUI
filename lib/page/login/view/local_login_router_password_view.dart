@@ -45,6 +45,13 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+
+    _passwordController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return _isLoading
         ? const AppFullScreenSpinner()

@@ -43,6 +43,14 @@ class _WifiSettingsReviewViewState
   }
 
   @override
+  void dispose() {
+    super.dispose();
+
+    _wifiNameController.dispose();
+    _wifiPasswordController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return _isLoading
         ? AppFullScreenSpinner(text: getAppLocalizations(context).processing)

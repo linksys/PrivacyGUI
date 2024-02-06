@@ -107,6 +107,29 @@ class _InternetSettingsContentViewState
   @override
   void dispose() {
     super.dispose();
+
+    _pppoeUsernameController.dispose();
+    _pppoePasswordController.dispose();
+    _pppoeVLANIDController.dispose();
+    _pppoeServiceNameController.dispose();
+    _staticIpAddressController.dispose();
+    _staticSubnetController.dispose();
+    _staticGatewayController.dispose();
+    _staticDns1Controller.dispose();
+    _staticDns2Controller.dispose();
+    _staticDns3Controller.dispose();
+    _pptpUsernameController.dispose();
+    _pptpPasswordController.dispose();
+    _pptpServerIpController.dispose();
+    _l2tpUsernameController.dispose();
+    _l2tpPasswordController.dispose();
+    _l2tpServerIpController.dispose();
+    _idleTimeController.dispose();
+    _redialPeriodController.dispose();
+    _ipv6PrefixController.dispose();
+    _ipv6PrefixLengthController.dispose();
+    _ipv6BorderRelayController.dispose();
+    _ipv6BorderRelayPrefixLengthController.dispose();
   }
 
   void initUI() {

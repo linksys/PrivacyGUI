@@ -31,6 +31,13 @@ class _ChangeAuthModePasswordViewState
   }
 
   @override
+  void dispose() {
+    super.dispose();
+
+    passwordController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return widget.args['changeModeTo'] == 'PASSWORDLESS'
         ? Container()

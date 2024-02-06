@@ -29,6 +29,13 @@ class _CloudPasswordValidationViewState
   }
 
   @override
+  void dispose() {
+    super.dispose();
+
+    passwordController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return _contentView();
   }

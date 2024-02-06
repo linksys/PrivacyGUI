@@ -69,6 +69,14 @@ class _RouterPasswordContentViewState
   }
 
   @override
+  void dispose() {
+    super.dispose();
+
+    _passwordController.dispose();
+    _hintController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = ref.watch(routerPasswordProvider);
     return state.isLoading

@@ -71,6 +71,11 @@ class _AddRuleContentViewState
   @override
   void dispose() {
     super.dispose();
+
+    _ruleNameController.dispose();
+    _firstExternalPortController.dispose();
+    _lastExternalPortController.dispose();
+    _deviceIpAddressController.dispose();
   }
 
   @override

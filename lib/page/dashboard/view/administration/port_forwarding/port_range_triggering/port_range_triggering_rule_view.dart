@@ -66,6 +66,12 @@ class _AddRuleContentViewState
   @override
   void dispose() {
     super.dispose();
+
+    _ruleNameController.dispose();
+    _firstTriggerPortController.dispose();
+    _lastTriggerPortController.dispose();
+    _firstForwardedPortController.dispose();
+    _lastForwardedPortController.dispose();
   }
 
   @override

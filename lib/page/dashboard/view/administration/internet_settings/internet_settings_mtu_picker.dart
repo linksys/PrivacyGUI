@@ -35,6 +35,13 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+
+    _valueController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
       title: getAppLocalizations(context).connection_type,

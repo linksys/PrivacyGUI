@@ -27,6 +27,13 @@ class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+
+    _controller.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
       title: getAppLocalizations(context).node_detail_label_node_name,

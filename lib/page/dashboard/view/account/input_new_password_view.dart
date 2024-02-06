@@ -28,6 +28,13 @@ class _InputNewPasswordViewState extends ConsumerState<InputNewPasswordView> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+
+    passwordController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return _contentView();
   }

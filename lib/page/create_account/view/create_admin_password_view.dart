@@ -51,6 +51,14 @@ class _CreateAdminPasswordViewState
   }
 
   @override
+  void dispose() {
+    super.dispose();
+
+    passwordController.dispose();
+    hintController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return _isLoading
         ? const AppFullScreenSpinner(

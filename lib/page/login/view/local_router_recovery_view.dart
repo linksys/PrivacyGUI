@@ -31,6 +31,13 @@ class _LocalRouterRecoveryViewState
   }
 
   @override
+  void dispose() {
+    super.dispose();
+
+    _otpController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) => _contentView();
 
   Widget _contentView() {

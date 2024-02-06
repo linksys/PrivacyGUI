@@ -12,7 +12,7 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class LocalResetRouterPasswordView extends ArgumentsConsumerStatefulView {
-  LocalResetRouterPasswordView({Key? key, super.args}) : super(key: key);
+  const LocalResetRouterPasswordView({Key? key, super.args}) : super(key: key);
 
   @override
   ConsumerState<LocalResetRouterPasswordView> createState() =>
@@ -37,6 +37,14 @@ class _LocalResetRouterPasswordViewState
         description: '1 special character',
         validator: ((text) => SpecialCharCheckRule().validate(text))),
   ];
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    _newPasswordController.dispose();
+    _hintController.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
