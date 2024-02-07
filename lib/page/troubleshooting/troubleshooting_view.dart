@@ -291,7 +291,6 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
 
   void showVerifyEmailDialog() {
     showAdaptiveDialog(
-      
       context: context,
       builder: (context) => AlertDialog(
         scrollable: true,
@@ -301,6 +300,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
           children: [
             AppTextField(
               controller: _emailController,
+              hintText: '(optional)',
               onFocusChanged: (hasFocus) {},
             ),
             const AppGap.small(),
