@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/dashboard/view/administration/common_widget.dart';
 import 'package:linksys_app/provider/local_network_settings/local_network_settings_provider.dart';
 import 'package:linksys_app/provider/local_network_settings/local_network_settings_state.dart';
-import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -443,202 +438,19 @@ class _LocalNetworkSettingsViewState
       errors.remove(key);
     }
   }
-}
-
-// class LocalNetworkSettingsView extends ArgumentsConsumerStatelessView {
-//   const LocalNetworkSettingsView({super.key, super.args});
-
-//   @override
-//   Widget build(BuildContext context, WidgetRef ref) {
-//     return LANContentView(
-//       args: super.args,
-//     );
-//   }
-// }
-
-/*
-class LANContentView extends ArgumentsConsumerStatefulView {
-  const LANContentView({super.key, super.args});
 
   @override
-  ConsumerState<LANContentView> createState() => _LANContentViewState();
-}
-
-
-class _LANContentViewState extends ConsumerState<LANContentView> {
-  late final LANNotifier _notifier;
-
-  final TextEditingController _ipAddressController = TextEditingController();
-  final TextEditingController _subnetMaskController = TextEditingController();
-  final TextEditingController _firstIPController = TextEditingController();
-  final TextEditingController _maxNumUserController = TextEditingController();
-  final TextEditingController _clientLeaseController = TextEditingController();
-  final TextEditingController _dns1Controller = TextEditingController();
-  final TextEditingController _dns2Controller = TextEditingController();
-
-  @override
-  void initState() {
-    _notifier = ref.read(lanProvider.notifier);
-    _notifier.fetch().then((state) {
-      // init text field
-      _ipAddressController.text = state.ipAddress;
-      _subnetMaskController.text = state.subnetMask;
-      _firstIPController.text = state.firstIPAddress;
-      _maxNumUserController.text = '${state.maxNumUsers}';
-      _clientLeaseController.text = '${state.clientLeaseTime}';
-    });
-    super.initState();
+  void dispose() {
+    super.dispose();
+    _hostNameController.dispose();
+    _hostIpAddressController.dispose();
+    _hostSubnetMaskController.dispose();
+    _startIpAddressController.dispose();
+    _maxUserAllowedController.dispose();
+    _clientLeaseTimeController.dispose();
+    _dns1Controller.dispose();
+    _dns2Controller.dispose();
+    _dns3Controller.dispose();
+    _winsController.dispose();
   }
-
-  @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(lanProvider);
-    return StyledAppPageView(
-      scrollable: true,
-      title: getAppLocalizations(context).lan,
-      actions: [
-        AppTextButton(
-          getAppLocalizations(context).save,
-          onTap: () {},
-        )
-      ],
-      child: AppBasicLayout(
-        content: Column(
-          children: [
-            administrationSection(
-              title: getAppLocalizations(context).router_details,
-              content: Column(
-                children: [
-                  AppIPFormField(
-                    header: AppText.bodyLarge(
-                      getAppLocalizations(context).ip_address,
-                    ),
-                    controller: _ipAddressController,
-                    onFocusChanged: (focused) {
-                      if (!focused) {
-                        _notifier.setIPAddress(_ipAddressController.text);
-                      }
-                    },
-                    isError: state.errors['ipAddress'] != null,
-                  ),
-                  const AppGap.semiBig(),
-                  AppIPFormField(
-                    header: AppText.bodyLarge(
-                      getAppLocalizations(context).subnet_mask,
-                    ),
-                    controller: _subnetMaskController,
-                    onFocusChanged: (focused) {
-                      if (!focused) {
-                        _notifier.setSubnetMask(_subnetMaskController.text);
-                      }
-                    },
-                    isError: state.errors['subnetMask'] != null,
-                  ),
-                ],
-              ),
-            ),
-            administrationSection(
-              title: getAppLocalizations(context).dhcp_server,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const AppGap.semiBig(),
-                  AppPanelWithSwitch(
-                    value: state.isDHCPEnabled,
-                    title: getAppLocalizations(context).dhcp_server,
-                    onChangedEvent: (value) {},
-                  ),
-                  AppIPFormField(
-                    header: AppText.bodyLarge(
-                      getAppLocalizations(context).start_ip_address,
-                    ),
-                    controller: _firstIPController,
-                    onFocusChanged: (focused) {
-                      if (!focused) {
-                        _notifier.setFirstIPAddress(_firstIPController.text);
-                      }
-                    },
-                    isError: state.errors['firstIPAddress'] != null,
-                  ),
-                  const AppGap.semiBig(),
-                  AppTextField(
-                    controller: _maxNumUserController,
-                    headerText:
-                        getAppLocalizations(context).max_number_of_users,
-                    hintText: getAppLocalizations(context).max_number_of_users,
-                    descriptionText: getAppLocalizations(context)
-                        .dhcp_users_limit(state.maxNumUsers),
-                    onFocusChanged: (focused) {
-                      if (!focused) {
-                        _notifier.setMaxUsers(_maxNumUserController.text);
-                      }
-                    },
-                  ),
-                  const AppGap.semiSmall(),
-                  AppText.bodyMedium(
-                    getAppLocalizations(context).dhcp_ip_range(
-                        state.firstIPAddress, state.lastIPAddress),
-                  ),
-                  const AppGap.semiBig(),
-                  AppTextField(
-                    controller: _clientLeaseController,
-                    headerText: getAppLocalizations(context).client_lease_time,
-                    hintText: getAppLocalizations(context).client_lease_time,
-                    descriptionText: getAppLocalizations(context).minutes,
-                    onFocusChanged: (focused) {
-                      if (!focused) {
-                        _notifier.setLeaseTime(_clientLeaseController.text);
-                      }
-                    },
-                  ),
-                  const AppGap.semiBig(),
-                ],
-              ),
-            ),
-            administrationSection(
-              enabled: state.isDHCPEnabled,
-              title: getAppLocalizations(context).dns_settings,
-              content: Column(
-                children: [
-                  AppPanelWithInfo(
-                    title: getAppLocalizations(context).dns,
-                    infoText: state.isAutoDNS
-                        ? getAppLocalizations(context).auto
-                        : getAppLocalizations(context).manual,
-                    onTap: () async {
-                      String? result = await context.pushNamed(
-                        RouteNamed.itemPicker,
-                        queryParameters: {
-                          'items': [
-                            const Item(title: 'Auto', id: 'Auto'),
-                            const Item(title: 'Manual', id: 'Manual'),
-                          ],
-                          'selected': state.isAutoDNS ? 'Auto' : 'Manual',
-                        },
-                      );
-                      if (result != null) {
-                        _notifier.setAutoDNS(result == 'Auto');
-                      }
-                    },
-                  ),
-                  ..._buildDNSInputFields(state),
-                  AppPanelWithInfo(
-                    title: getAppLocalizations(context).dhcp_reservations,
-                    infoText: ' ',
-                    onTap: () {
-                      context.pushNamed(RouteNamed.dhcpReservation);
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const AppGap.extraBig(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  
 }
-*/
