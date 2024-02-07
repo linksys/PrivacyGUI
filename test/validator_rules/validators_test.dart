@@ -88,6 +88,16 @@ void main() {
       expect(validator.validate('12.168.21.1'), false);
       expect(validator.validate('192.18.21.1'), false);
     });
+
+    test('router ip 192.168.1.1 and subnet mask 255.255.255.128', () async {
+      final validator = IpAddressLocalTestSubnetMaskValidator(
+          '192.168.1.1', '255.255.255.128');
+      expect(validator.validate('192.168.1.124'), true);
+      expect(validator.validate('192.168.1.244'), false);
+      for (int i = 1; i < 256; i++) {
+        expect(validator.validate('192.168.1.$i'), i < 128 ? true : false);
+      }
+    });
   });
 
   group('IpAddressLocalValidator', () {

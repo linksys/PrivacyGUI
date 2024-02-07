@@ -124,14 +124,48 @@ RESPONSE: 200, {
       expect(num, 255 * 256 * 256 * 256 + 255 * 256 * 256 + 255 * 256 + 0);
       expect(ipAddress, Utils.numToIp(num));
     });
-    test('test is valid subnet mask', () async {
+    test('test is valid subnet mask - 255.255.255.0', () async {
       const ipAddress = '255.255.255.0';
+      expect(Utils.isValidSubnetMask(ipAddress), true);
+    });
+    test('test is valid subnet mask - 255.255.0.0', () async {
+      const ipAddress = '255.255.0.0';
+      expect(Utils.isValidSubnetMask(ipAddress), true);
+    });
+    test('test is valid subnet mask - 255.0.0.0', () async {
+      const ipAddress = '255.0.0.0';
+      expect(Utils.isValidSubnetMask(ipAddress), true);
+    });
+    test('test is invalid subnet mask - 255.1.0.0', () async {
+      const ipAddress = '255.1.0.0';
+      expect(Utils.isValidSubnetMask(ipAddress), false);
+    });
+    test('test is valid subnet mask - 255.254.0.0', () async {
+      const ipAddress = '255.254.0.0';
+      expect(Utils.isValidSubnetMask(ipAddress), true);
+    });
+    test('test is invalid subnet mask - 255.253.0.0', () async {
+      const ipAddress = '255.253.0.0';
+      expect(Utils.isValidSubnetMask(ipAddress), false);
+    });
+    test('test is valid subnet mask - 255.255.255.128', () async {
+      const ipAddress = '255.255.255.128';
       expect(Utils.isValidSubnetMask(ipAddress), true);
     });
     test('test prefix length to subnet mask and convert back #1', () async {
       final actual = Utils.prefixLengthToSubnetMask(30);
       expect(actual, '255.255.255.252');
       expect(Utils.subnetMaskToPrefixLength(actual), 30);
+    });
+    test('test getMaxUserLimit', () async {
+      expect(
+          Utils.getMaxUserLimit(
+              '192.168.1.1', '192.168.1.10', '255.255.255.0', 23),
+          245);
+      expect(
+          Utils.getMaxUserLimit(
+              '192.168.1.15', '192.168.1.10', '255.255.255.0', 23),
+          244);
     });
   });
 }
