@@ -93,11 +93,11 @@ RESPONSE: 200, {
       final actual = Utils.replaceHttpScheme(str);
       expect(
           actual.indexOf(
-              'https://qa.linksyssmartwifi.com/cloud/device-service/rest/accounts/self/networks'),
+              'https://qa.linksyssmartwifi.com/'),
           -1);
       expect(
           actual.indexOf(
-                  'https-//qa-linksyssmartwifi-com/cloud/device-service/rest/accounts/self/networks') >
+                  'https-//qa-linksyssmartwifi-com/') >
               1,
           true);
     });
