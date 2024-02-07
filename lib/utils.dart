@@ -382,14 +382,17 @@ class Utils {
      * @params {String} lastClientIPAddress - A string representing the end IP of the DHCP Range
      * @return {Integer}
   */
-  static int getMaxUserForDHCPRange(String routerIPAddress,
+  static int getMaxUserAllowedInDHCPRange(String routerIPAddress,
       String firstClientIPAddress, String lastClientIPAddress) {
     final firstClientIPAddressNum = ipToNum(firstClientIPAddress);
     final lastClientIPAddressNum = ipToNum(lastClientIPAddress);
     var maxUsers = lastClientIPAddressNum - firstClientIPAddressNum;
 
     if (!isRouterIPInDHCPRange(
-        routerIPAddress, firstClientIPAddress, lastClientIPAddress)) {
+      routerIPAddress,
+      firstClientIPAddress,
+      lastClientIPAddress,
+    )) {
       maxUsers++;
     }
     return maxUsers;
@@ -409,6 +412,24 @@ class Utils {
     return numToIp(lastClientIPAddressNum);
   }
 
+  static String getEndingIpAddress(
+    String routerIpAddress,
+    String firstClientIpAddress,
+    int maxUserAllowed,
+  ) {
+    final firstClientIpAddressNum = ipToNum(firstClientIpAddress);
+    var lastClientIpAddressNum = firstClientIpAddressNum + maxUserAllowed - 1;
+    if (isRouterIPInDHCPRange(
+      routerIpAddress,
+      firstClientIpAddress,
+      null,
+      maxUserAllowed,
+    )) {
+      lastClientIpAddressNum++;
+    }
+    return numToIp(lastClientIpAddressNum);
+  }
+
   /*
      * @description returns an Integer for the max # of users that could be set, based on the 1st DHCP Client IP Address and the SubnetMask of the Router
      * @params {String} routerIPAddress - A string representing the current IP of the Router
@@ -417,8 +438,12 @@ class Utils {
      * @params {Integer} maxUsers - An integer containing the current # of users the DHCP Range should allow
      * @return {Integer}
   */
-  static int getMaxUserLimit(String routerIPAddress,
-      String firstClientIPAddress, String subnetMask, int maxUsers) {
+  static int getMaxUserLimit(
+    String routerIPAddress,
+    String firstClientIPAddress,
+    String subnetMask,
+    int maxUsers,
+  ) {
     final currentPrefixLength = subnetMaskToPrefixLength(subnetMask);
     int maxUserLimit = pow(2, 32 - currentPrefixLength).toInt();
     final subnetMaskNum = ipToNum(subnetMask);

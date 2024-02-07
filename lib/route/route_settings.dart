@@ -117,7 +117,7 @@ final settings = [
   LinksysRoute(
     name: RouteNamed.settingsLocalNetwork,
     path: RoutePath.settingsLocalNetwork,
-    builder: (context, state) => LANView(),
+    builder: (context, state) => LocalNetworkSettingsView(),
     routes: [
       LinksysRoute(
         name: RouteNamed.dhcpReservation,

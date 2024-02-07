@@ -17,7 +17,7 @@ import 'package:linksys_app/page/dashboard/view/administration/internet_settings
 import 'package:linksys_app/page/dashboard/view/administration/internet_settings/internet_settings_mac_clone_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/internet_settings/internet_settings_mtu_picker.dart';
 import 'package:linksys_app/page/dashboard/view/administration/internet_settings/internet_settings_view.dart';
-import 'package:linksys_app/page/dashboard/view/administration/lan/dhcp_reservations/dhcp_reservations_view.dart';
+import 'package:linksys_app/page/dashboard/view/administration/local_network_settings/dhcp_reservations/dhcp_reservations_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/mac_filtering/mac_filtering_enter_mac_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/mac_filtering/mac_filtering_view.dart';
 import 'package:linksys_app/page/dashboard/view/administration/port_forwarding/port_forwarding_view.dart';
@@ -65,7 +65,7 @@ import 'package:linksys_app/provider/otp/otp.dart';
 import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/route/router_logger.dart';
 
-import '../page/dashboard/view/administration/lan/lan_view.dart';
+import '../page/dashboard/view/administration/local_network_settings/local_network_settings_view.dart';
 import '../page/dashboard/view/nodes/node_switch_light_view.dart';
 import 'constants.dart';
 
