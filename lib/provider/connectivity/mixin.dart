@@ -20,7 +20,7 @@ mixin AvailabilityChecker {
   Duration internetCheckPeriod =
       const Duration(seconds: defaultInternetCheckPeriodSec);
   Timer? timer;
-  final _client = LinksysHttpClient(timeoutMs: 3000);
+  final _client = LinksysHttpClient()..timeoutMs = 3000;
   Function(bool, ConnectivityInfo, AvailabilityInfo?)? _callback;
 
   set callback(Function(bool, ConnectivityInfo, AvailabilityInfo?) callback) =>

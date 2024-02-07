@@ -11,6 +11,7 @@ import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/jnap_command_executor_mixin.dart';
 import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/command/http_base_command.dart';
+import 'package:linksys_app/core/utils/bench_mark.dart';
 import 'package:linksys_app/util/extensions.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:http/io_client.dart';
@@ -31,7 +32,6 @@ class LinksysHttpClient extends http.BaseClient
 
   LinksysHttpClient({
     IOClient? client,
-    int timeoutMs = 10000,
     int retries = 1,
     String? Function()? getHost,
     FutureOr<bool> Function(http.BaseResponse) when = _defaultWhen,
@@ -40,7 +40,6 @@ class LinksysHttpClient extends http.BaseClient
     FutureOr<void> Function(BaseRequest, http.BaseResponse?, int retryCount)?
         onRetry,
   })  : _inner = client ?? getClient(),
-        _timeoutMs = timeoutMs,
         _retries = retries,
         _when = when,
         _whenError = whenError,
@@ -52,7 +51,6 @@ class LinksysHttpClient extends http.BaseClient
 
   LinksysHttpClient.withCert(
     SecurityContext context, {
-    int timeoutMs = 10000,
     int retries = 1,
     FutureOr<bool> Function(http.BaseResponse) when = _defaultWhen,
     FutureOr<bool> Function(Object, StackTrace) whenError = _defaultWhenError,
@@ -61,7 +59,6 @@ class LinksysHttpClient extends http.BaseClient
         onRetry,
   }) : this(
           client: IOClient(HttpClient(context: context)),
-          timeoutMs: timeoutMs,
           retries: retries,
           when: when,
           whenError: whenError,
@@ -69,7 +66,6 @@ class LinksysHttpClient extends http.BaseClient
           onRetry: onRetry,
         );
 
-  final int _timeoutMs;
   final BaseClient _inner;
 
   /// The number of times a request should be retried.
@@ -140,7 +136,7 @@ class LinksysHttpClient extends http.BaseClient
 
         response = await _inner
             .send(copied)
-            .timeout(Duration(milliseconds: _timeoutMs));
+            .timeout(Duration(milliseconds: timeoutMs));
       } catch (error, stackTrace) {
         logger.e('Http Request Error: $error');
         if (i == _retries || !await _whenError(error, stackTrace)) {
@@ -173,11 +169,10 @@ class LinksysHttpClient extends http.BaseClient
       ..maxRedirects = original.maxRedirects
       ..persistentConnection = original.persistentConnection;
 
-    body.listen(request.sink.add,
+    body.timeout(Duration(milliseconds: timeoutMs)).listen(request.sink.add,
         onError: request.sink.addError,
         onDone: request.sink.close,
         cancelOnError: true);
-
     return request;
   }
 

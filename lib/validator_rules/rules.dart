@@ -141,8 +141,7 @@ class HostValidForGivenRouterIPAddressAndSubnetMaskRule extends ValidationRule {
   @override
   bool validate(String input) {
     final hostIPAddressNum = Utils.ipToNum(input);
-    final routerIPAddressNum = Utils.ipToNum(input);
-    // final routerIPAddressNum = Utils.ipToNum(routerIPAddress);
+    final routerIPAddressNum = Utils.ipToNum(routerIPAddress);
     final subnetMaskNum = Utils.ipToNum(subnetMask);
     final hostSubnet = (hostIPAddressNum & subnetMaskNum) >>> 0;
     final routerSubnet = (routerIPAddressNum & subnetMaskNum) >>> 0;

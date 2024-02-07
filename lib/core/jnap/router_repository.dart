@@ -65,7 +65,7 @@ class RouterRepository {
     if (_btSetupMode) {
       return BluetoothManager();
     } else {
-      return _client;
+      return LinksysHttpClient();
     }
   }
 
@@ -81,6 +81,7 @@ class RouterRepository {
     CommandType? type,
     bool fetchRemote = false,
     CacheLevel? cacheLevel,
+    int timeoutMs = 10000,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final sn = prefs.get(pCurrentSN) as String?;
@@ -93,7 +94,8 @@ class RouterRepository {
         needAuth: auth,
         type: type,
         fetchRemote: fetchRemote,
-        cacheLevel: cacheLevel);
+        cacheLevel: cacheLevel,
+        timeoutMs: timeoutMs);
     final sideEffectManager = ref.read(sideEffectProvider.notifier);
     final linksysCacheManager = ref.read(linksysCacheManagerProvider);
     return CommandQueue()
@@ -184,6 +186,7 @@ class RouterRepository {
     CommandType? type,
     bool fetchRemote = false,
     CacheLevel cacheLevel = CacheLevel.localCached,
+    int timeoutMs = 10000,
   }) async {
     if (isEnableBTSetup) {
       return _createBTCommand(action,
@@ -192,13 +195,16 @@ class RouterRepository {
           fetchRemote: fetchRemote,
           cacheLevel: cacheLevel);
     } else {
-      return _createHttpCommand(action,
-          data: data,
-          extraHeaders: extraHeaders,
-          needAuth: needAuth,
-          type: type,
-          fetchRemote: fetchRemote,
-          cacheLevel: cacheLevel);
+      return _createHttpCommand(
+        action,
+        data: data,
+        extraHeaders: extraHeaders,
+        needAuth: needAuth,
+        type: type,
+        fetchRemote: fetchRemote,
+        cacheLevel: cacheLevel,
+        timeoutMs: timeoutMs,
+      );
     }
   }
 
@@ -439,6 +445,7 @@ class RouterRepository {
     CommandType? type,
     bool fetchRemote = false,
     CacheLevel cacheLevel = CacheLevel.localCached,
+    int timeoutMs = 10000,
   }) async {
     final routerType = getRouterType();
     // final communicateType =
@@ -458,7 +465,7 @@ class RouterRepository {
     if (url.isNotEmpty) {
       return JNAPHttpCommand(
           url: url,
-          executor: executor,
+          executor: executor..timeoutMs = timeoutMs,
           action: action,
           data: data,
           extraHeader: header,

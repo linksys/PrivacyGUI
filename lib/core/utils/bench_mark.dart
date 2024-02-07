@@ -3,25 +3,33 @@ import 'package:linksys_app/core/utils/logger.dart';
 
 class BenchMarkLogger {
   final String name;
+  final bool recordOnly;
   late DateTime _start;
   late DateTime _end;
 
-  BenchMarkLogger({required this.name});
+  BenchMarkLogger({
+    required this.name,
+    this.recordOnly = false,
+  });
 
   void start() {
     _start = DateTime.now();
-    if (kDebugMode) {
-      logger.d(
-          '${describeIdentity(this)} - $name: start at <$_start>');
+    if (kDebugMode && !recordOnly) {
+      logger.d('${describeIdentity(this)} - $name: start at <$_start>');
     }
   }
 
-  void end() {
+  ///
+  /// @return milliseconds
+  ///
+  int end() {
     _end = DateTime.now();
-    if (kDebugMode) {
+    int delta = _calcuteDeltaTime();
+    if (kDebugMode && !recordOnly) {
       logger.d(
-          '${describeIdentity(this)} - $name: end at <$_end>, delta time is <${_calcuteDeltaTime()}>');
+          '${describeIdentity(this)} - $name: end at <$_end>, delta time is <$delta>');
     }
+    return delta;
   }
 
   int _calcuteDeltaTime() {

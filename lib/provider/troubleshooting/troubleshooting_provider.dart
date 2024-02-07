@@ -161,6 +161,7 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
           JNAPAction.sendSysinfoEmail,
           auth: true,
           data: SendSysinfoEmail(addressList: emailList).toJson(),
+          timeoutMs: 30000,
         );
   }
 
