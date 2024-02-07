@@ -248,7 +248,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
                     ),
                   ],
                 ),
-                ...state.dhchClientList.map(
+                ...state.dhcpClientList.map(
                   (e) => TableRow(
                     children: [
                       _paddingTableCell(child: AppText.bodyMedium(e.name)),

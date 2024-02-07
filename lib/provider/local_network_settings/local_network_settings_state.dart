@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:linksys_app/core/jnap/models/lan_settings.dart';
 
 class LocalNetworkSettingsState extends Equatable {
   final String hostName;
@@ -18,7 +19,7 @@ class LocalNetworkSettingsState extends Equatable {
   final String? dns2;
   final String? dns3;
   final String? wins;
-  // final bool isAutoDNS;
+  final List<DHCPReservation> dhcpReservationList;
 
   @override
   List<Object?> get props => [
@@ -60,7 +61,7 @@ class LocalNetworkSettingsState extends Equatable {
     this.dns2,
     this.dns3,
     this.wins,
-    // required this.isAutoDNS,
+    this.dhcpReservationList = const [],
   });
 
   factory LocalNetworkSettingsState.init() => const LocalNetworkSettingsState(
@@ -77,7 +78,6 @@ class LocalNetworkSettingsState extends Equatable {
         maxAllowDHCPLeaseMinutes: 0,
         minNetworkPrefixLength: 8,
         maxNetworkPrefixLength: 30,
-        // isAutoDNS: false,
       );
 
   LocalNetworkSettingsState copyWith({
@@ -98,7 +98,7 @@ class LocalNetworkSettingsState extends Equatable {
     String? dns2,
     String? dns3,
     String? wins,
-    // bool? isAutoDNS,
+    List<DHCPReservation>? dhcpReservationList,
   }) {
     return LocalNetworkSettingsState(
       hostName: hostName ?? this.hostName,
@@ -122,7 +122,7 @@ class LocalNetworkSettingsState extends Equatable {
       dns2: dns2 ?? this.dns2,
       dns3: dns3 ?? this.dns3,
       wins: wins ?? this.wins,
-      // isAutoDNS: isAutoDNS ?? this.isAutoDNS,
+      dhcpReservationList: dhcpReservationList ?? this.dhcpReservationList,
     );
   }
 }

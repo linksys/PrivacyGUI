@@ -8,10 +8,10 @@ import 'package:linksys_app/provider/troubleshooting/dhcp_client.dart';
 
 class TroubleshootingState extends Equatable {
   final List<DeviceStatusModel> deviceStatusList;
-  final List<DhcpClientModel> dhchClientList;
+  final List<DhcpClientModel> dhcpClientList;
   const TroubleshootingState({
     required this.deviceStatusList,
-    required this.dhchClientList,
+    required this.dhcpClientList,
   });
 
   TroubleshootingState copyWith({
@@ -20,14 +20,14 @@ class TroubleshootingState extends Equatable {
   }) {
     return TroubleshootingState(
       deviceStatusList: deviceStatusList ?? this.deviceStatusList,
-      dhchClientList: dhchClientList ?? this.dhchClientList,
+      dhcpClientList: dhchClientList ?? this.dhcpClientList,
     );
   }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'deviceStatusList': deviceStatusList.map((x) => x.toMap()).toList(),
-      'dhchClientList': dhchClientList.map((x) => x.toMap()).toList(),
+      'dhchClientList': dhcpClientList.map((x) => x.toMap()).toList(),
     };
   }
 
@@ -38,7 +38,7 @@ class TroubleshootingState extends Equatable {
           (x) => DeviceStatusModel.fromMap(x as Map<String, dynamic>),
         ),
       ),
-      dhchClientList: List<DhcpClientModel>.from(
+      dhcpClientList: List<DhcpClientModel>.from(
         (map['dhchClientList'] as List<int>).map<DhcpClientModel>(
           (x) => DhcpClientModel.fromMap(x as Map<String, dynamic>),
         ),
@@ -55,5 +55,5 @@ class TroubleshootingState extends Equatable {
   bool get stringify => true;
 
   @override
-  List<Object> get props => [deviceStatusList, dhchClientList];
+  List<Object> get props => [deviceStatusList, dhcpClientList];
 }

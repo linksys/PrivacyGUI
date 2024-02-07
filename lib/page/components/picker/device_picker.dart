@@ -7,7 +7,6 @@ import 'package:linksys_widgets/theme/custom_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/panel/custom_animated_box.dart';
 import 'package:linksys_widgets/widgets/panel/general_card.dart';
-import 'package:linksys_widgets/widgets/panel/panel_bases.dart';
 
 enum DevicePickerType {
   grid,

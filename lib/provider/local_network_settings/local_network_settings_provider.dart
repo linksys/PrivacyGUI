@@ -66,6 +66,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       dns2: lanSettings.dhcpSettings.dnsServer2,
       dns3: lanSettings.dhcpSettings.dnsServer3,
       wins: lanSettings.dhcpSettings.winsServer,
+      dhcpReservationList: lanSettings.dhcpSettings.reservations,
     );
     // Update all necessary validators by the current settings
     _updateValidators(state);
@@ -86,9 +87,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         dnsServer2: settings.dns2,
         dnsServer3: settings.dns3,
         winsServer: settings.wins,
-        reservations: [
-          //TODO: Add reservations
-        ],
+        reservations: settings.dhcpReservationList,
       ),
     );
     final routerRepository = ref.read(routerRepositoryProvider);
@@ -96,7 +95,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         .send(
       JNAPAction.setLANSettings,
       auth: true,
-      data: newSettings.toMap(),
+      data: newSettings.toMap()..removeWhere((key, value) => value == null),
     )
         .then((result) {
       // Update the state
@@ -118,6 +117,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         dns2: settings.dns2,
         dns3: settings.dns3,
         wins: settings.wins,
+        dhcpReservationList: settings.dhcpReservationList,
       );
     });
   }

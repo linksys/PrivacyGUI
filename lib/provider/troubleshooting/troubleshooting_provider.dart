@@ -26,7 +26,7 @@ final troubleshootingProvider =
 class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
   @override
   TroubleshootingState build() {
-    return const TroubleshootingState(deviceStatusList: [], dhchClientList: []);
+    return const TroubleshootingState(deviceStatusList: [], dhcpClientList: []);
   }
 
   Future fetch({bool force = false}) async {

@@ -291,8 +291,7 @@ class Utils {
 
   static bool isValidSubnetMask(String subnetMask,
       {int minNetworkPrefixLength = 8, int maxNetworkPrefixLength = 30}) {
-    if (subnetMask.
-    isEmpty) {
+    if (subnetMask.isEmpty) {
       return false;
     }
 
