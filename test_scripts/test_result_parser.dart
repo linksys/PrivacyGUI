@@ -5,8 +5,19 @@ import 'package:collection/collection.dart';
 
 part 'html_generate_functions.dart';
 
-void main() {
-  File file = File('./reports/tests.json');
+void main(List<String> args) {
+  print(args);
+  var testResultJsonPath = './reports/tests.json';
+  var testResultHtmlOutputPath = './reports/reports.html';
+
+  // use default path if no args input
+  if (args.isNotEmpty) {
+    testResultJsonPath = args[0];
+  }
+  if (args.length > 1) {
+    testResultHtmlOutputPath = args[1];
+  }
+  File file = File(testResultJsonPath);
 
   if (!file.existsSync()) {
     throw Exception('Test result does not exist!');
@@ -36,7 +47,7 @@ void main() {
       }
     }
     final htmlReport = generateHTMLReport(testResult);
-    final reportHTMLFile = File('./reports/reports.html');
+    final reportHTMLFile = File(testResultHtmlOutputPath);
     if (!reportHTMLFile.existsSync()) {
       reportHTMLFile.createSync(recursive: true);
     }
