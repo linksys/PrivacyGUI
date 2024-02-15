@@ -91,15 +91,8 @@ RESPONSE: 200, {
 ---------------------------------------------------RESPONSE END
       ''';
       final actual = Utils.replaceHttpScheme(str);
-      expect(
-          actual.indexOf(
-              'https://qa.linksyssmartwifi.com/'),
-          -1);
-      expect(
-          actual.indexOf(
-                  'https-//qa-linksyssmartwifi-com/') >
-              1,
-          true);
+      expect(actual.indexOf('https://qa.linksyssmartwifi.com/'), -1);
+      expect(actual.indexOf('https-//qa-linksyssmartwifi-com/') > 1, true);
     });
   });
   test('URL in cache data', () async {
@@ -124,34 +117,7 @@ RESPONSE: 200, {
       expect(num, 255 * 256 * 256 * 256 + 255 * 256 * 256 + 255 * 256 + 0);
       expect(ipAddress, Utils.numToIp(num));
     });
-    test('test is valid subnet mask - 255.255.255.0', () async {
-      const ipAddress = '255.255.255.0';
-      expect(Utils.isValidSubnetMask(ipAddress), true);
-    });
-    test('test is valid subnet mask - 255.255.0.0', () async {
-      const ipAddress = '255.255.0.0';
-      expect(Utils.isValidSubnetMask(ipAddress), true);
-    });
-    test('test is valid subnet mask - 255.0.0.0', () async {
-      const ipAddress = '255.0.0.0';
-      expect(Utils.isValidSubnetMask(ipAddress), true);
-    });
-    test('test is invalid subnet mask - 255.1.0.0', () async {
-      const ipAddress = '255.1.0.0';
-      expect(Utils.isValidSubnetMask(ipAddress), false);
-    });
-    test('test is valid subnet mask - 255.254.0.0', () async {
-      const ipAddress = '255.254.0.0';
-      expect(Utils.isValidSubnetMask(ipAddress), true);
-    });
-    test('test is invalid subnet mask - 255.253.0.0', () async {
-      const ipAddress = '255.253.0.0';
-      expect(Utils.isValidSubnetMask(ipAddress), false);
-    });
-    test('test is valid subnet mask - 255.255.255.128', () async {
-      const ipAddress = '255.255.255.128';
-      expect(Utils.isValidSubnetMask(ipAddress), true);
-    });
+
     test('test prefix length to subnet mask and convert back #1', () async {
       final actual = Utils.prefixLengthToSubnetMask(30);
       expect(actual, '255.255.255.252');
@@ -166,6 +132,82 @@ RESPONSE: 200, {
           Utils.getMaxUserLimit(
               '192.168.1.15', '192.168.1.10', '255.255.255.0', 23),
           244);
+    });
+  });
+
+  group('isValidSubnetMask', () {
+    test('returns true for valid subnet mask with default parameters', () {
+      expect(Utils.isValidSubnetMask('255.255.255.0'), true);
+    });
+
+    test('returns true for valid subnet mask with custom parameters', () {
+      expect(
+          Utils.isValidSubnetMask('255.255.255.128',
+              minNetworkPrefixLength: 25, maxNetworkPrefixLength: 30),
+          true);
+    });
+
+    test('returns true for valid mask with minimum prefix length', () {
+      expect(Utils.isValidSubnetMask('255.0.0.0'), true);
+    });
+
+    test('returns true for valid mask with minumum prefix length', () {
+      expect(Utils.isValidSubnetMask('128.0.0.0', minNetworkPrefixLength: 1),
+          true);
+    });
+
+    test('returns false for empty string', () {
+      expect(Utils.isValidSubnetMask(''), false);
+    });
+
+    test('returns false for invalid octet format', () {
+      expect(Utils.isValidSubnetMask('256.255.255.0'), false);
+    });
+
+    test('returns false for invalid prefix length with default parameters', () {
+      expect(Utils.isValidSubnetMask('255.0.0.1'), false);
+    });
+
+    test('returns false for invalid prefix length with custom parameters', () {
+      expect(
+          Utils.isValidSubnetMask('255.255.255.64',
+              minNetworkPrefixLength: 26, maxNetworkPrefixLength: 29),
+          false);
+    });
+
+    test('returns false for non-contiguous 1s', () {
+      expect(Utils.isValidSubnetMask('255.255.253.0'), false);
+    });
+    test('returns false for contiguous 1s', () {
+      expect(Utils.isValidSubnetMask('255.255.254.0'), true);
+    });
+    test('throws exception for invalid minNetworkPrefixLength', () {
+      expect(
+          () => Utils.isValidSubnetMask('255.255.255.0',
+              minNetworkPrefixLength: 0),
+          throwsA(isA<Exception>()));
+    });
+
+    test('throws exception for invalid maxNetworkPrefixLength', () {
+      expect(
+          () => Utils.isValidSubnetMask('255.255.255.0',
+              maxNetworkPrefixLength: -1),
+          throwsA(isA<Exception>()));
+    });
+
+    test('returns true for min and max prefix lengths equal', () {
+      expect(
+          Utils.isValidSubnetMask('255.255.255.128',
+              minNetworkPrefixLength: 25, maxNetworkPrefixLength: 25),
+          true);
+    });
+
+    test('returns true for max prefix length one more than min prefix length',
+        () {
+      expect(
+          Utils.isValidSubnetMask('255.255.255.0',
+              minNetworkPrefixLength: 24, maxNetworkPrefixLength: 25),
+          true);
     });
   });
 }
