@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/validator_rules/rules.dart';
-import 'package:linksys_app/validator_rules/validators.dart';
+import 'package:linksys_app/validator_rules/input_validators.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class WiFiSSIDField extends ConsumerStatefulWidget {
@@ -24,9 +24,10 @@ class WiFiSSIDField extends ConsumerStatefulWidget {
 
 class _WiFiSSIDFieldState extends ConsumerState<WiFiSSIDField> {
   final InputValidator wifiSSIDValidator = InputValidator([
+    RequiredRule(),
     NoSurroundWhitespaceRule(),
     WiFiSsidRule(),
-  ], required: true);
+  ]);
 
   @override
   Widget build(BuildContext context) {

@@ -22,27 +22,6 @@ class EmailRule extends RegExValidationRule {
       r"^[a-zA-Z0-9.!#$%&‘*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$");
 }
 
-class LengthRule extends ValidationRule {
-  final int min;
-  final int max;
-
-  LengthRule({this.min = 10, this.max = 0});
-
-  @override
-  bool validate(String input) {
-    return max > 0
-        ? input.length >= min && input.length <= max
-        : input.length >= min;
-  }
-}
-
-class HybridCaseRule extends ValidationRule {
-  @override
-  bool validate(String input) {
-    return input != input.toUpperCase() && input != input.toLowerCase();
-  }
-}
-
 class DigitalCheckRule extends RegExValidationRule {
   @override
   RegExp get _rule => RegExp(r".*\d+.*");
@@ -90,6 +69,37 @@ class AndroidNameRule extends RegExValidationRule {
       RegExp(r"^Android$|^android-[a-fA-F0-9]{16}.*|^Android-[0-9]+");
 }
 
+class AsciiRule extends RegExValidationRule {
+  @override
+  RegExp get _rule => RegExp(r'^[\x20-\x7E]+$');
+}
+
+class MACAddressRule extends RegExValidationRule {
+  @override
+  RegExp get _rule => RegExp(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$");
+}
+
+class LengthRule extends ValidationRule {
+  final int min;
+  final int max;
+
+  LengthRule({this.min = 10, this.max = 0});
+
+  @override
+  bool validate(String input) {
+    return max > 0
+        ? input.length >= min && input.length <= max
+        : input.length >= min;
+  }
+}
+
+class HybridCaseRule extends ValidationRule {
+  @override
+  bool validate(String input) {
+    return input != input.toUpperCase() && input != input.toLowerCase();
+  }
+}
+
 class IpAddressHasFourOctetsRule extends ValidationRule {
   @override
   bool validate(String input) => input.split('.').length == 4;
@@ -99,14 +109,18 @@ class SubnetMaskRule extends ValidationRule {
   final int minNetworkPrefixLength;
   final int maxNetworkPrefixLength;
 
-  SubnetMaskRule(
-      {this.minNetworkPrefixLength = 8, this.maxNetworkPrefixLength = 30});
+  SubnetMaskRule({
+    this.minNetworkPrefixLength = 8,
+    this.maxNetworkPrefixLength = 30,
+  });
 
   @override
   bool validate(String input) {
-    return Utils.isValidSubnetMask(input,
-        minNetworkPrefixLength: minNetworkPrefixLength,
-        maxNetworkPrefixLength: maxNetworkPrefixLength);
+    return Utils.isValidSubnetMask(
+      input,
+      minNetworkPrefixLength: minNetworkPrefixLength,
+      maxNetworkPrefixLength: maxNetworkPrefixLength,
+    );
   }
 }
 
@@ -124,11 +138,6 @@ class IpAddressNoReservedRule extends ValidationRule {
         input != '127.0.0.1' &&
         input != '255.255.255.255';
   }
-}
-
-class AsciiRule extends RegExValidationRule {
-  @override
-  RegExp get _rule => RegExp(r'^[\x20-\x7E]+$');
 }
 
 class HostValidForGivenRouterIPAddressAndSubnetMaskRule extends ValidationRule {
@@ -157,17 +166,17 @@ class HostValidForGivenRouterIPAddressAndSubnetMaskRule extends ValidationRule {
   }
 }
 
-class IpAddressLocalNotRouterIp extends ValidationRule {
-  final String routerIPAddress;
+class NotRouterIpAddressRule extends ValidationRule {
+  final String routerIpAddress;
 
   bool get notCheck => true;
 
-  IpAddressLocalNotRouterIp(this.routerIPAddress);
+  NotRouterIpAddressRule(this.routerIpAddress);
 
   @override
   bool validate(String input) {
     final ipAddressOctets = input.split('.');
-    final routerIPAddressOctets = routerIPAddress.split('.');
+    final routerIPAddressOctets = routerIpAddress.split('.');
     if (ipAddressOctets.length < 4) {
       return true;
     }
@@ -198,22 +207,3 @@ class IntegerRule extends ValidationRule {
     return false;
   }
 }
-
-class MACAddressRule extends RegExValidationRule {
-  @override
-  RegExp get _rule => RegExp(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$");
-}
-
-// class IpAddressOctetValidation extends ValidationRule {
-//   final int octet;
-//   final int min;
-//   final int max;
-//
-//   IpAddressOctetValidation(this.octet, {this.min = 0, this.max = 255});
-//
-//   @override
-//   bool validate(String input) {
-//     final all = input.split('.');
-//   }
-// }
-

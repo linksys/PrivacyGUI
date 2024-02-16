@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/validator_rules/rules.dart';
-import 'package:linksys_app/validator_rules/validators.dart';
+import 'package:linksys_app/validator_rules/input_validators.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class WiFiPasswordField extends ConsumerStatefulWidget {
@@ -24,10 +24,11 @@ class WiFiPasswordField extends ConsumerStatefulWidget {
 
 class _WiFiPasswordFieldState extends ConsumerState<WiFiPasswordField> {
   final InputValidator wifiPasswordValidator = InputValidator([
+    RequiredRule(),
     NoSurroundWhitespaceRule(),
     WiFiPasswordRule(ignoreLength: true),
     LengthRule(min: 8),
-  ], required: true);
+  ]);
 
   @override
   Widget build(BuildContext context) {

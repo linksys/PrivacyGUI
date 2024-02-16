@@ -5,7 +5,7 @@ import 'package:linksys_app/core/jnap/models/set_lan_settings.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/provider/local_network_settings/local_network_settings_state.dart';
 import 'package:linksys_app/utils.dart';
-import 'package:linksys_app/validator_rules/validators.dart';
+import 'package:linksys_app/validator_rules/input_validators.dart';
 
 final localNetworkSettingProvider =
     NotifierProvider<LocalNetworkSettingsNotifier, LocalNetworkSettingsState>(
@@ -123,20 +123,20 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   }
 
   void _updateValidators(LocalNetworkSettingsState currentSettings) {
-    _routerIpAddressValidator = IpAddressLocalTestSubnetMaskValidator(
+    _routerIpAddressValidator = IpAddressAsNewRouterIpValidator(
       currentSettings.ipAddress,
       currentSettings.subnetMask,
     );
-    _subnetMaskValidator = SubnetValidator(
+    _subnetMaskValidator = SubnetMaskValidator(
       min: currentSettings.minNetworkPrefixLength,
       max: currentSettings.maxNetworkPrefixLength,
     );
-    _startIpAddressValidator = IpAddressLocalValidator(
+    _startIpAddressValidator = IpAddressAsLocalIpValidator(
       currentSettings.ipAddress,
       currentSettings.subnetMask,
     );
     _maxUserAllowedValidator = MaxUsersValidator(currentSettings.maxUserLimit);
-    _clientLeaseTimeValidator = LeaseTimeValidator(
+    _clientLeaseTimeValidator = DhcpClientLeaseTimeValidator(
       currentSettings.minAllowDHCPLeaseMinutes,
       currentSettings.maxAllowDHCPLeaseMinutes,
     );
@@ -348,14 +348,14 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
 
 /*
   _updateValidator() {
-    _routerIPAddressValidator = IpAddressLocalTestSubnetMaskValidator(
+    _routerIPAddressValidator = IpAddressAsNewRouterIpValidator(
         state.ipAddress, state.subnetMask);
-    _ipAddressLocalValidator =
-        IpAddressLocalValidator(state.ipAddress, state.subnetMask);
+    _ipAddressAsLocalIpValidator =
+        IpAddressAsLocalIpValidator(state.ipAddress, state.subnetMask);
     _subnetValidator = SubnetValidator(
         min: state.minNetworkPrefixLength, max: state.maxNetworkPrefixLength);
     _maxUsersValidator = MaxUsersValidator(state.maxNumUsers);
-    _leaseTimeValidator = LeaseTimeValidator(
+    _leaseTimeValidator = DhcpClientLeaseTimeValidator(
         state.minAllowDHCPLeaseMinutes, state.maxAllowDHCPLeaseMinutes);
   }
 
@@ -397,7 +397,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   }
 
   setFirstIPAddress(String newFirstIPAddress) {
-    final valid = _ipAddressLocalValidator.validate(newFirstIPAddress);
+    final valid = _ipAddressAsLocalIpValidator.validate(newFirstIPAddress);
     if (valid) {
       state = state.copyWith(firstIPAddress: newFirstIPAddress);
       updateLastClientIPAddress();

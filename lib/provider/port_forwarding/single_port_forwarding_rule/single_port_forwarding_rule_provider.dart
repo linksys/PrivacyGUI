@@ -5,7 +5,7 @@ import 'package:linksys_app/core/jnap/models/single_port_forwarding_rule.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/provider/port_forwarding/single_port_forwarding_rule/single_port_forwarding_rule_state.dart';
 import 'package:linksys_app/utils.dart';
-import 'package:linksys_app/validator_rules/validators.dart';
+import 'package:linksys_app/validator_rules/input_validators.dart';
 
 final singlePortForwardingRuleProvider = NotifierProvider<
     SinglePortForwardingRuleNotifier,
@@ -43,7 +43,7 @@ class SinglePortForwardingRuleNotifier
     _ipAddress = lanSettings.ipAddress;
     _subnetMask =
         Utils.prefixLengthToSubnetMask(lanSettings.networkPrefixLength);
-    _localIpValidator = IpAddressLocalValidator(ipAddress, subnetMask);
+    _localIpValidator = IpAddressAsLocalIpValidator(ipAddress, subnetMask);
   }
 
   Future<bool> save(SinglePortForwardingRule rule) async {

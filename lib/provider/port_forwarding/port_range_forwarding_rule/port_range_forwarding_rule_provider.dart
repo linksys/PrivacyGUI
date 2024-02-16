@@ -3,10 +3,9 @@ import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/models/lan_settings.dart';
 import 'package:linksys_app/core/jnap/models/port_range_forwarding_rule.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/core/repository/router/extensions/firewall_extension.dart';
 import 'package:linksys_app/provider/port_forwarding/port_range_forwarding_rule/port_range_forwarding_rule_state.dart';
 import 'package:linksys_app/utils.dart';
-import 'package:linksys_app/validator_rules/validators.dart';
+import 'package:linksys_app/validator_rules/input_validators.dart';
 
 final portRangeForwardingRuleProvider = NotifierProvider<
     PortRangeForwardingRuleNotifier,
@@ -40,7 +39,7 @@ class PortRangeForwardingRuleNotifier
     _ipAddress = lanSettings.ipAddress;
     _subnetMask =
         Utils.prefixLengthToSubnetMask(lanSettings.networkPrefixLength);
-    _localIpValidator = IpAddressLocalValidator(ipAddress, subnetMask);
+    _localIpValidator = IpAddressAsLocalIpValidator(ipAddress, subnetMask);
   }
 
   Future<bool> save(PortRangeForwardingRule rule) async {

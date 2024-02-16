@@ -9,7 +9,7 @@ import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/validator_rules/rules.dart';
-import 'package:linksys_app/validator_rules/validators.dart';
+import 'package:linksys_app/validator_rules/input_validators.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -26,7 +26,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
   late final TextEditingController _textEditController;
   final InputValidator _validator = InputValidator([
     RequiredRule(),
-  ], required: true);
+  ]);
 
   bool _internetChecked = false;
   bool _internetConnected = false;
