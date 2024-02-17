@@ -105,9 +105,9 @@ String generateHTMLReport(Map<String, dynamic> result) {
 String generateHTMLSuite(Map<String, dynamic> suite) {
   return '''
   <table style="width:100%">
-    <tr class="clickable">
-      <th style="width:70%" class="wrapword">${suite['path']}</th>
-      <th style="width:30%" class="textCenter">${suite['total']}</th>
+    <tr class="clickable" style="background:beige;">
+      <th style="width:80%" class="wrapword">${suite['path']}</th>
+      <th style="width:20%" class="textCenter">${suite['total']}</th>
     </tr>
     ${(suite['groups'] as List<Map<String, dynamic>>).map((e) => generateHTMLGroup(e)).toList().join()}
   </table>
@@ -116,9 +116,9 @@ String generateHTMLSuite(Map<String, dynamic> suite) {
 
 String generateHTMLGroup(Map<String, dynamic> group) {
   return '''
-  <tr>
-    <td style="width:70%">${group['name'] == '' ? "All tests" : group['name']}</th>
-    <td class="textCenter" style="width:30%">${group['testCount']}</th>
+  <tr style="background: ghostwhite;">
+    <td style="width:80%;text-indent:10px">${group['name'] == '' ? "All tests" : group['name']}</th>
+    <td class="textCenter" style="width:20%">${group['testCount']}</th>
   </tr>
   ${(group['tests'] as List<Map<String, dynamic>>).where((element) => !RegExp(r'\(.*\)').hasMatch(element['name'].toString())).map((e) => generateHTMLTest(e)).toList().join()}
 ''';
@@ -127,8 +127,8 @@ String generateHTMLGroup(Map<String, dynamic> group) {
 String generateHTMLTest(Map<String, dynamic> test) {
   return '''
   <tr>
-    <td style="width:70%" >${test['name']}</th>
-    <td style="width:30%" class="textCenter ${test['result']}">${test['result']}</th>
+    <td style="width:80%;text-indent:20px" >${test['name']}</th>
+    <td style="width:20%" class="textCenter ${test['result']}">${test['result']}</th>
   </tr>
 ''';
 }
