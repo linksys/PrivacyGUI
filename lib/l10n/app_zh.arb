@@ -4,7 +4,13 @@
   "cloud_account_login_title": "請登入您的Linksys帳戶",
   "cloud_account_login_with_router_password": "使用路由器密碼登入",
   "email": "電子郵件",
+  "enter_password": "輸入密碼",
+  "forgot_password": "忘記密碼",
   "login": "登入",
   "next": "下一步",
-  "setup_new_router": "设置新的WiFi"
+  "password": "密碼",
+  "password_hint": "密碼",
+  "password_updated": "密碼",
+  "setup_new_router": "设置新的WiFi",
+  "text_continue": "繼續"
 }

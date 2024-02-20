@@ -4,6 +4,12 @@
   "cloud_account_login_title": "Linksys アカウントにログインしてください。",
   "cloud_account_login_with_router_password": "ルーターパスワードでログインしてください",
   "email": "電子メール",
+  "enter_password": "パスワードを入力してください",
+  "forgot_password": "パスワードを忘れました",
   "login": "ログイン",
-  "next": "次ぎ"
+  "next": "次ぎ",
+  "password": "パスワード",
+  "password_hint": "パスワード",
+  "password_updated": "パスワード",
+  "text_continue": "次へ"
 }

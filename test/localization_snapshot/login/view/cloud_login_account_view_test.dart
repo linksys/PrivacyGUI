@@ -6,14 +6,12 @@ import '../../../common/testable_widget.dart';
 import '../../test_localization.dart';
 
 void main() {
-  testLocalizations('test cloud login account view input something',
+  testLocalizations('Localization - Cloud Account View',
       (tester, locale) async {
     await tester.pumpWidgetBuilder(testableWidget(
       themeMode: ThemeMode.light,
       overrides: [],
       locale: locale,
-      theme: mockLightThemeData,
-      darkTheme: mockDarkThemeData,
       child: const CloudLoginAccountView(),
     ));
   });

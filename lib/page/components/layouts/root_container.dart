@@ -4,12 +4,13 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
 import 'package:linksys_app/page/components/layouts/idle_checker.dart';
 import 'package:linksys_app/provider/root/root_config.dart';
 import 'package:linksys_app/provider/root/root_provider.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/banner/banner_view.dart';
-import 'package:linksys_widgets/widgets/buttons/button.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 import 'package:linksys_app/constants/build_config.dart';
@@ -25,7 +26,9 @@ import 'package:linksys_app/provider/auth/auth_provider.dart';
 import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/utils.dart';
+import 'package:linksys_widgets/widgets/fab/expandable_fab.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AppRootContainer extends ConsumerStatefulWidget {
   final Widget? child;
@@ -42,6 +45,8 @@ class AppRootContainer extends ConsumerStatefulWidget {
 
 class _AppRootContainerState extends ConsumerState<AppRootContainer> {
   final _link = LayerLink();
+
+  bool _showLocaleList = false;
 
   @override
   Widget build(BuildContext context) {
@@ -79,12 +84,12 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
                           ),
                         ),
                       ),
-                CompositedTransformFollower(
-                  link: _link,
-                  targetAnchor: Alignment.bottomLeft,
-                  followerAnchor: Alignment.bottomLeft,
-                  child: _buildAppSettings(),
-                )
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: _buildFab(),
+                ),
+                // !TODO need to revisit
+                if (_showLocaleList) _localeList()
               ],
             ),
           ),
@@ -93,14 +98,25 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
     }));
   }
 
-  Widget _buildAppSettings() {
-    return AppIconButton(
-      icon: ref.read(appSettingsProvider).themeMode == ThemeMode.system
+  Widget _buildFab() {
+    return ExpandableFab(
+      icon: Icons.settings,
+      distance: 64,
+      children: [
+        _buildThemeSettings(),
+        _buildLocaleSetting(),
+      ],
+    );
+  }
+
+  Widget _buildThemeSettings() {
+    return ActionButton(
+      icon: Icon(ref.read(appSettingsProvider).themeMode == ThemeMode.system
           ? Icons.auto_awesome
           : ref.read(appSettingsProvider).themeMode == ThemeMode.dark
               ? Icons.dark_mode
-              : Icons.light_mode,
-      onTap: () {
+              : Icons.light_mode),
+      onPressed: () {
         final appSettings = ref.read(appSettingsProvider);
         final nextThemeMode = appSettings.themeMode == ThemeMode.system
             ? ThemeMode.dark
@@ -110,6 +126,50 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
         ref.read(appSettingsProvider.notifier).state =
             appSettings.copyWith(themeMode: nextThemeMode);
       },
+    );
+  }
+
+  Widget _buildLocaleSetting() {
+    return ActionButton(
+      icon: const Icon(Icons.translate),
+      onPressed: () async {
+        setState(() {
+          _showLocaleList = true;
+        });
+      },
+    );
+  }
+
+  // NEED TO revisit
+  Widget _localeList() {
+    const localeList = AppLocalizations.supportedLocales;
+    saveLocale(Locale locale) {
+      final appSettings = ref.read(appSettingsProvider);
+
+      ref.read(appSettingsProvider.notifier).state =
+          appSettings.copyWith(locale: locale);
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      child: Card(
+        child: ListView.builder(
+            itemCount: localeList.length,
+            itemBuilder: (context, index) {
+              final locale = localeList[index];
+              return ListTile(
+                hoverColor:
+                    Theme.of(context).colorScheme.background.withOpacity(.5),
+                title: AppText.labelLarge(locale.toString()),
+                onTap: () {
+                  saveLocale(locale);
+                  setState(() {
+                    _showLocaleList = false;
+                  });
+                },
+              );
+            }),
+      ),
     );
   }
 

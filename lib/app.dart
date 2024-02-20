@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
@@ -65,12 +66,15 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       theme: linksysLightThemeData,
       darkTheme: linksysDarkThemeData,
       themeMode: appSettings.themeMode,
+      locale: appSettings.locale ?? Locale(Intl.getCurrentLocale()),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      builder: (context, child) => CustomResponsive(
-        child: AppRootContainer(
-          routeConfig: _currentRoute?.config ?? const LinksysRouteConfig(),
-          child: child,
+      builder: (context, child) => Material(
+        child: CustomResponsive(
+          child: AppRootContainer(
+            routeConfig: _currentRoute?.config ?? const LinksysRouteConfig(),
+            child: child,
+          ),
         ),
       ),
       routeInformationProvider: router.routeInformationProvider,

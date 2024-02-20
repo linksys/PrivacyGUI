@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../localization_snapshot/test_localization.dart';
+
 // Assign a globalKey in order to retrieve current Build Context
 GlobalKey<NavigatorState> globalKey = GlobalKey();
 
@@ -18,8 +20,8 @@ Widget testableWidget({
       overrides: overrides,
       child: MaterialApp(
         navigatorKey: globalKey,
-        theme: theme ?? linksysLightThemeData,
-        darkTheme: darkTheme ?? linksysDarkThemeData,
+        theme: theme ?? mockLightThemeData,
+        darkTheme: darkTheme ?? mockDarkThemeData,
         locale: locale,
         themeMode: themeMode,
         localizationsDelegates: AppLocalizations.localizationsDelegates,

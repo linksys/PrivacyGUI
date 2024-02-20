@@ -2,16 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/cloud/model/cloud_account.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/provider/account/account_provider.dart';
 import 'package:linksys_app/provider/account/account_state.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
-import 'package:styled_text/styled_text.dart';
 
 class AccountView extends ConsumerStatefulWidget {
   const AccountView({super.key});
@@ -22,7 +20,6 @@ class AccountView extends ConsumerStatefulWidget {
 
 class _AccountViewState extends ConsumerState<AccountView> {
   late final TextEditingController _passwordController;
-  final String _displayPhoneNumber = '';
 
   @override
   void initState() {
@@ -51,23 +48,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
     return StyledAppPageView(
       scrollable: true,
       title: 'Account',
-      child: loginType == LoginType.remote ? _remote(state) : _local(state),
-    );
-  }
-
-  Widget _local(AccountState state) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const AppGap.regular(),
-        _localLoginInformationSection(context),
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: Spacing.regular),
-          child: Divider(),
-        ),
-        // _biometricsTile(state),
-        const Spacer(),
-      ],
+      child: loginType == LoginType.remote ? _remote(state) : const Center(),
     );
   }
 
@@ -165,57 +146,5 @@ class _AccountViewState extends ConsumerState<AccountView> {
         secured: true,
       ),
     ];
-  }
-
-  Widget _localLoginInformationSection(BuildContext context) {
-    return AppSection(
-      header: const AppText.titleLarge(
-        'No Linksys account',
-      ),
-      child: Column(
-        children: [
-          StyledText(
-            text:
-                'Unlock app features with a Linksys account  <link href="https://flutter.dev">Learn more</link>',
-            tags: {
-              'link': StyledTextActionTag(
-                  (String? text, Map<String?, String?> attrs) {
-                String? link = attrs['href'];
-                print('The "$link" link is tapped.');
-              }, style: const TextStyle(color: Colors.blue)),
-            },
-          ),
-          const AppGap.regular(),
-          const Row(children: [
-            AppGap.small(),
-            AppText.bodyLarge('\u2022'),
-            AppGap.small(),
-            AppText.bodyLarge('Benefit 1'),
-          ]),
-          const Row(children: [
-            AppGap.small(),
-            AppText.bodyLarge('\u2022'),
-            AppGap.small(),
-            AppText.bodyLarge('Benefit 2'),
-          ]),
-          const Row(children: [
-            AppGap.small(),
-            AppText.bodyLarge('\u2022'),
-            AppGap.small(),
-            AppText.bodyLarge('Benefit X'),
-          ]),
-          const AppGap.semiBig(),
-          AppFilledButton(
-            'Create an account',
-            onTap: () {
-              // ref.read(navigationsProvider.notifier).push(
-              //     CreateCloudAccountPath()
-              //       ..args = {'config': 'LOCALAUTHCREATEACCOUNT'});
-            },
-          ),
-          const AppGap.extraBig(),
-        ],
-      ),
-    );
   }
 }
