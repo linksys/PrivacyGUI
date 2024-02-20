@@ -416,7 +416,7 @@ void main() {
     test('formatTimeInterval: handles equal start and end times', () {
       const startTimeInSecond = 43200; // 12:00 PM
       const endTimeInSecond = 43200; // 12:00 PM
-      const expected = '12:00 pm - 12:00 pm ';
+      const expected = '12:00 pm - 12:00 pm';
 
       final formattedInterval = DateFormatUtils.formatTimeInterval(startTimeInSecond, endTimeInSecond);
       expect(formattedInterval, expected);
