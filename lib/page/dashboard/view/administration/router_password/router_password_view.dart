@@ -8,6 +8,7 @@ import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/provider/router_password/_router_password.dart';
 import 'package:linksys_app/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/input_field/validator_widget.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 

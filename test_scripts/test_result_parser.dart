@@ -40,9 +40,10 @@ void main(List<String> args) {
   }, onDone: () {
     // clean up
     final suites = testResult['suites'] as List<Map<String, dynamic>>;
+    suites.removeWhere((suite) => suite['groups'] == null);
     for (var suite in suites) {
-      final groups = suite['groups'] as List<Map<String, dynamic>>;
-      if (groups.length > 1) {
+      final groups = suite['groups'] as List<Map<String, dynamic>>?;
+      if (groups != null && groups.length > 1) {
         groups.removeWhere((element) => element['name'] == '');
       }
     }

@@ -11,6 +11,7 @@ import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/input_field/validator_widget.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 

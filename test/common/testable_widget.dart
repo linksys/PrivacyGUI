@@ -10,7 +10,35 @@ Widget testableWidget({
   required Widget child,
   List<Override> overrides = const [],
   ThemeMode themeMode = ThemeMode.system,
+  ThemeData? theme,
+  ThemeData? darkTheme,
   Locale? locale,
+}) =>
+    ProviderScope(
+      overrides: overrides,
+      child: MaterialApp(
+        navigatorKey: globalKey,
+        theme: theme ?? linksysLightThemeData,
+        darkTheme: darkTheme ?? linksysDarkThemeData,
+        locale: locale,
+        themeMode: themeMode,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: CustomResponsive(
+            child: child,
+          ),
+        ),
+      ),
+    );
+
+Widget testableWidgetWithFont({
+  required Widget child,
+  List<Override> overrides = const [],
+  ThemeMode themeMode = ThemeMode.system,
+  Locale? locale,
+  required String fontFamily,
 }) =>
     ProviderScope(
       overrides: overrides,
@@ -24,7 +52,8 @@ Widget testableWidget({
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: CustomResponsive(
-            child: child,
+            child: Material(
+                textStyle: TextStyle(fontFamily: fontFamily), child: child),
           ),
         ),
       ),

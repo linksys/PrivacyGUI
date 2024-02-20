@@ -9,7 +9,6 @@ import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_app/util/biometrics.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -83,20 +82,12 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   Widget _footer(BuildContext context) {
-    final goRouter = GoRouter.of(context);
-
     return Column(children: [
       AppFilledButton.fillWidth(
         getAppLocalizations(context).login,
         key: const Key('home_view_button_login'),
-        onTap: () async {
-          final list = await BiometricsHelp().getKeyList();
-          if (list.isNotEmpty) {
-            goRouter.goNamed(RouteNamed.cloudLoginPassword,
-                extra: {'username': list[0], 'enrolledBiometrics': true});
-          } else {
-            goRouter.pushNamed(RouteNamed.cloudLoginAccount);
-          }
+        onTap: () {
+          context.pushNamed(RouteNamed.cloudLoginAccount);
         },
       ),
       const AppGap.small(),
@@ -106,7 +97,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
           key: const Key('home_view_button_local_login'),
           onTap: () async {
             // Local version flow
-            goRouter.goNamed(RouteNamed.localLoginPassword);
+            context.pushNamed(RouteNamed.localLoginPassword);
           },
         ),
       Stack(

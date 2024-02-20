@@ -7,6 +7,7 @@ import 'package:linksys_app/util/error_code_handler.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/input_field/validator_widget.dart';
 
 class ChangeAuthModePasswordView extends ArgumentsConsumerStatefulView {
   const ChangeAuthModePasswordView({

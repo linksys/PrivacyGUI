@@ -1,0 +1,9 @@
+{
+  "@@locale": "fr",
+  "app_title": " Linksys Flutter",
+  "cloud_account_login_title": "Se connecter à votre compte Linksys.",
+  "cloud_account_login_with_router_password": "Connectez-vous avec le mot de passe du routeur.",
+  "email": "Email",
+  "login": "se connecter",
+  "next": "Prochain"
+}

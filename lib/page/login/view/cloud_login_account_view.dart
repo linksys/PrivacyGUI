@@ -28,7 +28,6 @@ class CloudLoginAccountView extends ArgumentsConsumerStatefulView {
 }
 
 class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
-  bool _enableBiometrics = false;
   String _errorCode = '';
 
   final _emailValidator = EmailValidator();
@@ -57,58 +56,6 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
         loading: () => AppFullScreenSpinner(
             text: getAppLocalizations(context).processing));
 
-    // return BlocConsumer<AuthBloc, AuthState>(
-    //     listenWhen: (previous, current) {
-    //       if (previous is AuthOnCloudLoginState &&
-    //           current is AuthOnCloudLoginState) {
-    //         return (previous.accountInfo.authenticationType ==
-    //                 AuthenticationType.none) &&
-    //             (current.accountInfo.authenticationType !=
-    //                 AuthenticationType.none);
-    //       } else {
-    //         return false;
-    //       }
-    //     },
-    //     listener: (context, state) async {
-    //       if (state is AuthOnCloudLoginState) {
-    //         // final accInfo = await context
-    //         //     .read<AuthBloc>()
-    //         //     .getMaskedCommunicationMethods(state.accountInfo.username);
-
-    //         if (state.accountInfo.authenticationType ==
-    //             AuthenticationType.password) {
-    //           logger.d('Go Password');
-    //           ref
-    //               .read(navigationsProvider.notifier)
-    //               .push(AuthCloudLoginWithPasswordPath()
-    //                 ..args = {
-    //                   // 'commMethods': accInfo.communicationMethods,
-    //                   // 'token': state.vToken,
-    //                   ...widget.args
-    //                 }
-    //                 ..next = widget.next);
-    //         } else if (state.accountInfo.authenticationType ==
-    //             AuthenticationType.passwordless) {
-    //           logger.d('Go Password-less');
-    //           ref
-    //               .read(navigationsProvider.notifier)
-    //               .push(AuthCloudLoginOtpPath()
-    //                 ..args = {
-    //                   'username': state.accountInfo.username,
-    //                   // 'commMethods': accInfo.communicationMethods,
-    //                   'token': state.vToken,
-    //                   ...widget.args
-    //                 }
-    //                 ..next = widget.next);
-    //         }
-    //       } else {
-    //         logger.d('ERROR: Wrong state type on LoginCloudAccountView');
-    //       }
-    //     },
-    //     builder: (context, state) => _isLoading
-    //         ? AppFullScreenSpinner(
-    //             text: getAppLocalizations(context).processing)
-    //         : _contentView(state));
   }
 
   Widget _contentView(AuthState state) {
@@ -150,7 +97,7 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
                 ),
               const Spacer(),
               AppFilledButton.fillWidth(
-                getAppLocalizations(context).login,
+                getAppLocalizations(context).next,
                 key: const Key('login_view_button_continue'),
                 onTap:
                     _accountController.text.isNotEmpty ? _prepareLogin : null,

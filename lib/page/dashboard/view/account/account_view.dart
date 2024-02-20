@@ -7,8 +7,6 @@ import 'package:linksys_app/provider/account/account_state.dart';
 import 'package:linksys_app/provider/auth/_auth.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_app/util/biometrics.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
@@ -107,9 +105,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
   }
 
   Widget _securitySection(AccountState state) {
-    final isBiometricEnrolled = ref.watch(authProvider
-            .select((value) => value.value?.isEnrolledBiometrics)) ??
-        false;
+
     return AppSection(
       header: const AppText.titleLarge(
         'Security',
@@ -123,44 +119,6 @@ class _AccountViewState extends ConsumerState<AccountView> {
               context.pushNamed(RouteNamed.twoStepVerification);
             },
           ),
-          FutureBuilder(
-              future: BiometricsHelp()
-                  .canAuthenticate()
-                  .then((value) => value == CanAuthenticateResponse.success),
-              builder: (context, canAuthenticate) {
-                return Offstage(
-                  offstage: !(canAuthenticate.data ?? false),
-                  child: AppPanelWithSwitch(
-                    value: isBiometricEnrolled,
-                    title: 'Biometrics',
-                    onChangedEvent: (value) async {
-                      if (value) {
-                        await BiometricsHelp()
-                            .saveBiometrics(state.username, state.password)
-                            .onError((error, stackTrace) => false)
-                            .then((success) {
-                          if (success) {
-                            ref
-                                .read(authProvider.notifier)
-                                .updateBiometrics(value);
-                          }
-                        });
-                      } else {
-                        await BiometricsHelp()
-                            .deleteBiometrics(state.username)
-                            .onError((error, stackTrace) => false)
-                            .then((success) {
-                          if (success) {
-                            ref
-                                .read(authProvider.notifier)
-                                .updateBiometrics(value);
-                          }
-                        });
-                      }
-                    },
-                  ),
-                );
-              }),
         ],
       ),
     );

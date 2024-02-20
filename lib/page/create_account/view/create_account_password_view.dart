@@ -6,6 +6,7 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/input_field/validator_widget.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class CreateAccountPasswordView extends ArgumentsConsumerStatefulView {

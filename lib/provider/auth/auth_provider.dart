@@ -21,7 +21,6 @@ import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/repository/router/extensions/core_extension.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/provider/auth/auth_exception.dart';
-import 'package:linksys_app/util/biometrics.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum LoginType { none, local, remote }
@@ -32,14 +31,12 @@ class AuthState extends Equatable {
   final String? localPassword;
   final SessionToken? sessionToken;
   final LoginType loginType;
-  final bool isEnrolledBiometrics;
 
   const AuthState({
     this.username,
     this.password,
     this.localPassword,
     this.sessionToken,
-    this.isEnrolledBiometrics = false,
     required this.loginType,
   });
 
@@ -59,7 +56,6 @@ class AuthState extends Equatable {
       password: json['password'],
       localPassword: json['localPassword'],
       sessionToken: sessionToken,
-      isEnrolledBiometrics: json['isEnrolledBiometrics'],
       loginType: loginType,
     );
   }
@@ -69,7 +65,6 @@ class AuthState extends Equatable {
     String? password,
     String? localPassword,
     SessionToken? sessionToken,
-    bool? isEnrolledBiometrics,
     LoginType? loginType,
   }) {
     return AuthState(
@@ -77,7 +72,6 @@ class AuthState extends Equatable {
       password: password ?? this.password,
       localPassword: localPassword ?? this.localPassword,
       sessionToken: sessionToken ?? this.sessionToken,
-      isEnrolledBiometrics: isEnrolledBiometrics ?? this.isEnrolledBiometrics,
       loginType: loginType ?? this.loginType,
     );
   }
@@ -207,38 +201,20 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     required String username,
     required String password,
     SessionToken? sessionToken,
-    bool isEnrolledBiometrics = false,
-    bool isBiometricsLogin = false,
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final cloud = ref.read(cloudRepositoryProvider);
       final newToken = sessionToken ??
           await cloud.login(username: username, password: password);
-      if (isEnrolledBiometrics) {
-        BiometricsHelp().deleteAllBiometrics();
-        isEnrolledBiometrics = await BiometricsHelp()
-            .saveBiometrics(username, password)
-            .onError((error, stackTrace) => false);
-      }
+      
       return await updateCredientials(
         sessionToken: newToken,
         username: username,
         password: password,
-      ).then((value) {
-        final hasBiometrics = isEnrolledBiometrics || isBiometricsLogin;
-        if (!hasBiometrics) {
-          BiometricsHelp().deleteAllBiometrics();
-        }
-        return value.copyWith(isEnrolledBiometrics: hasBiometrics);
-      });
+      );
     });
     logger.d('after cloud login: $state');
-  }
-
-  void updateBiometrics(bool isEnabled) {
-    state = AsyncValue.data((state.value ?? AuthState.empty())
-        .copyWith(isEnrolledBiometrics: isEnabled));
   }
 
   Future<AuthState> updateCredientials({

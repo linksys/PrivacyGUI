@@ -1,6 +1,9 @@
 {
   "@@locale": "zh_Hans",
   "app_title": "Linksys Flutter",
+  "cloud_account_login_title": "请登录您的 Linksys 帐户",
+  "cloud_account_login_with_router_password": "使用路由器密码登录",
   "login": "登入",
+  "next": "下一步",
   "setup_new_router": "设置新的WiFi"
 }

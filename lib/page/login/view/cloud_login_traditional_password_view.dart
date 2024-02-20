@@ -11,7 +11,6 @@ import 'package:linksys_app/core/cloud/model/error_response.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_app/util/biometrics.dart';
 import 'package:linksys_app/util/error_code_handler.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -34,31 +33,12 @@ class _LoginTraditionalPasswordViewState
   final TextEditingController passwordController = TextEditingController();
   String _errorCode = '';
   String _username = '';
-  bool _isEnrollBiometrics = false;
-  bool _isBiometricsLogin = false;
-  // late AuthBloc _authBloc;
-  // late OtpCubit _optCubit;
 
   @override
   initState() {
     super.initState();
-    // _authBloc = context.read<AuthBloc>();
-    // _optCubit = context.read<OtpCubit>();
-
     _username = widget.args['username'] ?? '';
-    _isBiometricsLogin = widget.args['enrolledBiometrics'] ?? false;
-    if (_isBiometricsLogin) {
-      BiometricsHelp().loadBiometrics(_username).then((value) {
-        passwordController.text = value;
-        ref.read(authProvider.notifier).cloudLogin(
-            username: _username,
-            password: value,
-            isBiometricsLogin: _isBiometricsLogin);
-      }).onError((error, stackTrace) {
-        // final err = error as PlatformException?;
-        context.pop();
-      });
-    }
+    
   }
 
   @override
@@ -86,8 +66,6 @@ class _LoginTraditionalPasswordViewState
               username: _username,
               password: passwordController.text,
               sessionToken: SessionToken.fromJson(next.$2),
-              isEnrolledBiometrics: _isEnrollBiometrics,
-              isBiometricsLogin: _isBiometricsLogin,
             );
       }
     });
@@ -145,11 +123,7 @@ class _LoginTraditionalPasswordViewState
               ),
             ),
             const AppGap.regular(),
-            FutureBuilder(
-              future: BiometricsHelp().canAuthenticate(),
-              builder: (context, snapshot) =>
-                  _checkBiometrics(context, snapshot),
-            ),
+            
             const Spacer(),
             AppFilledButton.fillWidth(
               getAppLocalizations(context).text_continue,
@@ -199,30 +173,7 @@ class _LoginTraditionalPasswordViewState
         .cloudLogin(
           username: _username,
           password: passwordController.text,
-          isEnrolledBiometrics: _isEnrollBiometrics,
         )
         .onError((error, stackTrace) {});
-  }
-
-  Widget _checkBiometrics(
-      BuildContext context, AsyncSnapshot<CanAuthenticateResponse> snapshot) {
-    if (kIsWeb) {
-      return const Center();
-    }
-    if (snapshot.hasError) {
-      return const Center();
-    } else {
-      return snapshot.data == CanAuthenticateResponse.success
-          ? AppCheckbox(
-              text: 'Enroll biometrics',
-              value: _isEnrollBiometrics,
-              onChanged: (value) {
-                setState(() {
-                  _isEnrollBiometrics = !_isEnrollBiometrics;
-                });
-              },
-            )
-          : const Center();
-    }
   }
 }

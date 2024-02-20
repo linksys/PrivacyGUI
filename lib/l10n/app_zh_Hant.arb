@@ -1,7 +1,11 @@
 {
   "@@locale": "zh_Hant",
   "app_title": "Linksys Flutter",
+  "cloud_account_login_title": "請登入您的Linksys帳戶",
+  "cloud_account_login_with_router_password": "使用路由器密碼登入",
+  "email": "電子郵件",
+  "internet": "網路",
   "login": "登入",
-  "setup_new_router": "設定新的WiFi",
-  "internet": "網路"
+  "next": "下一步",
+  "setup_new_router": "設定新的WiFi"
 }
