@@ -10,8 +10,7 @@ void main() {
   setUpAll(() async {});
   tearDownAll(() async {});
 
-  testLocalizations('Localization - Cloud Password View',
-      (tester, locale) async {
+  testLocalizations('Cloud Password View', (tester, locale) async {
     await tester.pumpWidgetBuilder(testableWidget(
       themeMode: ThemeMode.light,
       overrides: [],

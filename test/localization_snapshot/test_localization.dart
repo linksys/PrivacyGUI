@@ -13,14 +13,13 @@ final mockLightThemeData =
 final mockDarkThemeData =
     linksysDarkThemeData.copyWith(textTheme: mockLinksysLightTextTheme);
 
-Future<void> testLocalizations(
+void testLocalizations(
     String name, FutureOr<void> Function(WidgetTester, Locale) testMain) async {
-  return testGoldens(name, (tester) async {
+  testGoldens(name, (tester) async {
     await loadTestFonts();
     for (final locale in AppLocalizations.supportedLocales) {
       await testMain(tester, locale);
 
-      
       await screenMatchesGolden(
         tester,
         '$name-${locale.languageCode}',

@@ -5,6 +5,7 @@
   "cloud_account_login_with_router_password": "使用路由器密碼登入",
   "email": "電子郵件",
   "enter_password": "輸入密碼",
+  "error_enter_a_valid_email_format": "請使用有效的電子郵件格式。",
   "forgot_password": "忘記密碼",
   "internet": "網路",
   "login": "登入",

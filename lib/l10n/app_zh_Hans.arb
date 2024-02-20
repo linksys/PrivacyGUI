@@ -4,6 +4,7 @@
   "cloud_account_login_title": "请登录您的 Linksys 帐户",
   "cloud_account_login_with_router_password": "使用路由器密码登录",
   "enter_password": "输入密码",
+  "error_enter_a_valid_email_format": "请使用有效的电子邮件格式。",
   "forgot_password": "忘记密码",
   "login": "登入",
   "next": "下一步",

@@ -8,7 +8,7 @@ import '../../../common/testable_widget.dart';
 import '../../test_localization.dart';
 
 void main() {
-  group('Localization - Home View', () {
+  group('Home View', () {
     testLocalizations(
       'snapshot - home view',
       (tester, locale) async {

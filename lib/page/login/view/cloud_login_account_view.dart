@@ -11,7 +11,6 @@ import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/error_code_handler.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/validator_rules/_validator_rules.dart';
-import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -84,17 +83,6 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
                   _prepareLogin();
                 },
               ),
-              if (_errorCode == "RESOURCE_NOT_FOUND")
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: Spacing.semiSmall),
-                  child: AppTextButton(
-                      key: const Key(
-                          'login_view_button_email_with_another_linksys_app'),
-                      getAppLocalizations(context)
-                          .cloud_account_login_email_with_linksys_app,
-                      onTap: () {}),
-                ),
               const Spacer(),
               AppFilledButton.fillWidth(
                 getAppLocalizations(context).next,
@@ -122,12 +110,10 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
   }
 
   _prepareLogin() async {
-    logger.d('prepare login');
     final isValid = _emailValidator.validate(_accountController.text);
     setState(() {
       if (!isValid) {
         _errorCode = errorEmptyEmail;
-        logger.d('invalid input account');
       }
     });
     if (_errorCode.isEmpty) {

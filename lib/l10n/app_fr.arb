@@ -5,6 +5,7 @@
   "cloud_account_login_with_router_password": "Connectez-vous avec le mot de passe du routeur.",
   "email": "Email",
   "enter_password": "Entrez votre mot de passe",
+  "error_enter_a_valid_email_format": "Veuillez saisir une adresse e-mail au format valide.",
   "forgot_password": "J'ai oublié mon mot de passe.",
   "login": "se connecter",
   "next": "Prochain",
