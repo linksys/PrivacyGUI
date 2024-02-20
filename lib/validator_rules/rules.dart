@@ -116,7 +116,7 @@ class SubnetMaskRule extends ValidationRule {
 
   @override
   bool validate(String input) {
-    return Utils.isValidSubnetMask(
+    return NetworkUtils.isValidSubnetMask(
       input,
       minNetworkPrefixLength: minNetworkPrefixLength,
       maxNetworkPrefixLength: maxNetworkPrefixLength,
@@ -149,9 +149,9 @@ class HostValidForGivenRouterIPAddressAndSubnetMaskRule extends ValidationRule {
 
   @override
   bool validate(String input) {
-    final hostIPAddressNum = Utils.ipToNum(input);
-    final routerIPAddressNum = Utils.ipToNum(routerIPAddress);
-    final subnetMaskNum = Utils.ipToNum(subnetMask);
+    final hostIPAddressNum = NetworkUtils.ipToNum(input);
+    final routerIPAddressNum = NetworkUtils.ipToNum(routerIPAddress);
+    final subnetMaskNum = NetworkUtils.ipToNum(subnetMask);
     final hostSubnet = (hostIPAddressNum & subnetMaskNum) >>> 0;
     final routerSubnet = (routerIPAddressNum & subnetMaskNum) >>> 0;
 

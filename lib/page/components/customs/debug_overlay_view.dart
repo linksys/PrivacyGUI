@@ -35,8 +35,8 @@ class _OverlayInfoViewState extends ConsumerState<OverlayInfoView>
     return Container(
       padding: const EdgeInsets.all(12),
       width: ResponsiveLayout.isMobile(context)
-          ? Utils.getScreenWidth(context) / 2
-          : Utils.getScreenWidth(context) / 3,
+          ? MediaQueryUtils.getScreenWidth(context) / 2
+          : MediaQueryUtils.getScreenWidth(context) / 3,
       height: 130,
       decoration: const BoxDecoration(
         color: Color(0x33000000),

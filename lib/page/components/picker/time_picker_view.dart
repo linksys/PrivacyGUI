@@ -106,7 +106,7 @@ class _TimePickerViewState extends ConsumerState<TimePickerView> {
                 alignment: Alignment.centerLeft,
                 padding: const EdgeInsets.only(left: 0)),
             child: AppText.titleLarge(
-              Utils.formatTimeAmPm(_current.inSeconds),
+              DateFormatUtils.formatTimeAmPm(_current.inSeconds),
             ),
           ),
           const AppGap.small(),

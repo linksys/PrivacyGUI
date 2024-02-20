@@ -74,7 +74,7 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
                           ignoring: true,
                           child: Padding(
                             padding: EdgeInsets.only(
-                                top: Utils.getTopSafeAreaPadding(context)),
+                                top: MediaQueryUtils.getTopSafeAreaPadding(context)),
                             child: const OverlayInfoView(),
                           ),
                         ),

@@ -12,10 +12,80 @@ import 'package:linksys_app/util/uuid.dart';
 import 'core/utils/logger.dart';
 
 class Utils {
-  static const String NoSpeedCalculationText = "-----";
-  static const bool ReleaseMode =
-      bool.fromEnvironment('dart.vm.product', defaultValue: false);
+  static String maskJsonValue(String raw, List<String> keys) {
+    final pattern = '"?(${keys.join('|')})"?\\s*:\\s*"?([\\s\\S]*?)"?(?=,|})';
+    RegExp regex = RegExp(pattern, multiLine: true);
+    String result = raw;
 
+    regex.allMatches(raw).forEach((element) {
+      for (final key in keys) {
+        if (element.groupCount == 2 &&
+            element.group(1)!.toLowerCase() == key.toLowerCase()) {
+          final target = element.group(2)!;
+          result = result.replaceFirst(target, '************');
+        }
+      }
+    });
+    return result;
+  }
+
+  static String maskSensitiveJsonValues(String raw) {
+    final keys = [
+      'username',
+      'password',
+      'privateKey',
+      'adminPassword',
+      'passphrase',
+    ];
+    return maskJsonValue(raw, keys);
+  }
+
+  static String replaceHttpScheme(String raw) {
+    const pattern =
+        r'(https?:\/\/)?((www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b)([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)';
+    RegExp regex = RegExp(pattern, multiLine: true);
+    String result = raw;
+    int idx = 0;
+    regex.allMatches(result).forEach((element) {
+      element.groups([1, 2, 4]).whereNotNull().forEach((group) {
+            int start = raw.indexOf(group, idx);
+            int end = start + group.length;
+            final replaced = group.replaceAll(':', '-').replaceAll('.', '-');
+            result = result.replaceRange(start, end, replaced);
+            idx = end;
+          });
+    });
+    return result;
+  }
+
+  static String stringBase64Encode(String value) {
+    return utf8.fuse(base64).encode(value);
+  }
+
+  static String stringBase64Decode(String base64String) {
+    return utf8.fuse(base64).decode(base64String);
+  }
+
+  // String converter
+  static String fullStringEncoded(String value) {
+    final utf8Encoded =
+        String.fromCharCodes(Uint8List.fromList(utf8.encode(value)));
+    final b64 = base64Encode(utf8Encoded.codeUnits);
+    final uriFull = Uri.encodeQueryComponent(b64);
+    logger.d('u: $utf8Encoded, b: $b64, i: $uriFull');
+    return uriFull;
+  }
+
+  static String fullStringDecoded(String encoded) {
+    final uriBack = Uri.decodeComponent(encoded);
+    final b64Back = String.fromCharCodes(base64Decode(uriBack));
+    final utf8Back = utf8.decode(b64Back.codeUnits);
+    logger.d('i: $uriBack, b: $b64Back, u: $utf8Back');
+    return utf8Back;
+  }
+}
+
+extension DateFormatUtils on Utils {
   static String formatDuration(Duration d) {
     var seconds = d.inSeconds;
     final days = seconds ~/ Duration.secondsPerDay;
@@ -50,13 +120,14 @@ class Utils {
 
   static String formatTimeInterval(int startTimeInSecond, int endTimeInSecond) {
     bool isNextDay = startTimeInSecond > endTimeInSecond;
-    return '${formatTimeAmPm(startTimeInSecond)} - ${formatTimeAmPm(endTimeInSecond)} ${isNextDay ? 'next day' : ''}';
+    return '${formatTimeAmPm(startTimeInSecond)} - ${formatTimeAmPm(endTimeInSecond)}${isNextDay ? ' next day' : ''}';
   }
 
   static String formatTimeAmPm(int timeInSecond) {
     final Duration timeAmount = Duration(seconds: timeInSecond);
-    final String h =
-        timeAmount.inHours.remainder(12).toString().padLeft(2, '0');
+    final String h = timeAmount.inHours == 12
+        ? timeAmount.inHours.toString()
+        : timeAmount.inHours.remainder(12).toString().padLeft(2, '0');
     final String m =
         timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
     final String ampm = timeAmount.inHours.remainder(24) >= 12 ? 'pm' : 'am';
@@ -65,13 +136,15 @@ class Utils {
 
   static String formatTimeHM(int timeInSecond) {
     final Duration timeAmount = Duration(seconds: timeInSecond);
-    final String h =
-        timeAmount.inHours.remainder(24).toString().padLeft(2, '0');
+    // final String h =
+    //     timeAmount.inHours.remainder(24).toString().padLeft(2, '0');
+    final String h = timeAmount.inHours.toString().padLeft(2, '0');
     final String m =
         timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
     return '$h hr,$m min';
   }
 
+// TODO: Unit test
   static Map<String, bool> weeklyTransform(
       BuildContext context, List<bool> weeklyBool) {
     final weeklyStr = [
@@ -88,6 +161,7 @@ class Utils {
         .map((key, value) => MapEntry(weeklyStr[key], value));
   }
 
+// TODO: Unit test
   static List<String> toWeeklyStringList(
       BuildContext context, List<bool> weeklyBool) {
     final weeklyStr = [
@@ -106,15 +180,10 @@ class Utils {
         .where((element) => element.value)
         .map((e) => e.key));
   }
+}
 
-  static String formatBytes(int bytes, {int decimals = 0}) {
-    if (bytes <= 0) return "0 B";
-    const suffixes = ["B", "Kb", "Mb", "Gb", "Tb", "Pb"];
-    var i = (log(bytes) / log(1024)).floor();
-    var number = (bytes / pow(1024, i));
-    return '${(number).toStringAsFixed(number.truncateToDouble() == number ? 0 : decimals)} ${suffixes[i]}';
-  }
-
+// TODO: Unit test
+extension MediaQueryUtils on Utils {
   static Size getScreenSize(BuildContext context) {
     return MediaQuery.of(context).size;
   }
@@ -204,59 +273,15 @@ class Utils {
 
     return localeNames.length > 1 ? localeNames.last : Platform.localeName;
   }
+}
 
-  static String maskJsonValue(String raw, List<String> keys) {
-    final pattern = '"?(${keys.join('|')})"?\\s*:\\s*"?([\\s\\S]*?)"?(?=,|})';
-    RegExp regex = RegExp(pattern, multiLine: true);
-    String result = raw;
-
-    regex.allMatches(raw).forEach((element) {
-      for (final key in keys) {
-        if (element.groupCount == 2 &&
-            element.group(1)!.toLowerCase() == key.toLowerCase()) {
-          final target = element.group(2)!;
-          result = result.replaceFirst(target, '************');
-        }
-      }
-    });
-    return result;
-  }
-
-  static String maskSensitiveJsonValues(String raw) {
-    final keys = [
-      'username',
-      'password',
-      'privateKey',
-      'adminPassword',
-      'passphrase',
-    ];
-    return maskJsonValue(raw, keys);
-  }
-
-  static String replaceHttpScheme(String raw) {
-    const pattern =
-        r'(https?:\/\/)((www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b)([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)';
-    RegExp regex = RegExp(pattern, multiLine: true);
-    String result = raw;
-    int idx = 0;
-    regex.allMatches(result).forEach((element) {
-      element.groups([1, 2, 4]).whereNotNull().forEach((group) {
-            int start = raw.indexOf(group, idx);
-            int end = start + group.length;
-            final replaced = group.replaceAll(':', '-').replaceAll('.', '-');
-            result = result.replaceRange(start, end, replaced);
-            idx = end;
-          });
-    });
-    return result;
-  }
-
-  static String stringBase64Encode(String value) {
-    return utf8.fuse(base64).encode(value);
-  }
-
-  static String stringBase64Decode(String base64String) {
-    return utf8.fuse(base64).decode(base64String);
+extension NetworkUtils on Utils {
+  static String formatBytes(int bytes, {int decimals = 0}) {
+    if (bytes <= 0) return "0 B";
+    const suffixes = ["B", "Kb", "Mb", "Gb", "Tb", "Pb"];
+    var i = (log(bytes) / log(1024)).floor();
+    var number = (bytes / pow(1024, i));
+    return '${(number).toStringAsFixed(number.truncateToDouble() == number ? 0 : decimals)} ${suffixes[i]}';
   }
 
   static String generateMqttClintId() {
@@ -264,9 +289,24 @@ class Utils {
     return '$platform-${uuid.v1()}';
   }
 
+  static bool isValidIpAddress(String ipAddress) {
+    final octets = ipAddress.split('.');
+    if (octets.length != 4) return false;
+    final octet1 = int.tryParse(octets[0]);
+    if (octet1 == null || octet1 > 255 || octet1 < 0) return false;
+    final octet2 = int.tryParse(octets[1]);
+    if (octet2 == null || octet2 > 255 || octet2 < 0) return false;
+    final octet3 = int.tryParse(octets[2]);
+    if (octet3 == null || octet3 > 255 || octet3 < 0) return false;
+    final octet4 = int.tryParse(octets[3]);
+    if (octet4 == null || octet4 > 255 || octet4 < 0) return false;
+
+    return true;
+  }
+
   static int ipToNum(String ipAddress) {
     final octets = ipAddress.split('.');
-    if (octets.length < 4) {
+    if (isValidIpAddress(ipAddress) == false) {
       return 0;
     }
     return (((((int.parse(octets[0]) * 256) + int.parse(octets[1])) * 256) +
@@ -276,6 +316,7 @@ class Utils {
   }
 
   static String numToIp(int num) {
+    if (num < 0 || num > 4294967295) return '0.0.0.0';
     var octets = '${num % 256}';
     for (var _ in [1, 2, 3]) {
       num = (num / 256).floor();
@@ -285,13 +326,21 @@ class Utils {
   }
 
   static bool ipInRange(ipAddress, ipAddressMin, ipAddressMax) {
+    if (isValidIpAddress(ipAddress) == false ||
+        isValidIpAddress(ipAddressMin) == false ||
+        isValidIpAddress(ipAddressMax) == false) {
+      throw ArgumentError();
+    }
+    if (ipToNum(ipAddressMin) > ipToNum(ipAddressMax)) {
+      throw ArgumentError('Range error');
+    }
     return ipToNum(ipAddress) >= ipToNum(ipAddressMin) &&
         ipToNum(ipAddress) <= ipToNum(ipAddressMax);
   }
 
   static bool isValidSubnetMask(String subnetMask,
       {int minNetworkPrefixLength = 8, int maxNetworkPrefixLength = 30}) {
-    if (subnetMask.isEmpty) {
+    if (isValidIpAddress(subnetMask) == false) {
       return false;
     }
 
@@ -325,6 +374,9 @@ class Utils {
   }
 
   static String getIpPrefix(String ipAddress, String subnetMask) {
+    if (!isValidIpAddress(ipAddress) || !isValidSubnetMask(subnetMask)) {
+      throw ArgumentError();
+    }
     final subnetMaskToken = subnetMask.split('.');
     return ipAddress
         .split('.')
@@ -463,23 +515,5 @@ class Utils {
     }
 
     return maxUserLimit - startingIPAddress - 1;
-  }
-
-  // String converter
-  static String fullStringEncoded(String value) {
-    final utf8Encoded =
-        String.fromCharCodes(Uint8List.fromList(utf8.encode(value)));
-    final b64 = base64Encode(utf8Encoded.codeUnits);
-    final uriFull = Uri.encodeQueryComponent(b64);
-    logger.d('u: $utf8Encoded, b: $b64, i: $uriFull');
-    return uriFull;
-  }
-
-  static String fullStringDecoded(String encoded) {
-    final uriBack = Uri.decodeComponent(encoded);
-    final b64Back = String.fromCharCodes(base64Decode(uriBack));
-    final utf8Back = utf8.decode(b64Back.codeUnits);
-    logger.d('i: $uriBack, b: $b64Back, u: $utf8Back');
-    return utf8Back;
   }
 }

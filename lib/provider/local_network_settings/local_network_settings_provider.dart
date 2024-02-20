@@ -33,15 +33,15 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         )
         .then((value) => RouterLANSettings.fromJson(value.output));
 
-    final subnetMaskString = Utils.prefixLengthToSubnetMask(
+    final subnetMaskString = NetworkUtils.prefixLengthToSubnetMask(
       lanSettings.networkPrefixLength,
     );
-    final maxUserAllowed = Utils.getMaxUserAllowedInDHCPRange(
+    final maxUserAllowed = NetworkUtils.getMaxUserAllowedInDHCPRange(
       lanSettings.ipAddress,
       lanSettings.dhcpSettings.firstClientIPAddress,
       lanSettings.dhcpSettings.lastClientIPAddress,
     );
-    final maxUserLimit = Utils.getMaxUserLimit(
+    final maxUserLimit = NetworkUtils.getMaxUserLimit(
       lanSettings.ipAddress,
       lanSettings.dhcpSettings.firstClientIPAddress,
       subnetMaskString,
@@ -76,7 +76,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   Future<void> saveSettings(LocalNetworkSettingsState settings) {
     final newSettings = SetRouterLANSettings(
       ipAddress: settings.ipAddress,
-      networkPrefixLength: Utils.subnetMaskToPrefixLength(settings.subnetMask),
+      networkPrefixLength: NetworkUtils.subnetMaskToPrefixLength(settings.subnetMask),
       hostName: settings.hostName,
       isDHCPEnabled: settings.isDHCPEnabled,
       dhcpSettings: DHCPSettings(
@@ -155,7 +155,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       final newFirstIp =
           '${routerIpSplit[0]}.${routerIpSplit[1]}.${firstIpSplit[2]}.${firstIpSplit[3]}';
       // Calculate the new last Ip
-      final newLastIp = Utils.getEndingIpAddress(
+      final newLastIp = NetworkUtils.getEndingIpAddress(
         newRouterIpAddress,
         newFirstIp,
         settings.maxUserAllowed,
@@ -178,7 +178,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     final isMaskValid = _subnetMaskValidator.validate(subnetMask);
     if (isMaskValid) {
       // If the new subnet mask is valid, update the max user limit
-      final maxUserLimit = Utils.getMaxUserLimit(
+      final maxUserLimit = NetworkUtils.getMaxUserLimit(
         settings.ipAddress,
         settings.firstIPAddress,
         subnetMask,
@@ -198,7 +198,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         // If it's not (TOO BIG), directly reset it with the current max limit
         final newMaxUserAllowed = maxUserLimit;
         // Also, update the ending of Ip range
-        final newLastIpAddress = Utils.getEndingIpAddress(
+        final newLastIpAddress = NetworkUtils.getEndingIpAddress(
           settings.ipAddress,
           settings.firstIPAddress,
           newMaxUserAllowed,
@@ -221,7 +221,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     if (isValid) {
       final maxUserAllowedInt = int.parse(maxUserAllowed);
       // If it is valid, update the new last Ip
-      final lastIpAddress = Utils.getEndingIpAddress(
+      final lastIpAddress = NetworkUtils.getEndingIpAddress(
         settings.ipAddress,
         settings.firstIPAddress,
         maxUserAllowedInt,
@@ -241,7 +241,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     final isValid = _startIpAddressValidator.validate(startIpAddress);
     if (isValid) {
       // If it is valid, update the max user limit
-      final maxUserLimit = Utils.getMaxUserLimit(
+      final maxUserLimit = NetworkUtils.getMaxUserLimit(
         settings.ipAddress,
         startIpAddress,
         settings.subnetMask,
@@ -263,7 +263,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         );
       }
       // Lastly, update the new last Ip
-      final lastIpAddress = Utils.getEndingIpAddress(
+      final lastIpAddress = NetworkUtils.getEndingIpAddress(
         settings.ipAddress,
         startIpAddress,
         settings.maxUserAllowed,

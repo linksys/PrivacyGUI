@@ -126,12 +126,12 @@ List<String> _getAndroidDeviceInfo(AndroidDeviceInfo info) {
 String getScreenInfo(BuildContext context) {
   final List data = [
     '---------- Screen info ----------',
-    'Screen size: ${Utils.getScreenSize(context)}',
-    'Physical Screen size: ${Utils.getScreenSize(context)}',
-    'Screen pixel ratio: ${Utils.getScreenRatio(context)}',
-    'Font scale: ${Utils.getTextScaleFactor(context)}',
-    'Top padding of safe area: ${Utils.getTopSafeAreaPadding(context)}',
-    'Bottom padding of safe area: ${Utils.getBottomSafeAreaPadding(context)}',
+    'Screen size: ${MediaQueryUtils.getScreenSize(context)}',
+    'Physical Screen size: ${MediaQueryUtils.getScreenSize(context)}',
+    'Screen pixel ratio: ${MediaQueryUtils.getScreenRatio(context)}',
+    'Font scale: ${MediaQueryUtils.getTextScaleFactor(context)}',
+    'Top padding of safe area: ${MediaQueryUtils.getTopSafeAreaPadding(context)}',
+    'Bottom padding of safe area: ${MediaQueryUtils.getBottomSafeAreaPadding(context)}',
     '---------------------------------',
   ];
   return data.join('\n');

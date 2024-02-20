@@ -61,7 +61,7 @@ class _AddRuleContentViewState
     } else {
       _notifier.goAdd(_rules).then((_) {
         final prefixIp =
-            Utils.getIpPrefix(_notifier.ipAddress, _notifier.subnetMask);
+            NetworkUtils.getIpPrefix(_notifier.ipAddress, _notifier.subnetMask);
         _deviceIpAddressController.text = prefixIp;
       });
     }

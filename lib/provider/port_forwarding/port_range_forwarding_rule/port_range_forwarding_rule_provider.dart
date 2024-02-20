@@ -38,7 +38,7 @@ class PortRangeForwardingRuleNotifier
         .then((value) => RouterLANSettings.fromJson(value.output));
     _ipAddress = lanSettings.ipAddress;
     _subnetMask =
-        Utils.prefixLengthToSubnetMask(lanSettings.networkPrefixLength);
+        NetworkUtils.prefixLengthToSubnetMask(lanSettings.networkPrefixLength);
     _localIpValidator = IpAddressAsLocalIpValidator(ipAddress, subnetMask);
   }
 
