@@ -118,10 +118,10 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
     findTests(testID, testResult, result);
     if (json['result'] != null) {
       if (json['result'] == 'success') {
-        final successCount = testResult['counting']['success'];
+        final successCount = testResult['counting']['success'] ?? 0;
         testResult['counting']['success'] = successCount + 1;
       } else {
-        final failCount = testResult['counting']['failed'];
+        final failCount = testResult['counting']['failed'] ?? 0;
         testResult['counting']['fail'] = failCount + 1;
       }
       for (var element in result) {

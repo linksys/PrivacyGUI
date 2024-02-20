@@ -47,7 +47,7 @@ void main() {
     // log in with router password
     expect(
         find.text(getAppLocalizations(currentContext)
-            .cloud_account_login_with_router_password),
+            .next),
         findsOneWidget);
   });
   testWidgets('test cloud login account view input something', (tester) async {
@@ -59,7 +59,7 @@ void main() {
     final spinnerView = find.byType(AppFullScreenSpinner);
     // try to get specific widget via localized text
     final continueButton =
-        find.text(getAppLocalizations(globalKey.currentContext!).login);
+        find.text(getAppLocalizations(globalKey.currentContext!).next);
 
     await tester.pump();
 
@@ -93,7 +93,7 @@ void main() {
     final spinnerView = find.byType(AppFullScreenSpinner);
     // try to get specific widget via localized text
     final continueButton =
-        find.text(getAppLocalizations(globalKey.currentContext!).login);
+        find.text(getAppLocalizations(globalKey.currentContext!).next);
 
     await tester.pump();
 
