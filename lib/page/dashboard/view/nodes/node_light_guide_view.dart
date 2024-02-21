@@ -183,7 +183,7 @@ class NodeLightGuideView extends ConsumerWidget {
   }
 
   Widget _buildLightInfo({
-    required PictureProvider led,
+    required SvgLoader led,
     required String title,
     required String desc,
   }) {
