@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/provider/connectivity/_connectivity.dart';
-import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
+import 'package:linksys_app/providers/connectivity/_connectivity.dart';
+import 'package:linksys_app/providers/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/util/permission.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';

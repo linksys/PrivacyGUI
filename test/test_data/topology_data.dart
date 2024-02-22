@@ -1,5 +1,4 @@
-import 'package:linksys_app/page/dashboard/view/topology/topology_model.dart';
-import 'package:linksys_app/provider/devices/topology_state.dart';
+import 'package:linksys_app/page/topology/_topology.dart';
 import 'package:linksys_widgets/widgets/topology/tree_node.dart';
 
 final _onlineRoot = RouterTreeNode(

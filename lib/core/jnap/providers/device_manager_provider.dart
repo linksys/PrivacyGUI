@@ -14,7 +14,6 @@ import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/devices.dart';
-import 'package:linksys_app/provider/devices/device_detail_id_provider.dart';
 
 final deviceManagerProvider =
     NotifierProvider<DeviceManagerNotifier, DeviceManagerState>(
@@ -289,11 +288,10 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
 
   // Update the name(location) of nodes and external devices
   Future<void> updateDeviceName({
+    required String targetId,
     required String newName,
     required bool isLocation,
   }) async {
-    // Get the current target device Id
-    final targetId = ref.read(deviceDetailIdProvider);
     final routerRepository = ref.read(routerRepositoryProvider);
     List<RawDeviceProperty> properties = [
       if (isLocation)

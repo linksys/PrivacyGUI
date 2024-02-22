@@ -13,7 +13,7 @@ import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/firebase/analytics.dart';
 import 'package:linksys_app/firebase/notification_helper.dart';
 import 'package:linksys_app/app.dart';
-import 'package:linksys_app/provider/logger_observer.dart';
+import 'package:linksys_app/providers/logger_observer.dart';
 
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/provider/auth/auth_provider.dart';
+import 'package:linksys_app/providers/auth/auth_provider.dart';
 import 'package:linksys_app/core/cloud/model/region_code.dart';
 import 'package:linksys_app/page/components/layouts/basic_header.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';

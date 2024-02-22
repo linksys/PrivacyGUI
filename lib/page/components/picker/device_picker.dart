@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_app/provider/devices/device_list_state.dart';
+import 'package:linksys_app/page/devices/_devices.dart';
 import 'package:linksys_app/util/extensions.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';

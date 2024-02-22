@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/provider/connectivity/connectivity_provider.dart';
+import 'package:linksys_app/providers/connectivity/connectivity_provider.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_app/util/permission.dart';
 import 'package:linksys_widgets/widgets/base/gap.dart';

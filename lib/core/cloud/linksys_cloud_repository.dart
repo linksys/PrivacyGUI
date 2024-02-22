@@ -17,7 +17,7 @@ import 'package:linksys_app/core/cloud/model/cloud_account.dart';
 import 'package:linksys_app/core/cloud/model/cloud_communication_method.dart';
 import 'package:linksys_app/core/cloud/model/cloud_network_model.dart';
 import 'package:linksys_app/core/cloud/model/cloud_session_model.dart';
-import 'package:linksys_app/provider/connectivity/_connectivity.dart';
+import 'package:linksys_app/providers/connectivity/_connectivity.dart';
 
 final cloudRepositoryProvider = Provider((ref) => LinksysCloudRepository(
       httpClient: LinksysHttpClient(getHost: () {
