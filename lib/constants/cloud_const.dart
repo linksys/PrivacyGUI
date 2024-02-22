@@ -66,6 +66,7 @@ const kDeviceService = '/cloud/device-service';
 const kSmartDeviceService = '/cloud/smart-device-service';
 const kEventService = '/cloud/event-service';
 const kAssetService = '/cloud/asset-service';
+const kStorageService = '/cloud/storage-service';
 
 /// Cloud API Endpoint
 // Authorization service
@@ -89,6 +90,8 @@ const kUserGetAccount = '$kUserService/rest/accounts/self';
 // Device service
 const kDeviceNetworksEndpoint = '$kDeviceService/rest/networks/$kVarNetworkId';
 const kAccountNetworksEndpoint = '$kDeviceService/rest/accounts/self/networks';
+const kDeviceRegistrationsEndpoint =
+    '$kDeviceService/rest/devices/registrations';
 // Smart device service
 const kSmartDeviceRegisterEndpoint = '$kSmartDeviceService/rest/smartdevices';
 const kSmartDeviceVerificationEndpoint =
@@ -100,6 +103,9 @@ const kEventNetworkActionCreate =
     '$kEventService/rest/eventsubscriptions/$kVarEventSubscriptionId/actions';
 // Asset service
 const kFetchLinkup = '$kAssetService/rest/assets/linkup';
+// Storage service
+const kDeviceUpload =
+    '$kStorageService/rest/deviceuploads?uploadType=MOBILE_LOG';
 
 // Client type id/secret
 final kClientTypeId = clientTypeID;

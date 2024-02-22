@@ -253,12 +253,29 @@ class LinksysHttpClient extends http.BaseClient
     return true;
   }
 
+  Future<Response> upload(Uri url, List<MultipartFile> multipartList,
+      {Map<String, String>? headers}) async {
+    final request = http.MultipartRequest("POST", url);
+    request.headers.addEntries(headers?.entries ?? []);
+    request.files.addAll(multipartList);
+    final response = await _sendUnstreamedRequest(request);
+    _logResponse(
+      response,
+    );
+    return response;
+  }
+
+  /// Sends a non-streaming [Request] and returns a non-streaming [Response].
+  Future<Response> _sendUnstreamedRequest(BaseRequest request) async {
+    return Response.fromStream(await send(request));
+  }
+
   _logRequest(http.BaseRequest request, {int retry = 0}) {
     logger.i('\nREQUEST---------------------------------------------------\n'
         '${retry == 0 ? '' : 'RETRY: $retry\n'}'
         'URL: ${request.url}, METHOD: ${request.method}\n'
         'HEADERS: ${request.headers}\n'
-        '${request is http.Request ? 'BODY: ${request.body}' : ''}\n'
+        '${request is http.Request ? 'BODY: ${request.body}' : request is http.MultipartRequest ? 'Content-Length: ${request.contentLength}' : ''}\n'
         '---------------------------------------------------REQUEST END\n');
   }
 
