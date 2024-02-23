@@ -1,17 +1,31 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/theme/material/color_schemes_ext.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-
+import 'package:linksys_widgets/widgets/buttons/popup_button.dart';
+import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 
 import 'consts.dart';
 
+class PageMenuItem {
+  final String title;
+  final IconData? icon;
+  final void Function()? onTap;
+  PageMenuItem({
+    required this.title,
+    required this.icon,
+    this.onTap,
+  });
+}
+
 class StyledAppPageView extends ConsumerWidget {
   static const double kDefaultToolbarHeight = 80;
   final String? title;
-  final Widget? child;
+  final Widget child;
   final double toolbarHeight;
   final VoidCallback? onBackTap;
   final StyledBackState backState;
@@ -23,6 +37,7 @@ class StyledAppPageView extends ConsumerWidget {
   final AppBarStyle appBarStyle;
   final bool handleNoConnection;
   final bool handleBanner;
+  final List<PageMenuItem> menuItems;
 
   const StyledAppPageView({
     super.key,
@@ -33,12 +48,13 @@ class StyledAppPageView extends ConsumerWidget {
     this.onBackTap,
     this.backState = StyledBackState.enabled,
     this.actions,
-    this.child,
+    required this.child,
     this.bottomSheet,
     this.bottomNavigationBar,
     this.appBarStyle = AppBarStyle.back,
     this.handleNoConnection = false,
     this.handleBanner = false,
+    this.menuItems = const [],
   });
 
   @override
@@ -49,7 +65,27 @@ class StyledAppPageView extends ConsumerWidget {
       scrollable: scrollable,
       bottomSheet: bottomSheet,
       bottomNavigationBar: bottomNavigationBar,
-      child: child,
+      background: Theme.of(context).extension<ColorSchemeExt>()?.surfaceBright,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!ResponsiveLayout.isMobile(context))
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(8),
+                ),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+              ),
+              elevation: 0,
+              child: _createMenuWidget(context),
+            ),
+          Expanded(child: child),
+        ],
+      ),
     );
   }
 
@@ -71,7 +107,7 @@ class StyledAppPageView extends ConsumerWidget {
                   })
               : null,
           showBack: backState != StyledBackState.none,
-          trailing: actions,
+          trailing: _buildActions(context),
         );
       case AppBarStyle.close:
         return LinksysAppBar.withClose(
@@ -90,5 +126,38 @@ class StyledAppPageView extends ConsumerWidget {
       case AppBarStyle.none:
         return null;
     }
+  }
+
+  List<Widget>? _buildActions(BuildContext context) {
+    return menuItems.isEmpty || !ResponsiveLayout.isMobile(context)
+        ? actions
+        : ((actions ?? [])..add(_createMenuAction(context)));
+  }
+
+  Widget _createMenuAction(BuildContext context) {
+    return AppPopupButton(
+        button: Icon(getCharactersIcons(context).moreVertical),
+        borderRadius: const BorderRadius.all(Radius.circular(10)),
+        builder: (controller) {
+          return _createMenuWidget(context);
+        });
+  }
+
+  Widget _createMenuWidget(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 200),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ...menuItems.map((e) => ListTile(
+                leading: e.icon != null ? Icon(e.icon) : null,
+                title: AppText.bodySmall(e.title),
+                onTap: e.onTap,
+              ))
+        ],
+      ),
+    );
   }
 }

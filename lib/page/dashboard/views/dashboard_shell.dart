@@ -84,7 +84,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
           selected: _selectedIndex,
         ),
         const VerticalDivider(
-          thickness: 1,
+          width: 1,
         ),
         Expanded(
           child: GestureDetector(

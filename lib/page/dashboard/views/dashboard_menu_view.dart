@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';
 import 'package:linksys_app/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:linksys_app/page/select_network/providers/select_network_provider.dart';
@@ -14,7 +17,6 @@ import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
-import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/panel/custom_animated_box.dart';
 import 'package:linksys_widgets/widgets/panel/general_card.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
@@ -44,15 +46,21 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       return false;
     }); // .networks.length > 1;
 
-    return AppPageView.noNavigationBar(
+    return StyledAppPageView(
       // scrollable: true,
+      backState: StyledBackState.none,
+      title: 'Menu',
+      menuItems: [
+        PageMenuItem(title: 'Restart', icon: Icons.refresh),
+        PageMenuItem(title: 'Setup a new Product', icon: Icons.add)
+      ],
       child: SizedBox(
         // width: double.infinity,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppGap.extraBig(),
+            // const AppGap.extraBig(),
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -115,7 +123,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   Widget _buildDeviceGridView(List<AppSectionItemData> items) {
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: ResponsiveLayout.isMobile(context) ? 2 : 3,
+        crossAxisCount: ResponsiveLayout.isOverBreakpoint4(context) ? 3 : 2,
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
         childAspectRatio: (3 / 2),

@@ -16,6 +16,7 @@ class _TopBarState extends ConsumerState<TopBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      color: Theme.of(context).colorScheme.background,
       height: 56,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -38,8 +39,9 @@ class _TopBarState extends ConsumerState<TopBar> {
               ],
             ),
           ),
-          Divider(
-            thickness: 1,
+          const Spacer(),
+          const Divider(
+            height: 1,
           )
         ],
       ),
