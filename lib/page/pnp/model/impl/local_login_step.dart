@@ -83,9 +83,9 @@ class LocalLoginStep extends PnpStep {
           ),
           ..._checkError(context, error),
           const AppGap.semiSmall(),
-          const AppPopupButton(
+          AppPopupButton(
               button: AppText.bodyMedium('Where is it?'),
-              content: AppText.bodyMedium(
+              builder: (controller) => AppText.bodyMedium(
                   'Your router password is the same as your default Wi-Fi password, printed on the Quick Start Guide and on the bottom of your router')),
         ],
       ),

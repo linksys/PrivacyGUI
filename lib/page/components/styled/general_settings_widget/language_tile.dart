@@ -1,0 +1,46 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+
+class LanguageTile extends ConsumerStatefulWidget {
+  final void Function()? onTap;
+  final Locale locale;
+  final IconData icon;
+
+  const LanguageTile({
+    super.key,
+    this.onTap,
+    required this.locale,
+    this.icon = Icons.public,
+  });
+
+  @override
+  ConsumerState<ConsumerStatefulWidget> createState() => _LanguageTileState();
+}
+
+class _LanguageTileState extends ConsumerState<LanguageTile> {
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: widget.onTap,
+      child: _displayLocale(widget.locale),
+    );
+  }
+
+  Widget _displayLocale(Locale locale) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(widget.icon),
+        const AppGap.regular(),
+        if (locale.countryCode != null) ...[
+          AppText.labelMedium(locale.countryCode ?? ''),
+          const AppGap.regular(),
+          const AppText.labelMedium('|'),
+          const AppGap.regular(),
+        ],
+        AppText.labelMedium(locale.languageCode),
+      ],
+    );
+  }
+}

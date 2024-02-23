@@ -47,7 +47,7 @@ class BuildConfig {
   }
 }
 
-bool showDebugPanel = !kReleaseMode;
+bool showDebugPanel = !kReleaseMode && !kIsWeb;
 
 CloudEnvironment cloudEnvTarget = CloudEnvironment.values
     .firstWhere((element) => element.name == BuildConfig.cloudEnv);

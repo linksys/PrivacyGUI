@@ -142,9 +142,9 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             ),
             ..._checkError(context, _error),
             const AppGap.semiSmall(),
-            const AppPopupButton(
+            AppPopupButton(
                 button: AppText.bodyMedium('Where is it?'),
-                content: AppText.bodyMedium(
+                builder: (controller) => AppText.bodyMedium(
                     'Your router password is the same as your default Wi-Fi password, printed on the Quick Start Guide and on the bottom of your router')),
             const AppGap.extraBig(),
             AppFilledButton(

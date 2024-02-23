@@ -1,20 +1,19 @@
-import 'package:flutter/foundation.dart';
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/page/dashboard/views/dashboard_navigation_rail.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/route/router_provider.dart';
-
 import 'package:linksys_app/util/debug_mixin.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-
-enum DashboardBottomItemType { more, home, devices, settings }
+import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 class DashboardShell extends ArgumentsConsumerStatefulView {
   const DashboardShell({
@@ -30,16 +29,13 @@ class DashboardShell extends ArgumentsConsumerStatefulView {
 
 class _DashboardShellState extends ConsumerState<DashboardShell>
     with DebugObserver {
-  int _selectedIndex = 1;
-  final List<DashboardBottomItem> _bottomTabItems = [];
-  static final showBottomSheetList = [
-    RoutePath.dashboardHome,
-    RoutePath.dashboardMenu
-  ];
+  int _selectedIndex = 0;
+  final List<DashboardNaviItem> _dashboardNaviItems = [];
+
   @override
   void initState() {
     super.initState();
-    _prepareBottomTabItems(context);
+    _prepareNavigationItems(context);
   }
 
   @override
@@ -48,138 +44,145 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
   }
 
   Widget _contentView() {
-    final width = MediaQuery.of(context).size.width;
-    // HAS exception here
-    if (width > 768 && _selectedIndex == 0) {
-      _onItemTapped(1);
-    }
-    final lastPage = GoRouter.of(context)
-        .routerDelegate
-        .currentConfiguration
-        .last
-        .matchedLocation;
+    // final lastPage = GoRouter.of(context)
+    //     .routerDelegate
+    //     .currentConfiguration
+    //     .last
+    //     .matchedLocation;
+
     return StyledAppPageView(
-      backState: StyledBackState.none,
-      appBarStyle: AppBarStyle.none,
-      handleNoConnection: true,
-      handleBanner: true,
-      padding: const EdgeInsets.only(),
-      bottomNavigationBar: Offstage(
-        offstage: width > 768,
-        child: !showBottomSheetList.contains(lastPage)
-            ? null
-            : BottomNavigationBar(
-                useLegacyColorScheme: false,
-                backgroundColor: Theme.of(context)
-                    .extension<ColorSchemeExt>()
-                    ?.surfaceContainer,
-                type: BottomNavigationBarType.fixed,
-                iconSize: CustomTheme.of(context)
-                    .icons
-                    .sizes
-                    .resolve(AppIconSize.regular),
-                // selectedFontSize:
-                //     AppTheme.of(context).icons.sizes.resolve(AppIconSize.small),
-                selectedIconTheme: IconThemeData(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  size: CustomTheme.of(context)
-                      .icons
-                      .sizes
-                      .resolve(AppIconSize.regular),
-                ),
-                selectedItemColor:
-                    Theme.of(context).colorScheme.primaryContainer,
-                unselectedIconTheme: IconThemeData(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-                unselectedItemColor:
-                    Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                // unselectedFontSize:
-                //     AppTheme.of(context).icons.sizes.resolve(AppIconSize.small),
-                showSelectedLabels: false,
-                showUnselectedLabels: false,
-                currentIndex: _selectedIndex,
-                //New
-                onTap: _onItemTapped,
-                items: List.from(
-                    _bottomTabItems.map((e) => _bottomSheetIconView(e)))),
-      ),
-      child: Stack(
-        children: [
-          GestureDetector(
-              onTap: () {
-                if (increase()) {
-                  logger.d('Triggered!');
-                  context.pushNamed(RouteNamed.debug);
-                }
-              },
-              child: widget.child),
-        ],
-      ),
+        backState: StyledBackState.none,
+        appBarStyle: AppBarStyle.none,
+        handleNoConnection: true,
+        handleBanner: true,
+        padding: const EdgeInsets.only(),
+        bottomNavigationBar: ResponsiveLayout.isMobile(context)
+            ? NavigationBar(
+                selectedIndex: _selectedIndex,
+                destinations: _dashboardNaviItems
+                    .map((e) => _bottomSheetIconView(e))
+                    .toList(),
+                onDestinationSelected: _onItemTapped,
+                elevation: 0,
+              )
+            : null,
+        child: _buildLayout());
+  }
+
+  Widget _buildLayout() {
+    return ResponsiveLayout(desktop: _buildDesktop(), mobile: _buildMobile());
+  }
+
+  Widget _buildDesktop() {
+    return Row(
+      children: [
+        DashboardNavigationRail(
+          items: _dashboardNaviItems
+              .map((e) => _createNavigationRailDestination(e))
+              .toList(),
+          onItemTapped: _onItemTapped,
+          selected: _selectedIndex,
+        ),
+        const VerticalDivider(
+          thickness: 1,
+        ),
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              if (increase()) {
+                logger.d('Triggered!');
+                context.pushNamed(RouteNamed.debug);
+              }
+            },
+            child: widget.child,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobile() {
+    return GestureDetector(
+      onTap: () {
+        if (increase()) {
+          logger.d('Triggered!');
+          context.pushNamed(RouteNamed.debug);
+        }
+      },
+      child: widget.child,
     );
   }
 
   void _onItemTapped(int index) {
-    shellNavigatorKey.currentContext!.goNamed(_bottomTabItems[index].rootPath);
+    shellNavigatorKey.currentContext!
+        .goNamed(_dashboardNaviItems[index].rootPath);
     setState(() {
       _selectedIndex = index;
     });
   }
 
-  BottomNavigationBarItem _bottomSheetIconView(DashboardBottomItem item) {
-    return BottomNavigationBarItem(
+  _prepareNavigationItems(BuildContext context) {
+    //
+    if (!mounted) {
+      return;
+    }
+    const items = [
+      DashboardNaviItem(
+          iconId: 'homeDefault',
+          title: 'Home',
+          rootPath: RouteNamed.dashboardHome),
+      DashboardNaviItem(
+          iconId: 'moreHorizontal',
+          title: 'Menu',
+          rootPath: RouteNamed.dashboardMenu),
+      DashboardNaviItem(
+          iconId: 'helpRound',
+          title: 'Supports',
+          rootPath: RouteNamed.dashboardHome),
+    ];
+    _dashboardNaviItems.addAll(items);
+  }
+
+  NavigationDestination _bottomSheetIconView(DashboardNaviItem item) {
+    return NavigationDestination(
       icon: Icon(
         getCharactersIcons(context).getByName(item.iconId),
-      ),
-      activeIcon: Container(
-        decoration: BoxDecoration(
-          borderRadius: const BorderRadius.all(Radius.circular(100)),
-          shape: BoxShape.rectangle,
-          color: Theme.of(context).colorScheme.primaryContainer,
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-        child: Icon(
-          getCharactersIcons(context).getByName(item.iconId),
-        ),
+        color: Theme.of(context).colorScheme.onBackground,
       ),
       label: item.title,
     );
   }
 
-  _prepareBottomTabItems(BuildContext context) {
-    //
-    if (!mounted) {
-      return;
-    }
-    _bottomTabItems.addAll(navigationBottomItems());
+  NavigationRailDestination _createNavigationRailDestination(
+      DashboardNaviItem item) {
+    return NavigationRailDestination(
+      icon: Icon(
+        getCharactersIcons(context).getByName(item.iconId),
+      ),
+      label: AppText.bodySmall(
+        item.title,
+      ),
+    );
   }
 }
 
-navigationBottomItems() => [
-      const DashboardBottomItem(
-        iconId: 'moreHorizontal',
-        title: 'more',
-        type: DashboardBottomItemType.more,
-        rootPath: RouteNamed.dashboardMenu,
-      ),
-      const DashboardBottomItem(
-        iconId: 'homeDefault',
-        title: 'Home',
-        type: DashboardBottomItemType.home,
-        rootPath: RouteNamed.dashboardHome,
-      ),
-    ];
+class DashboardRailDestination {
+  final NavigationRailDestination destination;
+  final String path;
+  DashboardRailDestination({
+    required this.destination,
+    required this.path,
+  });
+}
 
-class DashboardBottomItem {
-  const DashboardBottomItem({
+class DashboardNaviItem {
+  const DashboardNaviItem({
     required this.iconId,
     required this.title,
-    required this.type,
     required this.rootPath,
   });
 
   final String iconId;
   final String title;
-  final DashboardBottomItemType type;
   final String rootPath;
 }

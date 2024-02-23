@@ -79,7 +79,8 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
                           ignoring: true,
                           child: Padding(
                             padding: EdgeInsets.only(
-                                top: MediaQueryUtils.getTopSafeAreaPadding(context)),
+                                top: MediaQueryUtils.getTopSafeAreaPadding(
+                                    context)),
                             child: const OverlayInfoView(),
                           ),
                         ),
@@ -182,14 +183,8 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
   }
 
   Widget _buildLayout(Widget child, BoxConstraints constraints) {
-    final isLoggedIn =
-        (ref.watch(authProvider).value?.loginType ?? LoginType.none) !=
-            LoginType.none;
-    final onlyMainView = widget.routeConfig?.onlyMainView ?? false;
-    final showSub = isLoggedIn && !onlyMainView;
     return ResponsiveLayout(
-        desktop: DesktopLayout(
-          sub: showSub ? const DashboardMenuView() : null,
+        desktop: MobileLayout(
           child: child,
         ),
         mobile: MobileLayout(child: child));
