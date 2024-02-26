@@ -62,8 +62,9 @@ class _WifiAdvancedSettingsViewState
       ],
       child: LayoutBuilder(builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final column =
-            width < 720 ? 1 : (ResponsiveLayout.isMobile(context) ? 1 : 2);
+        final column = width < 720
+            ? 1
+            : (ResponsiveLayout.isLayoutBreakpoint(context) ? 1 : 2);
         return _buildGrid(column: column, width: width);
       }),
     );

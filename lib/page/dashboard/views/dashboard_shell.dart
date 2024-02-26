@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/page/dashboard/views/dashboard_navigation_rail.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/theme/material/color_schemes_ext.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 import 'package:linksys_app/core/utils/logger.dart';
@@ -56,13 +57,16 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
         handleNoConnection: true,
         handleBanner: true,
         padding: const EdgeInsets.only(),
-        bottomNavigationBar: ResponsiveLayout.isMobile(context)
+        bottomNavigationBar: ResponsiveLayout.isLayoutBreakpoint(context)
             ? NavigationBar(
                 selectedIndex: _selectedIndex,
                 destinations: _dashboardNaviItems
                     .map((e) => _bottomSheetIconView(e))
                     .toList(),
                 onDestinationSelected: _onItemTapped,
+                backgroundColor: Theme.of(context)
+                    .extension<ColorSchemeExt>()
+                    ?.surfaceBright,
                 elevation: 0,
               )
             : null,
@@ -75,6 +79,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
 
   Widget _buildDesktop() {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         DashboardNavigationRail(
           items: _dashboardNaviItems
@@ -164,15 +169,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
       ),
     );
   }
-}
-
-class DashboardRailDestination {
-  final NavigationRailDestination destination;
-  final String path;
-  DashboardRailDestination({
-    required this.destination,
-    required this.path,
-  });
 }
 
 class DashboardNaviItem {

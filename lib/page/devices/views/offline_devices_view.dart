@@ -12,11 +12,11 @@ import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/card/general_card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/panel/custom_animated_box.dart';
-import 'package:linksys_widgets/widgets/panel/general_card.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class OfflineDevicesView extends ArgumentsConsumerStatefulView {

@@ -32,7 +32,7 @@ class SpeedTestSelectionView extends ConsumerWidget {
         children: [
           const AppText.bodyMedium('There are two ways to check your speeds.'),
           const AppGap.big(),
-          ResponsiveLayout.isMobile(context)
+          ResponsiveLayout.isLayoutBreakpoint(context)
               ? Column(children: [
                   _createVerticalCard(context, isSpeedCheckSupported),
                   _createDeviceToInternetCard(context, isBehindRouter),

@@ -2,9 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
-import 'package:linksys_app/core/utils/icon_rules.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';
@@ -13,12 +10,10 @@ import 'package:linksys_app/page/select_network/providers/select_network_provide
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/card/menu_card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 import 'package:linksys_widgets/widgets/panel/custom_animated_box.dart';
-import 'package:linksys_widgets/widgets/panel/general_card.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
 
 class DashboardMenuView extends ConsumerStatefulWidget {
@@ -50,83 +45,30 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       // scrollable: true,
       backState: StyledBackState.none,
       title: 'Menu',
-      menuItems: [
-        PageMenuItem(title: 'Restart', icon: Icons.refresh),
-        PageMenuItem(title: 'Setup a new Product', icon: Icons.add)
-      ],
-      child: SizedBox(
-        // width: double.infinity,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // const AppGap.extraBig(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: AppCard(
-                      // Get image by master node's model number
-                      image: CustomTheme.of(context).images.devices.getByName(
-                            routerIconTest(
-                              modelNumber: ref
-                                      .read(deviceManagerProvider)
-                                      .deviceList
-                                      .firstOrNull
-                                      ?.model
-                                      .modelNumber ??
-                                  '',
-                            ),
-                          ),
-                      maxWidth: 120,
-                      maxHeight: 120,
-                      minHeight: 60,
-                      minWidth: 60),
-                ),
-                const AppGap.regular(),
-                InkWell(
-                  onTap: hasMultiNetworks
-                      ? () {
-                          ref
-                              .read(selectNetworkProvider.notifier)
-                              .refreshCloudNetworks();
-
-                          _navigateTo(RouteNamed.selectNetwork);
-                        }
-                      : null,
-                  child: Row(
-                    children: [
-                      AppText.titleMedium(
-                        dashboardHomeState.mainWifiSsid,
-                        overflow: TextOverflow.fade,
-                      ),
-                      if (hasMultiNetworks)
-                        AppIcon.regular(
-                          icon: getCharactersIcons(context).chevronDown,
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const AppGap.big(),
-            Expanded(child: _buildDeviceGridView(createMenuItems())),
-            // const Spacer(),
-            // AppTextButton.noPadding('About Linksys', onTap: () {}),
-          ],
-        ),
+      menu: PageMenu(title: 'My Network', items: [
+        PageMenuItem(label: 'Restart', icon: Icons.refresh),
+        PageMenuItem(label: 'Setup a new Product', icon: Icons.add)
+      ]),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: _buildMenuGridView(createMenuItems())),
+          // const Spacer(),
+          // AppTextButton.noPadding('About Linksys', onTap: () {}),
+        ],
       ),
     );
   }
 
-  Widget _buildDeviceGridView(List<AppSectionItemData> items) {
+  Widget _buildMenuGridView(List<AppSectionItemData> items) {
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: ResponsiveLayout.isOverBreakpoint4(context) ? 3 : 2,
-        mainAxisSpacing: 16,
+        mainAxisSpacing: 0,
         crossAxisSpacing: 16,
         childAspectRatio: (3 / 2),
+        mainAxisExtent: 120,
       ),
       physics: const ScrollPhysics(),
       itemCount: items.length,
@@ -143,11 +85,10 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   Widget _buildDeviceGridCell(AppSectionItemData item) {
     return GestureDetector(
       onTap: item.onTap,
-      child: AppCard(
+      child: AppMenuCard(
         iconData: item.iconData,
         title: item.title,
         description: item.description,
-        alignCenter: false,
       ),
     );
   }

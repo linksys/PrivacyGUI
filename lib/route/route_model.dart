@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/page/components/styled/bottom_bar.dart';
 import 'package:linksys_app/page/components/styled/top_bar.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
@@ -41,27 +42,30 @@ class LinksysRoute extends GoRoute {
             children: [
               const TopBar(),
               Expanded(
-                  child: Stack(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      // if (increase()) {
-                      //   logger.d('Triggered!');
-                      //   context.pushNamed(RouteNamed.debug);
-                      // }
-                    },
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: pagePadding, vertical: 0),
-                      child: Container(
-                          constraints: BoxConstraints(
-                              maxWidth:
-                                  ResponsiveLayout.pageMainWidth(context)),
-                          child: builder(context, state)),
+                child: Stack(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        // if (increase()) {
+                        //   logger.d('Triggered!');
+                        //   context.pushNamed(RouteNamed.debug);
+                        // }
+                      },
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: pagePadding, vertical: 0),
+                        child: Container(
+                            constraints: BoxConstraints(
+                                maxWidth:
+                                    ResponsiveLayout.pageMainWidth(context)),
+                            child: builder(context, state)),
+                      ),
                     ),
-                  ),
-                ],
-              ))
+                  ],
+                ),
+              ),
+              if (!ResponsiveLayout.isLayoutBreakpoint(context))
+                const BottomBar(),
             ],
           );
         });

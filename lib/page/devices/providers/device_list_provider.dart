@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/core/utils/devices.dart';
@@ -11,56 +10,60 @@ final offlineDeviceListProvider = Provider((ref) {
   return deviceListState.devices.where((device) => !device.isOnline).toList();
 });
 final filteredDeviceListProvider = Provider((ref) {
-  final ssidFilter = ref.watch(ssidFilterProvider);
+  // final ssidFilter = ref.watch(ssidFilterProvider);
   final deviceListState = ref.watch(deviceListProvider);
   final nodeId = ref.watch(nodeIdFilterProvider);
   final band = ref.watch(bandFilterProvider);
   final connection = ref.watch(connectionFilterProvider);
 
-  var upstreamName = '';
-  final isApplyFilter = ssidFilter == null &&
-      nodeId.isEmpty &&
-      band.isEmpty &&
-      connection.isEmpty;
+  final isApplyFilter =
+      // ssidFilter == null &&
+      nodeId.isEmpty && band.isEmpty && connection.isEmpty;
 
+  final filteredDevices = deviceListState.devices
+      // .where(
+      //   (device) => ssidFilter == null ? true : device.type == ssidFilter,
+      // )
+      .where((device) =>
+          connection.contains(device.isOnline ? 'Online' : 'Offline'))
+      .where((device) {
+        if (!device.isOnline) {
+          return true;
+        }
+        if (nodeId.contains(device.upstreamDeviceID)) {
+          return true;
+        } else {
+          return false;
+        }
+      })
+      .where((device) => device.isOnline ? band.contains(device.band) : true)
+      .toList();
   return (
     isApplyFilter,
-    deviceListState.devices
-        .where((device) => device.isOnline)
-        .where(
-          (device) => ssidFilter == null ? true : device.type == ssidFilter,
-        )
-        .where((device) {
-          if (nodeId.isEmpty) {
-            return true;
-          } else if (device.upstreamDeviceID == nodeId) {
-            upstreamName = device.upstreamDevice;
-            return true;
-          } else {
-            return false;
-          }
-        })
-        .where((device) => band.isEmpty ? true : device.band == band)
-        .where((device) => connection.isEmpty
-            ? true
-            : (device.isWired && connection == 'Wired') ||
-                (!device.isWired && connection == 'WiFi'))
-        .toList(),
-    [ssidFilter?.value, upstreamName, band, connection]
-      ..removeWhere((element) => element == null || element.isEmpty)
+    filteredDevices,
   );
 });
 
-final ssidFilterProvider = StateProvider<WifiConnectionType?>((ref) {
-  return null;
+///
+/// Filter providers
+///
+
+// final ssidFilterProvider = StateProvider<WifiConnectionType?>((ref) {
+//   return null;
+// });
+
+final nodeIdFilterProvider = StateProvider<List<String>>((ref) {
+  return [];
 });
 
-final nodeIdFilterProvider = StateProvider((ref) {
-  return '';
-});
+final bandFilterProvider = StateProvider<List<String>>((ref) => []);
 
-final bandFilterProvider = StateProvider((ref) => '');
-final connectionFilterProvider = StateProvider((ref) => '');
+///
+///Online/Offline
+///
+final connectionFilterProvider = StateProvider<List<String>>((ref) => []);
+
+///
 
 final deviceListProvider =
     NotifierProvider<DeviceListNotifier, DeviceListState>(
@@ -107,7 +110,9 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
 
     name = device.getDeviceLocation();
     icon = iconTest(device.toMap());
-    final upstream = _getUpstreamDevice(device);
+    final upstream =
+        ref.read(deviceManagerProvider.notifier).findParent(device.deviceID) ??
+            ref.read(deviceManagerProvider).deviceList.first;
 
     upstreamDevice = upstream.getDeviceLocation();
     upstreamDeviceID = upstream.deviceID;
@@ -144,21 +149,5 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
       isWired: isWired,
       type: type,
     );
-  }
-
-  //TODO: Check if this logic is duplicate
-  RawDevice _getUpstreamDevice(RawDevice device) {
-    final parent =
-        ref.read(deviceManagerProvider.notifier).findParent(device.deviceID);
-    return parent ?? ref.read(deviceManagerProvider).deviceList.first;
-    // final deviceList = ref.read(deviceManagerProvider).deviceList;
-    // final parentId = device.connections.firstOrNull?.parentDeviceID;
-    // if (parentId != null) {
-    //   return deviceList.firstWhere((device) => device.deviceID == parentId);
-    // } else {
-    //   // No specified parent, use the master instead
-    //   // Master node is always at the first
-    //   return deviceList.first;
-    // }
   }
 }

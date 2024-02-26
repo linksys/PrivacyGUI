@@ -34,7 +34,7 @@ class _OverlayInfoViewState extends ConsumerState<OverlayInfoView>
     final state = ref.watch(connectivityProvider);
     return Container(
       padding: const EdgeInsets.all(12),
-      width: ResponsiveLayout.isMobile(context)
+      width: ResponsiveLayout.isLayoutBreakpoint(context)
           ? MediaQueryUtils.getScreenWidth(context) / 2
           : MediaQueryUtils.getScreenWidth(context) / 3,
       height: 130,

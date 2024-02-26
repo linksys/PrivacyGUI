@@ -30,7 +30,7 @@ class _DashboardNavigationRailState
 
   @override
   Widget build(BuildContext context) {
-    bool isMobile = ResponsiveLayout.isMobile(context);
+    bool isMobile = ResponsiveLayout.isLayoutBreakpoint(context);
     return NavigationRail(
       leading: isMobile
           ? null
@@ -46,6 +46,9 @@ class _DashboardNavigationRailState
       labelType: NavigationRailLabelType.all,
       destinations: widget.items,
       selectedIndex: widget.selected,
+      indicatorColor: Theme.of(context).colorScheme.primary,
+      selectedIconTheme:
+          IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
       onDestinationSelected: widget.onItemTapped,
     );
   }

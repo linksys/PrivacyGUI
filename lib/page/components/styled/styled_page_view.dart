@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/theme/material/color_schemes_ext.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/buttons/popup_button.dart';
@@ -11,12 +12,21 @@ import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 
 import 'consts.dart';
 
+class PageMenu {
+  final String? title;
+  List<PageMenuItem> items;
+  PageMenu({
+    this.title,
+    required this.items,
+  });
+}
+
 class PageMenuItem {
-  final String title;
+  final String label;
   final IconData? icon;
   final void Function()? onTap;
   PageMenuItem({
-    required this.title,
+    required this.label,
     required this.icon,
     this.onTap,
   });
@@ -37,7 +47,8 @@ class StyledAppPageView extends ConsumerWidget {
   final AppBarStyle appBarStyle;
   final bool handleNoConnection;
   final bool handleBanner;
-  final List<PageMenuItem> menuItems;
+  final PageMenu? menu;
+  final Widget? menuWidget;
 
   const StyledAppPageView({
     super.key,
@@ -54,7 +65,8 @@ class StyledAppPageView extends ConsumerWidget {
     this.appBarStyle = AppBarStyle.back,
     this.handleNoConnection = false,
     this.handleBanner = false,
-    this.menuItems = const [],
+    this.menu,
+    this.menuWidget,
   });
 
   @override
@@ -67,11 +79,12 @@ class StyledAppPageView extends ConsumerWidget {
       bottomNavigationBar: bottomNavigationBar,
       background: Theme.of(context).extension<ColorSchemeExt>()?.surfaceBright,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!ResponsiveLayout.isMobile(context))
+          if (!ResponsiveLayout.isLayoutBreakpoint(context) && hasMenu())
             Card(
+              margin: const EdgeInsets.only(right: Spacing.semiSmall),
               shape: RoundedRectangleBorder(
                 borderRadius: const BorderRadius.all(
                   Radius.circular(8),
@@ -90,6 +103,8 @@ class StyledAppPageView extends ConsumerWidget {
   }
 
   bool isBackEnabled() => backState == StyledBackState.enabled;
+
+  bool hasMenu() => menu != null || menuWidget != null;
 
   LinksysAppBar? _buildAppBar(BuildContext context, WidgetRef ref) {
     final title = this.title;
@@ -129,7 +144,7 @@ class StyledAppPageView extends ConsumerWidget {
   }
 
   List<Widget>? _buildActions(BuildContext context) {
-    return menuItems.isEmpty || !ResponsiveLayout.isMobile(context)
+    return !hasMenu() || !ResponsiveLayout.isLayoutBreakpoint(context)
         ? actions
         : ((actions ?? [])..add(_createMenuAction(context)));
   }
@@ -146,18 +161,25 @@ class StyledAppPageView extends ConsumerWidget {
   Widget _createMenuWidget(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(maxWidth: 200),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ...menuItems.map((e) => ListTile(
-                leading: e.icon != null ? Icon(e.icon) : null,
-                title: AppText.bodySmall(e.title),
-                onTap: e.onTap,
-              ))
-        ],
-      ),
+      child: menuWidget ??
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(
+                    left: 24.0, right: 24.0, top: 24.0, bottom: 0.0),
+                child: AppText.titleSmall(menu?.title ?? ''),
+              ),
+              const AppGap.regular(),
+              ...(menu?.items ?? []).map((e) => ListTile(
+                    leading: e.icon != null ? Icon(e.icon) : null,
+                    title: AppText.bodySmall(e.label),
+                    onTap: e.onTap,
+                  ))
+            ],
+          ),
     );
   }
 }

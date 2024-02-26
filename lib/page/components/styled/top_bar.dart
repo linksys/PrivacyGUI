@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_app/page/components/styled/general_settings_widget/general_settings_widget.dart';
+import 'package:linksys_app/page/dashboard/providers/dashboard_home_provider.dart';
+import 'package:linksys_app/page/select_network/_select_network.dart';
+import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/custom_theme.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 class TopBar extends ConsumerStatefulWidget {
@@ -28,14 +34,19 @@ class _TopBarState extends ConsumerState<TopBar> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                ResponsiveLayout.isMobile(context)
+                ResponsiveLayout.isLayoutBreakpoint(context)
                     ? SvgPicture(
                         CustomTheme.of(context).images.linksysLogoBlack,
                         width: 20,
                         height: 20,
                       )
                     : const Center(),
-                const GeneralSettingsWidget(),
+                Wrap(
+                  children: [
+                    _networkSelect(),
+                    const GeneralSettingsWidget(),
+                  ],
+                ),
               ],
             ),
           ),
@@ -43,6 +54,39 @@ class _TopBarState extends ConsumerState<TopBar> {
           const Divider(
             height: 1,
           )
+        ],
+      ),
+    );
+  }
+
+  Widget _networkSelect() {
+    final dashboardHomeState = ref.watch(dashboardHomeProvider);
+
+    final hasMultiNetworks =
+        ref.watch(selectNetworkProvider).when(data: (state) {
+      return state.networks.length > 1;
+    }, error: (error, stackTrace) {
+      return false;
+    }, loading: () {
+      return false;
+    });
+    return InkWell(
+      onTap: hasMultiNetworks
+          ? () {
+              ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
+              context.pushNamed(RouteNamed.selectNetwork);
+            }
+          : null,
+      child: Row(
+        children: [
+          AppText.labelMedium(
+            dashboardHomeState.mainWifiSsid,
+            overflow: TextOverflow.fade,
+          ),
+          if (hasMultiNetworks)
+            AppIcon.regular(
+              icon: getCharactersIcons(context).chevronDown,
+            ),
         ],
       ),
     );

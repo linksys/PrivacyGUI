@@ -9,6 +9,7 @@ import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
 import 'package:linksys_app/page/components/layouts/idle_checker.dart';
 import 'package:linksys_app/providers/root/root_config.dart';
 import 'package:linksys_app/providers/root/root_provider.dart';
+import 'package:linksys_widgets/theme/material/color_schemes_ext.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/banner/banner_view.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
@@ -60,12 +61,12 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
           logger.d('Idled!');
         },
         child: Container(
-          color: Theme.of(context).colorScheme.background,
+          color: Theme.of(context).extension<ColorSchemeExt>()?.surfaceBright,
           child: CompositedTransformTarget(
             link: _link,
             child: Stack(
               children: [
-                _buildLayout(widget.child ?? const Center(), constraints),
+                _buildLayout(Container(child: widget.child ?? const Center()), constraints),
                 ..._handleConnectivity(ref),
                 ..._handleBanner(ref),
                 _handleSpinner(rootConfig),
