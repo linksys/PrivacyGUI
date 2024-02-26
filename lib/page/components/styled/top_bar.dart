@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/page/components/styled/general_settings_widget/general_settings_widget.dart';
 import 'package:linksys_app/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:linksys_app/page/select_network/_select_network.dart';
+import 'package:linksys_app/providers/auth/auth_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/custom_theme.dart';
@@ -21,6 +22,9 @@ class TopBar extends ConsumerStatefulWidget {
 class _TopBarState extends ConsumerState<TopBar> {
   @override
   Widget build(BuildContext context) {
+    final loginType =
+        ref.watch(authProvider.select((value) => value.value?.loginType)) ??
+            LoginType.none;
     return Container(
       color: Theme.of(context).colorScheme.background,
       height: 56,
@@ -43,7 +47,7 @@ class _TopBarState extends ConsumerState<TopBar> {
                     : const Center(),
                 Wrap(
                   children: [
-                    _networkSelect(),
+                    if (loginType == LoginType.remote) _networkSelect(),
                     const GeneralSettingsWidget(),
                   ],
                 ),

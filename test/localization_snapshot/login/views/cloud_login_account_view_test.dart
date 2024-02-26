@@ -9,7 +9,7 @@ import '../../test_localization.dart';
 
 void main() {
   testLocalizations('Cloud Account View', (tester, locale) async {
-    await tester.pumpWidgetBuilder(testableWidget(
+    await tester.pumpWidgetBuilder(testableRouterWidget(
       themeMode: ThemeMode.light,
       overrides: [],
       locale: locale,
@@ -19,18 +19,20 @@ void main() {
 
   testLocalizations('Cloud Account View with invalid format',
       (tester, locale) async {
-    await tester.pumpWidgetBuilder(testableWidget(
+    await tester.pumpWidgetBuilder(testableRouterWidget(
       themeMode: ThemeMode.light,
       overrides: [],
       locale: locale,
       child: const CloudLoginAccountView(),
     ));
 
-    final textFieldFinder = find.byType(TextField);
+    final cloudAccountViewFinder = find.byType(CloudLoginAccountView);
+    final textFieldFinder = find.descendant(
+        of: cloudAccountViewFinder, matching: find.byType(AppTextField)).last;
     await tester.enterText(textFieldFinder, 'abc');
     await tester.pump();
 
-    final nextButtonFinder = find.byType(AppFilledButton);
+    final nextButtonFinder = find.byType(AppFilledButton).last;
     await tester.tap(nextButtonFinder);
     await tester.pump();
   });

@@ -105,6 +105,11 @@ final dashboardRoute = ShellRoute(
             path: RoutePath.settingsDDNS,
             builder: (context, state) => DDNSSettingsView(),
           ),
-        ]),
+        ],),
+        LinksysRoute(
+        name: RouteNamed.dashboardSupport,
+        path: RoutePath.dashboardSupport,
+        builder: (context, state) => DashboardSupportView(),
+        ),
   ],
 );

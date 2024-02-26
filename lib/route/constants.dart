@@ -18,6 +18,7 @@ class RoutePath {
   static const dashboardMenu = '/dashboardMenu';
   static const dashboardDevices = 'dashboardDevices';
   static const dashboardSettings = 'dashboardSettings';
+  static const dashboardSupport = '/dashboardSupport';
 
   /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';
@@ -139,6 +140,7 @@ class RouteNamed {
   static const dashboardHome = 'dashboardHome';
   static const dashboardDevices = 'dashboardDevices';
   static const dashboardSettings = 'dashboardSettings';
+  static const dashboardSupport = 'dashboardSupport';
 
   /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';

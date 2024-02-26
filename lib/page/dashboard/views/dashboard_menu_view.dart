@@ -5,8 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';
-import 'package:linksys_app/page/dashboard/providers/dashboard_home_provider.dart';
-import 'package:linksys_app/page/select_network/providers/select_network_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -31,16 +29,6 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
 
   @override
   Widget build(BuildContext context) {
-    final dashboardHomeState = ref.watch(dashboardHomeProvider);
-    final hasMultiNetworks =
-        ref.watch(selectNetworkProvider).when(data: (state) {
-      return state.networks.length > 1;
-    }, error: (error, stackTrace) {
-      return false;
-    }, loading: () {
-      return false;
-    }); // .networks.length > 1;
-
     return StyledAppPageView(
       // scrollable: true,
       backState: StyledBackState.none,

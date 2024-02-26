@@ -13,6 +13,7 @@ final mockLightThemeData =
 final mockDarkThemeData =
     linksysDarkThemeData.copyWith(textTheme: mockLinksysLightTextTheme);
 
+
 void testLocalizations(
     String name, FutureOr<void> Function(WidgetTester, Locale) testMain) async {
   testGoldens(name, (tester) async {
@@ -20,15 +21,17 @@ void testLocalizations(
     for (final locale in AppLocalizations.supportedLocales) {
       await testMain(tester, locale);
 
-      await screenMatchesGolden(
+      await multiScreenGolden(
         tester,
         '$name-${locale.languageCode}',
+        devices: const [
+          Device(name: 'Device320w', size: Size(320, 568)),
+          Device(name: 'Device480w', size: Size(480, 932)),
+          Device(name: 'Device744w', size: Size(744, 1133)),
+          Device(name: 'Device1280w', size: Size(1280, 720)),
+          Device(name: 'Device1440w', size: Size(1440, 900)),
+        ],
       );
-      // await multiScreenGolden(
-      //   tester,
-      //   '$name-${locale.languageCode}',
-      //   devices: [Device.iphone11, Device.phone, Device.tabletLandscape],
-      // );
     }
   }, tags: ['loc']);
 }

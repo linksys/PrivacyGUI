@@ -11,7 +11,7 @@ void main() {
   tearDownAll(() async {});
 
   testLocalizations('Cloud Password View', (tester, locale) async {
-    await tester.pumpWidgetBuilder(testableWidget(
+    await tester.pumpWidgetBuilder(testableRouterWidget(
       themeMode: ThemeMode.light,
       overrides: [],
       locale: locale,

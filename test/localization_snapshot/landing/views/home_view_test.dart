@@ -12,7 +12,7 @@ void main() {
     testLocalizations(
       'snapshot - home view',
       (tester, locale) async {
-        await tester.pumpWidgetBuilder(testableWidget(
+        await tester.pumpWidgetBuilder(testableRouterWidget(
           themeMode: ThemeMode.light,
           overrides: [],
           locale: locale,

@@ -54,7 +54,6 @@ class LoginCloudAccountState extends ConsumerState<CloudLoginAccountView> {
             ),
         loading: () => AppFullScreenSpinner(
             text: getAppLocalizations(context).processing));
-
   }
 
   Widget _contentView(AuthState state) {

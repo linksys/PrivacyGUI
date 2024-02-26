@@ -96,8 +96,9 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
         opacity: item.isOnline ? 1 : 0.3,
         child: AppDeviceListCard(
           title: '${item.name} [${item.signalStrength}]',
-          description:
-              ResponsiveLayout.isMobile(context) ? null : item.upstreamDevice,
+          description: ResponsiveLayout.isMobile(context) || !item.isOnline
+              ? null
+              : item.upstreamDevice,
           band: ResponsiveLayout.isMobile(context) ? null : item.band,
           leading: Icons.device_unknown,
           trailing: item.isOnline

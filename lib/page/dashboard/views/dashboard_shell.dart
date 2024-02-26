@@ -143,7 +143,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
       DashboardNaviItem(
           iconId: 'helpRound',
           title: 'Supports',
-          rootPath: RouteNamed.dashboardHome),
+          rootPath: RouteNamed.dashboardSupport),
     ];
     _dashboardNaviItems.addAll(items);
   }
