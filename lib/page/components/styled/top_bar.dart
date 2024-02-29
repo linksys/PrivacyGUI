@@ -25,40 +25,42 @@ class _TopBarState extends ConsumerState<TopBar> {
     final loginType =
         ref.watch(authProvider.select((value) => value.value?.loginType)) ??
             LoginType.none;
-    return Container(
-      color: Theme.of(context).colorScheme.background,
-      height: 56,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(
-                left: 24.0, right: 24, top: 14, bottom: 6),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                ResponsiveLayout.isLayoutBreakpoint(context)
-                    ? SvgPicture(
-                        CustomTheme.of(context).images.linksysLogoBlack,
-                        width: 20,
-                        height: 20,
-                      )
-                    : const Center(),
-                Wrap(
-                  children: [
-                    if (loginType == LoginType.remote) _networkSelect(),
-                    const GeneralSettingsWidget(),
-                  ],
-                ),
-              ],
+    return SafeArea(
+      child: Container(
+        color: Theme.of(context).colorScheme.surface,
+        height: 56,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(
+                  left: 24.0, right: 24, top: 14, bottom: 6),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  ResponsiveLayout.isLayoutBreakpoint(context)
+                      ? SvgPicture(
+                          CustomTheme.of(context).images.linksysLogoBlack,
+                          width: 20,
+                          height: 20,
+                        )
+                      : const Center(),
+                  Wrap(
+                    children: [
+                      if (loginType == LoginType.remote) _networkSelect(),
+                      const GeneralSettingsWidget(),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          const Spacer(),
-          const Divider(
-            height: 1,
-          )
-        ],
+            const Spacer(),
+            const Divider(
+              height: 1,
+            )
+          ],
+        ),
       ),
     );
   }

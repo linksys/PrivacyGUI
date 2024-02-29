@@ -4,7 +4,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
 import 'package:linksys_app/page/components/layouts/idle_checker.dart';
 import 'package:linksys_app/providers/root/root_config.dart';
@@ -18,18 +17,16 @@ import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/customs/debug_overlay_view.dart';
 import 'package:linksys_app/page/components/customs/no_network_bottom_modal.dart';
-import 'package:linksys_app/page/components/layouts/desktop_layout.dart';
 import 'package:linksys_app/page/components/layouts/mobile_layout.dart';
 import 'package:linksys_app/page/components/styled/banner_provider.dart';
-import 'package:linksys_app/page/dashboard/views/dashboard_menu_view.dart';
 import 'package:linksys_app/providers/app_settings/app_settings_provider.dart';
-import 'package:linksys_app/providers/auth/auth_provider.dart';
 import 'package:linksys_app/providers/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/widgets/fab/expandable_fab.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class AppRootContainer extends ConsumerStatefulWidget {
   final Widget? child;
@@ -61,12 +58,13 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
           logger.d('Idled!');
         },
         child: Container(
-          color: Theme.of(context).extension<ColorSchemeExt>()?.surfaceBright,
+          color: Theme.of(context).colorScheme.background,
           child: CompositedTransformTarget(
             link: _link,
             child: Stack(
               children: [
-                _buildLayout(Container(child: widget.child ?? const Center()), constraints),
+                _buildLayout(Container(child: widget.child ?? const Center()),
+                    constraints),
                 ..._handleConnectivity(ref),
                 ..._handleBanner(ref),
                 _handleSpinner(rootConfig),
@@ -102,7 +100,7 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
 
   Widget _buildFab() {
     return ExpandableFab(
-      icon: Icons.settings,
+      icon: Symbols.settings,
       distance: 64,
       children: [
         _buildThemeSettings(),
@@ -114,10 +112,10 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
   Widget _buildThemeSettings() {
     return ActionButton(
       icon: Icon(ref.read(appSettingsProvider).themeMode == ThemeMode.system
-          ? Icons.auto_awesome
+          ? Symbols.auto_awesome
           : ref.read(appSettingsProvider).themeMode == ThemeMode.dark
-              ? Icons.dark_mode
-              : Icons.light_mode),
+              ? Symbols.dark_mode
+              : Symbols.light_mode),
       onPressed: () {
         final appSettings = ref.read(appSettingsProvider);
         final nextThemeMode = appSettings.themeMode == ThemeMode.system
@@ -133,7 +131,7 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
 
   Widget _buildLocaleSetting() {
     return ActionButton(
-      icon: const Icon(Icons.translate),
+      icon: const Icon(Symbols.translate),
       onPressed: () async {
         setState(() {
           _showLocaleList = true;
@@ -184,11 +182,8 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
   }
 
   Widget _buildLayout(Widget child, BoxConstraints constraints) {
-    return ResponsiveLayout(
-        desktop: MobileLayout(
-          child: child,
-        ),
-        mobile: MobileLayout(child: child));
+    return child;
+    ;
   }
 
   List<Widget> _handleBanner(WidgetRef ref) {

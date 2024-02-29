@@ -6,6 +6,7 @@ import 'package:linksys_app/providers/app_settings/app_settings_provider.dart';
 import 'package:linksys_app/providers/auth/_auth.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/buttons/popup_button.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class GeneralSettingsWidget extends ConsumerStatefulWidget {
@@ -26,7 +27,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
         ref.watch(appSettingsProvider.select((value) => value.locale));
     return AppPopupButton(
       button: const Icon(
-        Icons.person,
+        Symbols.person,
         size: 20,
       ),
       borderRadius: const BorderRadius.all(Radius.circular(10)),

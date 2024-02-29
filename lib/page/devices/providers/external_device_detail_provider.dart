@@ -12,7 +12,7 @@ class ExternalDeviceDetailNotifier extends Notifier<ExternalDeviceDetailState> {
   ExternalDeviceDetailState build() {
     final filteredDeviceList = ref.watch(filteredDeviceListProvider);
     final targetId = ref.watch(deviceDetailIdProvider);
-    return createState(filteredDeviceList.$2, targetId);
+    return createState(filteredDeviceList, targetId);
   }
 
   ExternalDeviceDetailState createState(

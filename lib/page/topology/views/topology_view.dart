@@ -86,41 +86,7 @@ class TopologyView extends ArgumentsConsumerStatelessView {
             AppOutlinedButton.fillWidth(
               'Restart Network',
               onTap: () {
-                showAdaptiveDialog(
-                  context: context,
-                  barrierDismissible: true,
-                  builder: (context) => AlertDialog.adaptive(
-                    title: AppText.labelLarge('Alert!'),
-                    content: AppText.bodyMedium(
-                        'Restart router will take some time'),
-                    actions: [
-                      AppFilledButton(
-                        'Ok',
-                        onTap: () {
-                          ref
-                              .read(rootProvider.notifier)
-                              .showSpinner(tag: 'reboot', force: true);
-
-                          context.pop();
-                          ref
-                              .read(topologyProvider.notifier)
-                              .reboot()
-                              .then((value) {
-                            ref
-                                .read(rootProvider.notifier)
-                                .hideSpinner(tag: 'reboot');
-                          });
-                        },
-                      ),
-                      AppFilledButton(
-                        'Cancel',
-                        onTap: () {
-                          context.pop();
-                        },
-                      )
-                    ],
-                  ),
-                );
+                
               },
             ),
           ],

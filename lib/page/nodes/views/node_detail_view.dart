@@ -21,6 +21,7 @@ import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
 import 'package:linksys_widgets/widgets/page/layout/profile_header_layout.dart';
 
 import 'package:collection/collection.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class NodeDetailView extends ArgumentsConsumerStatefulView {
   const NodeDetailView({
@@ -112,12 +113,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
 
   Widget _getConnectionImage(NodeDetailState state) {
     return AppIcon.big(
-      icon: state.isWiredConnection
-          ? CustomTheme.of(context).icons.characters.ethernetDefault
-          : getWifiSignalIconData(
-              context,
-              state.signalStrength,
-            ),
+      icon: getWifiSignalIconData(
+        context,
+        state.signalStrength,
+      ),
     );
   }
 

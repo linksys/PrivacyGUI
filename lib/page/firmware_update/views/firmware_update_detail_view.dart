@@ -8,6 +8,7 @@ import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
 import 'package:linksys_app/page/firmware_update/_firmware_update.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class FirmwareUpdateDetailView extends ConsumerStatefulWidget {
   const FirmwareUpdateDetailView({
@@ -81,7 +82,7 @@ class _FirmwareUpdateDetailViewState
                       nodeStatusList: nodeStatusList,
                     ),
                     headerAction: AppIconButton.noPadding(
-                      icon: Icons.refresh,
+                      icon: Symbols.refresh,
                       onTap: () {
                         ref
                             .read(firmwareUpdateProvider.notifier)

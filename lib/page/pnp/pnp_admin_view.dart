@@ -14,6 +14,7 @@ import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/buttons/popup_button.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class PnpAdminView extends ArgumentsBaseConsumerStatefulView {
   const PnpAdminView({super.key, super.args});
@@ -88,7 +89,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
                 AppText.labelMedium('Internet connected'),
                 AppGap.regular(),
                 AppIcon.big(
-                  icon: Icons.check_circle,
+                  icon: Symbols.check_circle,
                 ),
               ],
             ),

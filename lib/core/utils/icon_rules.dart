@@ -1,5 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:linksys_app/core/utils/extension.dart';
+import 'package:linksys_app/core/utils/icon_device_category.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 
 const List<Map<String, dynamic>> iconRules = [
   {
@@ -438,124 +440,6 @@ const List<Map<String, dynamic>> iconRules = [
     'iconClass': 'tabletPc',
   },
   {
-    'description': 'WeMo Light Switch',
-    'test': {
-      'model': {
-        'deviceType': 'WeMoLightSwitch',
-      },
-    },
-    'iconClass': 'wemoLightswitch',
-  },
-  {
-    'description': 'WeMo Insight',
-    'test': {
-      'model': {
-        'deviceType': 'WeMoInsight',
-      },
-    },
-    'iconClass': 'wemoInsight',
-  },
-  {
-    'description': 'WeMo NetCam',
-    'test': {
-      'model': {
-        'deviceType': 'WeMoNetCam',
-      },
-    },
-    'iconClass': 'wemoNetcam',
-  },
-  {
-    'description': 'WeMo Sensor',
-    'test': {
-      'model': {
-        'deviceType': 'WeMoSensor',
-      },
-    },
-    'iconClass': 'wemoSensor',
-  },
-  {
-    'description': 'WeMo Mini',
-    'test': {
-      'model': {'deviceType': 'WeMoSocket'},
-      'unit': {
-        'firmwareVersion': 'snsv2',
-      },
-    },
-    'iconClass': 'wemoMini',
-  },
-  {
-    'description': 'WeMo Socket',
-    'test': {
-      'model': {
-        'deviceType': 'WeMoSocket',
-      },
-    },
-    'iconClass': 'wemoSocket',
-  },
-  {
-    'description': 'WeMo Link',
-    'test': {
-      'model': {
-        'deviceType': 'WeMoLink',
-      },
-    },
-    'iconClass': 'wemoLink',
-  },
-  {
-    'description': 'WeMo Maker',
-    'test': {
-      'model': {
-        'deviceType': 'WeMoMaker',
-      },
-    },
-    'iconClass': 'wemoMaker',
-  },
-  {
-    'description': 'Jarden AirPurifier',
-    'test': {
-      'model': {
-        'deviceType': 'WeMoAirPurifier',
-      },
-    },
-    'iconClass': 'smartAirpurifier',
-  },
-  {
-    'description': 'Jarden CrockPot',
-    'test': {
-      'model': {
-        'deviceType': 'WeMoCrockPot',
-      },
-    },
-    'iconClass': 'smartCrockpot',
-  },
-  {
-    'description': 'Jarden CoffeeMaker',
-    'test': {
-      'model': {
-        'deviceType': 'WeMoCoffeeMaker',
-      },
-    },
-    'iconClass': 'smartMrcoffee',
-  },
-  {
-    'description': 'Jarden Heater',
-    'test': {
-      'model': {
-        'deviceType': 'WeMoHeaterA|WeMoHeaterB',
-      },
-    },
-    'iconClass': 'smartHeater',
-  },
-  {
-    'description': 'WeMo Fallback',
-    'test': {
-      'model': {
-        'deviceType': 'WeMo',
-      },
-    },
-    'iconClass': 'wemoDevice',
-  },
-  {
     'description': 'OS X/macOS - iBook/MacBook',
     'test': {
       'unit': {
@@ -586,15 +470,6 @@ const List<Map<String, dynamic>> iconRules = [
     'iconClass': 'laptopMac',
   },
   {
-    'description': 'OS X/macOS - Desktop',
-    'test': {
-      'unit': {
-        'operatingSystem': 'OS X|macOS',
-      },
-    },
-    'iconClass': 'desktopMac',
-  },
-  {
     'description': 'Windows OS - UltraBook/NoteBook/ChromeBook',
     'test': {
       'unit': {
@@ -612,24 +487,6 @@ const List<Map<String, dynamic>> iconRules = [
       'deviceName': 'Laptop|Book',
     },
     'iconClass': 'laptopPc',
-  },
-  {
-    'description': 'Windows OS - Desktop',
-    'test': {
-      'unit': {
-        'operatingSystem': 'Windows',
-      },
-    },
-    'iconClass': 'desktopPc',
-  },
-  {
-    'description': 'Android OS',
-    'test': {
-      'unit': {
-        'operatingSystem': 'Android',
-      },
-    },
-    'iconClass': 'smartphone',
   },
   {
     'description': 'Name includes Android or iPhone',
@@ -667,6 +524,85 @@ const List<Map<String, dynamic>> iconRules = [
       },
     },
     'iconClass': 'desktopPc',
+  },
+  {
+    'description': 'Game console - Nintendo',
+    'test': {
+      'model': {
+        'manufacturer': 'Nintendo',
+      },
+    },
+    'iconClass': 'gameConsole',
+  },
+  {
+    'description': 'Google TV',
+    'test': {
+      'friendlyName': '.*TV|GoogleTV.*',
+    },
+    'iconClass': 'tv',
+  },
+  {
+    'description': 'Vacauum',
+    'test': {
+      'friendlyName': '.*vacuum.*',
+    },
+    'iconClass': 'vacauum',
+  },
+  {
+    'description': 'SmartPlug',
+    'test': {
+      'friendlyName': '.*plug.*',
+    },
+    'iconClass': 'plug',
+  },
+  {
+    'description': 'Game Console - PS5',
+    'test': {
+      'friendlyName': '.*PS5.*',
+    },
+    'iconClass': 'gameConsole',
+  },
+  {
+    'description': 'OS X/macOS - Desktop',
+    'test': {
+      'unit': {
+        'operatingSystem': 'OS X|macOS',
+      },
+    },
+    'iconClass': 'desktopMac',
+  },
+  {
+    'description': 'Windows OS - Desktop',
+    'test': {
+      'unit': {
+        'operatingSystem': 'Windows',
+      },
+    },
+    'iconClass': 'desktopPc',
+  },
+  {
+    'description': 'Android OS',
+    'test': {
+      'unit': {
+        'operatingSystem': 'Android',
+      },
+    },
+    'iconClass': 'smartphone',
+  },
+  {
+    'description': 'Generic Fallback',
+    'test': {},
+    'iconClass': 'genericDevice',
+  }
+];
+
+const List<Map<String, dynamic>> iconTestRules = [
+  {
+    'description': 'Google TV',
+    'test': {
+      'friendlyName': '.*TV|GoogleTV.*',
+    },
+    'iconClass': 'tv',
   },
   {
     'description': 'Generic Fallback',
@@ -797,6 +733,27 @@ String routerIconTest({required String modelNumber, String? hardwareVersion}) {
     }
   };
   return iconTest(data);
+}
+
+IconDeviceCategory deviceIconTest(Map<String, dynamic> target) {
+  const regex =
+      r'^.*((phone)|(android)|(iphone)|(mobile)|(desktop)|(laptop)|(windows)|(mac)|(pc)|(tv)|(vacauum)|(plug)|(gameConsole)|(generic)).*$';
+  final test = iconTest(target);
+  final check = RegExp(regex).firstMatch(test)?.group(1);
+  return switch (check) {
+    'tv' => IconDeviceCategory.tv,
+    'plug' => IconDeviceCategory.plug,
+    'vacauum' => IconDeviceCategory.vacuum,
+    'gameConsole' => IconDeviceCategory.gameConsole,
+    'phone' || 'android' || 'iphone' || 'mobile' => IconDeviceCategory.mobile,
+    'desktop' ||
+    'laptop' ||
+    'windows' ||
+    'mac' ||
+    'pc' =>
+      IconDeviceCategory.desktop,
+    _ => IconDeviceCategory.unknown
+  };
 }
 
 String iconTest(Map<String, dynamic> target) {

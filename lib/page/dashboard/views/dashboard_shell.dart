@@ -15,6 +15,8 @@ import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_app/util/debug_mixin.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
+import 'package:material_symbols_icons/symbols.dart';
+import 'package:test/test.dart';
 
 class DashboardShell extends ArgumentsConsumerStatefulView {
   const DashboardShell({
@@ -64,9 +66,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
                     .map((e) => _bottomSheetIconView(e))
                     .toList(),
                 onDestinationSelected: _onItemTapped,
-                backgroundColor: Theme.of(context)
-                    .extension<ColorSchemeExt>()
-                    ?.surfaceBright,
+                indicatorColor: Theme.of(context).colorScheme.primary,
                 elevation: 0,
               )
             : null,
@@ -133,15 +133,15 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
     }
     const items = [
       DashboardNaviItem(
-          iconId: 'homeDefault',
+          icon: Symbols.home,
           title: 'Home',
           rootPath: RouteNamed.dashboardHome),
       DashboardNaviItem(
-          iconId: 'moreHorizontal',
+          icon: Symbols.menu,
           title: 'Menu',
           rootPath: RouteNamed.dashboardMenu),
       DashboardNaviItem(
-          iconId: 'helpRound',
+          icon: Symbols.help_outline,
           title: 'Supports',
           rootPath: RouteNamed.dashboardSupport),
     ];
@@ -151,8 +151,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
   NavigationDestination _bottomSheetIconView(DashboardNaviItem item) {
     return NavigationDestination(
       icon: Icon(
-        getCharactersIcons(context).getByName(item.iconId),
-        color: Theme.of(context).colorScheme.onBackground,
+        item.icon,
+      ),
+      selectedIcon: Icon(
+        item.icon,
+        color: Theme.of(context).colorScheme.onPrimary,
       ),
       label: item.title,
     );
@@ -162,7 +165,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
       DashboardNaviItem item) {
     return NavigationRailDestination(
       icon: Icon(
-        getCharactersIcons(context).getByName(item.iconId),
+        item.icon,
+      ),
+      selectedIcon: Icon(
+        item.icon,
+        color: Theme.of(context).colorScheme.onPrimary,
       ),
       label: AppText.bodySmall(
         item.title,
@@ -173,12 +180,12 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
 
 class DashboardNaviItem {
   const DashboardNaviItem({
-    required this.iconId,
+    required this.icon,
     required this.title,
     required this.rootPath,
   });
 
-  final String iconId;
+  final IconData icon;
   final String title;
   final String rootPath;
 }

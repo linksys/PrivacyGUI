@@ -3,8 +3,9 @@ part of 'router_provider.dart';
 final localLoginRoute = LinksysRoute(
   name: RouteNamed.localLoginPassword,
   path: RoutePath.localLoginPassword,
-  builder: (context, state) => EnterRouterPasswordView(
-    args: state.uri.queryParameters,
+  config: const LinksysRouteConfig(fullWidth: true),
+  builder: (context, state) => LoginView(
+    args: state.extra as Map<String, dynamic>? ?? {},
   ),
   routes: [
     LinksysRoute(

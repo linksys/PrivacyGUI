@@ -120,4 +120,19 @@ void main() {
       expect(result, 'routerLn11');
     });
   });
+
+  group('test testDeviceIcon series', () {
+    test('test device icon', () {
+      const device = {
+        'model': {
+          'deviceType': 'Mobile',
+          'manufacturer': 'TCL|极光TV',
+          'modelNumber': 'DMR',
+        },
+        'friendlyName': 'GoogleTV1713',
+      };
+      final result = deviceIconTest(device);
+      print(result);
+    });
+  });
 }

@@ -47,8 +47,8 @@ class _DashboardNavigationRailState
       destinations: widget.items,
       selectedIndex: widget.selected,
       indicatorColor: Theme.of(context).colorScheme.primary,
-      selectedIconTheme:
-          IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
+      // selectedIconTheme:
+      //     IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
       onDestinationSelected: widget.onItemTapped,
     );
   }

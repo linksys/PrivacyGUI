@@ -23,6 +23,7 @@ import 'package:linksys_app/firebase/analytics.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/panel/general_expansion.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../export_log_selector/export_log_base.dart'
@@ -232,7 +233,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
                           }
                         : null,
                     icon: const Icon(
-                      Icons.share,
+                      Symbols.share,
                       color: Colors.white,
                     )),
                 AppText.bodyMedium(_fcmToken ?? 'No FCM Token'),
@@ -254,7 +255,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
                           }
                         : null,
                     icon: const Icon(
-                      Icons.share,
+                      Symbols.share,
                       color: Colors.white,
                     )),
                 AppText.bodyMedium(_apnsToken ?? 'No APNS Token'),

@@ -4,15 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/page/topology/providers/topology_provider.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';
+import 'package:linksys_app/providers/root/root_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/widgets/buttons/button.dart';
 import 'package:linksys_widgets/widgets/card/menu_card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 import 'package:linksys_widgets/widgets/panel/custom_animated_box.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
+import 'package:linksys_widgets/widgets/text/app_text.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class DashboardMenuView extends ConsumerStatefulWidget {
   const DashboardMenuView({Key? key}) : super(key: key);
@@ -34,8 +39,13 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       backState: StyledBackState.none,
       title: 'Menu',
       menu: PageMenu(title: 'My Network', items: [
-        PageMenuItem(label: 'Restart', icon: Icons.refresh),
-        PageMenuItem(label: 'Setup a new Product', icon: Icons.add)
+        PageMenuItem(
+            label: 'Restart Network',
+            icon: Symbols.restart_alt,
+            onTap: () {
+              _restartNetwork();
+            }),
+        PageMenuItem(label: 'Setup a new Product', icon: Symbols.add)
       ]),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -53,8 +63,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: ResponsiveLayout.isOverBreakpoint4(context) ? 3 : 2,
-        mainAxisSpacing: 0,
-        crossAxisSpacing: 16,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 10,
         childAspectRatio: (3 / 2),
         mainAxisExtent: 120,
       ),
@@ -71,13 +81,11 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   }
 
   Widget _buildDeviceGridCell(AppSectionItemData item) {
-    return GestureDetector(
+    return AppMenuCard(
+      iconData: item.iconData,
+      title: item.title,
+      description: item.description,
       onTap: item.onTap,
-      child: AppMenuCard(
-        iconData: item.iconData,
-        title: item.title,
-        description: item.description,
-      ),
     );
   }
 
@@ -86,66 +94,53 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         ref.read(authProvider).value?.loginType == LoginType.remote;
     return [
       AppSectionItemData(
-          title: 'Settings',
+          title: 'WiFi',
           description: 'This is a description for this tile',
-          iconData: getCharactersIcons(context).settingsDefault,
+          iconData: Symbols.signal_wifi_4_bar,
           onTap: () {
-            _navigateTo(RouteNamed.dashboardSettings);
+            _navigateTo(RouteNamed.settingsWifi);
+          }),
+      AppSectionItemData(
+          title: 'Router and nodes',
+          description: 'This is a description for this tile',
+          iconData: Symbols.router,
+          onTap: () {
+            _navigateTo(RouteNamed.settingsNodes);
           }),
       AppSectionItemData(
           title: 'Safe Browsing',
           description: 'This is a description for this tile',
-          iconData: getCharactersIcons(context).shieldDefault,
+          iconData: Symbols.encrypted,
           onTap: () {
             _navigateTo(RouteNamed.safeBrowsing);
           }),
       AppSectionItemData(
+          title: 'Family time',
+          description: 'This is a description for this tile',
+          iconData: Symbols.family_restroom,
+          onTap: () {}),
+      AppSectionItemData(
           title: 'Speed Test',
           description: 'This is a description for this tile',
-          iconData: getCharactersIcons(context).securityDefault,
+          iconData: Symbols.network_check,
           onTap: () {
             _navigateTo(RouteNamed.speedTestSelection);
           }),
       AppSectionItemData(
-          title: 'Troubleshooting',
+          title: 'Advanced Settings',
           description: 'This is a description for this tile',
-          iconData: getCharactersIcons(context).healthDefault,
+          iconData: Symbols.settings,
           onTap: () {
-            _navigateTo(RouteNamed.troubleshooting);
-          }),
-      AppSectionItemData(
-          title: 'DDNS Settings',
-          description: 'This is a description for this tile',
-          iconData: getCharactersIcons(context).healthDefault,
-          onTap: () {
-            _navigateTo(RouteNamed.settingsDDNS);
-          }),
-      AppSectionItemData(
-          title: 'Ipv6 Port Service',
-          description: 'This is a description for this tile',
-          iconData: getCharactersIcons(context).healthDefault,
-          onTap: () {
-            _navigateTo(RouteNamed.ipv6PortServiceList);
-          }),
-      AppSectionItemData(
-          title: 'Channel Finder',
-          description: 'This is a description for this tile',
-          iconData: getCharactersIcons(context).healthDefault,
-          onTap: () {
-            _navigateTo(RouteNamed.channelFinderOptimize);
+            _navigateTo(RouteNamed.dashboardSettings);
           }),
       if (isCloudLogin)
         AppSectionItemData(
             title: 'Account',
             description: 'This is a description for this tile',
-            iconData: getCharactersIcons(context).administrationDefault,
+            iconData: Symbols.person_rounded,
             onTap: () {
               _navigateTo(RouteNamed.accountInfo);
             }),
-      AppSectionItemData(
-          title: 'Help',
-          description: 'This is a description for this tile',
-          iconData: getCharactersIcons(context).helpRound),
       // AppSectionItemData(
       //     title: 'Linksys LinkUp',
       //     iconData: getCharactersIcons(context).bellDefault,
@@ -165,5 +160,37 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
     } else {
       shellNavigatorKey.currentContext!.pushNamed(name);
     }
+  }
+
+  void _restartNetwork() {
+    showAdaptiveDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => AlertDialog.adaptive(
+        title: AppText.labelLarge('Alert!'),
+        content: AppText.bodyMedium('Restart router will take some time'),
+        actions: [
+          AppFilledButton(
+            'Ok',
+            onTap: () {
+              ref
+                  .read(rootProvider.notifier)
+                  .showSpinner(tag: 'reboot', force: true);
+
+              context.pop();
+              ref.read(topologyProvider.notifier).reboot().then((value) {
+                ref.read(rootProvider.notifier).hideSpinner(tag: 'reboot');
+              });
+            },
+          ),
+          AppFilledButton(
+            'Cancel',
+            onTap: () {
+              context.pop();
+            },
+          )
+        ],
+      ),
+    );
   }
 }

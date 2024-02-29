@@ -18,6 +18,7 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 enum _PnpSetupStep {
   init,
@@ -145,7 +146,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             AppText.labelLarge('Saved'),
             AppGap.regular(),
             AppIcon.big(
-              icon: Icons.check_circle,
+              icon: Symbols.check_circle,
             ),
           ],
         ),

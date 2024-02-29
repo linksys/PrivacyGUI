@@ -99,6 +99,7 @@ dependencies:
   shimmer: ^3.0.0
   easy_stepper: ^0.8.3
   http_parser: ^4.0.2
+  material_symbols_icons: ^4.2719.1
 
 dev_dependencies:
   flutter_test:

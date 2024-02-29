@@ -66,13 +66,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       LinksysRoute(
         name: RouteNamed.prepareDashboard,
         path: RoutePath.prepareDashboard,
-        config: const LinksysRouteConfig(onlyMainView: true),
+        config: const LinksysRouteConfig(fullWidth: true),
         builder: (context, state) => PrepareDashboardView(),
       ),
       LinksysRoute(
         name: RouteNamed.selectNetwork,
         path: RoutePath.selectNetwork,
-        config: const LinksysRouteConfig(onlyMainView: true),
+        config: const LinksysRouteConfig(fullWidth: true),
         builder: (context, state) => SelectNetworkView(),
       ),
       dashboardRoute,

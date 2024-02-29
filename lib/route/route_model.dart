@@ -1,24 +1,22 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/page/components/styled/bottom_bar.dart';
 import 'package:linksys_app/page/components/styled/top_bar.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 class LinksysRouteConfig extends Equatable {
   const LinksysRouteConfig({
-    this.onlyMainView = false,
+    this.fullWidth = false,
     this.ignoreConnectivityEvent = false,
     this.ignoreCloudOfflineEvent = false,
   });
-  final bool onlyMainView;
+  final bool fullWidth;
   final bool ignoreConnectivityEvent;
   final bool ignoreCloudOfflineEvent;
 
   @override
   List<Object?> get props => [
-        onlyMainView,
+        fullWidth,
         ignoreConnectivityEvent,
         ignoreCloudOfflineEvent,
       ];
@@ -38,9 +36,9 @@ class LinksysRoute extends GoRoute {
     super.routes = const <RouteBase>[],
   }) : super(builder: (context, state) {
           final pagePadding = ResponsiveLayout.pageHorizontalPadding(context);
-
+          final isFullWidth = config?.fullWidth ?? false;
           return Container(
-            color: Theme.of(context).extension<ColorSchemeExt>()?.surfaceBright,
+            color: Theme.of(context).colorScheme.background,
             child: Column(
               children: [
                 const TopBar(),
@@ -56,19 +54,20 @@ class LinksysRoute extends GoRoute {
                         },
                         child: Padding(
                           padding: EdgeInsets.symmetric(
-                              horizontal: pagePadding, vertical: 0),
+                              horizontal: isFullWidth ? 0 : pagePadding,
+                              vertical: 0),
                           child: Container(
-                              constraints: BoxConstraints(
-                                  maxWidth:
-                                      ResponsiveLayout.pageMainWidth(context)),
+                              constraints: isFullWidth
+                                  ? null
+                                  : BoxConstraints(
+                                      maxWidth: ResponsiveLayout.pageMainWidth(
+                                          context)),
                               child: builder(context, state)),
                         ),
                       ),
                     ],
                   ),
                 ),
-                if (!ResponsiveLayout.isLayoutBreakpoint(context))
-                  const BottomBar(),
               ],
             ),
           );

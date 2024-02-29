@@ -52,6 +52,10 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
               _advancedSettingsSection(),
             ),
             const AppGap.semiBig(),
+            _section(
+              _othersSettingsSection(),
+            ),
+            const AppGap.semiBig(),
             AppSwitchTriggerTile(
               value: isFwAutoUpdate,
               title: AppText.bodyLarge('Auto Firmware Update'),
@@ -160,6 +164,36 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             // iconData: getCharactersIcons(context).nodesDefault,
             onTap: () => context.goNamed(RouteNamed.settingsPort),
           ),
+        ],
+      );
+
+  _othersSettingsSection() => DashboardSettingsSection(
+        title: 'OTHERS(TBC)',
+        items: [
+          AppSectionItemData(
+              title: 'Troubleshooting',
+              description: 'This is a description for this tile',
+              onTap: () {
+                context.goNamed(RouteNamed.troubleshooting);
+              }),
+          AppSectionItemData(
+              title: 'DDNS Settings',
+              description: 'This is a description for this tile',
+              onTap: () {
+                context.goNamed(RouteNamed.settingsDDNS);
+              }),
+          AppSectionItemData(
+              title: 'Ipv6 Port Service',
+              description: 'This is a description for this tile',
+              onTap: () {
+                context.goNamed(RouteNamed.ipv6PortServiceList);
+              }),
+          AppSectionItemData(
+              title: 'Channel Finder',
+              description: 'This is a description for this tile',
+              onTap: () {
+                context.goNamed(RouteNamed.channelFinderOptimize);
+              }),
         ],
       );
 }

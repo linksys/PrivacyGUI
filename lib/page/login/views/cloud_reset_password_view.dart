@@ -14,6 +14,7 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/input_field/validator_widget.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class CloudResetPasswordView extends ArgumentsConsumerStatefulView {
   const CloudResetPasswordView({Key? key}) : super(key: key);
@@ -121,7 +122,7 @@ class _CloudForgotPasswordViewState
           children: [
             IconButton(
               icon: const Icon(
-                Icons.check,
+                Symbols.check,
                 color: Colors.white,
               ),
               onPressed: () {

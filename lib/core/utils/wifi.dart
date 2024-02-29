@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 const signalThresholdSNR = [40, 25, 10];
 const signalThresholdRSSI = [-60, -70, -80];
@@ -28,22 +28,21 @@ NodeSignalLevel getWifiSignalLevel(int? signalStrength) {
   }
 }
 
+//! TODO move out from core libs
 IconData getWifiSignalIconData(BuildContext context, int? signalStrength) {
   switch (getWifiSignalLevel(signalStrength)) {
     case NodeSignalLevel.excellent:
-      return CustomTheme.of(context).icons.characters.signalstrength4;
+      return Symbols.signal_wifi_4_bar;
     case NodeSignalLevel.good:
-      return CustomTheme.of(context).icons.characters.signalstrength3;
+      return Symbols.network_wifi_3_bar;
     case NodeSignalLevel.fair:
-      return CustomTheme.of(context).icons.characters.signalstrength2;
+      return Symbols.network_wifi_2_bar;
     case NodeSignalLevel.weak:
-      return CustomTheme.of(context).icons.characters.signalstrength1;
+      return Symbols.network_wifi_1_bar;
     case NodeSignalLevel.none:
-      return CustomTheme.of(context)
-          .icons
-          .characters
-          .signalstrength0; // Default
+            return Symbols.signal_wifi_0_bar;
+// Default
     case NodeSignalLevel.wired:
-      return CustomTheme.of(context).icons.characters.ethernetDefault;
+      return Symbols.settings_ethernet;
   }
 }

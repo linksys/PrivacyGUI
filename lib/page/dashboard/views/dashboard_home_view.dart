@@ -46,6 +46,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
     return StyledAppPageView(
       scrollable: true,
+      appBarStyle: AppBarStyle.none,
       backState: StyledBackState.none,
       padding: const EdgeInsets.only(
         top: Spacing.big,
@@ -80,7 +81,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AppGap.big(),
         _ssid(ssid, isLoading),
         const AppGap.regular(),
         Stack(
@@ -324,7 +324,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   void _firmwareUpdateCheck() {
     Future.doWhile(() => !mounted).then((_) {
-          ref.read(firmwareUpdateProvider.notifier).checkFirmwareUpdateStatus();
+      ref.read(firmwareUpdateProvider.notifier).checkFirmwareUpdateStatus();
     });
   }
 

@@ -3,16 +3,17 @@ import 'dart:core';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/utils/icon_device_category.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
+import 'package:linksys_app/page/devices/extensions/icon_device_category_ext.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-
 
 class ChangeDeviceAvatarView extends ArgumentsConsumerStatefulView {
   const ChangeDeviceAvatarView({
@@ -60,8 +61,8 @@ class __ChangeDeviceAvatarViewState
   }
 
   Widget _deviceAvatar(String iconName) {
-    return AppDeviceAvatar.extraLarge(
-      image: CustomTheme.of(context).images.devices.getByName(iconName),
+    return Icon(
+      IconDeviceCategoryExt.resloveByName(iconName),
     );
   }
 
@@ -77,11 +78,8 @@ class __ChangeDeviceAvatarViewState
           onTap: () {
             context.pop(deviceAvatarNameList[index]);
           },
-          child: AppDeviceAvatar.large(
-              image: CustomTheme.of(context)
-                  .images
-                  .devices
-                  .getByName(deviceAvatarNameList[index])),
+          child: Icon(
+              IconDeviceCategoryExt.resloveByName(deviceAvatarNameList[index])),
         );
       },
     ));

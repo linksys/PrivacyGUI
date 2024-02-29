@@ -15,6 +15,7 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class AddAccountView extends ArgumentsConsumerStatefulView {
   const AddAccountView({Key? key, super.args}) : super(key: key);
@@ -78,8 +79,8 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
         children: List.generate(tips.length, (index) {
           return Row(
             children: [
-              AppIcon.regular(
-                  icon: CustomTheme.of(context).icons.characters.checkDefault),
+              const AppIcon.regular(
+                  icon: Symbols.check,),
               const AppGap.semiSmall(),
               AppText.bodyLarge(
                 tips[index],

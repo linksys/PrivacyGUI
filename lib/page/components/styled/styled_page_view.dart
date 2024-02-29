@@ -9,6 +9,7 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/buttons/popup_button.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import 'consts.dart';
 
@@ -47,6 +48,7 @@ class StyledAppPageView extends ConsumerWidget {
   final AppBarStyle appBarStyle;
   final bool handleNoConnection;
   final bool handleBanner;
+  final IconData? menuIcon;
   final PageMenu? menu;
   final Widget? menuWidget;
 
@@ -65,6 +67,7 @@ class StyledAppPageView extends ConsumerWidget {
     this.appBarStyle = AppBarStyle.back,
     this.handleNoConnection = false,
     this.handleBanner = false,
+    this.menuIcon,
     this.menu,
     this.menuWidget,
   });
@@ -77,14 +80,14 @@ class StyledAppPageView extends ConsumerWidget {
       scrollable: scrollable,
       bottomSheet: bottomSheet,
       bottomNavigationBar: bottomNavigationBar,
-      background: Theme.of(context).extension<ColorSchemeExt>()?.surfaceBright,
+      background: Theme.of(context).colorScheme.background,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!ResponsiveLayout.isLayoutBreakpoint(context) && hasMenu())
             Card(
-              margin: const EdgeInsets.only(right: Spacing.semiSmall),
+              margin: const EdgeInsets.only(right: Spacing.regular),
               shape: RoundedRectangleBorder(
                 borderRadius: const BorderRadius.all(
                   Radius.circular(8),
@@ -151,7 +154,7 @@ class StyledAppPageView extends ConsumerWidget {
 
   Widget _createMenuAction(BuildContext context) {
     return AppPopupButton(
-        button: Icon(getCharactersIcons(context).moreVertical),
+        button: Icon(menuIcon ?? Symbols.more_horiz),
         borderRadius: const BorderRadius.all(Radius.circular(10)),
         builder: (controller) {
           return _createMenuWidget(context);

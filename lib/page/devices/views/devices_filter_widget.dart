@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
-import 'package:linksys_app/page/devices/providers/device_list_provider.dart';
+import 'package:linksys_app/page/devices/_devices.dart';
 import 'package:linksys_app/util/extensions.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class DevicesFilterWidget extends ConsumerStatefulWidget {
   const DevicesFilterWidget({super.key});
@@ -24,19 +24,18 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
   @override
   void initState() {
     super.initState();
-
-    Future.doWhile(() => !mounted).then((value) => initFilter());
   }
 
   @override
   Widget build(BuildContext context) {
     final nodes = ref.watch(deviceManagerProvider).nodeDevices;
-    final radios =
-        ref.watch(dashboardManagerProvider).mainRadios.unique((x) => x.band);
-
-    final selectedNodeId = ref.watch(nodeIdFilterProvider);
-    final selectedBand = ref.watch(bandFilterProvider);
-    final selectConnection = ref.watch(connectionFilterProvider);
+    final radios = ref
+        .watch(dashboardManagerProvider.select((value) => value.mainRadios))
+        .unique((x) => x.band);
+    final filterConfig = ref.watch(deviceFilterConfigProvider);
+    final selectedNodeId = filterConfig.nodeFilter;
+    final selectedBand = filterConfig.bandFilter;
+    final selectConnection = filterConfig.connectionFilter;
     // final selectSSID = ref.watch(ssidFilterProvider);
     return SingleChildScrollView(
       physics: const ScrollPhysics(),
@@ -52,41 +51,51 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
         child: Padding(
           padding: const EdgeInsets.all(Spacing.regular),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const AppGap.semiSmall(),
+              const AppText.titleSmall('Filters'),
+              const AppGap.regular(),
               FilteredChipsWidget<String>(
-                  title: 'by Connection',
+                  title: 'By Connection',
                   dataList: const ['Online', 'Offline'],
                   chipName: (data) => data ?? '',
-                  checkIsSelected: (data) => selectConnection.contains(data),
+                  checkIsSelected: (data) =>
+                      selectConnection == (data == 'Online'),
                   onSelected: (data, value) {
                     if (data == null) {
                       return;
                     }
-                    final filter = ref.read(connectionFilterProvider.notifier);
                     if (value) {
-                      filter.state = List.from(filter.state..add(data));
-                    } else {
-                      filter.state = List.from(filter.state..remove(data));
+                      ref
+                          .read(deviceFilterConfigProvider.notifier)
+                          .updateConnectionFilter(data == 'Online');
                     }
                   }),
               FilteredChipsWidget<LinksysDevice>(
                   title: 'By node',
                   dataList: nodes,
                   chipName: (data) => data?.getDeviceLocation() ?? '',
-                  checkIsSelected: (data) =>
-                      selectedNodeId.contains(data?.deviceID),
-                  onSelected: (data, value) {
-                    final deviceId = data?.deviceID;
-                    if (deviceId == null) {
-                      return;
-                    }
-                    final filter = ref.read(nodeIdFilterProvider.notifier);
-                    if (value) {
-                      filter.state = List.from(filter.state..add(deviceId));
-                    } else {
-                      filter.state = List.from(filter.state..remove(deviceId));
-                    }
-                  }),
+                  checkIsSelected: (data) => selectConnection
+                      ? selectedNodeId.contains(data?.deviceID)
+                      : false,
+                  onSelected: selectConnection
+                      ? (data, value) {
+                          final deviceId = data?.deviceID;
+                          if (deviceId == null) {
+                            return;
+                          }
+                          final filter =
+                              ref.read(deviceFilterConfigProvider.notifier);
+                          if (value) {
+                            filter.updateNodeFilter(
+                                List.from(selectedNodeId..add(deviceId)));
+                          } else {
+                            filter.updateNodeFilter(
+                                List.from(selectedNodeId..remove(deviceId)));
+                          }
+                        }
+                      : null),
               // FilteredChipsWidget<WifiConnectionType>(
               //     title: 'SSID',
               //     dataList: WifiConnectionType.values,
@@ -98,41 +107,42 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
               //       ref.read(ssidFilterProvider.notifier).state = data;
               //     }),
               FilteredChipsWidget<RouterRadio>(
-                  title: 'by Radio',
+                  title: 'By Radio',
                   dataList: radios,
                   chipName: (data) => data?.band ?? '',
-                  checkIsSelected: (data) => selectedBand.contains(data?.band),
-                  onSelected: (data, value) {
-                    final band = data?.band;
-                    if (band == null) {
-                      return;
-                    }
-                    final filter = ref.read(bandFilterProvider.notifier);
-                    if (value) {
-                      filter.state = List.from(filter.state..add(band));
-                    } else {
-                      filter.state = List.from(filter.state..remove(band));
-                    }
-                  }),
+                  checkIsSelected: (data) => selectConnection
+                      ? selectedBand.contains(data?.band)
+                      : false,
+                  onSelected: selectConnection
+                      ? (data, value) {
+                          final band = data?.band;
+                          if (band == null) {
+                            return;
+                          }
+                          final filter =
+                              ref.read(deviceFilterConfigProvider.notifier);
+                          if (value) {
+                            filter.updateBandFilter(
+                                List.from(selectedBand..add(band)));
+                          } else {
+                            filter.updateBandFilter(
+                                List.from(selectedBand..remove(band)));
+                          }
+                        }
+                      : null),
+              const AppGap.regular(),
+              AppTextButton.noPadding(
+                'Reset Filters',
+                icon: Symbols.restart_alt,
+                onTap: () {
+                  ref.read(deviceFilterConfigProvider.notifier).initFilter();
+                },
+              )
             ],
           ),
         ),
       ),
     );
-  }
-
-  void initFilter() {
-    final nodes = ref.read(deviceManagerProvider).nodeDevices;
-    ref.read(nodeIdFilterProvider.notifier).state =
-        nodes.map((e) => e.deviceID).toList();
-    ref.read(bandFilterProvider.notifier).state = ref
-        .read(dashboardManagerProvider)
-        .mainRadios
-        .unique((x) => x.band)
-        .map((e) => e.band)
-        .toList();
-    ref.read(connectionFilterProvider.notifier).state = ['Online', 'Offline'];
-    // ref.read(ssidFilterProvider.notifier).state = null;
   }
 }
 
@@ -141,7 +151,7 @@ class FilteredChipsWidget<T> extends ConsumerStatefulWidget {
   final List<T> dataList;
   final String Function(T? data) chipName;
   final bool Function(T? data) checkIsSelected;
-  final void Function(T? data, bool isSelected) onSelected;
+  final void Function(T? data, bool isSelected)? onSelected;
 
   const FilteredChipsWidget({
     super.key,
@@ -149,7 +159,7 @@ class FilteredChipsWidget<T> extends ConsumerStatefulWidget {
     required this.dataList,
     required this.chipName,
     required this.checkIsSelected,
-    required this.onSelected,
+    this.onSelected,
   });
 
   @override
@@ -170,12 +180,14 @@ class _FilteredChipsWidgetState<T>
           children: [
             ...widget.dataList.map((e) => FilterChip(
                   label: AppText.bodySmall(widget.chipName(e)),
-                  shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(40))),
-                  showCheckmark: false,
-                  onSelected: (value) {
-                    widget.onSelected(e, value);
-                  },
+                  // shape: const RoundedRectangleBorder(
+                  //     borderRadius: BorderRadius.all(Radius.circular(40))),
+                  // showCheckmark: false,
+                  onSelected: widget.onSelected != null
+                      ? (value) {
+                          widget.onSelected?.call(e, value);
+                        }
+                      : null,
                   selected: widget.checkIsSelected(e),
                 ))
           ],

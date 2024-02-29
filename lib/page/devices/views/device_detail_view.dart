@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/utils/icon_device_category.dart';
 import 'package:linksys_app/core/utils/wifi.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
+import 'package:linksys_app/page/devices/extensions/icon_device_category_ext.dart';
 import 'package:linksys_app/page/topology/_topology.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -12,6 +14,7 @@ import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
+import 'package:linksys_widgets/widgets/card/device_info_card.dart';
 
 import 'package:linksys_widgets/widgets/page/layout/profile_header_layout.dart';
 
@@ -89,10 +92,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   }
 
   Widget _deviceAvatar(String iconName) {
-    return AppDeviceAvatar.extraLarge(
-      borderColor: Colors.transparent,
-      backgroundColor: Colors.transparent,
-      image: CustomTheme.of(context).images.devices.getByName(iconName),
+    return Icon(
+      IconDeviceCategoryExt.resloveByName(iconName),
     );
   }
 
@@ -196,7 +197,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppGap.big(),
-        AppSimplePanel(
+        AppDeviceInfoCard(
           title: getAppLocalizations(context).device_name,
           description: state.item.name,
           onTap: () {
@@ -206,45 +207,50 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         const Divider(height: 8),
         AppSimplePanel(
           title: getAppLocalizations(context).node_detail_label_connected_to,
-          description:
-              '${state.item.upstreamDevice} [${state.item.signalStrength}]',
-          onTap: () {
-            ref.read(topologySelectedIdProvider.notifier).state =
-                state.item.deviceId;
-            context.pushNamed(RouteNamed.settingsNodes);
-          },
+          description: state.item.isOnline
+              ? '${state.item.upstreamDevice} [${state.item.signalStrength}]'
+              : getAppLocalizations(context).offline,
+          onTap: state.item.isOnline
+              ? () {
+                  ref.read(topologySelectedIdProvider.notifier).state =
+                      state.item.deviceId;
+                  context.pushNamed(RouteNamed.settingsNodes);
+                }
+              : null,
         ),
       ],
     );
   }
 
   Widget _wifiSection(ExternalDeviceDetailState state) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppText.labelSmall(
-          getAppLocalizations(context).wifi_all_capital,
-        ),
-        const AppGap.small(),
-        AppSimplePanel(
-          title: getAppLocalizations(context).ip_address,
-          description: state.item.ipv4Address,
-        ),
-        const Divider(height: 8),
-        AppSimplePanel(
-          title: getAppLocalizations(context).mac_address,
-          description: state.item.macAddress,
-        ),
-        const Divider(height: 8),
-        if (state.item.ipv6Address.isNotEmpty) ...[
-          AppSimplePanel(
-            title: getAppLocalizations(context).ipv6_address,
-            description: state.item.ipv6Address,
-          ),
-          const Divider(height: 8),
-        ],
-      ],
-    );
+    return state.item.isOnline
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText.labelSmall(
+                getAppLocalizations(context).wifi_all_capital,
+              ),
+              const AppGap.small(),
+              AppSimplePanel(
+                title: getAppLocalizations(context).ip_address,
+                description: state.item.ipv4Address,
+              ),
+              const Divider(height: 8),
+              AppSimplePanel(
+                title: getAppLocalizations(context).mac_address,
+                description: state.item.macAddress,
+              ),
+              const Divider(height: 8),
+              if (state.item.ipv6Address.isNotEmpty) ...[
+                AppSimplePanel(
+                  title: getAppLocalizations(context).ipv6_address,
+                  description: state.item.ipv6Address,
+                ),
+                const Divider(height: 8),
+              ],
+            ],
+          )
+        : const Center();
   }
 
   Widget _detailSection(ExternalDeviceDetailState state) {

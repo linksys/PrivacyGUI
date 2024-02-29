@@ -118,7 +118,6 @@ class _EnterRouterPasswordState extends ConsumerState<EnterRouterPasswordView> {
             controller: _passwordController,
             hintText: getAppLocalizations(context).router_password,
             onChanged: _verifyPassword,
-            // isError: _errorReason.isNotEmpty,
             errorText: generalErrorCodeHandler(context, _errorReason),
           ),
           if (_hint.isNotEmpty)
