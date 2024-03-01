@@ -135,19 +135,19 @@
         // Service workers are supported. Use them.
         window.addEventListener('load', function () {
           // Register Firebase Messaging service worker.
-          navigator.serviceWorker.register('/firebase-messaging-sw.js');
+          navigator.serviceWorker.register('firebase-messaging-sw.js');
 
           // Wait for registration to finish before dropping the <script> tag.
           // Otherwise, the browser will load the script multiple times,
           // potentially different versions.
           var serviceWorkerUrl =
-            '/flutter_service_worker.js?v=' + serviceWorkerVersion;
+            'flutter_service_worker.js?v=' + serviceWorkerVersion;
 
           navigator.serviceWorker.register(serviceWorkerUrl).then((reg) => {
             function waitForActivation(serviceWorker) {
               serviceWorker.addEventListener('statechange', () => {
                 if (serviceWorker.state == 'activated') {
-                  console.log('Installed new service worker.');
+                  console.log('[ServiceWorker]Installed new service worker.');
                   loadMainDartJs();
                 }
               });
@@ -159,12 +159,12 @@
             } else if (!reg.active.scriptURL.endsWith(serviceWorkerVersion)) {
               // When the app updates the serviceWorkerVersion changes, so we
               // need to ask the service worker to update.
-              console.log('New service worker available.');
+              console.log('[ServiceWorker]New service worker available.');
               reg.update();
               waitForActivation(reg.installing);
             } else {
               // Existing service worker is still good.
-              console.log('Loading app from service worker.');
+              console.log('[ServiceWorker]Loading app from service worker.');
               loadMainDartJs();
             }
           });
@@ -174,7 +174,7 @@
           setTimeout(() => {
             if (!scriptLoaded) {
               console.warn(
-                'Failed to load app from service worker. Falling back to plain <script> tag.'
+                '[ServiceWorker]Failed to load app from service worker. Falling back to plain <script> tag.'
               );
               loadMainDartJs();
             }
