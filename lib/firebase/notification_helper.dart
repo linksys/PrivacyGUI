@@ -82,7 +82,10 @@ Future _initCloudMessageWeb() async {
               'BFSsxlFG5VQ5j1S99weYRQa12vmH9h1AL888jUgrLrNjKegy6MwB0_EJ9yoLs1Znfc3oizB0RNOTqdbg8T4GV88')
       .then(_setToken);
   tokenStreamSubscription =
-      FirebaseMessaging.instance.onTokenRefresh.listen(_setToken);
+      FirebaseMessaging.instance.onTokenRefresh.listen(_setToken)
+        ..onError((error) {
+          logger.d('[Notification][WEB] getToken Error: $error');
+        });
 }
 
 /// Mobile Push notification initialize
