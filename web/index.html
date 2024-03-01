@@ -120,8 +120,6 @@
 
   <script>
       var scriptLoaded = false;
-      var href1 = document.getElementsByTagName('base')[0].href;
-      console.log('href', href1);
 
       function loadMainDartJs() {
         if (scriptLoaded) {
@@ -138,13 +136,12 @@
         // Service workers are supported. Use them.
         window.addEventListener('load', function () {
           // Register Firebase Messaging service worker.
-          navigator.serviceWorker.register(href1 + 'flutter_service_worker.js');
+          navigator.serviceWorker.register('firebase-messaging-sw.js');
 
           // Wait for registration to finish before dropping the <script> tag.
           // Otherwise, the browser will load the script multiple times,
           // potentially different versions.
-          var serviceWorkerUrl = href1 +
-            'flutter_service_worker.js?v=' + serviceWorkerVersion;
+          var serviceWorkerUrl = 'firebase-messaging-sw.js?v=' + serviceWorkerVersion;
 
           navigator.serviceWorker.register(serviceWorkerUrl).then((reg) => {
             function waitForActivation(serviceWorker) {
