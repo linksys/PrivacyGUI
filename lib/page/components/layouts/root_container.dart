@@ -1,10 +1,13 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
+import 'package:linksys_app/firebase/notification_helper.dart';
+import 'package:linksys_app/firebase/notification_provider.dart';
 import 'package:linksys_app/page/components/layouts/idle_checker.dart';
 import 'package:linksys_app/providers/root/root_config.dart';
 import 'package:linksys_app/providers/root/root_provider.dart';
@@ -45,6 +48,12 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
   final _link = LayerLink();
 
   bool _showLocaleList = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.doWhile(() => !mounted).then((value) => _registerNotification());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -183,7 +192,6 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
 
   Widget _buildLayout(Widget child, BoxConstraints constraints) {
     return child;
-    ;
   }
 
   List<Widget> _handleBanner(WidgetRef ref) {
@@ -224,5 +232,31 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
       }
     }
     return [];
+  }
+
+  void _registerNotification() {
+    ref.read(notificationProvider.notifier).load();
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      logger.d(
+          '[Notification][WEB] Got a message whilst in the foreground! $message');
+      logger.d('[Notification][WEB] Message data: ${message.data}');
+
+      if (message.notification != null) {
+        logger.d(
+            '[Notification][WEB] Message also contained a notification: ${message.notification}');
+        saveNotificationMessage(message);
+      }
+    });
+  }
+
+  void saveNotificationMessage(RemoteMessage message) {
+    if (message.notification?.title == null &&
+        message.notification?.body == null) {
+      return;
+    }
+    ref.read(notificationProvider.notifier).onReceiveNotification(
+        message.notification?.title,
+        message.notification?.body,
+        message.sentTime?.millisecondsSinceEpoch);
   }
 }

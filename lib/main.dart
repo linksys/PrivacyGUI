@@ -12,6 +12,8 @@ import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/firebase/analytics.dart';
 import 'package:linksys_app/app.dart';
+import 'package:linksys_app/firebase/notification_helper.dart';
+import 'package:linksys_app/firebase/notification_provider.dart';
 import 'package:linksys_app/providers/logger_observer.dart';
 
 import 'package:linksys_app/core/utils/logger.dart';
@@ -37,6 +39,7 @@ void main() async {
   await initFirebase();
 
   container.read(linksysCacheManagerProvider);
+
   BuildConfig.load();
   initBetterActions();
   if (!kIsWeb) {
@@ -62,14 +65,14 @@ initErrorHandler() {
   FlutterError.onError = (FlutterErrorDetails details) {
     logger.e('Uncaught Flutter Error:\n', error: details);
     // if (!kIsWeb) {
-      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    FirebaseCrashlytics.instance.recordFlutterFatalError(details);
     // }
   };
   PlatformDispatcher.instance.onError = (error, stack) {
     logger.e('Uncaught Error:\n', error: error, stackTrace: stack);
     logger.e(stack.toString());
     // if (!kIsWeb) {
-      FirebaseCrashlytics.instance.recordError(error, stack);
+    FirebaseCrashlytics.instance.recordError(error, stack);
     // }
     return true;
   };
@@ -83,8 +86,9 @@ initFirebase() async {
         ? DefaultFirebaseOptions.iosEE
         : DefaultFirebaseOptions.currentPlatform,
   );
+
   await initAnalyticsDefault();
-  // await initCloudMessage();
+  await initCloudMessage();
   logger.d('Done for init Firebase Core');
 }
 

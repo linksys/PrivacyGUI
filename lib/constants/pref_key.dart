@@ -12,6 +12,9 @@ const pShowPushPrompt = 'PushPrompt';
 const pAppFirstLaunch = 'AppFirstLaunch';
 const pWebLog = 'web_log';
 
+const pNotificationLastSeen = 'NotificationLastSeen';
+const pNotifications = 'Notifications';
+
 // secured
 const pSessionToken = 'SessionToken';
 const pSessionTokenTs = 'SessionTokenTimeStamp';

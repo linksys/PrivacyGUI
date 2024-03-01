@@ -12,7 +12,7 @@ import 'package:linksys_app/page/devices/views/devices_filter_widget.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/card/device_card.dart';
+import 'package:linksys_widgets/widgets/card/device_list_card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';

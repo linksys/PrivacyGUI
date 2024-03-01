@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:linksys_app/firebase/notification_helper.dart';
+import 'package:linksys_app/firebase/notification_provider.dart';
 import 'package:linksys_app/page/components/styled/general_settings_widget/general_settings_widget.dart';
 import 'package:linksys_app/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:linksys_app/page/select_network/_select_network.dart';
@@ -10,7 +13,9 @@ import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/custom_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/buttons/popup_button.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class TopBar extends ConsumerStatefulWidget {
   const TopBar({super.key});
@@ -49,7 +54,14 @@ class _TopBarState extends ConsumerState<TopBar> {
                   Wrap(
                     children: [
                       if (loginType == LoginType.remote) _networkSelect(),
-                      const GeneralSettingsWidget(),
+                      const Padding(
+                        padding: EdgeInsets.all(4.0),
+                        child: NotificationPopupWidget(),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.all(4.0),
+                        child: GeneralSettingsWidget(),
+                      ),
                     ],
                   ),
                 ],
@@ -96,5 +108,68 @@ class _TopBarState extends ConsumerState<TopBar> {
         ],
       ),
     );
+  }
+}
+
+class NotificationPopupWidget extends StatefulWidget {
+  const NotificationPopupWidget({super.key});
+
+  @override
+  State<NotificationPopupWidget> createState() =>
+      _NotificationPopupWidgetState();
+}
+
+class _NotificationPopupWidgetState extends State<NotificationPopupWidget> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer(builder: (context, ref, child) {
+      final notificationState = ref.watch(notificationProvider);
+      final formatter = DateFormat();
+      return AppPopupButton(
+          button: Badge(
+            isLabelVisible: notificationState.hasNew,
+            child: const Icon(
+              Symbols.notifications,
+              size: 20,
+            ),
+          ),
+          builder: (controller) => Container(
+                constraints: const BoxConstraints(minWidth: 200, maxWidth: 300),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ...notificationState.notifications
+                        .map((e) => ListTile(
+                              title: AppText.labelLarge(e.title),
+                              subtitle: AppText.labelSmall(e.message ?? ''),
+                              trailing: AppText.bodySmall(
+                                formatter.format(
+                                  DateTime.fromMillisecondsSinceEpoch(
+                                      e.sentTime),
+                                ),
+                              ),
+                            ))
+                        .toList(),
+                    AppTextButton(
+                      'Clear',
+                      onTap: () {
+                        ref.read(notificationProvider.notifier).clear();
+                        controller.close();
+                      },
+                    ),
+                  ],
+                ),
+              ));
+    });
   }
 }
