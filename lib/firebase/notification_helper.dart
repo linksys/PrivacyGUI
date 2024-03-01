@@ -80,12 +80,16 @@ Future _initCloudMessageWeb() async {
       .getToken(
           vapidKey:
               'BFSsxlFG5VQ5j1S99weYRQa12vmH9h1AL888jUgrLrNjKegy6MwB0_EJ9yoLs1Znfc3oizB0RNOTqdbg8T4GV88')
-      .then(_setToken);
-  tokenStreamSubscription =
-      FirebaseMessaging.instance.onTokenRefresh.listen(_setToken)
-        ..onError((error) {
-          logger.d('[Notification][WEB] getToken Error: $error');
-        });
+      .then(_setToken)
+      .onError((error, stackTrace) {
+    logger.d('[Notification][WEB] get Token Error: $error');
+  });
+  tokenStreamSubscription = FirebaseMessaging.instance.onTokenRefresh
+      .listen(_setToken, onError: (error) {
+    logger.d('[Notification][WEB] onTokenRefresh Error: $error');
+  }, onDone: () {
+    logger.d('[Notification][WEB] geonTokenRefresht Done!');
+  });
 }
 
 /// Mobile Push notification initialize
