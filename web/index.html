@@ -119,29 +119,6 @@
   <script src="main.dart.js" type="application/javascript"></script>
 
   <script>
-    // if ('serviceWorker' in navigator) {
-    //   window.addEventListener('load', function(ev) {
-    //     navigator.serviceWorker.register('/firebase-messaging-sw.js');
-    //     // Wait for registration to finish before dropping the <script> tag.
-    //     // Otherwise, the browser will load the script multiple times,
-    //     // potentially different versions.
-    //     var serviceWorkerUrl =
-    //       'flutter_service_worker.js?v=' + serviceWorkerVersion;
-
-
-    //     // Download main.dart.js
-    //     _flutter.loader.loadEntrypoint({
-    //       serviceWorker: {
-    //         serviceWorkerVersion: serviceWorkerVersion,
-    //       }
-    //     }).then(function(engineInitializer) {
-    //       return engineInitializer.initializeEngine();
-    //     }).then(function(appRunner) {
-    //       return appRunner.runApp();
-    //     });
-    //   });
-    // }
-    var serviceWorkerVersion = null;
       var scriptLoaded = false;
       function loadMainDartJs() {
         if (scriptLoaded) {
