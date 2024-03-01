@@ -98,7 +98,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
       ..._buildConnectionInfo(),
       // ..._buildCloudApp(),
       ..._buildPushNotificationInfo(),
-      _buildSmartDeviceTile(),
+      // _buildSmartDeviceTile(),
     ];
   }
 
@@ -211,70 +211,51 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
   }
 
   List<Widget> _buildPushNotificationInfo() {
-    if (kIsWeb) return [];
     return [
       AppExpansion(
         title: 'PushNotification Info',
         children: [
-          Offstage(
-            offstage: Platform.isIOS,
-            child: Wrap(
-              alignment: WrapAlignment.start,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8.0),
-                  child: AppText.bodyMedium('FCM Token:'),
-                ),
-                IconButton(
-                    onPressed: _fcmToken != null
-                        ? () {
-                            _shareToken(_fcmToken!);
-                          }
-                        : null,
-                    icon: const Icon(
-                      Symbols.share,
-                      color: Colors.white,
-                    )),
-                AppText.bodyMedium(_fcmToken ?? 'No FCM Token'),
-              ],
-            ),
-          ),
-          const AppGap.small(),
-          Offstage(
-            offstage: Platform.isAndroid,
-            child: Wrap(
-              alignment: WrapAlignment.start,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                const AppText.bodyMedium('APNS Token:'),
-                IconButton(
-                    onPressed: _apnsToken != null
-                        ? () {
-                            _shareToken(_apnsToken!);
-                          }
-                        : null,
-                    icon: const Icon(
-                      Symbols.share,
-                      color: Colors.white,
-                    )),
-                AppText.bodyMedium(_apnsToken ?? 'No APNS Token'),
-              ],
-            ),
-          ),
-          const AppGap.regular(),
           Wrap(
+            alignment: WrapAlignment.start,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const Text('Foreground Push Notification'),
-              Switch(
-                  value: _streamSubscription != null,
-                  onChanged: (value) {
-                    _toggleForegroundNotification(value);
-                  })
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
+                child: AppText.bodyMedium('FCM Token:'),
+              ),
+              IconButton(
+                  onPressed: _fcmToken != null
+                      ? () {
+                          // _shareToken(_fcmToken!);
+                          Clipboard.setData(ClipboardData(text: _fcmToken!));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Copied!'),
+                            ),
+                          );
+                        }
+                      : null,
+                  icon: const Icon(
+                    Symbols.copy_all,
+                    color: Colors.white,
+                  )),
+              AppText.bodyMedium(_fcmToken ?? 'No FCM Token'),
             ],
           ),
+
           const AppGap.regular(),
+          // Wrap(
+          //   crossAxisAlignment: WrapCrossAlignment.center,
+          //   children: [
+          //     const Text('Foreground Push Notification'),
+          //     Switch(
+          //         value: _streamSubscription != null,
+          //         onChanged: (value) {
+          //           _toggleForegroundNotification(value);
+          //         })
+          //   ],
+          // ),
+          // const AppGap.regular(),
         ],
       ),
     ];
