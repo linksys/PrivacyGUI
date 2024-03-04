@@ -94,7 +94,6 @@
   "accept": "I accept",
   "access": "Access",
   "access_until_time_today": "WiFi access until {time} today",
-  "account": "Account",
   "account_name": "Account name",
   "add": "Add",
   "add_a_node": "Add a node",
@@ -153,7 +152,6 @@
   "bolivia_venezuela": "Bolivia, Venezuela",
   "brazil_east_greenland": "Brazil East, Greenland",
   "camera_access": "Camera access for QR code",
-  "cancel": "Cancel",
   "central_time_usa_canada": "Central Time (USA & Canada)",
   "change": "Change",
   "check_for_internet": "Checking for internet...",
@@ -164,7 +162,6 @@
   "chile_time_chile_antarctica": "Chile Time (Chile, Antarctica)",
   "china_hong_kong_australia_western": "China, Hong Kong, Australia Western",
   "clear": "Clear",
-  "clear_all": "Clear all",
   "clear_all_offline_devices": "Clear all offline devices?",
   "clear_all_offline_devices_desc": "These devices will reappear if they reconnect to your Wi-Fi network.",
   "client_lease_time": "Client lease time",
@@ -224,7 +221,6 @@
   "details_all_capital": "DETAILS",
   "device_ip_address": "Device IP address",
   "device_name": "Device name",
-  "devices": "Devices",
   "dhcp_ip_range": "{first} to {last}",
   "dhcp_list": "DHCP list",
   "dhcp_reservations": "DHCP reservations",
@@ -238,7 +234,6 @@
   "dont_want_cloud_account": "I do not want an account",
   "duid": "DUID",
   "eastern_time_usa_canada": "Eastern Time (USA & Canada)",
-  "edit": "Edit",
   "email": "Email",
   "enable_biometrics": "Enable biometrics",
   "enable_local_network": "I’ve enabled local network access",
@@ -424,10 +419,8 @@
   "num_online": "{num} online",
   "number_of_devices": "{count, plural, =0{No devices} =1{{count} device} other{{count} devices}}",
   "off": "Off",
-  "offline": "Offline",
   "offline_devices": "Offline devices",
   "on": "On",
-  "online": "Online",
   "opendns_by_cisco": "OpenDNS by Cisco",
   "operating_system": "Operating system",
   "other": "Other",
@@ -645,5 +638,52 @@
   "wifi_signal_weak": "Weak",
   "wifi_signal_weak_rssi_range": "0 to -50",
   "wins": "WINS",
-  "wired_device": "Wired device"
+  "wired_device": "Wired device",
+  "home": "Home",
+  "menu": "Menu",
+  "support": "Support",
+  "wifi": "WiFi",
+  "myNetwork": "My Network",
+  "restartNetwork": "Restart Network",
+  "menuSetupANewProduct": "Setup a New Product",
+  "account": "Account",
+  "menuRouterAndNodes": "Router and nodes",
+  "speedTest": "Speed Test",
+  "safeBrowsing": "Safe Browsing",
+  "familyTime": "Family Time",
+  "advancedSettings": "Advanced Settings",
+  "devices": "Devices",
+  "filters": "Filters",
+  "nDevices": "{count, plural, other{{count} devices} zero{No devices} one{1 device}}",
+  "@nDevices": {
+      "description": "Number of devices",
+      "placeholders": {
+          "count": {
+            "type": "int",
+            "example": "1" 
+          }
+      }
+  },
+  "byConnection": "By connection",
+  "byNode": "By node",
+  "byWifiName": "By WiFi Name",
+  "byRadio": "By Radio",
+  "resetFilters": "Reset Filters",
+  "online": "Online",
+  "offline": "Offline",
+  "edit": "Edit",
+  "selectAll": "Select All",
+  "clearAll": "Clear all",
+  "deleteSelected": "Delete Selected",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "nDevicesDeleteDevicesTitle": "{count, plural, other{Delete devices} one{Delete device}}",
+  "@nDevicesDeleteDevicesTitle": {
+      "description": "alert dialog delete device title plural"
+  },
+  "nDevicesDeleteDevicesDescription": "{count, plural, other{Devices can reappear in the list if reconnected to your WiFi network.} one{Device can reappear in the list if reconnected to your WiFi network.}}",
+  "@nDevicesDeleteDevicesDescription": {
+      "description": "alert dialog delete device description plural"
+  }
+
 }

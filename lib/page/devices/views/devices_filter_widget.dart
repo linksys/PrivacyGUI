@@ -4,6 +4,7 @@ import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
 import 'package:linksys_app/util/extensions.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
@@ -54,14 +55,16 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const AppGap.semiSmall(),
-              const AppText.titleSmall('Filters'),
+              AppText.titleSmall(loc(context).filters),
               const AppGap.regular(),
-              FilteredChipsWidget<String>(
-                  title: 'By Connection',
-                  dataList: const ['Online', 'Offline'],
-                  chipName: (data) => data ?? '',
-                  checkIsSelected: (data) =>
-                      selectConnection == (data == 'Online'),
+              FilteredChipsWidget<(String, bool)>(
+                  title: loc(context).byConnection,
+                  dataList: [
+                    (loc(context).online, true),
+                    (loc(context).offline, false)
+                  ],
+                  chipName: (data) => data?.$1 ?? '',
+                  checkIsSelected: (data) => selectConnection == (data?.$2),
                   onSelected: (data, value) {
                     if (data == null) {
                       return;
@@ -69,11 +72,11 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
                     if (value) {
                       ref
                           .read(deviceFilterConfigProvider.notifier)
-                          .updateConnectionFilter(data == 'Online');
+                          .updateConnectionFilter(data.$2);
                     }
                   }),
               FilteredChipsWidget<LinksysDevice>(
-                  title: 'By node',
+                  title: loc(context).byNode,
                   dataList: nodes,
                   chipName: (data) => data?.getDeviceLocation() ?? '',
                   checkIsSelected: (data) => selectConnection
@@ -107,7 +110,7 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
               //       ref.read(ssidFilterProvider.notifier).state = data;
               //     }),
               FilteredChipsWidget<RouterRadio>(
-                  title: 'By Radio',
+                  title: loc(context).byRadio,
                   dataList: radios,
                   chipName: (data) => data?.band ?? '',
                   checkIsSelected: (data) => selectConnection
@@ -132,7 +135,7 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
                       : null),
               const AppGap.regular(),
               AppTextButton.noPadding(
-                'Reset Filters',
+                loc(context).resetFilters,
                 icon: Symbols.restart_alt,
                 onTap: () {
                   ref.read(deviceFilterConfigProvider.notifier).initFilter();

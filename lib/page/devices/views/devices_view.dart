@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/utils/wifi.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
@@ -60,7 +61,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
         ? const AppFullScreenSpinner()
         : StyledAppPageView(
             padding: const EdgeInsets.only(),
-            title: 'Devices',
+            title: loc(context).devices,
             menuWidget: const DevicesFilterWidget(),
             child: AppBasicLayout(
               header: Padding(
@@ -73,7 +74,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          AppText.labelLarge('$count Devices'),
+                          AppText.labelLarge(loc(context).nDevices(count)),
                           if (!isOnlineFilter)
                             _buildEditWidget(filteredDeviceList),
                         ],
@@ -107,7 +108,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
     final content = switch (_isEdit) {
       true => [
           AppTextButton(
-            isSelectedAll ? 'Clear All' : 'Select All',
+            isSelectedAll ? loc(context).clearAll : loc(context).selectAll,
             icon: Symbols.check,
             onTap: () {
               setState(() {
@@ -117,7 +118,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
             },
           ),
           AppTextButton(
-            'Delect Selected',
+            loc(context).deleteSelected,
             icon: Symbols.delete,
             color: Theme.of(context).colorScheme.error,
             onTap: () {
@@ -125,7 +126,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
             },
           ),
           AppTextButton(
-            'Cancel',
+            loc(context).cancel,
             color: Theme.of(context).colorScheme.onSurface,
             onTap: () {
               setState(() {
@@ -136,7 +137,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
         ],
       false => [
           AppTextButton.noPadding(
-            'Edit',
+            loc(context).edit,
             icon: Symbols.edit,
             onTap: () {
               setState(() {
@@ -152,19 +153,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
   }
 
   Widget _buildCell(int index, List<DeviceListItem> deviceList) {
-    if (index == deviceList.length) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 24),
-        child: AppSimplePanel(
-          title: 'Offline (${ref.read(offlineDeviceListProvider).length})',
-          onTap: () {
-            context.pushNamed(RouteNamed.offlineDevices);
-          },
-        ),
-      );
-    } else {
-      return _buildDeviceCell(deviceList[index]);
-    }
+    return _buildDeviceCell(deviceList[index]);
   }
 
   Widget _buildDeviceCell(DeviceListItem item) {
@@ -209,15 +198,16 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
     showAdaptiveDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: AppText.bodyLarge('Delete device/s'),
-        content: AppText.bodyLarge(
-            'Device/s can reappear in the list if reconnected to your WiFi network.'),
+        title: AppText.bodyLarge(
+            loc(context).nDevicesDeleteDevicesTitle(_selectedList.length)),
+        content: AppText.bodyLarge(loc(context)
+            .nDevicesDeleteDevicesDescription(_selectedList.length)),
         actions: [
-          AppTextButton('Cancel', onTap: () {
+          AppTextButton(loc(context).cancel, onTap: () {
             context.pop();
           }),
           AppTextButton(
-            'Delete',
+            loc(context).delete,
             color: Theme.of(context).colorScheme.error,
             onTap: () {
               _removeDevices();

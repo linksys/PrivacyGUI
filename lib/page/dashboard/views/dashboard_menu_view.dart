@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/topology/providers/topology_provider.dart';
@@ -9,7 +10,6 @@ import 'package:linksys_app/providers/auth/auth_provider.dart';
 import 'package:linksys_app/providers/root/root_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/route/router_provider.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/buttons/button.dart';
 import 'package:linksys_widgets/widgets/card/menu_card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
@@ -98,40 +98,40 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         ref.read(authProvider).value?.loginType == LoginType.remote;
     return [
       AppSectionItemData(
-          title: 'WiFi',
+          title: loc(context).wifi,
           description: 'This is a description for this tile',
           iconData: Symbols.signal_wifi_4_bar,
           onTap: () {
             _navigateTo(RouteNamed.settingsWifi);
           }),
       AppSectionItemData(
-          title: 'Router and nodes',
+          title: loc(context).menuRouterAndNodes,
           description: 'This is a description for this tile',
           iconData: Symbols.router,
           onTap: () {
             _navigateTo(RouteNamed.settingsNodes);
           }),
       AppSectionItemData(
-          title: 'Safe Browsing',
+          title: loc(context).safeBrowsing,
           description: 'This is a description for this tile',
           iconData: Symbols.encrypted,
           onTap: () {
             _navigateTo(RouteNamed.safeBrowsing);
           }),
       AppSectionItemData(
-          title: 'Family time',
+          title: loc(context).familyTime,
           description: 'This is a description for this tile',
           iconData: Symbols.family_restroom,
           onTap: () {}),
       AppSectionItemData(
-          title: 'Speed Test',
+          title: loc(context).speedTest,
           description: 'This is a description for this tile',
           iconData: Symbols.network_check,
           onTap: () {
             _navigateTo(RouteNamed.speedTestSelection);
           }),
       AppSectionItemData(
-          title: 'Advanced Settings',
+          title: loc(context).advancedSettings,
           description: 'This is a description for this tile',
           iconData: Symbols.settings,
           onTap: () {
@@ -139,7 +139,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           }),
       if (isCloudLogin)
         AppSectionItemData(
-            title: 'Account',
+            title: loc(context).account,
             description: 'This is a description for this tile',
             iconData: Symbols.person_rounded,
             onTap: () {

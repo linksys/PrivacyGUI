@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/dashboard/views/dashboard_navigation_rail.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
@@ -35,7 +36,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
   @override
   void initState() {
     super.initState();
-    _prepareNavigationItems(context);
+    Future.doWhile(() => !mounted)
+        .then((value) => _prepareNavigationItems(context));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
   }
 
   @override
@@ -128,18 +135,18 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
     if (!mounted) {
       return;
     }
-    const items = [
+    final items = [
       DashboardNaviItem(
           icon: Symbols.home,
-          title: 'Home',
+          title: loc(context).home,
           rootPath: RouteNamed.dashboardHome),
       DashboardNaviItem(
           icon: Symbols.menu,
-          title: 'Menu',
+          title: loc(context).menu,
           rootPath: RouteNamed.dashboardMenu),
       DashboardNaviItem(
           icon: Symbols.help_outline,
-          title: 'Supports',
+          title: loc(context).support,
           rootPath: RouteNamed.dashboardSupport),
     ];
     _dashboardNaviItems.addAll(items);
