@@ -2,10 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/dashboard/views/dashboard_navigation_rail.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/theme/material/color_schemes_ext.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 import 'package:linksys_app/core/utils/logger.dart';
@@ -134,7 +131,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
     const items = [
       DashboardNaviItem(
           icon: Symbols.home,
-          title: getAppLocalizations(context),
+          title: 'Home',
           rootPath: RouteNamed.dashboardHome),
       DashboardNaviItem(
           icon: Symbols.menu,
