@@ -97,7 +97,7 @@ class StyledAppPageView extends ConsumerWidget {
                 ),
               ),
               elevation: 0,
-              child: _createMenuWidget(context),
+              child: _createMenuWidget(context, 200),
             ),
           Expanded(child: child),
         ],
@@ -153,17 +153,22 @@ class StyledAppPageView extends ConsumerWidget {
   }
 
   Widget _createMenuAction(BuildContext context) {
-    return AppPopupButton(
-        button: Icon(menuIcon ?? Symbols.more_horiz),
-        borderRadius: const BorderRadius.all(Radius.circular(10)),
-        builder: (controller) {
-          return _createMenuWidget(context);
-        });
+    return AppIconButton.noPadding(
+      icon: menuIcon ?? Symbols.more_horiz,
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          useRootNavigator: true,
+          builder: (context) => _createMenuWidget(context),
+        );
+      },
+    );
   }
 
-  Widget _createMenuWidget(BuildContext context) {
+  Widget _createMenuWidget(BuildContext context, [double? maxWidth]) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 200),
+      constraints: maxWidth != null ? BoxConstraints(maxWidth: maxWidth) : null,
       child: menuWidget ??
           Column(
             mainAxisSize: MainAxisSize.min,

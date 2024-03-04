@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/utils/icon_device_category.dart';
 import 'package:linksys_app/core/utils/wifi.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
@@ -13,10 +13,12 @@ import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/avatars/device_avatar.dart';
+import 'package:linksys_widgets/widgets/card/card.dart';
 import 'package:linksys_widgets/widgets/card/device_info_card.dart';
+import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
-import 'package:linksys_widgets/widgets/page/layout/profile_header_layout.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class DeviceDetailView extends ArgumentsConsumerStatefulView {
   const DeviceDetailView({
@@ -34,34 +36,158 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     final state = ref.watch(externalDeviceDetailProvider);
     return LayoutBuilder(
       builder: (context, constraint) {
-        return AppProfileHeaderLayout(
-          expandedHeight: constraint.maxHeight / 3,
-          collaspeTitle: state.item.name,
-          onCollaspeBackTap: () {
-            context.pop();
-          },
-          background: Theme.of(context).colorScheme.background,
-          header: Column(
-            children: [
-              LinksysAppBar(
-                leading: AppIconButton(
-                  icon: getCharactersIcons(context).arrowLeft,
-                  onTap: () {
-                    context.pop();
-                  },
-                ),
-              ),
-              const Spacer(),
-              _header(state),
-            ],
-          ),
-          body: Column(
-            children: [
-              _content(state),
-            ],
+        return StyledAppPageView(
+          padding: const EdgeInsets.only(),
+          title: 'Devices',
+          scrollable: true,
+          child: AppBasicLayout(
+            content: ResponsiveLayout(
+                desktop: _desktopLayout(state), mobile: _mobileLayout(state)),
           ),
         );
       },
+    );
+  }
+
+  Widget _desktopLayout(ExternalDeviceDetailState state) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 280,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _avatarCard(state),
+              const AppGap.regular(),
+              _connectionCard(state),
+              const AppGap.regular(),
+              _unitCard(state),
+              const Spacer(),
+            ],
+          ),
+        ),
+        const AppGap.regular(),
+        Expanded(child: _detailCard(state))
+      ],
+    );
+  }
+
+  Widget _mobileLayout(ExternalDeviceDetailState state) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        _avatarCard(state),
+        _detailCard(state),
+        _connectionCard(state),
+        _unitCard(state),
+      ],
+    );
+  }
+
+  Widget _avatarCard(ExternalDeviceDetailState state) {
+    return AppCard(
+      child: SizedBox(
+        height: 160,
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: AppIconButton(
+                icon: Symbols.edit,
+                onTap: () {},
+              ),
+            ),
+            Expanded(
+              child: Icon(
+                IconDeviceCategoryExt.resloveByName(state.item.icon),
+                size: 40,
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _connectionCard(ExternalDeviceDetailState state) {
+    return AppCard(
+        child: Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        AppDeviceInfoCard(
+          title: 'Connected to',
+          description: state.item.upstreamDevice,
+          showBorder: false,
+          padding: const EdgeInsets.symmetric(vertical: Spacing.semiSmall),
+        ),
+        const Divider(
+          height: 8,
+          thickness: 1,
+        ),
+        AppDeviceInfoCard(
+          title: 'Signal Strength',
+          description: '${state.item.signalStrength} dBM',
+          showBorder: false,
+          padding: const EdgeInsets.symmetric(vertical: Spacing.semiSmall),
+          trailing: Icon(getWifiSignalIconData(
+            context,
+            state.item.isWired ? null : state.item.signalStrength,
+          )),
+        ),
+      ],
+    ));
+  }
+
+  Widget _unitCard(ExternalDeviceDetailState state) {
+    return AppCard(
+        child: Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        AppDeviceInfoCard(
+          showBorder: false,
+          padding: const EdgeInsets.symmetric(vertical: Spacing.semiSmall),
+          title: 'Manufacturer',
+          description: state.item.manufacturer,
+        ),
+      ],
+    ));
+  }
+
+  Widget _detailCard(ExternalDeviceDetailState state) {
+    return Column(
+      children: [
+        AppDeviceInfoCard(
+          title: 'Device Name',
+          description: state.item.name,
+          trailing: AppIconButton(
+            icon: Symbols.edit,
+            onTap: () {},
+          ),
+        ),
+        AppDeviceInfoCard(
+          title: 'IP Address',
+          description: state.item.ipv4Address,
+          trailing: AppTextButton(
+            'Reserve DHCP',
+            onTap: () {},
+          ),
+        ),
+        AppDeviceInfoCard(
+          title: 'MAC Address',
+          description: state.item.macAddress,
+        ),
+        AppDeviceInfoCard(
+          title: 'IPv6 Address',
+          description: state.item.ipv6Address,
+        ),
+      ],
     );
   }
 

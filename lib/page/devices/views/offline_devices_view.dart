@@ -73,7 +73,7 @@ class _OfflineDevicesViewState extends ConsumerState<OfflineDevicesView> {
   }
 
   Widget _buildDeviceGridCell(DeviceListItem item) {
-    return AppCard(
+    return GeneralCard(
       image: CustomTheme.of(context).images.devices.getByName(item.icon),
       title: item.name,
     );

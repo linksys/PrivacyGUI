@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/dashboard/views/dashboard_navigation_rail.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/material/color_schemes_ext.dart';
@@ -16,7 +17,6 @@ import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_app/util/debug_mixin.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:test/test.dart';
 
 class DashboardShell extends ArgumentsConsumerStatefulView {
   const DashboardShell({
@@ -134,7 +134,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
     const items = [
       DashboardNaviItem(
           icon: Symbols.home,
-          title: 'Home',
+          title: getAppLocalizations(context),
           rootPath: RouteNamed.dashboardHome),
       DashboardNaviItem(
           icon: Symbols.menu,

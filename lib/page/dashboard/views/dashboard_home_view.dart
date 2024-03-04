@@ -207,7 +207,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             elevation: 10,
             child: Shimmer(
               gradient: _shimmerGradient,
-              child: AppCard(
+              child: GeneralCard(
                 iconData: iconData,
                 image: image,
                 title: text,
@@ -216,7 +216,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           )
         : InkWell(
             onTap: onTap,
-            child: AppCard(
+            child: GeneralCard(
               iconData: iconData,
               image: image,
               title: text,

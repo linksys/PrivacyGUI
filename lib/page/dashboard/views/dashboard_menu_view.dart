@@ -62,7 +62,11 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   Widget _buildMenuGridView(List<AppSectionItemData> items) {
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: ResponsiveLayout.isOverBreakpoint4(context) ? 3 : 2,
+        crossAxisCount: ResponsiveLayout.isOverBreakpoint4(context)
+            ? 3
+            : ResponsiveLayout.isOverBreakpoint3(context)
+                ? 2
+                : 1,
         mainAxisSpacing: 8,
         crossAxisSpacing: 10,
         childAspectRatio: (3 / 2),

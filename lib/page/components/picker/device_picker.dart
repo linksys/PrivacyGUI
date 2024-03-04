@@ -103,7 +103,7 @@ class _DevicePickerState extends State<DevicePicker> {
           : () {
               widget.onSubmit?.call([item]);
             },
-      child: AppCard(
+      child: GeneralCard(
         image: CustomTheme.of(context).images.devices.getByName(item.icon),
         title: item.name,
       ),
