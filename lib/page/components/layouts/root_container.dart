@@ -93,93 +93,12 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
                           ),
                         ),
                       ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: _buildFab(),
-                ),
-                // !TODO need to revisit
-                if (_showLocaleList) _localeList()
               ],
             ),
           ),
         ),
       );
     }));
-  }
-
-  Widget _buildFab() {
-    return ExpandableFab(
-      icon: Symbols.settings,
-      distance: 64,
-      children: [
-        _buildThemeSettings(),
-        _buildLocaleSetting(),
-      ],
-    );
-  }
-
-  Widget _buildThemeSettings() {
-    return ActionButton(
-      icon: Icon(ref.read(appSettingsProvider).themeMode == ThemeMode.system
-          ? Symbols.auto_awesome
-          : ref.read(appSettingsProvider).themeMode == ThemeMode.dark
-              ? Symbols.dark_mode
-              : Symbols.light_mode),
-      onPressed: () {
-        final appSettings = ref.read(appSettingsProvider);
-        final nextThemeMode = appSettings.themeMode == ThemeMode.system
-            ? ThemeMode.dark
-            : appSettings.themeMode == ThemeMode.dark
-                ? ThemeMode.light
-                : ThemeMode.system;
-        ref.read(appSettingsProvider.notifier).state =
-            appSettings.copyWith(themeMode: nextThemeMode);
-      },
-    );
-  }
-
-  Widget _buildLocaleSetting() {
-    return ActionButton(
-      icon: const Icon(Symbols.translate),
-      onPressed: () async {
-        setState(() {
-          _showLocaleList = true;
-        });
-      },
-    );
-  }
-
-  // NEED TO revisit
-  Widget _localeList() {
-    const localeList = AppLocalizations.supportedLocales;
-    saveLocale(Locale locale) {
-      final appSettings = ref.read(appSettingsProvider);
-
-      ref.read(appSettingsProvider.notifier).state =
-          appSettings.copyWith(locale: locale);
-    }
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      child: Card(
-        child: ListView.builder(
-            itemCount: localeList.length,
-            itemBuilder: (context, index) {
-              final locale = localeList[index];
-              return ListTile(
-                hoverColor:
-                    Theme.of(context).colorScheme.background.withOpacity(.5),
-                title: AppText.labelLarge(locale.toString()),
-                onTap: () {
-                  saveLocale(locale);
-                  setState(() {
-                    _showLocaleList = false;
-                  });
-                },
-              );
-            }),
-      ),
-    );
   }
 
   Widget _handleSpinner(AppRootConfig config) {

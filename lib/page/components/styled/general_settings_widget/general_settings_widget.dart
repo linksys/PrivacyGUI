@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/page/components/styled/general_settings_widget/language_tile.dart';
+import 'package:linksys_app/page/components/styled/general_settings_widget/theme_tile.dart';
 import 'package:linksys_app/providers/app_settings/app_settings_provider.dart';
 import 'package:linksys_app/providers/auth/_auth.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -51,6 +52,8 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                     });
               },
             ),
+            const AppGap.regular(),
+            const ThemeTile(),
             const AppGap.regular(),
             ..._displayAdditional(loginType),
             FutureBuilder(
