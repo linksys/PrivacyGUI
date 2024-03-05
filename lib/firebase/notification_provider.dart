@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:linksys_app/constants/_constants.dart';
@@ -24,7 +25,9 @@ class NotificationNotifier extends Notifier<NotificationState> {
       final keyLastSeen = _getKey(sn, pNotificationLastSeen);
       final lastSeen = prefs.getInt(keyLastSeen) ?? 0;
       final notifications = prefs.getStringList(key) ?? [];
+      final token = prefs.getString(pDeviceToken);
       state = state.copyWith(
+        token: token,
         lastSeen: lastSeen,
         notifications:
             notifications.map((e) => NotificationItem.fromJson(e)).toList(),
@@ -62,32 +65,54 @@ class NotificationNotifier extends Notifier<NotificationState> {
     });
   }
 
+  void saveToken(String? token) {
+    logger.d('[Notification][WEB] token - $token');
+    SharedPreferences.getInstance().then((prefs) {
+      if (token == null) {
+        prefs.remove(pDeviceToken);
+        state = state.removeToken();
+      } else {
+        prefs.setString(pDeviceToken, token);
+        state = state.copyWith(token: 'token');
+      }
+    });
+  }
+
   String _getKey(String sn, String key) {
     return '$sn-$key';
   }
 }
 
 class NotificationState extends Equatable {
+  final String? token;
   final int lastSeen;
   final bool hasNew;
   final List<NotificationItem> notifications;
 
   const NotificationState({
+    this.token,
     required this.lastSeen,
     this.hasNew = false,
     required this.notifications,
   });
 
   NotificationState copyWith({
+    String? token,
     int? lastSeen,
     bool? hasNew,
     List<NotificationItem>? notifications,
   }) {
     return NotificationState(
+      token: token ?? this.token,
       lastSeen: lastSeen ?? this.lastSeen,
       hasNew: hasNew ?? this.hasNew,
       notifications: notifications ?? this.notifications,
     );
+  }
+
+  NotificationState removeToken() {
+    return NotificationState(
+        lastSeen: lastSeen, notifications: notifications, hasNew: hasNew);
   }
 
   Map<String, dynamic> toMap() {

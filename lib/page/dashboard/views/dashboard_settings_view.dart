@@ -78,7 +78,7 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
               onChanged: (value) {},
               event: (value) async {
                 if (value) {
-                  await initCloudMessage();
+                  await initCloudMessage((_){});
                 } else {
                   await removeCloudMessage();
                 }

@@ -1,17 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
 import 'package:linksys_app/constants/pref_key.dart';
 import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/firebase/notification_provider.dart';
-import 'package:linksys_app/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../firebase_options.dart';
@@ -32,9 +28,9 @@ late AndroidNotificationChannel channel;
 late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
 ///
-Future initCloudMessage() async {
+Future initCloudMessage(void Function(String? token) onGet) async {
   if (kIsWeb) {
-    await _initCloudMessageWeb();
+    await _initCloudMessageWeb(onGet);
   } else {
     await _initCloudMessageMobile();
   }
@@ -55,41 +51,35 @@ Future requestNotificationPermission() {
   );
 }
 
-void _setToken(String? token) {
-  logger.d('[Notification][WEB] set token: $token');
-  if (token == null) {
-    return;
-  }
-  SharedPreferences.getInstance()
-      .then((value) => value.setString(pDeviceToken, token));
+Future<String?> getToken() {
+  return FirebaseMessaging.instance.getToken(
+      vapidKey:
+          'BFSsxlFG5VQ5j1S99weYRQa12vmH9h1AL888jUgrLrNjKegy6MwB0_EJ9yoLs1Znfc3oizB0RNOTqdbg8T4GV88');
 }
 
 /// Web Push notification initialize
-Future _initCloudMessageWeb() async {
+Future<String?> _initCloudMessageWeb(void Function(String? token) onGet) async {
   logger.d('[Notification][WEB] init and check permission.');
   NotificationSettings newSettings = await requestNotificationPermission();
   logger
       .d('[Notification][WEB] permission - ${newSettings.authorizationStatus}');
 
   if (newSettings.authorizationStatus != AuthorizationStatus.authorized) {
-    return;
+    return null;
   }
+
+  await Future.delayed(const Duration(seconds: 1));
   logger.d('[Notification][WEB] Get Token.');
 
-  FirebaseMessaging.instance
-      .getToken(
-          vapidKey:
-              'BFSsxlFG5VQ5j1S99weYRQa12vmH9h1AL888jUgrLrNjKegy6MwB0_EJ9yoLs1Znfc3oizB0RNOTqdbg8T4GV88')
-      .then(_setToken)
-      .onError((error, stackTrace) {
+  final token = await getToken()
+      .then((token) {
+    onGet(token);
+  }).onError((error, stackTrace) {
     logger.d('[Notification][WEB] get Token Error: $error');
+    // retry once
+    _initCloudMessageWeb(onGet);
   });
-  tokenStreamSubscription = FirebaseMessaging.instance.onTokenRefresh
-      .listen(_setToken, onError: (error) {
-    logger.d('[Notification][WEB] onTokenRefresh Error: $error');
-  }, onDone: () {
-    logger.d('[Notification][WEB] geonTokenRefresht Done!');
-  });
+  return token;
 }
 
 /// Mobile Push notification initialize

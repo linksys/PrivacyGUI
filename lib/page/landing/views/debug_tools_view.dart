@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -7,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
+import 'package:linksys_app/firebase/notification_helper.dart';
 import 'package:linksys_app/providers/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/bluetooth/bluetooth.dart';
@@ -372,12 +372,11 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
   }
 
   Future<void> checkTokens() async {
-    final instance = FirebaseMessaging.instance;
-    final fcmToken = await instance.getToken();
-    final apnsToken = await instance.getAPNSToken();
+    final fcmToken = await getToken();
+    // final apnsToken = await instance.getAPNSToken();
     setState(() {
       _fcmToken = fcmToken;
-      _apnsToken = apnsToken;
+      // _apnsToken = apnsToken;
     });
   }
 
@@ -389,36 +388,36 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
     ));
   }
 
-  _toggleForegroundNotification(bool value) {
-    setState(() {
-      if (value) {
-        if (Platform.isAndroid) {
-          _streamSubscription =
-              FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-            final title = message.notification?.title ?? '';
-            final msg = message.notification?.body ?? '';
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content:
-                    Text('Receive notification: title: $title, body: $msg')));
-          });
-        } else if (Platform.isIOS) {
-          IosPushNotificationPlugin().requestAuthorization().then((value) {
-            if (value) {
-              _streamSubscription = IosPushNotificationPlugin()
-                  .pushNotificationStream
-                  .listen((event) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('Receive notification: event: $event')));
-              });
-            }
-          });
-        }
-      } else {
-        _streamSubscription?.cancel();
-        _streamSubscription = null;
-      }
-    });
-  }
+  // _toggleForegroundNotification(bool value) {
+  //   setState(() {
+  //     if (value) {
+  //       if (Platform.isAndroid) {
+  //         _streamSubscription =
+  //             FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+  //           final title = message.notification?.title ?? '';
+  //           final msg = message.notification?.body ?? '';
+  //           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+  //               content:
+  //                   Text('Receive notification: title: $title, body: $msg')));
+  //         });
+  //       } else if (Platform.isIOS) {
+  //         IosPushNotificationPlugin().requestAuthorization().then((value) {
+  //           if (value) {
+  //             _streamSubscription = IosPushNotificationPlugin()
+  //                 .pushNotificationStream
+  //                 .listen((event) {
+  //               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+  //                   content: Text('Receive notification: event: $event')));
+  //             });
+  //           }
+  //         });
+  //       }
+  //     } else {
+  //       _streamSubscription?.cancel();
+  //       _streamSubscription = null;
+  //     }
+  //   });
+  // }
 
   void _goToDeviceInfoPage(BuildContext context) {
     showCupertinoModalPopup(
@@ -429,6 +428,6 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
   }
 }
 
-Future<SecurityContext> loader(BuildContext context) async {
-  return SecurityContext();
-}
+// Future<SecurityContext> loader(BuildContext context) async {
+//   return SecurityContext();
+// }
