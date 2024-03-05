@@ -1,4 +1,7 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
+
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 
 @immutable
@@ -18,8 +21,7 @@ class DeviceListState {
   }
 }
 
-@immutable
-class DeviceListItem {
+class DeviceListItem extends Equatable {
   final String deviceId;
   final String name;
   final String icon;
@@ -37,6 +39,7 @@ class DeviceListItem {
   final bool isOnline;
   final bool isWired;
   final WifiConnectionType type;
+  final String ssid;
 
   const DeviceListItem({
     this.deviceId = '',
@@ -56,6 +59,7 @@ class DeviceListItem {
     this.isOnline = false,
     this.isWired = false,
     this.type = WifiConnectionType.main,
+    this.ssid = '',
   });
 
   DeviceListItem copyWith({
@@ -76,6 +80,7 @@ class DeviceListItem {
     bool? isOnline,
     bool? isWired,
     WifiConnectionType? type,
+    String? ssid,
   }) {
     return DeviceListItem(
       deviceId: deviceId ?? this.deviceId,
@@ -95,6 +100,31 @@ class DeviceListItem {
       isOnline: isOnline ?? this.isOnline,
       isWired: isWired ?? this.isWired,
       type: type ?? this.type,
+      ssid: ssid ?? this.ssid,
     );
+  }
+
+  @override
+  List<Object> get props {
+    return [
+      deviceId,
+      name,
+      icon,
+      upstreamDevice,
+      upstreamDeviceID,
+      upstreamIcon,
+      ipv4Address,
+      ipv6Address,
+      macAddress,
+      manufacturer,
+      model,
+      operatingSystem,
+      band,
+      signalStrength,
+      isOnline,
+      isWired,
+      type,
+      ssid,
+    ];
   }
 }

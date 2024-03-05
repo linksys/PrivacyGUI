@@ -37,7 +37,7 @@ class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      title: getAppLocalizations(context).node_detail_label_node_name,
+      title: getAppLocalizations(context).name,
       actions: [
         AppTextButton(
           getAppLocalizations(context).save,
@@ -61,7 +61,7 @@ class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
         children: [
           AppTextField(
             headerText:
-                getAppLocalizations(context).node_detail_label_node_name,
+                getAppLocalizations(context).name,
             controller: _controller,
           )
         ],

@@ -46,7 +46,7 @@ class _MacFilteringEnterDeviceViewState
             AppTextField.macAddress(
               controller: _macController,
               headerText: getAppLocalizations(context).enter_mac_address,
-              hintText: getAppLocalizations(context).mac_address,
+              hintText: getAppLocalizations(context).macAddress,
               onChanged: (value) {
                 setState(() {
                   _isValid = _macValidator.validate(value);

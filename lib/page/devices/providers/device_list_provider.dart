@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/core/utils/devices.dart';
@@ -75,7 +74,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     signalStrength =
         ref.read(deviceManagerProvider.notifier).getWirelessSignal(device);
     type = device.connectedWifiType;
-
+    final ssid = ref.read(deviceManagerProvider.notifier).getSSID(device);
     return newState.copyWith(
       deviceId: targetId,
       name: name,
@@ -94,6 +93,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
       isOnline: isOnline,
       isWired: isWired,
       type: type,
+      ssid: ssid,
     );
   }
 }

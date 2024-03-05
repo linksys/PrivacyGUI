@@ -8,7 +8,9 @@ import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/models/layer2_connection.dart';
 import 'package:linksys_app/core/jnap/models/node_light_settings.dart';
 import 'package:linksys_app/core/jnap/models/node_wireless_connection.dart';
+import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/jnap/models/wan_status.dart';
+import 'package:linksys_app/core/jnap/models/wirless_connection.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
@@ -30,6 +32,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   DeviceManagerState createState({CoreTransactionData? pollingResult}) {
     Map<String, dynamic>? getNetworkConnectionsData;
     Map<String, dynamic>? getNodesNetworkConnectionsData;
+    Map<String, dynamic>? getRadioInfo;
 
     Map<String, dynamic>? getDevicesData;
     Map<String, dynamic>? getWANStatusData;
@@ -43,7 +46,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
           (result[JNAPAction.getNodesWirelessNetworkConnections]
                   as JNAPSuccess?)
               ?.output;
-
+      getRadioInfo = (result[JNAPAction.getRadioInfo] as JNAPSuccess?)?.output;
       getDevicesData = (result[JNAPAction.getDevices] as JNAPSuccess?)?.output;
       getWANStatusData =
           (result[JNAPAction.getWANStatus] as JNAPSuccess?)?.output;
@@ -67,13 +70,19 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
               .map((e) => Layer2Connection.fromMap(e))
               .toList();
     }
-
+    // Radio settings
+    final radioList = List.from(getRadioInfo?['radios'] ?? [])
+        .map((e) => RouterRadio.fromMap(e))
+        .toList();
+    final radioMap =
+        Map.fromEntries(radioList.map((e) => MapEntry(e.radioID, e)));
     var newState = const DeviceManagerState();
     newState = _getWirelessConnections(newState, connectionData);
     // The data process of NetworkConnections MUST be done before building device list
     newState = _getDeviceListAndLocations(newState, getDevicesData);
     newState = _getWANStatusModel(newState, getWANStatusData);
     newState = _getBackhaukInfoData(newState, getBackHaulInfoData);
+    newState = newState.copyWith(radioInfos: radioMap);
     return newState.copyWith(
       lastUpdateTime: pollingResult?.lastUpdate,
     );
@@ -83,21 +92,14 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     DeviceManagerState state,
     List<Layer2Connection>? data,
   ) {
-    var connectionsMap = <String, Map<String, dynamic>>{};
+    var connectionsMap = <String, WirelessConnection>{};
     if (data != null) {
       final connections = data;
       for (final connectionData in connections) {
         final macAddress = connectionData.macAddress;
         final wirelessData = connectionData.wireless;
         if (wirelessData != null) {
-          final band = wirelessData.band;
-          final signalDecibels = wirelessData.signalDecibels;
-          final isGuest = wirelessData.isGuest;
-          connectionsMap[macAddress] = {
-            'signalDecibels': signalDecibels,
-            'band': band,
-            'isGuest': isGuest,
-          };
+          connectionsMap[macAddress] = wirelessData;
         }
       }
     }
@@ -156,7 +158,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     final wirelessConnections = state.wirelessConnections;
     externalDevices = externalDevices.map((device) {
       final wirelessData = wirelessConnections[device.getMacAddress()];
-      final isGuestDevice = (wirelessData?['isGuest'] as bool?) ?? false;
+      final isGuestDevice = wirelessData?.isGuest ?? false;
       return device.copyWith(
         connectedWifiType:
             isGuestDevice ? WifiConnectionType.guest : WifiConnectionType.main,
@@ -215,12 +217,15 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       final mac = element.wirelessConnectionInfo?.stationBSSID;
       final rssi = element.wirelessConnectionInfo?.stationRSSI;
       final band = element.wirelessConnectionInfo?.radioID;
+      final bssid = element.wirelessConnectionInfo?.apBSSID;
       if (mac != null) {
-        wireleeConnectionInfo[mac] = {
-          'signalDecibels': rssi,
-          'band': '${band}z',
-          'isGuest': false
-        };
+        wireleeConnectionInfo[mac] = WirelessConnection(
+          bssid: bssid ?? '',
+          isGuest: false,
+          radioID: 'RADIO_${band}z',
+          band: '${band}z',
+          signalDecibels: rssi ?? -1,
+        );
       }
     });
     newState.copyWith(wirelessConnections: wireleeConnectionInfo);
@@ -230,18 +235,25 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   // Used in cases where the watched DeviceManager is still empty at very beginning stage
   bool isEmptyState() => state.deviceList.isEmpty;
 
+  String? getSSID(RawDevice device) {
+    final wirelessConnections = state.wirelessConnections;
+    final wirelessData = wirelessConnections[device.getMacAddress()];
+    final radioID = wirelessData?.radioID;
+    return state.radioInfos[radioID]?.settings.ssid;
+  }
+
   int getWirelessSignal(RawDevice device) {
     final wirelessConnections = state.wirelessConnections;
     final wirelessData = wirelessConnections[device.getMacAddress()];
-    final signalDecibels = wirelessData?['signalDecibels'] as int?;
+    final signalDecibels = wirelessData?.signalDecibels;
     return signalDecibels ?? -1;
   }
 
   String getWirelessBand(RawDevice device) {
     final wirelessConnections = state.wirelessConnections;
     final wirelessData = wirelessConnections[device.getMacAddress()];
-    final band = (wirelessData?['band'] ?? _getWirelessBandFromDevices(device))
-        as String?;
+    final band =
+        (wirelessData?.band ?? _getWirelessBandFromDevices(device)) as String?;
     return band ?? (device.isWiredConnection() ? 'Ethernet' : '');
   }
 

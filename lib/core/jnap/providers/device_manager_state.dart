@@ -2,7 +2,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:linksys_app/core/jnap/models/back_haul_info.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
+import 'package:linksys_app/core/jnap/models/layer2_connection.dart';
+import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/jnap/models/wan_status.dart';
+import 'package:linksys_app/core/jnap/models/wirless_connection.dart';
 
 class LinksysDevice extends RawDevice {
   final List<LinksysDevice> connectedDevices;
@@ -121,7 +124,8 @@ class LinksysDevice extends RawDevice {
 @immutable
 class DeviceManagerState {
   // Collected data for a specific network with its own devices shared to overall screens
-  final Map<String, Map<String, dynamic>> wirelessConnections;
+  final Map<String, WirelessConnection> wirelessConnections;
+  final Map<String, RouterRadio> radioInfos;
   final List<LinksysDevice> deviceList;
   final RouterWANStatus? wanStatus;
   final List<BackHaulInfoData> backhaulInfoData;
@@ -157,6 +161,7 @@ class DeviceManagerState {
 
   const DeviceManagerState({
     this.wirelessConnections = const {},
+    this.radioInfos = const {},
     this.deviceList = const [],
     this.wanStatus,
     this.backhaulInfoData = const [],
@@ -164,7 +169,8 @@ class DeviceManagerState {
   });
 
   DeviceManagerState copyWith({
-    Map<String, Map<String, dynamic>>? wirelessConnections,
+    Map<String, WirelessConnection>? wirelessConnections,
+    Map<String, RouterRadio>? radioInfos,
     List<LinksysDevice>? deviceList,
     RouterWANStatus? wanStatus,
     List<BackHaulInfoData>? backhaulInfoData,
@@ -173,6 +179,7 @@ class DeviceManagerState {
   }) {
     return DeviceManagerState(
       wirelessConnections: wirelessConnections ?? this.wirelessConnections,
+      radioInfos: radioInfos ?? this.radioInfos,
       deviceList: deviceList ?? this.deviceList,
       wanStatus: wanStatus ?? this.wanStatus,
       backhaulInfoData: backhaulInfoData ?? this.backhaulInfoData,

@@ -7,7 +7,6 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
 import 'package:linksys_app/page/topology/_topology.dart';
-import 'package:linksys_app/providers/root/root_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -78,16 +77,6 @@ class TopologyView extends ArgumentsConsumerStatelessView {
                   icon: getCharactersIcons(context).nodesDefault,
                 ),
               ),
-            ),
-          ],
-        ),
-        footer: Column(
-          children: [
-            AppOutlinedButton.fillWidth(
-              'Restart Network',
-              onTap: () {
-                
-              },
             ),
           ],
         ),

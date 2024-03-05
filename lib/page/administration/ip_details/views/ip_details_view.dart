@@ -168,7 +168,7 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
   Widget _lanSection(IpDetailsState state) {
     return AppSection(
         header: AppText.labelLarge(
-            getAppLocalizations(context).node_detail_label_lan),
+            getAppLocalizations(context).lan),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

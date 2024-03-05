@@ -25,7 +25,7 @@ class _SignalStrengthViewState extends ConsumerState<SignalStrengthView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      title: getAppLocalizations(context).node_detail_label_signal_strength,
+      title: getAppLocalizations(context).signalStrength,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,

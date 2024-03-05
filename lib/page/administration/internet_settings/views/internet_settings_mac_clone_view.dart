@@ -84,7 +84,7 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
       return AppTextField.macAddress(
         controller: _valueController,
         headerText: getAppLocalizations(context).enter_mac_address,
-        hintText: getAppLocalizations(context).mac_address,
+        hintText: getAppLocalizations(context).macAddress,
         onChanged: (value) {
           setState(() {
             _isValid = _macValidator.validate(value);

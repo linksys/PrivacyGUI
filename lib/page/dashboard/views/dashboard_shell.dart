@@ -63,7 +63,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
         handleNoConnection: true,
         handleBanner: true,
         padding: const EdgeInsets.only(),
-        bottomNavigationBar: ResponsiveLayout.isLayoutBreakpoint(context)
+        bottomNavigationBar: ResponsiveLayout.isLayoutBreakpoint(context) &&
+                _dashboardNaviItems.length > 1
             ? NavigationBar(
                 selectedIndex: _selectedIndex,
                 destinations: _dashboardNaviItems
@@ -85,13 +86,14 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        DashboardNavigationRail(
-          items: _dashboardNaviItems
-              .map((e) => _createNavigationRailDestination(e))
-              .toList(),
-          onItemTapped: _onItemTapped,
-          selected: _selectedIndex,
-        ),
+        if (_dashboardNaviItems.length > 1)
+          DashboardNavigationRail(
+            items: _dashboardNaviItems
+                .map((e) => _createNavigationRailDestination(e))
+                .toList(),
+            onItemTapped: _onItemTapped,
+            selected: _selectedIndex,
+          ),
         const VerticalDivider(
           width: 1,
         ),

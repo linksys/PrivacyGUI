@@ -64,16 +64,16 @@ initErrorHandler() {
   // Pass all uncaught errors from the framework to Crashlytics.
   FlutterError.onError = (FlutterErrorDetails details) {
     logger.e('Uncaught Flutter Error:\n', error: details);
-    // if (!kIsWeb) {
-    FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-    // }
+    if (!kIsWeb) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    }
   };
   PlatformDispatcher.instance.onError = (error, stack) {
     logger.e('Uncaught Error:\n', error: error, stackTrace: stack);
     logger.e(stack.toString());
-    // if (!kIsWeb) {
-    FirebaseCrashlytics.instance.recordError(error, stack);
-    // }
+    if (!kIsWeb) {
+      FirebaseCrashlytics.instance.recordError(error, stack);
+    }
     return true;
   };
 }
