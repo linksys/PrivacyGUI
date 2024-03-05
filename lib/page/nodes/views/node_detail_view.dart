@@ -278,7 +278,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 ? element.deviceUUID == state.deviceId
                 : false)))
         : ref.watch(
-            firmwareUpdateProvider.select((value) => value.nodesStatus?.first));
+            firmwareUpdateProvider.select((value) => value.nodesStatus?.firstOrNull));
     final isFwUpToDate = updateInfo?.availableUpdate == null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
