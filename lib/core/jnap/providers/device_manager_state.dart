@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:linksys_app/core/jnap/models/back_haul_info.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
-import 'package:linksys_app/core/jnap/models/layer2_connection.dart';
 import 'package:linksys_app/core/jnap/models/radio_info.dart';
 import 'package:linksys_app/core/jnap/models/wan_status.dart';
 import 'package:linksys_app/core/jnap/models/wirless_connection.dart';

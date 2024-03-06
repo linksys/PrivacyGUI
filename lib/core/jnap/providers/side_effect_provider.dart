@@ -12,7 +12,6 @@ import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../cache/linksys_cache_manager.dart';
 
 class JNAPSideEffect extends Equatable {
   final bool hasSideEffect;

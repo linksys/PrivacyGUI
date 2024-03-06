@@ -2,7 +2,6 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/page/components/styled/top_bar.dart';
-import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 class LinksysRouteConfig extends Equatable {

@@ -5,9 +5,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/core/cache/utility.dart';
-import 'package:linksys_app/core/jnap/jnap_retry_options.dart';
+import 'package:linksys_app/core/jnap/command/http/jnap_retry_options.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/providers/auth/_auth.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';
@@ -29,7 +28,6 @@ import 'package:linksys_app/core/jnap/spec/jnap_spec.dart';
 import 'package:linksys_app/core/jnap/providers/side_effect_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/utils.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/ip_getter/get_local_ip.dart'
     if (dart.library.io) 'providers/ip_getter/mobile_get_local_ip.dart'
     if (dart.library.html) 'providers/ip_getter/web_get_local_ip.dart';
@@ -59,7 +57,6 @@ class RouterRepository {
   RouterRepository(this.ref);
   final Ref ref;
   bool _btSetupMode = false;
-  final LinksysHttpClient _client = LinksysHttpClient();
 
   // To expose interface
   JNAPCommandExecutor get executor {
@@ -135,7 +132,7 @@ class RouterRepository {
       bool fetchRemote = false,
       CacheLevel cacheLevel = CacheLevel.localCached,
       CommandType? type}) async {
-    final loginType = getLoginType();
+    // final loginType = getLoginType();
     final routerType = getRouterType();
     // final communicateType = type ??
     //     (loginType == LoginType.local ? CommandType.local : CommandType.remote);

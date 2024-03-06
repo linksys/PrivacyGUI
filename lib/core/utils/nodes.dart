@@ -106,7 +106,6 @@
 
     */
 import 'package:collection/collection.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/main.dart';

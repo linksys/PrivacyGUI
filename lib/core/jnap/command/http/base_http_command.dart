@@ -8,7 +8,7 @@ import 'package:linksys_app/constants/jnap_const.dart';
 import 'package:linksys_app/constants/pref_key.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/jnap_retry_options.dart';
+import 'package:linksys_app/core/jnap/command/http/jnap_retry_options.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/spec/jnap_spec.dart';
 import 'package:linksys_app/core/jnap/command/base_command.dart';
