@@ -31,7 +31,7 @@ abstract class JNAPResult extends Equatable {
   List<Object?> get props => [result];
 }
 
-class JNAPSuccess extends JNAPResult {
+class JNAPSuccess extends JNAPResult with SideEffectGetter {
   final Map<String, dynamic> output;
   final List<String>? sideEffects;
 
@@ -65,7 +65,7 @@ class JNAPSuccess extends JNAPResult {
   List<Object?> get props => super.props..add(output);
 }
 
-class JNAPTransactionSuccess extends JNAPResult {
+class JNAPTransactionSuccess extends JNAPResult with SideEffectGetter {
   final List<JNAPSuccess> responses;
 
   const JNAPTransactionSuccess({
@@ -94,7 +94,7 @@ class JNAPTransactionSuccess extends JNAPResult {
   List<Object?> get props => super.props..add(responses);
 }
 
-class JNAPTransactionSuccessWrap extends JNAPResult {
+class JNAPTransactionSuccessWrap extends JNAPResult with SideEffectGetter {
   final List<MapEntry<JNAPAction, JNAPResult>> data;
 
   const JNAPTransactionSuccessWrap({
@@ -144,7 +144,8 @@ class JNAPError extends JNAPResult {
         if (response[keyJnapResult] != jnapResultOk) {
           return JNAPError(
             result: response[keyJnapResult],
-            error: response[keyJnapError] ?? jsonEncode(response[keyJnapOutput]),
+            error:
+                response[keyJnapError] ?? jsonEncode(response[keyJnapOutput]),
           );
         }
       }
@@ -170,4 +171,25 @@ class JNAPError extends JNAPResult {
 
   @override
   List<Object?> get props => super.props..add(error);
+}
+
+mixin SideEffectGetter {
+  List<String>? getSideEffects() {
+    if (this is JNAPSuccess) {
+      return (this as JNAPSuccess).sideEffects;
+    } else if (this is JNAPTransactionSuccessWrap) {
+      final trans = this as JNAPTransactionSuccessWrap;
+      return trans.data
+          .map((e) => e.value as JNAPSuccess?)
+          .whereType<JNAPSuccess>()
+          .fold<List<String>>([], (previousValue, element) {
+        if (element.sideEffects != null) {
+          previousValue.addAll(element.sideEffects!);
+        }
+        return previousValue;
+      }).toList();
+    } else {
+      return null;
+    }
+  }
 }

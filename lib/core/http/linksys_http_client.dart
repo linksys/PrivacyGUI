@@ -10,7 +10,7 @@ import 'package:http/http.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/jnap_command_executor_mixin.dart';
 import 'package:linksys_app/core/jnap/command/base_command.dart';
-import 'package:linksys_app/core/jnap/command/http_base_command.dart';
+import 'package:linksys_app/core/jnap/command/http/base_http_command.dart';
 import 'package:linksys_app/core/utils/bench_mark.dart';
 import 'package:linksys_app/util/extensions.dart';
 import 'package:linksys_app/core/utils/logger.dart';

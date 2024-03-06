@@ -155,9 +155,6 @@ enum JNAPAction {
   getDeviceMode,
   getSupportedDeviceMode,
   setDeviceMode,
-  // storage
-  getMountedPartitions,
-  getPartitions,
   // wirelessAP
   getRadioInfo,
   getWPSServerSessionStatus,

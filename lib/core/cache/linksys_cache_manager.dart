@@ -34,17 +34,17 @@ class LinksysCacheManager {
     defaultCacheExpiration = 110000;
     cacheManager = FlutterCacheManager();
     cache = await cacheManager.get() ?? "";
-    logger.d('linksys cache manager: init cache data: $cache');
+    logger.d('[CacheManager] init cache data: $cache');
   }
 
   void clearCache(String action) {
     if (action.isNotEmpty) {
       if (data.isNotEmpty && data.keys.contains(action)) {
-        logger.d('linksys cache manager: remove cache data: $action');
+        logger.d('[CacheManager] remove cache data: $action');
         data.remove(action);
       }
     } else {
-      logger.d('linksys cache manager: remove all cache data');
+      logger.d('[CacheManager] remove all cache data');
       data = {};
     }
 
@@ -54,7 +54,7 @@ class LinksysCacheManager {
   }
 
   Future<bool> loadCache({required String serialNumber}) async {
-    logger.d("linksys cache manager: Starting to load cache");
+    logger.d("[CacheManager] Starting to load cache");
     if (serialNumber != lastSerialNumber) {
       final value = await cacheManager.get();
       cache = value ?? "";
@@ -70,7 +70,7 @@ class LinksysCacheManager {
       data = allCaches[serialNumber];
       lastSerialNumber = serialNumber;
       logger.d(
-          "linksys cache manager: Load cache success for $serialNumber : ${data.toString()}");
+          "[CacheManager] Load cache success for $serialNumber : ${data.toString()}");
     }
     if (data.isEmpty) {
       return false;
@@ -79,7 +79,7 @@ class LinksysCacheManager {
   }
 
   void saveCache(String serialNumber) {
-    logger.d("linksys cache manager: Save cache for $serialNumber");
+    logger.d("[CacheManager] Save cache for $serialNumber");
     if (serialNumber.isEmpty) {
       return;
     }
@@ -109,10 +109,10 @@ class LinksysCacheManager {
     String sn = serialNumber ?? lastSerialNumber;
     final tempCache = await cacheManager.get();
     if (tempCache == null || tempCache.isEmpty) {
-      logger.d('linksys cache manager: no cache from $serialNumber');
+      logger.d('[CacheManager] no cache from $serialNumber');
       return null;
     }
-    logger.d("linksys cache manager: get cache of $serialNumber");
+    logger.d("[CacheManager] get cache of $serialNumber");
     return jsonDecode(tempCache)[sn];
   }
 
@@ -128,6 +128,29 @@ class LinksysCacheManager {
         data[action]["cachedAt"] == null ||
         DateTime.now().millisecondsSinceEpoch - data[action]["cachedAt"] >=
             defaultCacheExpiration) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  void handleJNAPCached(
+      Map<String, dynamic> record,
+      String action,
+      String? serialNumber,) {
+    final dataResult = {
+          "target": action,
+          "cachedAt": DateTime.now().millisecondsSinceEpoch,
+        };
+        dataResult["data"] = record;
+        data[action] = dataResult;
+        if (serialNumber != null) {
+          saveCache(serialNumber);
+        }
+  }
+
+  bool checkUseCacheDataForJnapHttpCommand(String action, bool remote) {
+    if (remote && data.containsKey(action) && data[action] != null && didCacheExpire(action)) {
       return true;
     } else {
       return false;

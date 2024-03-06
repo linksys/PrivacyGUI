@@ -8,15 +8,16 @@ import '../../cache/linksys_cache_manager.dart';
 enum CacheLevel { localCached, noCache }
 
 abstract class BaseCommand<R, S extends JNAPSpec> {
-  BaseCommand(
-      {required this.spec,
-      required this.executor,
-      this.fetchRemote = false,
-      this.cacheLevel = CacheLevel.localCached});
+  BaseCommand({
+    required this.spec,
+    required this.executor,
+    this.fetchRemote = false,
+    this.cacheLevel = CacheLevel.localCached,
+  });
 
   final S spec;
   final JNAPCommandExecutor executor;
-  final Completer<(R, DataSource)> _completer = Completer();
+  final Completer<R> _completer = Completer();
   final bool fetchRemote;
   final CacheLevel cacheLevel;
 
@@ -24,12 +25,14 @@ abstract class BaseCommand<R, S extends JNAPSpec> {
 
   bool isComplete() => _completer.isCompleted;
 
-  complete((R result, DataSource ds) record) => _completer.complete(record);
+  complete(R result) => _completer.complete(result);
 
   completeError(Object? error, StackTrace stackTrace) =>
       _completer.completeError(error ?? UnsupportedError, stackTrace);
 
-  Future<(R, DataSource)> wait() => _completer.future;
+  Future<R> wait() => _completer.future;
 
   R createResponse(String payload) => spec.response(payload);
+
+  bool checkCacheValidation(LinksysCacheManager cache) => !fetchRemote;
 }

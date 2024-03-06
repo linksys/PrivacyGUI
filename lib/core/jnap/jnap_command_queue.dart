@@ -1,12 +1,9 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
-import 'package:linksys_app/core/jnap/command/http_base_command.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 
-import '../../constants/jnap_const.dart';
 import 'command/base_command.dart';
 
 class CommandQueue {
@@ -47,27 +44,11 @@ class CommandQueue {
     final command = _queue.removeFirst();
     logger.d(
         'Command Queue <${_queue.length}>:: handle command: ${command.runtimeType}, ${command.spec.action}');
-    if (_checkUseCacheDataForJnapHttpCommand(command)) {
-      logger.d(
-          'linksys cache manager: responsed with local cache data: ${command.spec.action}');
-      command.complete((
-        command.createResponse(
-            jsonEncode(linksysCacheManger.data[command.spec.action]["data"])),
-        DataSource.fromCache
-      ));
-    } else if (_checkUseCacheDataForJnapTransactionCommand(command)) {
-      final dataMap = _buildTransacationData(command);
-      command.complete((
-        command.createResponse((jsonEncode(dataMap))),
-        DataSource.fromCache
-      ));
-    } else {
-      command
-          .publish()
-          .then((value) => command.complete((value, DataSource.fromRemote)))
-          .onError(
-              (error, stackTrace) => command.completeError(error, stackTrace));
-    }
+    command
+        .publish()
+        .then((value) => command.complete(value))
+        .onError(
+            (error, stackTrace) => command.completeError(error, stackTrace));
     _emptyRetry = 0;
   }
 
@@ -97,48 +78,4 @@ class CommandQueue {
     }
   }
 
-  bool _checkNonExistActionAndExpiration(
-      BaseCommand command, LinksysCacheManager cacheManager) {
-    for (var element in (jsonDecode(command.spec.payload()) as List<dynamic>)) {
-      if (!cacheManager.data.containsKey(element["action"]) ||
-          cacheManager
-              .didCacheExpire(cacheManager.data[element["action"]]["target"])) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  bool _checkUseCacheDataForJnapHttpCommand(BaseCommand command) {
-    if (command is JNAPHttpCommand &&
-        linksysCacheManger.data.containsKey(command.spec.action) &&
-        linksysCacheManger.data[command.spec.action] != null &&
-        !command.fetchRemote &&
-        !linksysCacheManger.didCacheExpire(command.spec.action)) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  bool _checkUseCacheDataForJnapTransactionCommand(BaseCommand command) {
-    if (command is TransactionHttpCommand &&
-        !_checkNonExistActionAndExpiration(command, linksysCacheManger) &&
-        !command.fetchRemote) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  Map<String, dynamic> _buildTransacationData(BaseCommand command) {
-    final actions = [];
-    for (var element in (jsonDecode(command.spec.payload()) as List<dynamic>)) {
-      actions.add(linksysCacheManger.data[element["action"]]["data"]);
-    }
-    final dataMap = {keyJnapResult: jnapResultOk, keyJnapResponses: actions};
-    logger.d(
-        'linksys cache manager: responsed with local cache transaction: $dataMap');
-    return dataMap;
-  }
 }

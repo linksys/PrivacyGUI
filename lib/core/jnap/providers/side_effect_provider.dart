@@ -75,15 +75,13 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     );
   }
 
-  Future<(JNAPSuccess, DataSource)> handleSideEffect(
-      (JNAPResult result, DataSource ds) record) async {
-    final sideEffects = (record.$1 as JNAPSuccess).sideEffects ?? [];
+  Future<JNAPResult> handleSideEffect(JNAPResult result) async {
+    final sideEffects = (result as SideEffectGetter).getSideEffects() ?? [];
     if (sideEffects.isEmpty) {
       state = state.copyWith(hasSideEffect: false);
-      return (record.$1 as JNAPSuccess, record.$2);
+      return result;
     }
-    logger.d(
-        'SideEffectManager: handleSideEffect: ${(record.$1 as JNAPSuccess)}');
+    logger.d('SideEffectManager: handleSideEffect: $result');
 
     state = state.copyWith(hasSideEffect: true, reason: sideEffects[0]);
     if (sideEffects.contains('WirelessInterruption')) {
@@ -92,14 +90,14 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
         timeDelayStartInSec: 10,
         retryDelayInSec: 10,
         maxPollTimeInSec: 120,
-      ).then((value) => (record.$1 as JNAPSuccess, record.$2));
+      ).then((value) => result);
     } else {
       return poll(
         pollFunc: testRouterFullyBootedUp,
         maxRetry: 5,
         timeDelayStartInSec: 5,
         retryDelayInSec: 15,
-      ).then((value) => (record.$1 as JNAPSuccess, record.$2));
+      ).then((value) => result);
     }
   }
 

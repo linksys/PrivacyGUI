@@ -259,8 +259,6 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.storage:
       break;
     case JNAPService.storage2:
-      _betterActionMap[JNAPAction.getMountedPartitions] =
-          _JNAPActionValue.getPartitions.value;
       break;
     case JNAPService.vlanTagging:
       break;
@@ -616,6 +614,10 @@ void initBetterActions() {
       _JNAPActionValue.getRemoteSetting.value;
   _betterActionMap[JNAPAction.setRemoteSetting] =
       _JNAPActionValue.setRemoteSetting.value;
+  _betterActionMap[JNAPAction.getGamingPrioritizationSettings] =
+      _JNAPActionValue.getGamingPrioritizationSettings.value;
+  _betterActionMap[JNAPAction.setGamingPrioritizationSettings] =
+      _JNAPActionValue.setGamingPrioritizationSettings.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

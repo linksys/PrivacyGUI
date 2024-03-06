@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
 import 'package:linksys_app/core/cache/utility.dart';
+import 'package:linksys_app/core/jnap/jnap_retry_options.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/providers/auth/_auth.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';
@@ -20,7 +21,7 @@ import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/command/bt_base_command.dart';
 import 'package:linksys_app/core/jnap/jnap_command_executor_mixin.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/command/http_base_command.dart';
+import 'package:linksys_app/core/jnap/command/http/base_http_command.dart';
 import 'package:linksys_app/core/jnap/jnap_command_queue.dart';
 import 'package:linksys_app/core/jnap/actions/jnap_transaction.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
@@ -82,9 +83,8 @@ class RouterRepository {
     bool fetchRemote = false,
     CacheLevel? cacheLevel,
     int timeoutMs = 10000,
+    JNAPRetryOptions retryOptions = const JNAPRetryOptions(),
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final sn = prefs.get(pCurrentSN) as String?;
     cacheLevel ??= isMatchedJNAPNoCachePolicy(action)
         ? CacheLevel.noCache
         : CacheLevel.localCached;
@@ -97,16 +97,12 @@ class RouterRepository {
         cacheLevel: cacheLevel,
         timeoutMs: timeoutMs);
     final sideEffectManager = ref.read(sideEffectProvider.notifier);
-    final linksysCacheManager = ref.read(linksysCacheManagerProvider);
     return CommandQueue()
         .enqueue(command)
-        .then((record) => handleJNAPResult(record))
         .then((record) => sideEffectManager.handleSideEffect(record))
         .then((record) {
-      _handleCacheProcess(
-          record, action.actionValue, linksysCacheManager, sn, cacheLevel!);
       sideEffectManager.finishSideEffect();
-      return record.$1;
+      return record as JNAPSuccess;
     });
   }
 
@@ -117,9 +113,8 @@ class RouterRepository {
         .map((entry) =>
             {'action': entry.key.actionValue, 'request': entry.value})
         .toList();
-    final prefs = await SharedPreferences.getInstance();
-    final sn = prefs.get(pCurrentSN) as String?;
-    final linksysCacheManager = ref.read(linksysCacheManagerProvider);
+    final sideEffectManager = ref.read(sideEffectProvider.notifier);
+
     final command = await createTransaction(payload,
         needAuth: builder.auth,
         fetchRemote: fetchRemote,
@@ -127,20 +122,11 @@ class RouterRepository {
 
     return CommandQueue()
         .enqueue(command)
-        .then((record) => handleJNAPResult(record))
+        .then((record) => sideEffectManager.handleSideEffect(record))
         .then((record) {
-      return (
-        JNAPTransactionSuccessWrap.convert(
-          actions: builder.commands.map((e) => e.key).toList(),
-          transactionSuccess: record.$1 as JNAPTransactionSuccess,
-        ),
-        record.$2
-      );
-    }).then((record) {
-      _handleTransactionCacheProcess(
-          record, linksysCacheManager, sn, cacheLevel);
-      return record.$1;
-    });
+      sideEffectManager.finishSideEffect();
+      return record;
+    }).then((result) => result as JNAPTransactionSuccessWrap);
   }
 
   Future<TransactionHttpCommand> createTransaction(
@@ -261,62 +247,6 @@ class RouterRepository {
       await Future.delayed(Duration(milliseconds: retryDelayInMilliSec));
     }
     onCompleted?.call();
-  }
-
-  (JNAPResult result, DataSource ds) handleJNAPResult(
-      (JNAPResult result, DataSource ds) record) {
-    if (record.$1 is JNAPSuccess || record.$1 is JNAPTransactionSuccess) {
-      return record;
-    }
-    LinksysHttpClient.onError?.call(record.$1 as JNAPError);
-    throw (record.$1 as JNAPError);
-  }
-
-  (JNAPResult result, DataSource ds) _handleCacheProcess(
-      (JNAPResult result, DataSource ds) record,
-      String action,
-      LinksysCacheManager linksysCacheManager,
-      String? serialNumber,
-      CacheLevel cacheLevel) {
-    if (record.$2 == DataSource.fromRemote) {
-      if (cacheLevel == CacheLevel.localCached) {
-        final dataResult = {
-          "target": action,
-          "cachedAt": DateTime.now().millisecondsSinceEpoch,
-        };
-        dataResult["data"] = record.$1.toJson();
-        linksysCacheManager.data[action] = dataResult;
-        if (serialNumber != null) {
-          linksysCacheManager.saveCache(serialNumber);
-        }
-      }
-    }
-    return record;
-  }
-
-  (JNAPTransactionSuccessWrap result, DataSource ds)
-      _handleTransactionCacheProcess(
-    (JNAPTransactionSuccessWrap result, DataSource ds) record,
-    LinksysCacheManager linksysCacheManager,
-    String? serialNumber,
-    CacheLevel cacheLevel,
-  ) {
-    if (record.$2 == DataSource.fromRemote) {
-      if (cacheLevel == CacheLevel.localCached) {
-        record.$1.data.forEach((entry) {
-          final dataResult = {
-            "target": entry.key.actionValue,
-            "cachedAt": DateTime.now().millisecondsSinceEpoch,
-          };
-          dataResult["data"] = (entry.value as JNAPSuccess).toJson();
-          linksysCacheManager.data[entry.key.actionValue] = dataResult;
-        });
-        if (serialNumber != null) {
-          linksysCacheManager.saveCache(serialNumber);
-        }
-      }
-    }
-    return record;
   }
 
   String _buildCommandUrl({

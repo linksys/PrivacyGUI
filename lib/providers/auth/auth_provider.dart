@@ -18,7 +18,6 @@ import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/core/repository/router/extensions/core_extension.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/providers/auth/auth_exception.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -283,9 +282,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         .then((value) => value.output['passwordHint'] ?? '');
   }
 
+  // TODO
   Future<void> createAdminPassword(String password, String hint) async {
-    final repo = ref.read(routerRepositoryProvider);
-    await repo.createAdminPassword('admin', hint);
+    // final repo = ref.read(routerRepositoryProvider);
+    // await repo.createAdminPassword('admin', hint);
   }
 
   Future logout() async {

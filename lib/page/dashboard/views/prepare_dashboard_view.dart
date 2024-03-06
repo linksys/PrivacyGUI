@@ -91,8 +91,6 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
         .onError((error, stackTrace) => null);
     if (nodeDeviceInfo != null) {
       logger.d('SN changed: ${nodeDeviceInfo.serialNumber}');
-      // final prefs = await SharedPreferences.getInstance();
-      // await prefs.setString(pCurrentSN, nodeDeviceInfo.serialNumber);
       await ref.read(connectivityProvider.notifier).forceUpdate();
       logger.d('Force update connectivity finish!');
 
@@ -102,6 +100,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
     } else {
       // TODO #LINKSYS Error handling for unable to get deviceinfo
       logger.i('PREPARE :: Error handling for unable to get deviceinfo');
+      router.goNamed(RouteNamed.cloudLoginAccount, extra: {'error': 'Unexpected'});
     }
   }
 }
