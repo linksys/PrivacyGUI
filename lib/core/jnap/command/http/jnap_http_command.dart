@@ -35,7 +35,7 @@ class JNAPHttpCommand extends BaseHttpCommand<JNAPResult, HttpJNAPSpec> {
           .execute(this)
           .then((result) => createResponse(result.body))
           .then((jnap) async {
-        if (fetchRemote && cacheLevel != CacheLevel.noCache) {
+        if (cacheLevel == CacheLevel.localCached) {
           final prefs = await SharedPreferences.getInstance();
           final serialNumber = prefs.getString(pCurrentSN);
           logger.d(
@@ -43,8 +43,7 @@ class JNAPHttpCommand extends BaseHttpCommand<JNAPResult, HttpJNAPSpec> {
           cache.handleJNAPCached(jnap.toJson(), spec.action, serialNumber);
         }
         return jnap;
-      }).catchError(handleJNAPError,
-              test: errorTest);
+      }).catchError(handleJNAPError, test: errorTest);
     }
   }
 
@@ -59,6 +58,6 @@ class JNAPHttpCommand extends BaseHttpCommand<JNAPResult, HttpJNAPSpec> {
 
   @override
   bool checkCacheValidation(LinksysCacheManager cache) {
-    return cache.checkUseCacheDataForJnapHttpCommand(spec.action, fetchRemote);
+    return !fetchRemote && cache.checkCacheDataValid(spec.action);
   }
 }

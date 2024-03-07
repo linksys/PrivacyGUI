@@ -135,22 +135,25 @@ class LinksysCacheManager {
   }
 
   void handleJNAPCached(
-      Map<String, dynamic> record,
-      String action,
-      String? serialNumber,) {
+    Map<String, dynamic> record,
+    String action,
+    String? serialNumber,
+  ) {
     final dataResult = {
-          "target": action,
-          "cachedAt": DateTime.now().millisecondsSinceEpoch,
-        };
-        dataResult["data"] = record;
-        data[action] = dataResult;
-        if (serialNumber != null) {
-          saveCache(serialNumber);
-        }
+      "target": action,
+      "cachedAt": DateTime.now().millisecondsSinceEpoch,
+    };
+    dataResult["data"] = record;
+    data[action] = dataResult;
+    if (serialNumber != null) {
+      saveCache(serialNumber);
+    }
   }
 
-  bool checkUseCacheDataForJnapHttpCommand(String action, bool remote) {
-    if (remote && data.containsKey(action) && data[action] != null && didCacheExpire(action)) {
+  bool checkCacheDataValid(String action) {
+    if (data.containsKey(action) &&
+        data[action] != null &&
+        !didCacheExpire(action)) {
       return true;
     } else {
       return false;

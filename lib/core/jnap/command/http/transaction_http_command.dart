@@ -39,7 +39,7 @@ class TransactionHttpCommand
           .execute(this)
           .then((result) => createResponse(result.body))
           .then((jnap) async {
-        if (fetchRemote && cacheLevel != CacheLevel.noCache) {
+        if (cacheLevel == CacheLevel.localCached) {
           final prefs = await SharedPreferences.getInstance();
           final serialNumber = prefs.getString(pCurrentSN);
           jnap.data.forEach((entry) {
@@ -73,21 +73,19 @@ class TransactionHttpCommand
           .whereType<JNAPAction>()
           .toList();
       return JNAPTransactionSuccessWrap.convert(
-          actions: actionList,
-          transactionSuccess: result);
+          actions: actionList, transactionSuccess: result);
     }
     throw (result as JNAPError);
   }
 
   @override
   bool checkCacheValidation(LinksysCacheManager cache) {
-    return !_checkNonExistActionAndExpiration(cache) && !fetchRemote;
+    return !fetchRemote && !_checkNonExistActionAndExpiration(cache);
   }
 
   bool _checkNonExistActionAndExpiration(LinksysCacheManager cache) {
     final actionList = jsonDecode(spec.payload()) as List<dynamic>;
-    return actionList.any((element) =>
-        !cache.data.containsKey(element["action"]) ||
-        cache.didCacheExpire(cache.data[element["action"]]["target"]));
+    return actionList
+        .any((element) => !cache.checkCacheDataValid(element['action']));
   }
 }
