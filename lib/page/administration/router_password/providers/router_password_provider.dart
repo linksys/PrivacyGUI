@@ -60,15 +60,10 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
       },
       type: CommandType.local,
     )
-        .then<void>((value) async {
-      const storage = FlutterSecureStorage();
-      await storage.write(key: pLocalPassword, value: password);
-      await fetch();
-    }).onError((error, stackTrace) {
-      if (error is JNAPError) {
-        // handle error
-        state = state.copyWith(error: error.error);
-      }
+        .then<void>((value) {
+      state = state.copyWith(
+        error: null,
+      );
     });
   }
 
@@ -105,6 +100,10 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
         'resetCode': code,
       },
     ).then((result) {
+      state = state.copyWith(
+        remainingErrorAttempts: null,
+        error: null,
+      );
       return true;
     }).onError((error, stackTrace) {
       if (error is JNAPError) {

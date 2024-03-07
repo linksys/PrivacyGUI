@@ -11,7 +11,7 @@ final localLoginRoute = LinksysRoute(
     LinksysRoute(
       name: RouteNamed.localRouterRecovery,
       path: RoutePath.localRouterRecovery,
-      builder: (context, state) => LocalRouterRecoveryView(),
+      builder: (context, state) => const LocalRouterRecoveryView(),
       routes: [
         LinksysRoute(
           name: RouteNamed.localPasswordReset,

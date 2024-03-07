@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/layouts/basic_header.dart';
+import 'package:linksys_app/page/components/styled/bottom_bar.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/administration/router_password/providers/_providers.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/card/card.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 
@@ -24,16 +26,11 @@ class LocalRouterRecoveryView extends ArgumentsConsumerStatefulView {
 class _LocalRouterRecoveryViewState
     extends ConsumerState<LocalRouterRecoveryView> {
   final TextEditingController _otpController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-  }
+  String userInputCode = '';
 
   @override
   void dispose() {
     super.dispose();
-
     _otpController.dispose();
   }
 
@@ -42,56 +39,88 @@ class _LocalRouterRecoveryViewState
 
   Widget _contentView() {
     final state = ref.watch(routerPasswordProvider);
-    final goRouter = GoRouter.of(context);
 
     return StyledAppPageView(
+      appBarStyle: AppBarStyle.none,
+      padding: EdgeInsets.zero,
+      scrollable: true,
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: const BasicHeader(
-          title: 'Enter Recovery Key',
-        ),
-        content: Column(
-          children: [
-            PinCodeTextField(
-              onChanged: (String value) {
-                // ref.read(routerPasswordProvider.notifier).clearErrorPrompt();
-              },
-              onCompleted: (String? value) => _onNext(value, goRouter),
-              length: 5,
-              appContext: context,
-              controller: _otpController,
-              keyboardType: TextInputType.number,
-              pinTheme: PinTheme(
-                shape: PinCodeFieldShape.underline,
-                fieldHeight: 46,
-                fieldWidth: 48,
-              ),
-            ),
-            const AppGap.regular(),
-            if (state.remainingErrorAttempts != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: Spacing.small),
-                child: AppText.bodyMedium(
-                  'That key didn\'t work. Check it and try again.\nTries remaining: ${state.remainingErrorAttempts}',
+        content: Center(
+          child: AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText.headlineSmall(loc(context).forgot_password),
+                const AppGap.regular(),
+                AppText.bodyMedium(loc(context).localRouterRecoveryDescription),
+                const AppGap.big(),
+                PinCodeTextField(
+                  errorTextSpace: 0,
+                  onChanged: (String value) {
+                    setState(() {
+                      userInputCode = value;
+                    });
+                  },
+                  length: 5,
+                  appContext: context,
+                  controller: _otpController,
+                  keyboardType: TextInputType.number,
+                  autoDismissKeyboard: true,
+                  pinTheme: PinTheme(
+                    shape: PinCodeFieldShape.box,
+                    borderRadius: BorderRadius.circular(4),
+                    borderWidth: 1,
+                    fieldHeight: 56,
+                    fieldWidth: 40,
+                    activeColor: Theme.of(context).colorScheme.outline,
+                    selectedColor: Theme.of(context).colorScheme.outline,
+                    inactiveColor: Theme.of(context).colorScheme.outline,
+                  ),
                 ),
-              ),
-          ],
+                if (state.remainingErrorAttempts != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: Spacing.semiSmall),
+                    child: AppText.bodyMedium(
+                      'That key didn\'t work. Check it and try again.\nTries remaining: ${state.remainingErrorAttempts}',
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                const AppGap.big(),
+                AppTextButton.noPadding(
+                  loc(context).localRouterRecoveryHint,
+                  onTap: () {},
+                ),
+                const AppGap.big(),
+                AppFilledButton(
+                  loc(context).text_continue,
+                  onTap: userInputCode.length == 5
+                      ? () {
+                          _validateCode(userInputCode);
+                        }
+                      : null,
+                )
+              ],
+            ),
+          ),
         ),
+        footer: const BottomBar(),
       ),
     );
   }
 
-  _onNext(String? value, GoRouter goRouter) async {
-    if (value != null) {
-      final isCodeValid = await ref
-          .read(routerPasswordProvider.notifier)
-          .checkRecoveryCode(value);
+  _validateCode(String code) {
+    ref
+        .read(routerPasswordProvider.notifier)
+        .checkRecoveryCode(code)
+        .then((isCodeValid) {
       if (isCodeValid) {
-        goRouter.pushNamed(
+        context.pushNamed(
           RouteNamed.localPasswordReset,
-          extra: {'code': value},
+          extra: {'code': code},
         );
       }
-    }
+    });
   }
 }

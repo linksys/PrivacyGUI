@@ -9,12 +9,12 @@ import 'package:linksys_app/providers/auth/_auth.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/page/components/customs/network_check_view.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/error_code_handler.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/card/card.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -29,7 +29,6 @@ class LoginView extends ArgumentsConsumerStatefulView {
 }
 
 class _LoginViewState extends ConsumerState<LoginView> {
-  bool _isConnectedToRouter = true;
   bool _isLoading = false;
   bool _isPasswordValidate = false;
   String _errorReason = '';
@@ -48,7 +47,6 @@ class _LoginViewState extends ConsumerState<LoginView> {
   @override
   void dispose() {
     super.dispose();
-
     _passwordController.dispose();
   }
 
@@ -62,72 +60,63 @@ class _LoginViewState extends ConsumerState<LoginView> {
             scrollable: true,
             child: AppBasicLayout(
               content: Center(
-                child: Card(
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(
-                        color: Theme.of(context).colorScheme.outline),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 0,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 36.0, vertical: 40.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AppText.headlineSmall(
-                            getAppLocalizations(context).login),
-                        const AppGap.big(),
-                        SizedBox(
-                          width: 289,
-                          child: AppPasswordField(
-                            border: const OutlineInputBorder(),
-                            controller: _passwordController,
-                            hintText: getAppLocalizations(context).password,
-                            onChanged: _verifyPassword,
-                            errorText:
-                                generalErrorCodeHandler(context, _errorReason),
-                          ),
+                child: AppCard(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppText.headlineSmall(getAppLocalizations(context).login),
+                      const AppGap.big(),
+                      SizedBox(
+                        width: 289,
+                        child: AppPasswordField(
+                          border: const OutlineInputBorder(),
+                          controller: _passwordController,
+                          hintText: getAppLocalizations(context).password,
+                          onChanged: _verifyPassword,
+                          errorText:
+                              generalErrorCodeHandler(context, _errorReason),
                         ),
-                        if (_hint.isNotEmpty)
-                          Theme(
-                            data: Theme.of(context)
-                                .copyWith(dividerColor: Colors.transparent),
-                            child: SizedBox(
-                              width: 200,
-                              child: ExpansionTile(
-                                title: AppText.bodySmall(
-                                  getAppLocalizations(context).show_hint,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                tilePadding: EdgeInsets.zero,
-                                backgroundColor: Colors.transparent,
-                                trailing: const SizedBox(),
-                                expandedAlignment: Alignment.centerLeft,
-                                expandedCrossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                children: [Text(_hint)],
+                      ),
+                      if (_hint.isNotEmpty)
+                        Theme(
+                          data: Theme.of(context)
+                              .copyWith(dividerColor: Colors.transparent),
+                          child: SizedBox(
+                            width: 200,
+                            child: ExpansionTile(
+                              title: AppText.bodySmall(
+                                getAppLocalizations(context).show_hint,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
+                              tilePadding: EdgeInsets.zero,
+                              backgroundColor: Colors.transparent,
+                              trailing: const SizedBox(),
+                              expandedAlignment: Alignment.centerLeft,
+                              expandedCrossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [Text(_hint)],
                             ),
                           ),
-                        const AppGap.big(),
-                        AppTextButton.noPadding(
-                          'Forgot password',
-                          onTap: () {},
                         ),
-                        const AppGap.big(),
-                        AppFilledButton(
-                          'Log in',
-                          onTap: _isPasswordValidate
-                              ? () {
-                                  _localLogin();
-                                }
-                              : null,
-                        ),
-                      ],
-                    ),
+                      const AppGap.big(),
+                      AppTextButton.noPadding(
+                        'Forgot password',
+                        onTap: () {
+                          context.pushNamed(RouteNamed.localRouterRecovery);
+                        },
+                      ),
+                      const AppGap.big(),
+                      AppFilledButton(
+                        'Log in',
+                        onTap: _isPasswordValidate
+                            ? () {
+                                _localLogin();
+                              }
+                            : null,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -151,7 +140,6 @@ class _LoginViewState extends ConsumerState<LoginView> {
     });
 
     setState(() {
-      // _isConnectedToRouter = isConnected;
       _isLoading = false;
     });
   }
