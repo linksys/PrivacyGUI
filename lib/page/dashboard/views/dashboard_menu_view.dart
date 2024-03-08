@@ -64,7 +64,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: ResponsiveLayout.isOverBreakpoint4(context)
             ? 3
-            : ResponsiveLayout.isOverBreakpoint3(context)
+            : ResponsiveLayout.isOverBreakpoint2(context)
                 ? 2
                 : 1,
         mainAxisSpacing: 8,
@@ -95,7 +95,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
 
   List<AppSectionItemData> createMenuItems() {
     final isCloudLogin =
-        ref.read(authProvider).value?.loginType == LoginType.remote;
+        ref.watch(authProvider).value?.loginType == LoginType.remote;
     return [
       AppSectionItemData(
           title: loc(context).wifi,
@@ -171,11 +171,11 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       context: context,
       barrierDismissible: true,
       builder: (context) => AlertDialog.adaptive(
-        title: AppText.labelLarge('Alert!'),
-        content: AppText.bodyMedium('Restart router will take some time'),
+        title: AppText.labelLarge(loc(context).alertExclamation),
+        content: AppText.bodyMedium(loc(context).menuRestartNetworkMessage),
         actions: [
           AppFilledButton(
-            'Ok',
+            loc(context).ok,
             onTap: () {
               ref
                   .read(rootProvider.notifier)
@@ -188,7 +188,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             },
           ),
           AppFilledButton(
-            'Cancel',
+            loc(context).cancel,
             onTap: () {
               context.pop();
             },

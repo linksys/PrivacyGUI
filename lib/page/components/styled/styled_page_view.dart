@@ -7,6 +7,7 @@ import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/theme/material/color_schemes_ext.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/buttons/popup_button.dart';
+import 'package:linksys_widgets/widgets/card/card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -86,17 +87,7 @@ class StyledAppPageView extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!ResponsiveLayout.isLayoutBreakpoint(context) && hasMenu())
-            Card(
-              margin: const EdgeInsets.only(right: Spacing.regular),
-              shape: RoundedRectangleBorder(
-                borderRadius: const BorderRadius.all(
-                  Radius.circular(8),
-                ),
-                side: BorderSide(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-              ),
-              elevation: 0,
+            AppCard(
               child: _createMenuWidget(context, 200),
             ),
           Expanded(child: child),

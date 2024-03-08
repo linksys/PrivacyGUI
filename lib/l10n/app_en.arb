@@ -698,5 +698,8 @@
   "signalStrength": "Signal strength",
   "reserveDHCP": "Reserve DHCP",
   "nodeLight": "Node light",
-  "nightMode": "Night mode"
+  "nightMode": "Night mode",
+  "alertExclamation": "Alert!",
+  "menuRestartNetworkMessage": "Restart router will take some time",
+  "ok": "Ok"
 }

@@ -13,4 +13,8 @@ extension MapExt on Map {
 extension StringExt on String {
   String capitalized() =>
       '${this[0].toUpperCase()}${substring(1).toLowerCase()}';
+  String camelCapitalized() {
+    return split(' ').fold('',
+        (previousValue, element) => '$previousValue ${element.capitalized()}');
+  }
 }
