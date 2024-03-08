@@ -72,6 +72,7 @@ class _LocalResetRouterPasswordViewState
                     loc(context).localResetRouterPasswordDescription),
                 const AppGap.big(),
                 AppPasswordField(
+                  
                   border: const OutlineInputBorder(),
                   withValidator: state.hasEdited,
                   validations: validations,
@@ -122,7 +123,7 @@ class _LocalResetRouterPasswordViewState
           code,
         )
         .then<void>((_) {
-      dialogTitle = loc(context).success_exclamation;
+      dialogTitle = loc(context).successExclamation;
       dialogContent = loc(context).localResetRouterPasswordSuccessContent;
       actionTitle = loc(context).localResetRouterPasswordSuccessNext;
       action = () {
@@ -130,7 +131,7 @@ class _LocalResetRouterPasswordViewState
       };
     }).onError((error, stackTrace) {
       //TODO: Error messages are not defined by UI
-      dialogTitle = 'Failed!';
+      dialogTitle = loc(context).failedExclamation;
       dialogContent = (error is JNAPError) ? error.result : '';
       actionTitle = loc(context).ok;
       action = () {
