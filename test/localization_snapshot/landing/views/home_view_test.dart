@@ -5,14 +5,14 @@ import 'package:linksys_app/page/landing/views/_views.dart';
 
 import '../../../common/testable_widget.dart';
 
-import '../../test_localization.dart';
+import '../../../common/test_localization.dart';
 
 void main() {
   group('Home View', () {
     testLocalizations(
       'snapshot - home view',
       (tester, locale) async {
-        await tester.pumpWidgetBuilder(testableRouterWidget(
+        await tester.pumpWidgetBuilder(testableRouteWidget(
           themeMode: ThemeMode.light,
           overrides: [],
           locale: locale,

@@ -1,0 +1,256 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:linksys_app/page/dashboard/_dashboard.dart';
+import 'package:linksys_app/providers/auth/_auth.dart';
+import 'package:linksys_app/providers/auth/auth_provider.dart';
+import 'package:linksys_widgets/widgets/card/menu_card.dart';
+import 'package:material_symbols_icons/symbols.dart';
+import 'package:mockito/mockito.dart';
+
+import '../../../common/test_responsive_widget.dart';
+import '../../../common/testable_widget.dart';
+
+class MockAuthNotifier extends AuthNotifier with Mock {
+  @override
+  AsyncValue<AuthState> get state =>
+      const AsyncData(AuthState(loginType: LoginType.remote));
+
+  @override
+  set state(AsyncValue<AuthState> newState) {
+    super.state = newState;
+  }
+}
+
+void main() {
+  late AuthNotifier mockAuthNotifier;
+
+  setUp(() {
+    mockAuthNotifier = MockAuthNotifier();
+  });
+
+  testWidgets('Test Dashboard Menu', (tester) async {
+    final provider = ProviderContainer();
+    await tester.pumpWidget(
+      testableWidget(
+        overrides: [authProvider.overrideWith(() => mockAuthNotifier)],
+        parent: provider,
+        child: const DashboardMenuView(),
+      ),
+    );
+    mockAuthNotifier.state =
+        const AsyncData(AuthState(loginType: LoginType.remote));
+
+    await tester.pumpAndSettle();
+
+    final titleFinder = find.text('Menu');
+    expect(titleFinder, findsOneWidget);
+    final menuCardFinder = find.byType(AppMenuCard);
+    expect(menuCardFinder, findsNWidgets(7));
+  });
+
+  testResponsiveWidgets(
+    'Test menu responsive layout with mobile size variants',
+    breakpoints: responsiveMobileVariants,
+    (tester) async {
+      await tester.pumpWidget(
+        testableWidget(
+          child: const DashboardMenuView(),
+        ),
+      );
+
+      final moreFinder = find.byIcon(Symbols.more_horiz);
+      expect(moreFinder, findsOneWidget);
+    },
+  );
+
+  testResponsiveWidgets(
+    'Test menu responsive layout with desktop size variants',
+    breakpoints: responsiveDesktopVariants,
+    (tester) async {
+      await tester.pumpWidget(
+        testableWidget(
+          child: const DashboardMenuView(),
+        ),
+      );
+
+      final moreFinder = find.byIcon(Symbols.more_horiz);
+      expect(moreFinder, findsNothing);
+
+      final subMenuTitleFinder = find.text('My Network');
+      expect(subMenuTitleFinder, findsOneWidget);
+      final restartNetworkMenuIconFinder = find.byIcon(Symbols.restart_alt);
+      final restartNetworkMenuLabelFinder = find.text('Restart Network');
+      expect(restartNetworkMenuIconFinder, findsOneWidget);
+      expect(restartNetworkMenuLabelFinder, findsOneWidget);
+      final setupMenuIconFinder = find.byIcon(Symbols.add);
+      final setupMenuLabelFinder = find.text('Setup a new Product');
+      expect(setupMenuIconFinder, findsOneWidget);
+      expect(setupMenuLabelFinder, findsOneWidget);
+    },
+  );
+
+  testResponsiveWidgets(
+    'Test menu responsive layout with mobile size variants has one column',
+    breakpoints: ValueVariant({device320w}),
+    (tester) async {
+      await tester.pumpWidget(
+        testableWidget(
+          child: const DashboardMenuView(),
+        ),
+      );
+
+      final gridViewFinder = find.byType(GridView);
+      final gridView = tester.widget<GridView>(gridViewFinder);
+      final gridDelegte =
+          gridView.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+      expect(gridDelegte.crossAxisCount, 1);
+    },
+  );
+
+  testResponsiveWidgets(
+    'Test menu responsive layout with mobile size variants has two column',
+    breakpoints: ValueVariant({device480w, device744w}),
+    (tester) async {
+      await tester.pumpWidget(
+        testableWidget(
+          child: const DashboardMenuView(),
+        ),
+      );
+
+      final gridViewFinder = find.byType(GridView);
+      final gridView = tester.widget<GridView>(gridViewFinder);
+      final gridDelegte =
+          gridView.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+      expect(gridDelegte.crossAxisCount, 2);
+    },
+  );
+
+  testResponsiveWidgets(
+    'Test menu responsive layout with mobile size variants has three column',
+    breakpoints: ValueVariant({device1280w, device1440w}),
+    (tester) async {
+      await tester.pumpWidget(
+        testableWidget(
+          child: const DashboardMenuView(),
+        ),
+      );
+
+      final gridViewFinder = find.byType(GridView);
+      final gridView = tester.widget<GridView>(gridViewFinder);
+      final gridDelegte =
+          gridView.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+      expect(gridDelegte.crossAxisCount, 3);
+    },
+  );
+
+  testResponsiveWidgets(
+    'Test tapping more button on mobile variants',
+    breakpoints: responsiveMobileVariants,
+    (tester) async {
+      await tester.pumpWidget(
+        testableWidget(
+          child: const DashboardMenuView(),
+        ),
+      );
+
+      final moreFinder = find.byIcon(Symbols.more_horiz);
+      expect(moreFinder, findsOneWidget);
+      await tester.tap(moreFinder);
+      await tester.pumpAndSettle();
+
+      // check bottom sheet displayed
+      final bottomSheetFinder = find.byType(BottomSheet);
+      expect(bottomSheetFinder, findsOneWidget);
+
+      // check contents on the bottom sheet
+      final subMenuTitleFinder = find.text('My Network');
+      expect(subMenuTitleFinder, findsOneWidget);
+      final restartNetworkMenuIconFinder = find.byIcon(Symbols.restart_alt);
+      final restartNetworkMenuLabelFinder = find.text('Restart Network');
+      expect(restartNetworkMenuIconFinder, findsOneWidget);
+      expect(restartNetworkMenuLabelFinder, findsOneWidget);
+      final setupMenuIconFinder = find.byIcon(Symbols.add);
+      final setupMenuLabelFinder = find.text('Setup a new Product');
+      expect(setupMenuIconFinder, findsOneWidget);
+      expect(setupMenuLabelFinder, findsOneWidget);
+    },
+  );
+
+  testResponsiveWidgets(
+    'Test tapping restart network button on mobile variants',
+    breakpoints: responsiveMobileVariants,
+    (tester) async {
+      await tester.pumpWidget(
+        testableWidget(
+          child: const DashboardMenuView(),
+        ),
+      );
+
+      final moreFinder = find.byIcon(Symbols.more_horiz);
+      expect(moreFinder, findsOneWidget);
+      await tester.tap(moreFinder);
+      await tester.pumpAndSettle();
+
+      // check bottom sheet displayed
+      final bottomSheetFinder = find.byType(BottomSheet);
+      expect(bottomSheetFinder, findsOneWidget);
+
+      // check contents on the bottom sheet
+      final subMenuTitleFinder = find.text('My Network');
+      expect(subMenuTitleFinder, findsOneWidget);
+      final restartNetworkMenuLabelFinder = find.text('Restart Network');
+      await tester.tap(restartNetworkMenuLabelFinder);
+      await tester.pumpAndSettle();
+
+      // check dialog displayed
+      final dialogFinder = find.byType(Dialog);
+      expect(dialogFinder, findsOneWidget);
+
+      // check contents on the dialog
+      final dialogTitleFinder = find.text('Alert!');
+      final dialogMessageFinder =
+          find.text('Restart router will take some time');
+      final dialogOkFinder = find.text('Ok');
+      final dialogCancelFinder = find.text('Cancel');
+      expect(dialogTitleFinder, findsOneWidget);
+      expect(dialogMessageFinder, findsOneWidget);
+      expect(dialogOkFinder, findsOneWidget);
+      expect(dialogCancelFinder, findsOneWidget);
+    },
+  );
+
+  testResponsiveWidgets(
+    'Test tapping restart network button on desktop variants',
+    breakpoints: responsiveDesktopVariants,
+    (tester) async {
+      await tester.pumpWidget(
+        testableWidget(
+          child: const DashboardMenuView(),
+        ),
+      );
+
+      // check contents on the bottom sheet
+      final subMenuTitleFinder = find.text('My Network');
+      expect(subMenuTitleFinder, findsOneWidget);
+      final restartNetworkMenuLabelFinder = find.text('Restart Network');
+      await tester.tap(restartNetworkMenuLabelFinder);
+      await tester.pumpAndSettle();
+
+      // check dialog displayed
+      final dialogFinder = find.byType(Dialog);
+      expect(dialogFinder, findsOneWidget);
+
+      // check contents on the dialog
+      final dialogTitleFinder = find.text('Alert!');
+      final dialogMessageFinder =
+          find.text('Restart router will take some time');
+      final dialogOkFinder = find.text('Ok');
+      final dialogCancelFinder = find.text('Cancel');
+      expect(dialogTitleFinder, findsOneWidget);
+      expect(dialogMessageFinder, findsOneWidget);
+      expect(dialogOkFinder, findsOneWidget);
+      expect(dialogCancelFinder, findsOneWidget);
+    },
+  );
+}

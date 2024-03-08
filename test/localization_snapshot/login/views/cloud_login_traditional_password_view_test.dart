@@ -4,14 +4,14 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:linksys_app/page/login/views/_views.dart';
 
 import '../../../common/testable_widget.dart';
-import '../../test_localization.dart';
+import '../../../common/test_localization.dart';
 
 void main() {
   setUpAll(() async {});
   tearDownAll(() async {});
 
   testLocalizations('Cloud Password View', (tester, locale) async {
-    await tester.pumpWidgetBuilder(testableRouterWidget(
+    await tester.pumpWidgetBuilder(testableRouteWidget(
       themeMode: ThemeMode.light,
       overrides: [],
       locale: locale,

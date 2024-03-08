@@ -5,20 +5,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:meta/meta.dart';
 
-import 'font_util.dart';
+import 'theme.dart';
 
 final mockLightThemeData =
     linksysLightThemeData.copyWith(textTheme: mockLinksysDarkTextTheme);
 final mockDarkThemeData =
     linksysDarkThemeData.copyWith(textTheme: mockLinksysLightTextTheme);
 
-
+@isTest
 void testLocalizations(
-    String name, FutureOr<void> Function(WidgetTester, Locale) testMain) async {
+  String name,
+  FutureOr<void> Function(WidgetTester, Locale) testMain,
+) async {
   testGoldens(name, (tester) async {
     await loadTestFonts();
-    for (final locale in AppLocalizations.supportedLocales) {
+    const supportedLocales = AppLocalizations.supportedLocales;
+    // final supportedLocales = AppLocalizations.supportedLocales.sublist(0, 1);
+    for (final locale in supportedLocales) {
       await testMain(tester, locale);
 
       await multiScreenGolden(

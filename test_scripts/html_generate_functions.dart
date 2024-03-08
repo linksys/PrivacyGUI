@@ -76,7 +76,7 @@ String generateHTMLReport(Map<String, dynamic> result) {
       });
     </script>
     <script>
-      var xValues = ["Passed", "Failed"];
+      var xValues = ["Success", "Fail"];
       var yValues = [${result['counting']['success']}, ${result['counting']['fail']}];
       var barColors = [
         "#1e7145",
@@ -120,7 +120,7 @@ String generateHTMLGroup(Map<String, dynamic> group) {
     <td style="width:80%;text-indent:10px">${group['name'] == '' ? "All tests" : group['name']}</th>
     <td class="textCenter" style="width:20%">${group['testCount']}</th>
   </tr>
-  ${(group['tests'] as List<Map<String, dynamic>>).where((element) => !RegExp(r'\(.*\)').hasMatch(element['name'].toString())).map((e) => generateHTMLTest(e)).toList().join()}
+  ${(group['tests'] as List<Map<String, dynamic>>).where((element) => element['result'] != null).map((e) => generateHTMLTest(e)).toList().join()}
 ''';
 }
 

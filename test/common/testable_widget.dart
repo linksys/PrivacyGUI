@@ -5,7 +5,7 @@ import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import '../localization_snapshot/test_localization.dart';
+import 'test_localization.dart';
 
 // Assign a globalKey in order to retrieve current Build Context
 GlobalKey<NavigatorState> globalKey = GlobalKey();
@@ -21,6 +21,7 @@ GoRouter mockRouter(
 
 Widget testableWidget({
   required Widget child,
+  ProviderContainer? parent,
   List<Override> overrides = const [],
   ThemeMode themeMode = ThemeMode.system,
   ThemeData? theme,
@@ -29,6 +30,7 @@ Widget testableWidget({
 }) =>
     ProviderScope(
       overrides: overrides,
+      parent: parent,
       child: MaterialApp(
         navigatorKey: globalKey,
         theme: theme ?? mockLightThemeData,
@@ -46,7 +48,7 @@ Widget testableWidget({
       ),
     );
 
-Widget testableRouterWidget({
+Widget testableRouteWidget({
   required Widget child,
   List<Override> overrides = const [],
   ThemeMode themeMode = ThemeMode.system,

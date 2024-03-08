@@ -88,6 +88,7 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
     }
     addOrAppendData<Map<String, dynamic>>(targetSuite, 'groups', groupJson);
   } else if (json['test'] != null) {
+
     final testJson = json['test'];
     final suiteID = testJson['suiteID'];
     final groupIDs = List.from(testJson['groupIDs']);
@@ -97,12 +98,14 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
     if (targetSuite == null) {
       return;
     }
+
     final groups = targetSuite['groups'] as List<Map<String, dynamic>>?;
     if (groups == null) {
       return;
     }
     final targetGroups =
         groups.where((element) => groupIDs.contains(element['id']));
+
     for (var element in targetGroups) {
       testJson['name'] =
           (testJson['name'] as String? ?? '').replaceFirst(element['name'], '');
@@ -118,10 +121,15 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
     findTests(testID, testResult, result);
     if (json['result'] != null) {
       if (json['result'] == 'success') {
-        final successCount = testResult['counting']['success'] ?? 0;
-        testResult['counting']['success'] = successCount + 1;
+        if (!json['skipped']) {
+          final successCount = testResult['counting']['success'] ?? 0;
+          testResult['counting']['success'] = successCount + 1;
+        } else {
+          final currentCount = testResult['counting']['total'];
+          testResult['counting']['total'] = currentCount - 1;
+        }
       } else {
-        final failCount = testResult['counting']['failed'] ?? 0;
+        final failCount = testResult['counting']['fail'] ?? 0;
         testResult['counting']['fail'] = failCount + 1;
       }
       for (var element in result) {
