@@ -113,6 +113,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   golden_toolkit: ^0.15.0
+  flutter_svg_test: ^1.0.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
