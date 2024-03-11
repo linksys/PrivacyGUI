@@ -1,9 +1,15 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:html' as html;
+
 import 'package:collection/collection.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
 import 'package:linksys_app/core/cloud/model/create_ticket.dart';
 import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/page/dashboard/providers/dashboard_support_state.dart';
@@ -24,13 +30,10 @@ class SupportNotifier extends Notifier<SupportState> {
       required String phoneNumber,
       required String subject}) async {
     // Device registrations
-    final router = ref
-        .read(deviceManagerProvider)
-        .deviceList
-        .firstWhereOrNull((element) => element.isAuthority);
-    final serialNumber = router?.unit.serialNumber ?? '';
-    final modelNumber = router?.modelNumber ?? '';
-    final macAddress = router?.getMacAddress() ?? '';
+    final routerIdentityInfo = getDeviceIdentityInfo();
+    final serialNumber = routerIdentityInfo['serialNumber'] ?? '';
+    final modelNumber = routerIdentityInfo['modelNumber'] ?? '';
+    final macAddress = routerIdentityInfo['macAddress'] ?? '';
     String token = state.linksysToken;
     if (token.isEmpty) {
       token = await deviceRegistrations(
@@ -40,15 +43,7 @@ class SupportNotifier extends Notifier<SupportState> {
     }
 
     // Collect data
-    final repo = ref.read(routerRepositoryProvider);
-    final results = await repo.fetchCreateTicketDeviceInfo();
-    Map<String, String> dataMap = {};
-    results.forEach((element) {
-      dataMap[element.key.actionValue] = element.value.result;
-    });
-    dataMap['serialNumber'] = serialNumber;
-    dataMap['modelNumber'] = modelNumber;
-    dataMap['macAddress'] = macAddress;
+    Map<String, String> dataMap = await fetchDeviceInfo();
 
     // Cloud api tickets to get ticketId
     final ticketId = await createTicket(
@@ -68,7 +63,19 @@ class SupportNotifier extends Notifier<SupportState> {
         ticketId: ticketId,
         linksysToken: token,
         serialNumber: serialNumber,
-        data: dataMap.toString());
+        data: jsonEncode(dataMap));
+  }
+
+  Map<String, String> getDeviceIdentityInfo() {
+    final router = ref
+        .read(deviceManagerProvider)
+        .deviceList
+        .firstWhereOrNull((element) => element.isAuthority);
+    return {
+      'serialNumber': router?.unit.serialNumber ?? '',
+      'modelNumber': router?.modelNumber ?? '',
+      'macAddress': router?.getMacAddress() ?? '',
+    };
   }
 
   Future<String> deviceRegistrations(
@@ -83,6 +90,20 @@ class SupportNotifier extends Notifier<SupportState> {
 
     state = state.copyWith(linksysToken: token);
     return token;
+  }
+
+  Future<Map<String, String>> fetchDeviceInfo() async {
+    final repo = ref.read(routerRepositoryProvider);
+    final results = await repo.fetchCreateTicketDeviceInfo();
+    Map<String, String> dataMap = {};
+    results.forEach((element) {
+      dataMap[element.key.actionValue] = jsonEncode((element.value as JNAPSuccess).output);
+    });
+    final routerIdentityInfo = getDeviceIdentityInfo();
+    dataMap['serialNumber'] = routerIdentityInfo['serialNumber'] ?? '';
+    dataMap['modelNumber'] = routerIdentityInfo['modelNumber'] ?? '';
+    dataMap['macAddress'] = routerIdentityInfo['macAddress'] ?? '';
+    return dataMap;
   }
 
   Future<String> createTicket(
@@ -118,5 +139,18 @@ class SupportNotifier extends Notifier<SupportState> {
       serialNumber: serialNumber,
       data: data,
     );
+  }
+
+  Future download(BuildContext context) async {
+    Map<String, String> dataMap = await fetchDeviceInfo();
+    List<int> utf8Bytes = utf8.encode(jsonEncode(dataMap));
+    var blob = html.Blob([Uint8List.fromList(utf8Bytes), 'text/plain']);
+    var anchor =
+        html.AnchorElement(href: html.Url.createObjectUrlFromBlob(blob))
+          ..target = 'blank'
+          ..download = 'device-jnap.txt';
+    html.document.body!.append(anchor);
+    anchor.click();
+    anchor.remove();
   }
 }

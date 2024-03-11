@@ -1,5 +1,10 @@
+import 'dart:convert';
+
+import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
@@ -111,47 +116,65 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
                 ),
                 const AppGap.regular(),
                 const Spacer(),
-                AppElevatedButton(
-                  'Send',
-                  onTap: enableSend
-                      ? () async {
-                          setState(() {
-                            isLoading = true;
-                          });
-                          await ref
-                              .read(supportProvider.notifier)
-                              .startCreateTicket(
-                                  email: emailController.text,
-                                  firstName: firstNameController.text,
-                                  lastName: lastNameController.text,
-                                  phoneRegionCode:
-                                      '+${phoneNumberController.country?.prefix}',
-                                  phoneNumber:
-                                      phoneNumberController.nationalNumber,
-                                  subject: subjectController.text)
-                              .onError((error, stackTrace) {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(AppToastHelp.negativeToast(
-                              context,
-                              text: (error as JNAPError).result,
-                            ));
-                          }).then((_) {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(AppToastHelp.positiveToast(
-                              context,
-                              text: 'Upload seccess',
-                            ));
-                          }).whenComplete(() {
-                            setState(() {
-                              isLoading = false;
-                            });
-                          });
-                        }
-                      : null,
+                Row(
+                  children: [
+                    _sendButton(),
+                    const AppGap.small(),
+                    if (kIsWeb) _downloadButton(),
+                  ],
                 ),
               ],
             ),
           );
+  }
+
+  _sendButton() {
+    return AppElevatedButton(
+      'Send',
+      onTap: enableSend
+          ? () async {
+              setState(() {
+                isLoading = true;
+              });
+              await ref
+                  .read(supportProvider.notifier)
+                  .startCreateTicket(
+                      email: emailController.text,
+                      firstName: firstNameController.text,
+                      lastName: lastNameController.text,
+                      phoneRegionCode:
+                          '+${phoneNumberController.country?.prefix}',
+                      phoneNumber: phoneNumberController.nationalNumber,
+                      subject: subjectController.text)
+                  .onError((error, stackTrace) {
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(AppToastHelp.negativeToast(
+                  context,
+                  text: (error as JNAPError).result,
+                ));
+              }).then((_) {
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(AppToastHelp.positiveToast(
+                  context,
+                  text: 'Upload seccess',
+                ));
+              }).whenComplete(() {
+                setState(() {
+                  isLoading = false;
+                });
+              });
+            }
+          : null,
+    );
+  }
+
+  _downloadButton() {
+    return AppElevatedButton(
+      'Download',
+      onTap: () async {
+        await ref.read(supportProvider.notifier).download(context);
+      },
+    );
   }
 
   void _onInputChanged() {
