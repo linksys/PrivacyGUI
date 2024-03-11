@@ -27,8 +27,8 @@ const kCloudEnvironmentConfigProd = {
 };
 // Linksys QA
 const kCloudEnvironmentConfigQa = {
-  kCloudBase: 'qa.$linksysCloudBaseUrl',
-  kCloudJNAP: 'https://qa.$linksysCloudBaseUrl/cloud/JNAP/',
+  kCloudBase: 'qa.cloud1.$linksysCloudBaseUrl',
+  kCloudJNAP: 'https://qa.cloud1.$linksysCloudBaseUrl/cloud/JNAP/',
   kCloudStatus: 'https://$linksysCloudStatusBaseUrl/cloud-qa.json',
   kCloudAware: 'staging.ds.veriksystems.com',
   kCloudAwarePort: 80,
@@ -58,6 +58,7 @@ const kVarUsername = '{username}';
 const kVarToken = '{token}';
 const kVarEventSubscriptionId = '{eventSubscriptionId}';
 const kVarId = '{id}';
+const kTicketId = '{ticketId}';
 
 // Cloud API Service
 const kAuthorizationService = '/cloud/authorization-service';
@@ -107,6 +108,11 @@ const kFetchLinkup = '$kAssetService/rest/assets/linkup';
 const kDeviceUpload =
     '$kStorageService/rest/deviceuploads?uploadType=MOBILE_LOG';
 
+// Create Ticket
+const kTickets = '/cloud/v1/tickets';
+const kGetTicketDetails = '/cloud/v1/tickets/$kTicketId';
+const kCreateTicketUpload = '/cloud/v1/tickets/$kTicketId/uploads';
+
 // Client type id/secret
 final kClientTypeId = clientTypeID;
 final kClientSecret = clientTypeSecret;
@@ -116,5 +122,6 @@ const kHeaderClientTypeId = 'X-Linksys-Client-Type-Id';
 const kHeaderSignature = 'X-Linksys-Signature';
 const kHeaderUserAgentId = 'X-Linksys-User-Agent-Id';
 const kHeaderTimestamp = 'X-Linksys-Timestamp';
-
+const kHeaderLinksysToken = 'X-Linksys-Token';
+const kHeaderSerialNumber = 'X-Linksys-SN';
 ///

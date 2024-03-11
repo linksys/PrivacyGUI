@@ -21,7 +21,6 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'dart:convert';
-import 'package:phone_number/phone_number.dart';
 
 class OtpAddPhoneView extends ArgumentsConsumerStatefulView {
   const OtpAddPhoneView({
@@ -34,7 +33,7 @@ class OtpAddPhoneView extends ArgumentsConsumerStatefulView {
 }
 
 class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
-  final PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil();
+  // final PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil();
   TextEditingController phoneController = TextEditingController();
 
   CAMobile? editPhone;
@@ -46,6 +45,16 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
     countryName: 'United States',
     countryCallingCode: 1,
   ); // Default
+
+
+  /* =============
+
+
+    TODO: Refactor this page if needed in the future because replace the 
+    old phone number lib with other libs.
+
+
+  ============= */
 
   @override
   void initState() {
@@ -84,17 +93,17 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
     final userInputPhoneNumber = phoneController.text;
     _setLoading(true);
     try {
-      final phoneNumber = await phoneNumberUtil.parse(userInputPhoneNumber,
-          regionCode: currentRegion.countryCode);
-      final phoneMethod = CommunicationMethod(
-          method: 'SMS',
-          target: phoneNumber.e164,
-          phone: CloudPhoneModel(
-            country: currentRegion.countryCode,
-            countryCallingCode: '+${currentRegion.countryCallingCode}',
-            phoneNumber: phoneNumber.nationalNumber,
-          ));
-      router.pop(phoneMethod);
+      // final phoneNumber = await phoneNumberUtil.parse(userInputPhoneNumber,
+      //     regionCode: currentRegion.countryCode);
+      // final phoneMethod = CommunicationMethod(
+      //     method: 'SMS',
+      //     target: phoneNumber.e164,
+      //     phone: CloudPhoneModel(
+      //       country: currentRegion.countryCode,
+      //       countryCallingCode: '+${currentRegion.countryCallingCode}',
+      //       phoneNumber: phoneNumber.nationalNumber,
+      //     ));
+      // router.pop(phoneMethod);
     } catch (e) {
       logger.e(
           'AddPhone: Special error: [$userInputPhoneNumber] is valid but cannot be parsed');
@@ -112,27 +121,27 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
     setState(() {
       currentRegion = region;
     });
-    phoneController = PhoneNumberEditingController.fromValue(
-      phoneNumberUtil,
-      phoneController.value,
-      regionCode: currentRegion.countryCode,
-      behavior: PhoneInputBehavior.strict,
-    );
+    // phoneController = PhoneNumberEditingController.fromValue(
+    //   phoneNumberUtil,
+    //   phoneController.value,
+    //   regionCode: currentRegion.countryCode,
+    //   behavior: PhoneInputBehavior.strict,
+    // );
     phoneController.addListener(() {
       logger.d('phone number changed');
       _onInputChanged(phoneController.value.text);
     });
   }
 
-  Future<String> _getPhoneHint(String countryCode) async {
-    final String? phoneSample = _countryCodes[countryCode];
-    if (phoneSample != null) {
-      return await phoneNumberUtil.format(
-          phoneSample, currentRegion.countryCode);
-    } else {
-      return getAppLocalizations(context).phone;
-    }
-  }
+  // Future<String> _getPhoneHint(String countryCode) async {
+  //   final String? phoneSample = _countryCodes[countryCode];
+  //   if (phoneSample != null) {
+  //     return await phoneNumberUtil.format(
+  //         phoneSample, currentRegion.countryCode);
+  //   } else {
+  //     return getAppLocalizations(context).phone;
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -183,21 +192,21 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
                     ),
                   ),
                   const AppGap.small(),
-                  Expanded(
-                    child: FutureBuilder<String>(
-                        future: _getPhoneHint(currentRegion.countryCode),
-                        initialData: getAppLocalizations(context).phone,
-                        builder: (context, data) {
-                          return AppTextField(
-                            controller: phoneController
-                              ..text = editPhone?.phoneNumber ?? '',
-                            hintText:
-                                data.data ?? getAppLocalizations(context).phone,
-                            inputType: TextInputType.number,
-                            onChanged: _onInputChanged,
-                          );
-                        }),
-                  ),
+                  // Expanded(
+                  //   child: FutureBuilder<String>(
+                  //       future: _getPhoneHint(currentRegion.countryCode),
+                  //       initialData: getAppLocalizations(context).phone,
+                  //       builder: (context, data) {
+                  //         return AppTextField(
+                  //           controller: phoneController
+                  //             ..text = editPhone?.phoneNumber ?? '',
+                  //           hintText:
+                  //               data.data ?? getAppLocalizations(context).phone,
+                  //           inputType: TextInputType.number,
+                  //           onChanged: _onInputChanged,
+                  //         );
+                  //       }),
+                  // ),
                 ],
               ),
             ),

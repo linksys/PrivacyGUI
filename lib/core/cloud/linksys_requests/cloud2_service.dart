@@ -1,0 +1,44 @@
+import 'dart:convert';
+
+import 'package:http/http.dart';
+import 'package:http_parser/http_parser.dart';
+import 'package:linksys_app/constants/cloud_const.dart';
+import 'package:linksys_app/core/cloud/model/create_ticket.dart';
+import 'package:linksys_app/core/http/linksys_http_client.dart';
+
+extension Cloud2Service on LinksysHttpClient {
+  Future<Response> createTicket(
+      {required CreateTicketInput createTicketInput,
+      required String linksysToken,
+      required String serialNumber}) async {
+    final endpoint = combineUrl(kTickets);
+    Map<String, String> header = defaultHeader;
+    header.addAll(
+        {kHeaderLinksysToken: linksysToken, kHeaderSerialNumber: serialNumber});
+    final body = createTicketInput.toJson();
+    return this
+        .post(Uri.parse(endpoint), body: jsonEncode(body), headers: header);
+  }
+
+  Future<Response> uploadToTicket(
+      {required String ticketId,
+      required String linksysToken,
+      required String serialNumber,
+      required String data}) async {
+    final endpoint =
+        combineUrl(kCreateTicketUpload, args: {kTicketId: ticketId});
+    Map<String, String> header = defaultHeader;
+    header.addAll({
+      kHeaderLinksysToken: linksysToken,
+      kHeaderSerialNumber: serialNumber,
+      'content-type': 'multipart/form-data'
+    });
+    final dataMultipart = MultipartFile.fromBytes(
+      'jnap',
+      data.codeUnits,
+      filename: 'jnap.txt',
+      contentType: MediaType('text', 'plain'),
+    );
+    return await upload(Uri.parse(endpoint), [dataMultipart], headers: header);
+  }
+}

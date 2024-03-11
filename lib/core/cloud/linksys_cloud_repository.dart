@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/cloud/linksys_requests/asset_service.dart';
+import 'package:linksys_app/core/cloud/linksys_requests/cloud2_service.dart';
 import 'package:linksys_app/core/cloud/linksys_requests/event_service.dart';
 import 'package:linksys_app/core/cloud/linksys_requests/smart_device_service.dart';
 import 'package:linksys_app/core/cloud/model/cloud_event_action.dart';
 import 'package:linksys_app/core/cloud/model/cloud_event_subscription.dart';
 import 'package:linksys_app/core/cloud/model/cloud_linkup.dart';
+import 'package:linksys_app/core/cloud/model/create_ticket.dart';
 import 'package:linksys_app/core/http/linksys_http_client.dart';
 import 'package:linksys_app/core/cloud/linksys_requests/authorization_service.dart';
 import 'package:linksys_app/core/cloud/linksys_requests/device_service.dart';
@@ -243,5 +245,47 @@ class LinksysCloudRepository {
     return loadSessionToken()
         .then((token) => _httpClient.fetchLinkup(token: token))
         .then((response) => CloudLinkUpModel.fromJson(response.body));
+  }
+
+  Future<String> deviceRegistrations(
+      {required String serialNumber,
+      required String modelNumber,
+      required String macAddress}) async {
+    return _httpClient
+        .registrations(
+          serialNumber: serialNumber,
+          modelNumber: modelNumber,
+          macAddress: macAddress,
+        )
+        .then(
+          (response) =>
+              jsonDecode(response.body)['clientDevice']['linksysToken'],
+        );
+  }
+
+  Future<String> createTicket(
+      {required CreateTicketInput createTicketInput,
+      required String linksysToken,
+      required String serialNumber}) async {
+    return _httpClient
+        .createTicket(
+            createTicketInput: createTicketInput,
+            linksysToken: linksysToken,
+            serialNumber: serialNumber)
+        .then(
+          (response) => jsonDecode(response.body)['ticketId'],
+        );
+  }
+
+  Future uploadToTicket(
+      {required String ticketId,
+      required String linksysToken,
+      required String serialNumber,
+      required String data}) async {
+    return _httpClient.uploadToTicket(
+        ticketId: ticketId,
+        linksysToken: linksysToken,
+        serialNumber: serialNumber,
+        data: data);
   }
 }

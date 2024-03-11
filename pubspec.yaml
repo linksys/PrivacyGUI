@@ -59,7 +59,7 @@ dependencies:
   path_provider: ^2.1.0
   share_plus: ^7.1.0
   package_info_plus: ^4.1.0
-  phone_number: ^2.0.1
+  phonenumbers: ^1.1.1
   uuid: ^3.0.6
   flutter_inappwebview: ^5.7.0
   shared_preferences: ^2.0.15
