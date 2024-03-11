@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'dart:html' as html;
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -142,15 +141,15 @@ class SupportNotifier extends Notifier<SupportState> {
   }
 
   Future download(BuildContext context) async {
-    Map<String, String> dataMap = await fetchDeviceInfo();
-    List<int> utf8Bytes = utf8.encode(jsonEncode(dataMap));
-    var blob = html.Blob([Uint8List.fromList(utf8Bytes), 'text/plain']);
-    var anchor =
-        html.AnchorElement(href: html.Url.createObjectUrlFromBlob(blob))
-          ..target = 'blank'
-          ..download = 'device-jnap.txt';
-    html.document.body!.append(anchor);
-    anchor.click();
-    anchor.remove();
+    // Map<String, String> dataMap = await fetchDeviceInfo();
+    // List<int> utf8Bytes = utf8.encode(jsonEncode(dataMap));
+    // var blob = html.Blob([Uint8List.fromList(utf8Bytes), 'text/plain']);
+    // var anchor =
+    //     html.AnchorElement(href: html.Url.createObjectUrlFromBlob(blob))
+    //       ..target = 'blank'
+    //       ..download = 'device-jnap.txt';
+    // html.document.body!.append(anchor);
+    // anchor.click();
+    // anchor.remove();
   }
 }

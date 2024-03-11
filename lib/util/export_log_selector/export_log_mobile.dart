@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../../core/utils/logger.dart';
-import '../../../core/utils/storage.dart';
-import '../../components/shortcuts/snack_bar.dart';
+import '../../core/utils/logger.dart';
+import '../../core/utils/storage.dart';
+import '../../page/components/shortcuts/snack_bar.dart';
 
 Future<void> exportLog(BuildContext context) async {
   final file = File.fromUri(Storage.logFileUri);

@@ -18,7 +18,7 @@ echo "Screens: $screens"
 flutter test --tags=loc --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" 
 echo 'Generating Localization snapshots Finished!******************************************'
 
-copy all screenshots to "screenshots" folder
+echo all screenshots to "screenshots" folder
 mkdir ./snapshots/
 for dir in $(find ./ -iname 'goldens' -type d); do
   echo $dir
