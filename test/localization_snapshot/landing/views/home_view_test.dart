@@ -6,6 +6,7 @@ import 'package:linksys_app/page/landing/views/_views.dart';
 import '../../../common/testable_widget.dart';
 
 import '../../../common/test_localization.dart';
+import '../../../common/theme.dart';
 
 void main() {
   group('Home View', () {

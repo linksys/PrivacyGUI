@@ -1,36 +1,12 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
 
-final responsiveAllVariants = ValueVariant<ScreenSize>({
-  ...responsiveMobileVariants.values,
-  ...responsiveDesktopVariants.values,
-});
-final responsiveMobileVariants = ValueVariant<ScreenSize>({
-  device320w,
-  device480w,
-  device744w,
-});
-final responsiveDesktopVariants = ValueVariant<ScreenSize>({
-  device1280w,
-  device1440w,
-});
-
-class ScreenSize {
-  const ScreenSize(this.name, this.width, this.height, this.pixelDensity);
-  final String name;
-  final double width, height, pixelDensity;
-
-  @override
-  String toString() => '$name($width, $height, $pixelDensity)';
-}
-
-const device320w = ScreenSize('Device320w', 320, 568, 1);
-const device480w = ScreenSize('Device480w', 480, 932, 1);
-const device744w = ScreenSize('Device744w', 744, 1133, 1);
-const device1280w = ScreenSize('Device1280w', 1280, 720, 1);
-const device1440w = ScreenSize('Device1440w', 1440, 900, 1);
+import 'config.dart';
+import 'screen.dart';
+import 'theme.dart';
 
 extension ScreenSizeManager on WidgetTester {
   Future<void> setScreenSize(ScreenSize screenSize) async {
@@ -57,6 +33,7 @@ extension ScreenSizeManager on WidgetTester {
 void testResponsiveWidgets(
   String description,
   WidgetTesterCallback callback, {
+  String? goldenFilename,
   Future<void> Function(String sizeName, WidgetTester tester)? goldenCallback,
   bool? skip,
   Timeout? timeout,
@@ -71,7 +48,9 @@ void testResponsiveWidgets(
       await tester.setScreenSize(variant.currentValue!);
       await callback(tester);
       if (goldenCallback != null) {
-        await goldenCallback(variant.currentValue!.name, tester);
+        await goldenCallback(
+            '${goldenFilename ?? description}-${variant.currentValue!.toShort()}',
+            tester);
       }
     },
     skip: skip,
@@ -79,5 +58,50 @@ void testResponsiveWidgets(
     semanticsEnabled: semanticsEnabled,
     variant: variant,
     tags: tags,
+  );
+}
+
+@isTest
+void testLocalizations(
+  String name,
+  FutureOr<void> Function(WidgetTester, Locale) testMain, {
+  String? goldenFilename,
+  List<Locale>? locales,
+  List<ScreenSize>? screens,
+  bool? skip,
+  Timeout? timeout,
+  bool semanticsEnabled = true,
+}) async {
+  final envLocales = targetLocales;
+  final envScreens = targetScreens;
+  final supportedLocales =
+      hasLocaleConfig ? envLocales : (locales ?? envLocales);
+  //
+  final supportedDevices = screens ?? envScreens;
+  final set = supportedLocales
+      .map((locale) => supportedDevices.map((device) =>
+          LocalizedScreen.fromScreenSize(locale: locale, screen: device)))
+      .expand((list) => list)
+      .toSet();
+  final variants = ValueVariant(set);
+  testResponsiveWidgets(
+    name,
+    (tester) async {
+      await loadTestFonts();
+      final current = variants.currentValue!;
+      await tester.setScreenSize(current);
+      await testMain(tester, current.locale);
+    },
+    goldenFilename: goldenFilename,
+    goldenCallback: (name, tester) async {
+      final actualFinder = find.byWidgetPredicate((w) => true).first;
+
+      await expectLater(actualFinder, matchesGoldenFile('goldens/$name.png'));
+    },
+    breakpoints: variants,
+    skip: skip,
+    timeout: timeout,
+    semanticsEnabled: semanticsEnabled,
+    tags: ['loc'],
   );
 }

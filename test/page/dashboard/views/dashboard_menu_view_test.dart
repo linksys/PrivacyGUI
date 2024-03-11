@@ -8,6 +8,7 @@ import 'package:linksys_widgets/widgets/card/menu_card.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:mockito/mockito.dart';
 
+import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_widget.dart';
 

@@ -5,7 +5,7 @@ import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import 'test_localization.dart';
+import 'theme.dart';
 
 // Assign a globalKey in order to retrieve current Build Context
 GlobalKey<NavigatorState> globalKey = GlobalKey();
