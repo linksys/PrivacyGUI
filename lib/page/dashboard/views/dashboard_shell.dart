@@ -16,6 +16,19 @@ import 'package:linksys_app/util/debug_mixin.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+enum NaviType {
+  home,
+  menu,
+  support,
+  ;
+
+  String resloveLabel(BuildContext context) => switch (this) {
+        NaviType.home => loc(context).home,
+        NaviType.menu => loc(context).menu,
+        NaviType.support => loc(context).support,
+      };
+}
+
 class DashboardShell extends ArgumentsConsumerStatefulView {
   const DashboardShell({
     Key? key,
@@ -36,8 +49,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
   @override
   void initState() {
     super.initState();
-    Future.doWhile(() => !mounted)
-        .then((value) => _prepareNavigationItems(context));
+    _prepareNavigationItems(context);
   }
 
   @override
@@ -137,18 +149,18 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
     if (!mounted) {
       return;
     }
-    final items = [
+    const items = [
       DashboardNaviItem(
           icon: Symbols.home,
-          title: loc(context).home,
+          type: NaviType.home,
           rootPath: RouteNamed.dashboardHome),
       DashboardNaviItem(
           icon: Symbols.menu,
-          title: loc(context).menu,
+          type: NaviType.menu,
           rootPath: RouteNamed.dashboardMenu),
       DashboardNaviItem(
           icon: Symbols.help_outline,
-          title: loc(context).support,
+          type: NaviType.support,
           rootPath: RouteNamed.dashboardSupport),
     ];
     _dashboardNaviItems.addAll(items);
@@ -163,7 +175,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
         item.icon,
         color: Theme.of(context).colorScheme.onPrimary,
       ),
-      label: item.title,
+      label: item.type.resloveLabel(context),
     );
   }
 
@@ -178,7 +190,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
         color: Theme.of(context).colorScheme.onPrimary,
       ),
       label: AppText.bodySmall(
-        item.title,
+        item.type.resloveLabel(context),
       ),
     );
   }
@@ -187,11 +199,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
 class DashboardNaviItem {
   const DashboardNaviItem({
     required this.icon,
-    required this.title,
+    required this.type,
     required this.rootPath,
   });
 
   final IconData icon;
-  final String title;
+  final NaviType type;
   final String rootPath;
 }
