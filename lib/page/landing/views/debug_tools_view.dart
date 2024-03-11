@@ -27,8 +27,8 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../util/export_log_selector/export_log_base.dart'
-    if (dart.library.io) '../export_log_selector/export_log_mobile.dart'
-    if (dart.library.html) '../export_log_selector/export_log_web.dart';
+    if (dart.library.io) '../../../util/export_log_selector/export_log_mobile.dart'
+    if (dart.library.html) '../../../util/export_log_selector/export_log_web.dart';
 
 class DebugToolsView extends ConsumerStatefulWidget {
   const DebugToolsView({
