@@ -1,14 +1,18 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_svg_test/flutter_svg_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/page/dashboard/views/dashboard_shell.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/route/router_provider.dart';
+import 'package:linksys_widgets/theme/custom_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../common/config.dart';
 import '../../../common/mock_firebase_messaging.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
@@ -82,4 +86,45 @@ void main() async {
     // verify home content again
     expect(homeTabFinder, findsOneWidget);
   });
+
+  testResponsiveWidgets(
+      'Test Dashboard Navigation Rail should display on desktop variants',
+      (tester) async {
+    await tester.pumpWidget(
+      testableRouter(
+        router: GoRouter(
+            routes: [mockDashboardRoute],
+            initialLocation: RoutePath.dashboardHome),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Find Build Context
+    final BuildContext context = tester.element(find.byType(DashboardShell));
+    final asset = CustomTheme.of(context).images.linksysLogoBlack;
+    final logoFinder = find.descendant(
+        of: find.byType(NavigationRail), matching: find.svg(asset));
+    expect(logoFinder, findsNWidgets(1));
+  }, variants: responsiveDesktopVariants);
+
+  testResponsiveWidgets(
+      'Test Dashboard Navigation Rail should not display on mobile variants',
+      (tester) async {
+    await tester.pumpWidget(
+      testableRouter(
+        router: GoRouter(
+            routes: [mockDashboardRoute],
+            initialLocation: RoutePath.dashboardHome),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Find Build Context
+    final BuildContext context = tester.element(find.byType(DashboardShell));
+    final asset = CustomTheme.of(context).images.linksysLogoBlack;
+    final logoFinder = find.descendant(
+        of: find.byType(NavigationRail), matching: find.svg(asset));
+    expect(logoFinder, findsNothing);
+  }, variants: responsiveMobileVariants);
 }
+

@@ -38,10 +38,10 @@ void testResponsiveWidgets(
   bool? skip,
   Timeout? timeout,
   bool semanticsEnabled = true,
-  ValueVariant<ScreenSize>? breakpoints,
+  ValueVariant<ScreenSize>? variants,
   dynamic tags,
 }) {
-  final variant = breakpoints ?? responsiveAllVariants;
+  final variant = variants ?? responsiveAllVariants;
   testWidgets(
     description,
     (tester) async {
@@ -98,7 +98,7 @@ void testLocalizations(
 
       await expectLater(actualFinder, matchesGoldenFile('goldens/$name.png'));
     },
-    breakpoints: variants,
+    variants: variants,
     skip: skip,
     timeout: timeout,
     semanticsEnabled: semanticsEnabled,

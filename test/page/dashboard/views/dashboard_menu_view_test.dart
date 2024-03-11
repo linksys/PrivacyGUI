@@ -6,22 +6,11 @@ import 'package:linksys_app/providers/auth/_auth.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';
 import 'package:linksys_widgets/widgets/card/menu_card.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:mockito/mockito.dart';
 
 import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_widget.dart';
-
-class MockAuthNotifier extends AuthNotifier with Mock {
-  @override
-  AsyncValue<AuthState> get state =>
-      const AsyncData(AuthState(loginType: LoginType.remote));
-
-  @override
-  set state(AsyncValue<AuthState> newState) {
-    super.state = newState;
-  }
-}
+import '../../../mock_notifiers/mock_auth_notifier.dart';
 
 void main() {
   late AuthNotifier mockAuthNotifier;
@@ -52,7 +41,7 @@ void main() {
 
   testResponsiveWidgets(
     'Test menu responsive layout with mobile size variants',
-    breakpoints: responsiveMobileVariants,
+    variants: responsiveMobileVariants,
     (tester) async {
       await tester.pumpWidget(
         testableWidget(
@@ -67,7 +56,7 @@ void main() {
 
   testResponsiveWidgets(
     'Test menu responsive layout with desktop size variants',
-    breakpoints: responsiveDesktopVariants,
+    variants: responsiveDesktopVariants,
     (tester) async {
       await tester.pumpWidget(
         testableWidget(
@@ -93,7 +82,7 @@ void main() {
 
   testResponsiveWidgets(
     'Test menu responsive layout with mobile size variants has one column',
-    breakpoints: ValueVariant({device320w}),
+    variants: ValueVariant({device320w}),
     (tester) async {
       await tester.pumpWidget(
         testableWidget(
@@ -111,7 +100,7 @@ void main() {
 
   testResponsiveWidgets(
     'Test menu responsive layout with mobile size variants has two column',
-    breakpoints: ValueVariant({device480w, device744w}),
+    variants: ValueVariant({device480w, device744w}),
     (tester) async {
       await tester.pumpWidget(
         testableWidget(
@@ -129,7 +118,7 @@ void main() {
 
   testResponsiveWidgets(
     'Test menu responsive layout with mobile size variants has three column',
-    breakpoints: ValueVariant({device1280w, device1440w}),
+    variants: ValueVariant({device1280w, device1440w}),
     (tester) async {
       await tester.pumpWidget(
         testableWidget(
@@ -147,7 +136,7 @@ void main() {
 
   testResponsiveWidgets(
     'Test tapping more button on mobile variants',
-    breakpoints: responsiveMobileVariants,
+    variants: responsiveMobileVariants,
     (tester) async {
       await tester.pumpWidget(
         testableWidget(
@@ -180,7 +169,7 @@ void main() {
 
   testResponsiveWidgets(
     'Test tapping restart network button on mobile variants',
-    breakpoints: responsiveMobileVariants,
+    variants: responsiveMobileVariants,
     (tester) async {
       await tester.pumpWidget(
         testableWidget(
@@ -223,7 +212,7 @@ void main() {
 
   testResponsiveWidgets(
     'Test tapping restart network button on desktop variants',
-    breakpoints: responsiveDesktopVariants,
+    variants: responsiveDesktopVariants,
     (tester) async {
       await tester.pumpWidget(
         testableWidget(

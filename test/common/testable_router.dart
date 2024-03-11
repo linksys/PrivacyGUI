@@ -11,6 +11,7 @@ import 'theme.dart';
 
 Widget testableRouter({
   required GoRouter router,
+  ProviderContainer? provider,
   List<Override> overrides = const [],
   ThemeMode themeMode = ThemeMode.system,
   ThemeData? theme,
@@ -19,6 +20,7 @@ Widget testableRouter({
 }) {
   return ProviderScope(
     overrides: overrides,
+    parent: provider,
     child: MaterialApp.router(
       theme: theme ?? mockLightThemeData,
       darkTheme: darkTheme ?? mockDarkThemeData,
