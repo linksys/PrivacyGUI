@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:linksys_app/page/login/views/_views.dart';
 
-import '../../../common/testable_widget.dart';
+import '../../../common/testable_router.dart';
 import '../../../common/test_localization.dart';
 
 void main() {
@@ -11,7 +11,7 @@ void main() {
   tearDownAll(() async {});
 
   testLocalizations('Cloud Password View', (tester, locale) async {
-    await tester.pumpWidgetBuilder(testableRouteWidget(
+    await tester.pumpWidgetBuilder(testableSingleRoute(
       themeMode: ThemeMode.light,
       overrides: [],
       locale: locale,

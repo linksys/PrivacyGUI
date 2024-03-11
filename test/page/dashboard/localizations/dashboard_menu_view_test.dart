@@ -6,7 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../common/config.dart';
 import '../../../common/mock_firebase_messaging.dart';
 import '../../../common/test_responsive_widget.dart';
-import '../../../common/testable_widget.dart';
+import '../../../common/testable_router.dart';
 
 void main() async {
   setupFirebaseMessagingMocks();
@@ -17,7 +17,7 @@ void main() async {
 
   testLocalizations('Dashboard Menu View', (tester, locale) async {
     await tester.pumpWidget(
-      testableRouteWidget(
+      testableSingleRoute(
         child: const DashboardShell(child: DashboardMenuView()),
         locale: locale,
       ),
@@ -26,7 +26,7 @@ void main() async {
   testLocalizations('Dashboard Menu View show bottom sheet',
       (tester, locale) async {
     await tester.pumpWidget(
-      testableRouteWidget(
+      testableSingleRoute(
         child: const DashboardShell(child: DashboardMenuView()),
         locale: locale,
       ),
@@ -40,7 +40,7 @@ void main() async {
       'Dashboard Menu View show restart confirm dialog on mobile varients',
       (tester, locale) async {
     await tester.pumpWidget(
-      testableRouteWidget(
+      testableSingleRoute(
         child: const DashboardShell(child: DashboardMenuView()),
         locale: locale,
       ),
@@ -57,7 +57,7 @@ void main() async {
       'Dashboard Menu View show restart confirm dialog on desktop varients',
       (tester, locale) async {
     await tester.pumpWidget(
-      testableRouteWidget(
+      testableSingleRoute(
         child: const DashboardShell(child: DashboardMenuView()),
         locale: locale,
       ),

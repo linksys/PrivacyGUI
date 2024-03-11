@@ -4,12 +4,12 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:linksys_app/page/login/views/_views.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
-import '../../../common/testable_widget.dart';
+import '../../../common/testable_router.dart';
 import '../../../common/test_localization.dart';
 
 void main() {
   testLocalizations('Cloud Account View', (tester, locale) async {
-    await tester.pumpWidgetBuilder(testableRouteWidget(
+    await tester.pumpWidgetBuilder(testableSingleRoute(
       themeMode: ThemeMode.light,
       overrides: [],
       locale: locale,
@@ -19,7 +19,7 @@ void main() {
 
   testLocalizations('Cloud Account View with invalid format',
       (tester, locale) async {
-    await tester.pumpWidgetBuilder(testableRouteWidget(
+    await tester.pumpWidgetBuilder(testableSingleRoute(
       themeMode: ThemeMode.light,
       overrides: [],
       locale: locale,

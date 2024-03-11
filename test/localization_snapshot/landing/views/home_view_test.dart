@@ -3,9 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:linksys_app/page/landing/views/_views.dart';
 
-import '../../../common/testable_widget.dart';
 
 import '../../../common/test_localization.dart';
+import '../../../common/testable_router.dart';
 import '../../../common/theme.dart';
 
 void main() {
@@ -13,7 +13,7 @@ void main() {
     testLocalizations(
       'snapshot - home view',
       (tester, locale) async {
-        await tester.pumpWidgetBuilder(testableRouteWidget(
+        await tester.pumpWidgetBuilder(testableSingleRoute(
           themeMode: ThemeMode.light,
           overrides: [],
           locale: locale,
