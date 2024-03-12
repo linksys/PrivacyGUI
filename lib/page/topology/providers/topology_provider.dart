@@ -19,15 +19,10 @@ class TopologyNotifier extends Notifier<TopologyState> {
   TopologyState build() {
     final deviceManagerState = ref.watch(deviceManagerProvider);
     final topologySelectId = ref.watch(topologySelectedIdProvider);
+    final count = deviceManagerState.nodeDevices.length;
     return TopologyState(
         onlineRoot: _buildRootNode(deviceManagerState, topologySelectId),
-        offlineRoot: _buildOfflineRootNode(deviceManagerState));
-  }
-
-  void setSelectedDeviceId(String deviceId) {
-    state = state.copyWith(
-      selectedDeviceId: deviceId,
-    );
+        offlineRoot: _buildOfflineRootNode(deviceManagerState), nodesCount: count);
   }
 
   RouterTreeNode _buildRootNode(

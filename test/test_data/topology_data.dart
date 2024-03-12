@@ -186,6 +186,7 @@ final _slaveOfflineNode5 = RouterTreeNode(
 /// State
 
 final testTopologyState1 = TopologyState(
+  nodesCount: 1,
   onlineRoot: _onlineRoot
     ..children.add(
       _masterNode
@@ -200,6 +201,7 @@ final testTopologyState1 = TopologyState(
 );
 
 final testTopologyState2 = TopologyState(
+  nodesCount: 1,
   onlineRoot: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
@@ -220,6 +222,7 @@ final testTopologyState2 = TopologyState(
 );
 
 final testTopologyState3 = TopologyState(
+  nodesCount: 1,
   onlineRoot: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
@@ -242,6 +245,7 @@ final testTopologyState3 = TopologyState(
 );
 
 final testTopologyState4 = TopologyState(
+  nodesCount: 1,
   onlineRoot: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
@@ -271,6 +275,7 @@ final testTopologyState4 = TopologyState(
 );
 
 final testTopologyState5 = TopologyState(
+  nodesCount: 1,
   onlineRoot: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
@@ -308,6 +313,7 @@ final testTopologyState5 = TopologyState(
 );
 
 final testTopologyState6 = TopologyState(
+  nodesCount: 1,
   onlineRoot: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
@@ -341,6 +347,7 @@ final testTopologyState6 = TopologyState(
 );
 
 final testTopologyStateOffline1 = TopologyState(
+  nodesCount: 1,
   onlineRoot: _onlineRoot
     ..children.clear()
     ..children.add(
@@ -355,6 +362,7 @@ final testTopologyStateOffline1 = TopologyState(
 );
 
 final testTopologyStateOffline2 = TopologyState(
+  nodesCount: 1,
   onlineRoot: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
@@ -370,6 +378,7 @@ final testTopologyStateOffline2 = TopologyState(
 );
 
 final testTopologyStateOffline3 = TopologyState(
+  nodesCount: 1,
   onlineRoot: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
@@ -394,6 +403,7 @@ final testTopologyStateOffline3 = TopologyState(
 );
 
 final testTopologyStateOffline4 = TopologyState(
+  nodesCount: 1,
   onlineRoot: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
@@ -416,6 +426,7 @@ final testTopologyStateOffline4 = TopologyState(
 );
 
 final testTopologyStateOffline5 = TopologyState(
+  nodesCount: 1,
   onlineRoot: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode

@@ -704,5 +704,15 @@
   "nightMode": "Night mode",
   "alertExclamation": "Alert!",
   "menuRestartNetworkMessage": "Restart router will take some time",
-  "ok": "Ok"
+  "ok": "Ok",
+  "nNodes": "{count, plural, other{Nodes ({count})} one{Node (1)}}",
+  "@nNodes": {
+      "description": "Number of nodes",
+      "placeholders": {
+          "count": {
+            "type": "int",
+            "example": "1" 
+          }
+      }
+  }
 }

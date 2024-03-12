@@ -15,6 +15,7 @@ import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/topology/tree_item.dart';
 import 'package:linksys_widgets/widgets/topology/tree_node.dart';
 import 'package:linksys_widgets/widgets/topology/tree_view.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 typedef TopologyTreeView = AppTreeView<TopologyModel>;
 
@@ -29,6 +30,8 @@ class TopologyView extends ArgumentsConsumerStatelessView {
         ref.watch(topologySelectedIdProvider).isNotEmpty;
     return StyledAppPageView(
       // scrollable: true,
+      title: loc(context).nNodes(topologyState.nodesCount),
+
       child: AppBasicLayout(
         content: Column(
           children: [
@@ -72,9 +75,11 @@ class TopologyView extends ArgumentsConsumerStatelessView {
                 rootBuilder: (index, node) => InfoCell(
                   type: node.type,
                   name: node.data.location == 'Internet'
-                      ? getAppLocalizations(context).internet
+                      ? loc(context).internet
                       : node.data.location,
-                  icon: getCharactersIcons(context).nodesDefault,
+                  icon: node.type == AppTreeNodeType.offline
+                      ? null
+                      : Symbols.language,
                 ),
               ),
             ),

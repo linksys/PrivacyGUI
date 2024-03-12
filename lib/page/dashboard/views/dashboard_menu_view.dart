@@ -37,15 +37,15 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
     return StyledAppPageView(
       // scrollable: true,
       backState: StyledBackState.none,
-      title: 'Menu',
-      menu: PageMenu(title: 'My Network', items: [
+      title: loc(context).menu,
+      menu: PageMenu(title: loc(context).myNetwork, items: [
         PageMenuItem(
-            label: 'Restart Network',
+            label: loc(context).restartNetwork,
             icon: Symbols.restart_alt,
             onTap: () {
               _restartNetwork();
             }),
-        PageMenuItem(label: 'Setup a new Product', icon: Symbols.add)
+        PageMenuItem(label: loc(context).menuSetupANewProduct, icon: Symbols.add)
       ]),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
