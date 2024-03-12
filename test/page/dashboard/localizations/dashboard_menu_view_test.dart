@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:linksys_app/page/dashboard/_dashboard.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -17,8 +18,8 @@ void main() async {
 
   testLocalizations('Dashboard Menu View', (tester, locale) async {
     await tester.pumpWidget(
-      testableSingleRoute(
-        child: const DashboardShell(child: DashboardMenuView()),
+      testableRouteShellWidget(
+        child: const DashboardMenuView(),
         locale: locale,
       ),
     );
@@ -26,8 +27,8 @@ void main() async {
   testLocalizations('Dashboard Menu View show bottom sheet',
       (tester, locale) async {
     await tester.pumpWidget(
-      testableSingleRoute(
-        child: const DashboardShell(child: DashboardMenuView()),
+      testableRouteShellWidget(
+        child: const DashboardMenuView(),
         locale: locale,
       ),
     );
@@ -40,8 +41,8 @@ void main() async {
       'Dashboard Menu View show restart confirm dialog on mobile varients',
       (tester, locale) async {
     await tester.pumpWidget(
-      testableSingleRoute(
-        child: const DashboardShell(child: DashboardMenuView()),
+      testableRouteShellWidget(
+        child: const DashboardMenuView(),
         locale: locale,
       ),
     );
@@ -57,8 +58,8 @@ void main() async {
       'Dashboard Menu View show restart confirm dialog on desktop varients',
       (tester, locale) async {
     await tester.pumpWidget(
-      testableSingleRoute(
-        child: const DashboardShell(child: DashboardMenuView()),
+      testableRouteShellWidget(
+        child: const DashboardMenuView(),
         locale: locale,
       ),
     );
