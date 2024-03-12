@@ -5,7 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
+import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_app/firebase/notification_helper.dart';
 import 'package:linksys_app/providers/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/constants/_constants.dart';
@@ -26,9 +28,12 @@ import 'package:linksys_widgets/widgets/panel/general_expansion.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../util/export_log_selector/export_log_base.dart'
-    if (dart.library.io) '../../../util/export_log_selector/export_log_mobile.dart'
-    if (dart.library.html) '../../../util/export_log_selector/export_log_web.dart';
+import '../../../util/export_selector/export_base.dart'
+    if (dart.library.io) '../../../util/export_selector/export_mobile.dart'
+    if (dart.library.html) '../../../util/export_selector/export_web.dart';
+import '../../../util/get_log_selector/get_log_base.dart'
+    if (dart.library.io) '../../../util/get_log_selector/get_log_mobile.dart'
+    if (dart.library.html) '../../../util/get_log_selector/get_log_web.dart';
 
 class DebugToolsView extends ConsumerStatefulWidget {
   const DebugToolsView({
@@ -82,7 +87,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         AppFilledButton(
           'Export log file',
           onTap: () async {
-            exportLog(context);
+            _exportLog();
           },
         ),
         const AppGap.regular(),
@@ -90,6 +95,25 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         const AppGap.regular(),
       ],
     );
+  }
+
+  _exportLog() async {
+    final content = await getLog(context);
+    final String shareLogFilename =
+        'log-${DateFormat("yyyy-MM-dd_HH_mm_ss").format(DateTime.now())}.txt';
+
+    await exportFile(
+      content: content,
+      fileName: shareLogFilename,
+      text: 'Linksys Log',
+      subject: 'Log file',
+    ).then((result) {
+      if (result?.status == ShareResultStatus.success) {
+        Storage.deleteFile(Storage.logFileUri);
+        Storage.createLoggerFile();
+      }
+      showSnackBar(context, content: Text("Share result: ${result?.status}"));
+    });
   }
 
   List<Widget> _buildInfo() {

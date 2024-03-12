@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +12,9 @@ import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/page/dashboard/providers/dashboard_support_state.dart';
 import 'package:linksys_app/page/troubleshooting/providers/troubleshooting_provider.dart';
+import '../../../util/export_selector/export_base.dart'
+    if (dart.library.io) '../../../util/export_selector/export_mobile.dart'
+    if (dart.library.html) '../../../util/export_selector/export_web.dart';
 
 final supportProvider =
     NotifierProvider<SupportNotifier, SupportState>(() => SupportNotifier());
@@ -33,16 +35,13 @@ class SupportNotifier extends Notifier<SupportState> {
     final serialNumber = routerIdentityInfo['serialNumber'] ?? '';
     final modelNumber = routerIdentityInfo['modelNumber'] ?? '';
     final macAddress = routerIdentityInfo['macAddress'] ?? '';
-    String token = state.linksysToken;
-    if (token.isEmpty) {
-      token = await deviceRegistrations(
-          serialNumber: serialNumber,
-          modelNumber: modelNumber,
-          macAddress: macAddress);
-    }
+    String token = await deviceRegistrations(
+        serialNumber: serialNumber,
+        modelNumber: modelNumber,
+        macAddress: macAddress);
 
     // Collect data
-    Map<String, String> dataMap = await fetchDeviceInfo();
+    final dataMap = await fetchDeviceInfo();
 
     // Cloud api tickets to get ticketId
     final ticketId = await createTicket(
@@ -91,12 +90,12 @@ class SupportNotifier extends Notifier<SupportState> {
     return token;
   }
 
-  Future<Map<String, String>> fetchDeviceInfo() async {
+  Future<Map<String, dynamic>> fetchDeviceInfo() async {
     final repo = ref.read(routerRepositoryProvider);
     final results = await repo.fetchCreateTicketDeviceInfo();
-    Map<String, String> dataMap = {};
+    Map<String, dynamic> dataMap = {};
     results.forEach((element) {
-      dataMap[element.key.actionValue] = jsonEncode((element.value as JNAPSuccess).output);
+      dataMap[element.key.actionValue] = (element.value as JNAPSuccess).output;
     });
     final routerIdentityInfo = getDeviceIdentityInfo();
     dataMap['serialNumber'] = routerIdentityInfo['serialNumber'] ?? '';
@@ -141,15 +140,7 @@ class SupportNotifier extends Notifier<SupportState> {
   }
 
   Future download(BuildContext context) async {
-    // Map<String, String> dataMap = await fetchDeviceInfo();
-    // List<int> utf8Bytes = utf8.encode(jsonEncode(dataMap));
-    // var blob = html.Blob([Uint8List.fromList(utf8Bytes), 'text/plain']);
-    // var anchor =
-    //     html.AnchorElement(href: html.Url.createObjectUrlFromBlob(blob))
-    //       ..target = 'blank'
-    //       ..download = 'device-jnap.txt';
-    // html.document.body!.append(anchor);
-    // anchor.click();
-    // anchor.remove();
+    final dataMap = await fetchDeviceInfo();
+    await exportFile(content: jsonEncode(dataMap), fileName: 'device-jnap');
   }
 }

@@ -120,7 +120,7 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
                   children: [
                     _sendButton(),
                     const AppGap.small(),
-                    if (kIsWeb) _downloadButton(),
+                    _downloadButton(),
                   ],
                 ),
               ],
@@ -172,7 +172,17 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
     return AppElevatedButton(
       'Download',
       onTap: () async {
-        await ref.read(supportProvider.notifier).download(context);
+        setState(() {
+          isLoading = true;
+        });
+        await ref
+            .read(supportProvider.notifier)
+            .download(context)
+            .whenComplete(() {
+          setState(() {
+            isLoading = false;
+          });
+        });
       },
     );
   }

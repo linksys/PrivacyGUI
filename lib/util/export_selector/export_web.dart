@@ -3,19 +3,20 @@ import 'dart:convert';
 import 'dart:html' as html;
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
-import 'package:linksys_app/constants/_constants.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:share_plus/share_plus.dart';
 
-Future<void> exportLog(BuildContext context) async {
-  final SharedPreferences sp = await SharedPreferences.getInstance();
-  final String content = sp.getString(pWebLog) ?? '';
+Future<ShareResult?> exportFile(
+    {required String content,
+    required String fileName,
+    String? text,
+    String? subject}) async {
   List<int> utf8Bytes = utf8.encode(content);
   var blob = html.Blob([Uint8List.fromList(utf8Bytes), 'text/plain']);
   var anchor = html.AnchorElement(href: html.Url.createObjectUrlFromBlob(blob))
     ..target = 'blank'
-    ..download = 'web-log.txt';
+    ..download = '$fileName.txt';
   html.document.body!.append(anchor);
   anchor.click();
   anchor.remove();
+  return null;
 }
