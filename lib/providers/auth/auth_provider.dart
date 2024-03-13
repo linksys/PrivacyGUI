@@ -89,6 +89,8 @@ final authProvider =
     AsyncNotifierProvider<AuthNotifier, AuthState>(() => AuthNotifier());
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
+  bool _isInit = false;
+
   AuthNotifier() : super() {
     LinksysHttpClient.onError = (error) async {
       logger.d('Http Response Error: $error');
@@ -118,10 +120,15 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<AuthState> build() => Future.value(AuthState.empty());
 
   Future init() async {
+    if (_isInit) {
+      logger.d('auth provider has been inited');
+      return state;
+    }
     state = const AsyncValue.loading();
     // check session token exist and is session token expored
 
     state = await AsyncValue.guard(() async {
+      _isInit = true;
       var loginType = LoginType.none;
 
       // Refresh token handle
@@ -206,7 +213,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final cloud = ref.read(cloudRepositoryProvider);
       final newToken = sessionToken ??
           await cloud.login(username: username, password: password);
-      
+
       return await updateCredientials(
         sessionToken: newToken,
         username: username,

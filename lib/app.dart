@@ -62,7 +62,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     router.routerDelegate.addListener(_onReceiveRouteChanged);
 
     return MaterialApp.router(
-      onGenerateTitle: (context) => getAppLocalizations(context).app_title,
+      onGenerateTitle: (context) => loc(context).app_title,
       theme: linksysLightThemeData,
       darkTheme: linksysDarkThemeData,
       themeMode: appSettings.themeMode,
@@ -98,10 +98,10 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   }
 
   _initAuth() {
-    ref.read(authProvider.notifier).init().then((_) {
-      logger.d('init auth finish');
-      FlutterNativeSplash.remove();
-    });
+    // ref.read(authProvider.notifier).init().then((_) {
+    //   logger.d('init auth finish');
+    //   FlutterNativeSplash.remove();
+    // });
   }
 
   void _onReceiveRouteChanged() {

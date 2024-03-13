@@ -47,7 +47,6 @@ class AppRootContainer extends ConsumerStatefulWidget {
 class _AppRootContainerState extends ConsumerState<AppRootContainer> {
   final _link = LayerLink();
 
-  bool _showLocaleList = false;
 
   @override
   void initState() {
