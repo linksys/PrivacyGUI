@@ -288,4 +288,13 @@ class LinksysCloudRepository {
         serialNumber: serialNumber,
         data: data);
   }
+
+  Future<List<Map<String, dynamic>>> getTickets({
+    required String linksysToken,
+    required String serialNumber,
+  }) {
+    return _httpClient
+        .getTickets(linksysToken: linksysToken, serialNumber: serialNumber)
+        .then((response) => List.from(jsonDecode(response.body)['data']));
+  }
 }

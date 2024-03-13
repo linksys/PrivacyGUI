@@ -19,6 +19,7 @@ class ErrorResponse extends Equatable {
   }
   factory ErrorResponse.fromJson(int status, Map<String, dynamic> json) {
     final errorsJson = json['errors'];
+
     if (errorsJson != null) {
       final errorJson = List.from(errorsJson)[0]['error'];
       final String code = errorJson['code'];
@@ -32,6 +33,14 @@ class ErrorResponse extends Equatable {
           code: code,
           errorMessage: errorMessage,
           parameters: parameters);
+    } else if (json.containsKey('code')) {
+      final String code = json['code'];
+      final String? errorMessage = json['errorMessage'];
+      return ErrorResponse(
+        status: status,
+        code: code,
+        errorMessage: errorMessage,
+      );
     } else {
       final String code = json['error'];
       final String? errorMessage = json['error_description'];

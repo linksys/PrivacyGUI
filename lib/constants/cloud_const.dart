@@ -113,6 +113,7 @@ const kTickets = '/cloud/v1/tickets';
 const kGetTicketDetails = '/cloud/v1/tickets/$kTicketId';
 const kCreateTicketUpload = '/cloud/v1/tickets/$kTicketId/uploads';
 
+
 // Client type id/secret
 final kClientTypeId = clientTypeID;
 final kClientSecret = clientTypeSecret;

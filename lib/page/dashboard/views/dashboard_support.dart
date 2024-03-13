@@ -4,6 +4,8 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/constants/_constants.dart';
+import 'package:linksys_app/core/cloud/model/error_response.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/utils/logger.dart';
@@ -15,6 +17,7 @@ import 'package:linksys_app/page/dashboard/providers/dashboard_support_provider.
 import 'package:linksys_app/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:phonenumbers/phonenumbers.dart';
 
 class DashboardSupportView extends ArgumentsConsumerStatefulView {
@@ -38,6 +41,10 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
   bool isValidEmail = false;
   bool isValidPhone = false;
 
+  List<Map<String, dynamic>> ticketList = [];
+  bool hasOpenTicket = false;
+  bool showList = false;
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +53,7 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
       logger.d('phone number changed');
       _onInputChanged();
     });
+    _fetchTickets();
   }
 
   @override
@@ -67,65 +75,129 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
             scrollable: true,
             backState: StyledBackState.none,
             title: 'Support',
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppTextField.outline(
-                  headerText: getAppLocalizations(context).email,
-                  controller: emailController,
-                  onChanged: (text) {
-                    setState(() {
-                      isValidEmail = emailValidator.validate(text);
-                    });
-                    _onInputChanged();
-                  },
-                ),
-                const AppGap.regular(),
-                AppTextField.outline(
-                  headerText: getAppLocalizations(context).first_name,
-                  controller: firstNameController,
-                  onChanged: (text) {
-                    _onInputChanged();
-                  },
-                ),
-                const AppGap.regular(),
-                AppTextField.outline(
-                  headerText: getAppLocalizations(context).last_name,
-                  controller: lastNameController,
-                  onChanged: (text) {
-                    _onInputChanged();
-                  },
-                ),
-                const AppGap.regular(),
-                PhoneNumberFormField(
-                  autovalidateMode: AutovalidateMode.always,
-                  controller: phoneNumberController,
-                  decoration:
-                      const InputDecoration(border: OutlineInputBorder()),
-                ),
-                const AppGap.regular(),
-                const AppText.bodyMedium('Subject'),
-                const AppGap.small(),
-                AppTextField.outline(
-                  maxLines: 5,
-                  controller: subjectController,
-                  onChanged: (text) {
-                    _onInputChanged();
-                  },
-                ),
-                const AppGap.regular(),
-                const Spacer(),
-                Row(
-                  children: [
-                    _sendButton(),
-                    const AppGap.small(),
-                    _downloadButton(),
-                  ],
-                ),
-              ],
-            ),
+            child: BuildConfig.cloudEnv == 'qa'
+                ? showList
+                    ? _buildTicketList()
+                    : _buildTicketForm()
+                : const Center(),
           );
+  }
+
+  Widget _buildTicketList() {
+    return Column(
+      children: [
+        ...ticketList.map(
+          (ticket) => Container(
+            height: 80,
+            child: ListTile(
+              leading: const Icon(Symbols.confirmation_number),
+              title: AppText.bodyLarge(ticket['description']),
+              subtitle: AppText.bodySmall(ticket['status']),
+            ),
+          ),
+        ),
+        const Spacer(),
+        AppFilledButton(
+          'Form',
+          onTap: () {
+            setState(() {
+              showList = false;
+            });
+          },
+        )
+      ],
+    );
+  }
+
+  Widget _buildTicketForm() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppTextField.outline(
+          headerText: getAppLocalizations(context).email,
+          controller: emailController,
+          onChanged: (text) {
+            setState(() {
+              isValidEmail = emailValidator.validate(text);
+            });
+            _onInputChanged();
+          },
+        ),
+        const AppGap.regular(),
+        AppTextField.outline(
+          headerText: getAppLocalizations(context).first_name,
+          controller: firstNameController,
+          onChanged: (text) {
+            _onInputChanged();
+          },
+        ),
+        const AppGap.regular(),
+        AppTextField.outline(
+          headerText: getAppLocalizations(context).last_name,
+          controller: lastNameController,
+          onChanged: (text) {
+            _onInputChanged();
+          },
+        ),
+        const AppGap.regular(),
+        PhoneNumberFormField(
+          autovalidateMode: AutovalidateMode.always,
+          controller: phoneNumberController,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        const AppGap.regular(),
+        const AppText.bodyMedium('Subject'),
+        const AppGap.small(),
+        AppTextField.outline(
+          maxLines: 5,
+          controller: subjectController,
+          onChanged: (text) {
+            _onInputChanged();
+          },
+        ),
+        const AppGap.regular(),
+        const Spacer(),
+        Row(
+          children: [
+            _sendButton(),
+            const AppGap.small(),
+            _downloadButton(),
+            const AppGap.small(),
+            AppFilledButton(
+              'List',
+              onTap: () {
+                setState(() {
+                  showList = true;
+                });
+              },
+            )
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _fetchTickets() {
+    if (BuildConfig.cloudEnv != 'qa') {
+      return Future.value();
+    }
+    setState(() {
+      isLoading = true;
+    });
+    return ref.read(supportProvider.notifier).fetchTickets().then((tickets) {
+      setState(() {
+        ticketList = tickets;
+      });
+    }).whenComplete(() {
+      setState(() {
+        hasOpenTicket = ticketList.any((ticket) =>
+            ticket['status'] != 'Resolved' &&
+            ticket['status'] != 'Timeout' &&
+            ticket['status'] != 'Failed');
+        isLoading = false;
+      });
+    });
   }
 
   _sendButton() {
@@ -146,17 +218,19 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
                           '+${phoneNumberController.country?.prefix}',
                       phoneNumber: phoneNumberController.nationalNumber,
                       subject: subjectController.text)
-                  .onError((error, stackTrace) {
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(AppToastHelp.negativeToast(
-                  context,
-                  text: (error as JNAPError).result,
-                ));
-              }).then((_) {
+                  .then((_) => _fetchTickets())
+                  .then((_) {
                 ScaffoldMessenger.of(context)
                     .showSnackBar(AppToastHelp.positiveToast(
                   context,
                   text: 'Upload seccess',
+                ));
+              }).onError((error, stackTrace) {
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(AppToastHelp.negativeToast(
+                  context,
+                  text: (error as ErrorResponse?)?.errorMessage ??
+                      'Unknown Error',
                 ));
               }).whenComplete(() {
                 setState(() {
