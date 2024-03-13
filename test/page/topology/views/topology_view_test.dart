@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:linksys_app/page/topology/_topology.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/topology/tree_item.dart';
 import 'package:mockito/annotations.dart';
@@ -43,7 +44,7 @@ void main() {
       final internetItem = find.text('Internet');
       // Find by icon
       final internetItemIcon =
-          find.byIcon(getCharactersIcons(context).nodesDefault);
+          find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
@@ -83,7 +84,7 @@ void main() {
       final internetItem = find.text('Internet');
       // Find by icon
       final internetItemIcon =
-          find.byIcon(getCharactersIcons(context).nodesDefault);
+          find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
@@ -129,7 +130,7 @@ void main() {
       final internetItem = find.text('Internet');
       // Find by icon
       final internetItemIcon =
-          find.byIcon(getCharactersIcons(context).nodesDefault);
+          find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
@@ -175,7 +176,7 @@ void main() {
       final internetItem = find.text('Internet');
       // Find by icon
       final internetItemIcon =
-          find.byIcon(getCharactersIcons(context).nodesDefault);
+          find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
@@ -241,7 +242,7 @@ void main() {
       final internetItem = find.text('Internet');
       // Find by icon
       final internetItemIcon =
-          find.byIcon(getCharactersIcons(context).nodesDefault);
+          find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
@@ -306,7 +307,7 @@ void main() {
       final internetItem = find.text('Internet');
       // Find by icon
       final internetItemIcon =
-          find.byIcon(getCharactersIcons(context).nodesDefault);
+          find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
@@ -376,10 +377,10 @@ void main() {
       final internetItem = find.text('Internet');
       // Find by icon
       final internetItemIcon =
-          find.byIcon(getCharactersIcons(context).nodesDefault);
+          find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
-      expect(internetItemIcon, findsNWidgets(2));
+      expect(internetItemIcon, findsOneWidget);
 
       // Find offline text
       final offlineItem = find.text('Offline');
@@ -423,10 +424,10 @@ void main() {
       final internetItem = find.text('Internet');
       // Find by icon
       final internetItemIcon =
-          find.byIcon(getCharactersIcons(context).nodesDefault);
+          find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
-      expect(internetItemIcon, findsNWidgets(2));
+      expect(internetItemIcon, findsOneWidget);
 
       // Find offline text
       final offlineItem = find.text('Offline');

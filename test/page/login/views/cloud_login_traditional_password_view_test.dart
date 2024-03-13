@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:linksys_app/page/login/views/_views.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -39,7 +40,6 @@ void main() {
     final spinnerView = find.byType(AppFullScreenSpinner);
     final continueButton = find.byType(AppFilledButton);
 
-    final iconData = AppIconsData.regular().characters;
 
     expect(spinnerView, findsOneWidget);
     expect(passwordViewInput, findsNothing);
@@ -54,7 +54,7 @@ void main() {
     // email should display
     expect(find.text('test@gmail.com'), findsOneWidget);
     // show password icon
-    expect(find.byIcon(iconData.showDefault), findsOneWidget);
+    expect(find.byIcon(LinksysIcons.visibility), findsOneWidget);
     // verify secure property is true
     expect(tester.widget<AppTextField>(passwordViewInput).secured, isTrue);
     // verify the button is disable
@@ -77,31 +77,30 @@ void main() {
     final passwordViewInput = find.byType(AppTextField);
     final spinnerView = find.byType(AppFullScreenSpinner);
 
-    final iconData = AppIconsData.regular().characters;
 
     // waiting for spinner finish
     await tester.pump();
     // spinner should be gone
     expect(spinnerView, findsNothing);
     // show password icon
-    expect(find.byIcon(iconData.showDefault), findsOneWidget);
+    expect(find.byIcon(LinksysIcons.visibility), findsOneWidget);
     // verify secure property is true
     expect(tester.widget<AppTextField>(passwordViewInput).secured, isTrue);
     // tap show password icon
-    await tester.tap(find.byIcon(iconData.showDefault));
+    await tester.tap(find.byIcon(LinksysIcons.visibility));
     // wait for rebuild
     await tester.pump();
     // hide password icon should display
-    expect(find.byIcon(iconData.hideDefault), findsOneWidget);
+    expect(find.byIcon(LinksysIcons.visibilityOff), findsOneWidget);
     // verify secure proporty is false
     expect(tester.widget<AppTextField>(passwordViewInput).secured, isFalse);
     // tap hide password icon
-    await tester.tap(find.byIcon(iconData.hideDefault));
+    await tester.tap(find.byIcon(LinksysIcons.visibilityOff));
 
     // wait for rebuild
     await tester.pump();
     // hide password icon should display
-    expect(find.byIcon(iconData.showDefault), findsOneWidget);
+    expect(find.byIcon(LinksysIcons.visibility), findsOneWidget);
     // verify secure proporty is true
     expect(tester.widget<AppTextField>(passwordViewInput).secured, isTrue);
   });

@@ -12,13 +12,12 @@ import 'package:linksys_app/page/pnp/model/impl/safe_browsing_step.dart';
 import 'package:linksys_app/page/pnp/model/pnp_step.dart';
 import 'package:linksys_app/page/pnp/pnp_stepper.dart';
 import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 enum _PnpSetupStep {
   init,
@@ -145,8 +144,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
           children: [
             AppText.labelLarge('Saved'),
             AppGap.regular(),
-            AppIcon.big(
-              icon: Symbols.check_circle,
+            Icon(
+              LinksysIcons.checkCircle,
             ),
           ],
         ),
@@ -163,8 +162,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppIcon.big(
-          icon: getCharactersIcons(context).wifiDefault,
+        const Icon(
+           LinksysIcons.wifi,
         ),
         const AppGap.regular(),
         AppText.titleMedium('$wifiSSID is ready'),

@@ -96,27 +96,27 @@ void main() {
 
   group('test testRouterIcon series', () {
     test('test routerIconTest - Unknown model number', () {
-      final result = routerIconTest(modelNumber: 'MR9500');
+      final result = routerIconTestByModel(modelNumber: 'MR9500');
       expect(result, 'genericDevice');
     });
     test('test routerIconTest - MR9600', () {
-      final result = routerIconTest(modelNumber: 'MR9600');
+      final result = routerIconTestByModel(modelNumber: 'MR9600');
       expect(result, 'routerEa9350');
     });
     test('test routerIconTest - Oak', () {
-      final result = routerIconTest(modelNumber: 'MBE7000');
+      final result = routerIconTestByModel(modelNumber: 'MBE7000');
       expect(result, 'routerMx6200');
     });
     test('test routerIconTest - Maple', () {
-      final result = routerIconTest(modelNumber: 'MX6200');
+      final result = routerIconTestByModel(modelNumber: 'MX6200');
       expect(result, 'routerMx6200');
     });
     test('test routerIconTest - Cherry', () {
-      final result = routerIconTest(modelNumber: 'LN12');
+      final result = routerIconTestByModel(modelNumber: 'LN12');
       expect(result, 'routerLn12');
     });
     test('test routerIconTest - Elm', () {
-      final result = routerIconTest(modelNumber: 'LN11');
+      final result = routerIconTestByModel(modelNumber: 'LN11');
       expect(result, 'routerLn11');
     });
   });

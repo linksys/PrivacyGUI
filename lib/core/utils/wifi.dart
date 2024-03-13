@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 
 const signalThresholdSNR = [40, 25, 10];
 const signalThresholdRSSI = [-60, -70, -80];
@@ -32,17 +32,17 @@ NodeSignalLevel getWifiSignalLevel(int? signalStrength) {
 IconData getWifiSignalIconData(BuildContext context, int? signalStrength) {
   switch (getWifiSignalLevel(signalStrength)) {
     case NodeSignalLevel.excellent:
-      return Symbols.signal_wifi_4_bar;
+      return LinksysIcons.signalWifi4Bar;
     case NodeSignalLevel.good:
-      return Symbols.network_wifi_3_bar;
+      return LinksysIcons.networkWifi3Bar;
     case NodeSignalLevel.fair:
-      return Symbols.network_wifi_2_bar;
+      return LinksysIcons.networkWifi2Bar;
     case NodeSignalLevel.weak:
-      return Symbols.network_wifi_1_bar;
+      return LinksysIcons.networkWifi1Bar;
     case NodeSignalLevel.none:
-            return Symbols.signal_wifi_0_bar;
+            return LinksysIcons.signalWifi0Bar;
 // Default
     case NodeSignalLevel.wired:
-      return Symbols.settings_ethernet;
+      return LinksysIcons.settingsEthernet;
   }
 }

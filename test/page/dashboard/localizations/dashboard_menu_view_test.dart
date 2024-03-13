@@ -1,8 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:linksys_app/page/dashboard/_dashboard.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 
 import '../../../common/config.dart';
 import '../../../common/mock_firebase_messaging.dart';
@@ -32,7 +31,7 @@ void main() async {
         locale: locale,
       ),
     );
-    final moreFinder = find.byIcon(Symbols.more_horiz).last;
+    final moreFinder = find.byIcon(LinksysIcons.moreHoriz).last;
     await tester.tap(moreFinder);
     await tester.pumpAndSettle();
   }, screens: responsiveMobileScreens);
@@ -46,10 +45,10 @@ void main() async {
         locale: locale,
       ),
     );
-    final moreFinder = find.byIcon(Symbols.more_horiz).last;
+    final moreFinder = find.byIcon(LinksysIcons.moreHoriz).last;
     await tester.tap(moreFinder);
     await tester.pumpAndSettle();
-    final restartFinder = find.byIcon(Symbols.restart_alt).last;
+    final restartFinder = find.byIcon(LinksysIcons.restartAlt).last;
     await tester.tap(restartFinder);
     await tester.pumpAndSettle();
   }, screens: responsiveMobileScreens);
@@ -63,7 +62,7 @@ void main() async {
         locale: locale,
       ),
     );
-    final restartFinder = find.byIcon(Symbols.restart_alt).last;
+    final restartFinder = find.byIcon(LinksysIcons.restartAlt).last;
     await tester.tap(restartFinder);
     await tester.pumpAndSettle();
   }, screens: responsiveDesktopScreens);

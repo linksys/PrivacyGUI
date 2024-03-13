@@ -44,7 +44,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     final isFirstPolling = deviceManagerState.lastUpdateTime == 0;
     // Get master node icon
     final sortedDeviceList = ref.read(deviceManagerProvider).deviceList;
-    final masterIcon = routerIconTest(
+    final masterIcon = routerIconTestByModel(
       modelNumber: sortedDeviceList.firstOrNull?.model.modelNumber ?? '',
       hardwareVersion: sortedDeviceList.firstOrNull?.model.hardwareVersion,
     );

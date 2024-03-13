@@ -7,10 +7,8 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/troubleshooting/_troubleshooting.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';
-import 'package:linksys_app/page/troubleshooting/providers/troubleshooting_provider.dart';
-import 'package:linksys_app/page/troubleshooting/providers/troubleshooting_state.dart';
 import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -61,7 +59,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
             title: 'Troubleshooting',
             actions: [
               AppIconButton.noPadding(
-                icon: getCharactersIcons(context).refreshDefault,
+                icon: LinksysIcons.refresh,
                 onTap: () {
                   ref.read(troubleshootingProvider.notifier).fetch(force: true);
                 },
@@ -218,7 +216,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
             Align(
               alignment: Alignment.centerRight,
               child: AppIconButton.noPadding(
-                icon: getCharactersIcons(context).crossDefault,
+                icon: LinksysIcons.close,
                 onTap: () {
                   context.pop();
                 },

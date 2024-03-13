@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/dashboard/views/dashboard_navigation_rail.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 import 'package:linksys_app/core/utils/logger.dart';
@@ -14,7 +15,6 @@ import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_app/util/debug_mixin.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 enum NaviType {
   home,
@@ -151,15 +151,15 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
     }
     const items = [
       DashboardNaviItem(
-          icon: Symbols.home,
+          icon: LinksysIcons.home,
           type: NaviType.home,
           rootPath: RouteNamed.dashboardHome),
       DashboardNaviItem(
-          icon: Symbols.menu,
+          icon: LinksysIcons.menu,
           type: NaviType.menu,
           rootPath: RouteNamed.dashboardMenu),
       DashboardNaviItem(
-          icon: Symbols.help_outline,
+          icon: LinksysIcons.help,
           type: NaviType.support,
           rootPath: RouteNamed.dashboardSupport),
     ];

@@ -11,7 +11,6 @@ import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
 import 'package:linksys_app/util/wifi_credential.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
@@ -125,7 +124,7 @@ class _WifiDetailViewState extends ConsumerState<WifiDetailView> {
         children: List.generate(options.length, (index) {
       return AppSimplePanel(
         title: options[index].displayTitle,
-        icon: getCharactersIcons(context).getByName(options[index].iconId),
+        // icon: getCharactersIcons(context).getByName(options[index].iconId),
         onTap: () {
           _onOptionTapped(options[index]);
         },

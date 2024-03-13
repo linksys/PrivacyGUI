@@ -16,6 +16,7 @@ import 'package:linksys_app/page/dashboard/providers/smart_device_provider.dart'
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/smart_device_prefs_helper.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -161,7 +162,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   Widget _wifiInfoTile(int wifiCount, bool isLoading) {
     return _infoTile(
-      iconData: getCharactersIcons(context).wifiDefault,
+      iconData: LinksysIcons.wifi,
       text: 'WiFi $wifiCount',
       isLoading: isLoading,
       onTap: () {
@@ -187,7 +188,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   Widget _devicesInfoTile(int numOfOnlineExternalDevices, bool isLoading) {
     return _infoTile(
       text: '$numOfOnlineExternalDevices devices',
-      iconData: getCharactersIcons(context).devicesDefault,
+      iconData: LinksysIcons.devices,
       isLoading: isLoading,
       onTap: () {
         context.goNamed(RouteNamed.dashboardDevices);
@@ -286,9 +287,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                   children: [
                     Row(
                       children: [
-                        AppIcon(
-                          icon: getCharactersIcons(context).arrowUp,
-                        ),
+                        
                         const AppGap.semiSmall(),
                         AppText.titleLarge(state.uploadResult.value),
                       ],
@@ -304,9 +303,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                   children: [
                     Row(
                       children: [
-                        AppIcon(
-                          icon: getCharactersIcons(context).arrowDown,
-                        ),
+                        
                         const AppGap.semiSmall(),
                         AppText.titleLarge(state.downloadResult.value),
                       ],

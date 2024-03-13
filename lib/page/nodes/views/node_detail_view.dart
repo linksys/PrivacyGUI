@@ -14,6 +14,7 @@ import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/nodes/_nodes.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -24,7 +25,6 @@ import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'package:collection/collection.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 class NodeDetailView extends ArgumentsConsumerStatefulView {
   const NodeDetailView({
@@ -50,7 +50,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     final state = ref.watch(nodeDetailProvider);
     final actions = [
       AppIconButton.noPadding(
-        icon: getCharactersIcons(context).infoRound,
+        icon: LinksysIcons.help,
         onTap: () {
           context.pushNamed(RouteNamed.nodeLight);
         },
@@ -130,7 +130,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
             Align(
               alignment: Alignment.centerRight,
               child: AppIconButton(
-                icon: Symbols.edit,
+                icon: LinksysIcons.edit,
                 onTap: () {},
               ),
             ),
@@ -139,7 +139,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 borderColor: Colors.transparent,
                 backgroundColor: Colors.transparent,
                 image: CustomTheme.of(context).images.devices.getByName(
-                      routerIconTest(modelNumber: state.modelNumber),
+                      routerIconTestByModel(modelNumber: state.modelNumber),
                     ),
               ),
             )
@@ -277,8 +277,8 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
             ?.firstWhereOrNull((element) => element is NodesFirmwareUpdateStatus
                 ? element.deviceUUID == state.deviceId
                 : false)))
-        : ref.watch(
-            firmwareUpdateProvider.select((value) => value.nodesStatus?.firstOrNull));
+        : ref.watch(firmwareUpdateProvider
+            .select((value) => value.nodesStatus?.firstOrNull));
     final isFwUpToDate = updateInfo?.availableUpdate == null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

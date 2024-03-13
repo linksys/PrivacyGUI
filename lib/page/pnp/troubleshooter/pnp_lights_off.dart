@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/bullet_list/bullet_list.dart';
@@ -90,7 +90,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpLightsOffView> {
           Align(
             alignment: Alignment.topRight,
             child: AppIconButton(
-              icon: getCharactersIcons(context).crossDefault,
+              icon: LinksysIcons.close,
               onTap: () {
                 context.pop();
               },

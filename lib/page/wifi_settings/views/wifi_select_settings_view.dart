@@ -5,7 +5,7 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
 import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -69,8 +69,8 @@ class _WifiSelectSettingsViewState extends ConsumerState<WifiSelectSettingsView>
                                         .toUpperCase(),
                               ),
                               const AppGap.regular(),
-                              AppIcon(
-                                icon: getCharactersIcons(context).chevronRight,
+                              const Icon(
+                                LinksysIcons.chevronRight,
                               ),
                             ],
                           ),

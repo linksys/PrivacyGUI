@@ -22,10 +22,10 @@ import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/dashboard/providers/smart_device_provider.dart';
 import 'package:linksys_app/firebase/analytics.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/panel/general_expansion.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../util/export_selector/export_base.dart'
@@ -260,7 +260,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
                         }
                       : null,
                   icon: const Icon(
-                    Symbols.copy_all,
+                    LinksysIcons.add,
                     color: Colors.white,
                   )),
               AppText.bodyMedium(_fcmToken ?? 'No FCM Token'),

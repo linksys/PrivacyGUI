@@ -58,7 +58,7 @@ class LocalLoginStep extends PnpStep {
             image: CustomTheme.of(context)
                 .images
                 .devices
-                .getByName(routerIconTest(modelNumber: 'LN11')),
+                .getByName(routerIconTestByModel(modelNumber: 'LN11')),
             height: 128,
           ),
           const AppText.bodyLarge("Enter your router's password to proceed"),

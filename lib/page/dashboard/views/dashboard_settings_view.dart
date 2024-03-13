@@ -1,4 +1,3 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,8 +8,8 @@ import 'package:linksys_app/firebase/notification_helper.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/topology/_topology.dart';
 import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 
-import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
 import 'package:linksys_widgets/widgets/panel/switch_trigger_tile.dart';
@@ -145,17 +144,17 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
         items: [
           AppSectionItemData(
             title: 'WiFi',
-            iconData: getCharactersIcons(context).wifiDefault,
+            iconData: LinksysIcons.wifi,
             onTap: () => context.goNamed(RouteNamed.settingsWifi),
           ),
           AppSectionItemData(
             title: 'WiFi Advanced',
-            iconData: getCharactersIcons(context).wifiDefault,
+            iconData: LinksysIcons.wifi,
             onTap: () => context.goNamed(RouteNamed.wifiAdvancedSettings),
           ),
           AppSectionItemData(
             title: 'Nodes',
-            iconData: getCharactersIcons(context).nodesDefault,
+            iconData: LinksysIcons.router,
             onTap: () {
               ref.read(topologySelectedIdProvider.notifier).state = '';
               context.pushNamed(RouteNamed.settingsNodes);

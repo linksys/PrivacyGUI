@@ -7,10 +7,10 @@ import 'package:intl/intl.dart';
 import 'package:linksys_app/firebase/notification_helper.dart';
 import 'package:linksys_app/firebase/notification_provider.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/buttons/popup_button.dart';
 import 'package:linksys_widgets/widgets/panel/switch_trigger_tile.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 class NotificationPopupWidget extends ConsumerStatefulWidget {
   const NotificationPopupWidget({super.key});
@@ -46,7 +46,7 @@ class _NotificationPopupWidgetState
         button: Badge(
           isLabelVisible: hasNew,
           child: const Icon(
-            Symbols.notifications,
+            LinksysIcons.notifications,
             size: 20,
           ),
         ),

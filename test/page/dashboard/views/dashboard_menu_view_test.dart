@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:linksys_app/page/dashboard/_dashboard.dart';
 import 'package:linksys_app/providers/auth/_auth.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/card/menu_card.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
@@ -49,7 +49,7 @@ void main() {
         ),
       );
 
-      final moreFinder = find.byIcon(Symbols.more_horiz);
+      final moreFinder = find.byIcon(LinksysIcons.moreHoriz);
       expect(moreFinder, findsOneWidget);
     },
   );
@@ -64,17 +64,17 @@ void main() {
         ),
       );
 
-      final moreFinder = find.byIcon(Symbols.more_horiz);
+      final moreFinder = find.byIcon(LinksysIcons.moreHoriz);
       expect(moreFinder, findsNothing);
 
       final subMenuTitleFinder = find.text('My Network');
       expect(subMenuTitleFinder, findsOneWidget);
-      final restartNetworkMenuIconFinder = find.byIcon(Symbols.restart_alt);
+      final restartNetworkMenuIconFinder = find.byIcon(LinksysIcons.restartAlt);
       final restartNetworkMenuLabelFinder = find.text('Restart Network');
       expect(restartNetworkMenuIconFinder, findsOneWidget);
       expect(restartNetworkMenuLabelFinder, findsOneWidget);
-      final setupMenuIconFinder = find.byIcon(Symbols.add);
-      final setupMenuLabelFinder = find.text('Setup a new Product');
+      final setupMenuIconFinder = find.byIcon(LinksysIcons.add);
+      final setupMenuLabelFinder = find.text('Setup a New Product');
       expect(setupMenuIconFinder, findsOneWidget);
       expect(setupMenuLabelFinder, findsOneWidget);
     },
@@ -144,7 +144,7 @@ void main() {
         ),
       );
 
-      final moreFinder = find.byIcon(Symbols.more_horiz);
+      final moreFinder = find.byIcon(LinksysIcons.moreHoriz);
       expect(moreFinder, findsOneWidget);
       await tester.tap(moreFinder);
       await tester.pumpAndSettle();
@@ -156,12 +156,12 @@ void main() {
       // check contents on the bottom sheet
       final subMenuTitleFinder = find.text('My Network');
       expect(subMenuTitleFinder, findsOneWidget);
-      final restartNetworkMenuIconFinder = find.byIcon(Symbols.restart_alt);
+      final restartNetworkMenuIconFinder = find.byIcon(LinksysIcons.restartAlt);
       final restartNetworkMenuLabelFinder = find.text('Restart Network');
       expect(restartNetworkMenuIconFinder, findsOneWidget);
       expect(restartNetworkMenuLabelFinder, findsOneWidget);
-      final setupMenuIconFinder = find.byIcon(Symbols.add);
-      final setupMenuLabelFinder = find.text('Setup a new Product');
+      final setupMenuIconFinder = find.byIcon(LinksysIcons.add);
+      final setupMenuLabelFinder = find.text('Setup a New Product');
       expect(setupMenuIconFinder, findsOneWidget);
       expect(setupMenuLabelFinder, findsOneWidget);
     },
@@ -177,7 +177,7 @@ void main() {
         ),
       );
 
-      final moreFinder = find.byIcon(Symbols.more_horiz);
+      final moreFinder = find.byIcon(LinksysIcons.moreHoriz);
       expect(moreFinder, findsOneWidget);
       await tester.tap(moreFinder);
       await tester.pumpAndSettle();

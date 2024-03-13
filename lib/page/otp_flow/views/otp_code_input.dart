@@ -12,10 +12,10 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/util/error_code_handler.dart';
 import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:sms_receiver_plugin/sms_receiver_plugin.dart';
 
 import '../providers/_providers.dart';
@@ -174,7 +174,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Wrap(alignment: WrapAlignment.center, children: [
         Icon(
-          Symbols.check,
+          LinksysIcons.check,
           color: Theme.of(context).primaryColor,
         ),
         Text(getAppLocalizations(context).otp_code_resent)

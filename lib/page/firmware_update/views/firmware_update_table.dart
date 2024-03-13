@@ -52,7 +52,7 @@ class _FirmwareUpdateTableViewState
                         Image(
                           image:
                               CustomTheme.of(context).images.devices.getByName(
-                                    routerIconTest(
+                                    routerIconTestByModel(
                                         modelNumber:
                                             child.$1.model.modelNumber ?? ''),
                                   ),

@@ -2,15 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/theme/const/spacing.dart';
-import 'package:linksys_widgets/theme/material/color_schemes_ext.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/buttons/popup_button.dart';
 import 'package:linksys_widgets/widgets/card/card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import 'consts.dart';
 
@@ -145,7 +141,7 @@ class StyledAppPageView extends ConsumerWidget {
 
   Widget _createMenuAction(BuildContext context) {
     return AppIconButton.noPadding(
-      icon: menuIcon ?? Symbols.more_horiz,
+      icon: menuIcon ?? LinksysIcons.moreHoriz,
       onTap: () {
         showModalBottomSheet(
           context: context,

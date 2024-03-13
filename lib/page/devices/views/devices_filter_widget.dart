@@ -7,11 +7,11 @@ import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
 import 'package:linksys_app/util/extensions.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 class DevicesFilterWidget extends ConsumerStatefulWidget {
   const DevicesFilterWidget({super.key});
@@ -136,7 +136,7 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
               const AppGap.regular(),
               AppTextButton.noPadding(
                 loc(context).resetFilters,
-                icon: Symbols.restart_alt,
+                icon: LinksysIcons.restartAlt,
                 onTap: () {
                   ref.read(deviceFilterConfigProvider.notifier).initFilter();
                 },

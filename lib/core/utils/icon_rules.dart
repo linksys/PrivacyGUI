@@ -722,7 +722,8 @@ String _iconMapping(String iconClass, {String? fallback}) {
   }
 }
 
-String routerIconTest({required String modelNumber, String? hardwareVersion}) {
+String routerIconTestByModel(
+    {required String modelNumber, String? hardwareVersion}) {
   final data = {
     'model': {
       'deviceType': 'Infrastructure',
@@ -732,6 +733,10 @@ String routerIconTest({required String modelNumber, String? hardwareVersion}) {
     }
   };
   return iconTest(data);
+}
+
+String routerIconTest(Map<String, dynamic> target) {
+  return iconTest(target);
 }
 
 IconDeviceCategory deviceIconTest(Map<String, dynamic> target) {
@@ -755,6 +760,9 @@ IconDeviceCategory deviceIconTest(Map<String, dynamic> target) {
   };
 }
 
+///
+/// Please use #deviceIconTest or routerIconTest instead
+///
 String iconTest(Map<String, dynamic> target) {
   final result = iconRules.firstWhereOrNull((iconRule) {
     List<bool> testResults = [];

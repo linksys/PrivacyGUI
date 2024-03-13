@@ -9,7 +9,6 @@ import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
 
-
 final channelFinderProvider =
     NotifierProvider<ChannelFinderNotifier, ChannelFinderState>(
         () => ChannelFinderNotifier());
@@ -114,7 +113,7 @@ class ChannelFinderNotifier extends Notifier<ChannelFinderState> {
         .firstWhere((element) => element.deviceID == oldChannelDeviceID);
     optimizedOldChannel = optimizedOldChannel.copyWith(
         deviceName: device.friendlyName,
-        deviceIcon: routerIconTest(modelNumber: device.modelNumber!));
+        deviceIcon: routerIconTestByModel(modelNumber: device.modelNumber!));
     if (!isEqual &&
         !const DeepCollectionEquality()
             .equals(oldChannel.channels, foundDevice.channels)) {
