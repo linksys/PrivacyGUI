@@ -8,7 +8,7 @@ import 'package:linksys_app/providers/app_settings/app_settings_provider.dart';
 import 'package:linksys_app/providers/auth/_auth.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';
 import 'package:linksys_app/route/route_model.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 
 import '../../../common/mock_firebase_messaging.dart';
 import '../../../common/test_responsive_widget.dart';
@@ -50,7 +50,7 @@ void main() async {
           const AsyncData(AuthState(loginType: LoginType.local));
       await tester.pumpAndSettle();
 
-      final settingsFinder = find.byIcon(Symbols.person);
+      final settingsFinder = find.byIcon(LinksysIcons.person);
       await tester.tap(settingsFinder);
       await tester.pumpAndSettle();
     },
@@ -79,7 +79,7 @@ void main() async {
           const AsyncData(AuthState(loginType: LoginType.local));
       await tester.pumpAndSettle();
 
-      final settingsFinder = find.byIcon(Symbols.person);
+      final settingsFinder = find.byIcon(LinksysIcons.person);
       await tester.tap(settingsFinder);
       await tester.pumpAndSettle();
     },
@@ -108,7 +108,7 @@ void main() async {
           const AsyncData(AuthState(loginType: LoginType.local));
       await tester.pumpAndSettle();
 
-      final settingsFinder = find.byIcon(Symbols.person);
+      final settingsFinder = find.byIcon(LinksysIcons.person);
       await tester.tap(settingsFinder);
       await tester.pumpAndSettle();
     },
@@ -137,7 +137,7 @@ void main() async {
           const AsyncData(AuthState(loginType: LoginType.none));
       await tester.pumpAndSettle();
 
-      final settingsFinder = find.byIcon(Symbols.person);
+      final settingsFinder = find.byIcon(LinksysIcons.person);
       await tester.tap(settingsFinder);
       await tester.pumpAndSettle();
     },
@@ -166,7 +166,7 @@ void main() async {
           const AsyncData(AuthState(loginType: LoginType.none));
       await tester.pumpAndSettle();
 
-      final settingsFinder = find.byIcon(Symbols.person);
+      final settingsFinder = find.byIcon(LinksysIcons.person);
       await tester.tap(settingsFinder);
       await tester.pumpAndSettle();
     },
@@ -195,7 +195,7 @@ void main() async {
           const AsyncData(AuthState(loginType: LoginType.none));
       await tester.pumpAndSettle();
 
-      final settingsFinder = find.byIcon(Symbols.person);
+      final settingsFinder = find.byIcon(LinksysIcons.person);
       await tester.tap(settingsFinder);
       await tester.pumpAndSettle();
     },

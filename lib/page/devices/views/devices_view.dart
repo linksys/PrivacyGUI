@@ -11,6 +11,7 @@ import 'package:linksys_app/page/devices/_devices.dart';
 import 'package:linksys_app/page/devices/extensions/icon_device_category_ext.dart';
 import 'package:linksys_app/page/devices/views/devices_filter_widget.dart';
 import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/card/device_list_card.dart';
@@ -18,7 +19,6 @@ import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 class DashboardDevices extends ArgumentsConsumerStatefulView {
   const DashboardDevices({
@@ -109,7 +109,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
       true => [
           AppTextButton(
             isSelectedAll ? loc(context).clearAll : loc(context).selectAll,
-            icon: Symbols.check,
+            icon: LinksysIcons.check,
             onTap: () {
               setState(() {
                 _selectedList =
@@ -119,7 +119,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
           ),
           AppTextButton(
             loc(context).deleteSelected,
-            icon: Symbols.delete,
+            icon: LinksysIcons.delete,
             color: Theme.of(context).colorScheme.error,
             onTap: () {
               _showConfirmDialog();
@@ -138,7 +138,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
       false => [
           AppTextButton.noPadding(
             loc(context).edit,
-            icon: Symbols.edit,
+            icon: LinksysIcons.edit,
             onTap: () {
               setState(() {
                 _isEdit = !_isEdit;

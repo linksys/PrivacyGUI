@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/providers/app_settings/app_settings_provider.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 class ThemeTile extends ConsumerStatefulWidget {
   const ThemeTile({
@@ -16,9 +16,9 @@ class ThemeTile extends ConsumerStatefulWidget {
 class _ThemeTileState extends ConsumerState<ThemeTile> {
   Widget _displayTheme(ThemeMode theme) {
     final icon = switch (theme) {
-      ThemeMode.system => Symbols.auto_awesome,
-      ThemeMode.light => Symbols.light_mode,
-      ThemeMode.dark => Symbols.dark_mode,
+      ThemeMode.system => LinksysIcons.autoAwesomeMosaic,
+      ThemeMode.light => LinksysIcons.lightMode,
+      ThemeMode.dark => LinksysIcons.darkMode,
     };
     final themeText = switch (theme) {
       ThemeMode.system => 'System',

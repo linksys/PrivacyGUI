@@ -1,18 +1,17 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_app/core/utils/icon_device_category.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 
 extension IconDeviceCategoryExt on IconDeviceCategory {
   IconData reslove() => switch (this) {
-        IconDeviceCategory.mobile => Symbols.phone_iphone,
-        IconDeviceCategory.desktop => Symbols.computer,
-        IconDeviceCategory.tv => Symbols.tv,
-        IconDeviceCategory.vacuum => Symbols.vacuum,
-        IconDeviceCategory.gameConsole => Symbols.stadia_controller,
-        IconDeviceCategory.plug => Symbols.outlet,
-        _ => Symbols.devices,
+        IconDeviceCategory.mobile => LinksysIcons.phoneIphone,
+        IconDeviceCategory.desktop => LinksysIcons.computer,
+        IconDeviceCategory.tv => LinksysIcons.tvGen,
+        IconDeviceCategory.vacuum => LinksysIcons.vacuum,
+        IconDeviceCategory.gameConsole => LinksysIcons.stadiaController,
+        IconDeviceCategory.plug => LinksysIcons.outlet,
+        _ => LinksysIcons.devices,
       };
 
   static IconData resloveByName(String name) {

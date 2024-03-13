@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 class LanguageTile extends ConsumerStatefulWidget {
   final void Function()? onTap;
@@ -12,7 +12,7 @@ class LanguageTile extends ConsumerStatefulWidget {
     super.key,
     this.onTap,
     required this.locale,
-    this.icon = Symbols.public,
+    this.icon = LinksysIcons.public,
   });
 
   @override

@@ -22,7 +22,8 @@ class TopologyNotifier extends Notifier<TopologyState> {
     final count = deviceManagerState.nodeDevices.length;
     return TopologyState(
         onlineRoot: _buildRootNode(deviceManagerState, topologySelectId),
-        offlineRoot: _buildOfflineRootNode(deviceManagerState), nodesCount: count);
+        offlineRoot: _buildOfflineRootNode(deviceManagerState),
+        nodesCount: count);
   }
 
   RouterTreeNode _buildRootNode(
@@ -152,7 +153,9 @@ class TopologyNotifier extends Notifier<TopologyState> {
       isWiredConnection: isWiredConnection,
       signalStrength: signalStrength,
       isRouter: isRouter,
-      icon: iconTest(device.toMap()),
+      icon: isRouter
+          ? routerIconTest(device.toMap())
+          : deviceIconTest(device.toMap()).name,
       connectedDeviceCount: device.connectedDevices.length,
     );
     return RouterTreeNode(data: data, children: [], type: type);

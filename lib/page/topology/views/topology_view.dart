@@ -9,13 +9,12 @@ import 'package:linksys_app/page/devices/_devices.dart';
 import 'package:linksys_app/page/topology/_topology.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/topology/tree_item.dart';
 import 'package:linksys_widgets/widgets/topology/tree_node.dart';
 import 'package:linksys_widgets/widgets/topology/tree_view.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 typedef TopologyTreeView = AppTreeView<TopologyModel>;
 
@@ -51,8 +50,8 @@ class TopologyView extends ArgumentsConsumerStatelessView {
                             : null,
                     status: node.data.isOnline ? null : 'Offline',
                     tail: node.data.isOnline
-                        ? AppIcon.regular(
-                            icon: node.data.isWiredConnection
+                        ? Icon(
+                            node.data.isWiredConnection
                                 ? getWifiSignalIconData(context, null)
                                 : getWifiSignalIconData(
                                     context, node.data.signalStrength),
@@ -79,7 +78,7 @@ class TopologyView extends ArgumentsConsumerStatelessView {
                       : node.data.location,
                   icon: node.type == AppTreeNodeType.offline
                       ? null
-                      : Symbols.language,
+                      : LinksysIcons.language,
                 ),
               ),
             ),

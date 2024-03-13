@@ -10,9 +10,9 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/select_network/_select_network.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/select_network/providers/select_network_provider.dart';
 import 'package:linksys_app/firebase/analytics.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -101,7 +101,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
     } else {
       return AppIconButton(
         padding: const EdgeInsets.all(0),
-        icon: getCharactersIcons(context).refreshDefault,
+        icon: LinksysIcons.refresh,
         onTap: () {
           ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
         },
@@ -160,7 +160,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
             children: [
               Image(
                 image: CustomTheme.of(context).images.devices.getByName(
-                      routerIconTest(
+                      routerIconTestByModel(
                         modelNumber: network.network.routerModelNumber,
                         hardwareVersion: network.network.routerHardwareVersion,
                       ),

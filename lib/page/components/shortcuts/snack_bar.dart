@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
@@ -7,8 +7,8 @@ showSuccessSnackBar(BuildContext context, String message) {
   showSimpleSnackBar(
     context,
     message,
-    icon: AppIcon.regular(
-      icon: getCharactersIcons(context).checkDefault,
+    icon: const Icon(
+      LinksysIcons.check,
       color: Colors.white,
     ),
     background: Color(greenTonal.get(40)),
@@ -19,8 +19,8 @@ showFailedSnackBar(BuildContext context, String message) {
   showSimpleSnackBar(
     context,
     message,
-    icon: AppIcon.regular(
-      icon: getCharactersIcons(context).crossDefault,
+    icon: const Icon(
+      LinksysIcons.close,
       color: Colors.white,
     ),
     background: Theme.of(context).colorScheme.error,
@@ -30,7 +30,7 @@ showFailedSnackBar(BuildContext context, String message) {
 showSimpleSnackBar(
   BuildContext context,
   String message, {
-  AppIcon? icon,
+  Icon? icon,
   Color? background,
 }) {
   showSnackBar(

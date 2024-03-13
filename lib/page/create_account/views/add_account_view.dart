@@ -9,13 +9,12 @@ import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/util/error_code_handler.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/validator_rules/_validator_rules.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 class AddAccountView extends ArgumentsConsumerStatefulView {
   const AddAccountView({Key? key, super.args}) : super(key: key);
@@ -79,8 +78,8 @@ class _AddAccountState extends ConsumerState<AddAccountView> {
         children: List.generate(tips.length, (index) {
           return Row(
             children: [
-              const AppIcon.regular(
-                  icon: Symbols.check,),
+              const Icon(
+                   LinksysIcons.check,),
               const AppGap.semiSmall(),
               AppText.bodyLarge(
                 tips[index],

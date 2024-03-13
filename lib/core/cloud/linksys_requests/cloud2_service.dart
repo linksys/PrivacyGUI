@@ -10,7 +10,7 @@ extension Cloud2Service on LinksysHttpClient {
   Future<Response> createTicket(
       {required CreateTicketInput createTicketInput,
       required String linksysToken,
-      required String serialNumber}) async {
+      required String serialNumber}) {
     final endpoint = combineUrl(kTickets);
     Map<String, String> header = defaultHeader;
     header.addAll(
@@ -24,7 +24,7 @@ extension Cloud2Service on LinksysHttpClient {
       {required String ticketId,
       required String linksysToken,
       required String serialNumber,
-      required String data}) async {
+      required String data}) {
     final endpoint =
         combineUrl(kCreateTicketUpload, args: {kTicketId: ticketId});
     Map<String, String> header = defaultHeader;
@@ -39,6 +39,19 @@ extension Cloud2Service on LinksysHttpClient {
       filename: 'jnap.txt',
       contentType: MediaType('text', 'plain'),
     );
-    return await upload(Uri.parse(endpoint), [dataMultipart], headers: header);
+    return upload(Uri.parse(endpoint), [dataMultipart], headers: header);
+  }
+
+  Future<Response> getTickets({
+    required String linksysToken,
+    required String serialNumber,
+  }) {
+    final endpoint = combineUrl(kTickets);
+    Map<String, String> header = defaultHeader;
+    header.addAll({
+      kHeaderLinksysToken: linksysToken,
+      kHeaderSerialNumber: serialNumber,
+    });
+    return this.get(Uri.parse(endpoint), headers: header);
   }
 }

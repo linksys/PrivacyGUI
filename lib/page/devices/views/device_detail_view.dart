@@ -6,6 +6,7 @@ import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
 import 'package:linksys_app/page/devices/extensions/icon_device_category_ext.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/card/card.dart';
@@ -13,7 +14,6 @@ import 'package:linksys_widgets/widgets/card/device_info_card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
-import 'package:material_symbols_icons/symbols.dart';
 
 class DeviceDetailView extends ArgumentsConsumerStatefulView {
   const DeviceDetailView({
@@ -91,7 +91,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             Align(
               alignment: Alignment.centerRight,
               child: AppIconButton(
-                icon: Symbols.edit,
+                icon: LinksysIcons.edit,
                 onTap: () {},
               ),
             ),
@@ -173,7 +173,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           title: loc(context).deviceName,
           description: _checkEmptyValue(state.item.name),
           trailing: AppIconButton(
-            icon: Symbols.edit,
+            icon: LinksysIcons.edit,
             onTap: () {},
           ),
         ),

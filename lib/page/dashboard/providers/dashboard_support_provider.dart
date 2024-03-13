@@ -23,6 +23,20 @@ class SupportNotifier extends Notifier<SupportState> {
   @override
   SupportState build() => SupportState.init();
 
+  Future fetchTickets() {
+    final routerIdentityInfo = getDeviceIdentityInfo();
+    final serialNumber = routerIdentityInfo['serialNumber'] ?? '';
+    final modelNumber = routerIdentityInfo['modelNumber'] ?? '';
+    final macAddress = routerIdentityInfo['macAddress'] ?? '';
+    return deviceRegistrations(
+            serialNumber: serialNumber,
+            modelNumber: modelNumber,
+            macAddress: macAddress)
+        .then((token) => ref
+            .read(cloudRepositoryProvider)
+            .getTickets(linksysToken: token, serialNumber: serialNumber));
+  }
+
   Future startCreateTicket(
       {required String email,
       required String firstName,

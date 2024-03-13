@@ -10,6 +10,7 @@ import 'package:linksys_app/providers/auth/auth_provider.dart';
 import 'package:linksys_app/providers/root/root_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/route/router_provider.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/buttons/button.dart';
 import 'package:linksys_widgets/widgets/card/menu_card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
@@ -17,7 +18,6 @@ import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/panel/custom_animated_box.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
 import 'package:linksys_widgets/widgets/text/app_text.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 class DashboardMenuView extends ConsumerStatefulWidget {
   const DashboardMenuView({Key? key}) : super(key: key);
@@ -41,11 +41,11 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       menu: PageMenu(title: loc(context).myNetwork, items: [
         PageMenuItem(
             label: loc(context).restartNetwork,
-            icon: Symbols.restart_alt,
+            icon: LinksysIcons.restartAlt,
             onTap: () {
               _restartNetwork();
             }),
-        PageMenuItem(label: loc(context).menuSetupANewProduct, icon: Symbols.add)
+        PageMenuItem(label: loc(context).menuSetupANewProduct, icon: LinksysIcons.add)
       ]),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -100,40 +100,40 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       AppSectionItemData(
           title: loc(context).wifi,
           description: 'This is a description for this tile',
-          iconData: Symbols.signal_wifi_4_bar,
+          iconData: LinksysIcons.wifi,
           onTap: () {
             _navigateTo(RouteNamed.settingsWifi);
           }),
       AppSectionItemData(
           title: loc(context).menuRouterAndNodes,
           description: 'This is a description for this tile',
-          iconData: Symbols.router,
+          iconData: LinksysIcons.router,
           onTap: () {
             _navigateTo(RouteNamed.settingsNodes);
           }),
       AppSectionItemData(
           title: loc(context).safeBrowsing,
           description: 'This is a description for this tile',
-          iconData: Symbols.encrypted,
+          iconData: LinksysIcons.encrypted,
           onTap: () {
             _navigateTo(RouteNamed.safeBrowsing);
           }),
       AppSectionItemData(
           title: loc(context).familyTime,
           description: 'This is a description for this tile',
-          iconData: Symbols.family_restroom,
+          iconData: LinksysIcons.familyRestroom,
           onTap: () {}),
       AppSectionItemData(
           title: loc(context).speedTest,
           description: 'This is a description for this tile',
-          iconData: Symbols.network_check,
+          iconData: LinksysIcons.networkCheck,
           onTap: () {
             _navigateTo(RouteNamed.speedTestSelection);
           }),
       AppSectionItemData(
           title: loc(context).advancedSettings,
           description: 'This is a description for this tile',
-          iconData: Symbols.settings,
+          iconData: LinksysIcons.settings,
           onTap: () {
             _navigateTo(RouteNamed.dashboardSettings);
           }),
@@ -141,7 +141,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         AppSectionItemData(
             title: loc(context).account,
             description: 'This is a description for this tile',
-            iconData: Symbols.person_rounded,
+            iconData: LinksysIcons.accountCircle,
             onTap: () {
               _navigateTo(RouteNamed.accountInfo);
             }),

@@ -63,7 +63,8 @@ class _NodeOfflineCheckViewState extends ConsumerState<NodeOfflineCheckView> {
                     children: [
                       Image(
                         image: CustomTheme.of(context).images.devices.getByName(
-                              routerIconTest(modelNumber: state.modelNumber),
+                              routerIconTestByModel(
+                                  modelNumber: state.modelNumber),
                             ),
                         width: 74,
                         height: 74,

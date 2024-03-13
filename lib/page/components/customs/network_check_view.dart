@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/providers/connectivity/connectivity_provider.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_app/util/permission.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/base/gap.dart';
-import 'package:linksys_widgets/widgets/base/icon.dart';
 import 'package:linksys_widgets/widgets/text/app_text.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -56,7 +55,7 @@ class _NetworkCheckViewState extends ConsumerState<NetworkCheckView>
           widget.description,
         ),
         const AppGap.regular(),
-        AppIcon(icon: getCharactersIcons(context).wifiDefault),
+        const Icon(LinksysIcons.wifi),
         const AppGap.semiSmall(),
         AppText.bodyLarge(
           state.connectivityInfo.ssid ?? '',

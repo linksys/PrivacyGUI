@@ -1,6 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_svg_test/flutter_svg_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -8,9 +7,9 @@ import 'package:linksys_app/page/dashboard/views/dashboard_shell.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/route/router_provider.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/custom_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../common/config.dart';
 import '../../../common/mock_firebase_messaging.dart';
@@ -63,7 +62,7 @@ void main() async {
     final homeContentFinder = find.text('Home View');
     expect(homeContentFinder, findsOneWidget);
     // find menu tab and tap it.
-    final menuTabFinder = find.byIcon(Symbols.menu);
+    final menuTabFinder = find.byIcon(LinksysIcons.menu);
     expect(menuTabFinder, findsOneWidget);
     await tester.tap(menuTabFinder);
     await tester.pumpAndSettle();
@@ -71,7 +70,7 @@ void main() async {
     final menuContentFinder = find.text('Menu View');
     expect(menuContentFinder, findsOneWidget);
     // find support tab and tap it.
-    final supportTabFinder = find.byIcon(Symbols.help_outline);
+    final supportTabFinder = find.byIcon(LinksysIcons.help);
     expect(supportTabFinder, findsOneWidget);
     await tester.tap(supportTabFinder);
     await tester.pumpAndSettle();
@@ -79,7 +78,7 @@ void main() async {
     final supportContentFinder = find.text('Support View');
     expect(supportContentFinder, findsOneWidget);
     // find home tab and tap it.
-    final homeTabFinder = find.byIcon(Symbols.home);
+    final homeTabFinder = find.byIcon(LinksysIcons.home);
     expect(homeTabFinder, findsOneWidget);
     await tester.tap(homeTabFinder);
     await tester.pumpAndSettle();
@@ -127,4 +126,3 @@ void main() async {
     expect(logoFinder, findsNothing);
   }, variants: responsiveMobileVariants);
 }
-

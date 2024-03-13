@@ -66,24 +66,18 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
   }
 
   Widget _content(BuildContext context, HealthCheckState state) {
-    return Container(
-      decoration: BoxDecoration(
-          image: DecorationImage(
-              image: CustomTheme.of(context).images.bgSpeedtestLight,
-              fit: BoxFit.fitWidth)),
-      child: Stack(children: [
-        Container(
-          alignment: Alignment.bottomLeft,
-          child: Image(
-            image: CustomTheme.of(context).images.speedtestPowered,
-            fit: BoxFit.fitWidth,
-          ),
+    return Stack(children: [
+      Container(
+        alignment: Alignment.bottomLeft,
+        child: Image(
+          image: CustomTheme.of(context).images.speedtestPowered,
+          fit: BoxFit.fitWidth,
         ),
-        Container(
-            alignment: Alignment.center,
-            child: speedTestSection(context, _status, state))
-      ]),
-    );
+      ),
+      Container(
+          alignment: Alignment.center,
+          child: speedTestSection(context, _status, state))
+    ]);
   }
 
   Widget speedTestSection(

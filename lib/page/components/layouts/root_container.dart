@@ -6,30 +6,21 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
-import 'package:linksys_app/firebase/notification_helper.dart';
 import 'package:linksys_app/firebase/notification_provider.dart';
 import 'package:linksys_app/page/components/layouts/idle_checker.dart';
 import 'package:linksys_app/providers/root/root_config.dart';
 import 'package:linksys_app/providers/root/root_provider.dart';
-import 'package:linksys_widgets/theme/material/color_schemes_ext.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/banner/banner_view.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
 import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/customs/debug_overlay_view.dart';
 import 'package:linksys_app/page/components/customs/no_network_bottom_modal.dart';
-import 'package:linksys_app/page/components/layouts/mobile_layout.dart';
 import 'package:linksys_app/page/components/styled/banner_provider.dart';
-import 'package:linksys_app/providers/app_settings/app_settings_provider.dart';
 import 'package:linksys_app/providers/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/utils.dart';
-import 'package:linksys_widgets/widgets/fab/expandable_fab.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 class AppRootContainer extends ConsumerStatefulWidget {
   final Widget? child;

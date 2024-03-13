@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/page/components/picker/device_picker.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/buttons/button.dart';
 import 'package:linksys_widgets/widgets/input_field/ipv6_form_field.dart';
 
@@ -52,7 +52,7 @@ class AppIpv6FieldWithDevicePicker extends StatelessWidget {
           ),
         ),
         AppIconButton(
-          icon: getCharactersIcons(context).devicesDefault,
+          icon: LinksysIcons.devices,
           onTap: deviceList.isEmpty
               ? null
               : () async {
