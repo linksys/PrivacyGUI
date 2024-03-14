@@ -351,6 +351,7 @@ enum _JNAPActionValue {
   //ui
   getRemoteSetting(value: 'http://linksys.com/jnap/ui/GetRemoteSetting'),
   setRemoteSetting(value: 'http://linksys.com/jnap/ui/SetRemoteSetting'),
+  getAutoConfigurationSettings(value: 'http://linksys.com/jnap/nodes/setup/GetAutoConfigurationSettings'),
   ;
 
   const _JNAPActionValue({required this.value});

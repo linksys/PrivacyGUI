@@ -125,6 +125,8 @@ enum JNAPService {
   setup7(value: 'http://linksys.com/jnap/nodes/setup/Setup7'),
   setup8(value: 'http://linksys.com/jnap/nodes/setup/Setup8'),
   setup9(value: 'http://linksys.com/jnap/nodes/setup/Setup9'),
+  setup10(value: 'http://linksys.com/jnap/nodes/setup/Setup10'),
+  setup11(value: 'http://linksys.com/jnap/nodes/setup/Setup11'),
   smartMode(value: 'http://linksys.com/jnap/nodes/smartmode/SmartMode'),
   smartMode2(value: 'http://linksys.com/jnap/nodes/smartmode/SmartMode2'),
   selectableWAN(value: 'http://linksys.com/jnap/nodes/setup/SelectableWAN'),

@@ -250,6 +250,10 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.setup9:
       break;
+    case JNAPService.setup10:
+      break;
+    case JNAPService.setup11:
+      break;
     case JNAPService.smartMode:
       break;
     case JNAPService.smartMode2:
@@ -618,6 +622,8 @@ void initBetterActions() {
       _JNAPActionValue.getGamingPrioritizationSettings.value;
   _betterActionMap[JNAPAction.setGamingPrioritizationSettings] =
       _JNAPActionValue.setGamingPrioritizationSettings.value;
+  _betterActionMap[JNAPAction.getAutoConfigurationSettings] =
+      _JNAPActionValue.getAutoConfigurationSettings.value;
 }
 
 void buildBetterActions(List<String> routerServices) {
