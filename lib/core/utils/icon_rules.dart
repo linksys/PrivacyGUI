@@ -724,6 +724,9 @@ String _iconMapping(String iconClass, {String? fallback}) {
 
 String routerIconTestByModel(
     {required String modelNumber, String? hardwareVersion}) {
+  if (modelNumber.isEmpty) {
+    return 'node';
+  }
   final data = {
     'model': {
       'deviceType': 'Infrastructure',
