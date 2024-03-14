@@ -80,7 +80,9 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
+      appBarStyle: AppBarStyle.none,
       backState: StyledBackState.none,
+      padding: EdgeInsets.zero,
       child: _buildPnpSetupView(),
     );
   }
@@ -104,17 +106,6 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
 
   Widget _configView() => AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: InkWell(
-          onTap: () {
-            context.goNamed(RouteNamed.pnpNoInternetConnection);
-          },
-          child: SvgPicture(
-            CustomTheme.of(context).images.linksysLogoBlack,
-            width: 32,
-            height: 32,
-            fit: BoxFit.cover,
-          ),
-        ),
         content: LayoutBuilder(builder: (context, constraints) {
           return PnpStepper(
             steps: steps,
@@ -163,7 +154,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Icon(
-           LinksysIcons.wifi,
+          LinksysIcons.wifi,
         ),
         const AppGap.regular(),
         AppText.titleMedium('$wifiSSID is ready'),

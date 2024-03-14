@@ -98,10 +98,10 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   }
 
   _initAuth() {
-    // ref.read(authProvider.notifier).init().then((_) {
-    //   logger.d('init auth finish');
-    //   FlutterNativeSplash.remove();
-    // });
+    ref.read(authProvider.notifier).init().then((_) {
+      logger.d('init auth finish');
+      FlutterNativeSplash.remove();
+    });
   }
 
   void _onReceiveRouteChanged() {
@@ -109,8 +109,10 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       if (!mounted) return;
       final router = ref.read(routerProvider);
 
-      final GoRoute? page =
-          router.routerDelegate.currentConfiguration.last.route as GoRoute?;
+      final GoRoute? page = router
+              .routerDelegate.currentConfiguration.isNotEmpty
+          ? router.routerDelegate.currentConfiguration.last.route as GoRoute?
+          : null;
       logger.d('Router Delegate Changed! ${page?.name},');
       if (page is LinksysRoute) {
         setState(() {

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/constants/build_config.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/account/_account.dart';
@@ -28,6 +29,7 @@ import 'package:linksys_app/page/nodes/_nodes.dart';
 import 'package:linksys_app/page/notifications/notification_settings_page.dart';
 import 'package:linksys_app/page/otp_flow/providers/_providers.dart';
 import 'package:linksys_app/page/otp_flow/views/_views.dart';
+import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
 import 'package:linksys_app/page/pnp/pnp_admin_view.dart';
 import 'package:linksys_app/page/pnp/pnp_setup_view.dart';
 import 'package:linksys_app/page/pnp/troubleshooter/pnp_lights_off.dart';
@@ -40,6 +42,7 @@ import 'package:linksys_app/page/topology/_topology.dart';
 import 'package:linksys_app/page/troubleshooting/_troubleshooting.dart';
 import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
 import 'package:linksys_app/providers/auth/_auth.dart';
+import 'package:linksys_app/providers/connectivity/_connectivity.dart';
 import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/route/router_logger.dart';
 import '../page/administration/local_network_settings/_local_network_settings.dart';
@@ -106,25 +109,25 @@ class RouterNotifier extends ChangeNotifier {
   }
 
   Future<String?> _redirectLogic(GoRouterState state) async {
-    if (state.matchedLocation == '/pnp/index.html') {
-      return '/pnp';
-    }
-
     final loginType =
         _ref.watch(authProvider.select((data) => data.value?.loginType));
+
     if (state.matchedLocation == '/') {
-      // TODO
-      Future.delayed(Duration(seconds: 2))
-          .then((_) => _ref.read(authProvider.notifier).init())
-          .then((value) {
-        logger.d('init auth finish');
-        FlutterNativeSplash.remove();
-        return switch (loginType) {
-          LoginType.remote => RoutePath.prepareDashboard,
-          LoginType.local => RoutePath.prepareDashboard,
-          _ => null,
-        };
-      });
+      await _ref.read(connectivityProvider.notifier).forceUpdate();
+      final pnp = _ref.read(pnpProvider.notifier);
+      bool shouldGoPnp = false;
+      if (BuildConfig.forceCommandType == ForceCommand.local ||
+          _ref.read(connectivityProvider).connectivityInfo.routerType ==
+              RouterType.behind) {
+        shouldGoPnp = await pnp.fetchDeviceInfo().then((_) => pnp.pnpCheck());
+      } else {
+        shouldGoPnp = false;
+      }
+      if (shouldGoPnp) {
+        return _goPnp();
+      } else {
+        return _authCheck();
+      }
     }
 
     // if no network Id for remote login
@@ -132,10 +135,30 @@ class RouterNotifier extends ChangeNotifier {
     if (loginType == LoginType.remote &&
         managedNetworkId == null &&
         state.matchedLocation != RoutePath.selectNetwork) {
+      FlutterNativeSplash.remove();
+
       logger.d('empty network');
       return RoutePath.prepareDashboard;
     }
 
     return null;
+  }
+
+  FutureOr<String?> _goPnp() {
+    FlutterNativeSplash.remove();
+
+    return RoutePath.pnp;
+  }
+
+  Future<String?> _authCheck() {
+    return _ref.read(authProvider.notifier).init().then((state) {
+      logger.d('init auth finish');
+      FlutterNativeSplash.remove();
+      return switch (state?.loginType ?? LoginType.none) {
+        LoginType.remote => RoutePath.prepareDashboard,
+        LoginType.local => RoutePath.prepareDashboard,
+        _ => null,
+      };
+    });
   }
 }

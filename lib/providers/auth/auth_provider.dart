@@ -119,16 +119,17 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   @override
   Future<AuthState> build() => Future.value(AuthState.empty());
 
-  Future init() async {
+  Future<AuthState?> init() async {
     if (_isInit) {
       logger.d('auth provider has been inited');
-      return state;
+      return state.value;
     }
+    _isInit = true;
+
     state = const AsyncValue.loading();
     // check session token exist and is session token expored
 
     state = await AsyncValue.guard(() async {
-      _isInit = true;
       var loginType = LoginType.none;
 
       // Refresh token handle
@@ -161,6 +162,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         localPassword: localPassword,
       );
     });
+    return state.value;
   }
 
   Future<SessionToken?> checkSessionToken() async {
