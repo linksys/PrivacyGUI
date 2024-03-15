@@ -95,6 +95,51 @@ final _slaveNode5 = RouterTopologyNode(
   children: [],
 );
 
+final _slaveNode6 = RouterTopologyNode(
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000006',
+    location: 'A super cool name',
+    isMaster: false,
+    isOnline: true,
+    isWiredConnection: false,
+    signalStrength: -70,
+    isRouter: true,
+    icon: 'routerLn11',
+    connectedDeviceCount: 9,
+  ),
+  children: [],
+);
+
+final _slaveNode7 = RouterTopologyNode(
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000007',
+    location: 'A name',
+    isMaster: false,
+    isOnline: true,
+    isWiredConnection: false,
+    signalStrength: -70,
+    isRouter: true,
+    icon: 'routerLn12',
+    connectedDeviceCount: 999,
+  ),
+  children: [],
+);
+
+final _slaveNode8 = RouterTopologyNode(
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000008',
+    location: 'HIDDEN',
+    isMaster: false,
+    isOnline: true,
+    isWiredConnection: false,
+    signalStrength: -70,
+    isRouter: true,
+    icon: 'routerLn12',
+    connectedDeviceCount: 999,
+  ),
+  children: [],
+);
+
 final _slaveOfflineNode1 = RouterTopologyNode(
   data: const TopologyModel(
     deviceId: 'ROUTER-SLAVE-DEVICEID-000001',
@@ -308,7 +353,18 @@ final testTopologyState6 = TopologyState(
           ..children.addAll([
             _slaveNode2
               ..children.clear()
-              ..parent = _slaveNode1,
+              ..parent = _slaveNode1
+              ..children.addAll([
+                _slaveNode6
+                  ..children.clear()
+                  ..parent = _slaveNode2,
+                _slaveNode7
+                  ..children.clear()
+                  ..parent = _slaveNode2,
+                _slaveNode8
+                  ..children.clear()
+                  ..parent = _slaveNode2,
+              ]),
             _slaveNode3
               ..children.clear()
               ..parent = _slaveNode1
@@ -408,7 +464,39 @@ final testTopologyStateOffline5 = TopologyState(
     ..children.clear()
     ..children.add(_masterNode
       ..parent = _onlineRoot
-      ..children.clear()),
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode
+          ..children.addAll([
+            _slaveNode2
+              ..children.clear()
+              ..parent = _slaveNode1
+              ..children.addAll([
+                _slaveNode6
+                  ..children.clear()
+                  ..parent = _slaveNode2,
+                _slaveNode7
+                  ..children.clear()
+                  ..parent = _slaveNode2,
+                _slaveNode8
+                  ..children.clear()
+                  ..parent = _slaveNode2,
+              ]),
+            _slaveNode3
+              ..children.clear()
+              ..parent = _slaveNode1
+              ..children.addAll([
+                _slaveNode4
+                  ..children.clear()
+                  ..parent = _slaveNode3,
+                _slaveNode5
+                  ..children.clear()
+                  ..parent = _slaveNode3,
+              ]),
+          ]),
+      ])),
   offlineRoot: OfflineTopologyNode(
       data: const TopologyModel(isOnline: true, location: 'Offline'),
       children: [

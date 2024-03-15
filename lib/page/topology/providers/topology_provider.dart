@@ -7,7 +7,6 @@ import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/page/topology/_topology.dart';
-import 'package:linksys_widgets/widgets/topology/tree_node.dart';
 
 final topologySelectedIdProvider = StateProvider((ref) => '');
 final topologyProvider = NotifierProvider<TopologyNotifier, TopologyState>(
@@ -35,17 +34,16 @@ class TopologyNotifier extends Notifier<TopologyState> {
     // return deviceId != null
     //     ? _buildDeviceChain(deviceId, deviceManagerState)
     //     : _buildRouterTopology(deviceManagerState);
-    return RouterTreeNode(
-        type: AppTreeNodeType.internet,
+    return OnlineTopologyNode(
         data: const TopologyModel(isOnline: true, location: 'Internet'),
         children: [_buildRouterTopology(deviceManagerState, selectId)]);
   }
 
   RouterTreeNode _buildOfflineRootNode(DeviceManagerState deviceManagerState) {
-    return RouterTreeNode(
-        type: AppTreeNodeType.offline,
-        data: const TopologyModel(isOnline: true, location: 'Offline'),
-        children: [..._buildOfflineRouterTopology(deviceManagerState)]);
+    return OfflineTopologyNode(
+      data: const TopologyModel(isOnline: true, location: 'Offline'),
+      children: [..._buildOfflineRouterTopology(deviceManagerState)],
+    );
   }
 
   List<RouterTreeNode> _buildOfflineRouterTopology(
@@ -54,7 +52,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
       ...deviceManagerState.nodeDevices
           .where((device) => device.connections.isEmpty)
           .map(
-            (device) => _createTopologyNode(device),
+            (device) => _createRouterTopologyNode(device),
           )
           .toList(),
     ];
@@ -67,7 +65,8 @@ class TopologyNotifier extends Notifier<TopologyState> {
       deviceManagerState.nodeDevices
           .where((device) => device.connections.isNotEmpty)
           .map(
-            (device) => MapEntry(device.deviceID, _createTopologyNode(device)),
+            (device) =>
+                MapEntry(device.deviceID, _createRouterTopologyNode(device)),
           ),
     );
     final deviceList = deviceManagerState.deviceList;
@@ -104,8 +103,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
         } else {
           // An external device
           if (device.deviceID == selectId) {
-            final deviceNode =
-                _createTopologyNode(device, type: AppTreeNodeType.device);
+            final deviceNode = _createDeviceTopologyNode(device);
             // Check if there is a parent
             final parentId = ref
                 .read(deviceManagerProvider.notifier)
@@ -133,10 +131,9 @@ class TopologyNotifier extends Notifier<TopologyState> {
     return masterNode;
   }
 
-  RouterTreeNode _createTopologyNode(
-    LinksysDevice device, {
-    AppTreeNodeType type = AppTreeNodeType.node,
-  }) {
+  RouterTreeNode _createRouterTopologyNode(
+    LinksysDevice device,
+  ) {
     String deviceId = device.deviceID;
     String location = device.getDeviceLocation();
     bool isMaster = device.isAuthority || device.nodeType == 'Master';
@@ -158,7 +155,35 @@ class TopologyNotifier extends Notifier<TopologyState> {
           : deviceIconTest(device.toMap()).name,
       connectedDeviceCount: device.connectedDevices.length,
     );
-    return RouterTreeNode(data: data, children: [], type: type);
+    return RouterTopologyNode(
+      data: data,
+      children: [],
+    );
+  }
+
+  RouterTreeNode _createDeviceTopologyNode(LinksysDevice device) {
+    String deviceId = device.deviceID;
+    String location = device.getDeviceLocation();
+    bool isMaster = device.isAuthority || device.nodeType == 'Master';
+    bool isOnline = device.connections.isNotEmpty;
+    bool isRouter = device.isAuthority || device.nodeType != null;
+    bool isWiredConnection = device.isWiredConnection();
+    int signalStrength =
+        ref.read(deviceManagerProvider.notifier).getWirelessSignal(device);
+    final data = TopologyModel(
+      deviceId: deviceId,
+      location: location,
+      isMaster: isMaster,
+      isOnline: isOnline,
+      isWiredConnection: isWiredConnection,
+      signalStrength: signalStrength,
+      isRouter: isRouter,
+      icon: isRouter
+          ? routerIconTest(device.toMap())
+          : deviceIconTest(device.toMap()).name,
+      connectedDeviceCount: device.connectedDevices.length,
+    );
+    return DeviceTopologyNode(data: data, children: []);
   }
 
   Future reboot() {

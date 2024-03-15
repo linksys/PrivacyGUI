@@ -6,6 +6,41 @@ import 'package:linksys_widgets/widgets/topology/tree_node.dart';
 
 typedef RouterTreeNode = AppTreeNode<TopologyModel>;
 
+///
+/// DO NOT instant root sealed class
+///
+sealed class BaseTopologyNode extends RouterTreeNode {
+  BaseTopologyNode({required super.data, required super.children});
+}
+
+class OnlineTopologyNode extends BaseTopologyNode {
+  OnlineTopologyNode({
+    required super.children,
+    required super.data,
+  });
+}
+
+class OfflineTopologyNode extends BaseTopologyNode {
+  OfflineTopologyNode({
+    required super.children,
+    required super.data,
+  });
+}
+
+class RouterTopologyNode extends BaseTopologyNode {
+  RouterTopologyNode({
+    required super.data,
+    required super.children,
+  });
+}
+
+class DeviceTopologyNode extends BaseTopologyNode {
+  DeviceTopologyNode({
+    required super.data,
+    required super.children,
+  });
+}
+
 class TopologyModel extends Equatable {
   final String deviceId;
   final String location;
@@ -83,8 +118,8 @@ class TopologyModel extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory TopologyModel.fromJson(String source) => TopologyModel.fromMap(json.decode(source) as Map<String, dynamic>);
-
+  factory TopologyModel.fromJson(String source) =>
+      TopologyModel.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   List<Object> get props {
