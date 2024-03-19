@@ -28,6 +28,7 @@ class AuthState extends Equatable {
   final String? username;
   final String? password;
   final String? localPassword;
+  final String? localPasswordHint;
   final SessionToken? sessionToken;
   final LoginType loginType;
 
@@ -35,6 +36,7 @@ class AuthState extends Equatable {
     this.username,
     this.password,
     this.localPassword,
+    this.localPasswordHint,
     this.sessionToken,
     required this.loginType,
   });
@@ -54,6 +56,7 @@ class AuthState extends Equatable {
       username: json['username'],
       password: json['password'],
       localPassword: json['localPassword'],
+      localPasswordHint: json['localPasswordHint'],
       sessionToken: sessionToken,
       loginType: loginType,
     );
@@ -63,6 +66,7 @@ class AuthState extends Equatable {
     String? username,
     String? password,
     String? localPassword,
+    String? localPasswordHint,
     SessionToken? sessionToken,
     LoginType? loginType,
   }) {
@@ -70,6 +74,7 @@ class AuthState extends Equatable {
       username: username ?? this.username,
       password: password ?? this.password,
       localPassword: localPassword ?? this.localPassword,
+      localPasswordHint: localPasswordHint ?? this.localPasswordHint,
       sessionToken: sessionToken ?? this.sessionToken,
       loginType: loginType ?? this.loginType,
     );
@@ -80,6 +85,7 @@ class AuthState extends Equatable {
         username,
         password,
         localPassword,
+        localPasswordHint,
         sessionToken,
         loginType,
       ];
@@ -206,7 +212,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final cloud = ref.read(cloudRepositoryProvider);
       final newToken = sessionToken ??
           await cloud.login(username: username, password: password);
-      
+
       return await updateCredientials(
         sessionToken: newToken,
         username: username,
@@ -274,12 +280,20 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     });
   }
 
-  Future getAdminPasswordInfo() async {
-    final routerRepository = ref.read(routerRepositoryProvider);
-
-    return await routerRepository
-        .send(JNAPAction.getAdminPasswordHint)
-        .then((value) => value.output['passwordHint'] ?? '');
+  Future<void> getPasswordHint() async {
+    final previousState = state.value;
+    if (previousState != null) {
+      state = const AsyncValue.loading();
+      state = await AsyncValue.guard(() async {
+        final routerRepository = ref.read(routerRepositoryProvider);
+        final result = await routerRepository.send(
+          JNAPAction.getAdminPasswordHint,
+        );
+        return previousState.copyWith(
+          localPasswordHint: result.output['passwordHint'] ?? '',
+        );
+      });
+    }
   }
 
   // TODO

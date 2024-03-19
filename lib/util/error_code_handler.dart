@@ -28,7 +28,7 @@ String? generalErrorCodeHandler(BuildContext context, String code) {
     case errorJNAPUnauthorized:
       return getAppLocalizations(context).error_incorrect_password;
     case errorAdminAccountLocked:
-      return getAppLocalizations(context).error_local_access_locked;
+      return loc(context).local_login_too_many_attempts_title;
     default:
       logger.e('Unhandled Error: $code');
       return getAppLocalizations(context).unknown_error_code(code);

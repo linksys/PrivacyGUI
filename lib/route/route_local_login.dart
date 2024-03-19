@@ -4,7 +4,7 @@ final localLoginRoute = LinksysRoute(
   name: RouteNamed.localLoginPassword,
   path: RoutePath.localLoginPassword,
   config: const LinksysRouteConfig(fullWidth: true),
-  builder: (context, state) => LoginView(
+  builder: (context, state) => LoginLocalView(
     args: state.extra as Map<String, dynamic>? ?? {},
   ),
   routes: [
