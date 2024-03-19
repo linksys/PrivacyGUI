@@ -44,21 +44,27 @@ class DeviceFilterConfigNotifier extends Notifier<DeviceFilterConfigState> {
   }
 
   void initFilter() {
-    final nodes = ref
+    final nodes = getNodes();
+
+    final bands = getBands();
+    state = state.copyWith(
+        connectionFilter: true, nodeFilter: nodes, bandFilter: bands);
+  }
+
+  List<String> getNodes() {
+    return ref
         .read(deviceManagerProvider)
         .nodeDevices
         .map((e) => e.deviceID)
         .toList();
-
-    final bands = ref
-        .read(dashboardManagerProvider)
-        .mainRadios
-        .unique((x) => x.band)
-        .map((e) => e.band)
-        .toList();
-    state = state.copyWith(
-        connectionFilter: true, nodeFilter: nodes, bandFilter: bands);
   }
+
+  List<String> getBands() => ref
+      .read(dashboardManagerProvider)
+      .mainRadios
+      .unique((x) => x.band)
+      .map((e) => e.band)
+      .toList();
 
   void updateConnectionFilter(bool value) {
     state = state.copyWith(connectionFilter: value);

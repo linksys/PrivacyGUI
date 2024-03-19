@@ -42,13 +42,13 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
       physics: const ScrollPhysics(),
       child: Container(
         alignment: Alignment.bottomLeft,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.background,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(30),
-            topRight: Radius.circular(30),
-          ),
-        ),
+        // decoration: BoxDecoration(
+        //   color: Theme.of(context).colorScheme.background,
+        //   borderRadius: const BorderRadius.only(
+        //     topLeft: Radius.circular(30),
+        //     topRight: Radius.circular(30),
+        //   ),
+        // ),
         child: Padding(
           padding: const EdgeInsets.all(Spacing.regular),
           child: Column(

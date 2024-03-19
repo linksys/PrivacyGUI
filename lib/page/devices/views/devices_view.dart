@@ -38,8 +38,9 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
   @override
   void initState() {
     super.initState();
-    Future.doWhile(() => !mounted).then(
-        (value) => ref.read(deviceFilterConfigProvider.notifier).initFilter());
+    Future.doWhile(() => !mounted).then((value) {
+      return ref.read(deviceFilterConfigProvider.notifier).initFilter();
+    });
   }
 
   @override

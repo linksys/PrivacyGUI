@@ -115,7 +115,8 @@ class RouterRadio extends Equatable {
       'band': band,
       'supportedModes': supportedModes,
       'defaultMixedMode': defaultMixedMode,
-      'supportedChannelsForChannelWidths': supportedChannelsForChannelWidths,
+      'supportedChannelsForChannelWidths':
+          List.from(supportedChannelsForChannelWidths.map((e) => e.toMap())),
       'supportedSecurityTypes': supportedSecurityTypes,
       'maxRADIUSSharedKeyLength': maxRadiusSharedKeyLength,
       'settings': settings.toMap(),
@@ -123,30 +124,30 @@ class RouterRadio extends Equatable {
   }
 
   factory RouterRadio.fromMap(Map<String, dynamic> map) {
-    return RouterRadio(
-      radioID: map['radioID'] as String,
-      physicalRadioID: map['physicalRadioID'] as String,
-      bssid: map['bssid'] as String,
-      band: map['band'] as String,
-      supportedModes:
-          List<String>.from((map['supportedModes'] as List<dynamic>)),
-      defaultMixedMode: map['defaultMixedMode'] != null
-          ? map['defaultMixedMode'] as String
-          : null,
-      supportedChannelsForChannelWidths:
-          List<SupportedChannelsForChannelWidths>.from(
-        (map['supportedChannelsForChannelWidths'] as List<dynamic>)
-            .map<SupportedChannelsForChannelWidths>(
-          (x) => SupportedChannelsForChannelWidths.fromMap(x),
+      final supportedChannelsForChannelWidths =
+          List.from(map['supportedChannelsForChannelWidths'])
+              .map(
+                (x) => SupportedChannelsForChannelWidths.fromMap(x),
+              )
+              .toList();
+      return RouterRadio(
+        radioID: map['radioID'] as String,
+        physicalRadioID: map['physicalRadioID'] as String,
+        bssid: map['bssid'] as String,
+        band: map['band'] as String,
+        supportedModes: List<String>.from(map['supportedModes']),
+        defaultMixedMode: map['defaultMixedMode'] != null
+            ? map['defaultMixedMode'] as String
+            : null,
+        supportedChannelsForChannelWidths: supportedChannelsForChannelWidths,
+        supportedSecurityTypes: List<String>.from(
+          (map['supportedSecurityTypes'] as List<dynamic>),
         ),
-      ),
-      supportedSecurityTypes: List<String>.from(
-        (map['supportedSecurityTypes'] as List<dynamic>),
-      ),
-      maxRadiusSharedKeyLength: map['maxRADIUSSharedKeyLength'] as int,
-      settings:
-          RouterRadioSettings.fromMap(map['settings'] as Map<String, dynamic>),
-    );
+        maxRadiusSharedKeyLength: map['maxRADIUSSharedKeyLength'] as int,
+        settings: RouterRadioSettings.fromMap(
+            map['settings'] as Map<String, dynamic>),
+      );
+    
   }
 
   String toJson() => json.encode(toMap());
@@ -488,8 +489,8 @@ class SupportedChannelsForChannelWidths extends Equatable {
 
   factory SupportedChannelsForChannelWidths.fromMap(Map<String, dynamic> map) {
     return SupportedChannelsForChannelWidths(
-      channelWidth: map['channelWidth'] as String,
-      channels: List<int>.from((map['channels'] as List<dynamic>)),
+      channelWidth: map['channelWidth'],
+      channels: List<int>.from(map['channels']),
     );
   }
 

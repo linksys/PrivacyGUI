@@ -1,5 +1,9 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+
+import 'package:collection/collection.dart';
+import 'package:equatable/equatable.dart';
+
 import 'package:linksys_app/core/jnap/models/back_haul_info.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/models/radio_info.dart';
@@ -66,7 +70,7 @@ class LinksysDevice extends RawDevice {
     return <String, dynamic>{
       ...super.toMap(),
       'connectedDevices': connectedDevices.map((e) => e.toMap()).toList(),
-      'connectedWifiType': connectedWifiType,
+      'connectedWifiType': connectedWifiType.value,
     }..removeWhere((key, value) => value == null);
   }
 
@@ -108,7 +112,9 @@ class LinksysDevice extends RawDevice {
               .toList()
           : [],
       connectedWifiType: map['connectedWifiType'] != null
-          ? map['connectedWifiType'] as WifiConnectionType
+          ? WifiConnectionType.values.firstWhereOrNull(
+                  (element) => element.value == map['connectedWifiType']) ??
+              WifiConnectionType.main
           : WifiConnectionType.main,
     );
   }
@@ -120,8 +126,7 @@ class LinksysDevice extends RawDevice {
       LinksysDevice.fromMap(json.decode(source) as Map<String, dynamic>);
 }
 
-@immutable
-class DeviceManagerState {
+class DeviceManagerState extends Equatable {
   // Collected data for a specific network with its own devices shared to overall screens
   final Map<String, WirelessConnection> wirelessConnections;
   final Map<String, RouterRadio> radioInfos;
@@ -173,7 +178,6 @@ class DeviceManagerState {
     List<LinksysDevice>? deviceList,
     RouterWANStatus? wanStatus,
     List<BackHaulInfoData>? backhaulInfoData,
-    bool? isFirmwareUpToDate,
     int? lastUpdateTime,
   }) {
     return DeviceManagerState(
@@ -184,6 +188,75 @@ class DeviceManagerState {
       backhaulInfoData: backhaulInfoData ?? this.backhaulInfoData,
       lastUpdateTime: lastUpdateTime ?? this.lastUpdateTime,
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    final wirelessConnectionMap = Map.fromEntries(wirelessConnections.entries
+        .map((e) => MapEntry(e.key, e.value.toMap())));
+    final radioInfoMap = Map.fromEntries(
+        radioInfos.entries.map((e) => MapEntry(e.key, e.value.toMap())));
+    return <String, dynamic>{
+      'wirelessConnections': wirelessConnectionMap,
+      'radioInfos': radioInfoMap,
+      'deviceList': deviceList.map((x) => x.toMap()).toList(),
+      'wanStatus': wanStatus?.toJson(),
+      'backhaulInfoData': backhaulInfoData.map((x) => x.toMap()).toList(),
+      'lastUpdateTime': lastUpdateTime,
+    };
+  }
+
+  factory DeviceManagerState.fromMap(Map<String, dynamic> map) {
+    return DeviceManagerState(
+      wirelessConnections: Map<String, WirelessConnection>.fromEntries(
+        (map['wirelessConnections'] as Map).entries.map(
+              (e) => MapEntry(
+                e.key,
+                WirelessConnection.fromMap(e.value),
+              ),
+            ),
+      ),
+      radioInfos: Map<String, RouterRadio>.fromEntries(
+          (map['radioInfos'] as Map).entries.map(
+                (e) => MapEntry(
+                  e.key,
+                  RouterRadio.fromMap(e.value),
+                ),
+              )),
+      deviceList: List<LinksysDevice>.from(
+        map['deviceList'].map<LinksysDevice>(
+          (x) => LinksysDevice.fromMap(x as Map<String, dynamic>),
+        ),
+      ),
+      wanStatus: map['wanStatus'] != null
+          ? RouterWANStatus.fromJson(map['wanStatus'] as Map<String, dynamic>)
+          : null,
+      backhaulInfoData: List<BackHaulInfoData>.from(
+        map['backhaulInfoData'].map<BackHaulInfoData>(
+          (x) => BackHaulInfoData.fromMap(x as Map<String, dynamic>),
+        ),
+      ),
+      lastUpdateTime: map['lastUpdateTime'],
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory DeviceManagerState.fromJson(String source) =>
+      DeviceManagerState.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  bool get stringify => true;
+
+  @override
+  List<Object?> get props {
+    return [
+      wirelessConnections,
+      radioInfos,
+      deviceList,
+      wanStatus,
+      backhaulInfoData,
+      lastUpdateTime,
+    ];
   }
 }
 

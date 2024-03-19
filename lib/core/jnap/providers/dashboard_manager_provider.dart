@@ -23,11 +23,13 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
   @override
   DashboardManagerState build() {
     final coreTransactionData = ref.watch(pollingProvider).value;
-    logger.d('dashboard manager provider - rebuild');
+    logger.d('dashboard manager provider - rebuild - $coreTransactionData');
     return createState(pollingResult: coreTransactionData);
   }
 
   DashboardManagerState createState({CoreTransactionData? pollingResult}) {
+    logger.d('dashboard manager provider - createState - $pollingResult');
+
     // Map<String, dynamic>? getDeviceInfoData;
     Map<String, dynamic>? getRadioInfoData;
     Map<String, dynamic>? getGuestRadioSettingsData;
