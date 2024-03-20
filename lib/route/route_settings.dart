@@ -55,11 +55,6 @@ final settings = [
           ],
         ),
         LinksysRoute(
-          name: RouteNamed.nodeOffline,
-          path: RoutePath.nodeOffline,
-          builder: (context, state) => NodeOfflineCheckView(),
-        ),
-        LinksysRoute(
           name: RouteNamed.nodeLight,
           path: RoutePath.nodeLight,
           builder: (context, state) => NodeLightGuideView(),

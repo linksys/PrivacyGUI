@@ -43,8 +43,7 @@ void main() {
       // Find by text
       final internetItem = find.text('Internet');
       // Find by icon
-      final internetItemIcon =
-          find.byIcon(LinksysIcons.language);
+      final internetItemIcon = find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
@@ -59,13 +58,11 @@ void main() {
       final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
 
       expect(node1.name, 'Living room');
-      expect(node1.count, 30);
       expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
-      expect(node2.count, 20);
       expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
@@ -83,8 +80,7 @@ void main() {
       // Find by text
       final internetItem = find.text('Internet');
       // Find by icon
-      final internetItemIcon =
-          find.byIcon(LinksysIcons.language);
+      final internetItemIcon = find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
@@ -99,19 +95,16 @@ void main() {
       final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
 
       expect(node1.name, 'Living room');
-      expect(node1.count, 30);
       expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
-      expect(node2.count, 20);
       expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
-      expect(node3.count, 17);
       expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
@@ -129,8 +122,7 @@ void main() {
       // Find by text
       final internetItem = find.text('Internet');
       // Find by icon
-      final internetItemIcon =
-          find.byIcon(LinksysIcons.language);
+      final internetItemIcon = find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
@@ -145,19 +137,16 @@ void main() {
       final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
 
       expect(node1.name, 'Living room');
-      expect(node1.count, 30);
       expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
-      expect(node2.count, 20);
       expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
-      expect(node3.count, 17);
       expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
@@ -175,8 +164,7 @@ void main() {
       // Find by text
       final internetItem = find.text('Internet');
       // Find by icon
-      final internetItemIcon =
-          find.byIcon(LinksysIcons.language);
+      final internetItemIcon = find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
@@ -192,38 +180,32 @@ void main() {
       final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
 
       expect(node1.name, 'Living room');
-      expect(node1.count, 30);
       expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
-      expect(node2.count, 20);
       expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
-      expect(node3.count, 17);
       expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node4Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 1');
       final node4 = tester.firstWidget(node4Finder) as AppTreeNodeItem;
       expect(node4.name, 'Bed room 1');
-      expect(node4.count, 7);
       expect(node4.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node5Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 2');
       final node5 = tester.firstWidget(node5Finder) as AppTreeNodeItem;
       expect(node5.name, 'Bed room 2');
-      expect(node5.count, 1);
       expect(node5.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node6Finder = find.widgetWithText(
           AppTreeNodeItem, 'A super long long long long long long cool name');
       final node6 = tester.firstWidget(node6Finder) as AppTreeNodeItem;
       expect(node6.name, 'A super long long long long long long cool name');
-      expect(node6.count, 999);
       expect(node6.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
@@ -241,8 +223,7 @@ void main() {
       // Find by text
       final internetItem = find.text('Internet');
       // Find by icon
-      final internetItemIcon =
-          find.byIcon(LinksysIcons.language);
+      final internetItemIcon = find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
@@ -257,38 +238,32 @@ void main() {
       final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
 
       expect(node1.name, 'Living room');
-      expect(node1.count, 30);
       expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
-      expect(node2.count, 20);
       expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
-      expect(node3.count, 17);
       expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node4Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 1');
       final node4 = tester.firstWidget(node4Finder) as AppTreeNodeItem;
       expect(node4.name, 'Bed room 1');
-      expect(node4.count, 7);
       expect(node4.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node5Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 2');
       final node5 = tester.firstWidget(node5Finder) as AppTreeNodeItem;
       expect(node5.name, 'Bed room 2');
-      expect(node5.count, 1);
       expect(node5.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node6Finder = find.widgetWithText(
           AppTreeNodeItem, 'A super long long long long long long cool name');
       final node6 = tester.firstWidget(node6Finder) as AppTreeNodeItem;
       expect(node6.name, 'A super long long long long long long cool name');
-      expect(node6.count, 999);
       expect(node6.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
@@ -306,8 +281,7 @@ void main() {
       // Find by text
       final internetItem = find.text('Internet');
       // Find by icon
-      final internetItemIcon =
-          find.byIcon(LinksysIcons.language);
+      final internetItemIcon = find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
@@ -322,38 +296,32 @@ void main() {
       final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
 
       expect(node1.name, 'Living room');
-      expect(node1.count, 30);
       expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
-      expect(node2.count, 20);
       expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
-      expect(node3.count, 17);
       expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node4Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 1');
       final node4 = tester.firstWidget(node4Finder) as AppTreeNodeItem;
       expect(node4.name, 'Bed room 1');
-      expect(node4.count, 7);
       expect(node4.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node5Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 2');
       final node5 = tester.firstWidget(node5Finder) as AppTreeNodeItem;
       expect(node5.name, 'Bed room 2');
-      expect(node5.count, 1);
       expect(node5.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node6Finder = find.widgetWithText(
           AppTreeNodeItem, 'A super long long long long long long cool name');
       final node6 = tester.firstWidget(node6Finder) as AppTreeNodeItem;
       expect(node6.name, 'A super long long long long long long cool name');
-      expect(node6.count, 999);
       expect(node6.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
   });
@@ -376,8 +344,7 @@ void main() {
       // Find by text
       final internetItem = find.text('Internet');
       // Find by icon
-      final internetItemIcon =
-          find.byIcon(LinksysIcons.language);
+      final internetItemIcon = find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
@@ -386,7 +353,7 @@ void main() {
       final offlineItem = find.text('Offline');
 
       // check
-      expect(offlineItem, findsNWidgets(2));
+      expect(offlineItem, findsNWidgets(1));
 
       // Find by type
       final treeNodeItems = find.byType(AppTreeNodeItem);
@@ -398,13 +365,11 @@ void main() {
       final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
 
       expect(node1.name, 'Living room');
-      expect(node1.count, 30);
       expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
-      expect(node2.count, null);
       expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
       expect(node2.status, 'Offline');
     });
@@ -423,8 +388,7 @@ void main() {
       // Find by text
       final internetItem = find.text('Internet');
       // Find by icon
-      final internetItemIcon =
-          find.byIcon(LinksysIcons.language);
+      final internetItemIcon = find.byIcon(LinksysIcons.language);
       // internet node check
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
@@ -433,7 +397,7 @@ void main() {
       final offlineItem = find.text('Offline');
 
       // check
-      expect(offlineItem, findsNWidgets(3));
+      expect(offlineItem, findsNWidgets(2));
 
       // Find by type
       final treeNodeItems = find.byType(AppTreeNodeItem);
@@ -445,20 +409,17 @@ void main() {
       final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
 
       expect(node1.name, 'Living room');
-      expect(node1.count, 30);
       expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
       final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
       expect(node2.name, 'Kitchen');
-      expect(node2.count, null);
       expect(node2.status, 'Offline');
       expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
       final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
       final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
       expect(node3.name, 'Basement');
-      expect(node3.count, null);
       expect(node3.status, 'Offline');
       expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
     });

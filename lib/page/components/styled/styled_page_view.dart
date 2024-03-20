@@ -48,6 +48,7 @@ class StyledAppPageView extends ConsumerWidget {
   final IconData? menuIcon;
   final PageMenu? menu;
   final Widget? menuWidget;
+  final ScrollController? controller;
 
   const StyledAppPageView({
     super.key,
@@ -67,6 +68,7 @@ class StyledAppPageView extends ConsumerWidget {
     this.menuIcon,
     this.menu,
     this.menuWidget,
+    this.controller,
   });
 
   @override

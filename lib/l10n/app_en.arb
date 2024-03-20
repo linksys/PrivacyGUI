@@ -475,7 +475,6 @@
   "release_and_renew": "Release and renew",
   "release_ip_description": "To release and renew the WAN IP address, connect to {ssid}.",
   "remote_access": "Remote access",
-  "remove_node_from_network": "Remove node from network",
   "reservations_added": "Reservations added",
   "reserved_addresses": "Reserved addresses",
   "restart": "Restart",
@@ -716,5 +715,41 @@
             "example": "1" 
           }
       }
-  }
+  },
+  "nNodesOffline": "{count, plural, other{{count} nodes offline} one{1 node offline}}",
+  "@nNodesOffline": {
+    "description": "Number of offline nodes",
+    "placeholders": {
+        "count": {
+          "type": "int",
+          "example": "1" 
+        }
+    }
+  },
+  "node": "Node",
+  "modalOfflineNodeTitle": "Let’s check a few things",
+  "modalOfflineNodeCheckTitle1": "Power is on",
+  "modalOfflineNodeCheckTitle2": "Make sure the power cord is plugged in and the light is on. If you have Night Mode on, the node light will be off during certain hours.",
+  "modalOfflineNodeCheckTitle3": "Nodes are within range",
+  "modalOfflineNodeCheckDesc1": "If you recently moved any nodes, try moving them back or to a better location. Also remove any obstacles that may be blocking the signal.",
+  "modalOfflineNodeCheckDesc2": "Nodes may need a refresh",
+  "modalOfflineNodeCheckDesc3": "Unplug and plug them back in.",
+  "modalOfflineNodeGoToNightMode": "Go to Night Mode settings",
+  "modalOfflineRemoveNodeFromNetwork": "Remove node from network",
+  "modalRemoveNodeTitle": "Remove node?",
+  "modalRemoveNodeDesc": "Are you sure you want to remove {node} from your mesh network?",
+  "@modalRemoveNodeDesc": {
+    "description": "Node name",
+    "placeholders": {
+      "node": {
+        "type": "String",
+        "example": "Awesome Node Name"
+      }
+    }
+  },
+  "removeNode": "Remove node",
+  "close": "Close",
+  "nodeRemoved": "Node removed"
+
+
 }

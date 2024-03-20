@@ -52,7 +52,6 @@ class RoutePath {
 
   /// node
   static const nodeDetails = 'nodeDetails';
-  static const nodeOffline = 'nodeOffline';
   static const nodeLight = 'nodeLight';
   static const changeNodeName = 'changeNodeName';
   static const nodeLightSettings = 'nodeLightSettings';
@@ -174,7 +173,6 @@ class RouteNamed {
 
   /// node
   static const nodeDetails = 'nodeDetails';
-  static const nodeOffline = 'nodeOffline';
   static const nodeLight = 'nodeLight';
   static const changeNodeName = 'changeNodeName';
   static const nodeLightSettings = 'nodeLightSettings';

@@ -363,7 +363,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       final idResultsMap = Map.fromEntries(idResults);
       idResultsMap.removeWhere((key, value) => value.result != 'OK');
       final completedIds = idResultsMap.keys.toList();
-      final newDeviceList = state.deviceList;
+      final newDeviceList = List<LinksysDevice>.from(state.deviceList);
       newDeviceList.removeWhere(
         (device) => completedIds.contains(device.deviceID),
       );

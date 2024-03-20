@@ -36,17 +36,17 @@ showSimpleSnackBar(
   showSnackBar(
     context,
     background: background,
-    content: Container(
-      child: SizedBox(
-        height: 48,
-        child: Row(
-          children: [
-            icon ?? const Center(),
-            const AppGap.regular(),
-            Text(message),
-          ],
+    content: Row(
+      children: [
+        if (icon != null) ...[
+          icon,
+          const AppGap.regular(),
+        ],
+        AppText.labelMedium(
+          message,
+          color: Theme.of(context).colorScheme.onInverseSurface,
         ),
-      ),
+      ],
     ),
   );
 }
@@ -56,8 +56,8 @@ showSnackBar(BuildContext context,
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: background,
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+      margin: EdgeInsets.only(
+          left: MediaQuery.of(context).size.width * 0.6, right: 24, bottom: 24),
       content: content,
     ),
   );
