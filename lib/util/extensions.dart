@@ -21,6 +21,17 @@ extension StringExt on String {
   String toMd5() {
     return md5.convert(utf8.encode(this)).toString();
   }
+
+  String capitalize(String value) {
+    return "${value[0].toUpperCase()}${value.substring(1).toLowerCase()}";
+  }
+
+  String capitalizeWords(String value) {
+    return value.split(' ').map((element) => capitalize(element)).join(' ');
+  }
+  String capitalizeSentence(String value) {
+    return value.split('. ').map((element) => capitalize(element)).join('. ');
+  }
 }
 
 extension Unique<E, Id> on List<E> {
