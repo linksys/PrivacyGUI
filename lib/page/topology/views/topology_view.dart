@@ -1,7 +1,9 @@
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
@@ -50,6 +52,18 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
               // scrollable: true,
               padding: EdgeInsets.zero,
               title: loc(context).node,
+              actions: [
+                AppTextButton.noPadding(
+                  loc(context).addNodes,
+                  icon: LinksysIcons.add,
+                  onTap: () {
+                    // context.pushNamed(RouteNamed.addNodes).then((result) {
+                    //   _showMoveChildNodesModal();
+                    // });
+                    showSuccessSnackBar(context, '123');
+                  },
+                )
+              ],
               child: AppBasicLayout(
                 content: Column(
                   children: [
@@ -324,5 +338,31 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
       });
       throw error ?? Exception('Unknown Error');
     });
+  }
+
+  _showMoveChildNodesModal() {
+    return showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: AppText.headlineSmall(loc(context).modalMoveChildNodesTitle),
+            actions: [
+              AppTextButton(
+                loc(context).close,
+                onTap: () {
+                  context.pop();
+                },
+              ),
+            ],
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText.bodyMedium(loc(context).modalMoveChildNodesDesc),
+                const AppGap.semiBig(),
+                SvgPicture(CustomTheme.of(context).images.imgMoveNodes),
+              ],
+            ),
+          );
+        });
   }
 }

@@ -97,7 +97,6 @@ dependencies:
   qr: ^3.0.1
   animated_list_plus: ^0.5.2
   shimmer: ^3.0.0
-  easy_stepper: ^0.8.3
   http_parser: ^4.0.2
   meta: ^1.11.0
 

@@ -287,7 +287,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                   children: [
                     Row(
                       children: [
-                        
                         const AppGap.semiSmall(),
                         AppText.titleLarge(state.uploadResult.value),
                       ],
@@ -303,7 +302,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                   children: [
                     Row(
                       children: [
-                        
                         const AppGap.semiSmall(),
                         AppText.titleLarge(state.downloadResult.value),
                       ],

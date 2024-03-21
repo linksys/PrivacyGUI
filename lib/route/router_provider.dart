@@ -24,6 +24,7 @@ import 'package:linksys_app/page/linkup/views/linkup_view.dart';
 import 'package:linksys_app/page/login/views/_views.dart';
 import 'package:linksys_app/page/login/views/local_reset_router_password_view.dart';
 import 'package:linksys_app/page/nodes/_nodes.dart';
+import 'package:linksys_app/page/nodes/views/add_nodes_view.dart';
 import 'package:linksys_app/page/notifications/notification_settings_page.dart';
 import 'package:linksys_app/page/otp_flow/providers/_providers.dart';
 import 'package:linksys_app/page/otp_flow/views/_views.dart';
@@ -52,6 +53,7 @@ part 'route_dashboard.dart';
 part 'route_settings.dart';
 part 'route_otp.dart';
 part 'route_pnp.dart';
+part 'route_add_nodes.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final router = RouterNotifier(ref);
@@ -65,17 +67,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       LinksysRoute(
         name: RouteNamed.prepareDashboard,
         path: RoutePath.prepareDashboard,
-        config: const LinksysRouteConfig(fullWidth: true),
+        config: LinksysRouteConfig(pageWidth: FullPageWidth()),
         builder: (context, state) => PrepareDashboardView(),
       ),
       LinksysRoute(
         name: RouteNamed.selectNetwork,
         path: RoutePath.selectNetwork,
-        config: const LinksysRouteConfig(fullWidth: true),
+        config: const LinksysRouteConfig(noNaviRail: true),
         builder: (context, state) => SelectNetworkView(),
       ),
       dashboardRoute,
       pnpRoute,
+      addNodesRoute,
     ],
     redirect: (context, state) {
       return router._redirectLogic(state);

@@ -124,12 +124,15 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       const MapEntry(JNAPAction.getGuestRadioSettings, {}),
       const MapEntry(JNAPAction.getDevices, {}),
       const MapEntry(JNAPAction.getFirmwareUpdateSettings, {}),
-      const MapEntry(
-          JNAPAction.getHealthCheckResults, {'includeModuleResults': true}),
-      const MapEntry(JNAPAction.getNodesSupportedHealthCheckModules, {}),
       const MapEntry(JNAPAction.getBackhaulInfo, {}),
       const MapEntry(JNAPAction.getWANStatus, {}),
     ];
+    if (isServiceSupport(JNAPService.healthCheckManager)) {
+      commands.add(const MapEntry(
+          JNAPAction.getHealthCheckResults, {'includeModuleResults': true}));
+      commands.add(
+          const MapEntry(JNAPAction.getNodesSupportedHealthCheckModules, {}));
+    }
     if (isServiceSupport(JNAPService.nodesFirmwareUpdate)) {
       commands.add(
         const MapEntry(JNAPAction.getNodesFirmwareUpdateStatus, {}),

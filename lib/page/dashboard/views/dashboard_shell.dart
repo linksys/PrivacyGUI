@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/dashboard/views/dashboard_navigation_rail.dart';
+import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
@@ -33,6 +34,7 @@ class DashboardShell extends ArgumentsConsumerStatefulView {
   const DashboardShell({
     Key? key,
     required this.child,
+    super.args,
   }) : super(key: key);
 
   final Widget child;
@@ -63,12 +65,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
   }
 
   Widget _contentView() {
-    // final lastPage = GoRouter.of(context)
-    //     .routerDelegate
-    //     .currentConfiguration
-    //     .last
-    //     .matchedLocation;
-
+    final pageRoute = GoRouter.of(context)
+        .routerDelegate
+        .currentConfiguration
+        .routes
+        .last as LinksysRoute?;
     return StyledAppPageView(
         backState: StyledBackState.none,
         appBarStyle: AppBarStyle.none,
@@ -76,7 +77,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
         handleBanner: true,
         padding: const EdgeInsets.only(),
         bottomNavigationBar: ResponsiveLayout.isLayoutBreakpoint(context) &&
-                _dashboardNaviItems.length > 1
+                pageRoute?.config?.noNaviRail != true
             ? NavigationBar(
                 selectedIndex: _selectedIndex,
                 destinations: _dashboardNaviItems
@@ -95,10 +96,15 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
   }
 
   Widget _buildDesktop() {
+    final pageRoute = GoRouter.of(context)
+        .routerDelegate
+        .currentConfiguration
+        .routes
+        .last as LinksysRoute?;
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        if (_dashboardNaviItems.length > 1)
+        if (pageRoute?.config?.noNaviRail != true)
           DashboardNavigationRail(
             items: _dashboardNaviItems
                 .map((e) => _createNavigationRailDestination(e))

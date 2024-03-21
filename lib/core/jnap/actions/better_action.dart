@@ -1,3 +1,5 @@
+import 'package:linksys_app/core/utils/logger.dart';
+
 part 'jnap_action.dart';
 
 part 'jnap_action_value.dart';
@@ -618,6 +620,16 @@ void initBetterActions() {
       _JNAPActionValue.getGamingPrioritizationSettings.value;
   _betterActionMap[JNAPAction.setGamingPrioritizationSettings] =
       _JNAPActionValue.setGamingPrioritizationSettings.value;
+  _betterActionMap[JNAPAction.getNodesHealthCheckStatus] =
+      _JNAPActionValue.getHealthCheckStatus.value;
+  _betterActionMap[JNAPAction.getNodesHealthCheckResults] =
+      _JNAPActionValue.getHealthCheckResults.value;
+  _betterActionMap[JNAPAction.runNodesHealthCheck] =
+      _JNAPActionValue.runHealthCheck.value;
+  _betterActionMap[JNAPAction.stopNodesHealCheck] =
+      _JNAPActionValue.stopHealthCheck.value;
+  _betterActionMap[JNAPAction.getNodesSupportedHealthCheckModules] =
+      _JNAPActionValue.getSupportedHealthCheckModules.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

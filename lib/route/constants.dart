@@ -55,6 +55,7 @@ class RoutePath {
   static const nodeLight = 'nodeLight';
   static const changeNodeName = 'changeNodeName';
   static const nodeLightSettings = 'nodeLightSettings';
+  static const addNodes = '/addNodes';
 
   /// device
   static const deviceDetails = 'deviceDetails';
@@ -176,6 +177,7 @@ class RouteNamed {
   static const nodeLight = 'nodeLight';
   static const changeNodeName = 'changeNodeName';
   static const nodeLightSettings = 'nodeLightSettings';
+  static const addNodes = 'addNodes';
 
   ///device
   static const deviceDetails = 'deviceDetails';
