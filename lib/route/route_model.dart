@@ -23,12 +23,14 @@ class LinksysRouteConfig extends Equatable {
     this.ignoreConnectivityEvent = false,
     this.ignoreCloudOfflineEvent = false,
     this.noNaviRail,
+    this.pageAlignment,
   });
 
   final PageWidth? pageWidth;
   final bool ignoreConnectivityEvent;
   final bool ignoreCloudOfflineEvent;
   final bool? noNaviRail;
+  final CrossAxisAlignment? pageAlignment;
 
   @override
   List<Object?> get props => [
@@ -65,6 +67,9 @@ class LinksysRoute extends GoRoute {
           return Container(
             color: Theme.of(context).colorScheme.background,
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment:
+                  config?.pageAlignment ?? CrossAxisAlignment.center,
               children: [
                 const TopBar(),
                 Expanded(

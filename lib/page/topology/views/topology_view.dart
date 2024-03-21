@@ -57,10 +57,9 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
                   loc(context).addNodes,
                   icon: LinksysIcons.add,
                   onTap: () {
-                    // context.pushNamed(RouteNamed.addNodes).then((result) {
-                    //   _showMoveChildNodesModal();
-                    // });
-                    showSuccessSnackBar(context, '123');
+                    context.pushNamed(RouteNamed.addNodes).then((result) {
+                      _showMoveChildNodesModal();
+                    });
                   },
                 )
               ],
