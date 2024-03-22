@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:linksys_app/core/utils/extension.dart';
 import 'package:linksys_app/providers/connectivity/_connectivity.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
@@ -87,7 +88,7 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
             description: state.ipv6WANType,
           ),
           AppPanelWithTrailWidget(
-            title: getAppLocalizations(context).ip_address,
+            title: loc(context).ipAddress.capitalized(),
             description: state.ipv4WANAddress,
             trailing: _checkIpIsRenewIng(state),
           ),
@@ -173,7 +174,7 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppSimplePanel(
-              title: getAppLocalizations(context).ip_address,
+              title: loc(context).ipAddress.capitalized(),
               description:
                   state.masterNode?.connections.firstOrNull?.ipAddress ?? '',
             ),

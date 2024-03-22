@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/utils/extension.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
@@ -115,7 +116,7 @@ class _LocalNetworkSettingsViewState
             // IP address
             AppIPFormField(
               header: AppText.bodyLarge(
-                getAppLocalizations(context).ip_address,
+                loc(context).ipAddress.capitalized(),
               ),
               controller: _hostIpAddressController,
               onFocusChanged: (focused) {

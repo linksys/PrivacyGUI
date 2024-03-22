@@ -9,6 +9,7 @@ import 'package:linksys_app/core/jnap/models/set_lan_settings.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/utils/extension.dart';
 import 'package:linksys_app/page/safe_browsing/providers/safe_browsing_state.dart';
 
 final safeBrowsingProvider =
@@ -38,20 +39,19 @@ final compatibilityMap = [
     modelRegExp: '^LN11',
     compatibleFW: CompatibilityFW(min: '1.0.2.213420'),
   ),
+  CompatibilityItem(modelRegExp: '^LN14'),
 ];
 
 class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {
   @override
   SafeBrowsingState build() => const SafeBrowsingState();
 
-  Future fetchLANSettings({bool forceUpdate = false}) async {
-    // state = state.copyWith(isLoading: true);
-
+  Future fetchLANSettings({bool fetchRemote = false}) async {
     final repo = ref.read(routerRepositoryProvider);
     final lanSettings = await repo
         .send(
           JNAPAction.getLANSettings,
-          cacheLevel: forceUpdate ? CacheLevel.noCache : null,
+          fetchRemote: fetchRemote,
           auth: true,
         )
         .then((value) => RouterLANSettings.fromJson(value.output));
@@ -59,7 +59,6 @@ class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {
     final safeBrowsingType = getSafeBrowsingType(lanSettings);
 
     state = state.copyWith(
-      isLoading: false,
       lanSetting: lanSettings,
       safeBrowsingType: safeBrowsingType,
       hasFortinet: hasFortinet(),
@@ -67,8 +66,6 @@ class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {
   }
 
   Future setSafeBrowsing(SafeBrowsingType safeBrowsingType) async {
-    state = state.copyWith(isLoading: true);
-
     final lanSetting = state.lanSetting;
     if (lanSetting != null) {
       DHCPSettings dhcpSettings;
@@ -110,11 +107,13 @@ class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {
         data: setLanSetting.toMap(),
       )
           .then((value) {
-        fetchLANSettings(forceUpdate: true);
+        fetchLANSettings(fetchRemote: true);
+      }).onError((error, stackTrace) {
+        throw SafeBrowsingError(message: (error as JNAPError).error);
       });
     } else {
       // ERROR
-      state = state.copyWith(isLoading: false);
+      throw SafeBrowsingError(message: 'Lan settings NULL');
     }
   }
 
@@ -145,10 +144,10 @@ class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {
         if (compatibilityItems.isEmpty) return false;
         final compatibleFW = compatibilityItems.first.compatibleFW;
         if (compatibleFW != null) {
-          if (deviceInfo.firmwareVersion.compareTo(compatibleFW.min) >= 0) {
+          if (deviceInfo.firmwareVersion.compareToVersion(compatibleFW.min) >= 0) {
             final max = compatibleFW.max;
             if (max != null) {
-              if (deviceInfo.firmwareVersion.compareTo(max) <= 0) {
+              if (deviceInfo.firmwareVersion.compareToVersion(max) <= 0) {
                 return true;
               }
             } else {
@@ -195,5 +194,13 @@ class CompatibilityFW {
   CompatibilityFW({
     required this.min,
     this.max,
+  });
+}
+
+class SafeBrowsingError extends Error {
+  final String? message;
+
+  SafeBrowsingError({
+    this.message = 'Unknown error',
   });
 }

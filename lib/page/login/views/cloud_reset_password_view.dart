@@ -87,7 +87,7 @@ class _CloudForgotPasswordViewState
             ),
             const AppGap.semiBig(),
             AppFilledButton(
-              getAppLocalizations(context).text_continue,
+              loc(context).textContinue,
               onTap: _localValidatePassword(_passwordController.text)
                   ? () async {
                       // setState(() {
