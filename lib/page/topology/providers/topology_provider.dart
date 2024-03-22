@@ -135,7 +135,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
     bool isRouter = device.isAuthority || device.nodeType != null;
     bool isWiredConnection = device.isWiredConnection();
     int signalStrength =
-        ref.read(deviceManagerProvider.notifier).getWirelessSignal(device);
+        ref.read(deviceManagerProvider.notifier).getWirelessSignalOf(device);
     final data = TopologyModel(
       deviceId: deviceId,
       location: location,
@@ -163,7 +163,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
     bool isRouter = device.isAuthority || device.nodeType != null;
     bool isWiredConnection = device.isWiredConnection();
     int signalStrength =
-        ref.read(deviceManagerProvider.notifier).getWirelessSignal(device);
+        ref.read(deviceManagerProvider.notifier).getWirelessSignalOf(device);
     final data = TopologyModel(
       deviceId: deviceId,
       location: location,

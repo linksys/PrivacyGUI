@@ -1,9 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
-
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
-
 import 'package:linksys_app/core/jnap/models/back_haul_info.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/models/radio_info.dart';
@@ -148,6 +146,7 @@ class DeviceManagerState extends Equatable {
   final RouterWANStatus? wanStatus;
   final List<BackHaulInfoData> backhaulInfoData;
   final int lastUpdateTime;
+
   // Calculated properties
   List<LinksysDevice> get nodeDevices {
     return deviceList.where((device) => device.nodeType != null).toList();

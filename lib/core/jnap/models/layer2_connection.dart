@@ -9,6 +9,7 @@ class Layer2Connection extends Equatable {
   final String macAddress;
   final int negotiatedMbps;
   final WirelessConnection? wireless;
+
   const Layer2Connection({
     required this.macAddress,
     required this.negotiatedMbps,
@@ -32,7 +33,7 @@ class Layer2Connection extends Equatable {
       'macAddress': macAddress,
       'negotiatedMbps': negotiatedMbps,
       'wireless': wireless?.toMap(),
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory Layer2Connection.fromMap(Map<String, dynamic> map) {
@@ -89,7 +90,7 @@ class NodeWirelessLayer2Connections extends Layer2Connection {
       'negotiatedMbps': negotiatedMbps,
       'timestamp': timestamp,
       'wireless': wireless?.toMap(),
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory NodeWirelessLayer2Connections.fromMap(Map<String, dynamic> map) {

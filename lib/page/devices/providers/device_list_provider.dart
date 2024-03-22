@@ -68,11 +68,12 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     manufacturer = device.manufacturer ?? '';
     model = device.modelNumber ?? '';
     operatingSystem = device.operatingSystem ?? '';
-    band = ref.read(deviceManagerProvider.notifier).getWirelessBand(device);
+    band = ref.read(deviceManagerProvider.notifier).getBandConnectedBy(device);
     signalStrength =
-        ref.read(deviceManagerProvider.notifier).getWirelessSignal(device);
+        ref.read(deviceManagerProvider.notifier).getWirelessSignalOf(device);
     type = device.connectedWifiType;
-    final ssid = ref.read(deviceManagerProvider.notifier).getSSID(device);
+    final ssid =
+        ref.read(deviceManagerProvider.notifier).getSsidConnectedBy(device);
     return newState.copyWith(
       deviceId: targetId,
       name: name,

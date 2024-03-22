@@ -74,7 +74,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
             ? 0
             : ref
                 .read(deviceManagerProvider.notifier)
-                .getWirelessSignal(device);
+                .getWirelessSignalOf(device);
         serialNumber = device.unit.serialNumber ?? '';
         modelNumber = device.model.modelNumber ?? '';
         firmwareVersion = device.unit.firmwareVersion ?? '';

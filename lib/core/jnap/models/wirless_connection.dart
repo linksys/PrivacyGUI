@@ -5,16 +5,17 @@ import 'package:equatable/equatable.dart';
 class WirelessConnection extends Equatable {
   final String bssid;
   final bool isGuest;
-  final String radioID;
+  final String? radioID;
   final String band;
   final int signalDecibels;
   final int? txRate;
   final int? rxRate;
   final bool? isMLOCapable;
+
   const WirelessConnection({
     required this.bssid,
     required this.isGuest,
-    required this.radioID,
+    this.radioID,
     required this.band,
     required this.signalDecibels,
     this.txRate,
@@ -54,14 +55,14 @@ class WirelessConnection extends Equatable {
       'txRate': txRate,
       'rxRate': rxRate,
       'isMLOCapable': isMLOCapable,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory WirelessConnection.fromMap(Map<String, dynamic> map) {
     return WirelessConnection(
       bssid: map['bssid'] as String,
       isGuest: map['isGuest'] as bool,
-      radioID: map['radioID'] as String,
+      radioID: map['radioID'] != null ? map['radioID'] as String : null,
       band: map['band'] as String,
       signalDecibels: map['signalDecibels'] as int,
       txRate: map['txRate'] != null ? map['txRate'] as int : null,

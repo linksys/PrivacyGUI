@@ -55,14 +55,13 @@ class WifiListNotifier extends Notifier<List<WifiItem>> {
               }, value: ((e) {
                 return (e as SupportedChannelsForChannelWidths).channels;
               })),
-              numOfDevices: deviceManagerState.mainWifiDevices
-                  .where((device) =>
-                      device.connections.isNotEmpty &&
-                      ref
-                              .read(deviceManagerProvider.notifier)
-                              .getWirelessBand(device) ==
-                          radio.band)
-                  .length,
+              numOfDevices: deviceManagerState.mainWifiDevices.where((device) {
+                final deviceBand = ref
+                    .read(deviceManagerProvider.notifier)
+                    .getBandConnectedBy(device);
+                return device.connections.isNotEmpty &&
+                    deviceBand == radio.band;
+              }).length,
             ))
         .toList();
 
