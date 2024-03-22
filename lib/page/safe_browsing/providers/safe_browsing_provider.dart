@@ -106,8 +106,8 @@ class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {
         cacheLevel: CacheLevel.noCache,
         data: setLanSetting.toMap(),
       )
-          .then((value) {
-        fetchLANSettings(fetchRemote: true);
+          .then((value) async {
+        await fetchLANSettings(fetchRemote: true);
       }).onError((error, stackTrace) {
         throw SafeBrowsingError(message: (error as JNAPError).error);
       });

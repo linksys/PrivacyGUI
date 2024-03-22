@@ -206,6 +206,7 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
         .setSafeBrowsing(
             enableSafeBrowsing ? currentSafeBrowsingType : SafeBrowsingType.off)
         .then((_) {
+      _initCurrentState();
       showSuccessSnackBar(
         context,
         loc(context).settingsSaved,
@@ -229,22 +230,26 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
 
   Future _fetchData() async {
     _notifier.fetchLANSettings().then((_) {
-      setState(() {
-        final stateSafeBrowsingType =
-            ref.read(safeBrowsingProvider).safeBrowsingType;
-        enableSafeBrowsing = !(stateSafeBrowsingType == SafeBrowsingType.off);
-        if (stateSafeBrowsingType == SafeBrowsingType.off) {
-          currentSafeBrowsingType = ref.read(safeBrowsingProvider).hasFortinet
-              ? SafeBrowsingType.fortinet
-              : SafeBrowsingType.openDNS;
-        } else {
-          currentSafeBrowsingType = stateSafeBrowsingType;
-        }
-      });
+      _initCurrentState();
     }).whenComplete(() {
       setState(() {
         isLoading = false;
       });
+    });
+  }
+
+  _initCurrentState() {
+    setState(() {
+      final stateSafeBrowsingType =
+          ref.read(safeBrowsingProvider).safeBrowsingType;
+      enableSafeBrowsing = !(stateSafeBrowsingType == SafeBrowsingType.off);
+      if (stateSafeBrowsingType == SafeBrowsingType.off) {
+        currentSafeBrowsingType = ref.read(safeBrowsingProvider).hasFortinet
+            ? SafeBrowsingType.fortinet
+            : SafeBrowsingType.openDNS;
+      } else {
+        currentSafeBrowsingType = stateSafeBrowsingType;
+      }
     });
   }
 
