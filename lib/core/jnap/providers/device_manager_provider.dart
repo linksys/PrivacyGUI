@@ -83,6 +83,8 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     newState = _getWANStatusModel(newState, getWANStatusData);
     newState = _getBackhaukInfoData(newState, getBackHaulInfoData);
     newState = newState.copyWith(radioInfos: radioMap);
+    newState = _checkUpstream(newState);
+
     return newState.copyWith(
       lastUpdateTime: pollingResult?.lastUpdate,
     );
@@ -116,7 +118,10 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     if (data != null) {
       allDevices = List.from(
         data['devices'],
-      ).map((e) => LinksysDevice.fromMap(e)).toList();
+      )
+          .map((e) => LinksysDevice.fromMap(e))
+          .map((e) => e.copyWith(signalDecibels: getWirelessSignal(e, state)))
+          .toList();
       // Sort the device list in order to correctly build the location map later
       allDevices.sort((device1, device2) {
         if (device1.isAuthority) {
@@ -232,6 +237,17 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     return newState;
   }
 
+  DeviceManagerState _checkUpstream(
+    DeviceManagerState state,
+  ) {
+    return state.copyWith(
+        deviceList: List<LinksysDevice>.from(state.deviceList)
+            .map((e) => e.isAuthority
+                ? e
+                : e.copyWith(upstream: findParent(e.deviceID, state)))
+            .toList());
+  }
+
   // Used in cases where the watched DeviceManager is still empty at very beginning stage
   bool isEmptyState() => state.deviceList.isEmpty;
 
@@ -242,8 +258,10 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     return state.radioInfos[radioID]?.settings.ssid;
   }
 
-  int getWirelessSignal(RawDevice device) {
-    final wirelessConnections = state.wirelessConnections;
+  @Deprecated(
+      'this should be deprecated, singlalDecibels has integrated into #LinksysDevice')
+  int getWirelessSignal(RawDevice device, [DeviceManagerState? currentState]) {
+    final wirelessConnections = (currentState ?? state).wirelessConnections;
     final wirelessData = wirelessConnections[device.getMacAddress()];
     final signalDecibels = wirelessData?.signalDecibels;
     return signalDecibels ?? -1;
@@ -252,8 +270,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   String getWirelessBand(RawDevice device) {
     final wirelessConnections = state.wirelessConnections;
     final wirelessData = wirelessConnections[device.getMacAddress()];
-    final band =
-        (wirelessData?.band ?? _getWirelessBandFromDevices(device)) as String?;
+    final band = (wirelessData?.band ?? _getWirelessBandFromDevices(device));
     return band ?? (device.isWiredConnection() ? 'Ethernet' : '');
   }
 
@@ -264,18 +281,20 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
         ?.band;
   }
 
-  RawDevice? findParent(String deviceID) {
-    final device = state.deviceList
+  LinksysDevice findParent(String deviceID, [DeviceManagerState? current]) {
+    final currentState = current ?? state;
+    final master = currentState.masterDevice;
+    final device = currentState.deviceList
         .firstWhereOrNull((element) => element.deviceID == deviceID);
     if (device == null) {
-      return null;
+      return master;
     }
     if (device.connections.isEmpty) {
-      return null;
+      return master;
     }
     String? parentIpAddr;
     for (var element in device.connections) {
-      for (var backhaul in state.backhaulInfoData) {
+      for (var backhaul in currentState.backhaulInfoData) {
         if (backhaul.ipAddress == element.ipAddress) {
           parentIpAddr = backhaul.parentIPAddress;
           break;
@@ -284,18 +303,20 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     }
     //
     if (parentIpAddr != null) {
-      return state.deviceList.firstWhereOrNull((element) =>
-          element.connections.firstWhereOrNull(
-              (element) => element.ipAddress == parentIpAddr) !=
-          null);
+      return currentState.deviceList.firstWhereOrNull((element) =>
+              element.connections.firstWhereOrNull(
+                  (element) => element.ipAddress == parentIpAddr) !=
+              null) ??
+          master;
     }
     //
     // There usually be only one item
     final parentDeviceId = device.connections.firstOrNull?.parentDeviceID;
     // Count it if this item's parentId is the target node,
     // or if its parentId is null and the target node is master
-    return state.deviceList
-        .firstWhereOrNull((element) => parentDeviceId == element.deviceID);
+    return currentState.deviceList.firstWhereOrNull(
+            (element) => parentDeviceId == element.deviceID) ??
+        master;
   }
 
   // Update the name(location) of nodes and external devices

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:linksys_app/core/jnap/models/device.dart';
 import 'package:linksys_app/core/jnap/models/node_light_settings.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 
 enum BlinkingStatus {
@@ -49,7 +50,7 @@ class NodeDetailState {
   final String location;
   final bool isMaster;
   final bool isOnline;
-  final List<RawDevice> connectedDevices;
+  final List<LinksysDevice> connectedDevices;
   final String upstreamDevice;
   final bool isWiredConnection;
   final int signalStrength;
@@ -86,7 +87,7 @@ class NodeDetailState {
     String? location,
     bool? isMaster,
     bool? isOnline,
-    List<RawDevice>? connectedDevices,
+    List<LinksysDevice>? connectedDevices,
     String? upstreamDevice,
     bool? isWiredConnection,
     int? signalStrength,

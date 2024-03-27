@@ -55,13 +55,11 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
 
     name = device.getDeviceLocation();
     icon = deviceIconTest(device.toMap()).name;
-    final upstream =
-        ref.read(deviceManagerProvider.notifier).findParent(device.deviceID) ??
-            ref.read(deviceManagerProvider).deviceList.first;
+    final upstream = device.upstream;
 
-    upstreamDevice = upstream.getDeviceLocation();
-    upstreamDeviceID = upstream.deviceID;
-    upstreamIcon = routerIconTest(upstream.toMap());
+    upstreamDevice = upstream?.getDeviceLocation() ?? '';
+    upstreamDeviceID = upstream?.deviceID ?? '';
+    upstreamIcon = routerIconTest(upstream?.toMap() ?? {});
     isOnline = device.connections.isNotEmpty;
     isWired = device.isWiredConnection();
     ipv4Address = isOnline ? (device.connections.first.ipAddress ?? '') : '';

@@ -4,6 +4,10 @@ part of 'better_action.dart';
 enum JNAPService {
   autoOnboarding(
       value: 'http://linksys.com/jnap/nodes/autoonboarding/AutoOnboarding'),
+  autoOnboarding2(
+      value: 'http://linksys.com/jnap/nodes/autoonboarding/AutoOnboarding2'),
+  autoOnboarding3(
+      value: 'http://linksys.com/jnap/nodes/autoonboarding/AutoOnboarding3'),
   bluetooth(value: 'http://linksys.com/jnap/nodes/bluetooth/Bluetooth'),
   bluetooth2(value: 'http://linksys.com/jnap/nodes/bluetooth/Bluetooth2'),
   core(value: 'http://linksys.com/jnap/core/Core'),

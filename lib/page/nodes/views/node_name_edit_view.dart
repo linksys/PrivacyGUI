@@ -5,6 +5,7 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
+import 'package:linksys_app/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class NodeNameEditView extends ArgumentsConsumerStatefulView {
@@ -44,7 +45,7 @@ class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
           onTap: () {
             final newLocation = _controller.text;
             if (newLocation.isNotEmpty) {
-              final targetId = ref.read(deviceDetailIdProvider);
+              final targetId = ref.read(nodeDetailIdProvider);
 
               ref.read(deviceManagerProvider.notifier).updateDeviceName(
                     targetId: targetId,
@@ -60,8 +61,7 @@ class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppTextField(
-            headerText:
-                getAppLocalizations(context).name,
+            headerText: getAppLocalizations(context).name,
             controller: _controller,
           )
         ],

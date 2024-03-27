@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/constants/_constants.dart';
-import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/page/nodes/providers/add_nodes_provider.dart';
+import 'package:linksys_app/page/nodes/providers/add_nodes_state.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:linksys_widgets/widgets/bullet_list/bullet_style.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class AddNodesView extends ArgumentsConsumerStatefulView {
   const AddNodesView({
@@ -30,17 +31,63 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
   @override
   void initState() {
     super.initState();
+    ref.read(addNodesProvider.notifier).getAutoOnboardingSettings();
   }
 
   @override
   void dispose() {
     super.dispose();
-
     _controller.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(addNodesProvider);
+    return state.when(
+        error: (error, stackTrace) {
+          // error handling
+          return _contentView();
+        },
+        data: (state) {
+          if (state.nodesSnapshot != null) {
+            return _resultView();
+          } else {
+            return _contentView();
+          }
+        },
+        loading: () => AppFullScreenSpinner(
+              title: 'Searching for Nodes...',
+              text: 'Watch for node lights to change',
+            ));
+  }
+
+  Widget _resultView() {
+    return StyledAppPageView(
+      scrollable: true,
+      title: loc(context).addNodes,
+      child: AppBasicLayout(
+          content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 400,
+          ),
+          const AppGap.regular(),
+          AppTextButton.noPadding(
+            loc(context).try_again_button,
+            onTap: () {},
+          ),
+          const AppGap.big(),
+          AppFilledButton(
+            loc(context).next,
+            onTap: () {},
+          )
+        ],
+      )),
+    );
+  }
+
+  Widget _contentView() {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).addNodes,
@@ -69,7 +116,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           AppFilledButton(
             loc(context).next,
             onTap: () {
-              context.pop();
+              ref.read(addNodesProvider.notifier).startAutoOnboarding();
             },
           )
         ],
@@ -92,69 +139,73 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
             ],
             title:
                 AppText.headlineSmall(loc(context).addNodesLightDifferentColor),
-            content: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.labelLarge(
-                    loc(context).modalLightDifferentSeeRedLightDesc),
-                const AppGap.semiBig(),
-                _createLightInfoTile(
-                  ledBlue,
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppText.labelLarge(loc(context).solidBlue),
-                      AppText.bodyMedium(loc(context).readyForSetup)
-                    ],
+            content: Container(
+              constraints: BoxConstraints(maxWidth: 312),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppText.labelLarge(
+                      loc(context).modalLightDifferentSeeRedLightDesc),
+                  const AppGap.semiBig(),
+                  _createLightInfoTile(
+                    ledBlue,
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText.labelLarge(loc(context).solidBlue),
+                        AppText.bodyMedium(loc(context).readyForSetup)
+                      ],
+                    ),
                   ),
-                ),
-                const AppGap.semiBig(),
-                _createLightInfoTile(
-                  ledPurple,
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppText.labelLarge(loc(context).solidPurple),
-                      AppText.bodyMedium(loc(context).readyForSetup)
-                    ],
+                  const AppGap.semiBig(),
+                  _createLightInfoTile(
+                    ledPurple,
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText.labelLarge(loc(context).solidPurple),
+                        AppText.bodyMedium(loc(context).readyForSetup)
+                      ],
+                    ),
                   ),
-                ),
-                const AppGap.semiBig(),
-                _createLightInfoTile(
-                  ledRed,
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppText.labelLarge(
-                          loc(context).modalLightDifferentSeeRedLight),
-                      AppText.bodyMedium(
-                          loc(context).modalLightDifferentSeeRedLightDesc)
-                    ],
+                  const AppGap.semiBig(),
+                  _createLightInfoTile(
+                    ledRed,
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText.labelLarge(
+                            loc(context).modalLightDifferentSeeRedLight),
+                        AppText.bodyMedium(
+                            loc(context).modalLightDifferentSeeRedLightDesc)
+                      ],
+                    ),
                   ),
-                ),
-                const AppGap.semiBig(),
-                AppText.labelLarge(
-                    loc(context).modalLightDifferentToFactoryReset),
-                const AppGap.semiBig(),
-                AppBulletList(
-                    style: AppBulletStyle.number,
-                    itemSpacing: 24,
-                    children: [
-                      AppStyledText.bold(
-                          loc(context).modalLightDifferentToFactoryResetStep1,
-                          defaultTextStyle:
-                              Theme.of(context).textTheme.bodyMedium!,
-                          tags: const ['b']),
-                      AppStyledText.bold(
-                          loc(context).modalLightDifferentToFactoryResetStep2,
-                          defaultTextStyle:
-                              Theme.of(context).textTheme.bodyMedium!,
-                          tags: const ['b']),
-                    ]),
-              ],
+                  const AppGap.semiBig(),
+                  AppText.labelLarge(
+                      loc(context).modalLightDifferentToFactoryReset),
+                  const AppGap.semiBig(),
+                  AppBulletList(
+                      style: AppBulletStyle.number,
+                      itemSpacing: 24,
+                      children: [
+                        AppStyledText.bold(
+                            loc(context).modalLightDifferentToFactoryResetStep1,
+                            defaultTextStyle:
+                                Theme.of(context).textTheme.bodyMedium!,
+                            tags: const ['b']),
+                        AppStyledText.bold(
+                            loc(context).modalLightDifferentToFactoryResetStep2,
+                            defaultTextStyle:
+                                Theme.of(context).textTheme.bodyMedium!,
+                            tags: const ['b']),
+                      ]),
+                ],
+              ),
             ),
           );
         });

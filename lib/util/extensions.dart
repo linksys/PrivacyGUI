@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:crypto/crypto.dart';
 
@@ -29,6 +30,7 @@ extension StringExt on String {
   String capitalizeWords(String value) {
     return value.split(' ').map((element) => capitalize(element)).join(' ');
   }
+
   String capitalizeSentence(String value) {
     return value.split('. ').map((element) => capitalize(element)).join('. ');
   }
@@ -54,4 +56,16 @@ extension DurationExt on Duration {
     String twoDigitSeconds = twoDigits(inSeconds.remainder(60).abs());
     return "$negativeSign${twoDigits(inHours)}:$twoDigitMinutes:$twoDigitSeconds";
   }
+}
+
+extension LocaleExt on Locale {
+  String get displayText => switch ((languageCode, countryCode, scriptCode)) {
+        ('en') => 'English (United States)',
+        ('ja', null, null) => '日本語',
+        ('fr', null, null) => 'Francais (France)',
+        ('ko', null, null) => 'Korean',
+        ('zh', null, 'Hans') => '簡體中文',
+        ('zh', null, 'Hant') => '繁體中文',
+        _ => 'English (United States)',
+      };
 }

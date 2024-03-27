@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
 
-
 final externalDeviceDetailProvider =
     NotifierProvider<ExternalDeviceDetailNotifier, ExternalDeviceDetailState>(
   () => ExternalDeviceDetailNotifier(),
@@ -10,7 +9,7 @@ final externalDeviceDetailProvider =
 class ExternalDeviceDetailNotifier extends Notifier<ExternalDeviceDetailState> {
   @override
   ExternalDeviceDetailState build() {
-    final filteredDeviceList = ref.watch(filteredDeviceListProvider);
+    final filteredDeviceList = ref.watch(deviceListProvider).devices;
     final targetId = ref.watch(deviceDetailIdProvider);
     return createState(filteredDeviceList, targetId);
   }

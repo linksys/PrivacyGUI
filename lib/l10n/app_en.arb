@@ -391,7 +391,6 @@
   "no_internet_alternative": "Or, your ISP settings require something else",
   "no_internet_connection_title": "No internet connection",
   "no_router_title": "It's lonely in here... no Linksys routers are setup with this account",
-  "node_detail_blink_node_light_btn": "Blink node light",
   "node_detail_label_connected_devices": "Connected devices",
   "node_detail_label_firmware_version": "Firmware version",
 
@@ -764,6 +763,19 @@
   "modalLightDifferentToFactoryResetStep1": "<b>Press and hold the Node's reset button for 10 seconds.</b> The light will turn red, fade until it's completely off, and turn red again.",
   "modalLightDifferentToFactoryResetStep2": "<b>Afterwards, the node will restart.</b> The light will pulse as it starts up, and turn solid when it's ready.",
   "modalMoveChildNodesTitle": "Go ahead and move child nodes",
-  "modalMoveChildNodesDesc": "Keep the Router and Mesh Nodes 1-2 rooms apart and out in the open to receive good Wi-Fi signals."
-
+  "modalMoveChildNodesDesc": "Keep the Router and Mesh Nodes 1-2 rooms apart and out in the open to receive good Wi-Fi signals.",
+  "router": "Router",
+  "info": "Info",
+  "nodeDetailBlinkNodeLightBtn": "Blink node light",
+  "nodeDetailBlinkingCounting": "({count}s) Blinking... <u>Stop</u>",
+  "@nodeDetailBlinkingCounting": {
+    "description": "Blinking count down",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "20"
+      }
+    }
+  },
+  "moreInfo": "More info"
 }

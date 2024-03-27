@@ -14,6 +14,7 @@ import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
 import 'package:linksys_app/page/nodes/_nodes.dart';
+import 'package:linksys_app/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String blinkingDeviceId = 'blinkDeviceId';
@@ -26,7 +27,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
   @override
   NodeDetailState build() {
     final deviceManagerState = ref.watch(deviceManagerProvider);
-    final targetId = ref.watch(deviceDetailIdProvider);
+    final targetId = ref.watch(nodeDetailIdProvider);
     return createState(deviceManagerState, targetId);
   }
 
@@ -43,7 +44,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     var location = '';
     var isMaster = false;
     var isOnline = false;
-    var connectedDevices = <RawDevice>[];
+    var connectedDevices = <LinksysDevice>[];
     var upstreamDevice = '';
     var isWired = false;
     var signalStrength = 0;
@@ -65,7 +66,9 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
         isOnline = device.connections.isNotEmpty;
         upstreamDevice = isMaster
             ? 'INTERNET'
-            : (_getUpstream(device) ?? master?.getDeviceLocation() ?? '');
+            : (device.upstream?.getDeviceLocation() ??
+                master?.getDeviceLocation() ??
+                '');
         isWired = device.isWiredConnection();
         signalStrength = isWired
             ? 0
@@ -101,13 +104,6 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     );
   }
 
-  String? _getUpstream(RawDevice device) {
-    final parent =
-        ref.read(deviceManagerProvider.notifier).findParent(device.deviceID);
-    final upstreamLocation = parent?.getDeviceLocation();
-    return upstreamLocation;
-  }
-
   Future<void> getLEDLight() async {
     ref.read(deviceManagerProvider.notifier).getLEDLight().then((value) {
       state = state.copyWith(nodeLightSettings: value);
@@ -138,7 +134,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
   Future<void> toggleBlinkNode() async {
     final prefs = await SharedPreferences.getInstance();
     final blinkDevice = prefs.get(blinkingDeviceId);
-    final deviceId = ref.read(deviceDetailIdProvider);
+    final deviceId = ref.read(nodeDetailIdProvider);
     if (blinkDevice == null) {
       state = state.copyWith(blinkingStatus: BlinkingStatus.blinking);
       startBlinkNodeLED(deviceId).then((response) {

@@ -1,18 +1,18 @@
-import 'package:adaptive_dialog/adaptive_dialog.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_app/core/utils/nodes.dart';
 import 'package:linksys_app/core/utils/wifi.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
+import 'package:linksys_app/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:linksys_app/page/topology/_topology.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
@@ -43,6 +43,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
 
     final isShowingDeviceChain =
         ref.watch(topologySelectedIdProvider).isNotEmpty;
+    final autoOnboarding = isServiceSupport(JNAPService.autoOnboarding);
     return LayoutBuilder(builder: (context, constraint) {
       return _isLoading
           ? AppFullScreenSpinner(
@@ -53,15 +54,16 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
               padding: EdgeInsets.zero,
               title: loc(context).node,
               actions: [
-                AppTextButton.noPadding(
-                  loc(context).addNodes,
-                  icon: LinksysIcons.add,
-                  onTap: () {
-                    context.pushNamed(RouteNamed.addNodes).then((result) {
-                      _showMoveChildNodesModal();
-                    });
-                  },
-                )
+                if (autoOnboarding)
+                  AppTextButton.noPadding(
+                    loc(context).addNodes,
+                    icon: LinksysIcons.add,
+                    onTap: () {
+                      context.pushNamed(RouteNamed.addNodes).then((result) {
+                        _showMoveChildNodesModal();
+                      });
+                    },
+                  )
               ],
               child: AppBasicLayout(
                 content: Column(
@@ -180,7 +182,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
   }
 
   void onNodeTap(BuildContext context, WidgetRef ref, RouterTreeNode node) {
-    ref.read(deviceDetailIdProvider.notifier).state = node.data.deviceId;
+    ref.read(nodeDetailIdProvider.notifier).state = node.data.deviceId;
     if (node is DeviceTopologyNode) {
       context.pop();
     } else if (node.data.isOnline) {

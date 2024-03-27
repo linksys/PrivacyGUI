@@ -7,6 +7,7 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
 import 'package:linksys_app/page/nodes/_nodes.dart';
+import 'package:linksys_app/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
@@ -69,7 +70,7 @@ class __ChangeNodeNameViewState extends ConsumerState<ChangeNodeNameView> {
 
   void _checkInputData() {
     if (nameController.text.isNotEmpty) {
-      final targetId = ref.read(deviceDetailIdProvider);
+      final targetId = ref.read(nodeDetailIdProvider);
 
       ref
           .read(deviceManagerProvider.notifier)

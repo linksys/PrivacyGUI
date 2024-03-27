@@ -9,6 +9,7 @@ import 'package:linksys_app/core/jnap/models/set_lan_settings.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/safe_browsing/providers/safe_browsing_state.dart';
 
 final safeBrowsingProvider =
@@ -25,16 +26,16 @@ final DhcpOption openDNSSetting = DhcpOption(
   dnsServer2: '208.67.220.123',
 );
 final compatibilityMap = [
-  CompatibilityItem(
+  const CompatibilityItem(
     modelRegExp: '^MX62',
     compatibleFW: CompatibilityFW(min: '1.0.5.213402'),
   ),
-  CompatibilityItem(
+  const CompatibilityItem(
     modelRegExp: '^MBE70',
     compatibleFW: CompatibilityFW(min: '1.0.4.213257'),
   ),
-  CompatibilityItem(modelRegExp: '^MBE71'),
-  CompatibilityItem(
+  const CompatibilityItem(modelRegExp: '^MBE71'),
+  const CompatibilityItem(
     modelRegExp: '^LN11',
     compatibleFW: CompatibilityFW(min: '1.0.2.213420'),
   ),
@@ -145,6 +146,7 @@ class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {
         if (compatibilityItems.isEmpty) return false;
         final compatibleFW = compatibilityItems.first.compatibleFW;
         if (compatibleFW != null) {
+          logger.d('min version ${compatibleFW.min}');
           if (deviceInfo.firmwareVersion.compareTo(compatibleFW.min) >= 0) {
             final max = compatibleFW.max;
             if (max != null) {
@@ -179,20 +181,20 @@ class DhcpOption {
 }
 
 class CompatibilityItem {
-  String modelRegExp;
-  CompatibilityFW? compatibleFW;
+  final String modelRegExp;
+  final CompatibilityFW? compatibleFW;
 
-  CompatibilityItem({
+  const CompatibilityItem({
     required this.modelRegExp,
     this.compatibleFW,
   });
 }
 
 class CompatibilityFW {
-  String min;
-  String? max;
+  final String min;
+  final String? max;
 
-  CompatibilityFW({
+  const CompatibilityFW({
     required this.min,
     this.max,
   });

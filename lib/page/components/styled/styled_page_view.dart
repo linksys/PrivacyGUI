@@ -30,8 +30,9 @@ class PageMenuItem {
   });
 }
 
+const double kDefaultToolbarHeight = 80;
+
 class StyledAppPageView extends ConsumerWidget {
-  static const double kDefaultToolbarHeight = 80;
   final String? title;
   final Widget child;
   final double toolbarHeight;

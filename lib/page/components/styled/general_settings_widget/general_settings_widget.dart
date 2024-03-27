@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/styled/general_settings_widget/language_tile.dart';
 import 'package:linksys_app/page/components/styled/general_settings_widget/theme_tile.dart';
 import 'package:linksys_app/providers/app_settings/app_settings_provider.dart';
 import 'package:linksys_app/providers/auth/_auth.dart';
+import 'package:linksys_app/util/extensions.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/buttons/popup_button.dart';
@@ -24,8 +27,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
     final loginType =
         ref.watch(authProvider.select((state) => state.value?.loginType)) ??
             LoginType.none;
-    final locale =
-        ref.watch(appSettingsProvider.select((value) => value.locale));
+
     return AppPopupButton(
       button: const Icon(
         LinksysIcons.person,
@@ -33,64 +35,83 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
       ),
       borderRadius: const BorderRadius.all(Radius.circular(10)),
       backgroundColor: Theme.of(context).colorScheme.background,
-      builder: (controller) => Container(
-        constraints: const BoxConstraints(minWidth: 200, maxWidth: 240),
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            LanguageTile(
-              locale: locale ?? const Locale('en', 'US'),
-              onTap: () {
-                controller.close();
-                showModalBottomSheet(
-                    context: context,
-                    builder: (context) {
-                      return _localeList();
-                    });
-              },
-            ),
-            const AppGap.regular(),
-            const ThemeTile(),
-            const AppGap.regular(),
-            ..._displayAdditional(loginType),
-            FutureBuilder(
-                future:
-                    PackageInfo.fromPlatform().then((value) => value.version),
-                initialData: '-',
-                builder: (context, data) {
-                  return AppText.bodySmall(
-                    'version ${data.data}',
-                  );
-                }),
-          ],
-        ),
-      ),
+      builder: (controller) {
+        final locale =
+            ref.watch(appSettingsProvider.select((value) => value.locale));
+        return Container(
+          constraints: const BoxConstraints(minWidth: 200, maxWidth: 240),
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: LanguageTile(
+                  locale: locale ?? const Locale('en', 'US'),
+                  onTap: () {
+                    controller.close();
+                    showModalBottomSheet(
+                        context: context,
+                        builder: (context) {
+                          return _localeList();
+                        });
+                  },
+                ),
+              ),
+              const AppGap.regular(),
+              const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: ThemeTile(),
+              ),
+              const AppGap.regular(),
+              ..._displayAdditional(loginType),
+              FutureBuilder(
+                  future:
+                      PackageInfo.fromPlatform().then((value) => value.version),
+                  initialData: '-',
+                  builder: (context, data) {
+                    return AppText.bodySmall(
+                      'version ${data.data}',
+                    );
+                  }),
+            ],
+          ),
+        );
+      },
     );
   }
 
   List<Widget> _displayAdditional(LoginType loginType) {
     if (loginType != LoginType.none) {
       return [
-        AppTextButton(
-          'Linksys Pledges',
-          onTap: () {},
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: AppTextButton(
+            'Linksys Pledges',
+            onTap: () {},
+          ),
         ),
-        AppTextButton(
-          'Privacy & Iegal documents',
-          onTap: () {},
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: AppTextButton(
+            'Privacy & Iegal documents',
+            onTap: () {},
+          ),
         ),
         const Divider(
           thickness: 1,
         ),
-        const AppText.labelMedium('Router'),
-        AppTextButton(
-          'Log out',
-          onTap: () {
-            ref.read(authProvider.notifier).logout();
-          },
+        // const AppText.labelMedium('Router'),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: AppTextButton(
+            'Log out',
+            onTap: () {
+              ref.read(authProvider.notifier).logout();
+            },
+          ),
         ),
         const AppGap.regular(),
       ];
@@ -119,9 +140,10 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
               return ListTile(
                 hoverColor:
                     Theme.of(context).colorScheme.background.withOpacity(.5),
-                title: AppText.labelLarge(locale.toString()),
+                title: AppText.labelLarge(locale.displayText),
                 onTap: () {
                   saveLocale(locale);
+                  context.pop();
                 },
               );
             }),

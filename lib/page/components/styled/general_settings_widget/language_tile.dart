@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/util/extensions.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
@@ -12,7 +13,7 @@ class LanguageTile extends ConsumerStatefulWidget {
     super.key,
     this.onTap,
     required this.locale,
-    this.icon = LinksysIcons.public,
+    this.icon = LinksysIcons.language,
   });
 
   @override
@@ -34,13 +35,7 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
       children: [
         Icon(widget.icon),
         const AppGap.regular(),
-        if (locale.countryCode != null) ...[
-          AppText.labelMedium(locale.countryCode ?? ''),
-          const AppGap.regular(),
-          const AppText.labelMedium('|'),
-          const AppGap.regular(),
-        ],
-        AppText.labelMedium(locale.languageCode),
+        AppText.labelMedium(locale.displayText),
       ],
     );
   }

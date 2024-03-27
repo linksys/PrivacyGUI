@@ -81,10 +81,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
         if (router != null) {
           // A child device
           // Check if there is a parent
-          final parentId = ref
-              .read(deviceManagerProvider.notifier)
-              .findParent(device.deviceID)
-              ?.deviceID;
+          final parentId = device.upstream?.deviceID;
           if (parentId != null) {
             // Parent exists
             final parentNode = nodeMap[parentId];
@@ -105,10 +102,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
           if (device.deviceID == selectId) {
             final deviceNode = _createDeviceTopologyNode(device);
             // Check if there is a parent
-            final parentId = ref
-                .read(deviceManagerProvider.notifier)
-                .findParent(device.deviceID)
-                ?.deviceID;
+            final parentId = device.upstream?.deviceID;
             if (parentId != null) {
               // Parent exists
               final parentNode = nodeMap[parentId];

@@ -1,5 +1,3 @@
-import 'package:linksys_app/core/utils/logger.dart';
-
 part 'jnap_action.dart';
 
 part 'jnap_action_value.dart';
@@ -14,6 +12,12 @@ void _updateBetterActions(JNAPService service) {
   switch (service) {
     case JNAPService.autoOnboarding:
       break;
+    case JNAPService.autoOnboarding2:
+      _betterActionMap[JNAPAction.getBluetoothAutoOnboardingStatus] =
+          _JNAPActionValue.getBluetoothAutoOnboardingStatus2.value;
+    case JNAPService.autoOnboarding3:
+      _betterActionMap[JNAPAction.startBlueboothAutoOnboarding] =
+          _JNAPActionValue.startBluetoothAutoOnboarding2.value;
     case JNAPService.bluetooth:
       break;
     case JNAPService.bluetooth2:
@@ -568,7 +572,9 @@ void initBetterActions() {
       _JNAPActionValue.btRequestScanUnconfigured2.value;
   _betterActionMap[JNAPAction.getBluetoothAutoOnboardingSettings] =
       _JNAPActionValue.getBluetoothAutoOnboardingSettings.value;
-  _betterActionMap[JNAPAction.getBlueboothAutoOnboardingStatus] =
+  _betterActionMap[JNAPAction.setBluetoothAutoOnboardingSettings] =
+      _JNAPActionValue.setBluetoothAutoOnboardingSettings.value;
+  _betterActionMap[JNAPAction.getBluetoothAutoOnboardingStatus] =
       _JNAPActionValue.getBluetoothAutoOnboardingStatus.value;
   _betterActionMap[JNAPAction.startBlueboothAutoOnboarding] =
       _JNAPActionValue.startBluetoothAutoOnboarding.value;

@@ -15,7 +15,7 @@ class StyledAppTabPageView extends ConsumerWidget {
   final VoidCallback? onBackTap;
   final StyledBackState backState;
   final List<Widget>? actions;
-  final List<AppTab> tabs;
+  final List<Widget> tabs;
   final Widget? headerContent;
   final List<Widget> tabContentViews;
   final bool pinned;
@@ -44,8 +44,8 @@ class StyledAppTabPageView extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) =>
-      AppPageView.noNavigationBar(
+  Widget build(BuildContext context, WidgetRef ref) => AppPageView(
+        // appBar: _buildAppBar(context, ref),
         padding: const EdgeInsets.only(),
         child: AppTabLayout(
           flexibleSpace: FlexibleSpaceBar(

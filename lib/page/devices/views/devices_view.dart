@@ -9,6 +9,7 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
 import 'package:linksys_app/page/devices/extensions/icon_device_category_ext.dart';
+import 'package:linksys_app/page/devices/views/device_list_widget.dart';
 import 'package:linksys_app/page/devices/views/devices_filter_widget.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
@@ -93,11 +94,26 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
                       // ),
                     ],
                   )),
-              content: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: count,
-                itemBuilder: (context, index) {
-                  return _buildCell(index, filteredDeviceList);
+              content: DeviceListWidget(
+                devices: filteredDeviceList,
+                isEdit: _isEdit,
+                isItemSelected: (item) => _selectedList.contains(item.deviceId),
+                // itemBuilder: (context, index) {
+                //   return _buildCell(index, filteredDeviceList);
+                // },
+                onItemSelected: (value, item) {
+                  setState(() {
+                    if (value) {
+                      _selectedList.add(item.deviceId);
+                    } else {
+                      _selectedList.remove(item.deviceId);
+                    }
+                  });
+                },
+                onItemClick: (item) {
+                  ref.read(deviceDetailIdProvider.notifier).state =
+                      item.deviceId;
+                  context.pushNamed(RouteNamed.deviceDetails);
                 },
               ),
             ),

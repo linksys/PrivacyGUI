@@ -309,12 +309,21 @@ enum _JNAPActionValue {
   getBluetoothAutoOnboardingSettings(
       value:
           'http://linksys.com/jnap/nodes/autoonboarding/GetBluetoothAutoOnboardingSettings'),
+  setBluetoothAutoOnboardingSettings(
+      value:
+          'http://linksys.com/jnap/nodes/autoonboarding/SetBluetoothAutoOnboardingSettings'),
   getBluetoothAutoOnboardingStatus(
       value:
           'http://linksys.com/jnap/nodes/autoonboarding/GetBluetoothAutoOnboardingStatus'),
+  getBluetoothAutoOnboardingStatus2(
+      value:
+          'http://linksys.com/jnap/nodes/autoonboarding/GetBluetoothAutoOnboardingStatus2'),
   startBluetoothAutoOnboarding(
       value:
           'http://linksys.com/jnap/nodes/autoonboarding/StartBluetoothAutoOnboarding'),
+  startBluetoothAutoOnboarding2(
+      value:
+          'http://linksys.com/jnap/nodes/autoonboarding/StartBluetoothAutoOnboarding2'),
   btGetScanUnconfiguredResult2(
       value:
           'http://linksys.com/jnap/nodes/bluetooth/BTGetScanUnconfiguredResult2'),

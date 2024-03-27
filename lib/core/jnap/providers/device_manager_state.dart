@@ -13,6 +13,9 @@ import 'package:linksys_app/core/jnap/models/wirless_connection.dart';
 class LinksysDevice extends RawDevice {
   final List<LinksysDevice> connectedDevices;
   final WifiConnectionType connectedWifiType;
+  final int? signalDecibels;
+  final LinksysDevice? upstream;
+  
 
   const LinksysDevice({
     required super.connections,
@@ -29,24 +32,29 @@ class LinksysDevice extends RawDevice {
     super.nodeType,
     this.connectedDevices = const [],
     this.connectedWifiType = WifiConnectionType.main,
+    this.signalDecibels,
+    this.upstream,
   });
 
   @override
-  LinksysDevice copyWith(
-      {List<RawDeviceConnection>? connections,
-      List<RawDeviceProperty>? properties,
-      RawDeviceUnit? unit,
-      String? deviceID,
-      int? maxAllowedProperties,
-      RawDeviceModel? model,
-      bool? isAuthority,
-      int? lastChangeRevision,
-      String? friendlyName,
-      List<RawDeviceKnownInterface>? knownInterfaces,
-      List<String>? knownMACAddresses,
-      String? nodeType,
-      List<LinksysDevice>? connectedDevices,
-      WifiConnectionType? connectedWifiType}) {
+  LinksysDevice copyWith({
+    List<RawDeviceConnection>? connections,
+    List<RawDeviceProperty>? properties,
+    RawDeviceUnit? unit,
+    String? deviceID,
+    int? maxAllowedProperties,
+    RawDeviceModel? model,
+    bool? isAuthority,
+    int? lastChangeRevision,
+    String? friendlyName,
+    List<RawDeviceKnownInterface>? knownInterfaces,
+    List<String>? knownMACAddresses,
+    String? nodeType,
+    List<LinksysDevice>? connectedDevices,
+    WifiConnectionType? connectedWifiType,
+    int? signalDecibels,
+    LinksysDevice? upstream,
+  }) {
     return LinksysDevice(
       connections: connections ?? this.connections,
       properties: properties ?? this.properties,
@@ -62,6 +70,8 @@ class LinksysDevice extends RawDevice {
       nodeType: nodeType ?? this.nodeType,
       connectedDevices: connectedDevices ?? this.connectedDevices,
       connectedWifiType: connectedWifiType ?? this.connectedWifiType,
+      signalDecibels: signalDecibels ?? this.signalDecibels,
+      upstream: upstream ?? this.upstream,
     );
   }
 
@@ -71,6 +81,8 @@ class LinksysDevice extends RawDevice {
       ...super.toMap(),
       'connectedDevices': connectedDevices.map((e) => e.toMap()).toList(),
       'connectedWifiType': connectedWifiType.value,
+      'signalDecibels': signalDecibels,
+      'upstream': upstream?.toMap(),
     }..removeWhere((key, value) => value == null);
   }
 
@@ -116,6 +128,8 @@ class LinksysDevice extends RawDevice {
                   (element) => element.value == map['connectedWifiType']) ??
               WifiConnectionType.main
           : WifiConnectionType.main,
+      signalDecibels: map['signalDecibels'],
+      upstream: map['upstream'],
     );
   }
 

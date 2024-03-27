@@ -6,8 +6,9 @@ enum JNAPAction {
   transaction,
   // auto onboarding
   startBlueboothAutoOnboarding,
-  getBlueboothAutoOnboardingStatus,
+  getBluetoothAutoOnboardingStatus,
   getBluetoothAutoOnboardingSettings,
+  setBluetoothAutoOnboardingSettings,
   // bluetooth
   btGetScanUnconfiguredResult,
   btRequestScanUnconfigured,
