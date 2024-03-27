@@ -655,6 +655,7 @@
   "safeBrowsing": "Safe Browsing",
   "familyTime": "Family Time",
   "advancedSettings": "Advanced Settings",
+  "device": "Device",
   "devices": "Devices",
   "filters": "Filters",
   "nDevices": "{count, plural, other{{count} devices} zero{No devices} one{1 device}}",

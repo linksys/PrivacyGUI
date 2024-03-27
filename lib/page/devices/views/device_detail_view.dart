@@ -14,7 +14,6 @@ import 'package:linksys_widgets/widgets/card/device_info_card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
-
 class DeviceDetailView extends ArgumentsConsumerStatefulView {
   const DeviceDetailView({
     Key? key,
@@ -56,15 +55,12 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             children: [
               _avatarCard(state),
               const AppGap.regular(),
-              _connectionCard(state),
-              const AppGap.regular(),
-              _unitCard(state),
-              const Spacer(),
+              _extraInfoSection(state),
             ],
           ),
         ),
         const AppGap.regular(),
-        Expanded(child: _detailCard(state))
+        Expanded(child: _detailSection(state))
       ],
     );
   }
@@ -75,135 +71,160 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         _avatarCard(state),
-        _detailCard(state),
-        _connectionCard(state),
-        _unitCard(state),
+        _detailSection(state),
+        _extraInfoSection(state),
       ],
     );
   }
 
   Widget _avatarCard(ExternalDeviceDetailState state) {
     return AppCard(
-      child: SizedBox(
-        height: 160,
-        child: Column(
-          children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: AppIconButton(
-                icon: LinksysIcons.edit,
-                onTap: () {},
-              ),
+      padding: const EdgeInsets.all(Spacing.semiSmall),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            height: 120,
+            child: Icon(
+              IconDeviceCategoryExt.resloveByName(state.item.icon),
+              size: 40,
             ),
-            Expanded(
-              child: Icon(
-                IconDeviceCategoryExt.resloveByName(state.item.icon),
-                size: 40,
-              ),
-            )
-          ],
-        ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 8, 16),
+            child: Row(
+              children: [
+                AppText.labelLarge(state.item.name),
+                const Spacer(),
+                AppIconButton(
+                  icon: LinksysIcons.edit,
+                  onTap: () {},
+                )
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.bodySmall(loc(context).connectTo),
+                const AppGap.small(),
+                AppText.labelLarge(state.item.upstreamDevice),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            child: Row(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.bodySmall(loc(context).signalStrength),
+                    const AppGap.small(),
+                    AppText.labelLarge(
+                      _formatEmptyValue('${state.item.signalStrength} dBM'),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Icon(getWifiSignalIconData(
+                  context,
+                  state.item.isWired ? null : state.item.signalStrength,
+                )),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _connectionCard(ExternalDeviceDetailState state) {
-    return AppCard(
-        child: Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        AppDeviceInfoCard(
-          title: loc(context).connectTo,
-          description: _checkEmptyValue(state.item.upstreamDevice),
-          showBorder: false,
-          padding: const EdgeInsets.symmetric(vertical: Spacing.semiSmall),
-        ),
-        const Divider(
-          height: 8,
-          thickness: 1,
-        ),
-        AppDeviceInfoCard(
-          title: loc(context).wifi,
-          description:
-              _checkEmptyValue('${state.item.ssid} (${state.item.band})'),
-          showBorder: false,
-          padding: const EdgeInsets.symmetric(vertical: Spacing.semiSmall),
-        ),
-        const Divider(
-          height: 8,
-          thickness: 1,
-        ),
-        AppDeviceInfoCard(
-          title: loc(context).signalStrength,
-          description: _checkEmptyValue('${state.item.signalStrength} dBM'),
-          showBorder: false,
-          padding: const EdgeInsets.symmetric(vertical: Spacing.semiSmall),
-          trailing: Icon(getWifiSignalIconData(
-            context,
-            state.item.isWired ? null : state.item.signalStrength,
-          )),
-        ),
-      ],
-    ));
-  }
-
-  Widget _unitCard(ExternalDeviceDetailState state) {
-    return AppCard(
-        child: Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        AppDeviceInfoCard(
-          showBorder: false,
-          padding: const EdgeInsets.symmetric(vertical: Spacing.semiSmall),
-          title: loc(context).manufacturer,
-          description: _checkEmptyValue(state.item.manufacturer),
-        ),
-      ],
-    ));
-  }
-
-  Widget _detailCard(ExternalDeviceDetailState state) {
+  Widget _detailSection(ExternalDeviceDetailState state) {
     return Column(
       children: [
         AppDeviceInfoCard(
-          title: loc(context).deviceName,
-          description: _checkEmptyValue(state.item.name),
-          trailing: AppIconButton(
-            icon: LinksysIcons.edit,
-            onTap: () {},
+          padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.semiBig,
+            vertical: Spacing.regular,
           ),
+          title: loc(context).wifi,
+          description:
+              _formatEmptyValue('${state.item.ssid} (${state.item.band})'),
         ),
         AppDeviceInfoCard(
+          padding: const EdgeInsets.fromLTRB(
+            Spacing.semiBig,
+            Spacing.regular,
+            Spacing.small,
+            Spacing.regular,
+          ),
           title: loc(context).ipAddress,
-          description: _checkEmptyValue(state.item.ipv4Address),
+          description: _formatEmptyValue(state.item.ipv4Address),
           trailing: AppTextButton(
             loc(context).reserveDHCP,
             onTap: () {},
           ),
         ),
         AppDeviceInfoCard(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.semiBig,
+            vertical: Spacing.regular,
+          ),
           title: loc(context).macAddress,
-          description: _checkEmptyValue(state.item.macAddress),
+          description: _formatEmptyValue(state.item.macAddress),
         ),
         AppDeviceInfoCard(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.semiBig,
+            vertical: Spacing.regular,
+          ),
           title: loc(context).ipv6Address,
-          description: _checkEmptyValue(state.item.ipv6Address),
+          description: _formatEmptyValue(state.item.ipv6Address),
         ),
       ],
     );
   }
 
-  String _checkEmptyValue(String? value) {
-    if (value == null) {
-      return '--';
-    }
-    if (value.isEmpty) {
-      return '--';
-    }
-    return value;
+  Widget _extraInfoSection(ExternalDeviceDetailState state) {
+    return AppCard(
+        child: Column(
+      // crossAxisAlignment: CrossAxisAlignment.start,
+      // mainAxisSize: MainAxisSize.min,
+      children: [
+        AppDeviceInfoCard(
+          showBorder: false,
+          padding: const EdgeInsets.fromLTRB(
+            Spacing.semiSmall,
+            0,
+            Spacing.semiSmall,
+            Spacing.semiSmall,
+          ),
+          title: loc(context).manufacturer,
+          description: _formatEmptyValue(state.item.manufacturer),
+        ),
+        const Divider(
+          height: 8,
+          thickness: 1,
+        ),
+        AppDeviceInfoCard(
+          showBorder: false,
+          padding: const EdgeInsets.fromLTRB(
+            Spacing.semiSmall,
+            Spacing.semiSmall,
+            Spacing.semiSmall,
+            0,
+          ),
+          title: loc(context).device,
+          description: state.item.model,
+        ),
+      ],
+    ));
+  }
+
+  String _formatEmptyValue(String? value) {
+    return (value == null || value.isEmpty) ? '--' : value;
   }
 }
