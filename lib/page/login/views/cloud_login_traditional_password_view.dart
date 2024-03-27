@@ -126,7 +126,7 @@ class _LoginTraditionalPasswordViewState
             
             const Spacer(),
             AppFilledButton.fillWidth(
-              getAppLocalizations(context).text_continue,
+              loc(context).textContinue,
               key: const Key('login_password_view_button_continue'),
               onTap: passwordController.text.isEmpty
                   ? null

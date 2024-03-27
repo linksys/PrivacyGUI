@@ -33,6 +33,7 @@ final dashboardRoute = ShellRoute(
           LinksysRoute(
             name: RouteNamed.safeBrowsing,
             path: RoutePath.safeBrowsing,
+            config: const LinksysRouteConfig(pageAlignment: CrossAxisAlignment.start),
             builder: (context, state) => const SafeBrowsingView(),
           )
         ]),

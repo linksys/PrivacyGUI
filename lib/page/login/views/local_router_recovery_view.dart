@@ -94,7 +94,7 @@ class _LocalRouterRecoveryViewState
                 ),
                 const AppGap.big(),
                 AppFilledButton(
-                  loc(context).text_continue,
+                  loc(context).textContinue,
                   onTap: userInputCode.length == 5
                       ? () {
                           _validateCode(userInputCode);
