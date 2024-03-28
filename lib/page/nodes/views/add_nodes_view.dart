@@ -1,19 +1,23 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/bullet_list/bullet_list.dart';
+import 'package:linksys_widgets/widgets/bullet_list/bullet_style.dart';
+import 'package:linksys_widgets/widgets/dialogs/multiple_page_alert_dialog.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/nodes/providers/add_nodes_provider.dart';
-import 'package:linksys_app/page/nodes/providers/add_nodes_state.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/bullet_list/bullet_list.dart';
-import 'package:linksys_widgets/widgets/bullet_list/bullet_style.dart';
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:linksys_app/page/nodes/views/light_different_color_modal.dart';
+import 'package:linksys_app/page/nodes/views/light_info_tile.dart';
 
 class AddNodesView extends ArgumentsConsumerStatefulView {
   const AddNodesView({
@@ -56,8 +60,8 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           }
         },
         loading: () => AppFullScreenSpinner(
-              title: 'Searching for Nodes...',
-              text: 'Watch for node lights to change',
+              title: loc(context).addNodesSearchingNodes,
+              text: loc(context).addNodesSearchingNodesDesc,
             ));
   }
 
@@ -69,6 +73,20 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          AppStyledText.link(
+            loc(context).addNodesNoNodesFound,
+            defaultTextStyle: Theme.of(context)
+                .textTheme
+                .bodyMedium!
+                .copyWith(color: Theme.of(context).colorScheme.error),
+            color: Theme.of(context).colorScheme.primary,
+            tags: const ['l'],
+            callbackTags: {
+              'l': (String? text, Map<String?, String?> attrs) {
+                _showTroubleshootNoNodesFoundModal();
+              }
+            },
+          ),
           Container(
             height: 400,
           ),
@@ -100,9 +118,9 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
               tags: const ['b']),
           const AppGap.semiBig(),
           SvgPicture(CustomTheme.of(context).images.imgAddNodes),
-          _createLightInfoTile(
-              ledBlue,
-              AppStyledText.bold(loc(context).addNodesSolidBlueDesc,
+          LightInfoTile(
+              color: ledBlue,
+              content: AppStyledText.bold(loc(context).addNodesSolidBlueDesc,
                   defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
                   tags: const ['b'])),
           const AppGap.regular(),
@@ -124,6 +142,57 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
     );
   }
 
+  _showTroubleshootNoNodesFoundModal() {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return MultiplePagesAlertDialog(
+            onClose: () {
+              context.pop();
+            },
+            pages: [
+              MultipleAlertDialogPage(
+                  title: loc(context).modalTroubleshootNoNodesFound,
+                  buttonText: loc(context).close,
+                  contentBuilder: (context, controller, index) {
+                    return Container(
+                      constraints: const BoxConstraints(maxWidth: 312),
+                      child: AppBulletList(
+                          style: AppBulletStyle.number,
+                          itemSpacing: 24,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                AppText.bodyMedium(loc(context)
+                                    .modalTroubleshootNoNodesFoundDesc1),
+                                const AppGap.regular(),
+                                AppTextButton.noPadding(
+                                  loc(context).addNodesLightDifferentColor,
+                                  onTap: () {
+                                    controller.goTo(index + 1);
+                                  },
+                                )
+                              ],
+                            ),
+                            AppText.bodyMedium(loc(context)
+                                .modalTroubleshootNoNodesFoundDesc2),
+                          ]),
+                    );
+                  }),
+              MultipleAlertDialogPage(
+                  title: loc(context).addNodesLightDifferentColor,
+                  buttonText: loc(context).back,
+                  contentBuilder: (BuildContext context,
+                          MultiplePagesAlertDialogController controller,
+                          int current) =>
+                      const LightDifferentColorModal()),
+            ],
+          );
+        });
+  }
+
   _showLightDifferentColorModal() {
     showDialog(
         context: context,
@@ -140,101 +209,10 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
             title:
                 AppText.headlineSmall(loc(context).addNodesLightDifferentColor),
             content: Container(
-              constraints: BoxConstraints(maxWidth: 312),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppText.labelLarge(
-                      loc(context).modalLightDifferentSeeRedLightDesc),
-                  const AppGap.semiBig(),
-                  _createLightInfoTile(
-                    ledBlue,
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText.labelLarge(loc(context).solidBlue),
-                        AppText.bodyMedium(loc(context).readyForSetup)
-                      ],
-                    ),
-                  ),
-                  const AppGap.semiBig(),
-                  _createLightInfoTile(
-                    ledPurple,
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText.labelLarge(loc(context).solidPurple),
-                        AppText.bodyMedium(loc(context).readyForSetup)
-                      ],
-                    ),
-                  ),
-                  const AppGap.semiBig(),
-                  _createLightInfoTile(
-                    ledRed,
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText.labelLarge(
-                            loc(context).modalLightDifferentSeeRedLight),
-                        AppText.bodyMedium(
-                            loc(context).modalLightDifferentSeeRedLightDesc)
-                      ],
-                    ),
-                  ),
-                  const AppGap.semiBig(),
-                  AppText.labelLarge(
-                      loc(context).modalLightDifferentToFactoryReset),
-                  const AppGap.semiBig(),
-                  AppBulletList(
-                      style: AppBulletStyle.number,
-                      itemSpacing: 24,
-                      children: [
-                        AppStyledText.bold(
-                            loc(context).modalLightDifferentToFactoryResetStep1,
-                            defaultTextStyle:
-                                Theme.of(context).textTheme.bodyMedium!,
-                            tags: const ['b']),
-                        AppStyledText.bold(
-                            loc(context).modalLightDifferentToFactoryResetStep2,
-                            defaultTextStyle:
-                                Theme.of(context).textTheme.bodyMedium!,
-                            tags: const ['b']),
-                      ]),
-                ],
-              ),
+              constraints: const BoxConstraints(maxWidth: 312),
+              child: const LightDifferentColorModal(),
             ),
           );
         });
-  }
-
-  Widget _createLightInfoTile(Color color, Widget content) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _createLightCircle(color),
-        const AppGap.regular(),
-        Flexible(
-          child: content,
-        )
-      ],
-    );
-  }
-
-  Widget _createLightCircle(Color color) {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(
-              width: 3, color: Theme.of(context).colorScheme.outline)),
-    );
   }
 }

@@ -780,5 +780,12 @@
   },
   "moreInfo": "More info",
   "restartingWifi": "Restarting Wi-Fi...",
-  "settingsSaved": "Settings saved"
+  "settingsSaved": "Settings saved",
+  "addNodesSearchingNodes": "Searching for nodes...",
+  "addNodesSearchingNodesDesc": "Watch for node lights to change",
+  "addNodesNoNodesFound": "We didn't find any nodes. Try again or <l>troubleshoot</l>.",
+  "modalTroubleshootNoNodesFound": "Let's check a few things",
+  "modalTroubleshootNoNodesFoundDesc1": "Make sure the Nodes you're adding are fully powered on, indicated by a solid blue light",
+  "modalTroubleshootNoNodesFoundDesc2": "Nodes are within range. Try moving them closer to the Router. Once added to your network, you can mode them further away.",
+  "back": "Back"
 }

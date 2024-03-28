@@ -159,4 +159,12 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       });
     }
   }
+
+  Future<void> updateDeviceName(String newName) {
+    return ref.read(deviceManagerProvider.notifier).updateDeviceName(
+          targetId: state.deviceId,
+          newName: newName,
+          isLocation: true,
+        );
+  }
 }

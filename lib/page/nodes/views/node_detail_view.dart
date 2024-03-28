@@ -10,7 +10,6 @@ import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
 import 'package:linksys_app/core/utils/extension.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/core/utils/nodes.dart';
-import 'package:linksys_app/core/utils/wifi.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
@@ -23,7 +22,6 @@ import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/card/card.dart';
 import 'package:linksys_widgets/widgets/card/device_info_card.dart';
@@ -31,6 +29,8 @@ import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'package:collection/collection.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:linksys_widgets/widgets/progress_bar/spinner.dart';
 
 class NodeDetailView extends ArgumentsConsumerStatefulView {
   const NodeDetailView({
@@ -43,9 +43,6 @@ class NodeDetailView extends ArgumentsConsumerStatefulView {
 }
 
 class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
-  int _count = 0;
-  bool _isBlinking = false;
-
   @override
   void initState() {
     super.initState();
@@ -210,61 +207,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget _nameCard(NodeDetailState state) {
-    return AppDeviceInfoCard(
-      title: loc(context).name,
-      description: _checkEmptyValue(state.location),
-      onTap: () {
-        context.pushNamed(RouteNamed.changeNodeName);
-      },
-    );
-  }
-
-  Widget _connectionCard(NodeDetailState state) {
-    return AppCard(
-        child: Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        AppDeviceInfoCard(
-          title: loc(context).connectTo,
-          description: _checkEmptyValue(state.upstreamDevice),
-          showBorder: false,
-          padding: const EdgeInsets.symmetric(vertical: Spacing.semiSmall),
-        ),
-        const Divider(
-          height: 8,
-          thickness: 1,
-        ),
-        AppDeviceInfoCard(
-          title: loc(context).connectedDevice,
-          description: _checkEmptyValue(
-            loc(context).nDevices(state.connectedDevices.length),
-          ),
-          showBorder: false,
-          padding: const EdgeInsets.symmetric(vertical: Spacing.semiSmall),
-        ),
-        if (!state.isWiredConnection) ...[
-          const Divider(
-            height: 8,
-            thickness: 1,
-          ),
-          AppDeviceInfoCard(
-            title: loc(context).signalStrength,
-            description: _checkEmptyValue('${state.signalStrength} dBM'),
-            showBorder: false,
-            padding: const EdgeInsets.symmetric(vertical: Spacing.semiSmall),
-            trailing: Icon(getWifiSignalIconData(
-              context,
-              state.isWiredConnection ? null : state.signalStrength,
-            )),
-          ),
-        ]
-      ],
-    ));
-  }
-
   Widget _lightCard(NodeDetailState state) {
     final hasBlinkFunction = isServiceSupport(JNAPService.setup9);
     bool isSupportNightModeOnly = isServiceSupport(JNAPService.routerLEDs3);
@@ -276,23 +218,15 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         child: Column(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        ..._createNodeLightTile(state.nodeLightSettings),
         ...hasBlinkFunction
             ? [
-                const Divider(
-                  height: 8,
-                ),
-                AppDeviceInfoCard(
-                  showBorder: false,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: Spacing.semiSmall),
-                  title: 'Blink node LED',
-                  description: state.blinkingStatus.value,
-                ),
+                const AppGap.regular(),
+                const BlinkNodeLightWidget(),
               ]
             : [],
-        ..._createNodeLightTile(state.nodeLightSettings)
       ],
     ));
   }
@@ -315,13 +249,13 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     } else {
       final title = isSupportNodeLight ? 'Node Light' : 'Night Mode';
       return [
-        const Divider(
-          height: 8,
-        ),
         AppDeviceInfoCard(
           title: title,
-          description: NodeLightStatus.getStatus(nodeLightSettings)
-              .resolveString(context),
+          showBorder: false,
+          padding: EdgeInsets.zero,
+          trailing: AppText.bodySmall(
+            NodeLightStatus.getStatus(nodeLightSettings).resolveString(context),
+          ),
           onTap: () {
             context.pushNamed(RouteNamed.nodeLightSettings);
           },
@@ -384,8 +318,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                     getAppLocalizations(context).up_to_date)),
           ),
           const AppGap.regular(),
-          AppTextButton.noPadding(
+          AppTextButton(
             loc(context).moreInfo,
+            padding: const EdgeInsets.all(4),
             onTap: () {
               _showMoreRouterInfoModal(state);
             },
@@ -398,75 +333,60 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   Future _showEditNodeNameDialog(NodeDetailState state) {
     final textController = TextEditingController()..text = state.location;
     final hasBlinkFunction = isServiceSupport(JNAPService.setup9);
-    late StreamSubscription subscription;
     return showDialog(
         context: context,
         builder: (context) {
+          bool isLoading = false;
           return StatefulBuilder(builder: (context, setState) {
             return AlertDialog(
               title: AppText.titleLarge(loc(context).nodeName),
-              actions: [
-                AppTextButton.noPadding(
-                  loc(context).cancel,
-                  color: Theme.of(context).colorScheme.onSurface,
-                  onTap: () {
-                    context.pop();
-                  },
-                ),
-                AppTextButton(
-                  loc(context).save,
-                  onTap: () {},
-                ),
-              ],
+              actions: isLoading
+                  ? null
+                  : [
+                      AppTextButton.noPadding(
+                        loc(context).cancel,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        onTap: () {
+                          context.pop();
+                        },
+                      ),
+                      AppTextButton(
+                        loc(context).save,
+                        onTap: () async {
+                          setState(() {
+                            isLoading = true;
+                          });
+                          await ref
+                              .read(nodeDetailProvider.notifier)
+                              .updateDeviceName(textController.text);
+                          setState(() {
+                            isLoading = false;
+                          });
+                        },
+                      ),
+                    ],
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppTextField(
-                    headerText: loc(context).nodeName,
-                    border: const OutlineInputBorder(),
-                    controller: textController,
-                  ),
-                  const AppGap.regular(),
-                  ...[
-                    _isBlinking
-                        ? AppStyledText.link(
-                            loc(context).nodeDetailBlinkingCounting(_count),
-                            defaultTextStyle:
-                                Theme.of(context).textTheme.bodySmall!,
-                            tags: const ['u'],
-                            callbackTags: {
-                              'u': (String? text, Map<String?, String?> attrs) {
-                                setState(() {
-                                  _isBlinking = false;
-                                });
-                                subscription.cancel();
-                              }
-                            },
-                          )
-                        : AppTextButton(
-                            loc(context).nodeDetailBlinkNodeLightBtn,
-                            onTap: () {
-                              setState(() {
-                                _count = 20;
-                                _isBlinking = true;
-                              });
-                              subscription = startCounting()
-                                  .map((event) => 20 - event)
-                                  .listen((event) {
-                                setState(() {
-                                  _count = event;
-                                });
-                              }, onDone: () {
-                                setState(() {
-                                  _isBlinking = false;
-                                });
-                                subscription.cancel();
-                              });
-                            },
+                children: isLoading
+                    ? [
+                        const Center(
+                          child: AppSpinner(
+                            size: Size(200, 200),
                           ),
-                  ],
-                ],
+                        ),
+                      ]
+                    : [
+                        AppTextField(
+                          headerText: loc(context).nodeName,
+                          border: const OutlineInputBorder(),
+                          controller: textController,
+                        ),
+                        if (hasBlinkFunction) ...[
+                          const AppGap.regular(),
+                          const BlinkNodeLightWidget(),
+                        ],
+                      ],
               ),
             );
           });
@@ -503,8 +423,70 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           );
         });
   }
+}
+
+class BlinkNodeLightWidget extends ConsumerStatefulWidget {
+  final int max;
+  final EdgeInsets? padding;
+  const BlinkNodeLightWidget({
+    super.key,
+    this.max = 20,
+    this.padding,
+  });
+
+  @override
+  ConsumerState<ConsumerStatefulWidget> createState() =>
+      _BlinkNodeLightWidgetState();
+}
+
+class _BlinkNodeLightWidgetState extends ConsumerState<BlinkNodeLightWidget> {
+  int _count = 0;
+  bool _isBlinking = false;
+  late StreamSubscription subscription;
 
   Stream<int> startCounting() =>
       Stream<int>.periodic(const Duration(seconds: 1), (count) => count)
-          .take(20);
+          .take(widget.max);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: widget.padding ?? const EdgeInsets.all(4.0),
+      child: _isBlinking
+          ? AppStyledText.link(
+              loc(context).nodeDetailBlinkingCounting(_count),
+              defaultTextStyle: Theme.of(context).textTheme.bodySmall!,
+              tags: const ['u'],
+              callbackTags: {
+                'u': (String? text, Map<String?, String?> attrs) {
+                  setState(() {
+                    _isBlinking = false;
+                  });
+                  subscription.cancel();
+                }
+              },
+            )
+          : AppTextButton.noPadding(
+              loc(context).nodeDetailBlinkNodeLightBtn,
+              onTap: () {
+                setState(() {
+                  _count = widget.max;
+                  _isBlinking = true;
+                });
+                subscription = startCounting()
+                    .map((event) => widget.max - event)
+                    .listen((event) {
+                  setState(() {
+                    _count = event;
+                  });
+                }, onDone: () {
+                  setState(() {
+                    _isBlinking = false;
+                  });
+                  subscription.cancel();
+                });
+              },
+            ),
+    );
+  }
 }

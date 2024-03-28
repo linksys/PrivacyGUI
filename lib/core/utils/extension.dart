@@ -19,8 +19,10 @@ extension StringExt on String {
       '${this[0].toUpperCase()}${substring(1).toLowerCase()}';
 
   String camelCapitalized() {
-    return split(' ').fold('',
-        (previousValue, element) => '$previousValue ${element.capitalized()}');
+    return split(' ').fold(
+        '',
+        (previousValue, element) =>
+            '${previousValue.isEmpty ? '' : '$previousValue '}${element.capitalized()}');
   }
 
   bool isJsonFormat() {

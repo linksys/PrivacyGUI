@@ -339,6 +339,8 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       },
       auth: true,
     );
+    await routerRepository.send(JNAPAction.getDevices,
+        fetchRemote: true, auth: true);
     if (result.result == 'OK') {
       final newList = state.deviceList.fold(<LinksysDevice>[], (list, element) {
         if (element.deviceID == targetId) {

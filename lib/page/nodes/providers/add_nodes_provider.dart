@@ -73,17 +73,39 @@ class AddNodesNotifier extends AutoDisposeAsyncNotifier<AddNodesState> {
     state = await AsyncValue.guard(() async {
       ref.read(pollingProvider.notifier).stopPolling();
       final nodeSnapshot =
-          List<LinksysDevice>.from(ref.read(deviceManagerProvider).nodeDevices);
+          List<LinksysDevice>.from(ref.read(deviceManagerProvider).deviceList)
+              .where((device) => device.isAuthority == false)
+              .toList();
+      logger.d('XXXXX: [init nodes] $nodeSnapshot');
+
       final repo = ref.read(routerRepositoryProvider);
       await repo.send(JNAPAction.startBlueboothAutoOnboarding);
 
       // For AutoOnboarding 2 service, there has no deviceOnboardingStatus
       // only AutoOnboarding 3 service has deviceOnboardingStatus.
+      bool onboardingProceed = false;
+      bool anyOnboarded = false;
       await for (final result in pollAutoOnboardingStatus()) {
         // Update onboarding status
-        logger.d('[AddNodes]getAutoOnboardingStatus: $result');
+        logger.d('XXXXX: [AddNodes]getAutoOnboardingStatus: $result');
+        if (result is JNAPSuccess &&
+            result.output['autoOnboardingStatus'] == 'Onboarding') {
+          onboardingProceed = true;
+        }
+        //deviceOnboardingStatus
+        if (result is JNAPSuccess) {
+          if (result.output['autoOnboardingStatus'] == 'Onboarding') {
+            onboardingProceed = true;
+          }
+          final deviceOnboardingStatus =
+              result.output['deviceOnboardingStatus'] ?? [];
+          anyOnboarded = List.from(deviceOnboardingStatus)
+              .any((element) => element['onboardingStatus'] == 'Onboarded');
+        }
       }
-      await for (final result in pollForNodesOnline(nodeSnapshot)) {}
+      if (onboardingProceed && anyOnboarded) {
+        await for (final result in pollForNodesOnline(nodeSnapshot)) {}
+      }
       final polling = ref.read(pollingProvider.notifier);
       await polling.forcePolling().then((value) => polling.startPolling());
       return AddNodesState(nodesSnapshot: nodeSnapshot);

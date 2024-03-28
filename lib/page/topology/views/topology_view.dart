@@ -81,7 +81,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
                           OfflineTopologyNode =>
                             _buildOfflineHeader(context, ref, node),
                           RouterTopologyNode =>
-                            topologyState.onlineRoot.toFlatList().length == 1
+                            topologyState.onlineRoot.toFlatList().length == 2
                                 ? _buildNodeLarge(context, ref, node)
                                 : _buildNode(context, ref, node),
                           _ => _buildHeader(context, ref, node),
