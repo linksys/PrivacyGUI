@@ -29,7 +29,6 @@ import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'package:collection/collection.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:linksys_widgets/widgets/progress_bar/spinner.dart';
 
 class NodeDetailView extends ArgumentsConsumerStatefulView {

@@ -612,40 +612,6 @@ const List<Map<String, dynamic>> iconTestRules = [
 
 String _iconMapping(String iconClass, {String? fallback}) {
   switch (iconClass) {
-    //
-    case 'routerE4200':
-    case 'routerEa4500':
-    case 'routerEa6200':
-    case 'routerXac1200':
-    case 'routerEa4500v3':
-      return 'routerEa4500';
-    //
-    case 'routerEa5800':
-    case 'routerEa6100':
-      return 'routerEa6100';
-    //
-    case 'routerEa6300':
-    case 'routerEa6300v1':
-    case 'routerEa6400':
-    case 'routerEa6500':
-    case 'routerEa6700':
-      return 'routerEa6300';
-    //
-    case 'routerEa6900':
-    case 'routerXac1900':
-      return 'routerEa6900';
-
-    //
-    case 'routerEa7300':
-    case 'routerEa7400':
-    case 'routerEa7500':
-      return 'routerEa7500';
-    //
-    case 'routerEa7500v3':
-    case 'routerEa7250':
-    case 'routerEa7430':
-      return 'routerEa7500v3';
-    //
     case 'routerMr7350':
     case 'routerMr5500':
     case 'routerMr2000':
@@ -675,23 +641,11 @@ String _iconMapping(String iconClass, {String? fallback}) {
     case 'routerMbe7000':
       return 'routerMx6200';
     //
-    case 'routerEa8100':
-    case 'routerEa8500':
-      return 'routerEa8500';
-    //
+
     case 'routerEa9350':
     case 'routerEa9350v3':
     case 'routerMr9600':
       return 'routerEa9350';
-    //
-    case 'routerEa9400':
-    case 'routerEa9500':
-      return 'routerEa9500';
-    //
-    case 'routerWrt1900ac':
-    case 'routerWrt1900asc':
-    case 'routerWrt3200acm':
-      return 'routerWrt1900ac';
     //
     case 'linksysVelop':
     case 'routerNd001':
@@ -701,7 +655,7 @@ String _iconMapping(String iconClass, {String? fallback}) {
     case 'routerMx5500':
     case 'routerMx5600':
     case 'routerMx2000':
-      return 'linksysVelop';
+      return 'routerWhw03';
     //
     case 'routerWhw01':
     case 'routerVlp01':
@@ -718,7 +672,7 @@ String _iconMapping(String iconClass, {String? fallback}) {
       return 'routerLn12';
     default:
       // do router check
-      return fallback ?? 'genericDevice';
+      return fallback ?? 'routerLn11';
   }
 }
 

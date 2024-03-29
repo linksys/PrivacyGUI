@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
@@ -20,6 +21,7 @@ import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/card/card.dart';
 import 'package:linksys_widgets/widgets/card/general_card.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -203,30 +205,41 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     VoidCallback? onTap,
     bool isLoading = false,
   }) {
-    return isLoading
-        ? Card(
-            elevation: 10,
-            child: Shimmer(
-              gradient: _shimmerGradient,
-              child: GeneralCard(
-                iconData: iconData,
-                image: image,
-                title: text,
+    return Container(
+      constraints: BoxConstraints(
+        minWidth: 200,
+        maxWidth: 380,
+        minHeight: 160,
+        maxHeight: 240,
+      ),
+      child: isLoading
+          ? Card(
+              elevation: 10,
+              child: Shimmer(gradient: _shimmerGradient, child: Container()),
+            )
+          : AppCard(
+              onTap: onTap,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (iconData != null)
+                    Icon(
+                      iconData,
+                      size: 70,
+                    ),
+                  if (image != null)
+                    Image(
+                      image: image,
+                      width: 70,
+                      height: 70,
+                    ),
+                  // const AppGap.regular(),
+                  AppText.labelLarge(text),
+                ],
               ),
             ),
-          )
-        : InkWell(
-            onTap: onTap,
-            child: GeneralCard(
-              iconData: iconData,
-              image: image,
-              title: text,
-              maxHeight: 240,
-              maxWidth: 240,
-              minWidth: 120,
-              minHeight: 120,
-            ),
-          );
+    );
   }
 
   Widget _speedTestTile(DashboardHomeState state, bool isLoading) {
