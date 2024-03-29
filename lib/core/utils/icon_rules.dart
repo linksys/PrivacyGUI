@@ -693,7 +693,7 @@ String routerIconTest(Map<String, dynamic> target) {
   return iconTest(target);
 }
 
-IconDeviceCategory deviceIconTest(Map<String, dynamic> target) {
+String deviceIconTest(Map<String, dynamic> target) {
   const regex =
       r'^.*((phone)|(android)|(iphone)|(mobile)|(desktop)|(laptop)|(windows)|(mac)|(pc)|(tv)|(vacauum)|(plug)|(gameConsole)|(generic)).*$';
   final test = iconTest(target);
@@ -703,15 +703,15 @@ IconDeviceCategory deviceIconTest(Map<String, dynamic> target) {
     'plug' => IconDeviceCategory.plug,
     'vacauum' => IconDeviceCategory.vacuum,
     'gameConsole' => IconDeviceCategory.gameConsole,
-    'phone' || 'android' || 'iphone' || 'mobile' => IconDeviceCategory.mobile,
+    'phone' || 'android' || 'iphone' || 'mobile' => IconDeviceCategory.phone,
     'desktop' ||
     'laptop' ||
     'windows' ||
     'mac' ||
     'pc' =>
-      IconDeviceCategory.desktop,
+      IconDeviceCategory.computer,
     _ => IconDeviceCategory.unknown
-  };
+  }.name;
 }
 
 ///

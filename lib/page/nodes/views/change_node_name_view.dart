@@ -73,7 +73,7 @@ class __ChangeNodeNameViewState extends ConsumerState<ChangeNodeNameView> {
 
       ref
           .read(deviceManagerProvider.notifier)
-          .updateDeviceName(
+          .updateDeviceNameAndIcon(
             targetId: targetId,
             newName: nameController.text,
             isLocation: true,

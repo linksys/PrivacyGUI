@@ -43,6 +43,6 @@ IconData getWifiSignalIconData(BuildContext context, int? signalStrength) {
             return LinksysIcons.signalWifi0Bar;
 // Default
     case NodeSignalLevel.wired:
-      return LinksysIcons.settingsEthernet;
+      return LinksysIcons.ethernet;
   }
 }

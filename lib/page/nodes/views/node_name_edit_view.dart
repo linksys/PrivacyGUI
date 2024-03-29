@@ -47,7 +47,7 @@ class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
             if (newLocation.isNotEmpty) {
               final targetId = ref.read(nodeDetailIdProvider);
 
-              ref.read(deviceManagerProvider.notifier).updateDeviceName(
+              ref.read(deviceManagerProvider.notifier).updateDeviceNameAndIcon(
                     targetId: targetId,
                     newName: newLocation,
                     isLocation: true,

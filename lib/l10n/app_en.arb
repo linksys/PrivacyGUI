@@ -420,6 +420,8 @@
   "nodes_success_multi_add_wifi_name_button_text": "Let's add a WiFi name",
   "nodes_success_multi_description": "Name your nodes to tell them apart when accessing settings. (You can do this later in the app.)",
   "none": "None",
+  "device_detail_edit_dialog_title": "Device Name and Icon",
+  "select_icon": "Select Icon",
   "num_online": "{num} online",
   "number_of_devices": "{count, plural, =0{No devices} =1{{count} device} other{{count} devices}}",
   "off": "Off",

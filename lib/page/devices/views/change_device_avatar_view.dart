@@ -62,7 +62,7 @@ class __ChangeDeviceAvatarViewState
 
   Widget _deviceAvatar(String iconName) {
     return Icon(
-      IconDeviceCategoryExt.resloveByName(iconName),
+      IconDeviceCategoryExt.resolveByName(iconName),
     );
   }
 
@@ -79,7 +79,7 @@ class __ChangeDeviceAvatarViewState
             context.pop(deviceAvatarNameList[index]);
           },
           child: Icon(
-              IconDeviceCategoryExt.resloveByName(deviceAvatarNameList[index])),
+              IconDeviceCategoryExt.resolveByName(deviceAvatarNameList[index])),
         );
       },
     ));

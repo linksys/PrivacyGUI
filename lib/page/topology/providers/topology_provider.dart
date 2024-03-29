@@ -146,7 +146,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
       isRouter: isRouter,
       icon: isRouter
           ? routerIconTest(device.toMap())
-          : deviceIconTest(device.toMap()).name,
+          : deviceIconTest(device.toMap()),
       connectedDeviceCount: device.connectedDevices.length,
     );
     return RouterTopologyNode(
@@ -174,7 +174,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
       isRouter: isRouter,
       icon: isRouter
           ? routerIconTest(device.toMap())
-          : deviceIconTest(device.toMap()).name,
+          : deviceIconTest(device.toMap()),
       connectedDeviceCount: device.connectedDevices.length,
     );
     return DeviceTopologyNode(data: data, children: []);

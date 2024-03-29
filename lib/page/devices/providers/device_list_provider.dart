@@ -1,9 +1,12 @@
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
+import 'package:linksys_app/page/devices/extensions/icon_device_category_ext.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 
 final offlineDeviceListProvider = Provider((ref) {
   final deviceListState = ref.watch(deviceListProvider);
@@ -54,9 +57,8 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     var type = WifiConnectionType.main;
 
     name = device.getDeviceLocation();
-    icon = deviceIconTest(device.toMap()).name;
+    icon = _readIcon(device);
     final upstream = device.upstream;
-
     upstreamDevice = upstream?.getDeviceLocation() ?? '';
     upstreamDeviceID = upstream?.deviceID ?? '';
     upstreamIcon = routerIconTest(upstream?.toMap() ?? {});
@@ -94,5 +96,23 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
       type: type,
       ssid: ssid,
     );
+  }
+
+  String _readIcon(LinksysDevice device) {
+    final userDeviceType = (device.properties.firstWhereOrNull((element) {
+      return element.name == 'userDeviceType';
+    }))?.value;
+    // device icon test will be the only way to resolve the device type
+    // if userDeviceType is null
+    if (userDeviceType == null) {
+      return deviceIconTest(device.toMap());
+    }
+    final match = IconDeviceCategoryExt.resolveByName(userDeviceType);
+    // The userDeviceType failed to be resolved may be because its value is not one of our custom values
+    // but can be resolved correctly by device icon test (e.g., desktop-mac)
+    if (match == LinksysIcons.genericDevice) {
+      return deviceIconTest(device.toMap());
+    }
+    return userDeviceType;
   }
 }

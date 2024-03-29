@@ -161,7 +161,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
   }
 
   Future<void> updateDeviceName(String newName) {
-    return ref.read(deviceManagerProvider.notifier).updateDeviceName(
+    return ref.read(deviceManagerProvider.notifier).updateDeviceNameAndIcon(
           targetId: state.deviceId,
           newName: newName,
           isLocation: true,

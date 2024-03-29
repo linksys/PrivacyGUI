@@ -16,6 +16,7 @@ import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/devices.dart';
+import 'package:linksys_app/core/utils/icon_device_category.dart';
 
 final deviceManagerProvider =
     NotifierProvider<DeviceManagerNotifier, DeviceManagerState>(
@@ -122,7 +123,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
         data['devices'],
       )
           .map((e) => LinksysDevice.fromMap(e))
-          .map((e) => e.copyWith(signalDecibels: getWirelessSignal(e, state)))
+          .map((e) => e.copyWith(signalDecibels: getWirelessSignalOf(e, state)))
           .toList();
       // Sort the device list in order to correctly build the location map later
       allDevices.sort((device1, device2) {
@@ -273,7 +274,6 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   String getBandConnectedBy(RawDevice device) {
     final wirelessConnections = state.wirelessConnections;
     final wirelessData = wirelessConnections[device.getMacAddress()];
-    //final band = (wirelessData?.band ?? _getWirelessBandFromDevices(device));
     // If the band data is absent in (NodesWireless)NetworkConnection,
     // check the knownInterface in GetDevices
     final band = wirelessData?.band ?? _getBandFromKnownInterfacesOf(device);
@@ -326,16 +326,19 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   }
 
   // Update the name(location) of nodes and external devices
-  Future<void> updateDeviceName({
+  Future<void> updateDeviceNameAndIcon({
     required String targetId,
     required String newName,
     required bool isLocation,
+    IconDeviceCategory? icon,
   }) async {
     final routerRepository = ref.read(routerRepositoryProvider);
     List<RawDeviceProperty> properties = [
+      RawDeviceProperty(name: 'userDeviceName', value: newName),
       if (isLocation)
         RawDeviceProperty(name: 'userDeviceLocation', value: newName),
-      RawDeviceProperty(name: 'userDeviceName', value: newName)
+      if (icon != null)
+        RawDeviceProperty(name: 'userDeviceType', value: icon.name),
     ];
     final result = await routerRepository.send(
       JNAPAction.setDeviceProperties,

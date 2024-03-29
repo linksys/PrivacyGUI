@@ -56,7 +56,7 @@ class _DeviceListWidgetState extends ConsumerState<ConnectedDeviceListWidget> {
         isSelected: widget.isItemSelected?.call(item) ?? false,
         title: item.getDeviceLocation(),
         leading:
-            IconDeviceCategoryExt.resloveByName(routerIconTest(item.toMap())),
+            IconDeviceCategoryExt.resolveByName(routerIconTest(item.toMap())),
         onTap: () {
           if (widget.isEdit) {
             return;

@@ -1,10 +1,16 @@
 enum IconDeviceCategory {
-  tv,
-  plug,
-  vacuum,
-  mobile,
-  desktop,
-  gameConsole,
   unknown,
-  ;
+  ethernet,
+  phone,
+  computer,
+  tv,
+  speaker,
+  camera,
+  doorbell,
+  lock,
+  watch,
+  plug,
+  bulb,
+  vacuum,
+  gameConsole,
 }

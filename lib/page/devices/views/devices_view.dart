@@ -183,7 +183,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
             ? null
             : item.upstreamDevice,
         band: ResponsiveLayout.isMobile(context) ? null : item.band,
-        leading: IconDeviceCategoryExt.resloveByName(item.icon),
+        leading: IconDeviceCategoryExt.resolveByName(item.icon),
         trailing: item.isOnline
             ? getWifiSignalIconData(
                 context, item.isWired ? null : item.signalStrength)

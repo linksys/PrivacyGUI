@@ -71,7 +71,7 @@ class __ChangeDeviceNameViewState extends ConsumerState<ChangeDeviceNameView> {
 
       ref
           .read(deviceManagerProvider.notifier)
-          .updateDeviceName(
+          .updateDeviceNameAndIcon(
             targetId: targetId,
             newName: nameController.text,
             isLocation: false,

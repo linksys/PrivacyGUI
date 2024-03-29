@@ -59,7 +59,7 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
             : !item.isOnline
                 ? null
                 : item.band,
-        leading: IconDeviceCategoryExt.resloveByName(item.icon),
+        leading: IconDeviceCategoryExt.resolveByName(item.icon),
         trailing: item.isOnline
             ? getWifiSignalIconData(
                 context, item.isWired ? null : item.signalStrength)
