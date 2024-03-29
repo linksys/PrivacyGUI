@@ -49,6 +49,8 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
                   speedTestResult: speedtestTempResult)
             ], step: step);
           }
+          getHealthCheckResults(module, 1);
+
           if (result is JNAPSuccess &&
               result.output['speedTestResult']['exitCode'] != 'Unavailable') {
             getHealthCheckResults(module, 1);

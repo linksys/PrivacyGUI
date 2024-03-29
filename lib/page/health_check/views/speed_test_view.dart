@@ -1,11 +1,16 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/health_check/providers/health_check_provider.dart';
 import 'package:linksys_app/page/health_check/providers/health_check_state.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/animation/breath_dot.dart';
+import 'package:linksys_widgets/widgets/container/animated_meter.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'speed_test_button.dart';
@@ -24,6 +29,9 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
+
+  List<String> _markers = [];
+
   String _status = "IDLE";
 
   @override
@@ -82,6 +90,10 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
 
   Widget speedTestSection(
       BuildContext context, String status, HealthCheckState state) {
+    if (state.result.isNotEmpty) {
+      logger.d('XXXXX health check - ${state.result.first}');
+    }
+
     var downloadBandWidth = '0';
     if (state.result.isNotEmpty &&
         state.result.first.speedTestResult?.downloadBandwidth != null) {
@@ -101,6 +113,18 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
         state.result.first.speedTestResult?.latency != null) {
       latency = state.result.first.speedTestResult!.latency.toString();
     }
+    final defaultMarkers = ['1', '5', '10', '20', '30', '50', '75', '100'];
+    if (_markers.isEmpty) {
+      _markers = defaultMarkers;
+    }
+    var dl = int.parse(downloadBandWidth);
+    var ul = int.parse(uploadBandWidth);
+    var valueMax = max(dl, ul);
+    var isDownload = dl > 0 && ul == 0;
+    if (valueMax > 0 && valueMax > int.parse(_markers.last)) {
+      // rearrange markers
+    }
+
     switch (status) {
       case "IDLE":
         return TriLayerButton(
@@ -118,13 +142,45 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
           },
         );
       case "RUNNING":
-        return AnimatedBuilder(
-          animation: _animation,
-          builder: (context, child) {
-            return CircleProgressBar(
-              progress: _animation.value,
-              strokeWidth: 8.0,
-              backgroundColor: Colors.white,
+        var value = Random().nextDouble();
+        logger.d('XXXXX: meter value : $value');
+
+        return AnimatedMeter(
+          value: value,
+          markers: _markers,
+          centerBuilder: (context, value) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText.labelMedium(isDownload ? 'Download' : 'Upload'),
+                AppText.titleLarge((100 * value).toStringAsFixed(2)),
+                AppText.bodySmall('Mbps')
+              ],
+            );
+          },
+          bottomBuilder: (context, value) {
+            return Wrap(
+              alignment: WrapAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: BreathDot(
+                    breathSpeed: const Duration(seconds: 1),
+                    lightColor: Theme.of(context).colorScheme.primary,
+                    borderColor: Theme.of(context).colorScheme.primary,
+                    size: 12,
+                    dotSize: 8,
+                  ),
+                ),
+                AppText.labelMedium(
+                  'Ping:',
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                AppText.bodySmall(
+                  '--ms',
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ],
             );
           },
         );
