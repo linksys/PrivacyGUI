@@ -2,10 +2,12 @@ part of 'base_http_command.dart';
 
 class TransactionHttpCommand
     extends BaseHttpCommand<JNAPTransactionSuccessWrap, HttpTransactionSpec> {
+  final List<JNAPAction> actions;
   TransactionHttpCommand({
     required super.url,
     required super.executor,
     required List<Map<String, dynamic>> payload,
+    required this.actions,
     Map<String, String> extraHeader = const {},
     super.fetchRemote,
     super.cacheLevel,
@@ -65,15 +67,8 @@ class TransactionHttpCommand
   JNAPTransactionSuccessWrap createResponse(String payload) {
     final result = spec.response(payload);
     if (result is JNAPTransactionSuccess) {
-      final data = List.from(jsonDecode(spec.payload()));
-      final actionList = data
-          .map((e) => JNAPAction.values.firstWhereOrNull((action) {
-                return action.actionValue == e['action'];
-              }))
-          .whereType<JNAPAction>()
-          .toList();
       return JNAPTransactionSuccessWrap.convert(
-          actions: actionList, transactionSuccess: result);
+          actions: actions, transactionSuccess: result);
     }
     throw (result as JNAPError);
   }

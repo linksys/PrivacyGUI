@@ -113,6 +113,7 @@ class RouterRepository {
     final sideEffectManager = ref.read(sideEffectProvider.notifier);
 
     final command = await createTransaction(payload,
+        actions: builder.commands.map((e) => e.key).toList(),
         needAuth: builder.auth,
         fetchRemote: fetchRemote,
         cacheLevel: cacheLevel);
@@ -129,6 +130,7 @@ class RouterRepository {
   Future<TransactionHttpCommand> createTransaction(
       List<Map<String, dynamic>> payload,
       {bool needAuth = false,
+      required List<JNAPAction> actions,
       bool fetchRemote = false,
       CacheLevel cacheLevel = CacheLevel.localCached,
       CommandType? type}) async {
@@ -151,6 +153,7 @@ class RouterRepository {
       return TransactionHttpCommand(
         url: url,
         executor: executor,
+        actions: actions,
         payload: payload,
         extraHeader: header,
         fetchRemote: fetchRemote,

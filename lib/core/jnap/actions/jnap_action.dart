@@ -100,12 +100,6 @@ enum JNAPAction {
   getNodeNeighborInfo,
   getSlaveBackhaulStatus,
   refreshSlaveBackhaulData,
-  // nodes healthCheckManager,
-  getNodesHealthCheckStatus,
-  getNodesHealthCheckResults,
-  runNodesHealthCheck,
-  stopNodesHealCheck,
-  getNodesSupportedHealthCheckModules,
   // nodes networkConnections
   getNodesWirelessNetworkConnections,
   // nodes optimization

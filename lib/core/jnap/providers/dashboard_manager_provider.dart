@@ -47,7 +47,7 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
       getHealthCheckResultsData =
           (result[JNAPAction.getHealthCheckResults] as JNAPSuccess?)?.output;
       getHealthCheckModuleData =
-          (result[JNAPAction.getNodesSupportedHealthCheckModules]
+          (result[JNAPAction.getSupportedHealthCheckModules]
                   as JNAPSuccess?)
               ?.output;
     }

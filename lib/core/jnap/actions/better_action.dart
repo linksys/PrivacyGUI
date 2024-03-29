@@ -109,16 +109,6 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.guestNetwork5:
       break;
     case JNAPService.healthCheckManager:
-      _betterActionMap[JNAPAction.getNodesHealthCheckStatus] =
-          _JNAPActionValue.getHealthCheckStatus.value;
-      _betterActionMap[JNAPAction.getNodesHealthCheckResults] =
-          _JNAPActionValue.getHealthCheckResults.value;
-      _betterActionMap[JNAPAction.runNodesHealthCheck] =
-          _JNAPActionValue.runHealthCheck.value;
-      _betterActionMap[JNAPAction.stopNodesHealCheck] =
-          _JNAPActionValue.stopHealthCheck.value;
-      _betterActionMap[JNAPAction.getNodesSupportedHealthCheckModules] =
-          _JNAPActionValue.getSupportedHealthCheckModules.value;
       break;
     case JNAPService.locale:
       break;
@@ -293,8 +283,6 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.wirelessScheduler:
       break;
     case JNAPService.wirelessScheduler2:
-      break;
-    case JNAPService.nodeHealthCheck:
       break;
     case JNAPService.routerLEDs:
       break;
@@ -626,16 +614,6 @@ void initBetterActions() {
       _JNAPActionValue.getGamingPrioritizationSettings.value;
   _betterActionMap[JNAPAction.setGamingPrioritizationSettings] =
       _JNAPActionValue.setGamingPrioritizationSettings.value;
-  _betterActionMap[JNAPAction.getNodesHealthCheckStatus] =
-      _JNAPActionValue.getHealthCheckStatus.value;
-  _betterActionMap[JNAPAction.getNodesHealthCheckResults] =
-      _JNAPActionValue.getHealthCheckResults.value;
-  _betterActionMap[JNAPAction.runNodesHealthCheck] =
-      _JNAPActionValue.runHealthCheck.value;
-  _betterActionMap[JNAPAction.stopNodesHealCheck] =
-      _JNAPActionValue.stopHealthCheck.value;
-  _betterActionMap[JNAPAction.getNodesSupportedHealthCheckModules] =
-      _JNAPActionValue.getSupportedHealthCheckModules.value;
 }
 
 void buildBetterActions(List<String> routerServices) {
