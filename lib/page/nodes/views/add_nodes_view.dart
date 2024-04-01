@@ -3,10 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/utils/devices.dart';
+import 'package:linksys_app/core/utils/icon_rules.dart';
+import 'package:linksys_app/page/nodes/providers/add_nodes_state.dart';
+import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:linksys_widgets/widgets/bullet_list/bullet_style.dart';
+import 'package:linksys_widgets/widgets/card/node_list_card.dart';
 import 'package:linksys_widgets/widgets/dialogs/multiple_page_alert_dialog.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -53,8 +58,8 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           return _contentView();
         },
         data: (state) {
-          if (state.nodesSnapshot != null) {
-            return _resultView();
+          if (state.onboardingProceed != null) {
+            return _resultView(state);
           } else {
             return _contentView();
           }
@@ -65,7 +70,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
             ));
   }
 
-  Widget _resultView() {
+  Widget _resultView(AddNodesState state) {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).addNodes,
@@ -73,22 +78,34 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppStyledText.link(
-            loc(context).addNodesNoNodesFound,
-            defaultTextStyle: Theme.of(context)
-                .textTheme
-                .bodyMedium!
-                .copyWith(color: Theme.of(context).colorScheme.error),
-            color: Theme.of(context).colorScheme.primary,
-            tags: const ['l'],
-            callbackTags: {
-              'l': (String? text, Map<String?, String?> attrs) {
-                _showTroubleshootNoNodesFoundModal();
-              }
-            },
-          ),
-          Container(
-            height: 400,
+          if (state.addedNodes?.isEmpty == true)
+            AppStyledText.link(
+              loc(context).addNodesNoNodesFound,
+              defaultTextStyle: Theme.of(context)
+                  .textTheme
+                  .bodyMedium!
+                  .copyWith(color: Theme.of(context).colorScheme.error),
+              color: Theme.of(context).colorScheme.primary,
+              tags: const ['l'],
+              callbackTags: {
+                'l': (String? text, Map<String?, String?> attrs) {
+                  _showTroubleshootNoNodesFoundModal();
+                }
+              },
+            ),
+          Column(
+            children: [
+              ...state.childNodes
+                      ?.map((e) => AppNodeListCard(
+                          leading: CustomTheme.of(context)
+                              .images
+                              .devices
+                              .getByName(routerIconTest(e.toMap())),
+                          title: e.getDeviceLocation(),
+                          trailing: null))
+                      .toList() ??
+                  []
+            ],
           ),
           const AppGap.regular(),
           AppTextButton.noPadding(
