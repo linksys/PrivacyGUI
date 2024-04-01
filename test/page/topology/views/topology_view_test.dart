@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:linksys_app/page/topology/_topology.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/topology/tree_item.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
+import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_widget.dart';
 import '../../../test_data/topology_data.dart';
-import 'topology_view_test.mocks.dart';
+import '../topology_view_test_mocks.dart';
 
 /// Please modify auto-generated file - mixin Mock instead extends
 /// class MockTopologyNotifier extends _i2.Notifier<_i3.TopologyState> with _i1.Mock implements _i4.TopologyNotifier (O)
@@ -25,7 +25,7 @@ void main() {
     mockTopologyNotifier = MockTopologyNotifier();
   });
   group('Topology view test - online nodes', () {
-    testWidgets('topology view - 2 online nodes', (tester) async {
+    testResponsiveWidgets('topology view - 2 online nodes', (tester) async {
       await loadAppFonts();
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState1);
 
@@ -66,7 +66,8 @@ void main() {
       expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
-    testWidgets('topology view - 3 online nodes stars', (tester) async {
+    testResponsiveWidgets('topology view - 3 online nodes stars',
+        (tester) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState2);
 
       final widget = testableWidget(overrides: [
@@ -108,7 +109,8 @@ void main() {
       expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
-    testWidgets('topology view - 3 online nodes daisy', (tester) async {
+    testResponsiveWidgets('topology view - 3 online nodes daisy',
+        (tester) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState3);
 
       final widget = testableWidget(overrides: [
@@ -150,7 +152,8 @@ void main() {
       expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
-    testWidgets('topology view - 6 online nodes stars', (tester) async {
+    testResponsiveWidgets('topology view - 6 online nodes stars',
+        (tester) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState4);
 
       final widget = testableWidget(overrides: [
@@ -209,7 +212,8 @@ void main() {
       expect(node6.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
-    testWidgets('topology view - 6 online nodes daisy', (tester) async {
+    testResponsiveWidgets('topology view - 6 online nodes daisy',
+        (tester) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState5);
 
       final widget = testableWidget(overrides: [
@@ -267,7 +271,8 @@ void main() {
       expect(node6.image, CustomTheme.of(context).images.devices.routerMx6200);
     });
 
-    testWidgets('topology view - 6 online nodes hybrid', (tester) async {
+    testResponsiveWidgets('topology view - 6 online nodes hybrid',
+        (tester) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState5);
 
       final widget = testableWidget(overrides: [
@@ -327,9 +332,9 @@ void main() {
   });
 
   group('Topology view test - has offline nodes', () {
-    testWidgets('topology view - 1 offline node', (tester) async {
+    testResponsiveWidgets('topology view - 1 offline node', (tester) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyStateOffline1);
-
+      when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
       final widget = testableWidget(
           themeMode: ThemeMode.dark,
           overrides: [
@@ -357,12 +362,16 @@ void main() {
 
       // Find by type
       final treeNodeItems = find.byType(AppTreeNodeItem);
+      final treeNodeLargeItems = find.byType(AppTreeNodeItem);
+
       // nodes check
-      expect(treeNodeItems, findsNWidgets(2));
+      expect(treeNodeItems, findsNWidgets(1));
+      expect(treeNodeLargeItems, findsNWidgets(1));
 
       // AppTreeNodeItem widget
-      final node1Finder = find.widgetWithText(AppTreeNodeItem, 'Living room');
-      final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
+      final node1Finder =
+          find.widgetWithText(AppTreeNodeItemLarge, 'Living room');
+      final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItemLarge;
 
       expect(node1.name, 'Living room');
       expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
@@ -374,8 +383,9 @@ void main() {
       expect(node2.status, 'Offline');
     });
 
-    testWidgets('topology view - 2 offline nodes', (tester) async {
+    testResponsiveWidgets('topology view - 2 offline nodes', (tester) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyStateOffline2);
+      when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
 
       final widget = testableWidget(overrides: [
         topologyProvider.overrideWith(() => mockTopologyNotifier),
@@ -401,12 +411,16 @@ void main() {
 
       // Find by type
       final treeNodeItems = find.byType(AppTreeNodeItem);
+      final treeNodeLargeItems = find.byType(AppTreeNodeItemLarge);
+
       // nodes check
-      expect(treeNodeItems, findsNWidgets(3));
+      expect(treeNodeItems, findsNWidgets(2));
+      expect(treeNodeLargeItems, findsNWidgets(1));
 
       // AppTreeNodeItem widget
-      final node1Finder = find.widgetWithText(AppTreeNodeItem, 'Living room');
-      final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
+      final node1Finder =
+          find.widgetWithText(AppTreeNodeItemLarge, 'Living room');
+      final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItemLarge;
 
       expect(node1.name, 'Living room');
       expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);

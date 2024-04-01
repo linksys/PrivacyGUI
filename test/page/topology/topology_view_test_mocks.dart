@@ -7,7 +7,6 @@ import 'dart:async' as _i4;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:linksys_app/page/topology/_topology.dart' as _i3;
-import 'package:linksys_app/page/topology/providers/_providers.dart';
 import 'package:mockito/mockito.dart' as _i1;
 
 // ignore_for_file: type=lint
@@ -107,15 +106,6 @@ class MockTopologyNotifier extends _i2.Notifier<_i3.TopologyState> with _i1.Mock
       ) as _i3.TopologyState);
 
   @override
-  void setSelectedDeviceId(String? deviceId) => super.noSuchMethod(
-        Invocation.method(
-          #setSelectedDeviceId,
-          [deviceId],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
   _i4.Future<dynamic> reboot() => (super.noSuchMethod(
         Invocation.method(
           #reboot,
@@ -124,6 +114,16 @@ class MockTopologyNotifier extends _i2.Notifier<_i3.TopologyState> with _i1.Mock
         returnValue: _i4.Future<dynamic>.value(),
         returnValueForMissingStub: _i4.Future<dynamic>.value(),
       ) as _i4.Future<dynamic>);
+
+  @override
+  bool isSupportAutoOnboarding() => (super.noSuchMethod(
+        Invocation.method(
+          #isSupportAutoOnboarding,
+          [],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
 
   @override
   bool updateShouldNotify(

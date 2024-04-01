@@ -35,7 +35,7 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
       children: [
         Icon(widget.icon),
         const AppGap.regular(),
-        AppText.labelMedium(locale.displayText),
+        Flexible(child: AppText.labelMedium(locale.displayText)),
       ],
     );
   }

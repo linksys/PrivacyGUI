@@ -9,7 +9,7 @@ void main() {
     {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "MX57CF", "hardwareVersion": "1"}}
     ''';
       final result = iconTest(jsonDecode(deviceJson));
-      expect(result, 'genericDevice');
+      expect(result, 'routerLn11');
     });
     test('test iconTest - MR9600', () {
       const deviceJson = '''
@@ -97,7 +97,7 @@ void main() {
   group('test testRouterIcon series', () {
     test('test routerIconTest - Unknown model number', () {
       final result = routerIconTestByModel(modelNumber: 'MR9500');
-      expect(result, 'genericDevice');
+      expect(result, 'routerLn11');
     });
     test('test routerIconTest - MR9600', () {
       final result = routerIconTestByModel(modelNumber: 'MR9600');

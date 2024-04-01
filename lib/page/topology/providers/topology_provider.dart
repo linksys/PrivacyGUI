@@ -6,6 +6,7 @@ import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
+import 'package:linksys_app/core/utils/nodes.dart';
 import 'package:linksys_app/page/topology/_topology.dart';
 
 final topologySelectedIdProvider = StateProvider((ref) => '');
@@ -187,4 +188,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
       cacheLevel: CacheLevel.noCache,
     );
   }
+
+  bool isSupportAutoOnboarding() =>
+      isServiceSupport(JNAPService.autoOnboarding);
 }

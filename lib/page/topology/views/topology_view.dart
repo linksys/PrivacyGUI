@@ -2,16 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/core/utils/nodes.dart';
 import 'package:linksys_app/core/utils/wifi.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/devices/_devices.dart';
 import 'package:linksys_app/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:linksys_app/page/topology/_topology.dart';
 import 'package:linksys_app/route/constants.dart';
@@ -43,7 +40,8 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
 
     final isShowingDeviceChain =
         ref.watch(topologySelectedIdProvider).isNotEmpty;
-    final autoOnboarding = isServiceSupport(JNAPService.autoOnboarding);
+    final autoOnboarding =
+        ref.read(topologyProvider.notifier).isSupportAutoOnboarding();
     return LayoutBuilder(builder: (context, constraint) {
       return _isLoading
           ? AppFullScreenSpinner(
@@ -151,6 +149,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
           : node.data.location,
       icon: node is OnlineTopologyNode ? LinksysIcons.language : null,
       showConnector: node is OnlineTopologyNode,
+      width: node.width,
     );
   }
 
