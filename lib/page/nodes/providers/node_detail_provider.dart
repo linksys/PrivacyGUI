@@ -105,15 +105,16 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
   }
 
   Future<void> getLEDLight() async {
-    ref.read(deviceManagerProvider.notifier).getLEDLight().then((value) {
+    return ref.read(deviceManagerProvider.notifier).getLEDLight().then((value) {
       state = state.copyWith(nodeLightSettings: value);
     });
   }
 
   Future<void> setLEDLight(NodeLightSettings settings) async {
-    ref
+    return ref
         .read(deviceManagerProvider.notifier)
         .setLEDLight(settings)
+        .then((_) => ref.read(deviceManagerProvider.notifier).getLEDLight())
         .then((value) {
       state = state.copyWith(nodeLightSettings: settings);
     });

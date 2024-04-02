@@ -790,5 +790,6 @@
   "modalTroubleshootNoNodesFound": "Let's check a few things",
   "modalTroubleshootNoNodesFoundDesc1": "Make sure the Nodes you're adding are fully powered on, indicated by a solid blue light",
   "modalTroubleshootNoNodesFoundDesc2": "Nodes are within range. Try moving them closer to the Router. Once added to your network, you can mode them further away.",
-  "back": "Back"
+  "back": "Back",
+  "nodeDetailsLedNightMode": "Night mode (8PM - 8AM)"
 }
