@@ -113,6 +113,8 @@ const kTickets = '/cloud/v1/tickets';
 const kGetTicketDetails = '/cloud/v1/tickets/$kTicketId';
 const kCreateTicketUpload = '/cloud/v1/tickets/$kTicketId/uploads';
 
+// NEW smart device
+const kSmartDeviceAssociate = '/cloud/v1/smart-devices/associate';
 
 // Client type id/secret
 final kClientTypeId = clientTypeID;

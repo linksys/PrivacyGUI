@@ -3,6 +3,9 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
+import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
+import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -73,6 +76,22 @@ class NotificationNotifier extends Notifier<NotificationState> {
         state = state.removeToken();
       } else {
         prefs.setString(pDeviceToken, token);
+
+        final master = ref.read(deviceManagerProvider).masterDevice;
+        final cloud = ref.read(cloudRepositoryProvider);
+
+        cloud
+            .deviceRegistrations(
+                serialNumber: master.unit.serialNumber ?? '',
+                modelNumber: master.model.modelNumber ?? '',
+                macAddress: master.getMacAddress())
+            .then((deviceToken) {
+          cloud.associateSmartDevice(
+              linksysToken: deviceToken,
+              serialNumber: master.unit.serialNumber ?? '',
+              fcmToken: token);
+        });
+
         state = state.copyWith(token: 'token');
       }
     });

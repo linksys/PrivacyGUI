@@ -54,4 +54,20 @@ extension Cloud2Service on LinksysHttpClient {
     });
     return this.get(Uri.parse(endpoint), headers: header);
   }
+
+  Future<Response> associateSmartDevice({
+    required String linksysToken,
+    required String serialNumber,
+    required String fcmToken,
+  }) {
+    final endpoint = combineUrl(kSmartDeviceAssociate);
+    Map<String, String> header = defaultHeader;
+
+    header.addAll({
+      kHeaderLinksysToken: linksysToken,
+      kHeaderSerialNumber: serialNumber,
+    });
+    return this.post(Uri.parse(endpoint),
+        headers: header, body: jsonEncode({'fcmToken': fcmToken}));
+  }
 }

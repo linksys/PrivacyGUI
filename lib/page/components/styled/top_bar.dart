@@ -56,10 +56,11 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                     Wrap(
                       children: [
                         if (loginType == LoginType.remote) _networkSelect(),
-                        const Padding(
-                          padding: EdgeInsets.all(4.0),
-                          child: NotificationPopupWidget(),
-                        ),
+                        if (loginType != LoginType.none)
+                          const Padding(
+                            padding: EdgeInsets.all(4.0),
+                            child: NotificationPopupWidget(),
+                          ),
                         const Padding(
                           padding: EdgeInsets.all(4.0),
                           child: GeneralSettingsWidget(),
@@ -109,4 +110,3 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
     );
   }
 }
-

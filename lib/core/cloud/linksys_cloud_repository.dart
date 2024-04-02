@@ -297,4 +297,15 @@ class LinksysCloudRepository {
         .getTickets(linksysToken: linksysToken, serialNumber: serialNumber)
         .then((response) => List.from(jsonDecode(response.body)['data']));
   }
+
+  Future<void> associateSmartDevice({
+    required String linksysToken,
+    required String serialNumber,
+    required String fcmToken,
+  }) {
+    return _httpClient.associateSmartDevice(
+        linksysToken: linksysToken,
+        serialNumber: serialNumber,
+        fcmToken: fcmToken);
+  }
 }
