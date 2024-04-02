@@ -30,6 +30,12 @@ class _BlinkNodeLightWidgetState extends ConsumerState<BlinkNodeLightWidget> {
           .take(widget.max);
 
   @override
+  void dispose() {
+    super.dispose();
+    _stopBlink();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: widget.padding ?? const EdgeInsets.all(4.0),
