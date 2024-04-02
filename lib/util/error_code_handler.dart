@@ -1,18 +1,19 @@
-
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/constants/error_code.dart';
-import 'package:linksys_moab/localization/localization_hook.dart';
-import 'package:linksys_moab/util/logger.dart';
+import 'package:linksys_app/constants/error_code.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 
-String generalErrorCodeHandler(BuildContext context, String code) {
-  switch(code) {
+String? generalErrorCodeHandler(BuildContext context, String code) {
+  switch (code) {
     case '':
-      return '';
+      return null;
     case errorUsernameExists:
       return getAppLocalizations(context).error_username_already_exist;
     case errorEmptyEmail:
       return getAppLocalizations(context).error_enter_a_valid_email_format;
     case errorInvalidPassword:
+      return getAppLocalizations(context).error_incorrect_password;
+    case errorInvalidCredentials:
       return getAppLocalizations(context).error_incorrect_password;
     case errorResourceNotFound:
       return getAppLocalizations(context).error_email_address_not_fount;
@@ -24,6 +25,10 @@ String generalErrorCodeHandler(BuildContext context, String code) {
       return getAppLocalizations(context).error_otp_exceeds_threshold;
     case errorInvalidPhone:
       return getAppLocalizations(context).error_invalid_phone_number;
+    case errorJNAPUnauthorized:
+      return getAppLocalizations(context).error_incorrect_password;
+    case errorAdminAccountLocked:
+      return loc(context).local_login_too_many_attempts_title;
     default:
       logger.e('Unhandled Error: $code');
       return getAppLocalizations(context).unknown_error_code(code);

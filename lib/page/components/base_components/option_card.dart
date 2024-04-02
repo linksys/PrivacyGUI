@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/design/colors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
-class OptionCard extends StatelessWidget {
+class OptionCard extends ConsumerWidget {
   const OptionCard({
     Key? key,
     required this.title,
     required this.description,
     this.minHeight = 120,
     this.onPress,
-  }): super(key: key);
+  }) : super(key: key);
 
   final String title;
   final String description;
@@ -16,36 +17,36 @@ class OptionCard extends StatelessWidget {
   final VoidCallback? onPress;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
+      onTap: onPress,
       child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(context).primaryColor,
+          ),
+        ),
+        constraints: BoxConstraints(
+          minHeight: minHeight,
+        ),
         child: Row(
           children: [
             Expanded(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  AppText.bodyLarge(
                     title,
-                    style: Theme.of(context).textTheme.headline3?.copyWith(
-                        color: Theme.of(context).primaryColor
-                    ),
                   ),
-                  const SizedBox(
-                    height: 16,
-                  ),
-                  Text(
+                  const AppGap.regular(),
+                  AppText.bodyMedium(
                     description,
-                    style: Theme.of(context).textTheme.headline4?.copyWith(
-                        color: Theme.of(context).colorScheme.tertiary
-                    ),
                   ),
                 ],
-                crossAxisAlignment: CrossAxisAlignment.start,
               ),
             ),
-            const SizedBox(
-              width: 20,
-            ),
+            const AppGap.big(),
             Image.asset(
               'assets/images/arrow_point_to_right.png',
               width: 10,
@@ -54,13 +55,7 @@ class OptionCard extends StatelessWidget {
             ),
           ],
         ),
-        color: MoabColor.cardBackground,
-        padding: const EdgeInsets.all(20),
-        constraints: BoxConstraints(
-          minHeight: minHeight,
-        ),
       ),
-      onTap: onPress,
     );
   }
 }

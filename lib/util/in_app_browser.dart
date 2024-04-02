@@ -1,15 +1,9 @@
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-final inAppBrowserOptions = InAppBrowserClassOptions(
-    crossPlatform: InAppBrowserOptions(hideUrlBar: true),
-    inAppWebViewGroupOptions: InAppWebViewGroupOptions(
-        crossPlatform: InAppWebViewOptions(javaScriptEnabled: true)));
-
 class MoabInAppBrowser extends InAppBrowser {
-
   MoabInAppBrowser();
   MoabInAppBrowser.withDefaultOption() {
-    setOptions(options: inAppBrowserOptions);
+    // setSettings(settings: InAppBrowserClassSettings());
   }
 
   @override

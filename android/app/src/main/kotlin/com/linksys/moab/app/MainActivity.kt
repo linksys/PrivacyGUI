@@ -1,4 +1,4 @@
-package com.linksys.moab.app
+package com.linksys.app.android
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

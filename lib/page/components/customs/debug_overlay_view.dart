@@ -1,49 +1,62 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:linksys_moab/bloc/connectivity/_connectivity.dart';
-import 'package:linksys_moab/bloc/connectivity/state.dart';
-import 'package:linksys_moab/repository/router/router_repository.dart';
-import 'package:linksys_moab/utils.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/providers/connectivity/_connectivity.dart';
+import 'package:linksys_app/providers/connectivity/connectivity_provider.dart';
+import 'package:linksys_app/util/permission.dart';
+import 'package:linksys_app/utils.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 
-class OverlayInfoView extends StatefulWidget {
+import '../../../constants/build_config.dart';
+
+class OverlayInfoView extends ConsumerStatefulWidget {
   const OverlayInfoView({super.key});
 
   @override
-  State<OverlayInfoView> createState() => _OverlayInfoViewState();
+  ConsumerState<OverlayInfoView> createState() => _OverlayInfoViewState();
 }
 
-class _OverlayInfoViewState extends State<OverlayInfoView> {
-  bool _isMqttConnected = false;
+class _OverlayInfoViewState extends ConsumerState<OverlayInfoView>
+    with Permissions {
   @override
   void initState() {
-    context.read<RouterRepository>().addMqttConnectionCallback((isConnected) {
-      setState(() {
-        _isMqttConnected = isConnected;
-      });
-    });
     super.initState();
+    // if (!kIsWeb) {
+    //   checkLocationPermissions().then((value) {
+    //     ref.read(connectivityProvider.notifier).forceUpdate();
+    //   });
+    // }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ConnectivityCubit, ConnectivityState>(
-        builder: (context, state) => Container(
-          padding: EdgeInsets.all(12),
-          width: Utils.getScreenWidth(context) / 2,
-              height: Utils.getScreenHeight(context)/ 10,
-              decoration: BoxDecoration(
-                color: Color(0x66000000),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Router: ${state.connectivityInfo.routerType.name}'),
-                  Text('Connectivity: ${state.connectivityInfo.type.name}'),
-                  Text('Gateway IP: ${state.connectivityInfo.gatewayIp}'),
-                  Text('SSID: ${state.connectivityInfo.ssid}'),
-                ],
-              ),
-            ));
+    final state = ref.watch(connectivityProvider);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      width: ResponsiveLayout.isLayoutBreakpoint(context)
+          ? MediaQueryUtils.getScreenWidth(context) / 2
+          : MediaQueryUtils.getScreenWidth(context) / 3,
+      height: 130,
+      decoration: const BoxDecoration(
+        color: Color(0x33000000),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.bodyMedium('Envrionment: ${cloudEnvTarget.name}'),
+            AppText.bodyMedium(
+                'Router: ${state.connectivityInfo.routerType.name}'),
+            AppText.bodyMedium(
+                'Connectivity: ${state.connectivityInfo.type.name}'),
+            AppText.bodyMedium(
+                'Gateway IP: ${state.connectivityInfo.gatewayIp}'),
+            AppText.bodyMedium('SSID: ${state.connectivityInfo.ssid}'),
+          ],
+        ),
+      ),
+    );
   }
 }

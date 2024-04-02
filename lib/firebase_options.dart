@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -49,21 +46,43 @@ class DefaultFirebaseOptions {
     }
   }
 
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyCvTujhXf_EeAuXWeecLeDEw4FH9IuNzqc',
+    appId: '1:110788105434:web:21200bdcd63b0be37281e3',
+    messagingSenderId: '110788105434',
+    projectId: 'linksys-app-flutter',
+    authDomain: 'linksys-app-flutter.firebaseapp.com',
+    storageBucket: 'linksys-app-flutter.appspot.com',
+    measurementId: 'G-XWTREXPQW6',
+  );
+
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBbmdFleHRNLNCjTrEvno_x2gVsMprhBMg',
-    appId: '1:1088152750789:android:709a0cc71267bad594beac',
-    messagingSenderId: '1088152750789',
-    projectId: 'moab-poc',
-    storageBucket: 'moab-poc.appspot.com',
+    apiKey: 'AIzaSyATn7lXHrJ2_e8BEclZB7J3T9ETegRx9f4',
+    appId: '1:110788105434:android:a243d83e7adcc6bb7281e3',
+    messagingSenderId: '110788105434',
+    projectId: 'linksys-app-flutter',
+    storageBucket: 'linksys-app-flutter.appspot.com',
+  );
+
+  static const FirebaseOptions iosEE = FirebaseOptions(
+    apiKey: 'AIzaSyAEG6J_AFleZcp06s5lUINsLmdoVwA90kI',
+    appId: '1:110788105434:ios:c10401c8fde9b7c37281e3',
+    messagingSenderId: '110788105434',
+    projectId: 'linksys-app-flutter',
+    storageBucket: 'linksys-app-flutter.appspot.com',
+    iosClientId:
+        '110788105434-h12ns2uc9nirulib0jmv84bv1ap8ev0k.apps.googleusercontent.com',
+    iosBundleId: 'com.linksys.app.ios.ee',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyC7JYg9RkPvYTMiabF8Gdao4eMoyBa0OHs',
-    appId: '1:1088152750789:ios:f4550b14644e5f2f94beac',
-    messagingSenderId: '1088152750789',
-    projectId: 'moab-poc',
-    storageBucket: 'moab-poc.appspot.com',
-    iosClientId: '1088152750789-ussp34ea7l49u7crdps34p9g1loqp31m.apps.googleusercontent.com',
-    iosBundleId: 'com.linksys.moab.poc',
+    apiKey: 'AIzaSyAEG6J_AFleZcp06s5lUINsLmdoVwA90kI',
+    appId: '1:110788105434:ios:bac9ae53b469127f7281e3',
+    messagingSenderId: '110788105434',
+    projectId: 'linksys-app-flutter',
+    storageBucket: 'linksys-app-flutter.appspot.com',
+    iosClientId:
+        '110788105434-2jp7p5sdmi448a623ur2hj77ljfe3tjt.apps.googleusercontent.com',
+    iosBundleId: 'com.linksys.app.ios',
   );
 }

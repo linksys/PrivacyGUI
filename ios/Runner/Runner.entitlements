@@ -6,7 +6,7 @@
 	<string>development</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>webcredentials:com.linksys.moab.poc</string>
+		<string>webcredentials:com.linksys.app.ios</string>
 		<string>applinks:qa.linksys.cloud</string>
 		<string>applinks:dev.linksys.cloud</string>
 	</array>

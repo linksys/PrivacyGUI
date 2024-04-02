@@ -1,29 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:linksys_moab/bloc/connectivity/cubit.dart';
-import 'package:linksys_moab/bloc/connectivity/state.dart';
-import 'package:linksys_moab/route/navigation_cubit.dart';
-import 'package:linksys_moab/util/permission.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:linksys_app/providers/connectivity/connectivity_provider.dart';
+import 'package:linksys_app/util/permission.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
+import 'package:linksys_widgets/widgets/base/gap.dart';
+import 'package:linksys_widgets/widgets/text/app_text.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class NetworkCheckView extends StatefulWidget {
-  const NetworkCheckView({Key? key, required this.description, required this.button }) : super(key: key);
+class NetworkCheckView extends ConsumerStatefulWidget {
+  const NetworkCheckView(
+      {Key? key, required this.description, required this.button})
+      : super(key: key);
 
   final String description;
   final Widget button;
 
   @override
-  State<NetworkCheckView> createState() => _NetworkCheckViewState();
+  ConsumerState<NetworkCheckView> createState() => _NetworkCheckViewState();
 }
 
-class _NetworkCheckViewState extends State<NetworkCheckView> with Permissions {
-
+class _NetworkCheckViewState extends ConsumerState<NetworkCheckView>
+    with Permissions {
   @override
   void initState() {
     super.initState();
     _initConnectivity();
   }
-
 
   @override
   void dispose() {
@@ -35,45 +38,31 @@ class _NetworkCheckViewState extends State<NetworkCheckView> with Permissions {
     await checkLocationPermissions().then((value) {
       if (!value) {
         openAppSettings();
-        NavigationCubit.of(context).pop();
+        context.pop();
       } else {
-        context.read<ConnectivityCubit>().forceUpdate();
+        ref.read(connectivityProvider.notifier).forceUpdate();
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ConnectivityCubit, ConnectivityState>(
-        builder: (context, state) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.description,
-                  style: Theme.of(context)
-                      .textTheme
-                      .headline3
-                      ?.copyWith(color: Theme.of(context).colorScheme.primary),
-                ),
-                const SizedBox(
-                  height: 8,
-                ),
-                Image.asset('assets/images/icon_wifi.png'),
-                const SizedBox(
-                  height: 12,
-                ),
-                Text(
-                  state.connectivityInfo.ssid ?? '',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headline3
-                      ?.copyWith(color: Theme.of(context).colorScheme.primary),
-                ),
-                const SizedBox(
-                  height: 43,
-                ),
-                widget.button,
-              ],
-            ));
+    final state = ref.watch(connectivityProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText.titleLarge(
+          widget.description,
+        ),
+        const AppGap.regular(),
+        const Icon(LinksysIcons.wifi),
+        const AppGap.semiSmall(),
+        AppText.bodyLarge(
+          state.connectivityInfo.ssid ?? '',
+        ),
+        const Spacer(),
+        widget.button,
+      ],
+    );
   }
 }

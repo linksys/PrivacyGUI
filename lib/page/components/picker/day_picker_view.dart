@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/utils.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const List<String> weeklyId = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-class DayPickerView extends StatefulWidget {
+class DayPickerView extends ConsumerStatefulWidget {
   const DayPickerView({
     Key? key,
     this.weeklyBool = const [
@@ -22,16 +22,18 @@ class DayPickerView extends StatefulWidget {
   final Function(List<bool> changed)? onChanged;
 
   @override
-  State<DayPickerView> createState() => _DayPickerViewState();
+  ConsumerState<DayPickerView> createState() => _DayPickerViewState();
 }
 
-class _DayPickerViewState extends State<DayPickerView> {
+class _DayPickerViewState extends ConsumerState<DayPickerView> {
   Map<String, bool> days = {};
 
   @override
   void initState() {
     super.initState();
-    days = widget.weeklyBool.asMap().map((key, value) => MapEntry(weeklyId[key], value));
+    days = widget.weeklyBool
+        .asMap()
+        .map((key, value) => MapEntry(weeklyId[key], value));
   }
 
   void changeStatus(String key) {

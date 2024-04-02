@@ -1,0 +1,16 @@
+{
+  "@@locale": "ko",
+  "app_title": " Linksys Flutter",
+  "cloud_account_login_title": "Linksys 계정에 로그인하세요",
+  "cloud_account_login_with_router_password": "라우터 비밀번호로 로그인하십시오",
+  "email": "이메일",
+  "enter_password": "비밀번호를 입력하십시오",
+  "error_enter_a_valid_email_format": "유효한 이메일 형식을 입력하세요.",
+  "forgot_password": "비밀번호를 잊어버렸습니다",
+  "login": "로그인",
+  "next": "다음",
+  "password": "비밀번호",
+  "password_hint": "비밀번호",
+  "password_updated": "비밀번호",
+  "text_continue": "계속"
+}

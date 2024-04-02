@@ -1,7 +1,7 @@
 {
   "file_generated_by": "FlutterFire CLI",
   "purpose": "FirebaseAppID & ProjectID for this Firebase app in this directory",
-  "GOOGLE_APP_ID": "1:1088152750789:ios:f4550b14644e5f2f94beac",
-  "FIREBASE_PROJECT_ID": "moab-poc",
-  "GCM_SENDER_ID": "1088152750789"
+  "GOOGLE_APP_ID": "1:110788105434:ios:bac9ae53b469127f7281e3",
+  "FIREBASE_PROJECT_ID": "linksys-app-flutter",
+  "GCM_SENDER_ID": "110788105434"
 }

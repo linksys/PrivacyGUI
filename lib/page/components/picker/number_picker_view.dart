@@ -2,12 +2,14 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/util/logger.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:numberpicker/numberpicker.dart';
 
 const double _kItemExtent = 32.0;
 
-class NumberPickerView extends StatefulWidget {
+class NumberPickerView extends ConsumerStatefulWidget {
   NumberPickerView(
       {Key? key,
       required this.title,
@@ -25,10 +27,10 @@ class NumberPickerView extends StatefulWidget {
   ValueChanged callback;
 
   @override
-  State<NumberPickerView> createState() => _NumberPickerViewState();
+  ConsumerState<NumberPickerView> createState() => _NumberPickerViewState();
 }
 
-class _NumberPickerViewState extends State<NumberPickerView> {
+class _NumberPickerViewState extends ConsumerState<NumberPickerView> {
   int pickerNumber = 0;
 
   @override
@@ -95,12 +97,11 @@ class _NumberPickerViewState extends State<NumberPickerView> {
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(widget.title,
-          style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Color.fromRGBO(0, 0, 0, 0.2))),
-      const SizedBox(height: 11),
+      AppText.bodyMedium(
+        widget.title,
+        color: const Color.fromRGBO(0, 0, 0, 0.2),
+      ),
+      const AppGap.semiSmall(),
       TextButton(
           onPressed: () {
             if (Platform.isAndroid) {
@@ -109,19 +110,21 @@ class _NumberPickerViewState extends State<NumberPickerView> {
               _showIOSDialog();
             }
           },
-          child: Text(pickerNumber.toString(),
-              style:
-                  const TextStyle(fontSize: 25, fontWeight: FontWeight.w500, color: Colors.black)),
           style: TextButton.styleFrom(
               alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.only(left: 0))),
-      const SizedBox(height: 6),
+              padding: const EdgeInsets.only(left: 0)),
+          child: Text(pickerNumber.toString(),
+              style: const TextStyle(
+                  fontSize: 25,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black))),
+      const AppGap.small(),
       Image.asset('assets/images/line.png')
     ]);
   }
 }
 
-class AndroidPicker extends StatefulWidget {
+class AndroidPicker extends ConsumerStatefulWidget {
   AndroidPicker(
       {Key? key,
       required this.current,
@@ -140,13 +143,13 @@ class AndroidPicker extends StatefulWidget {
   AndroidPickerState createState() => AndroidPickerState();
 }
 
-class AndroidPickerState extends State<AndroidPicker> {
+class AndroidPickerState extends ConsumerState<AndroidPicker> {
   int _currentValue = 0;
 
   @override
   void initState() {
     super.initState();
-    if (widget.current != null && widget.current != _currentValue) {
+    if (widget.current != _currentValue) {
       _currentValue = widget.current;
     }
   }
@@ -170,7 +173,7 @@ class AndroidPickerState extends State<AndroidPicker> {
   }
 }
 
-class IOSPicker extends StatefulWidget {
+class IOSPicker extends ConsumerStatefulWidget {
   IOSPicker(
       {Key? key,
       required this.current,
@@ -186,10 +189,10 @@ class IOSPicker extends StatefulWidget {
   ValueChanged callback;
 
   @override
-  State<IOSPicker> createState() => _IOSPickerState();
+  ConsumerState<IOSPicker> createState() => _IOSPickerState();
 }
 
-class _IOSPickerState extends State<IOSPicker> {
+class _IOSPickerState extends ConsumerState<IOSPicker> {
   late List<int> nums;
 
   @override

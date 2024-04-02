@@ -65,13 +65,15 @@ class _MyAppState extends State<MyApp> {
                     // setState(() {
                     //   _platformVersion = '$result';
                     // });
-                    final isTen = !await _connectingWifiPlugin.isAndroidVersionUnderTen();
-                    final easy = await _connectingWifiPlugin.isAndroidTenAndSupportEasyConnect();
+                    final isTen =
+                        !await _connectingWifiPlugin.isAndroidVersionUnderTen();
+                    final easy = await _connectingWifiPlugin
+                        .isAndroidTenAndSupportEasyConnect();
                     setState(() {
                       _platformVersion = 'ten: $isTen, easy: $easy';
                     });
                   },
-                  child: Text('Connect')),
+                  child: const Text('Connect')),
             ],
           ),
         ),

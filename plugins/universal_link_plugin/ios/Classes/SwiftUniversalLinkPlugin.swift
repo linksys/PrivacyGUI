@@ -11,7 +11,7 @@ public class SwiftUniversalLinkPlugin: NSObject, FlutterPlugin, FlutterStreamHan
     let instance = SwiftUniversalLinkPlugin()
     registrar.addMethodCallDelegate(instance, channel: channel)
     
-      let eventChannel = FlutterEventChannel(name: "com.linksys.moab/universal_link", binaryMessenger: registrar.messenger())
+      let eventChannel = FlutterEventChannel(name: "com.linksys.app.ios/universal_link", binaryMessenger: registrar.messenger())
       eventChannel.setStreamHandler(instance)
       registrar.addApplicationDelegate(instance)
   }

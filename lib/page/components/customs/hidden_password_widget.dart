@@ -1,34 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
-class HiddenPasswordWidget extends StatefulWidget {
+class HiddenPasswordWidget extends ConsumerStatefulWidget {
   final String password;
-  const HiddenPasswordWidget({
-    Key? key,
-    required this.password
-  }): super(key: key);
+  const HiddenPasswordWidget({Key? key, required this.password})
+      : super(key: key);
 
   @override
-  _HiddenPasswordWidgetState createState() => _HiddenPasswordWidgetState();
+  ConsumerState<HiddenPasswordWidget> createState() =>
+      _HiddenPasswordWidgetState();
 }
 
-class _HiddenPasswordWidgetState extends State<HiddenPasswordWidget> {
+class _HiddenPasswordWidgetState extends ConsumerState<HiddenPasswordWidget> {
   bool isPwSecure = true;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(
+        AppText.headlineMedium(
           _getPasswordContent(),
-          style: Theme.of(context).textTheme.headline2,
         ),
-        const SizedBox(
-          width: 6,
-        ),
-        InkWell(
-          child: isPwSecure
-              ? Image.asset('assets/images/eye_open.png')
-              : Image.asset('assets/images/eye_close.png'),
+        const AppGap.semiSmall(),
+        AppIconButton(
+          icon: isPwSecure
+              ? LinksysIcons.visibility
+              : LinksysIcons.visibilityOff,
           onTap: () {
             setState(() {
               isPwSecure = !isPwSecure;

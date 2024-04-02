@@ -1,10 +1,11 @@
 import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:linksys_moab/utils.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/utils.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 
-class TimePickerView extends StatefulWidget {
+class TimePickerView extends ConsumerStatefulWidget {
   const TimePickerView({
     Key? key,
     required this.title,
@@ -19,10 +20,10 @@ class TimePickerView extends StatefulWidget {
   final Function(Duration)? onChanged;
 
   @override
-  State<TimePickerView> createState() => _TimePickerViewState();
+  ConsumerState<TimePickerView> createState() => _TimePickerViewState();
 }
 
-class _TimePickerViewState extends State<TimePickerView> {
+class _TimePickerViewState extends ConsumerState<TimePickerView> {
   late Duration _current;
 
   _androidSelectTime(BuildContext context) async {
@@ -67,7 +68,6 @@ class _TimePickerViewState extends State<TimePickerView> {
                   mode: CupertinoDatePickerMode.time,
                   use24hFormat: false,
                   onDateTimeChanged: (DateTime newTime) {
-
                     setState(() => _current =
                         Duration(hours: newTime.hour, minutes: newTime.minute));
                     widget.onChanged?.call(_current);
@@ -89,36 +89,38 @@ class _TimePickerViewState extends State<TimePickerView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(widget.title,
-              style: const TextStyle(
-                  fontSize: 15, color: Color.fromRGBO(0, 0, 0, 0.4))),
-          const SizedBox(height: 11),
+          AppText.bodyLarge(
+            widget.title,
+            color: const Color.fromRGBO(0, 0, 0, 0.4),
+          ),
+          const AppGap.semiSmall(),
           TextButton(
-              onPressed: () {
-                if (Platform.isAndroid) {
-                  _androidSelectTime(context);
-                } else if (Platform.isIOS) {
-                  _iosSelectTime(context);
-                }
-              },
-              child: Text(Utils.formatTimeAmPm(_current.inSeconds),
-                  style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 25,
-                      fontWeight: FontWeight.w500)),
-              style: TextButton.styleFrom(
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.only(left: 0))),
-          const SizedBox(height: 6),
+            onPressed: () {
+              if (Platform.isAndroid) {
+                _androidSelectTime(context);
+              } else if (Platform.isIOS) {
+                _iosSelectTime(context);
+              }
+            },
+            style: TextButton.styleFrom(
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.only(left: 0)),
+            child: AppText.titleLarge(
+              DateFormatUtils.formatTimeAmPm(_current.inSeconds),
+            ),
+          ),
+          const AppGap.small(),
           Image.asset('assets/images/line.png'),
-          const SizedBox(height: 6),
+          const AppGap.small(),
           Visibility(
-            child: const Text('next day',
-                style: TextStyle(fontSize: 13, color: Colors.grey)),
             visible: widget.isNextDay,
             maintainSize: true,
             maintainAnimation: true,
             maintainState: true,
+            child: const AppText.bodyMedium(
+              'next day',
+              color: Colors.grey,
+            ),
           )
         ]);
   }

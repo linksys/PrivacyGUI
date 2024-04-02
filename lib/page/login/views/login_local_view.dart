@@ -1,0 +1,229 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:linksys_app/constants/error_code.dart';
+import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:linksys_app/page/components/styled/bottom_bar.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
+import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/providers/auth/_auth.dart';
+import 'package:linksys_app/providers/auth/auth_provider.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_app/util/error_code_handler.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/card/card.dart';
+import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+
+class LoginLocalView extends ArgumentsConsumerStatefulView {
+  const LoginLocalView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
+
+  @override
+  ConsumerState<LoginLocalView> createState() => _LoginViewState();
+}
+
+class _LoginViewState extends ConsumerState<LoginLocalView> {
+  String? _passwordHint;
+  String? _errorMessage;
+  int? _delayTime;
+  int? _remainingAttempts;
+  Timer? _timer;
+  bool isCountdownJustFinished = false;
+
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    //Use this to prevent errors from modifying the state during the init stage
+    Future.doWhile(() => !mounted).then((value) {
+      _getAdminPasswordHint();
+    });
+    ref.read(dashboardManagerProvider.notifier).checkDeviceInfo(null);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _timer?.cancel();
+    _passwordController.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(authProvider);
+    return state.when(error: (error, stack) {
+      //The countdown has been triggered and finished, but the error still exists in AsyncValue state
+      //The error message should not be set again when countdown is terminated
+      if (!isCountdownJustFinished) {
+        // Just get the error and the countdown has yet to be triggered
+        final JNAPError? jnapError = (error is JNAPError) ? error : null;
+        setErrorMessage(jnapError);
+      }
+      return contentView();
+    }, data: (state) {
+      //Read password hint from the state
+      _passwordHint = state.localPasswordHint;
+      return contentView();
+    }, loading: () {
+      return const AppFullScreenSpinner();
+    });
+  }
+
+  void setErrorMessage(JNAPError? error) {
+    if (error != null) {
+      // Check if it's the invalid admin password error from CheckAdminPassword3
+      if (error.result == errorInvalidAdminPassword) {
+        // Do not re-assign the error data while the timer is still running
+        if (!_isTimerRunning()) {
+          final errorContent =
+              jsonDecode(error.error!) as Map<String, dynamic>?;
+          _delayTime = errorContent?['delayTimeRemaining'] as int?;
+          _remainingAttempts = errorContent?['attemptsRemaining'] as int?;
+          if (_delayTime != null) {
+            // Trigger the timer as long as there is delay time
+            _errorMessage = getCountdownPrompt();
+            _startTimer();
+          } else {
+            // delay time will be absent if remaining attempts reach to 0
+            // No need to count down
+            _errorMessage = loc(context).local_login_too_many_attempts_title;
+          }
+        }
+      } else {
+        // Older check admin password jnaps or other error types
+        _errorMessage = generalErrorCodeHandler(context, error.result);
+      }
+    } else {
+      // Should not be here
+      _errorMessage = generalErrorCodeHandler(context, '');
+    }
+  }
+
+  String getCountdownPrompt() {
+    if (_remainingAttempts != null && _delayTime != null) {
+      //TODO: Localize the string
+      return 'Incorrect Router Password. Try again in ${_delayTime}s. Remaining attempts: $_remainingAttempts.';
+    } else {
+      return loc(context).local_login_incorrect_router_password;
+    }
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_delayTime! < 1) {
+        // Countdown has finished, clear the error message and refresh the view
+        setState(() {
+          _timer?.cancel();
+          _delayTime = null;
+          _remainingAttempts = null;
+          _errorMessage = null;
+          // By setting true, it prevent the error message being set again in this view updating
+          isCountdownJustFinished = true;
+        });
+      } else {
+        setState(() {
+          // Keep count down the delay time and update the error message
+          _delayTime = _delayTime! - 1;
+          _errorMessage = getCountdownPrompt();
+        });
+      }
+    });
+  }
+
+  bool _isTimerRunning() => _timer?.isActive ?? false;
+
+  StyledAppPageView contentView() {
+    return StyledAppPageView(
+      appBarStyle: AppBarStyle.none,
+      padding: EdgeInsets.zero,
+      scrollable: true,
+      child: AppBasicLayout(
+        content: Center(
+          child: AppCard(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText.headlineSmall(loc(context).login),
+                const AppGap.big(),
+                SizedBox(
+                  width: 289,
+                  child: AppPasswordField(
+                    border: const OutlineInputBorder(),
+                    controller: _passwordController,
+                    hintText: loc(context).router_password,
+                    onChanged: (value) {
+                      setState(() {
+                        _shouldEnableLoginButton();
+                      });
+                    },
+                    errorText: _errorMessage,
+                  ),
+                ),
+                if (_passwordHint != null)
+                  Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: SizedBox(
+                      width: 200,
+                      child: ExpansionTile(
+                        title: AppText.bodySmall(
+                          getAppLocalizations(context).show_hint,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        tilePadding: EdgeInsets.zero,
+                        backgroundColor: Colors.transparent,
+                        trailing: const SizedBox(),
+                        expandedAlignment: Alignment.centerLeft,
+                        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                        children: [Text(_passwordHint!)],
+                      ),
+                    ),
+                  ),
+                const AppGap.big(),
+                AppTextButton.noPadding(
+                  loc(context).forgot_password,
+                  onTap: () {
+                    context.pushNamed(RouteNamed.localRouterRecovery);
+                  },
+                ),
+                const AppGap.big(),
+                AppFilledButton(
+                  loc(context).login,
+                  onTap: _shouldEnableLoginButton()
+                      ? () {
+                          _localLogin();
+                        }
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+        footer: const BottomBar(),
+      ),
+    );
+  }
+
+  bool _shouldEnableLoginButton() =>
+      _passwordController.text.isNotEmpty && !_isTimerRunning();
+
+  void _getAdminPasswordHint() {
+    ref.read(authProvider.notifier).getPasswordHint();
+  }
+
+  _localLogin() {
+    isCountdownJustFinished = false;
+    ref.read(authProvider.notifier).localLogin(_passwordController.text);
+  }
+}

@@ -1,0 +1,122 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/constants/jnap_const.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
+import 'package:linksys_app/core/jnap/models/device_info.dart';
+import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/page/pnp/data/pnp_state.dart';
+import 'package:linksys_app/page/pnp/data/pnp_step_state.dart';
+import 'package:linksys_app/page/pnp/model/pnp_step.dart';
+
+final pnpProvider =
+    NotifierProvider<BasePnpNotifier, PnpState>(() => MockPnpNotifier());
+
+abstract class BasePnpNotifier extends Notifier<PnpState> {
+  @override
+  PnpState build() => const PnpState(
+        deviceInfo: null,
+        password: '',
+      );
+
+  ///
+  PnpStepState getStepState(int index) {
+    return state.stepStateList[index] ??
+        const PnpStepState(status: StepViewStatus.data, data: {});
+  }
+
+  void setStepState(int index, PnpStepState stepState) {
+    final stepStateData = Map<int, PnpStepState>.from(state.stepStateList);
+    stepStateData[index] = stepState;
+    state = state.copyWith(stepStateList: stepStateData);
+  }
+
+  void setStepStatus(int index, {required StepViewStatus status}) {
+    final stepStateData = Map<int, PnpStepState>.from(state.stepStateList);
+    final target = stepStateData[index] ??
+        const PnpStepState(status: StepViewStatus.loading, data: {});
+    stepStateData[index] = target.copyWith(status: status);
+    state = state.copyWith(stepStateList: stepStateData);
+  }
+
+  void setStepData(int index, {required Map<String, dynamic> data}) {
+    final stepStateData = Map<int, PnpStepState>.from(state.stepStateList);
+    final target = stepStateData[index] ??
+        const PnpStepState(status: StepViewStatus.loading, data: {});
+    stepStateData[index] = target.copyWith(
+        data: Map.fromEntries(target.data.entries)..addAll(data));
+    state = state.copyWith(stepStateList: stepStateData);
+  }
+
+  void setStepError(int index, {Object? error}) {
+    final stepStateData = Map<int, PnpStepState>.from(state.stepStateList);
+    final target = stepStateData[index] ??
+        const PnpStepState(status: StepViewStatus.loading, data: {});
+    stepStateData[index] = target.copyWith(error: error);
+    state = state.copyWith(stepStateList: stepStateData);
+  }
+
+  // abstract functions
+
+  Future fetchDeviceInfo();
+  Future checkAdminPassword(String? password);
+  Future checkInternetConnection();
+}
+
+class MockPnpNotifier extends BasePnpNotifier {
+  @override
+  Future checkAdminPassword(String? password) {
+    return Future.delayed(const Duration(seconds: 3));
+  }
+
+  @override
+  Future checkInternetConnection() {
+    return Future.delayed(const Duration(seconds: 3));
+  }
+
+  @override
+  Future fetchDeviceInfo() {
+    return Future.delayed(const Duration(seconds: 3));
+  }
+}
+
+class PnpNotifier extends BasePnpNotifier {
+  @override
+  Future fetchDeviceInfo() async {
+    final deviceInfo = await ref
+        .read(routerRepositoryProvider)
+        .send(
+          JNAPAction.getDeviceInfo,
+          cacheLevel: CacheLevel.noCache,
+          type: CommandType.local,
+          fetchRemote: true,
+        )
+        .then((result) => NodeDeviceInfo.fromJson(result.output));
+    // Build/Update better actions
+    buildBetterActions(deviceInfo.services);
+    state = state.copyWith(deviceInfo: deviceInfo);
+  }
+
+  @override
+  Future checkAdminPassword(String? password) async {
+    final response = await ref.read(routerRepositoryProvider).send(
+      JNAPAction.checkAdminPassword,
+      cacheLevel: CacheLevel.noCache,
+      type: CommandType.local,
+      fetchRemote: true,
+      data: {
+        'adminPassword': password,
+      },
+    );
+    if (response.result == jnapResultOk) {
+      state = state.copyWith(password: password);
+    } else {
+      throw response;
+    }
+  }
+
+  /// check internet connection within 30 seconds
+  @override
+  Future checkInternetConnection() {
+    return Future.delayed(const Duration(seconds: 3));
+  }
+}

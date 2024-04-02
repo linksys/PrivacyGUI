@@ -1,6 +1,18 @@
 {
   "@@locale": "zh_Hant",
-  "app_title": "Moab PoC 中文",
+  "app_title": "Linksys Flutter",
+  "cloud_account_login_title": "請登入您的Linksys帳戶",
+  "cloud_account_login_with_router_password": "使用路由器密碼登入",
+  "email": "電子郵件",
+  "enter_password": "輸入密碼",
+  "error_enter_a_valid_email_format": "請使用有效的電子郵件格式。",
+  "forgot_password": "忘記密碼",
+  "internet": "網路",
   "login": "登入",
-  "setup_new_router": "設定新的WiFi"
+  "next": "下一步",
+  "password": "密碼",
+  "password_hint": "密碼",
+  "password_updated": "密碼",
+  "setup_new_router": "設定新的WiFi",
+  "text_continue": "繼續"
 }
