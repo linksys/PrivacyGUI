@@ -9,6 +9,7 @@ import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/utils/bench_mark.dart';
 import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/nodes/providers/add_nodes_state.dart';
@@ -66,6 +67,8 @@ class AddNodesNotifier extends AutoDisposeAsyncNotifier<AddNodesState> {
 
   Future startAutoOnboarding() async {
     logger.d('XXXXX: startAutoOnboarding: ${state.value?.nodesSnapshot}');
+    final benchMark = BenchMarkLogger(name: 'AutoOnboarding');
+    benchMark.start();
     state = const AsyncValue.loading();
 
     state = await AsyncValue.guard(() async {
@@ -105,6 +108,19 @@ class AddNodesNotifier extends AutoDisposeAsyncNotifier<AddNodesState> {
             .map((e) => e['btMACAddress'] as String?)
             .whereNotNull()
             .toList();
+        // // delete devices data
+        // final deviceIDList = nodeSnapshot
+        //     .where((device) =>
+        //         device.knownInterfaces?.any((knownInterface) =>
+        //             onboardedMACList.contains(knownInterface.macAddress)) ??
+        //         false)
+        //     .map((e) => e.deviceID)
+        //     .toList();
+        // logger.d(
+        //     'XXXXX: [onboardingStatus]deleted device id list: $deviceIDList');
+        // await ref
+        //     .read(deviceManagerProvider.notifier)
+        //     .deleteDevices(deviceIds: deviceIDList);
       }
       List<RawDevice> addedDevices = [];
       List<RawDevice> childNodes = [];
@@ -129,6 +145,7 @@ class AddNodesNotifier extends AutoDisposeAsyncNotifier<AddNodesState> {
       await polling.forcePolling().then((value) => polling.startPolling());
       logger.d(
           'XXXXX: add nodes state: nodesSnapshot: $nodeSnapshot, onboardingProceed: $onboardingProceed, anyOnboarded: $anyOnboarded, addedDevices: $addedDevices');
+      benchMark.end();
       return AddNodesState(
         nodesSnapshot: nodeSnapshot,
         onboardingProceed: onboardingProceed,
@@ -176,15 +193,14 @@ class AddNodesNotifier extends AutoDisposeAsyncNotifier<AddNodesState> {
                               .contains(knownInterface.macAddress)) ??
                       false;
                   logger.d(
-                      'XXXXX: [pollForNodesOnline] test node<$device> is new added? ${!hit}, or included in the MAC list? $hitFromOnboardMACList');
+                      'XXXXX: [pollForNodesOnline] test node<${device.getDeviceLocation()}> is new added? ${!hit}, or included in the MAC list? $hitFromOnboardMACList');
 
-                  final nameUpdated =
-                      device.getDeviceLocation() != device.modelNumber;
+                  final hasConnections = device.connections.isNotEmpty;
                   if (hitFromOnboardMACList) {
                     logger.d(
-                        'XXXXX: [pollForNodesOnline] check name is updated: ${device.getDeviceLocation()}, ${device.modelNumber}, $nameUpdated');
+                        'XXXXX: [pollForNodesOnline] check connections: $hasConnections');
                   }
-                  return !hit || (hitFromOnboardMACList && !nameUpdated);
+                  return !hit || (hitFromOnboardMACList && !hasConnections);
                 });
                 if (!ret && testRetry++ > maxTestRetry) {
                   return true;

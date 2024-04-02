@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/nodes/providers/add_nodes_state.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -52,25 +53,25 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(addNodesProvider);
-    return state.when(
-        error: (error, stackTrace) {
-          // error handling
-          return _contentView();
-        },
-        data: (state) {
-          if (state.onboardingProceed != null) {
-            return _resultView(state);
-          } else {
-            return _contentView();
-          }
-        },
-        loading: () => AppFullScreenSpinner(
-              title: loc(context).addNodesSearchingNodes,
-              text: loc(context).addNodesSearchingNodesDesc,
-            ));
+    return state.when(error: (error, stackTrace) {
+      // error handling
+      logger.e(error, stackTrace: stackTrace);
+      return _resultView(state.value);
+    }, data: (state) {
+      if (state.onboardingProceed != null) {
+        return _resultView(state);
+      } else {
+        return _contentView();
+      }
+    }, loading: () {
+      return AppFullScreenSpinner(
+        title: loc(context).addNodesSearchingNodes,
+        text: loc(context).addNodesSearchingNodesDesc,
+      );
+    });
   }
 
-  Widget _resultView(AddNodesState state) {
+  Widget _resultView(AddNodesState? state) {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).addNodes,
@@ -78,7 +79,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (state.addedNodes?.isEmpty == true)
+          if (state?.addedNodes?.isEmpty == true)
             AppStyledText.link(
               loc(context).addNodesNoNodesFound,
               defaultTextStyle: Theme.of(context)
@@ -95,7 +96,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
             ),
           Column(
             children: [
-              ...state.childNodes
+              ...state?.childNodes
                       ?.map((e) => AppNodeListCard(
                           leading: CustomTheme.of(context)
                               .images
