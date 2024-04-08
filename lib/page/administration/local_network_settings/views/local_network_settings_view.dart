@@ -116,7 +116,7 @@ class _LocalNetworkSettingsViewState
             // IP address
             AppIPFormField(
               header: AppText.bodyLarge(
-                loc(context).ipAddress.capitalized(),
+                loc(context).ipAddress.capitalizeWords(),
               ),
               controller: _hostIpAddressController,
               onFocusChanged: (focused) {

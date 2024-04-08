@@ -88,7 +88,7 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
             description: state.ipv6WANType,
           ),
           AppPanelWithTrailWidget(
-            title: loc(context).ipAddress.capitalized(),
+            title: loc(context).ipAddress.capitalizeWords(),
             description: state.ipv4WANAddress,
             trailing: _checkIpIsRenewIng(state),
           ),
@@ -174,7 +174,7 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppSimplePanel(
-              title: loc(context).ipAddress.capitalized(),
+              title: loc(context).ipAddress.capitalizeWords(),
               description:
                   state.masterNode?.connections.firstOrNull?.ipAddress ?? '',
             ),

@@ -402,7 +402,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: AppText.titleLarge(loc(context).moreInfo.camelCapitalized()),
+            title: AppText.titleLarge(loc(context).moreInfo.camelCapitalize()),
             actions: [
               AppTextButton.noPadding(
                 loc(context).close,
@@ -420,7 +420,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 AppText.bodyMedium(state.modelNumber),
                 const AppGap.regular(),
                 AppText.labelLarge(
-                    loc(context).serialNumber.camelCapitalized()),
+                    loc(context).serialNumber.camelCapitalize()),
                 AppText.bodyMedium(state.serialNumber),
               ],
             ),
