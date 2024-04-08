@@ -51,6 +51,7 @@ part 'route_cloud_login.dart';
 part 'route_local_login.dart';
 part 'route_dashboard.dart';
 part 'route_settings.dart';
+part 'route_advanced_settings.dart';
 part 'route_otp.dart';
 part 'route_pnp.dart';
 part 'route_add_nodes.dart';

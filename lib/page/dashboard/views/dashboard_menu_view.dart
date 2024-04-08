@@ -45,7 +45,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             onTap: () {
               _restartNetwork();
             }),
-        PageMenuItem(label: loc(context).menuSetupANewProduct, icon: LinksysIcons.add)
+        PageMenuItem(
+            label: loc(context).menuSetupANewProduct, icon: LinksysIcons.add)
       ]),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -99,24 +100,30 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
     return [
       AppSectionItemData(
           title: loc(context).wifi,
-          description: 'This is a description for this tile',
+          description: loc(context).menuWifiDesc,
           iconData: LinksysIcons.wifi,
           onTap: () {
             _navigateTo(RouteNamed.settingsWifi);
           }),
       AppSectionItemData(
           title: loc(context).menuRouterAndNodes,
-          description: 'This is a description for this tile',
+          description: loc(context).menuRouterAndNodesDesc,
           iconData: LinksysIcons.router,
           onTap: () {
             _navigateTo(RouteNamed.settingsNodes);
           }),
       AppSectionItemData(
           title: loc(context).safeBrowsing,
-          description: 'This is a description for this tile',
+          description: loc(context).menuSafeBrowsingDesc,
           iconData: LinksysIcons.encrypted,
           onTap: () {
             _navigateTo(RouteNamed.safeBrowsing);
+          }),
+      AppSectionItemData(
+          title: loc(context).advancedSettings,
+          iconData: LinksysIcons.settings,
+          onTap: () {
+            _navigateTo(RouteNamed.dashboardAdvancedSettings);
           }),
       AppSectionItemData(
           title: loc(context).familyTime,
@@ -131,7 +138,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             _navigateTo(RouteNamed.speedTestSelection);
           }),
       AppSectionItemData(
-          title: loc(context).advancedSettings,
+          title: 'Settings',
           description: 'This is a description for this tile',
           iconData: LinksysIcons.settings,
           onTap: () {

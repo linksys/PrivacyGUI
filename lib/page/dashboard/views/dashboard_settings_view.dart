@@ -60,10 +60,6 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             ),
             const AppGap.semiBig(),
             _section(
-              _advancedSettingsSection(),
-            ),
-            const AppGap.semiBig(),
-            _section(
               _othersSettingsSection(),
             ),
             const AppGap.semiBig(),
@@ -169,33 +165,6 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             title: 'Time Zone',
             // iconData: getCharactersIcons(context).smsDefault,
             onTap: () => context.goNamed(RouteNamed.settingsTimeZone),
-          ),
-        ],
-      );
-
-//
-  _advancedSettingsSection() => DashboardSettingsSection(
-        title: 'ADVANCED',
-        items: [
-          AppSectionItemData(
-            title: 'Internet Settings',
-            // iconData: getCharactersIcons(context).profileDefault,
-            onTap: () => context.goNamed(RouteNamed.settingsInternet),
-          ),
-          AppSectionItemData(
-            title: 'IP Details',
-            // iconData: getCharactersIcons(context).infoRound,
-            onTap: () => context.goNamed(RouteNamed.settingsIpDetails),
-          ),
-          AppSectionItemData(
-            title: 'Local Network Settings',
-            // iconData: getCharactersIcons(context).nodesDefault,
-            onTap: () => context.goNamed(RouteNamed.settingsLocalNetwork),
-          ),
-          AppSectionItemData(
-            title: 'Port',
-            // iconData: getCharactersIcons(context).nodesDefault,
-            onTap: () => context.goNamed(RouteNamed.settingsPort),
           ),
         ],
       );
