@@ -48,9 +48,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   @override
   void initState() {
     super.initState();
-    if (isServiceSupport(JNAPService.routerLEDs3)) {
-      ref.read(nodeDetailProvider.notifier).getLEDLight();
-    }
   }
 
   @override
@@ -210,10 +207,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   Widget _lightCard(NodeDetailState state) {
-    final hasBlinkFunction = isServiceSupport(JNAPService.setup9);
-    bool isSupportNightModeOnly = isServiceSupport(JNAPService.routerLEDs3);
-    bool isSupportNodeLight = isServiceSupport(JNAPService.routerLEDs4);
-    if (!hasBlinkFunction && !isSupportNightModeOnly && !isSupportNodeLight) {
+    final hasBlinkFunction = ref.read(nodeDetailProvider.notifier).isSupportLedBlinking();
+    bool isSupportNodeLight = ref.read(nodeDetailProvider.notifier).isSupportLedMode();
+    if (!hasBlinkFunction && !isSupportNodeLight) {
       return const Center();
     }
     return AppCard(
@@ -244,12 +240,11 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   List<Widget> _createNodeLightTile(NodeLightSettings? nodeLightSettings) {
-    bool isSupportNightModeOnly = isServiceSupport(JNAPService.routerLEDs3);
-    bool isSupportNodeLight = isServiceSupport(JNAPService.routerLEDs4);
-    if (!isSupportNodeLight && !isSupportNightModeOnly) {
+    bool isSupportNodeLight = ref.read(nodeDetailProvider.notifier).isSupportLedMode();
+    if (!isSupportNodeLight) {
       return [];
     } else {
-      final title = isSupportNodeLight ? 'Node Light' : 'Night Mode';
+      final title = loc(context).nodeLight;
       return [
         AppDeviceInfoCard(
           title: title,
@@ -335,7 +330,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
 
   Future _showEditNodeNameDialog(NodeDetailState state) {
     final textController = TextEditingController()..text = state.location;
-    final hasBlinkFunction = isServiceSupport(JNAPService.setup9);
+    final hasBlinkFunction = ref.read(nodeDetailProvider.notifier).isSupportLedBlinking();
     return showDialog(
         context: context,
         builder: (context) {

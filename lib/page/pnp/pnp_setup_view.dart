@@ -15,9 +15,11 @@ import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/card/card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_widgets/widgets/progress_bar/spinner.dart';
 
 enum _PnpSetupStep {
   init,
@@ -61,7 +63,6 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         PersonalWiFiStep(index: index++),
         GuestWiFiStep(index: index++),
         NightModeStep(index: index++),
-        SafeBrowsingStep(index: index++),
       ];
       setState(() {
         _setupStep = _PnpSetupStep.config;
@@ -81,7 +82,17 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   Widget build(BuildContext context) {
     return StyledAppPageView(
       backState: StyledBackState.none,
-      child: _buildPnpSetupView(),
+      padding: EdgeInsets.zero,
+      child: AppBasicLayout(
+        content: Center(
+          child: AppCard(
+            showBorder: false,
+            color: Theme.of(context).colorScheme.background,
+            padding: EdgeInsets.zero,
+            child: _buildPnpSetupView(),
+          ),
+        ),
+      ),
     );
   }
 
@@ -104,23 +115,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
 
   Widget _configView() => AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: InkWell(
-          onTap: () {
-            context.goNamed(RouteNamed.pnpNoInternetConnection);
-          },
-          child: SvgPicture(
-            CustomTheme.of(context).images.linksysLogoBlack,
-            width: 32,
-            height: 32,
-            fit: BoxFit.cover,
-          ),
-        ),
         content: LayoutBuilder(builder: (context, constraints) {
           return PnpStepper(
             steps: steps,
-            stepperType: ResponsiveLayout.isMobile(context)
-                ? StepperType.vertical
-                : StepperType.horizontal,
+            stepperType: StepperType.horizontal,
             onLastStep: _saveChanges,
           );
         }),
@@ -130,7 +128,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(),
+            const AppSpinner(),
             const AppGap.regular(),
             AppText.labelMedium(_loadingMessage),
             const AppGap.regular(),
@@ -163,7 +161,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Icon(
-           LinksysIcons.wifi,
+          LinksysIcons.wifi,
         ),
         const AppGap.regular(),
         AppText.titleMedium('$wifiSSID is ready'),

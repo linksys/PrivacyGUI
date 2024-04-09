@@ -4,6 +4,7 @@ import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/models/device_info.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/page/pnp/data/pnp_error.dart';
 import 'package:linksys_app/page/pnp/data/pnp_state.dart';
 import 'package:linksys_app/page/pnp/data/pnp_step_state.dart';
 import 'package:linksys_app/page/pnp/model/pnp_step.dart';
@@ -65,7 +66,11 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
 class MockPnpNotifier extends BasePnpNotifier {
   @override
   Future checkAdminPassword(String? password) {
-    return Future.delayed(const Duration(seconds: 3));
+    if (password == 'Linksys123!') {
+      return Future.delayed(const Duration(seconds: 1));
+    }
+    return Future.delayed(const Duration(seconds: 3))
+        .then((value) => throw ErrorInvalidAdminPassword());
   }
 
   @override

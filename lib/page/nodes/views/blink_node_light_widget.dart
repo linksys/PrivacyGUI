@@ -24,10 +24,17 @@ class _BlinkNodeLightWidgetState extends ConsumerState<BlinkNodeLightWidget> {
   int _count = 0;
   bool _isBlinking = false;
   StreamSubscription? subscription;
+  late final NodeDetailNotifier _notifier;
 
   Stream<int> startCounting() =>
       Stream<int>.periodic(const Duration(seconds: 1), (count) => count)
           .take(widget.max);
+
+  @override
+  void initState() {
+    super.initState();
+    _notifier = ref.read(nodeDetailProvider.notifier);
+  }
 
   @override
   void dispose() {
@@ -60,7 +67,7 @@ class _BlinkNodeLightWidgetState extends ConsumerState<BlinkNodeLightWidget> {
   }
 
   _startBlink() async {
-    await ref.read(nodeDetailProvider.notifier).toggleBlinkNode();
+    await _notifier.toggleBlinkNode();
     setState(() {
       _count = widget.max;
       _isBlinking = true;
@@ -76,11 +83,12 @@ class _BlinkNodeLightWidgetState extends ConsumerState<BlinkNodeLightWidget> {
   }
 
   _stopBlink() async {
-    await ref.read(nodeDetailProvider.notifier).stopBlinkNodeLED();
-
-    setState(() {
-      _isBlinking = false;
-    });
+    await _notifier.stopBlinkNodeLED();
+    if (mounted) {
+      setState(() {
+        _isBlinking = false;
+      });
+    }
     subscription?.cancel();
   }
 }

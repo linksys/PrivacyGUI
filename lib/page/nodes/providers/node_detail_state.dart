@@ -1,6 +1,9 @@
-import 'package:flutter/foundation.dart';
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:convert';
+
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
-import 'package:linksys_app/core/jnap/models/device.dart';
+
 import 'package:linksys_app/core/jnap/models/node_light_settings.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
@@ -12,6 +15,12 @@ enum BlinkingStatus {
 
   final String value;
   const BlinkingStatus(this.value);
+
+  static BlinkingStatus resolve(String value) => switch (value) {
+        'Blink Node' => BlinkingStatus.blinkNode,
+        'Blinking' => BlinkingStatus.blinking,
+        _ => BlinkingStatus.stopBlinking,
+      };
 }
 
 enum NodeLightStatus {
@@ -44,8 +53,7 @@ enum NodeLightStatus {
   }
 }
 
-@immutable
-class NodeDetailState {
+class NodeDetailState extends Equatable {
   final String deviceId;
   final String location;
   final bool isMaster;
@@ -118,5 +126,84 @@ class NodeDetailState {
       nodeLightSettings: nodeLightSettings ?? this.nodeLightSettings,
       blinkingStatus: blinkingStatus ?? this.blinkingStatus,
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'deviceId': deviceId,
+      'location': location,
+      'isMaster': isMaster,
+      'isOnline': isOnline,
+      'connectedDevices': connectedDevices.map((x) => x.toMap()).toList(),
+      'upstreamDevice': upstreamDevice,
+      'isWiredConnection': isWiredConnection,
+      'signalStrength': signalStrength,
+      'serialNumber': serialNumber,
+      'modelNumber': modelNumber,
+      'firmwareVersion': firmwareVersion,
+      'hardwareVersion': hardwareVersion,
+      'lanIpAddress': lanIpAddress,
+      'wanIpAddress': wanIpAddress,
+      'nodeLightSettings': nodeLightSettings?.toMap(),
+      'blinkingStatus': blinkingStatus.value,
+    };
+  }
+
+  factory NodeDetailState.fromMap(Map<String, dynamic> map) {
+    return NodeDetailState(
+      deviceId: map['deviceId'] as String,
+      location: map['location'] as String,
+      isMaster: map['isMaster'] as bool,
+      isOnline: map['isOnline'] as bool,
+      connectedDevices: List<LinksysDevice>.from(
+        map['connectedDevices'].map<LinksysDevice>(
+          (x) => LinksysDevice.fromMap(x as Map<String, dynamic>),
+        ),
+      ),
+      upstreamDevice: map['upstreamDevice'] as String,
+      isWiredConnection: map['isWiredConnection'] as bool,
+      signalStrength: map['signalStrength'] as int,
+      serialNumber: map['serialNumber'] as String,
+      modelNumber: map['modelNumber'] as String,
+      firmwareVersion: map['firmwareVersion'] as String,
+      hardwareVersion: map['hardwareVersion'] as String,
+      lanIpAddress: map['lanIpAddress'] as String,
+      wanIpAddress: map['wanIpAddress'] as String,
+      nodeLightSettings: map['nodeLightSettings'] != null
+          ? NodeLightSettings.fromMap(
+              map['nodeLightSettings'] as Map<String, dynamic>)
+          : null,
+      blinkingStatus: BlinkingStatus.resolve(map['blinkingStatus'] as String),
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory NodeDetailState.fromJson(String source) =>
+      NodeDetailState.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  bool get stringify => true;
+
+  @override
+  List<Object?> get props {
+    return [
+      deviceId,
+      location,
+      isMaster,
+      isOnline,
+      connectedDevices,
+      upstreamDevice,
+      isWiredConnection,
+      signalStrength,
+      serialNumber,
+      modelNumber,
+      firmwareVersion,
+      hardwareVersion,
+      lanIpAddress,
+      wanIpAddress,
+      nodeLightSettings,
+      blinkingStatus,
+    ];
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
 import 'package:linksys_app/page/pnp/model/pnp_step.dart';
 import 'package:linksys_app/page/pnp/widgets/wifi_password_widget.dart';
@@ -53,72 +54,61 @@ class GuestWiFiStep extends PnpStep {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AppText.bodyLarge(
-            'Turn on guest network to create separate Wi-Fi network for guests and maintain the privacy of your main network'),
-        const AppGap.semiSmall(),
-        Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppSwitch(
-              value: isEnabled,
-              onChanged: (value) {
-                update(ref, key: 'isEnabled', value: value);
-              },
-            ),
-            ...isEnabled
-                ? [
-                    Container(
-                      constraints: const BoxConstraints(maxWidth: 480),
-                      child: WiFiSSIDField(
-                        controller: _ssidEditController!,
-                        label: 'SSID',
-                        hint: 'Guest WiFi SSID',
-                        onCheckInput: (isValid, input) {
-                          if (isValid) {
-                            ref
-                                .read(pnpProvider.notifier)
-                                .setStepData(index, data: {'ssid': input});
-                          } else {
-                            ref
-                                .read(pnpProvider.notifier)
-                                .setStepData(index, data: {'ssid': ''});
-                          }
-                          _check(ref);
-                        },
-                      ),
-                    ),
-                    const AppGap.semiSmall(),
-                    Container(
-                      constraints: const BoxConstraints(maxWidth: 480),
-                      child: WiFiPasswordField(
-                        controller: _passwordEditController!,
-                        label: 'Password',
-                        hint: 'Guest WiFi Password',
-                        onCheckInput: (isValid, input) {
-                          if (isValid) {
-                            ref
-                                .read(pnpProvider.notifier)
-                                .setStepData(index, data: {'password': input});
-                          } else {
-                            ref
-                                .read(pnpProvider.notifier)
-                                .setStepData(index, data: {'password': ''});
-                          }
-                          _check(ref);
-                        },
-                      ),
-                    )
-                  ]
-                : [],
-          ],
+        AppSwitch(
+          value: isEnabled,
+          onChanged: (value) {
+            update(ref, key: 'isEnabled', value: value);
+          },
         ),
+        const AppGap.big(),
+        AppText.bodyLarge(loc(context).pnpGuestWiFiDesc),
+        const AppGap.big(),
+        ...isEnabled
+            ? [
+                WiFiSSIDField(
+                  controller: _ssidEditController!,
+                  label: loc(context).guestWiFiName,
+                  hint: loc(context).guestWiFiName,
+                  onCheckInput: (isValid, input) {
+                    if (isValid) {
+                      ref
+                          .read(pnpProvider.notifier)
+                          .setStepData(index, data: {'ssid': input});
+                    } else {
+                      ref
+                          .read(pnpProvider.notifier)
+                          .setStepData(index, data: {'ssid': ''});
+                    }
+                    _check(ref);
+                  },
+                ),
+                const AppGap.regular(),
+                WiFiPasswordField(
+                  controller: _passwordEditController!,
+                  label: loc(context).guestWiFiPassword,
+                  hint: loc(context).guestWiFiPassword,
+                  onCheckInput: (isValid, input) {
+                    if (isValid) {
+                      ref
+                          .read(pnpProvider.notifier)
+                          .setStepData(index, data: {'password': input});
+                    } else {
+                      ref
+                          .read(pnpProvider.notifier)
+                          .setStepData(index, data: {'password': ''});
+                    }
+                    _check(ref);
+                  },
+                ),
+                const AppGap.regular(),
+              ]
+            : [],
       ],
     );
   }
 
   @override
-  String title(BuildContext context) => 'Guest Network';
+  String title(BuildContext context) => loc(context).guestNetwork;
 
   void update(WidgetRef ref, {required String key, dynamic value}) {
     if (value == null) {

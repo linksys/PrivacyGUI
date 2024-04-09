@@ -6,6 +6,7 @@ import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/progress_bar/spinner.dart';
 
 enum StepViewStatus {
   data,
@@ -112,10 +113,21 @@ abstract class PnpStep {
             ? const SizedBox(
                 height: 240,
                 child: Center(
-                  child: CircularProgressIndicator(),
+                  child: AppSpinner(),
                 ),
               )
-            : content(context: context, ref: ref, child: child);
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    children: [
+                      AppText.titleLarge(title(context)),
+                    ],
+                  ),
+                  const AppGap.big(),
+                  content(context: context, ref: ref, child: child),
+                ],
+              );
       });
   Step resolveStep({
     required BuildContext context,

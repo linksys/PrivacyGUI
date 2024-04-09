@@ -111,12 +111,16 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           const AppGap.regular(),
           AppTextButton.noPadding(
             loc(context).try_again_button,
-            onTap: () {},
+            onTap: () {
+              ref.read(addNodesProvider.notifier).startAutoOnboarding();
+            },
           ),
           const AppGap.big(),
           AppFilledButton(
             loc(context).next,
-            onTap: () {},
+            onTap: () {
+              context.pop(state?.addedNodes?.isNotEmpty ?? false);
+            },
           )
         ],
       )),

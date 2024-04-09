@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/page/pnp/data/pnp_error.dart';
 import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/validator_rules/rules.dart';
@@ -14,7 +16,8 @@ import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/buttons/popup_button.dart';
+import 'package:linksys_widgets/widgets/card/card.dart';
+import 'package:linksys_widgets/widgets/progress_bar/spinner.dart';
 
 class PnpAdminView extends ArgumentsBaseConsumerStatefulView {
   const PnpAdminView({super.key, super.args});
@@ -59,13 +62,13 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         })
         .catchError((error, stackTrace) {
           context.goNamed(RouteNamed.pnpNoInternetConnection);
-        }, test: (error) => error == 'ErrorCheckInternetConnection')
+        }, test: (error) => error is ErrorCheckInternetConnection)
         .catchError((error, stackTrace) {
           setState(() {
             _internetChecked = true;
             _inputError = '';
           });
-        }, test: (error) => error == 'ErrorInvalidAdminPassword');
+        }, test: (error) => error is ErrorInvalidAdminPassword);
   }
 
   @override
@@ -82,25 +85,26 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
 
   Widget _checkInternetView() {
     return _internetConnected
-        ? const Center(
+        ? Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                AppText.labelMedium('Internet connected'),
-                AppGap.regular(),
+                AppText.labelMedium(loc(context).launchInternetConnected),
+                const AppGap.regular(),
                 Icon(
-                  LinksysIcons.checkCircle,
+                  LinksysIcons.signalWifi4Bar,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ],
             ),
           )
-        : const Center(
+        : Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                AppText.labelMedium('Checking your internet...'),
-                AppGap.regular(),
-                CircularProgressIndicator(),
+                const AppSpinner(),
+                const AppGap.regular(),
+                AppText.labelMedium(loc(context).launchCheckInternet),
               ],
             ),
           );
@@ -109,25 +113,30 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
   Widget _adminPasswordView() {
     return StyledAppPageView(
       backState: StyledBackState.none,
-      child: Align(
-        alignment: Alignment.topLeft,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Image(
-              image: CustomTheme.of(context)
-                  .images
-                  .devices
-                  .getByName(routerIconTestByModel(modelNumber: 'LN11')),
-              height: 128,
-            ),
-            const AppText.bodyLarge("Enter your router's password to proceed"),
-            const AppGap.semiSmall(),
-            Container(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: AppPasswordField(
-                hintText: 'Password',
+      child: Center(
+        child: AppCard(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Image(
+                image: CustomTheme.of(context)
+                    .images
+                    .devices
+                    .getByName(routerIconTestByModel(modelNumber: 'LN11')),
+                height: 160,
+                width: 160,
+                fit: BoxFit.fitWidth,
+              ),
+              AppText.headlineSmall(loc(context).welcome),
+              const AppGap.regular(),
+              AppText.bodyLarge(loc(context).pnpRouterLoginDesc),
+              const AppGap.big(),
+              AppPasswordField(
+                hintText: loc(context).routerPassword,
+                border: const OutlineInputBorder(),
                 controller: _textEditController,
                 errorText: _inputError?.isEmpty ?? true ? null : _inputError,
                 onChanged: (value) {
@@ -140,39 +149,41 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
                   });
                 },
               ),
-            ),
-            ..._checkError(context, _error),
-            const AppGap.semiSmall(),
-            AppPopupButton(
-                button: AppText.bodyMedium('Where is it?'),
-                builder: (controller) => AppText.bodyMedium(
-                    'Your router password is the same as your default Wi-Fi password, printed on the Quick Start Guide and on the bottom of your router')),
-            const AppGap.extraBig(),
-            AppFilledButton(
-              'Next',
-              onTap: _inputError == null && !_processing
-                  ? () {
-                      setState(() {
-                        _processing = true;
-                      });
-                      ref
-                          .read(pnpProvider.notifier)
-                          .checkAdminPassword(_textEditController.text)
-                          .then((_) {
-                        context.goNamed(RouteNamed.pnpConfig);
-                      }).onError((error, stackTrace) {
+              ..._checkError(context, _error),
+              const AppGap.big(),
+              AppTextButton.noPadding(
+                loc(context).pnpRouterLoginWhereIsIt,
+                onTap: () {
+                  _showRouterPasswordModal();
+                },
+              ),
+              const AppGap.extraBig(),
+              AppFilledButton(
+                loc(context).login,
+                onTap: _inputError == null && !_processing
+                    ? () {
                         setState(() {
-                          _error = error;
+                          _processing = true;
                         });
-                      }).whenComplete(() {
-                        setState(() {
-                          _processing = false;
+                        ref
+                            .read(pnpProvider.notifier)
+                            .checkAdminPassword(_textEditController.text)
+                            .then((_) {
+                          context.goNamed(RouteNamed.pnpConfig);
+                        }).onError((error, stackTrace) {
+                          setState(() {
+                            _error = error;
+                          });
+                        }).whenComplete(() {
+                          setState(() {
+                            _processing = false;
+                          });
                         });
-                      });
-                    }
-                  : null,
-            )
-          ],
+                      }
+                    : null,
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -192,5 +203,28 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       AppText.labelMedium('Unknown error',
           color: Theme.of(context).colorScheme.error)
     ];
+  }
+
+  _showRouterPasswordModal() {
+    return showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: AppText.titleLarge(loc(context).routerPassword),
+            actions: [
+              AppTextButton(
+                loc(context).close,
+                onTap: () {
+                  context.pop();
+                },
+              )
+            ],
+            content: SizedBox(
+              width: 312,
+              child:
+                  AppText.bodyMedium(loc(context).modalRouterPasswordLocation),
+            ),
+          );
+        });
   }
 }

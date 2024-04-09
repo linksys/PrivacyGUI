@@ -46,11 +46,17 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    ResponsiveLayout.isLayoutBreakpoint(context)
-                        ? SvgPicture(
-                            CustomTheme.of(context).images.linksysLogoBlack,
-                            width: 20,
-                            height: 20,
+                    (loginType == LoginType.none ||
+                            ResponsiveLayout.isLayoutBreakpoint(context))
+                        ? InkWell(
+                            onTap: () {
+                              context.goNamed(RouteNamed.pnp);
+                            },
+                            child: SvgPicture(
+                              CustomTheme.of(context).images.linksysLogoBlack,
+                              width: 20,
+                              height: 20,
+                            ),
                           )
                         : const Center(),
                     Wrap(

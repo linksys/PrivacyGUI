@@ -34,6 +34,7 @@ class _WiFiPasswordFieldState extends ConsumerState<WiFiPasswordField> {
   @override
   Widget build(BuildContext context) {
     return AppPasswordField.withValidator(
+      border: const OutlineInputBorder(),
       headerText: widget.label,
       hintText: widget.hint,
       errorText: () {

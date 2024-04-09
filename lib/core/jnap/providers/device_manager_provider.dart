@@ -264,7 +264,8 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
 
   @Deprecated(
       'this should be deprecated, singlalDecibels has integrated into #LinksysDevice')
-  int getWirelessSignalOf(RawDevice device, [DeviceManagerState? currentState]) {
+  int getWirelessSignalOf(RawDevice device,
+      [DeviceManagerState? currentState]) {
     final wirelessConnections = (currentState ?? state).wirelessConnections;
     final wirelessData = wirelessConnections[device.getMacAddress()];
     final signalDecibels = wirelessData?.signalDecibels;
@@ -402,6 +403,10 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       state = state.copyWith(
         deviceList: newDeviceList,
       );
-    });
+    }).then((value) => routerRepository.send(
+          JNAPAction.getDevices,
+          fetchRemote: true,
+          auth: true,
+        ));
   }
 }

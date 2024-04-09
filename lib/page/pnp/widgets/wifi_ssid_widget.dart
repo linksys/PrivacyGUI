@@ -32,6 +32,7 @@ class _WiFiSSIDFieldState extends ConsumerState<WiFiSSIDField> {
   @override
   Widget build(BuildContext context) {
     return AppTextField(
+      border: const OutlineInputBorder(),
       headerText: widget.label,
       hintText: widget.hint,
       errorText: () {

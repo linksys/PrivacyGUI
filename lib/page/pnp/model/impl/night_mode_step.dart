@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
 import 'package:linksys_app/page/pnp/model/pnp_step.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -39,8 +40,8 @@ class NightModeStep extends PnpStep {
         {};
     bool isEnabled = data['isEnabled'] ?? true;
     final desc = isEnabled
-        ? 'Enable Night Mode to turn off node lights automatically from 8PM - 8AM'
-        : 'Node lights are always on';
+        ? loc(context).nightModeOnDesc
+        : loc(context).nightModeOffDesc;
     return Align(
       alignment: Alignment.centerLeft,
       child: Column(
@@ -48,21 +49,22 @@ class NightModeStep extends PnpStep {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          AppText.bodyLarge(desc),
-          const AppGap.semiSmall(),
-          AppSwitch.withIcon(
+          AppSwitch(
             value: isEnabled,
             onChanged: (value) {
               update(ref, key: 'isEnabled', value: value);
             },
           ),
+          const AppGap.big(),
+          AppText.bodyLarge(desc),
+          const AppGap.regular(),
         ],
       ),
     );
   }
 
   @override
-  String title(BuildContext context) => 'Night Mode';
+  String title(BuildContext context) => loc(context).nightMode;
 
   void update(WidgetRef ref, {required String key, dynamic value}) {
     if (value == null) {

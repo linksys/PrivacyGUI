@@ -26,7 +26,6 @@ void main() {
   });
   group('Topology view test - online nodes', () {
     testResponsiveWidgets('topology view - 2 online nodes', (tester) async {
-      await loadAppFonts();
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState1);
 
       final widget = testableWidget(

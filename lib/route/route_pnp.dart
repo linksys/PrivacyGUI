@@ -3,6 +3,7 @@ part of 'router_provider.dart';
 final pnpRoute = LinksysRoute(
   name: RouteNamed.pnp,
   path: RoutePath.pnp,
+  config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
   builder: (context, state) => PnpAdminView(
     args: state.uri.queryParameters,
   ),
@@ -10,6 +11,7 @@ final pnpRoute = LinksysRoute(
     LinksysRoute(
         name: RouteNamed.pnpConfig,
         path: RoutePath.pnpConfig,
+        config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
         builder: (context, state) => const PnpSetupView(),
         routes: [
           LinksysRoute(
