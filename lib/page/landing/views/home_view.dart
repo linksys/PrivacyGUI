@@ -76,7 +76,11 @@ class _HomeViewState extends ConsumerState<HomeView> {
         getAppLocalizations(context).login,
         key: const Key('home_view_button_login'),
         onTap: () {
-          context.pushNamed(RouteNamed.cloudLoginAccount);
+          if (BuildConfig.forceCommandType == ForceCommand.local) {
+            context.pushNamed(RouteNamed.localLoginPassword);
+          } else {
+            context.pushNamed(RouteNamed.cloudLoginAccount);
+          }
         },
       ),
       const AppGap.small(),
@@ -98,8 +102,9 @@ class _HomeViewState extends ConsumerState<HomeView> {
                 initialData: '-',
                 builder: (context, data) {
                   var version = 'version ${data.data}';
-                  version =
-                      '$version ${cloudEnvTarget == CloudEnvironment.prod ? '' : cloudEnvTarget.name}';
+                  version = BuildConfig.forceCommandType == ForceCommand.local
+                      ? version
+                      : '$version ${cloudEnvTarget == CloudEnvironment.prod ? '' : cloudEnvTarget.name}';
                   // if (kDebugMode && kIsWeb) {
                   if (kIsWeb) {
                     version = '$version - ${BuildConfig.forceCommandType.name}';
@@ -109,7 +114,8 @@ class _HomeViewState extends ConsumerState<HomeView> {
                   );
                 }),
           ),
-          if (BuildConfig.isEnableEnvPicker)
+          if (BuildConfig.isEnableEnvPicker &&
+              BuildConfig.forceCommandType != ForceCommand.local)
             Align(
                 alignment: Alignment.bottomRight,
                 child: AppTextButton.noPadding('Select Env', onTap: () async {

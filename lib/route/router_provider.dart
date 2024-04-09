@@ -122,7 +122,8 @@ class RouterNotifier extends ChangeNotifier {
       if (BuildConfig.forceCommandType == ForceCommand.local ||
           _ref.read(connectivityProvider).connectivityInfo.routerType ==
               RouterType.behind) {
-        shouldGoPnp = await pnp.fetchDeviceInfo().then((_) => pnp.pnpCheck());
+        shouldGoPnp = await pnp.fetchDeviceInfo().then(
+            (_) async => await pnp.pnpCheck() || await pnp.factoryResetCheck());
       } else {
         shouldGoPnp = false;
       }
