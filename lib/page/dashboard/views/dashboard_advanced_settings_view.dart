@@ -20,16 +20,17 @@ class DashboardAdvancedSettingsView extends ConsumerStatefulWidget {
 
 class _DashboardAdvancedSettingsViewState
     extends ConsumerState<DashboardAdvancedSettingsView> {
-  late List<AppSectionItemData> advancedSettings;
+  List<AppSectionItemData> advancedSettings = [];
   @override
   void initState() {
     super.initState();
-
-    advancedSettings = _initAdvancedSettingsItems();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (advancedSettings.isEmpty) {
+      advancedSettings = _initAdvancedSettingsItems();
+    }
     return StyledAppPageView(
       title: loc(context).advancedSettings,
       child: ListView.builder(
@@ -54,17 +55,27 @@ class _DashboardAdvancedSettingsViewState
         onTap: () => context.goNamed(RouteNamed.settingsInternet),
       ),
       AppSectionItemData(
-        title: 'IP Details',
-        // iconData: getCharactersIcons(context).infoRound,
-        onTap: () => context.goNamed(RouteNamed.settingsIpDetails),
-      ),
-      AppSectionItemData(
-        title: 'Local Network Settings',
+        title: loc(context).localNetwork,
         // iconData: getCharactersIcons(context).nodesDefault,
         onTap: () => context.goNamed(RouteNamed.settingsLocalNetwork),
       ),
       AppSectionItemData(
-        title: 'Port',
+        title: loc(context).advancedRouting,
+        // iconData: getCharactersIcons(context).infoRound,
+        onTap: () => context.goNamed(RouteNamed.settingsIpDetails),
+      ),
+      AppSectionItemData(
+        title: loc(context).firewall,
+        // iconData: getCharactersIcons(context).nodesDefault,
+        onTap: () => context.goNamed(RouteNamed.settingsPort),
+      ),
+      AppSectionItemData(
+        title: loc(context).dmz,
+        // iconData: getCharactersIcons(context).nodesDefault,
+        onTap: () => context.goNamed(RouteNamed.settingsPort),
+      ),
+      AppSectionItemData(
+        title: loc(context).portForwarding,
         // iconData: getCharactersIcons(context).nodesDefault,
         onTap: () => context.goNamed(RouteNamed.settingsPort),
       ),

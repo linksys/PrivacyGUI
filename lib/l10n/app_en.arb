@@ -796,5 +796,10 @@
   "menuAdminDesc": "Router password, Time zone, Warranty",
   "menuRouterAndNodesDesc": "Node name and light settings",
   "menuSpeedTestDesc": "Test your upload and download speeds",
-  "menuSafeBrowsingDesc": "Block inappropriate web content"
+  "menuSafeBrowsingDesc": "Block inappropriate web content",
+  "localNetwork": "Local Network",
+  "advancedRouting": "Advanced Routing",
+  "firewall": "Firewall",
+  "dmz": "DMZ",
+  "portForwarding": "Port Forwarding"
 }
