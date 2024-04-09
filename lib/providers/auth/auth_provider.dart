@@ -95,6 +95,8 @@ final authProvider =
     AsyncNotifierProvider<AuthNotifier, AuthState>(() => AuthNotifier());
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
+  bool _isInit = false;
+
   AuthNotifier() : super() {
     LinksysHttpClient.onError = (error) async {
       logger.d('Http Response Error: $error');
@@ -123,7 +125,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   @override
   Future<AuthState> build() => Future.value(AuthState.empty());
 
-  Future init() async {
+  Future<AuthState?> init() async {
+    if (_isInit) {
+      logger.d('auth provider has been inited');
+      return state.value;
+    }
+    _isInit = true;
+
     state = const AsyncValue.loading();
     // check session token exist and is session token expored
 
@@ -160,6 +168,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         localPassword: localPassword,
       );
     });
+    return state.value;
   }
 
   Future<SessionToken?> checkSessionToken() async {

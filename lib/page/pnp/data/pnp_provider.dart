@@ -5,6 +5,7 @@ import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/models/device_info.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/page/pnp/data/pnp_error.dart';
+import 'package:linksys_app/core/utils/nodes.dart';
 import 'package:linksys_app/page/pnp/data/pnp_state.dart';
 import 'package:linksys_app/page/pnp/data/pnp_step_state.dart';
 import 'package:linksys_app/page/pnp/model/pnp_step.dart';
@@ -61,6 +62,7 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   Future fetchDeviceInfo();
   Future checkAdminPassword(String? password);
   Future checkInternetConnection();
+  Future<bool> pnpCheck();
 }
 
 class MockPnpNotifier extends BasePnpNotifier {
@@ -82,6 +84,11 @@ class MockPnpNotifier extends BasePnpNotifier {
   Future fetchDeviceInfo() {
     return Future.delayed(const Duration(seconds: 3));
   }
+
+  @override
+  Future<bool> pnpCheck() {
+    return Future.delayed(const Duration(seconds: 3)).then((value) => true);
+  }
 }
 
 class PnpNotifier extends BasePnpNotifier {
@@ -91,7 +98,6 @@ class PnpNotifier extends BasePnpNotifier {
         .read(routerRepositoryProvider)
         .send(
           JNAPAction.getDeviceInfo,
-          cacheLevel: CacheLevel.noCache,
           type: CommandType.local,
           fetchRemote: true,
         )
@@ -123,5 +129,19 @@ class PnpNotifier extends BasePnpNotifier {
   @override
   Future checkInternetConnection() {
     return Future.delayed(const Duration(seconds: 3));
+  }
+
+  @override
+  Future<bool> pnpCheck() async {
+    final isSupportedSetup11 = isServiceSupport(JNAPService.setup11);
+    if (!isSupportedSetup11) {
+      return false;
+    }
+    final repo = ref.read(routerRepositoryProvider);
+    final result = repo.send(JNAPAction.getAutoConfigurationSettings).then(
+        (data) =>
+            !data.output['isAutoConfigurationSupported'] ||
+            data.output['userAcknowledgedAutoConfiguration']);
+    return result;
   }
 }

@@ -262,7 +262,8 @@ class RouterRepository {
     final newRouterType = () {
       if (type == CommandType.local) {
         return RouterType.behindManaged;
-      } else if (type == CommandType.remote) {
+      } else if (type == CommandType.remote &&
+          routerType != RouterType.behind) {
         return RouterType.others;
       } else {
         return routerType;

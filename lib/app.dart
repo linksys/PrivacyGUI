@@ -62,7 +62,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     router.routerDelegate.addListener(_onReceiveRouteChanged);
 
     return MaterialApp.router(
-      onGenerateTitle: (context) => getAppLocalizations(context).app_title,
+      onGenerateTitle: (context) => loc(context).app_title,
       theme: linksysLightThemeData,
       darkTheme: linksysDarkThemeData,
       themeMode: appSettings.themeMode,
@@ -109,8 +109,10 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       if (!mounted) return;
       final router = ref.read(routerProvider);
 
-      final GoRoute? page =
-          router.routerDelegate.currentConfiguration.last.route as GoRoute?;
+      final GoRoute? page = router
+              .routerDelegate.currentConfiguration.isNotEmpty
+          ? router.routerDelegate.currentConfiguration.last.route as GoRoute?
+          : null;
       logger.d('Router Delegate Changed! ${page?.name},');
       if (page is LinksysRoute) {
         setState(() {

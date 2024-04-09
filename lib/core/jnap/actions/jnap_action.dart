@@ -137,6 +137,7 @@ enum JNAPAction {
   setWANPort,
   // setup
   isAdminPasswordSetByUser,
+  getAutoConfigurationSettings,
   setupSetAdminPassword,
   verifyRouterResetCode,
   getWANDetectionStatus,

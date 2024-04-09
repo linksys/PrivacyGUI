@@ -81,6 +81,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
+      appBarStyle: AppBarStyle.none,
       backState: StyledBackState.none,
       padding: EdgeInsets.zero,
       child: AppBasicLayout(
