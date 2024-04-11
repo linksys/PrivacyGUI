@@ -391,6 +391,7 @@
   "no_filters": "No filters",
   "no_internet_alternative": "Or, your ISP settings require something else",
   "no_internet_connection_title": "No internet connection",
+  "no_internet_connection_description": "Your internet might be down because of a local power outage or issue with your ISP.",
   "no_router_title": "It's lonely in here... no Linksys routers are setup with this account",
   "node_detail_label_connected_devices": "Connected devices",
   "node_detail_label_firmware_version": "Firmware version",
