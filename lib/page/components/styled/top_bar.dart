@@ -27,6 +27,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
         ref.watch(authProvider.select((value) => value.value?.loginType)) ??
             LoginType.none;
     return SafeArea(
+      bottom: false,
       child: GestureDetector(
         onTap: () {
           if (increase()) {

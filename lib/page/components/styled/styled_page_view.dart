@@ -7,7 +7,6 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/card/card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
-
 import 'consts.dart';
 
 class PageMenu {
@@ -50,6 +49,7 @@ class StyledAppPageView extends ConsumerWidget {
   final PageMenu? menu;
   final Widget? menuWidget;
   final ScrollController? controller;
+  final ({bool left, bool top, bool right, bool bottom}) enableSafeArea;
 
   const StyledAppPageView({
     super.key,
@@ -70,6 +70,7 @@ class StyledAppPageView extends ConsumerWidget {
     this.menu,
     this.menuWidget,
     this.controller,
+    this.enableSafeArea = (left: true, top: true, right: true, bottom: true),
   });
 
   @override
@@ -81,6 +82,12 @@ class StyledAppPageView extends ConsumerWidget {
       bottomSheet: bottomSheet,
       bottomNavigationBar: bottomNavigationBar,
       background: Theme.of(context).colorScheme.background,
+      enableSafeArea: (
+        left: enableSafeArea.left,
+        top: enableSafeArea.top,
+        right: enableSafeArea.right,
+        bottom: enableSafeArea.bottom,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,

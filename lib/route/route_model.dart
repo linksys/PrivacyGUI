@@ -83,8 +83,9 @@ class LinksysRoute extends GoRoute {
                         },
                         child: Padding(
                           padding: EdgeInsets.symmetric(
-                              horizontal: isFullWidth ? 0 : pagePadding,
-                              vertical: 0),
+                            horizontal: isFullWidth ? 0 : pagePadding,
+                            vertical: 0,
+                          ),
                           child: Container(
                               width: specificWidth,
                               constraints: isFullWidth
