@@ -38,7 +38,6 @@ class AppRootContainer extends ConsumerStatefulWidget {
 class _AppRootContainerState extends ConsumerState<AppRootContainer> {
   final _link = LayerLink();
 
-
   @override
   void initState() {
     super.initState();
@@ -118,28 +117,28 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
   }
 
   List<Widget> _handleConnectivity(WidgetRef ref) {
-    final ignoreConnectivity =
-        (widget.routeConfig?.ignoreConnectivityEvent ?? false) || kIsWeb;
-    final ignoreCloudOffline =
-        (widget.routeConfig?.ignoreCloudOfflineEvent ?? false) || kIsWeb;
-    if (!ignoreConnectivity) {
-      final connectivity = ref.watch(connectivityProvider
-          .select((value) => (value.hasInternet, value.connectivityInfo.type)));
-      final hasInternet = connectivity.$1;
-      final connectivityType = connectivity.$2;
-      if (!hasInternet || connectivityType == ConnectivityResult.none) {
-        logger.i('No internet access: $hasInternet, $connectivityType');
-        return [const NoInternetConnectionModal()];
-      }
-    }
-    if (!ignoreCloudOffline) {
-      final cloudOffline = ref.watch(connectivityProvider
-          .select((value) => value.cloudAvailabilityInfo?.isCloudOk ?? false));
-      if (!cloudOffline) {
-        logger.i('cloud unavailable: $cloudOffline');
-        return [const NoInternetConnectionModal()];
-      }
-    }
+    // final ignoreConnectivity =
+    //     (widget.routeConfig?.ignoreConnectivityEvent ?? false) || kIsWeb;
+    // final ignoreCloudOffline =
+    //     (widget.routeConfig?.ignoreCloudOfflineEvent ?? false) || kIsWeb;
+    // if (!ignoreConnectivity) {
+    //   final connectivity = ref.watch(connectivityProvider
+    //       .select((value) => (value.hasInternet, value.connectivityInfo.type)));
+    //   final hasInternet = connectivity.$1;
+    //   final connectivityType = connectivity.$2;
+    //   if (!hasInternet || connectivityType == ConnectivityResult.none) {
+    //     logger.i('No internet access: $hasInternet, $connectivityType');
+    //     return [const NoInternetConnectionModal()];
+    //   }
+    // }
+    // if (!ignoreCloudOffline) {
+    //   final cloudOffline = ref.watch(connectivityProvider
+    //       .select((value) => value.cloudAvailabilityInfo?.isCloudOk ?? false));
+    //   if (!cloudOffline) {
+    //     logger.i('cloud unavailable: $cloudOffline');
+    //     return [const NoInternetConnectionModal()];
+    //   }
+    // }
     return [];
   }
 

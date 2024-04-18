@@ -38,7 +38,7 @@ class NodeLightSettings extends Equatable {
       'StartingTime': startHour,
       'EndingTime': endHour,
       'AllDayOff': allDayOff,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory NodeLightSettings.fromMap(Map<String, dynamic> map) {

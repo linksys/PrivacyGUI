@@ -70,7 +70,7 @@ class _CreateAdminPasswordViewState
   }
 
   Widget _successView() {
-    return AppPageView.noNavigationBar(
+    return AppPageView(
       child: AppBasicLayout(
         header: BasicHeader(
           title:

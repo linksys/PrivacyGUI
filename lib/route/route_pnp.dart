@@ -17,6 +17,8 @@ final pnpRoute = LinksysRoute(
           LinksysRoute(
             name: RouteNamed.pnpNoInternetConnection,
             path: RoutePath.pnpNoInternetConnection,
+            config:
+                LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
             builder: (context, state) => const PnpNoInternetConnectionView(),
             routes: [
               LinksysRoute(

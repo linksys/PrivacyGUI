@@ -66,7 +66,7 @@ class ConnectivityNotifier extends Notifier<ConnectivityState>
     logger.d('_internetCheckCallback: $hasConnection, $connectivityInfo');
 
     var routerType = RouterType.others;
-    if (!kIsWeb && hasConnection) {
+    if (!kIsWeb) {
       routerType = await _testRouterType(connectivityInfo.gatewayIp);
     }
     logger.d('_internetCheckCallback: $routerType');

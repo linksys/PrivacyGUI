@@ -7,14 +7,14 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 class WiFiSSIDField extends ConsumerStatefulWidget {
   final String? label;
   final String? hint;
-  final TextEditingController controller;
+  final TextEditingController? controller;
   final void Function(bool isValid, String input)? onCheckInput;
 
   const WiFiSSIDField({
     super.key,
     this.label,
     this.hint,
-    required this.controller,
+    this.controller,
     this.onCheckInput,
   });
 
@@ -36,11 +36,11 @@ class _WiFiSSIDFieldState extends ConsumerState<WiFiSSIDField> {
       headerText: widget.label,
       hintText: widget.hint,
       errorText: () {
-        if (widget.controller.text.isEmpty) {
+        if (widget.controller?.text.isEmpty == true) {
           return null;
         }
         final errorKeys = wifiSSIDValidator
-            .validateDetail(widget.controller.text, onlyFailed: true);
+            .validateDetail(widget.controller?.text ?? '', onlyFailed: true);
         if (errorKeys.isEmpty) {
           return null;
         } else if (errorKeys.keys.first ==
@@ -55,7 +55,7 @@ class _WiFiSSIDFieldState extends ConsumerState<WiFiSSIDField> {
       controller: widget.controller,
       onChanged: (value) {
         final errorKeys = wifiSSIDValidator
-            .validateDetail(widget.controller.text, onlyFailed: true);
+            .validateDetail(widget.controller?.text ?? '', onlyFailed: true);
         if (value.isEmpty || errorKeys.isNotEmpty) {
           widget.onCheckInput?.call(false, value);
         } else {

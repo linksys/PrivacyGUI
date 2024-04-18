@@ -25,7 +25,7 @@ class _CloudReadyForLoginViewState
 
   @override
   Widget build(BuildContext context) {
-    return AppPageView.noNavigationBar(
+    return AppPageView(
       child:
           AppFullScreenSpinner(text: getAppLocalizations(context).processing),
     );

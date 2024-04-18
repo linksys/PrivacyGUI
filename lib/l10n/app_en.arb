@@ -811,5 +811,28 @@
   "pnpRouterLoginDesc": "Enter your router's password to proceed",
   "routerPassword": "Router Password",
   "pnpRouterLoginWhereIsIt": "Where is it?",
-  "modalRouterPasswordLocation": "Your router password is the same as your default Wi-Fi password, printed on the Quick Start Guide and on the bottom of your router."
+  "modalRouterPasswordLocation": "Your router password is the same as your default Wi-Fi password, printed on the Quick Start Guide and on the bottom of your router.",
+  "pnpFactoryResetTitle": "This router has been factory reset",
+  "pnpFactoryResetDesc": "All settings have been restored to factory defaults.",
+  "pnpYourNetworkTitle": "Your network",
+  "pnpYourNetworkDesc": "Confirm all Nodes are here",
+  "pnpWiFiReady": "{ssid} is ready",
+  "@pnpWiFiReady": {
+    "description": "Show set ssid",
+    "placeholders": {
+      "ssid": {
+        "type": "String",
+        "example": "MyHomeSSID"
+      }
+    }
+  },
+  "pnpWiFiReadyConnectToNewWiFi": "Connect your devices to your new WiFi",
+  "pnpReconnectWiFi": "Reconnect to your router’s WiFi to continue setup",
+  "savingChanges": "Saving changes...",
+  "pnpSavingChangesDesc": "Your router’s WiFi will briefly turn off and then on again. If you lose connection, reconnect to your router’s WiFi to finish setup.",
+  "collectingData": "Collecting data...",
+  "saved": "Saved",
+  "incorrectPassword": "Incorrect password"
+
+
 }

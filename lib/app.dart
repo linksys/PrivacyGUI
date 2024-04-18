@@ -3,6 +3,7 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
@@ -16,6 +17,7 @@ import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/route/router_provider.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LinksysApp extends ConsumerStatefulWidget {
   const LinksysApp({Key? key}) : super(key: key);
@@ -35,7 +37,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
 
     final connectivity = ref.read(connectivityProvider.notifier);
     connectivity.start();
-    connectivity.forceUpdate().then((value) => _initAuth());
+    // connectivity.forceUpdate().then((value) => _initAuth());
   }
 
   @override
@@ -87,8 +89,14 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     logger.v('didChangeAppLifecycleState: ${state.name}');
     if (state == AppLifecycleState.resumed) {
-      ref.read(connectivityProvider.notifier).forceUpdate().then((_) {
-        if (ref.read(authProvider).value?.loginType != LoginType.none) {
+      ref
+          .read(connectivityProvider.notifier)
+          .forceUpdate()
+          .then((_) => SharedPreferences.getInstance())
+          .then((prefs) {
+        final currentSN = prefs.getString(pCurrentSN);
+        if (ref.read(authProvider).value?.loginType != LoginType.none &&
+            currentSN?.isNotEmpty == true) {
           ref.read(pollingProvider.notifier).startPolling();
         }
       });

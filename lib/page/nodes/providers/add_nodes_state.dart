@@ -11,6 +11,9 @@ class AddNodesState extends Equatable {
   final List<RawDevice>? nodesSnapshot;
   final List<RawDevice>? addedNodes;
   final List<RawDevice>? childNodes;
+  final bool isLoading;
+  final String? loadingMessage;
+  final Object? error;
 
   const AddNodesState({
     this.onboardingProceed,
@@ -18,6 +21,9 @@ class AddNodesState extends Equatable {
     this.nodesSnapshot,
     this.addedNodes,
     this.childNodes,
+    this.isLoading = false,
+    this.loadingMessage,
+    this.error,
   });
 
   @override
@@ -28,6 +34,9 @@ class AddNodesState extends Equatable {
       nodesSnapshot,
       addedNodes,
       childNodes,
+      isLoading,
+      loadingMessage,
+      error,
     ];
   }
 
@@ -37,6 +46,9 @@ class AddNodesState extends Equatable {
     List<RawDevice>? nodesSnapshot,
     List<RawDevice>? addedNodes,
     List<RawDevice>? childNodes,
+    bool? isLoading,
+    String? loadingMessage,
+    Object? error,
   }) {
     return AddNodesState(
       onboardingProceed: onboardingProceed ?? this.onboardingProceed,
@@ -44,6 +56,9 @@ class AddNodesState extends Equatable {
       nodesSnapshot: nodesSnapshot ?? this.nodesSnapshot,
       addedNodes: addedNodes ?? this.addedNodes,
       childNodes: childNodes ?? this.childNodes,
+      isLoading: isLoading ?? this.isLoading,
+      loadingMessage: loadingMessage ?? this.loadingMessage,
+      error: error ?? this.error,
     );
   }
 
@@ -54,7 +69,9 @@ class AddNodesState extends Equatable {
       'nodesSnapshot': nodesSnapshot?.map((x) => x.toMap()).toList(),
       'addedNodes': addedNodes?.map((x) => x.toMap()).toList(),
       'childNodes': childNodes?.map((x) => x.toMap()).toList(),
-    };
+      'isLoading': isLoading,
+      'loadingMessage': loadingMessage,
+    }..removeWhere((key, value) => value == null);
   }
 
   factory AddNodesState.fromMap(Map<String, dynamic> map) {
@@ -85,6 +102,8 @@ class AddNodesState extends Equatable {
               ),
             )
           : null,
+      isLoading: map['isLoading'],
+      loadingMessage: map['loadingMessage'],
     );
   }
 

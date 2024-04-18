@@ -348,6 +348,8 @@ void initBetterActions() {
   _betterActionMap[JNAPAction.transaction] = _JNAPActionValue.transaction.value;
   _betterActionMap[JNAPAction.checkAdminPassword] =
       _JNAPActionValue.checkAdminPassword.value;
+  _betterActionMap[JNAPAction.pnpCheckAdminPassword] =
+      _JNAPActionValue.checkAdminPassword2.value;
   _betterActionMap[JNAPAction.coreSetAdminPassword] =
       _JNAPActionValue.coreSetAdminPassword.value;
   _betterActionMap[JNAPAction.getAdminPasswordAuthStatus] =
@@ -550,6 +552,8 @@ void initBetterActions() {
   _betterActionMap[JNAPAction.setWANPort] = _JNAPActionValue.setWANPort.value;
   _betterActionMap[JNAPAction.getInternetConnectionStatus] =
       _JNAPActionValue.getInternetConnectionStatus.value;
+  _betterActionMap[JNAPAction.getSimpleWiFiSettings] =
+      _JNAPActionValue.getSimpleWiFiSettings.value;
   _betterActionMap[JNAPAction.setSimpleWiFiSettings] =
       _JNAPActionValue.setSimpleWiFiSettings.value;
   _betterActionMap[JNAPAction.getMACAddress] =
@@ -620,6 +624,8 @@ void initBetterActions() {
       _JNAPActionValue.setGamingPrioritizationSettings.value;
   _betterActionMap[JNAPAction.getAutoConfigurationSettings] =
       _JNAPActionValue.getAutoConfigurationSettings.value;
+  _betterActionMap[JNAPAction.setUserAcknowledgedAutoConfiguration] =
+      _JNAPActionValue.setUserAcknowledgedAutoConfiguration.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

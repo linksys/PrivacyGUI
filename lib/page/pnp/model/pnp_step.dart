@@ -16,8 +16,11 @@ enum StepViewStatus {
 
 abstract class PnpStep {
   final int index;
+  final Future Function()? saveChanges;
+  late final BasePnpNotifier pnp;
+  bool _canGoNext = true;
 
-  PnpStep({required this.index});
+  PnpStep({required this.index, this.saveChanges});
 
   // Title for displaying on the stepper
   String title(BuildContext context);
@@ -29,23 +32,21 @@ abstract class PnpStep {
   /// Save the data to [PnpProvider] when the next button been clicked.
   /// The [data] is coming from [onNext].
   @protected
-  void save(WidgetRef ref, Map<String, dynamic> data) {
-    ref.read(pnpProvider.notifier).setStepData(index, data: data);
+  Future save(WidgetRef ref, Map<String, dynamic> data) async {
+    pnp.setStepData(index, data: data);
+    await saveChanges?.call();
   }
 
-  bool Function() canGoNext = () => true;
+  void canGoNext(bool value) {
+    _canGoNext = value;
+  }
 
   /// Init this step, override it if there has pre-process data.
+  /// assign pnp
+  @mustCallSuper
   Future<void> onInit(WidgetRef ref) async {
     logger.d('$runtimeType: onInit');
-    ref
-        .read(pnpProvider.notifier)
-        .setStepStatus(index, status: StepViewStatus.loading);
-
-    await Future.delayed(const Duration(seconds: 1));
-    ref
-        .read(pnpProvider.notifier)
-        .setStepStatus(index, status: StepViewStatus.data);
+    pnp = ref.read(pnpProvider.notifier);
   }
 
   /// Post-process data after clicked next button.
@@ -55,8 +56,8 @@ abstract class PnpStep {
 
   /// Triggered when an error occurs during the next flow. (onNext, save)
   void onError(WidgetRef ref, Object? error, StackTrace stackTrace) {
-    logger.d('PNP:: $runtimeType: error $error \n$stackTrace');
-    ref.read(pnpProvider.notifier).setStepError(index, error: error);
+    logger.e('[pnp] $runtimeType', error: error, stackTrace: stackTrace);
+    pnp.setStepError(index, error: error);
   }
 
   /// the dispose hook when the whole page is disposing.
@@ -87,9 +88,14 @@ abstract class PnpStep {
                       ? null
                       : () {
                           onNext(ref)
-                              .then((data) => save(ref, data))
-                              .then((_) => details.onStepContinue?.call())
-                              .onError((error, stackTrace) =>
+                              .then((data) async => await save(ref, data))
+                              .then((_) {
+                            if (_canGoNext) {
+                              return details.onStepContinue?.call();
+                            } else {
+                              return;
+                            }
+                          }).onError((error, stackTrace) =>
                                   onError(ref, error, stackTrace));
                         },
                 ),
@@ -101,21 +107,26 @@ abstract class PnpStep {
 
   Widget content(
       {required BuildContext context, required WidgetRef ref, Widget? child});
+
+  Widget loadingView() {
+    return const SizedBox(
+      height: 240,
+      child: Center(
+        child: AppSpinner(),
+      ),
+    );
+  }
+
   Widget _contentWrapping() => Consumer(builder: (context, ref, child) {
         final status = ref
                 .watch(
                     pnpProvider.select((value) => value.stepStateList))[index]
                 ?.status ??
-            StepViewStatus.loading;
+            StepViewStatus.data;
 
         bool isLoading = status == StepViewStatus.loading;
         return isLoading
-            ? const SizedBox(
-                height: 240,
-                child: Center(
-                  child: AppSpinner(),
-                ),
-              )
+            ? loadingView()
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

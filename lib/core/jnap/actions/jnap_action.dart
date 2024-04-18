@@ -14,6 +14,7 @@ enum JNAPAction {
   btRequestScanUnconfigured,
   // core
   checkAdminPassword,
+  pnpCheckAdminPassword,
   coreSetAdminPassword,
   getAdminPasswordAuthStatus,
   getAdminPasswordHint,
@@ -142,11 +143,13 @@ enum JNAPAction {
   verifyRouterResetCode,
   getWANDetectionStatus,
   getInternetConnectionStatus,
+  getSimpleWiFiSettings,
   setSimpleWiFiSettings,
   getMACAddress,
   getVersionInfo,
   startBlinkNodeLed,
   stopBlinkNodeLed,
+  setUserAcknowledgedAutoConfiguration,
   // smartMode
   getDeviceMode,
   getSupportedDeviceMode,
@@ -184,7 +187,7 @@ enum JNAPAction {
   getSelectedChannels,
   startAutoChannelSelection,
   ;
-
+  
   String get actionValue {
     return _betterActionMap[this]!;
   }

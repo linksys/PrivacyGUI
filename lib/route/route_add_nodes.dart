@@ -6,7 +6,7 @@ final addNodesRoute = LinksysRoute(
   config: LinksysRouteConfig(
       noNaviRail: true, pageWidth: SpecificPageWidth(width: 488)),
   builder: (context, state) => AddNodesView(
-    args: state.uri.queryParameters,
+    args: state.extra as Map<String, dynamic>? ?? {},
   ),
   routes: [],
 );

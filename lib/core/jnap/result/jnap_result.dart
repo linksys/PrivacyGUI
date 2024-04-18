@@ -62,15 +62,19 @@ class JNAPSuccess extends JNAPResult with SideEffectGetter {
   }
 
   @override
-  List<Object?> get props => super.props..add(output);
+  List<Object?> get props => super.props
+    ..add(output)
+    ..add(sideEffects);
 }
 
 class JNAPTransactionSuccess extends JNAPResult with SideEffectGetter {
   final List<JNAPSuccess> responses;
+  final List<String>? sideEffects;
 
   const JNAPTransactionSuccess({
     required super.result,
     required this.responses,
+    this.sideEffects,
   });
 
   factory JNAPTransactionSuccess.fromJson(Map<String, dynamic> json) {
@@ -79,6 +83,9 @@ class JNAPTransactionSuccess extends JNAPResult with SideEffectGetter {
       responses: List.from(json[keyJnapResponses])
           .map((e) => JNAPSuccess.fromJson(e))
           .toList(),
+      sideEffects: json.containsKey(keyJnapSideEffects)
+          ? List.from(json[keyJnapSideEffects])
+          : null,
     );
   }
 
@@ -87,19 +94,24 @@ class JNAPTransactionSuccess extends JNAPResult with SideEffectGetter {
     return {
       keyJnapResult: result,
       keyJnapResponses: responses,
-    };
+      keyJnapSideEffects: sideEffects
+    }..removeWhere((key, value) => value == null);
   }
 
   @override
-  List<Object?> get props => super.props..add(responses);
+  List<Object?> get props => super.props
+    ..add(responses)
+    ..add(sideEffects);
 }
 
 class JNAPTransactionSuccessWrap extends JNAPResult with SideEffectGetter {
+  final List<String> sideEffects;
   final List<MapEntry<JNAPAction, JNAPResult>> data;
 
   const JNAPTransactionSuccessWrap({
     required super.result,
     this.data = const [],
+    this.sideEffects = const [],
   });
 
   factory JNAPTransactionSuccessWrap.convert({
@@ -108,6 +120,7 @@ class JNAPTransactionSuccessWrap extends JNAPResult with SideEffectGetter {
   }) {
     return JNAPTransactionSuccessWrap(
       result: transactionSuccess.result,
+      sideEffects: transactionSuccess.getSideEffects() ?? [],
       data: actions
           .mapIndexed((index, action) =>
               MapEntry(action, transactionSuccess.responses[index]))
@@ -177,17 +190,20 @@ mixin SideEffectGetter {
   List<String>? getSideEffects() {
     if (this is JNAPSuccess) {
       return (this as JNAPSuccess).sideEffects;
+    } else if (this is JNAPTransactionSuccess) {
+      return (this as JNAPTransactionSuccess).sideEffects;
     } else if (this is JNAPTransactionSuccessWrap) {
       final trans = this as JNAPTransactionSuccessWrap;
-      return trans.data
-          .map((e) => e.value as JNAPSuccess?)
-          .whereType<JNAPSuccess>()
-          .fold<List<String>>([], (previousValue, element) {
-        if (element.sideEffects != null) {
-          previousValue.addAll(element.sideEffects!);
-        }
-        return previousValue;
-      }).toList();
+      // return trans.data
+      //     .map((e) => e.value as JNAPSuccess?)
+      //     .whereType<JNAPSuccess>()
+      //     .fold<List<String>>([], (previousValue, element) {
+      //   if (element.sideEffects != null) {
+      //     previousValue.addAll(element.sideEffects!);
+      //   }
+      //   return previousValue;
+      // }).toList();
+      return trans.sideEffects;
     } else {
       return null;
     }

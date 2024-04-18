@@ -47,8 +47,7 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
       getHealthCheckResultsData =
           (result[JNAPAction.getHealthCheckResults] as JNAPSuccess?)?.output;
       getHealthCheckModuleData =
-          (result[JNAPAction.getSupportedHealthCheckModules]
-                  as JNAPSuccess?)
+          (result[JNAPAction.getSupportedHealthCheckModules] as JNAPSuccess?)
               ?.output;
     }
 
@@ -154,7 +153,7 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     DashboardManagerState state,
     Map<String, dynamic> data,
   ) {
-    final guestRadioSettings = GuestRadioSetting.fromJson(data);
+    final guestRadioSettings = GuestRadioSettings.fromMap(data);
     return state.copyWith(
       guestRadios: guestRadioSettings.radios,
       isGuestNetworkEnabled: guestRadioSettings.isGuestNetworkEnabled,

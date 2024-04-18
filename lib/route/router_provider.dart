@@ -85,6 +85,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       addNodesRoute,
     ],
     redirect: (context, state) {
+      if (state.matchedLocation == '/') {
+        return router._redirectPnpLogic(state);
+      } else if (state.matchedLocation.startsWith('/pnp')) {
+        // bypass any pnp views
+        return state.uri.toString();
+      }
       return router._redirectLogic(state);
     },
     debugLogDiagnostics: true,
@@ -111,28 +117,33 @@ class RouterNotifier extends ChangeNotifier {
     super.dispose();
   }
 
+  Future<String?> _redirectPnpLogic(GoRouterState state) async {
+    await _ref.read(connectivityProvider.notifier).forceUpdate();
+    final loginType = _ref.read(authProvider
+        .select((value) => value.value?.loginType ?? LoginType.none));
+    final pnp = _ref.read(pnpProvider.notifier);
+    bool shouldGoPnp = false;
+    final routerType =
+        _ref.read(connectivityProvider).connectivityInfo.routerType;
+    logger.d('XXXXX: routerType: $routerType');
+    if (BuildConfig.forceCommandType == ForceCommand.local ||
+        (routerType != RouterType.others && loginType != LoginType.remote)) {
+      shouldGoPnp = await pnp.fetchDeviceInfo().then((_) async =>
+          await pnp.pnpCheck() || !(await pnp.isRouterPasswordSet()));
+    } else {
+      shouldGoPnp = false;
+    }
+    logger.d('XXXXX: go pnp? $shouldGoPnp, state uri: <${state.uri}>');
+    if (shouldGoPnp) {
+      return _goPnp(state.uri.query);
+    } else {
+      return _authCheck();
+    }
+  }
+
   Future<String?> _redirectLogic(GoRouterState state) async {
     final loginType =
         _ref.watch(authProvider.select((data) => data.value?.loginType));
-
-    if (state.matchedLocation == '/') {
-      await _ref.read(connectivityProvider.notifier).forceUpdate();
-      final pnp = _ref.read(pnpProvider.notifier);
-      bool shouldGoPnp = false;
-      if (BuildConfig.forceCommandType == ForceCommand.local ||
-          _ref.read(connectivityProvider).connectivityInfo.routerType ==
-              RouterType.behind) {
-        shouldGoPnp = await pnp.fetchDeviceInfo().then(
-            (_) async => await pnp.pnpCheck() || await pnp.factoryResetCheck());
-      } else {
-        shouldGoPnp = false;
-      }
-      if (shouldGoPnp) {
-        return _goPnp();
-      } else {
-        return _authCheck();
-      }
-    }
 
     // if no network Id for remote login
     final managedNetworkId = _ref.read(selectedNetworkIdProvider);
@@ -148,10 +159,11 @@ class RouterNotifier extends ChangeNotifier {
     return null;
   }
 
-  FutureOr<String?> _goPnp() {
+  FutureOr<String?> _goPnp(String? query) {
     FlutterNativeSplash.remove();
-
-    return RoutePath.pnp;
+    final path = '${RoutePath.pnp}?${query ?? ''}';
+    logger.d('pnp uri : $path');
+    return path;
   }
 
   Future<String?> _authCheck() {
