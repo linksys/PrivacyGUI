@@ -37,7 +37,7 @@ void main() async {
   ///
   initErrorHandler();
 
-  await initFirebase();
+  // await initFirebase();
 
   container.read(linksysCacheManagerProvider);
 
@@ -79,18 +79,22 @@ initErrorHandler() {
   };
 }
 
-initFirebase() async {
-  logger.d('Start to init Firebase Core');
-  final appConst = await PackageInfo.fromPlatform();
-  await Firebase.initializeApp(
-    options: appConst.appName.endsWith('ee')
-        ? DefaultFirebaseOptions.iosEE
-        : DefaultFirebaseOptions.currentPlatform,
-  );
+Future initFirebase() async {
+  try {
+    logger.d('Start to init Firebase Core');
+    final appConst = await PackageInfo.fromPlatform();
+    await Firebase.initializeApp(
+      options: appConst.appName.endsWith('ee')
+          ? DefaultFirebaseOptions.iosEE
+          : DefaultFirebaseOptions.currentPlatform,
+    );
 
-  await initAnalyticsDefault();
-  // await initCloudMessage();
-  logger.d('Done for init Firebase Core');
+    await initAnalyticsDefault();
+    // await initCloudMessage();
+    logger.d('Done for init Firebase Core');
+  } catch (e) {
+    logger.e('Init Firebase Core failed', error: e);
+  }
 }
 
 final container = ProviderContainer();

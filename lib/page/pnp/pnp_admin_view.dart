@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
@@ -68,7 +69,12 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             _isFactoryReset = true;
             _inputError = '';
           });
-        }, test: (error) => error is ExceptionRouterUnconfigured);
+        }, test: (error) => error is ExceptionRouterUnconfigured)
+        .onError((error, stackTrace) {
+          logger.e('[pnp] Uncaught Error',
+              error: error, stackTrace: stackTrace);
+          context.goNamed(RouteNamed.pnpNoInternetConnection);
+        });
   }
 
   @override

@@ -41,6 +41,7 @@ class BuildConfig {
       const String.fromEnvironment('force', defaultValue: 'none'));
 
   static load() async {
+    logger.d('load build configuration');
     final prefs = await SharedPreferences.getInstance();
     final envStr = prefs.getString(pCloudEnv);
     cloudEnvTarget = CloudEnvironment.get(envStr ?? '') ?? cloudEnvTarget;
