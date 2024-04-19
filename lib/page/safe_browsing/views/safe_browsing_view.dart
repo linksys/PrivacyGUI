@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/components/responsive/responsive_bottom_button.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/safe_browsing/providers/_providers.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/card/safe_browsing_card.dart';
+import 'package:linksys_widgets/widgets/card/list_card.dart';
+import 'package:linksys_widgets/widgets/card/setting_card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -54,8 +56,8 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
                 children: [
                   AppText.bodyLarge(loc(context).safeBrowsingDesc),
                   const AppGap.big(),
-                  AppSafeBrowsingCard(
-                    description: loc(context).safeBrowsing,
+                  AppSettingCard(
+                    title: loc(context).safeBrowsing,
                     trailing: AppSwitch(
                       value: enableSafeBrowsing,
                       onChanged: (enable) {
@@ -68,7 +70,7 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
                   const AppGap.semiSmall(),
                   Opacity(
                     opacity: enableSafeBrowsing ? 1 : 0.5,
-                    child: AppSafeBrowsingCard(
+                    child: AppSettingCard(
                       title: loc(context).provider,
                       description:
                           _getTextFormSafeBrowsingType(currentSafeBrowsingType),
@@ -82,29 +84,11 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
                       ),
                     ),
                   ),
-                  responsiveGap(),
-                  _safeButton(_edited(state.safeBrowsingType)),
+                  responsiveGap(context),
+                  responsiveBottomButton(context: context, title: loc(context).save, enable: _edited(state.safeBrowsingType), onTap: _showRestartAlert),
                 ],
               ),
             ),
-          );
-  }
-
-  Widget responsiveGap() {
-    return ResponsiveLayout.isLayoutBreakpoint(context)
-        ? const Spacer()
-        : const AppGap.big();
-  }
-
-  Widget _safeButton(bool enable) {
-    return ResponsiveLayout.isLayoutBreakpoint(context)
-        ? AppFilledButton.fillWidth(
-            loc(context).save,
-            onTap: enable ? () => _showRestartAlert() : null,
-          )
-        : AppFilledButton(
-            loc(context).save,
-            onTap: enable ? () => _showRestartAlert() : null,
           );
   }
 
@@ -162,13 +146,13 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
     });
   }
 
-  _showRestartAlert() {
+  void _showRestartAlert() {
     showDialog(
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: AppText.titleLarge(loc(context).editProviderChangesTitle),
-            content: AppText.bodyMedium(loc(context).editProviderChangesDesc),
+            title: AppText.titleLarge(loc(context).restartWifiAlertTitle),
+            content: AppText.bodyMedium(loc(context).restartWifiAlertDesc),
             actions: [
               AppTextButton(
                 loc(context).cancel,

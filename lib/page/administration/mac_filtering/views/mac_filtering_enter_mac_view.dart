@@ -45,7 +45,7 @@ class _MacFilteringEnterDeviceViewState
             const AppGap.semiBig(),
             AppTextField.macAddress(
               controller: _macController,
-              headerText: getAppLocalizations(context).enter_mac_address,
+              headerText: getAppLocalizations(context).macAddress,
               hintText: getAppLocalizations(context).macAddress,
               onChanged: (value) {
                 setState(() {

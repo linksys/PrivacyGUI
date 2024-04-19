@@ -144,7 +144,7 @@ class _LocalNetworkSettingsViewState
             // Subnet mask
             AppIPFormField(
               header: AppText.bodyLarge(
-                getAppLocalizations(context).subnet_mask,
+                getAppLocalizations(context).subnetMask,
               ),
               octet1ReadOnly: true,
               octet2ReadOnly: true,

@@ -4,7 +4,7 @@ final advancedSettings = [
   LinksysRoute(
       name: RouteNamed.settingsInternet,
       path: RoutePath.settingsInternet,
-      builder: (context, state) => InternetSettingsView(),
+      builder: (context, state) => const InternetSettingsView(),
       routes: [
         LinksysRoute(
           name: RouteNamed.itemPicker,
@@ -30,6 +30,13 @@ final advancedSettings = [
         LinksysRoute(
           name: RouteNamed.connectionType,
           path: RoutePath.connectionType,
+          builder: (context, state) => ConnectionTypeView(
+            args: state.extra as Map<String, dynamic>? ?? {},
+          ),
+        ),
+        LinksysRoute(
+          name: RouteNamed.connectionTypeSelection,
+          path: RoutePath.connectionTypeSelection,
           builder: (context, state) => ConnectionTypeSelectionView(
             args: state.extra as Map<String, dynamic>? ?? {},
           ),

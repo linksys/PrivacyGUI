@@ -114,7 +114,7 @@ class _MacFilteringContentViewState
               ),
             ),
             AppSimplePanel(
-              title: getAppLocalizations(context).enter_mac_address,
+              title: getAppLocalizations(context).macAddress,
               onTap: () async {
                 String? macAddress =
                     await context.pushNamed(RouteNamed.macFilteringInput);

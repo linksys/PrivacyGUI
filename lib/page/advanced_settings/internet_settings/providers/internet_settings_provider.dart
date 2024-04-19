@@ -12,7 +12,7 @@ import 'package:linksys_app/core/jnap/models/wan_settings.dart';
 import 'package:linksys_app/core/jnap/models/wan_status.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/page/administration/internet_settings/providers/internet_settings_state.dart';
+import 'package:linksys_app/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 
 final internetSettingsProvider =
     NotifierProvider<InternetSettingsNotifier, InternetSettingsState>(
@@ -48,8 +48,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         JNAPAction.getMACAddressCloneSettings, Map.fromEntries(results));
     final macAddressCloneSettings = macAddressCloneSettingsResult == null
         ? null
-        : MACAddressCloneSettings.fromJson(
-            macAddressCloneSettingsResult.output);
+        : MACAddressCloneSettings.fromMap(macAddressCloneSettingsResult.output);
 
     switch (WanType.resolve(wanSettings?.wanType ?? '')) {
       case WanType.dhcp:
@@ -58,12 +57,15 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         final pppoeSettings = wanSettings?.pppoeSettings;
         if (pppoeSettings != null) {
           state = state.copyWith(
-            behavior: PPPConnectionBehavior.resolve(pppoeSettings.behavior),
-            maxIdleMinutes: pppoeSettings.maxIdleMinutes,
-            reconnectAfterSeconds: pppoeSettings.reconnectAfterSeconds,
-            username: pppoeSettings.username,
-            password: pppoeSettings.password,
-            serviceName: pppoeSettings.serviceName,
+            ipv4Setting: state.ipv4Setting.copyWith(
+              behavior: PPPConnectionBehavior.resolve(pppoeSettings.behavior) ??
+                  PPPConnectionBehavior.keepAlive,
+              maxIdleMinutes: pppoeSettings.maxIdleMinutes,
+              reconnectAfterSeconds: pppoeSettings.reconnectAfterSeconds,
+              username: pppoeSettings.username,
+              password: pppoeSettings.password,
+              serviceName: pppoeSettings.serviceName,
+            ),
           );
         }
         break;
@@ -71,18 +73,20 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         final tpSettings = wanSettings?.tpSettings;
         if (tpSettings != null) {
           state = state.copyWith(
-            behavior: PPPConnectionBehavior.resolve(tpSettings.behavior),
-            maxIdleMinutes: tpSettings.maxIdleMinutes,
-            reconnectAfterSeconds: tpSettings.reconnectAfterSeconds,
-            serverIp: tpSettings.server,
-            useStaticSettings: tpSettings.useStaticSettings,
-            username: tpSettings.username,
-            password: tpSettings.password,
-            staticIpAddress: tpSettings.staticSettings?.ipAddress,
-            staticGateway: tpSettings.staticSettings?.gateway,
-            staticDns1: tpSettings.staticSettings?.dnsServer1,
-            staticDns2: tpSettings.staticSettings?.dnsServer2,
-            staticDns3: tpSettings.staticSettings?.dnsServer3,
+            ipv4Setting: state.ipv4Setting.copyWith(
+              behavior: PPPConnectionBehavior.resolve(tpSettings.behavior),
+              maxIdleMinutes: tpSettings.maxIdleMinutes,
+              reconnectAfterSeconds: tpSettings.reconnectAfterSeconds,
+              serverIp: tpSettings.server,
+              useStaticSettings: tpSettings.useStaticSettings,
+              username: tpSettings.username,
+              password: tpSettings.password,
+              staticIpAddress: tpSettings.staticSettings?.ipAddress,
+              staticGateway: tpSettings.staticSettings?.gateway,
+              staticDns1: tpSettings.staticSettings?.dnsServer1,
+              staticDns2: tpSettings.staticSettings?.dnsServer2,
+              staticDns3: tpSettings.staticSettings?.dnsServer3,
+            ),
           );
         }
         break;
@@ -90,13 +94,15 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         final tpSettings = wanSettings?.tpSettings;
         if (tpSettings != null) {
           state = state.copyWith(
-            behavior: PPPConnectionBehavior.resolve(tpSettings.behavior),
-            maxIdleMinutes: tpSettings.maxIdleMinutes,
-            reconnectAfterSeconds: tpSettings.reconnectAfterSeconds,
-            serverIp: tpSettings.server,
-            useStaticSettings: false,
-            username: tpSettings.username,
-            password: tpSettings.password,
+            ipv4Setting: state.ipv4Setting.copyWith(
+              behavior: PPPConnectionBehavior.resolve(tpSettings.behavior),
+              maxIdleMinutes: tpSettings.maxIdleMinutes,
+              reconnectAfterSeconds: tpSettings.reconnectAfterSeconds,
+              serverIp: tpSettings.server,
+              useStaticSettings: false,
+              username: tpSettings.username,
+              password: tpSettings.password,
+            ),
           );
         }
         break;
@@ -104,11 +110,14 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         final staticSettings = wanSettings?.staticSettings;
         if (staticSettings != null) {
           state = state.copyWith(
-            staticIpAddress: staticSettings.ipAddress,
-            staticGateway: staticSettings.gateway,
-            staticDns1: staticSettings.dnsServer1,
-            staticDns2: staticSettings.dnsServer2,
-            staticDns3: staticSettings.dnsServer3,
+            ipv4Setting: state.ipv4Setting.copyWith(
+              staticIpAddress: staticSettings.ipAddress,
+              staticGateway: staticSettings.gateway,
+              staticDns1: staticSettings.dnsServer1,
+              staticDns2: staticSettings.dnsServer2,
+              staticDns3: staticSettings.dnsServer3,
+              networkPrefixLength: staticSettings.networkPrefixLength,
+            ),
           );
         }
         break;
@@ -119,39 +128,43 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
     }
 
     return state = state.copyWith(
-      ipv4ConnectionType: wanSettings?.wanType ?? '',
-      ipv6ConnectionType: getIPv6Settings?.wanType ?? '',
-      supportedIPv4ConnectionType: wanStatus?.supportedWANTypes ?? [],
-      supportedIPv6ConnectionType: wanStatus?.supportedIPv6WANTypes ?? [],
-      supportedWANCombinations: wanStatus?.supportedWANCombinations ?? [],
-      mtu: wanSettings?.mtu ?? 0,
+      ipv4Setting: state.ipv4Setting.copyWith(
+        ipv4ConnectionType: wanSettings?.wanType ?? '',
+        supportedIPv4ConnectionType: wanStatus?.supportedWANTypes ?? [],
+        supportedWANCombinations: wanStatus?.supportedWANCombinations ?? [],
+        mtu: wanSettings?.mtu ?? 0,
+        vlanId: wanSettings?.wanTaggingSettings?.vlanTaggingSettings?.vlanID,
+      ),
+      ipv6Setting: state.ipv6Setting.copyWith(
+        ipv6ConnectionType: getIPv6Settings?.wanType ?? '',
+        supportedIPv6ConnectionType: wanStatus?.supportedIPv6WANTypes ?? [],
+        duid: getIPv6Settings?.duid ?? '',
+        isIPv6AutomaticEnabled:
+            getIPv6Settings?.ipv6AutomaticSettings?.isIPv6AutomaticEnabled ??
+                false,
+        ipv6rdTunnelMode: IPv6rdTunnelMode.resolve(
+            getIPv6Settings?.ipv6AutomaticSettings?.ipv6rdTunnelMode ?? ''),
+        ipv6Prefix: getIPv6Settings
+            ?.ipv6AutomaticSettings?.ipv6rdTunnelSettings?.prefix,
+        ipv6PrefixLength: getIPv6Settings
+            ?.ipv6AutomaticSettings?.ipv6rdTunnelSettings?.prefixLength,
+        ipv6BorderRelay: getIPv6Settings
+            ?.ipv6AutomaticSettings?.ipv6rdTunnelSettings?.borderRelay,
+        ipv6BorderRelayPrefixLength: getIPv6Settings?.ipv6AutomaticSettings
+            ?.ipv6rdTunnelSettings?.borderRelayPrefixLength,
+      ),
       macClone: macAddressCloneSettings?.isMACAddressCloneEnabled ?? false,
       macCloneAddress: macAddressCloneSettings?.macAddress ?? '',
-      vlanId: wanSettings?.wanTaggingSettings?.vlanTaggingSettings?.vlanID,
-      duid: getIPv6Settings?.duid ?? '',
-      isIPv6AutomaticEnabled:
-          getIPv6Settings?.ipv6AutomaticSettings?.isIPv6AutomaticEnabled ??
-              false,
-      ipv6rdTunnelMode: IPv6rdTunnelMode.resolve(
-          getIPv6Settings?.ipv6AutomaticSettings?.ipv6rdTunnelMode ?? ''),
-      ipv6Prefix:
-          getIPv6Settings?.ipv6AutomaticSettings?.ipv6rdTunnelSettings?.prefix,
-      ipv6PrefixLength: getIPv6Settings
-          ?.ipv6AutomaticSettings?.ipv6rdTunnelSettings?.prefixLength,
-      ipv6BorderRelay: getIPv6Settings
-          ?.ipv6AutomaticSettings?.ipv6rdTunnelSettings?.borderRelay,
-      ipv6BorderRelayPrefixLength: getIPv6Settings?.ipv6AutomaticSettings
-          ?.ipv6rdTunnelSettings?.borderRelayPrefixLength,
     );
   }
 
   Future saveIpv4(InternetSettingsState newState) async {
-    final wanType = WanType.resolve(newState.ipv4ConnectionType);
+    final wanType = WanType.resolve(newState.ipv4Setting.ipv4ConnectionType);
     if (wanType != null) {
       final repo = ref.read(routerRepositoryProvider);
       MapEntry<JNAPAction, Map<String, dynamic>>? additionalSetting;
-      RouterWANSettings wanSettings =
-          RouterWANSettings(wanType: wanType.type, mtu: newState.mtu);
+      RouterWANSettings wanSettings = RouterWANSettings(
+          wanType: wanType.type, mtu: newState.ipv4Setting.mtu);
       switch (wanType) {
         case WanType.dhcp:
           break;
@@ -171,54 +184,57 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
               auth: true,
             );
           }
-          final behavior = newState.behavior ?? PPPConnectionBehavior.keepAlive;
+          final behavior =
+              newState.ipv4Setting.behavior ?? PPPConnectionBehavior.keepAlive;
           wanSettings = wanSettings.copyWith(
             pppoeSettings: PPPoESettings(
-              username: newState.username ?? '',
-              password: newState.password ?? '',
-              serviceName: newState.serviceName ?? '',
+              username: newState.ipv4Setting.username ?? '',
+              password: newState.ipv4Setting.password ?? '',
+              serviceName: newState.ipv4Setting.serviceName ?? '',
               behavior: behavior.value,
               maxIdleMinutes: behavior == PPPConnectionBehavior.connectOnDemand
-                  ? newState.maxIdleMinutes
+                  ? newState.ipv4Setting.maxIdleMinutes
                   : null,
               reconnectAfterSeconds: behavior == PPPConnectionBehavior.keepAlive
-                  ? newState.reconnectAfterSeconds
+                  ? newState.ipv4Setting.reconnectAfterSeconds
                   : null,
             ),
             wanTaggingSettings: SinglePortVLANTaggingSettings(
               isEnabled: true,
               vlanTaggingSettings: PortTaggingSettings(
-                vlanID: newState.vlanId ?? 5,
+                vlanID: newState.ipv4Setting.vlanId ?? 5,
                 vlanStatus: TaggingStatus.tagged.value,
               ),
             ),
           );
           break;
         case WanType.pptp:
-          final behavior = newState.behavior ?? PPPConnectionBehavior.keepAlive;
-          final useStaticSettings = newState.useStaticSettings ?? false;
+          final behavior =
+              newState.ipv4Setting.behavior ?? PPPConnectionBehavior.keepAlive;
+          final useStaticSettings =
+              newState.ipv4Setting.useStaticSettings ?? false;
           wanSettings = wanSettings.copyWith(
             tpSettings: TPSettings(
               useStaticSettings: useStaticSettings,
               staticSettings: useStaticSettings
                   ? StaticSettings(
-                      ipAddress: newState.staticIpAddress ?? '',
+                      ipAddress: newState.ipv4Setting.staticIpAddress ?? '',
                       networkPrefixLength: 24,
-                      gateway: newState.staticGateway ?? '',
-                      dnsServer1: newState.staticDns1 ?? '',
-                      dnsServer2: newState.staticDns2,
-                      dnsServer3: newState.staticDns3,
+                      gateway: newState.ipv4Setting.staticGateway ?? '',
+                      dnsServer1: newState.ipv4Setting.staticDns1 ?? '',
+                      dnsServer2: newState.ipv4Setting.staticDns2,
+                      dnsServer3: newState.ipv4Setting.staticDns3,
                     )
                   : null,
-              server: newState.serverIp ?? '',
-              username: newState.username ?? '',
-              password: newState.password ?? '',
+              server: newState.ipv4Setting.serverIp ?? '',
+              username: newState.ipv4Setting.username ?? '',
+              password: newState.ipv4Setting.password ?? '',
               behavior: behavior.value,
               maxIdleMinutes: behavior == PPPConnectionBehavior.connectOnDemand
-                  ? newState.maxIdleMinutes
+                  ? newState.ipv4Setting.maxIdleMinutes
                   : null,
               reconnectAfterSeconds: behavior == PPPConnectionBehavior.keepAlive
-                  ? newState.reconnectAfterSeconds
+                  ? newState.ipv4Setting.reconnectAfterSeconds
                   : null,
             ),
             wanTaggingSettings:
@@ -226,19 +242,20 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           );
           break;
         case WanType.l2tp:
-          final behavior = newState.behavior ?? PPPConnectionBehavior.keepAlive;
+          final behavior =
+              newState.ipv4Setting.behavior ?? PPPConnectionBehavior.keepAlive;
           wanSettings = wanSettings.copyWith(
             tpSettings: TPSettings(
               useStaticSettings: false,
-              server: newState.serverIp ?? '',
-              username: newState.username ?? '',
-              password: newState.password ?? '',
+              server: newState.ipv4Setting.serverIp ?? '',
+              username: newState.ipv4Setting.username ?? '',
+              password: newState.ipv4Setting.password ?? '',
               behavior: behavior.value,
               maxIdleMinutes: behavior == PPPConnectionBehavior.connectOnDemand
-                  ? newState.maxIdleMinutes
+                  ? newState.ipv4Setting.maxIdleMinutes
                   : null,
               reconnectAfterSeconds: behavior == PPPConnectionBehavior.keepAlive
-                  ? newState.reconnectAfterSeconds
+                  ? newState.ipv4Setting.reconnectAfterSeconds
                   : null,
             ),
           );
@@ -246,12 +263,13 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         case WanType.static:
           wanSettings = wanSettings.copyWith(
             staticSettings: StaticSettings(
-              ipAddress: newState.staticIpAddress ?? '',
-              networkPrefixLength: 24,
-              gateway: newState.staticGateway ?? '',
-              dnsServer1: newState.staticDns1 ?? '',
-              dnsServer2: newState.staticDns2,
-              dnsServer3: newState.staticDns3,
+              ipAddress: newState.ipv4Setting.staticIpAddress ?? '',
+              networkPrefixLength:
+                  newState.ipv4Setting.networkPrefixLength ?? 24,
+              gateway: newState.ipv4Setting.staticGateway ?? '',
+              dnsServer1: newState.ipv4Setting.staticDns1 ?? '',
+              dnsServer2: newState.ipv4Setting.staticDns2,
+              dnsServer3: newState.ipv4Setting.staticDns3,
             ),
             wanTaggingSettings:
                 const SinglePortVLANTaggingSettings(isEnabled: false),
@@ -280,13 +298,6 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       if (additionalSetting != null) {
         transactions.add(additionalSetting);
       }
-      transactions.add(MapEntry(
-        JNAPAction.setMACAddressCloneSettings,
-        MACAddressCloneSettings(
-          isMACAddressCloneEnabled: newState.macClone,
-          macAddress: newState.macClone ? newState.macCloneAddress : null,
-        ).toJson(),
-      ));
 
       await repo
           .doTransaction(transactions, fetchRemote: true)
@@ -295,7 +306,8 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
   }
 
   Future saveIpv6(InternetSettingsState newState) async {
-    final wanType = WanIPv6Type.resolve(newState.ipv6ConnectionType);
+    final wanType =
+        WanIPv6Type.resolve(newState.ipv6Setting.ipv6ConnectionType);
     if (wanType != null) {
       final repo = ref.read(routerRepositoryProvider);
       SetIPv6Settings settings = SetIPv6Settings(wanType: wanType.type);
@@ -303,21 +315,22 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         case WanIPv6Type.automatic:
           settings = settings.copyWith(
               ipv6AutomaticSettings: IPv6AutomaticSettings(
-            isIPv6AutomaticEnabled: newState.isIPv6AutomaticEnabled,
-            ipv6rdTunnelMode: newState.isIPv6AutomaticEnabled
+            isIPv6AutomaticEnabled: newState.ipv6Setting.isIPv6AutomaticEnabled,
+            ipv6rdTunnelMode: newState.ipv6Setting.isIPv6AutomaticEnabled
                 ? null
-                : newState.ipv6rdTunnelMode?.value,
+                : newState.ipv6Setting.ipv6rdTunnelMode?.value,
           ));
-          if (!newState.isIPv6AutomaticEnabled &&
-              newState.ipv6rdTunnelMode == IPv6rdTunnelMode.manual) {
+          if (!newState.ipv6Setting.isIPv6AutomaticEnabled &&
+              newState.ipv6Setting.ipv6rdTunnelMode ==
+                  IPv6rdTunnelMode.manual) {
             settings = settings.copyWith(
               ipv6AutomaticSettings: settings.ipv6AutomaticSettings?.copyWith(
                 ipv6rdTunnelSettings: IPv6rdTunnelSettings(
-                  prefix: newState.ipv6Prefix ?? '',
-                  prefixLength: newState.ipv6PrefixLength ?? 0,
-                  borderRelay: newState.ipv6BorderRelay ?? '',
+                  prefix: newState.ipv6Setting.ipv6Prefix ?? '',
+                  prefixLength: newState.ipv6Setting.ipv6PrefixLength ?? 0,
+                  borderRelay: newState.ipv6Setting.ipv6BorderRelay ?? '',
                   borderRelayPrefixLength:
-                      newState.ipv6BorderRelayPrefixLength ?? 0,
+                      newState.ipv6Setting.ipv6BorderRelayPrefixLength ?? 0,
                 ),
               ),
             );
@@ -335,5 +348,25 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           .send(JNAPAction.setIPv6Settings, data: settings.toJson(), auth: true)
           .then((_) => fetch(fetchRemote: true));
     }
+  }
+
+  Future setMacAddressClone(bool isMACAddressCloneEnabled, String? macAddress) {
+    final repo = ref.read(routerRepositoryProvider);
+    return repo
+        .send(
+      JNAPAction.setMACAddressCloneSettings,
+      auth: true,
+      timeoutMs: 3000,
+      data: MACAddressCloneSettings(
+        isMACAddressCloneEnabled: isMACAddressCloneEnabled,
+        macAddress: isMACAddressCloneEnabled ? macAddress : null,
+      ).toMap(),
+    )
+        .then((_) {
+      state = state.copyWith(
+        macClone: isMACAddressCloneEnabled,
+        macCloneAddress: macAddress,
+      );
+    });
   }
 }

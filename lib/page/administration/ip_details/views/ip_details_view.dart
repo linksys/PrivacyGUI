@@ -80,11 +80,11 @@ class _IpDetailsContentViewState extends ConsumerState<IpDetailsContentView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppSimplePanel(
-            title: getAppLocalizations(context).connection_type,
+            title: getAppLocalizations(context).connectionType,
             description: state.ipv4WANType,
           ),
           AppSimplePanel(
-            title: getAppLocalizations(context).connection_type,
+            title: getAppLocalizations(context).connectionType,
             description: state.ipv6WANType,
           ),
           AppPanelWithTrailWidget(

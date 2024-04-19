@@ -7,7 +7,7 @@ import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/account/_account.dart';
 import 'package:linksys_app/page/administration/firewall/_firewall.dart';
-import 'package:linksys_app/page/administration/internet_settings/_internet_settings.dart';
+import 'package:linksys_app/page/advanced_settings/internet_settings/_internet_settings.dart';
 import 'package:linksys_app/page/administration/ip_details/_ip_details.dart';
 import 'package:linksys_app/page/administration/port_forwarding/_port_forwarding.dart';
 import 'package:linksys_app/page/administration/router_password/_router_password.dart';

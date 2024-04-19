@@ -72,6 +72,7 @@ class RoutePath {
   static const mtuPicker = 'mtuPicker';
   static const macClone = 'macClone';
   static const connectionType = 'connectionType';
+  static const connectionTypeSelection = 'connectionTypeSelection';
 
   /// lan
   static const dhcpReservation = 'dhcpReservation';
@@ -195,6 +196,7 @@ class RouteNamed {
   static const mtuPicker = 'mtuPicker';
   static const macClone = 'macClone';
   static const connectionType = 'connectionType';
+  static const connectionTypeSelection = 'connectionTypeSelection';
 
   /// lan
   static const dhcpReservation = 'dhcpReservation';

@@ -1,25 +1,28 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/page/administration/internet_settings/_internet_settings.dart';
-import 'package:linksys_app/providers/connectivity/_connectivity.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/dashboard/providers/dashboard_home_provider.dart';
-import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_app/util/string_mapping.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/card/card.dart';
+import 'package:linksys_widgets/widgets/card/setting_card.dart';
 import 'package:linksys_widgets/widgets/dropdown/dropdown_menu.dart';
 import 'package:linksys_widgets/widgets/input_field/ip_form_field.dart';
-
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:linksys_widgets/widgets/radios/radio_list.dart';
+
+import 'package:linksys_app/core/utils/extension.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/advanced_settings/internet_settings/_internet_settings.dart';
+import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/page/components/views/arguments_view.dart';
+import 'package:linksys_app/providers/connectivity/_connectivity.dart';
+import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_app/util/string_mapping.dart';
 
 enum InternetSettingsViewType {
   ipv4,
@@ -134,42 +137,46 @@ class _InternetSettingsContentViewState
 
   void initUI() {
     // IPv4 setup
-    switch (WanType.resolve(state.ipv4ConnectionType)) {
+    switch (WanType.resolve(state.ipv4Setting.ipv4ConnectionType)) {
       case WanType.dhcp:
         break;
       case WanType.pppoe:
-        _pppoeUsernameController.text = state.username ?? '';
-        _pppoePasswordController.text = state.password ?? '';
-        _pppoeServiceNameController.text = state.serviceName ?? '';
-        _pppoeVLANIDController.text =
-            state.vlanId != null ? '${state.vlanId}' : '5';
+        _pppoeUsernameController.text = state.ipv4Setting.username ?? '';
+        _pppoePasswordController.text = state.ipv4Setting.password ?? '';
+        _pppoeServiceNameController.text = state.ipv4Setting.serviceName ?? '';
+        _pppoeVLANIDController.text = state.ipv4Setting.vlanId != null
+            ? '${state.ipv4Setting.vlanId}'
+            : '5';
         break;
       case WanType.pptp:
-        _pptpUsernameController.text = state.username ?? '';
-        _pptpPasswordController.text = state.password ?? '';
-        _pptpServerIpController.text = state.serverIp ?? '';
-        _selectedPPTPIpAddressMode = (state.useStaticSettings ?? false)
-            ? PPTPIpAddressMode.specify
-            : PPTPIpAddressMode.dhcp;
+        _pptpUsernameController.text = state.ipv4Setting.username ?? '';
+        _pptpPasswordController.text = state.ipv4Setting.password ?? '';
+        _pptpServerIpController.text = state.ipv4Setting.serverIp ?? '';
+        _selectedPPTPIpAddressMode =
+            (state.ipv4Setting.useStaticSettings ?? false)
+                ? PPTPIpAddressMode.specify
+                : PPTPIpAddressMode.dhcp;
         if (_selectedPPTPIpAddressMode == PPTPIpAddressMode.specify) {
-          _staticIpAddressController.text = state.staticIpAddress ?? '';
-          _staticGatewayController.text = state.staticGateway ?? '';
-          _staticDns1Controller.text = state.staticDns1 ?? '';
-          _staticDns2Controller.text = state.staticDns2 ?? '';
-          _staticDns3Controller.text = state.staticDns3 ?? '';
+          _staticIpAddressController.text =
+              state.ipv4Setting.staticIpAddress ?? '';
+          _staticGatewayController.text = state.ipv4Setting.staticGateway ?? '';
+          _staticDns1Controller.text = state.ipv4Setting.staticDns1 ?? '';
+          _staticDns2Controller.text = state.ipv4Setting.staticDns2 ?? '';
+          _staticDns3Controller.text = state.ipv4Setting.staticDns3 ?? '';
         }
         break;
       case WanType.l2tp:
-        _l2tpUsernameController.text = state.username ?? '';
-        _l2tpPasswordController.text = state.password ?? '';
-        _l2tpServerIpController.text = state.serverIp ?? '';
+        _l2tpUsernameController.text = state.ipv4Setting.username ?? '';
+        _l2tpPasswordController.text = state.ipv4Setting.password ?? '';
+        _l2tpServerIpController.text = state.ipv4Setting.serverIp ?? '';
         break;
       case WanType.static:
-        _staticIpAddressController.text = state.staticIpAddress ?? '';
-        _staticGatewayController.text = state.staticGateway ?? '';
-        _staticDns1Controller.text = state.staticDns1 ?? '';
-        _staticDns2Controller.text = state.staticDns2 ?? '';
-        _staticDns3Controller.text = state.staticDns3 ?? '';
+        _staticIpAddressController.text =
+            state.ipv4Setting.staticIpAddress ?? '';
+        _staticGatewayController.text = state.ipv4Setting.staticGateway ?? '';
+        _staticDns1Controller.text = state.ipv4Setting.staticDns1 ?? '';
+        _staticDns2Controller.text = state.ipv4Setting.staticDns2 ?? '';
+        _staticDns3Controller.text = state.ipv4Setting.staticDns3 ?? '';
         break;
       case WanType.bridge:
         break;
@@ -177,15 +184,18 @@ class _InternetSettingsContentViewState
         break;
     }
     // IPv6 setup
-    switch (WanIPv6Type.resolve(state.ipv6ConnectionType)) {
+    switch (WanIPv6Type.resolve(state.ipv6Setting.ipv6ConnectionType)) {
       case WanIPv6Type.automatic:
-        _ipv6PrefixController.text = state.ipv6Prefix ?? '';
+        _ipv6PrefixController.text = state.ipv6Setting.ipv6Prefix ?? '';
         _ipv6PrefixLengthController.text =
-            state.ipv6PrefixLength != null ? '${state.ipv6PrefixLength}' : '';
-        _ipv6BorderRelayController.text = state.ipv6BorderRelay ?? '';
+            state.ipv6Setting.ipv6PrefixLength != null
+                ? '${state.ipv6Setting.ipv6PrefixLength}'
+                : '';
+        _ipv6BorderRelayController.text =
+            state.ipv6Setting.ipv6BorderRelay ?? '';
         _ipv6BorderRelayPrefixLengthController.text =
-            state.ipv6BorderRelayPrefixLength != null
-                ? '${state.ipv6BorderRelayPrefixLength}'
+            state.ipv6Setting.ipv6BorderRelayPrefixLength != null
+                ? '${state.ipv6Setting.ipv6BorderRelayPrefixLength}'
                 : '';
         break;
       case WanIPv6Type.pppoe:
@@ -196,12 +206,15 @@ class _InternetSettingsContentViewState
         break;
     }
 
-    _selectedConnectionMode = state.behavior ?? _selectedConnectionMode;
-    _idleTimeController.text =
-        state.maxIdleMinutes != null ? '${state.maxIdleMinutes}' : '15';
-    _redialPeriodController.text = state.reconnectAfterSeconds != null
-        ? '${state.reconnectAfterSeconds}'
-        : '30';
+    _selectedConnectionMode =
+        state.ipv4Setting.behavior ?? _selectedConnectionMode;
+    _idleTimeController.text = state.ipv4Setting.maxIdleMinutes != null
+        ? '${state.ipv4Setting.maxIdleMinutes}'
+        : '15';
+    _redialPeriodController.text =
+        state.ipv4Setting.reconnectAfterSeconds != null
+            ? '${state.ipv4Setting.reconnectAfterSeconds}'
+            : '30';
   }
 
   Future save() async {
@@ -218,80 +231,124 @@ class _InternetSettingsContentViewState
 
   @override
   Widget build(BuildContext context) {
+    final macAddressCloneEnable =
+        ref.watch(internetSettingsProvider.select((value) => value.macClone));
     final connectivityState = ref.watch(connectivityProvider);
     _isBehindRouter = connectivityState.connectivityInfo.routerType ==
         RouterType.behindManaged;
     return isLoading
         ? const AppFullScreenSpinner()
         : StyledAppPageView(
-            padding: const EdgeInsets.only(),
             scrollable: true,
             title: getAppLocalizations(context).internet_settings,
-            actions: [
-              AppTextButton(
-                getAppLocalizations(context).save,
-                onTap: _isBehindRouter
-                    ? () async {
-                        setState(() {
-                          isLoading = true;
-                        });
-                        await save().onError((error, stackTrace) {
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(AppToastHelp.negativeToast(
-                            context,
-                            text: (error as JNAPError).result,
-                          ));
-                        }).whenComplete(() {
-                          setState(() {
-                            isLoading = false;
-                          });
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(AppToastHelp.positiveToast(
-                            context,
-                            text: 'Saved',
-                          ));
-                        });
-                      }
-                    : null,
-              ),
-            ],
+            // actions: [
+            //   AppTextButton(
+            //     getAppLocalizations(context).save,
+            //     onTap: _isBehindRouter
+            //         ? () async {
+            //             setState(() {
+            //               isLoading = true;
+            //             });
+            //             await save().onError((error, stackTrace) {
+            //               ScaffoldMessenger.of(context)
+            //                   .showSnackBar(AppToastHelp.negativeToast(
+            //                 context,
+            //                 text: (error as JNAPError).result,
+            //               ));
+            //             }).whenComplete(() {
+            //               setState(() {
+            //                 isLoading = false;
+            //               });
+            //               ScaffoldMessenger.of(context)
+            //                   .showSnackBar(AppToastHelp.positiveToast(
+            //                 context,
+            //                 text: 'Saved',
+            //               ));
+            //             });
+            //           }
+            //         : null,
+            //   ),
+            // ],
             child: AppBasicLayout(
               content: Column(
                 children: [
-                  if (!_isBehindRouter)
-                    Container(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      width: double.infinity,
-                      height: 100,
-                      alignment: Alignment.center,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: AppText.bodyLarge(
-                          'To change these settings. connect to ${ref.read(dashboardHomeProvider).mainWifiSsid}',
-                        ),
-                      ),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.all(Spacing.semiSmall),
-                    child: Stack(
+                  AppCard(
+                    padding: EdgeInsets.zero,
+                    child: Column(
                       children: [
-                        Column(
-                          children: [
-                            _buildSegmentController(),
-                            const AppGap.semiBig(),
-                            _buildSegment(),
-                            const AppGap.semiBig(),
-                            if (_selected == InternetSettingsViewType.ipv4)
-                              _buildAdditionalSettings(),
-                          ],
+                        InternetSettingCard(
+                          title: loc(context).ipv4,
+                          showBorder: false,
+                          onTap: () async {
+                            String? select = await context
+                                .pushNamed(RouteNamed.connectionType, extra: {
+                              'supportedList':
+                                  state.ipv4Setting.supportedIPv4ConnectionType,
+                              'selected': state.ipv4Setting.ipv4ConnectionType,
+                              'viewType': InternetSettingsViewType.ipv4,
+                            });
+                            if (select != null) {
+                              setState(() {
+                                state = state.copyWith(
+                                    ipv4Setting: state.ipv4Setting
+                                        .copyWith(ipv4ConnectionType: select));
+                              });
+                            }
+                          },
                         ),
-                        if (!_isBehindRouter)
-                          Container(
-                            decoration:
-                                const BoxDecoration(color: Color(0x88aaaaaa)),
-                          )
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Divider(),
+                        ),
+                        InternetSettingCard(
+                          title: loc(context).ipv6,
+                          showBorder: false,
+                          onTap: () async {
+                            final disabled = state
+                                .ipv6Setting.supportedIPv6ConnectionType
+                                .where((ipv6) => !state
+                                    .ipv4Setting.supportedWANCombinations
+                                    .any((combine) =>
+                                        combine.wanType ==
+                                            state.ipv4Setting
+                                                .ipv4ConnectionType &&
+                                        combine.wanIPv6Type == ipv6))
+                                .toList();
+                            String? select = await context.pushNamed(
+                              RouteNamed.connectionType,
+                              extra: {
+                                'supportedList': state
+                                    .ipv6Setting.supportedIPv6ConnectionType,
+                                'selected':
+                                    state.ipv6Setting.ipv6ConnectionType,
+                                'disabled': disabled,
+                                'viewType': InternetSettingsViewType.ipv6,
+                              },
+                            );
+                            if (select != null) {
+                              setState(() {
+                                state = state.copyWith(
+                                  ipv6Setting: state.ipv6Setting
+                                      .copyWith(ipv6ConnectionType: select),
+                                );
+                              });
+                            }
+                          },
+                        ),
                       ],
                     ),
+                  ),
+                  InternetSettingCard(
+                    title: loc(context).macAddressClone.capitalizeWords(),
+                    description: macAddressCloneEnable
+                        ? loc(context).on
+                        : loc(context).off,
+                    onTap: state.ipv4Setting.ipv4ConnectionType ==
+                            WanType.bridge.type
+                        ? null
+                        : () {
+                            context.pushNamed(RouteNamed.macClone);
+                          },
                   ),
                 ],
               ),
@@ -322,11 +379,11 @@ class _InternetSettingsContentViewState
         children: {
           InternetSettingsViewType.ipv4: Padding(
             padding: const EdgeInsets.all(Spacing.semiSmall),
-            child: AppText.bodyLarge(getAppLocalizations(context).label_ipv4),
+            child: AppText.bodyLarge(getAppLocalizations(context).ipv4),
           ),
           InternetSettingsViewType.ipv6: Padding(
             padding: const EdgeInsets.all(Spacing.semiSmall),
-            child: AppText.bodyLarge(getAppLocalizations(context).label_ipv6),
+            child: AppText.bodyLarge(getAppLocalizations(context).ipv6),
           ),
         },
       ),
@@ -347,34 +404,36 @@ class _InternetSettingsContentViewState
         children: [
           AppPanelWithInfo(
             title: getAppLocalizations(context).mtu,
-            description: state.mtu == 0
+            description: state.ipv4Setting.mtu == 0
                 ? getAppLocalizations(context).auto
                 : getAppLocalizations(context).manual,
             infoText: ' ',
-            onTap: state.ipv4ConnectionType == WanType.bridge.type
+            onTap: state.ipv4Setting.ipv4ConnectionType == WanType.bridge.type
                 ? null
                 : () async {
                     int? value = await context.pushNamed(
                       RouteNamed.mtuPicker,
                       extra: {
-                        'selected': state.mtu,
-                        'wanType': state.ipv4ConnectionType
+                        'selected': state.ipv4Setting.mtu,
+                        'wanType': state.ipv4Setting.ipv4ConnectionType
                       },
                     );
                     if (value != null) {
                       setState(() {
-                        state = state.copyWith(mtu: value);
+                        state = state.copyWith(
+                          ipv4Setting: state.ipv4Setting.copyWith(mtu: value),
+                        );
                       });
                     }
                   },
           ),
           AppPanelWithInfo(
-            title: getAppLocalizations(context).mac_address_clone,
+            title: getAppLocalizations(context).macAddressClone,
             description: state.macClone
                 ? getAppLocalizations(context).on
                 : getAppLocalizations(context).off,
             infoText: ' ',
-            onTap: state.ipv4ConnectionType == WanType.bridge.type
+            onTap: state.ipv4Setting.ipv4ConnectionType == WanType.bridge.type
                 ? null
                 : () async {
                     String? macAddress = await context
@@ -385,8 +444,9 @@ class _InternetSettingsContentViewState
                     if (macAddress != null) {
                       setState(() {
                         state = state.copyWith(
-                            macClone: macAddress.isNotEmpty,
-                            macCloneAddress: macAddress);
+                          macClone: macAddress.isNotEmpty,
+                          macCloneAddress: macAddress,
+                        );
                       });
                     }
                   },
@@ -400,19 +460,22 @@ class _InternetSettingsContentViewState
     return Column(
       children: [
         AppPanelWithInfo(
-          title: getAppLocalizations(context).connection_type,
-          description:
-              toConnectionTypeData(context, state.ipv4ConnectionType).title,
+          title: getAppLocalizations(context).connectionType,
+          description: toConnectionTypeData(
+                  context, state.ipv4Setting.ipv4ConnectionType)
+              .title,
           infoText: ' ',
           onTap: () async {
             String? select =
                 await context.pushNamed(RouteNamed.connectionType, extra: {
-              'supportedList': state.supportedIPv4ConnectionType,
-              'selected': state.ipv4ConnectionType,
+              'supportedList': state.ipv4Setting.supportedIPv4ConnectionType,
+              'selected': state.ipv4Setting.ipv4ConnectionType,
             });
             if (select != null) {
               setState(() {
-                state = state.copyWith(ipv4ConnectionType: select);
+                state = state.copyWith(
+                    ipv4Setting:
+                        state.ipv4Setting.copyWith(ipv4ConnectionType: select));
               });
             }
           },
@@ -423,7 +486,7 @@ class _InternetSettingsContentViewState
   }
 
   Widget _buildIPv4SettingsByConnectionType() {
-    final type = WanType.resolve(state.ipv4ConnectionType);
+    final type = WanType.resolve(state.ipv4Setting.ipv4ConnectionType);
     switch (type) {
       case WanType.dhcp:
         return _buildDHCPSettings();
@@ -457,7 +520,10 @@ class _InternetSettingsContentViewState
           onFocusChanged: (focused) {
             if (!focused) {
               setState(() {
-                state = state.copyWith(username: _pppoeUsernameController.text);
+                state = state.copyWith(
+                  ipv4Setting: state.ipv4Setting
+                      .copyWith(username: _pppoeUsernameController.text),
+                );
               });
             }
           },
@@ -470,7 +536,10 @@ class _InternetSettingsContentViewState
           onFocusChanged: (focused) {
             if (!focused) {
               setState(() {
-                state = state.copyWith(password: _pppoePasswordController.text);
+                state = state.copyWith(
+                  ipv4Setting: state.ipv4Setting
+                      .copyWith(password: _pppoePasswordController.text),
+                );
               });
             }
           },
@@ -484,7 +553,9 @@ class _InternetSettingsContentViewState
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                    serviceName: _pppoeServiceNameController.text);
+                  ipv4Setting: state.ipv4Setting
+                      .copyWith(serviceName: _pppoeServiceNameController.text),
+                );
               });
             }
           },
@@ -493,14 +564,16 @@ class _InternetSettingsContentViewState
         AppTextField.minMaxNumber(
           min: 5,
           max: 4094,
-          headerText: getAppLocalizations(context).vlan_id,
-          hintText: getAppLocalizations(context).vlan_id,
+          headerText: getAppLocalizations(context).vlanIdOptional,
+          hintText: getAppLocalizations(context).vlanIdOptional,
           controller: _pppoeVLANIDController,
           onFocusChanged: (focused) {
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                    vlanId: int.parse(_pppoeVLANIDController.text));
+                  ipv4Setting: state.ipv4Setting
+                      .copyWith(vlanId: int.parse(_pppoeVLANIDController.text)),
+                );
               });
             }
           },
@@ -518,14 +591,16 @@ class _InternetSettingsContentViewState
       children: [
         AppIPFormField(
           header: AppText.bodyLarge(
-            getAppLocalizations(context).internet_ipv4_address,
+            getAppLocalizations(context).internetIpv4Address,
           ),
           controller: _staticIpAddressController,
           onFocusChanged: (focused) {
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                    staticIpAddress: _staticIpAddressController.text);
+                  ipv4Setting: state.ipv4Setting.copyWith(
+                      staticIpAddress: _staticIpAddressController.text),
+                );
               });
             }
           },
@@ -533,7 +608,7 @@ class _InternetSettingsContentViewState
         const AppGap.semiSmall(),
         AppIPFormField(
           header: AppText.bodyLarge(
-            getAppLocalizations(context).subnet_mask,
+            getAppLocalizations(context).subnetMask,
           ),
           controller: _staticSubnetController,
           onFocusChanged: (focused) {},
@@ -541,14 +616,16 @@ class _InternetSettingsContentViewState
         const AppGap.semiSmall(),
         AppIPFormField(
           header: AppText.bodyLarge(
-            getAppLocalizations(context).default_gateway,
+            getAppLocalizations(context).defaultGateway,
           ),
           controller: _staticGatewayController,
           onFocusChanged: (focused) {
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                    staticGateway: _staticGatewayController.text);
+                  ipv4Setting: state.ipv4Setting
+                      .copyWith(staticGateway: _staticGatewayController.text),
+                );
               });
             }
           },
@@ -562,7 +639,10 @@ class _InternetSettingsContentViewState
           onFocusChanged: (focused) {
             if (!focused) {
               setState(() {
-                state = state.copyWith(staticDns1: _staticDns1Controller.text);
+                state = state.copyWith(
+                  ipv4Setting: state.ipv4Setting
+                      .copyWith(staticDns1: _staticDns1Controller.text),
+                );
               });
             }
           },
@@ -576,7 +656,10 @@ class _InternetSettingsContentViewState
           onFocusChanged: (focused) {
             if (!focused) {
               setState(() {
-                state = state.copyWith(staticDns2: _staticDns2Controller.text);
+                state = state.copyWith(
+                  ipv4Setting: state.ipv4Setting
+                      .copyWith(staticDns2: _staticDns2Controller.text),
+                );
               });
             }
           },
@@ -590,7 +673,10 @@ class _InternetSettingsContentViewState
           onFocusChanged: (focused) {
             if (!focused) {
               setState(() {
-                state = state.copyWith(staticDns3: _staticDns3Controller.text);
+                state = state.copyWith(
+                  ipv4Setting: state.ipv4Setting
+                      .copyWith(staticDns3: _staticDns3Controller.text),
+                );
               });
             }
           },
@@ -609,7 +695,10 @@ class _InternetSettingsContentViewState
           onFocusChanged: (focused) {
             if (!focused) {
               setState(() {
-                state = state.copyWith(username: _pptpUsernameController.text);
+                state = state.copyWith(
+                  ipv4Setting: state.ipv4Setting
+                      .copyWith(username: _pptpUsernameController.text),
+                );
               });
             }
           },
@@ -622,7 +711,10 @@ class _InternetSettingsContentViewState
           onFocusChanged: (focused) {
             if (!focused) {
               setState(() {
-                state = state.copyWith(password: _pptpPasswordController.text);
+                state = state.copyWith(
+                  ipv4Setting: state.ipv4Setting
+                      .copyWith(password: _pptpPasswordController.text),
+                );
               });
             }
           },
@@ -630,13 +722,16 @@ class _InternetSettingsContentViewState
         const AppGap.semiSmall(),
         AppIPFormField(
           header: AppText.bodyLarge(
-            getAppLocalizations(context).server_ipv4_address,
+            getAppLocalizations(context).serverIpv4Address,
           ),
           controller: _pptpServerIpController,
           onFocusChanged: (focused) {
             if (!focused) {
               setState(() {
-                state = state.copyWith(serverIp: _pptpServerIpController.text);
+                state = state.copyWith(
+                  ipv4Setting: state.ipv4Setting
+                      .copyWith(serverIp: _pptpServerIpController.text),
+                );
               });
             }
           },
@@ -661,7 +756,10 @@ class _InternetSettingsContentViewState
           onFocusChanged: (focused) {
             if (!focused) {
               setState(() {
-                state = state.copyWith(username: _l2tpUsernameController.text);
+                state = state.copyWith(
+                  ipv4Setting: state.ipv4Setting
+                      .copyWith(username: _l2tpUsernameController.text),
+                );
               });
             }
           },
@@ -674,7 +772,10 @@ class _InternetSettingsContentViewState
           onFocusChanged: (focused) {
             if (!focused) {
               setState(() {
-                state = state.copyWith(password: _l2tpPasswordController.text);
+                state = state.copyWith(
+                  ipv4Setting: state.ipv4Setting
+                      .copyWith(password: _l2tpPasswordController.text),
+                );
               });
             }
           },
@@ -682,13 +783,16 @@ class _InternetSettingsContentViewState
         const AppGap.semiSmall(),
         AppIPFormField(
           header: AppText.bodyLarge(
-            getAppLocalizations(context).server_ipv4_address,
+            getAppLocalizations(context).serverIpv4Address,
           ),
           controller: _l2tpServerIpController,
           onFocusChanged: (focused) {
             if (!focused) {
               setState(() {
-                state = state.copyWith(serverIp: _l2tpServerIpController.text);
+                state = state.copyWith(
+                  ipv4Setting: state.ipv4Setting
+                      .copyWith(serverIp: _l2tpServerIpController.text),
+                );
               });
             }
           },
@@ -707,28 +811,33 @@ class _InternetSettingsContentViewState
     return Column(
       children: [
         AppPanelWithInfo(
-          title: getAppLocalizations(context).connection_type,
-          description:
-              toConnectionTypeData(context, state.ipv6ConnectionType).title,
+          title: getAppLocalizations(context).connectionType,
+          description: toConnectionTypeData(
+                  context, state.ipv6Setting.ipv6ConnectionType)
+              .title,
           infoText: ' ',
           onTap: () async {
-            final disabled = state.supportedIPv6ConnectionType
-                .where((ipv6) => !state.supportedWANCombinations.any(
-                    (combine) =>
-                        combine.wanType == state.ipv4ConnectionType &&
+            final disabled = state.ipv6Setting.supportedIPv6ConnectionType
+                .where((ipv6) => !state.ipv4Setting.supportedWANCombinations
+                    .any((combine) =>
+                        combine.wanType ==
+                            state.ipv4Setting.ipv4ConnectionType &&
                         combine.wanIPv6Type == ipv6))
                 .toList();
             String? select = await context.pushNamed(
               RouteNamed.connectionType,
               extra: {
-                'supportedList': state.supportedIPv6ConnectionType,
-                'selected': state.ipv6ConnectionType,
+                'supportedList': state.ipv6Setting.supportedIPv6ConnectionType,
+                'selected': state.ipv6Setting.ipv6ConnectionType,
                 'disabled': disabled
               },
             );
             if (select != null) {
               setState(() {
-                state = state.copyWith(ipv6ConnectionType: select);
+                state = state.copyWith(
+                  ipv6Setting:
+                      state.ipv6Setting.copyWith(ipv6ConnectionType: select),
+                );
               });
             }
           },
@@ -739,7 +848,7 @@ class _InternetSettingsContentViewState
   }
 
   Widget _buildIPv6SettingsByConnectionType() {
-    final type = WanIPv6Type.resolve(state.ipv6ConnectionType);
+    final type = WanIPv6Type.resolve(state.ipv6Setting.ipv6ConnectionType);
     switch (type) {
       case WanIPv6Type.automatic:
         return _buildIpv6AutomaticSettings();
@@ -757,13 +866,16 @@ class _InternetSettingsContentViewState
       children: [
         Row(
           children: [
-            AppText.bodyLarge(getAppLocalizations(context).ipv6_automatic),
+            AppText.bodyLarge(getAppLocalizations(context).ipv6Automatic),
             const Spacer(),
             AppSwitch(
-              value: state.isIPv6AutomaticEnabled,
+              value: state.ipv6Setting.isIPv6AutomaticEnabled,
               onChanged: (value) {
                 setState(() {
-                  state = state.copyWith(isIPv6AutomaticEnabled: value);
+                  state = state.copyWith(
+                    ipv6Setting: state.ipv6Setting
+                        .copyWith(isIPv6AutomaticEnabled: value),
+                  );
                 });
               },
             ),
@@ -771,11 +883,11 @@ class _InternetSettingsContentViewState
         ),
         AppPanelWithInfo(
           title: getAppLocalizations(context).duid,
-          description: state.duid,
+          description: state.ipv6Setting.duid,
           infoText: ' ',
           forcedHidingAccessory: true,
         ),
-        if (!state.isIPv6AutomaticEnabled) _sixrdTunnel(),
+        if (!state.ipv6Setting.isIPv6AutomaticEnabled) _sixrdTunnel(),
       ],
     );
   }
@@ -785,7 +897,7 @@ class _InternetSettingsContentViewState
       children: [
         Row(
           children: [
-            AppText.bodyLarge(getAppLocalizations(context).sixth_tunnel),
+            AppText.bodyLarge(getAppLocalizations(context).sixrdTunnel),
             const Spacer(),
             AppDropdownMenu<IPv6rdTunnelMode>(
               items: const [
@@ -793,17 +905,20 @@ class _InternetSettingsContentViewState
                 IPv6rdTunnelMode.automatic,
                 IPv6rdTunnelMode.manual,
               ],
-              initial: state.ipv6rdTunnelMode,
+              initial: state.ipv6Setting.ipv6rdTunnelMode,
               label: (item) => item.value,
               onChanged: (value) {
                 setState(() {
-                  state = state.copyWith(ipv6rdTunnelMode: value);
+                  state = state.copyWith(
+                    ipv6Setting:
+                        state.ipv6Setting.copyWith(ipv6rdTunnelMode: value),
+                  );
                 });
               },
             ),
           ],
         ),
-        if (state.ipv6rdTunnelMode == IPv6rdTunnelMode.manual)
+        if (state.ipv6Setting.ipv6rdTunnelMode == IPv6rdTunnelMode.manual)
           _manualSixrdTunnel(),
       ],
     );
@@ -819,7 +934,10 @@ class _InternetSettingsContentViewState
           onFocusChanged: (focused) {
             if (!focused) {
               setState(() {
-                state = state.copyWith(ipv6Prefix: _ipv6PrefixController.text);
+                state = state.copyWith(
+                  ipv6Setting: state.ipv6Setting
+                      .copyWith(ipv6Prefix: _ipv6PrefixController.text),
+                );
               });
             }
           },
@@ -833,8 +951,10 @@ class _InternetSettingsContentViewState
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                    ipv6PrefixLength:
-                        int.parse(_ipv6PrefixLengthController.text));
+                  ipv6Setting: state.ipv6Setting.copyWith(
+                      ipv6PrefixLength:
+                          int.parse(_ipv6PrefixLengthController.text)),
+                );
               });
             }
           },
@@ -848,7 +968,9 @@ class _InternetSettingsContentViewState
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                    ipv6BorderRelay: _ipv6BorderRelayController.text);
+                  ipv6Setting: state.ipv6Setting.copyWith(
+                      ipv6BorderRelay: _ipv6BorderRelayController.text),
+                );
               });
             }
           },
@@ -862,8 +984,10 @@ class _InternetSettingsContentViewState
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                    ipv6BorderRelayPrefixLength:
-                        int.parse(_ipv6BorderRelayPrefixLengthController.text));
+                  ipv6Setting: state.ipv6Setting.copyWith(
+                      ipv6BorderRelayPrefixLength: int.parse(
+                          _ipv6BorderRelayPrefixLengthController.text)),
+                );
               });
             }
           },
@@ -897,8 +1021,10 @@ class _InternetSettingsContentViewState
                         if (!focused) {
                           setState(() {
                             state = state.copyWith(
-                                maxIdleMinutes:
-                                    int.parse(_idleTimeController.text));
+                              ipv4Setting: state.ipv4Setting.copyWith(
+                                  maxIdleMinutes:
+                                      int.parse(_idleTimeController.text)),
+                            );
                           });
                         }
                       },
@@ -926,8 +1052,10 @@ class _InternetSettingsContentViewState
                         if (!focused) {
                           setState(() {
                             state = state.copyWith(
-                                reconnectAfterSeconds:
-                                    int.parse(_redialPeriodController.text));
+                              ipv4Setting: state.ipv4Setting.copyWith(
+                                  reconnectAfterSeconds:
+                                      int.parse(_redialPeriodController.text)),
+                            );
                           });
                         }
                       },
@@ -973,12 +1101,40 @@ class _InternetSettingsContentViewState
               if (type != null) {
                 _selectedPPTPIpAddressMode = type;
                 state = state.copyWith(
-                    useStaticSettings: type == PPTPIpAddressMode.specify);
+                  ipv4Setting: state.ipv4Setting.copyWith(
+                      useStaticSettings: type == PPTPIpAddressMode.specify),
+                );
               }
             });
           },
         ),
       ),
+    );
+  }
+}
+
+class InternetSettingCard extends StatelessWidget {
+  final String title;
+  final String? description;
+  final bool showBorder;
+  final VoidCallback? onTap;
+
+  const InternetSettingCard({
+    Key? key,
+    required this.title,
+    this.description,
+    this.showBorder = true,
+    this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSettingCard(
+      title: title,
+      description: description,
+      showBorder: showBorder,
+      trailing: const Icon(LinksysIcons.chevronRight),
+      onTap: onTap,
     );
   }
 }

@@ -1,3 +1,6 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 class RouterWANStatus extends Equatable {
@@ -82,7 +85,7 @@ class RouterWANStatus extends Equatable {
       supportedWANCombinations: json['supportedWANCombinations'] == null
           ? []
           : List.from(json['supportedWANCombinations'])
-              .map((e) => SupportedWANCombination.fromJson(e))
+              .map((e) => SupportedWANCombination.fromMap(e))
               .toList(),
     );
   }
@@ -319,17 +322,24 @@ class SupportedWANCombination extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
       'wanType': wanType,
       'wanIPv6Type': wanIPv6Type,
     };
   }
 
-  factory SupportedWANCombination.fromJson(Map<String, dynamic> json) {
+  factory SupportedWANCombination.fromMap(Map<String, dynamic> map) {
     return SupportedWANCombination(
-      wanType: json['wanType'],
-      wanIPv6Type: json['wanIPv6Type'],
+      wanType: map['wanType'],
+      wanIPv6Type: map['wanIPv6Type'],
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory SupportedWANCombination.fromJson(String source) => SupportedWANCombination.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  bool get stringify => true;
 }

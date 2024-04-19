@@ -6,9 +6,8 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/widgets/card/list_card.dart';
+import 'package:linksys_widgets/widgets/card/setting_card.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
-import 'package:linksys_widgets/widgets/text/app_text.dart';
 
 class DashboardAdvancedSettingsView extends ConsumerStatefulWidget {
   const DashboardAdvancedSettingsView({Key? key}) : super(key: key);
@@ -37,8 +36,8 @@ class _DashboardAdvancedSettingsViewState
         itemCount: advancedSettings.length,
         shrinkWrap: true,
         itemBuilder: (context, index) {
-          return AppListCard(
-            title: AppText.labelLarge(advancedSettings[index].title),
+          return AppSettingCard(
+            title: advancedSettings[index].title,
             trailing: const Icon(LinksysIcons.chevronRight),
             onTap: advancedSettings[index].onTap,
           );
