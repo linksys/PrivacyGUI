@@ -109,7 +109,6 @@ class MockPnpNotifier extends BasePnpNotifier {
   @override
   Future checkInternetConnection() {
     return Future.delayed(const Duration(seconds: 1));
-    
   }
 
   @override
@@ -209,8 +208,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   /// check internet connection within 30 seconds
   @override
   Future checkInternetConnection() async {
-    final isOnline =
-        await testConnection() && (await testCloudAvailability()).isCloudOk;
+    final isOnline = (await testCloudAvailability()).isCloudOk;
     if (!isOnline) {
       throw ExceptionNoInternetConnection();
     }

@@ -37,7 +37,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
 
     final connectivity = ref.read(connectivityProvider.notifier);
     connectivity.start();
-    // connectivity.forceUpdate().then((value) => _initAuth());
+    connectivity.forceUpdate().then((value) => _initAuth());
   }
 
   @override

@@ -35,9 +35,12 @@ class DashboardHomeView extends ConsumerStatefulWidget {
 }
 
 class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
+  late FirmwareUpdateNotifier firmware;
+
   @override
   void initState() {
     super.initState();
+    firmware = ref.read(firmwareUpdateProvider.notifier);
     _pushNotificationCheck();
     _firmwareUpdateCheck();
   }
@@ -332,7 +335,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   void _firmwareUpdateCheck() {
     Future.doWhile(() => !mounted).then((_) {
-      ref.read(firmwareUpdateProvider.notifier).checkFirmwareUpdateStatus();
+      firmware.checkFirmwareUpdateStatus();
     });
   }
 
