@@ -108,8 +108,8 @@ class MockPnpNotifier extends BasePnpNotifier {
 
   @override
   Future checkInternetConnection() {
-    return Future.delayed(const Duration(seconds: 1))
-        .then((value) => throw ExceptionNoInternetConnection());
+    return Future.delayed(const Duration(seconds: 1));
+    
   }
 
   @override
@@ -226,7 +226,11 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     }
     final repo = ref.read(routerRepositoryProvider);
     final result = await repo
-        .send(JNAPAction.getAutoConfigurationSettings)
+        .send(
+          JNAPAction.getAutoConfigurationSettings,
+          fetchRemote: true,
+          cacheLevel: CacheLevel.noCache,
+        )
         .then((data) =>
             data.output['isAutoConfigurationSupported'] &&
             !data.output['userAcknowledgedAutoConfiguration'])
@@ -246,7 +250,13 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       auth: true,
     );
     final repo = ref.read(routerRepositoryProvider);
-    return repo.transaction(transaction, fetchRemote: true).then((response) {
+    return repo
+        .transaction(
+      transaction,
+      fetchRemote: true,
+      cacheLevel: CacheLevel.noCache,
+    )
+        .then((response) {
       bool isAdminPasswordDefault = (response.data
                   .firstWhereOrNull((element) =>
                       element.key == JNAPAction.isAdminPasswordDefault)
@@ -263,7 +273,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           '[pnp]: is Router configured? $isAdminPasswordDefault, $isAdminPasswordSetByUser');
       return !isAdminPasswordDefault || isAdminPasswordSetByUser;
     }).onError((error, stackTrace) =>
-        true); // error handling - set configured to prevent go to pnp
+            true); // error handling - set configured to prevent go to pnp
   }
 
   @override

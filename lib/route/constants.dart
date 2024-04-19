@@ -9,7 +9,7 @@ class RoutePath {
   static const cloudLoginPassword = 'cloudLoginPassword';
   static const cloudForgotPassword = 'cloudForgotPassword';
   static const phoneRegionCode = 'phoneRegionCode';
-  static const localLoginPassword = 'localLoginPassword';
+  static const localLoginPassword = '/localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
   static const localPasswordReset = 'localPasswordReset';
 

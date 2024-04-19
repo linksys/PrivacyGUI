@@ -66,6 +66,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     observers: [ref.read(routerLoggerProvider)],
     initialLocation: '/',
     routes: [
+      localLoginRoute,
       homeRoute,
       // ref.read(otpRouteProvider),
       LinksysRoute(
@@ -156,7 +157,7 @@ class RouterNotifier extends ChangeNotifier {
       return RoutePath.prepareDashboard;
     }
 
-    return null;
+    return state.matchedLocation == RoutePath.home ? _home() : null;
   }
 
   FutureOr<String?> _goPnp(String? query) {
@@ -173,8 +174,14 @@ class RouterNotifier extends ChangeNotifier {
       return switch (state?.loginType ?? LoginType.none) {
         LoginType.remote => RoutePath.prepareDashboard,
         LoginType.local => RoutePath.prepareDashboard,
-        _ => null,
+        _ => _home(),
       };
     });
+  }
+
+  String _home() {
+    return BuildConfig.forceCommandType == ForceCommand.local
+        ? RoutePath.localLoginPassword
+        : RoutePath.home;
   }
 }

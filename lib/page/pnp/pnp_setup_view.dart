@@ -48,7 +48,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   _PnpSetupStep _setupStep = _PnpSetupStep.init;
   String _loadingMessage = '';
   String _loadingMessageSub = '';
-  bool _showFactoryReset = false;
+  bool _isUnconfigured = false;
   bool _needToReconnect = false;
   PnpStep? _currentStep;
   ({void Function() stepCancel, void Function() stepContinue})? _stepController;
@@ -64,15 +64,15 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
       });
       await ref.read(pnpProvider.notifier).fetchData();
     }).then((_) {
-      _showFactoryReset = ref.read(pnpProvider).isUnconfigured;
+      _isUnconfigured = ref.read(pnpProvider).isUnconfigured;
       int index = 0;
       steps = [
         PersonalWiFiStep(index: index++),
         GuestWiFiStep(index: index++),
         NightModeStep(
             index: index++,
-            saveChanges: _showFactoryReset ? _saveChanges : null),
-        if (_showFactoryReset)
+            saveChanges: _isUnconfigured ? _saveChanges : null),
+        if (_isUnconfigured)
           YourNetworkStep(index: index++, saveChanges: _finishAddNodes),
       ];
       setState(() {
@@ -95,6 +95,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
       appBarStyle: AppBarStyle.none,
       backState: StyledBackState.none,
       padding: EdgeInsets.zero,
+      enableSafeArea: (bottom: true, top: false, left: true, right: false),
       child: AppBasicLayout(
         content: Center(
           child: AppCard(
@@ -134,7 +135,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             child: PnpStepper(
               steps: steps,
               stepperType: StepperType.horizontal,
-              onLastStep: _showFactoryReset ? _finishAddNodes : _saveChanges,
+              onLastStep: _isUnconfigured ? _finishAddNodes : _saveChanges,
               onStepChanged: ((index, step, controller) {
                 _currentStep = step;
                 _stepController = controller;

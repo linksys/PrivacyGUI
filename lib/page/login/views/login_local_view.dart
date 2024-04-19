@@ -37,12 +37,14 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
   int? _remainingAttempts;
   Timer? _timer;
   bool isCountdownJustFinished = false;
+  late AuthNotifier auth;
 
   final TextEditingController _passwordController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    auth = ref.read(authProvider.notifier);
     //Use this to prevent errors from modifying the state during the init stage
     Future.doWhile(() => !mounted).then((value) {
       _getAdminPasswordHint();
@@ -219,11 +221,11 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
       _passwordController.text.isNotEmpty && !_isTimerRunning();
 
   void _getAdminPasswordHint() {
-    ref.read(authProvider.notifier).getPasswordHint();
+    auth.getPasswordHint();
   }
 
   _localLogin() {
     isCountdownJustFinished = false;
-    ref.read(authProvider.notifier).localLogin(_passwordController.text);
+    auth.localLogin(_passwordController.text);
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
@@ -207,7 +206,9 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         ref.watch(pnpProvider.select((value) => value.deviceInfo));
     return StyledAppPageView(
       scrollable: true,
+      appBarStyle: AppBarStyle.none,
       backState: StyledBackState.none,
+      enableSafeArea: (bottom: true, top: false, left: true, right: false),
       child: Center(
         child: AppCard(
           padding: const EdgeInsets.all(24.0),
