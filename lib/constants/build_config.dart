@@ -44,6 +44,7 @@ class BuildConfig {
     final prefs = await SharedPreferences.getInstance();
     final envStr = prefs.getString(pCloudEnv);
     cloudEnvTarget = CloudEnvironment.get(envStr ?? '') ?? cloudEnvTarget;
+    logger.d('Cloud Env: $cloudEnvTarget');
   }
 }
 
