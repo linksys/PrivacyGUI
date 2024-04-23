@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/utils/extension.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:linksys_app/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:linksys_app/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
 import 'package:linksys_app/page/components/responsive/responsive_bottom_button.dart';
+import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_app/util/url_helper/url_helper.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:linksys_app/validator_rules/_validator_rules.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
@@ -107,6 +110,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
   }
 
   void initUI() {
+    resetUI();
     // IPv4 setup
     switch (WanType.resolve(state.ipv4Setting.ipv4ConnectionType)) {
       case WanType.dhcp:
@@ -186,6 +190,31 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             : '30';
   }
 
+  void resetUI() {
+    _pppoeUsernameController.text = '';
+    _pppoePasswordController.text = '';
+    _pppoeVLANIDController.text = '';
+    _pppoeServiceNameController.text = '';
+    _staticIpAddressController.text = '';
+    _staticSubnetController.text = '';
+    _staticGatewayController.text = '';
+    _staticDns1Controller.text = '';
+    _staticDns2Controller.text = '';
+    _staticDns3Controller.text = '';
+    _pptpUsernameController.text = '';
+    _pptpPasswordController.text = '';
+    _pptpServerIpController.text = '';
+    _l2tpUsernameController.text = '';
+    _l2tpPasswordController.text = '';
+    _l2tpServerIpController.text = '';
+    _idleTimeController.text = '';
+    _redialPeriodController.text = '';
+    _ipv6PrefixController.text = '';
+    _ipv6PrefixLengthController.text = '';
+    _ipv6BorderRelayController.text = '';
+    _ipv6BorderRelayPrefixLengthController.text = '';
+  }
+
   @override
   Widget build(BuildContext context) {
     final title =
@@ -200,7 +229,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             }
           : null,
       actions: [
-        AppTextButton.noPadding(
+        AppTextButton(
           isEditing ? loc(context).cancel : loc(context).edit,
           onTap: isEditing
               ? () {
@@ -258,6 +287,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                               }
                             },
                     ),
+                  const AppGap.regular(),
                   if (isEditing) responsiveGap(context),
                   if (isEditing)
                     responsiveBottomButton(
@@ -1045,8 +1075,10 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       ),
       AppSettingCard.noBorder(
         title: loc(context).vlanIdOptional,
-        description: state.ipv4Setting.vlanId != null
-            ? state.ipv4Setting.vlanId.toString()
+        description: (state.ipv4Setting.wanTaggingSettingsEnable ?? false)
+            ? state.ipv4Setting.vlanId != null
+                ? state.ipv4Setting.vlanId.toString()
+                : ''
             : '',
         color: Theme.of(context).colorScheme.background,
       ),
@@ -1138,9 +1170,11 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             ),
             const AppGap.semiSmall(),
             AppTextButton.noPadding(
-              'url',
+              state.ipv4Setting.redirection ?? '',
               icon: Icons.open_in_new,
-              onTap: () {},
+              onTap: () {
+                openUrl(state.ipv4Setting.redirection ?? '');
+              },
             ),
             const AppGap.regular(),
           ],
@@ -1213,26 +1247,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               ),
               AppTextButton(
                 loc(context).restart,
-                onTap: () async {
-                  setState(() {
-                    isLoading = true;
-                    loadingTitle = loc(context).restarting;
-                  });
-                  await _saveChange(viewType)
-                      .onError((error, stackTrace) => null)
-                      .then((value) {
-                    setState(() {
-                      isEditing = false;
-                      state = ref.read(internetSettingsProvider).copyWith();
-                      initUI();
-                    });
-                  }).whenComplete(() {
-                    setState(() {
-                      isLoading = false;
-                      loadingTitle = '';
-                    });
-                    context.pop();
-                  });
+                onTap: () {
+                  context.pop();
+                  _onRestartButtonTap();
                 },
               ),
             ],
@@ -1240,11 +1257,43 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         });
   }
 
-  Future _saveChange(InternetSettingsViewType viewType) async {
+  Future _onRestartButtonTap() {
+    setState(() {
+      isLoading = true;
+      loadingTitle = loc(context).restarting;
+    });
+    return _saveChange(viewType).then((value) {
+      setState(() {
+        isEditing = false;
+        state = ref.read(internetSettingsProvider).copyWith();
+        initUI();
+      });
+      showSuccessSnackBar(
+        context,
+        loc(context).changesSaved,
+      );
+    }).catchError(
+      (error, stackTrace) {
+        final errorMsg = (error as JNAPError).result;
+        showFailedSnackBar(
+          context,
+          errorMsg,
+        );
+      },
+      test: (error) => error is JNAPError,
+    ).whenComplete(() {
+      setState(() {
+        isLoading = false;
+        loadingTitle = '';
+      });
+    });
+  }
+
+  Future _saveChange(InternetSettingsViewType viewType) {
     if (viewType == InternetSettingsViewType.ipv4) {
-      await ref.read(internetSettingsProvider.notifier).saveIpv4(state);
+      return ref.read(internetSettingsProvider.notifier).saveIpv4(state);
     } else {
-      await ref.read(internetSettingsProvider.notifier).saveIpv6(state);
+      return ref.read(internetSettingsProvider.notifier).saveIpv6(state);
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/constants/pref_key.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
 import 'package:linksys_app/core/jnap/models/get_port_connection_status.dart';
@@ -13,6 +14,7 @@ import 'package:linksys_app/core/jnap/models/wan_status.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final internetSettingsProvider =
     NotifierProvider<InternetSettingsNotifier, InternetSettingsState>(
@@ -65,6 +67,10 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
               username: pppoeSettings.username,
               password: pppoeSettings.password,
               serviceName: pppoeSettings.serviceName,
+              wanTaggingSettingsEnable:
+                  wanSettings?.wanTaggingSettings?.isEnabled,
+              vlanId:
+                  wanSettings?.wanTaggingSettings?.vlanTaggingSettings?.vlanID,
             ),
           );
         }
@@ -122,18 +128,25 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         }
         break;
       case WanType.bridge:
+        SharedPreferences.getInstance().then((prefs) {
+          final redirection = prefs.getString(pRedirection);
+          state = state.copyWith(
+            ipv4Setting: state.ipv4Setting.copyWith(
+              redirection: redirection,
+            ),
+          );
+        });
         break;
       default:
         break;
     }
 
-    return state = state.copyWith(
+    return state = InternetSettingsState.init().copyWith(
       ipv4Setting: state.ipv4Setting.copyWith(
         ipv4ConnectionType: wanSettings?.wanType ?? '',
         supportedIPv4ConnectionType: wanStatus?.supportedWANTypes ?? [],
         supportedWANCombinations: wanStatus?.supportedWANCombinations ?? [],
         mtu: wanSettings?.mtu ?? 0,
-        vlanId: wanSettings?.wanTaggingSettings?.vlanTaggingSettings?.vlanID,
       ),
       ipv6Setting: state.ipv6Setting.copyWith(
         ipv6ConnectionType: getIPv6Settings?.wanType ?? '',
@@ -186,6 +199,11 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           }
           final behavior =
               newState.ipv4Setting.behavior ?? PPPConnectionBehavior.keepAlive;
+          final vlanId = newState.ipv4Setting.vlanId;
+          bool wanTaggingSettingsEnabled = false;
+          if (vlanId != null) {
+            wanTaggingSettingsEnabled = (vlanId >= 5) && (vlanId <= 4094);
+          }
           wanSettings = wanSettings.copyWith(
             pppoeSettings: PPPoESettings(
               username: newState.ipv4Setting.username ?? '',
@@ -193,18 +211,20 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
               serviceName: newState.ipv4Setting.serviceName ?? '',
               behavior: behavior.value,
               maxIdleMinutes: behavior == PPPConnectionBehavior.connectOnDemand
-                  ? newState.ipv4Setting.maxIdleMinutes
+                  ? newState.ipv4Setting.maxIdleMinutes ?? 15
                   : null,
               reconnectAfterSeconds: behavior == PPPConnectionBehavior.keepAlive
-                  ? newState.ipv4Setting.reconnectAfterSeconds
+                  ? newState.ipv4Setting.reconnectAfterSeconds ?? 30
                   : null,
             ),
             wanTaggingSettings: SinglePortVLANTaggingSettings(
-              isEnabled: true,
-              vlanTaggingSettings: PortTaggingSettings(
-                vlanID: newState.ipv4Setting.vlanId ?? 5,
-                vlanStatus: TaggingStatus.tagged.value,
-              ),
+              isEnabled: wanTaggingSettingsEnabled,
+              vlanTaggingSettings: wanTaggingSettingsEnabled
+                  ? PortTaggingSettings(
+                      vlanID: newState.ipv4Setting.vlanId ?? 5,
+                      vlanStatus: TaggingStatus.tagged.value,
+                    )
+                  : null,
             ),
           );
           break;
@@ -299,13 +319,26 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         transactions.add(additionalSetting);
       }
 
-      await repo
+      return repo
           .doTransaction(transactions, fetchRemote: true)
-          .then((_) => fetch(fetchRemote: true));
+          .then((results) {
+        if (wanType == WanType.bridge) {
+          final setWanSettingsResult = JNAPTransactionSuccessWrap.getResult(
+              JNAPAction.setWANSettings, Map.fromEntries(results));
+          final redirection = setWanSettingsResult?.output["redirection"];
+          SharedPreferences.getInstance().then((prefs) {
+            prefs.setString(pRedirection,
+                "http://${redirection["hostName"]}.${redirection["domain"]}");
+          });
+        }
+        fetch(fetchRemote: true);
+      });
+    } else {
+      throw const JNAPError(result: 'Empty wanType', error: 'Empty wanType');
     }
   }
 
-  Future saveIpv6(InternetSettingsState newState) async {
+  Future saveIpv6(InternetSettingsState newState) {
     final wanType =
         WanIPv6Type.resolve(newState.ipv6Setting.ipv6ConnectionType);
     if (wanType != null) {
@@ -344,9 +377,11 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           break;
       }
 
-      await repo
+      return repo
           .send(JNAPAction.setIPv6Settings, data: settings.toJson(), auth: true)
           .then((_) => fetch(fetchRemote: true));
+    } else {
+      throw const JNAPError(result: 'Empty wanType', error: 'Empty wanType');
     }
   }
 
@@ -356,16 +391,30 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         .send(
       JNAPAction.setMACAddressCloneSettings,
       auth: true,
-      timeoutMs: 3000,
       data: MACAddressCloneSettings(
         isMACAddressCloneEnabled: isMACAddressCloneEnabled,
         macAddress: isMACAddressCloneEnabled ? macAddress : null,
       ).toMap(),
     )
         .then((_) {
+      getMacAddressClone();
+    });
+  }
+
+  Future getMacAddressClone() {
+    final repo = ref.read(routerRepositoryProvider);
+    return repo
+        .send(
+      JNAPAction.getMACAddressCloneSettings,
+      auth: true,
+      fetchRemote: true,
+    )
+        .then((success) {
+      final macAddressCloneSettings =
+          MACAddressCloneSettings.fromMap(success.output);
       state = state.copyWith(
-        macClone: isMACAddressCloneEnabled,
-        macCloneAddress: macAddress,
+        macClone: macAddressCloneSettings.isMACAddressCloneEnabled,
+        macCloneAddress: macAddressCloneSettings.macAddress,
       );
     });
   }

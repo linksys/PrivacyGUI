@@ -828,5 +828,6 @@
   "unsavedChangesTitle": "You have unsaved changes on this page",
   "unsavedChangesDesc": "Navigating away from this page will discard any inputs.",
   "goBack": "Go back",
-  "discardChanges": "Discard changes"
+  "discardChanges": "Discard changes",
+  "changesSaved": "Changes saved"
 }

@@ -201,7 +201,10 @@ class Ipv4Setting extends Equatable {
   final String? serviceName;
   final String? serverIp;
   final bool? useStaticSettings;
+  // Brigde
+  final String? redirection;
   // Wan Tagging Settings
+  final bool? wanTaggingSettingsEnable;
   final int? vlanId;
 
   const Ipv4Setting({
@@ -223,6 +226,8 @@ class Ipv4Setting extends Equatable {
     this.serviceName,
     this.serverIp,
     this.useStaticSettings,
+    this.redirection,
+    this.wanTaggingSettingsEnable,
     this.vlanId,
   });
 
@@ -247,6 +252,8 @@ class Ipv4Setting extends Equatable {
       serviceName,
       serverIp,
       useStaticSettings,
+      redirection,
+      wanTaggingSettingsEnable,
       vlanId,
     ];
   }
@@ -270,6 +277,8 @@ class Ipv4Setting extends Equatable {
     String? serviceName,
     String? serverIp,
     bool? useStaticSettings,
+    String? redirection,
+    bool? wanTaggingSettingsEnable,
     int? vlanId,
   }) {
     return Ipv4Setting(
@@ -294,6 +303,9 @@ class Ipv4Setting extends Equatable {
       serviceName: serviceName ?? this.serviceName,
       serverIp: serverIp ?? this.serverIp,
       useStaticSettings: useStaticSettings ?? this.useStaticSettings,
+      redirection: redirection ?? this.redirection,
+      wanTaggingSettingsEnable:
+          wanTaggingSettingsEnable ?? this.wanTaggingSettingsEnable,
       vlanId: vlanId ?? this.vlanId,
     );
   }
@@ -319,6 +331,8 @@ class Ipv4Setting extends Equatable {
       'serviceName': serviceName,
       'serverIp': serverIp,
       'useStaticSettings': useStaticSettings,
+      'redirection': redirection,
+      'wanTaggingSettingsEnable': wanTaggingSettingsEnable,
       'vlanId': vlanId,
     }..removeWhere((key, value) => value == null);
   }
@@ -359,6 +373,11 @@ class Ipv4Setting extends Equatable {
       serverIp: map['serverIp'] != null ? map['serverIp'] as String : null,
       useStaticSettings: map['useStaticSettings'] != null
           ? map['useStaticSettings'] as bool
+          : null,
+      redirection:
+          map['redirection'] != null ? map['redirection'] as String : null,
+      wanTaggingSettingsEnable: map['wanTaggingSettingsEnable'] != null
+          ? map['wanTaggingSettingsEnable'] as bool
           : null,
       vlanId: map['vlanId'] != null ? map['vlanId'] as int : null,
     );

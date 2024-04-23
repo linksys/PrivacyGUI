@@ -11,6 +11,7 @@ const pSelectedNetworkId = 'LinksysSelectedNetworkId';
 const pShowPushPrompt = 'PushPrompt';
 const pAppFirstLaunch = 'AppFirstLaunch';
 const pWebLog = 'web_log';
+const pRedirection = 'Redirection';
 
 const pNotificationLastSeen = 'NotificationLastSeen';
 const pNotifications = 'Notifications';
