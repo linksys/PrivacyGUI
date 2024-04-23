@@ -24,23 +24,42 @@ final pnpRoute = LinksysRoute(
               LinksysRoute(
                 name: RouteNamed.pnpUnplugModem,
                 path: RoutePath.pnpUnplugModem,
+                config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
                 builder: (context, state) => const PnpUnplugModemView(),
                 routes: [
                   LinksysRoute(
                     name: RouteNamed.pnpMakeSureLightOff,
                     path: RoutePath.pnpMakeSureLightOff,
+                    config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
                     builder: (context, state) => const PnpLightsOffView(),
                     routes: [
                       LinksysRoute(
                         name: RouteNamed.pnpWaitingModem,
                         path: RoutePath.pnpWaitingModem,
+                        config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
                         builder: (context, state) =>
                             const PnpWaitingModemView(),
                       )
                     ],
                   )
                 ],
-              )
+              ),
+              LinksysRoute(
+                name: RouteNamed.contactSupportChoose,
+                path: RoutePath.contactSupportChoose,
+                config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
+                builder: (context, state) => const ContactSupportChoose(),
+                routes: [
+                  LinksysRoute(
+                    name: RouteNamed.contactSupportDetails,
+                    path: RoutePath.contactSupportDetails,
+                    config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
+                    builder: (context, state) => ContactSupportDetails(
+                      args: state.extra as Map<String, dynamic>? ?? {},
+                    ),
+                  )
+                ],
+              ),
             ],
           ),
         ]),

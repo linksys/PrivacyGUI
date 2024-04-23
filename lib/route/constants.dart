@@ -110,6 +110,10 @@ class RoutePath {
   static const troubleshooting = 'troubleshooting';
   static const troubleshootingPing = 'troubleshootingPing';
 
+  /// ContactSupport
+  static const contactSupportChoose = 'contactSupportChoose';
+  static const contactSupportDetails = 'contactSupportDetails';
+
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
 
@@ -231,6 +235,10 @@ class RouteNamed {
   /// Troubleshooting
   static const troubleshooting = 'troubleshooting';
   static const troubleshootingPing = 'troubleshootingPing';
+
+  /// ContactSupport
+  static const contactSupportChoose = 'contactSupportChoose';
+  static const contactSupportDetails = 'contactSupportDetails';
 
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';

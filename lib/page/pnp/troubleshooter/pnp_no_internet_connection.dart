@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
+import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
+import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/card/card.dart';
@@ -20,7 +24,6 @@ class PnpNoInternetConnectionView extends ConsumerStatefulWidget {
 
 class _PnpNoInternetConnectionState
     extends ConsumerState<PnpNoInternetConnectionView> {
-
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
@@ -29,94 +32,120 @@ class _PnpNoInternetConnectionState
       backState: StyledBackState.none,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
       child: AppBasicLayout(
-        // header: SvgPicture(CustomTheme.of(context).images.noInternetConnection),
         content: _contentView(context),
       ),
     );
   }
 
   Widget _contentView(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(Spacing.big),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            LinksysIcons.publicOff,
-            size: 48,
-          ),
-          const AppGap.big(),
-          _titleView(context),
-          const AppGap.regular(),
-          AppText.bodyLarge(
-            loc(context).no_internet_connection_description,
-          ),
-          const AppGap.big(),
-          AppCard(
-            onTap: () {
-              //TODO: GO to Restart modem
-            },
-            child: const Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppText.labelLarge(
-                        'Restart your modem',
-                      ),
-                      AppGap.small(),
-                      AppText.bodyMedium(
-                        'Some ISPs require this when setting up a new router',
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(LinksysIcons.chevronRight),
-              ],
+    return Center(
+      child: AppCard(
+        padding: const EdgeInsets.all(Spacing.big),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              LinksysIcons.publicOff,
+              size: 48,
             ),
-          ),
-          AppCard(
-            onTap: () {
-              //TODO: GO to ISP setting
-            },
-            child: const Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppText.labelLarge(
-                        'Enter ISP settings',
-                      ),
-                      AppGap.small(),
-                      AppText.bodyMedium(
-                        'Enter Static IP or PPPoE settings provided by your ISP',
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(LinksysIcons.chevronRight),
-              ],
+            const AppGap.big(),
+            _titleView(context),
+            const AppGap.regular(),
+            AppText.bodyLarge(
+              loc(context).no_internet_connection_description,
             ),
-          ),
-          // context.goNamed(RouteNamed.pnpUnplugModem);
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: Spacing.big),
-            child: AppTextButton(
-              'Log into router',
+            const AppGap.big(),
+            //TODO: Add condition check for Linksys Support
+            AppCard(
               onTap: () {
-                //TODO: Go to login local view
+                context.goNamed(RouteNamed.contactSupportChoose);
               },
+              child: const Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText.labelLarge(
+                          'Need help?',
+                        ),
+                        AppGap.small(),
+                        AppText.bodyMedium(
+                          'Contact Linksys support',
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(LinksysIcons.chevronRight),
+                ],
+              ),
             ),
-          ),
-          AppFilledButton(
-            'Try Again',
-            onTap: () {
-              //TODO: Try again
-            },
-          )
-        ],
+            AppCard(
+              onTap: () {
+                context.goNamed(RouteNamed.pnpUnplugModem);
+              },
+              child: const Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText.labelLarge(
+                          'Restart your modem',
+                        ),
+                        AppGap.small(),
+                        AppText.bodyMedium(
+                          'Some ISPs require this when setting up a new router',
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(LinksysIcons.chevronRight),
+                ],
+              ),
+            ),
+            AppCard(
+              onTap: () {
+                //TODO: GO to ISP setting
+              },
+              child: const Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText.labelLarge(
+                          'Enter ISP settings',
+                        ),
+                        AppGap.small(),
+                        AppText.bodyMedium(
+                          'Enter Static IP or PPPoE settings provided by your ISP',
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(LinksysIcons.chevronRight),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: Spacing.big),
+              child: AppTextButton(
+                'Log into router',
+                onTap: () {
+                  //TODO: Go to login local view
+                },
+              ),
+            ),
+            AppFilledButton(
+              'Try Again',
+              onTap: () {
+                //TODO: Try again
+              },
+            )
+          ],
+        ),
       ),
     );
   }
