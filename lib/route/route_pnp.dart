@@ -48,13 +48,13 @@ final pnpRoute = LinksysRoute(
                 name: RouteNamed.contactSupportChoose,
                 path: RoutePath.contactSupportChoose,
                 config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
-                builder: (context, state) => const ContactSupportChoose(),
+                builder: (context, state) => const ContactSupportSelectionView(),
                 routes: [
                   LinksysRoute(
                     name: RouteNamed.contactSupportDetails,
                     path: RoutePath.contactSupportDetails,
                     config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
-                    builder: (context, state) => ContactSupportDetails(
+                    builder: (context, state) => ContactSupportDetailView(
                       args: state.extra as Map<String, dynamic>? ?? {},
                     ),
                   )

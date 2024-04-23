@@ -31,8 +31,8 @@ enum ContactSupportRegion {
   }
 }
 
-class ContactSupportChoose extends ArgumentsConsumerStatelessView {
-  const ContactSupportChoose({
+class ContactSupportSelectionView extends ArgumentsConsumerStatelessView {
+  const ContactSupportSelectionView({
     Key? key,
     super.args,
   }) : super(key: key);

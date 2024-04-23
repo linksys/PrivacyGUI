@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/pnp/contact_support/contact_support_choose.dart';
+import 'package:linksys_app/page/pnp/troubleshooter/contact_support/contact_support_selection_view.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
-class ContactSupportDetails extends ArgumentsConsumerStatelessView {
-  const ContactSupportDetails({
+class ContactSupportDetailView extends ArgumentsConsumerStatelessView {
+  const ContactSupportDetailView({
     Key? key,
     super.args,
   }) : super(key: key);
