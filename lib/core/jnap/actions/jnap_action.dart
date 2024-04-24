@@ -16,6 +16,7 @@ enum JNAPAction {
   checkAdminPassword,
   pnpCheckAdminPassword,
   coreSetAdminPassword,
+  pnpSetAdminPassword,
   getAdminPasswordAuthStatus,
   getAdminPasswordHint,
   getDataUploadUserConsent,

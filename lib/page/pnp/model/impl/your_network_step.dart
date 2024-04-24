@@ -14,8 +14,6 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/card/node_list_card.dart';
 
 class YourNetworkStep extends PnpStep {
-  late final TextEditingController _textEditController;
-
   YourNetworkStep({
     required super.index,
     super.saveChanges,
@@ -37,10 +35,10 @@ class YourNetworkStep extends PnpStep {
     return {};
   }
 
-  @override
-  void onDispose() {
-    _textEditController.dispose();
-  }
+  // @override
+  // void onDispose() {
+  //   super.onDispose();
+  // }
 
   @override
   Widget content({

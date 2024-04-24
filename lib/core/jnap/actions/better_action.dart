@@ -350,6 +350,8 @@ void initBetterActions() {
       _JNAPActionValue.checkAdminPassword.value;
   _betterActionMap[JNAPAction.pnpCheckAdminPassword] =
       _JNAPActionValue.checkAdminPassword2.value;
+  _betterActionMap[JNAPAction.pnpSetAdminPassword] =
+      _JNAPActionValue.coreSetAdminPassword2.value;
   _betterActionMap[JNAPAction.coreSetAdminPassword] =
       _JNAPActionValue.coreSetAdminPassword.value;
   _betterActionMap[JNAPAction.getAdminPasswordAuthStatus] =

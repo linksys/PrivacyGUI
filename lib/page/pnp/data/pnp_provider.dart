@@ -185,6 +185,9 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           fetchRemote: true,
         )
         .then((result) => NodeDeviceInfo.fromJson(result.output));
+    // check current sn and clear it
+    final prefs = await SharedPreferences.getInstance();
+    prefs.remove(pCurrentSN);
     // Build/Update better actions
     buildBetterActions(deviceInfo.services);
     ref.read(routerRepositoryProvider).send(JNAPAction.getDeviceMode,
@@ -344,7 +347,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     final defaultGuestWiFi = getDefaultGuestWiFiNameAndPassPhrase();
     // if configured call setUserAcknowledgedAutoConfiguration else call setAdminPassword
     final closeCommand = state.isUnconfigured
-        ? JNAPAction.coreSetAdminPassword
+        ? JNAPAction.pnpSetAdminPassword
         : JNAPAction.setUserAcknowledgedAutoConfiguration;
     final closeData = state.isUnconfigured
         ? {'adminPassword': defaultWiFi.password}
