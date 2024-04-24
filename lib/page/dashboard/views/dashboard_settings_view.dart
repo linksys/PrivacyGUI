@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/constants/pref_key.dart';
 import 'package:linksys_app/core/jnap/models/firmware_update_settings.dart';
 import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
-import 'package:linksys_app/firebase/notification_helper.dart';
+// import 'package:linksys_app/firebase/notification_helper.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/topology/_topology.dart';
 import 'package:linksys_app/route/constants.dart';
@@ -66,28 +66,28 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             _section(
               _othersSettingsSection(),
             ),
-            const AppGap.semiBig(),
-            AppSwitchTriggerTile(
-              value: _pushEnabled,
-              title: AppText.bodyLarge('Enable Push Notification'),
-              subtitle: AppText.bodySmall(
-                'Experiential',
-                color: Colors.grey,
-              ),
-              onChanged: (value) {},
-              event: (value) async {
-                if (value) {
-                  await initCloudMessage((_){});
-                } else {
-                  await removeCloudMessage();
-                }
-                SharedPreferences.getInstance().then((prefs) {
-                  setState(() {
-                    _pushEnabled = prefs.getString(pDeviceToken) != null;
-                  });
-                });
-              },
-            ),
+            // const AppGap.semiBig(),
+            // AppSwitchTriggerTile(
+            //   value: _pushEnabled,
+            //   title: AppText.bodyLarge('Enable Push Notification'),
+            //   subtitle: AppText.bodySmall(
+            //     'Experiential',
+            //     color: Colors.grey,
+            //   ),
+            //   onChanged: (value) {},
+            //   event: (value) async {
+            //     if (value) {
+            //       await initCloudMessage((_){});
+            //     } else {
+            //       await removeCloudMessage();
+            //     }
+            //     SharedPreferences.getInstance().then((prefs) {
+            //       setState(() {
+            //         _pushEnabled = prefs.getString(pDeviceToken) != null;
+            //       });
+            //     });
+            //   },
+            // ),
             const AppGap.semiBig(),
             AppSwitchTriggerTile(
               value: isFwAutoUpdate,
