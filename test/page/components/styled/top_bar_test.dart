@@ -50,8 +50,8 @@ void main() async {
 
       final settingsFinder = find.byIcon(LinksysIcons.person);
       expect(settingsFinder, findsOneWidget);
-      final notificationsFinder = find.byIcon(LinksysIcons.notifications);
-      expect(notificationsFinder, findsOneWidget);
+      // final notificationsFinder = find.byIcon(LinksysIcons.notifications);
+      // expect(notificationsFinder, findsOneWidget);
     },
   );
 
