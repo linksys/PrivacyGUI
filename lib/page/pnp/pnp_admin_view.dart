@@ -60,6 +60,8 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         })
         .then((_) => pnp.checkRouterConfigured())
         .then((_) => adminPasswordFlow(_password))
+        .catchError((error, stackTrace) {},
+            test: (error) => error is ExceptionInvalidAdminPassword)
         .catchError((error, stackTrace) {
           context.goNamed(RouteNamed.pnpNoInternetConnection);
         }, test: (error) => error is ExceptionNoInternetConnection)
@@ -129,7 +131,9 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         AppFilledButton(
           loc(context).textContinue,
           onTap: () {
-            adminPasswordFlow(_password);
+            adminPasswordFlow(_password).then((_) {
+              context.goNamed(RouteNamed.pnpConfig);
+            });
           },
         ),
       ],
@@ -195,6 +199,8 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
                     setState(() {
                       _error = error;
                     });
+                  }).then((_) {
+                    context.goNamed(RouteNamed.pnpConfig);
                   }).whenComplete(() {
                     setState(() {
                       _processing = false;
@@ -271,9 +277,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           _password = null;
         });
         throw error;
-      }, test: (error) => error is ExceptionInvalidAdminPassword).then((_) {
-        context.goNamed(RouteNamed.pnpConfig);
-      });
+      }, test: (error) => error is ExceptionInvalidAdminPassword);
 
   _showRouterPasswordModal() {
     return showDialog(

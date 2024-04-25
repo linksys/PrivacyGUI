@@ -398,16 +398,16 @@ bool isCognitiveMeshRouter({
       false;
 }
 
-bool isServiceSupport(JNAPService service) {
+bool isServiceSupport(JNAPService service, [List<String>? services]) {
   final provider = container.read(linksysCacheManagerProvider);
-  if (provider.data[JNAPAction.getDeviceInfo.actionValue] != null) {
-    for (var item in provider.data[JNAPAction.getDeviceInfo.actionValue]['data']
-        ['output']['services']) {
-      if ((item as String).contains(service.value)) {
-        return true;
-      }
-    }
-    return false;
+
+  if (services != null ||
+      provider.data[JNAPAction.getDeviceInfo.actionValue] != null) {
+    final currentServices = services ??
+        provider.data[JNAPAction.getDeviceInfo.actionValue]['data']['output']
+            ['services'] as List<dynamic>? ??
+        [];
+    return currentServices.contains(service.value);
   }
   return false;
 }

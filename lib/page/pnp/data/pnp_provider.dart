@@ -220,7 +220,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
   @override
   Future<bool> pnpCheck() async {
-    final isSupportedSetup11 = isServiceSupport(JNAPService.setup11);
+    final isSupportedSetup11 =
+        isServiceSupport(JNAPService.setup11, state.deviceInfo?.services);
     if (!isSupportedSetup11) {
       logger.d('[pnp]: pnp check? NOT supported!');
       return false;
