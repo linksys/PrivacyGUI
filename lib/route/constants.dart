@@ -102,6 +102,10 @@ class RoutePath {
   static const pnpUnplugModem = 'unPlugModem';
   static const pnpMakeSureLightOff = 'makeSureLightOff';
   static const pnpWaitingModem = 'waitingModem';
+  static const pnpIspSettings = 'pnpIspSettings';
+  static const pnpIspTypeSelection = 'pnpIspTypeSelection';
+  static const pnpStaticIp = 'pnpStaticIp';
+  static const pnpIspSettingsAuth = 'pnpIspSettingsAuth';
 
   /// Safe Browsing
   static const safeBrowsing = 'safeBrowsing';
@@ -228,6 +232,10 @@ class RouteNamed {
   static const pnpUnplugModem = 'unPlugModem';
   static const pnpMakeSureLightOff = 'makeSureLightOff';
   static const pnpWaitingModem = 'waitingModem';
+  static const pnpIspSettings = 'pnpIspSettings';
+  static const pnpIspTypeSelection = 'pnpIspTypeSelection';
+  static const pnpStaticIp = 'pnpStaticIp';
+  static const pnpIspSettingsAuth = 'pnpIspSettingsAuth';
 
   /// Safe Browsing
   static const safeBrowsing = 'safeBrowsing';

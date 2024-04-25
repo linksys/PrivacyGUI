@@ -107,7 +107,7 @@ class _PnpNoInternetConnectionState
             ),
             AppCard(
               onTap: () {
-                //TODO: GO to ISP setting
+                context.goNamed(RouteNamed.pnpIspTypeSelection);
               },
               child: const Row(
                 children: [

@@ -17,26 +17,54 @@ final pnpRoute = LinksysRoute(
           LinksysRoute(
             name: RouteNamed.pnpNoInternetConnection,
             path: RoutePath.pnpNoInternetConnection,
-            config:
-                LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
+            config: LinksysRouteConfig(
+              pageWidth: SpecificPageWidth(width: 430),
+            ),
             builder: (context, state) => const PnpNoInternetConnectionView(),
             routes: [
               LinksysRoute(
+                name: RouteNamed.contactSupportChoose,
+                path: RoutePath.contactSupportChoose,
+                config: LinksysRouteConfig(
+                  pageWidth: SpecificPageWidth(width: 430),
+                ),
+                builder: (context, state) =>
+                    const ContactSupportSelectionView(),
+                routes: [
+                  LinksysRoute(
+                    name: RouteNamed.contactSupportDetails,
+                    path: RoutePath.contactSupportDetails,
+                    config: LinksysRouteConfig(
+                      pageWidth: SpecificPageWidth(width: 430),
+                    ),
+                    builder: (context, state) => ContactSupportDetailView(
+                      args: state.extra as Map<String, dynamic>? ?? {},
+                    ),
+                  )
+                ],
+              ),
+              LinksysRoute(
                 name: RouteNamed.pnpUnplugModem,
                 path: RoutePath.pnpUnplugModem,
-                config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
+                config: LinksysRouteConfig(
+                  pageWidth: SpecificPageWidth(width: 430),
+                ),
                 builder: (context, state) => const PnpUnplugModemView(),
                 routes: [
                   LinksysRoute(
                     name: RouteNamed.pnpMakeSureLightOff,
                     path: RoutePath.pnpMakeSureLightOff,
-                    config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
+                    config: LinksysRouteConfig(
+                      pageWidth: SpecificPageWidth(width: 430),
+                    ),
                     builder: (context, state) => const PnpLightsOffView(),
                     routes: [
                       LinksysRoute(
                         name: RouteNamed.pnpWaitingModem,
                         path: RoutePath.pnpWaitingModem,
-                        config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
+                        config: LinksysRouteConfig(
+                          pageWidth: SpecificPageWidth(width: 430),
+                        ),
                         builder: (context, state) =>
                             const PnpWaitingModemView(),
                       )
@@ -45,19 +73,31 @@ final pnpRoute = LinksysRoute(
                 ],
               ),
               LinksysRoute(
-                name: RouteNamed.contactSupportChoose,
-                path: RoutePath.contactSupportChoose,
-                config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
-                builder: (context, state) => const ContactSupportSelectionView(),
+                name: RouteNamed.pnpIspTypeSelection,
+                path: RoutePath.pnpIspTypeSelection,
+                config: LinksysRouteConfig(
+                  pageWidth: SpecificPageWidth(width: 430),
+                ),
+                builder: (context, state) => const PnpIspTypeSelectionView(),
                 routes: [
                   LinksysRoute(
-                    name: RouteNamed.contactSupportDetails,
-                    path: RoutePath.contactSupportDetails,
-                    config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
-                    builder: (context, state) => ContactSupportDetailView(
+                    name: RouteNamed.pnpStaticIp,
+                    path: RoutePath.pnpStaticIp,
+                    config: LinksysRouteConfig(
+                      pageWidth: SpecificPageWidth(width: 430),
+                    ),
+                    builder: (context, state) => const PnpStaticIpView(),
+                  ),
+                  LinksysRoute(
+                    name: RouteNamed.pnpIspSettings,
+                    path: RoutePath.pnpIspSettings,
+                    config: LinksysRouteConfig(
+                      pageWidth: SpecificPageWidth(width: 430),
+                    ),
+                    builder: (context, state) => PnpIspSettingsView(
                       args: state.extra as Map<String, dynamic>? ?? {},
                     ),
-                  )
+                  ),
                 ],
               ),
             ],
