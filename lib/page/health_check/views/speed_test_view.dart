@@ -64,8 +64,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: switch (_status) {
-          "RUNNING" =>
-            _runningView(healthCheck.result.firstOrNull?.speedTestResult),
+          "RUNNING" => _runningView(healthCheck.step,
+              healthCheck.result.firstOrNull?.speedTestResult),
           "COMPLETE" =>
             _finishView(healthCheck.result.firstOrNull?.speedTestResult),
           _ => _initView()
@@ -144,10 +144,11 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
     ]);
   }
 
-  Widget _runningView(SpeedTestResult? result) {
+  Widget _runningView(String step, SpeedTestResult? result) {
     final (latency, downloadBandWidth, uploadBandWidth) = _getDataText(result);
-    final isDownload = uploadBandWidth == '0';
-    final value = uploadBandWidth == '0' ? downloadBandWidth : uploadBandWidth;
+    final isDownload = uploadBandWidth == '0.00';
+    final value =
+        uploadBandWidth == '0.00' ? downloadBandWidth : uploadBandWidth;
     return AnimatedMeter(
       value: double.parse(value),
       markers: _markers,
@@ -156,7 +157,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
           mainAxisSize: MainAxisSize.min,
           children: [
             AppText.labelMedium(isDownload ? 'Download' : 'Upload'),
-            AppText.titleLarge((100 * value).toStringAsFixed(2)),
+            AppText.titleLarge((value).toStringAsFixed(2)),
             AppText.bodySmall('Mbps')
           ],
         );
@@ -180,7 +181,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
               color: Theme.of(context).colorScheme.primary,
             ),
             AppText.bodySmall(
-              '--ms',
+              step == 'latency' ? '--ms' : '${latency}ms',
               color: Theme.of(context).colorScheme.primary,
             ),
           ],
@@ -235,187 +236,187 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
     return (latency, downloadBandWidth, uploadBandWidth);
   }
 
-  Widget _content(BuildContext context, HealthCheckState state) {
-    return Stack(children: [
-      Container(
-        decoration: BoxDecoration(
-            gradient: LinearGradient(
-          colors: [
-            Color(0xffeff3ff),
-            Color(0xffd8e2ff),
-            Color(0xff005bc1),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        )),
-      ),
-      Container(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-              radius: 0.3,
-              center: Alignment.center,
-              colors: [Color(0xffe9efff), Color(0x00ffffff)]),
-        ),
-      ),
-      Container(
-        alignment: Alignment.bottomCenter,
-        padding: EdgeInsets.only(bottom: 24),
-        child: Image(
-          image: CustomTheme.of(context).images.speedtestPowered,
-          fit: BoxFit.fitWidth,
-        ),
-      ),
-      Container(
-          alignment: Alignment.center,
-          child: speedTestSection(context, _status, state))
-    ]);
-  }
+  // Widget _content(BuildContext context, HealthCheckState state) {
+  //   return Stack(children: [
+  //     Container(
+  //       decoration: BoxDecoration(
+  //           gradient: LinearGradient(
+  //         colors: [
+  //           Color(0xffeff3ff),
+  //           Color(0xffd8e2ff),
+  //           Color(0xff005bc1),
+  //         ],
+  //         begin: Alignment.topCenter,
+  //         end: Alignment.bottomCenter,
+  //       )),
+  //     ),
+  //     Container(
+  //       decoration: BoxDecoration(
+  //         gradient: RadialGradient(
+  //             radius: 0.3,
+  //             center: Alignment.center,
+  //             colors: [Color(0xffe9efff), Color(0x00ffffff)]),
+  //       ),
+  //     ),
+  //     Container(
+  //       alignment: Alignment.bottomCenter,
+  //       padding: EdgeInsets.only(bottom: 24),
+  //       child: Image(
+  //         image: CustomTheme.of(context).images.speedtestPowered,
+  //         fit: BoxFit.fitWidth,
+  //       ),
+  //     ),
+  //     Container(
+  //         alignment: Alignment.center,
+  //         child: speedTestSection(context, _status, state))
+  //   ]);
+  // }
 
-  Widget speedTestSection(
-      BuildContext context, String status, HealthCheckState state) {
-    if (state.result.isNotEmpty) {
-      logger.d('XXXXX health check - ${state.result.first}');
-    }
+  // Widget speedTestSection(
+  //     BuildContext context, String status, HealthCheckState state) {
+  //   if (state.result.isNotEmpty) {
+  //     logger.d('XXXXX health check - ${state.result.first}');
+  //   }
 
-    var downloadBandWidth = '0';
-    if (state.result.isNotEmpty &&
-        state.result.first.speedTestResult?.downloadBandwidth != null) {
-      downloadBandWidth =
-          state.result.first.speedTestResult!.downloadBandwidth.toString();
-    }
-    downloadBandWidth = (int.parse(downloadBandWidth) ~/ 1000).toString();
-    var uploadBandWidth = '0';
-    if (state.result.isNotEmpty &&
-        state.result.first.speedTestResult?.uploadBandwidth != null) {
-      uploadBandWidth =
-          state.result.first.speedTestResult!.uploadBandwidth.toString();
-    }
-    uploadBandWidth = (int.parse(uploadBandWidth) ~/ 1000).toString();
-    var latency = '0';
-    if (state.result.isNotEmpty &&
-        state.result.first.speedTestResult?.latency != null) {
-      latency = state.result.first.speedTestResult!.latency.toString();
-    }
-    final defaultMarkers = ['1', '5', '10', '20', '30', '50', '75', '100'];
-    if (_markers.isEmpty) {
-      _markers = defaultMarkers;
-    }
-    var dl = int.parse(downloadBandWidth);
-    var ul = int.parse(uploadBandWidth);
-    var valueMax = max(dl, ul);
-    var isDownload = dl > 0 && ul == 0;
-    if (valueMax > 0 && valueMax > int.parse(_markers.last)) {
-      // rearrange markers
-    }
+  //   var downloadBandWidth = '0';
+  //   if (state.result.isNotEmpty &&
+  //       state.result.first.speedTestResult?.downloadBandwidth != null) {
+  //     downloadBandWidth =
+  //         state.result.first.speedTestResult!.downloadBandwidth.toString();
+  //   }
+  //   downloadBandWidth = (int.parse(downloadBandWidth) ~/ 1000).toString();
+  //   var uploadBandWidth = '0';
+  //   if (state.result.isNotEmpty &&
+  //       state.result.first.speedTestResult?.uploadBandwidth != null) {
+  //     uploadBandWidth =
+  //         state.result.first.speedTestResult!.uploadBandwidth.toString();
+  //   }
+  //   uploadBandWidth = (int.parse(uploadBandWidth) ~/ 1000).toString();
+  //   var latency = '0';
+  //   if (state.result.isNotEmpty &&
+  //       state.result.first.speedTestResult?.latency != null) {
+  //     latency = state.result.first.speedTestResult!.latency.toString();
+  //   }
+  //   final defaultMarkers = ['1', '5', '10', '20', '30', '50', '75', '100'];
+  //   if (_markers.isEmpty) {
+  //     _markers = defaultMarkers;
+  //   }
+  //   var dl = int.parse(downloadBandWidth);
+  //   var ul = int.parse(uploadBandWidth);
+  //   var valueMax = max(dl, ul);
+  //   var isDownload = dl > 0 && ul == 0;
+  //   if (valueMax > 0 && valueMax > int.parse(_markers.last)) {
+  //     // rearrange markers
+  //   }
 
-    switch (status) {
-      case "IDLE":
-        return InkWell(
-          onTap: () {
-            Future.delayed(const Duration(milliseconds: 500), () {
-              setState(() {
-                _status = "RUNNING";
-                _controller.forward();
-              });
-            });
-            ref
-                .read(healthCheckProvider.notifier)
-                .runHealthCheck(Module.speedtest);
-          },
-          child: Container(
-            width: 240,
-            height: 240,
-            decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.primary),
-            child: Center(
-              child: AppText.displayLarge(
-                'GO',
-                color: Theme.of(context).colorScheme.onPrimary,
-              ),
-            ),
-          ),
-        );
-      case "RUNNING":
-        var value = Random().nextDouble();
-        logger.d('XXXXX: meter value : $value');
+  //   switch (status) {
+  //     case "IDLE":
+  //       return InkWell(
+  //         onTap: () {
+  //           Future.delayed(const Duration(milliseconds: 500), () {
+  //             setState(() {
+  //               _status = "RUNNING";
+  //               _controller.forward();
+  //             });
+  //           });
+  //           ref
+  //               .read(healthCheckProvider.notifier)
+  //               .runHealthCheck(Module.speedtest);
+  //         },
+  //         child: Container(
+  //           width: 240,
+  //           height: 240,
+  //           decoration: BoxDecoration(
+  //               shape: BoxShape.circle,
+  //               color: Theme.of(context).colorScheme.primary),
+  //           child: Center(
+  //             child: AppText.displayLarge(
+  //               'GO',
+  //               color: Theme.of(context).colorScheme.onPrimary,
+  //             ),
+  //           ),
+  //         ),
+  //       );
+  //     case "RUNNING":
+  //       var value = Random().nextDouble();
+  //       logger.d('XXXXX: meter value : $value');
 
-        return AnimatedMeter(
-          value: value,
-          markers: _markers,
-          centerBuilder: (context, value) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppText.labelMedium(isDownload ? 'Download' : 'Upload'),
-                AppText.titleLarge((100 * value).toStringAsFixed(2)),
-                AppText.bodySmall('Mbps')
-              ],
-            );
-          },
-          bottomBuilder: (context, value) {
-            return Wrap(
-              alignment: WrapAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: BreathDot(
-                    breathSpeed: const Duration(seconds: 1),
-                    lightColor: Theme.of(context).colorScheme.primary,
-                    borderColor: Theme.of(context).colorScheme.primary,
-                    size: 12,
-                    dotSize: 8,
-                  ),
-                ),
-                AppText.labelMedium(
-                  'Ping:',
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                AppText.bodySmall(
-                  '--ms',
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ],
-            );
-          },
-        );
-      case "COMPLETE":
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const AppText.displaySmall("Latency"),
-                const AppGap.regular(),
-                AppText.displaySmall(latency),
-              ],
-            ),
-            const AppGap.regular(),
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                AppText.displaySmall('Upload'),
-                AppText.displaySmall('Download'),
-              ],
-            ),
-            const AppGap.regular(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                AppText.displaySmall(uploadBandWidth),
-                AppText.displaySmall(downloadBandWidth),
-              ],
-            ),
-          ],
-        );
-      default:
-        return Container();
-    }
-  }
+  //       return AnimatedMeter(
+  //         value: value,
+  //         markers: _markers,
+  //         centerBuilder: (context, value) {
+  //           return Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               AppText.labelMedium(isDownload ? 'Download' : 'Upload'),
+  //               AppText.titleLarge((100 * value).toStringAsFixed(2)),
+  //               AppText.bodySmall('Mbps')
+  //             ],
+  //           );
+  //         },
+  //         bottomBuilder: (context, value) {
+  //           return Wrap(
+  //             alignment: WrapAlignment.center,
+  //             children: [
+  //               Padding(
+  //                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
+  //                 child: BreathDot(
+  //                   breathSpeed: const Duration(seconds: 1),
+  //                   lightColor: Theme.of(context).colorScheme.primary,
+  //                   borderColor: Theme.of(context).colorScheme.primary,
+  //                   size: 12,
+  //                   dotSize: 8,
+  //                 ),
+  //               ),
+  //               AppText.labelMedium(
+  //                 'Ping:',
+  //                 color: Theme.of(context).colorScheme.primary,
+  //               ),
+  //               AppText.bodySmall(
+  //                 '--ms',
+  //                 color: Theme.of(context).colorScheme.primary,
+  //               ),
+  //             ],
+  //           );
+  //         },
+  //       );
+  //     case "COMPLETE":
+  //       return Column(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         crossAxisAlignment: CrossAxisAlignment.center,
+  //         children: [
+  //           Row(
+  //             crossAxisAlignment: CrossAxisAlignment.center,
+  //             children: [
+  //               const AppText.displaySmall("Latency"),
+  //               const AppGap.regular(),
+  //               AppText.displaySmall(latency),
+  //             ],
+  //           ),
+  //           const AppGap.regular(),
+  //           const Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             crossAxisAlignment: CrossAxisAlignment.center,
+  //             children: [
+  //               AppText.displaySmall('Upload'),
+  //               AppText.displaySmall('Download'),
+  //             ],
+  //           ),
+  //           const AppGap.regular(),
+  //           Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             crossAxisAlignment: CrossAxisAlignment.center,
+  //             children: [
+  //               AppText.displaySmall(uploadBandWidth),
+  //               AppText.displaySmall(downloadBandWidth),
+  //             ],
+  //           ),
+  //         ],
+  //       );
+  //     default:
+  //       return Container();
+  //   }
+  // }
 
   //TODO: Create a speed test provider and move this function into it
   /*
