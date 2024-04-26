@@ -9,6 +9,7 @@ import 'package:linksys_app/page/select_network/_select_network.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/debug_mixin.dart';
+import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/theme/custom_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
@@ -31,7 +32,8 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
       child: GestureDetector(
         onTap: () {
           if (increase()) {
-            context.pushNamed(RouteNamed.debug);
+            // context.pushNamed(RouteNamed.debug);
+            Utils.exportLogFile(context);
           }
         },
         child: Container(

@@ -6,6 +6,7 @@ import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/cloud/linksys_requests/asset_service.dart';
 import 'package:linksys_app/core/cloud/linksys_requests/cloud2_service.dart';
 import 'package:linksys_app/core/cloud/linksys_requests/event_service.dart';
+import 'package:linksys_app/core/cloud/linksys_requests/ping_service.dart';
 import 'package:linksys_app/core/cloud/linksys_requests/smart_device_service.dart';
 import 'package:linksys_app/core/cloud/model/cloud_event_action.dart';
 import 'package:linksys_app/core/cloud/model/cloud_event_subscription.dart';
@@ -307,5 +308,12 @@ class LinksysCloudRepository {
         linksysToken: linksysToken,
         serialNumber: serialNumber,
         fcmToken: fcmToken);
+  }
+
+  Future<bool> testPingPng() {
+    return _httpClient
+        .testPingPng()
+        .then((response) => response.statusCode == HttpStatus.ok)
+        .onError((error, stackTrace) => false);
   }
 }

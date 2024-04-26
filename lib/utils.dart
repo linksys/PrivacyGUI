@@ -7,11 +7,39 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/util/uuid.dart';
+import 'package:share_plus/share_plus.dart';
 import 'core/utils/logger.dart';
+import 'core/utils/storage.dart';
+import '../../../util/export_selector/export_base.dart'
+    if (dart.library.io) '../../../util/export_selector/export_mobile.dart'
+    if (dart.library.html) '../../../util/export_selector/export_web.dart';
+import '../../../util/get_log_selector/get_log_base.dart'
+    if (dart.library.io) '../../../util/get_log_selector/get_log_mobile.dart'
+    if (dart.library.html) '../../../util/get_log_selector/get_log_web.dart';
 
 class Utils {
+  static Future exportLogFile(BuildContext context) async {
+    final content = await getLog(context);
+    final String shareLogFilename =
+        'log-${DateFormat("yyyy-MM-dd_HH_mm_ss").format(DateTime.now())}.txt';
+
+    await exportFile(
+      content: content,
+      fileName: shareLogFilename,
+      text: 'Linksys Log',
+      subject: 'Log file',
+    ).then((result) {
+      if (result?.status == ShareResultStatus.success) {
+        Storage.deleteFile(Storage.logFileUri);
+        Storage.createLoggerFile();
+      }
+      showSnackBar(context, content: Text("Share result: ${result?.status}"));
+    });
+  }
   static String maskJsonValue(String raw, List<String> keys) {
     final pattern = '"?(${keys.join('|')})"?\\s*:\\s*"?([\\s\\S]*?)"?(?=,|})';
     RegExp regex = RegExp(pattern, multiLine: true);

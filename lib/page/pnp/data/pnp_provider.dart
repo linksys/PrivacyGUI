@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart';
 import 'package:linksys_app/constants/_constants.dart';
+import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/actions/jnap_transaction.dart';
 import 'package:linksys_app/core/jnap/command/base_command.dart';
@@ -108,7 +109,8 @@ class MockPnpNotifier extends BasePnpNotifier {
 
   @override
   Future checkInternetConnection() {
-    return Future.delayed(const Duration(seconds: 1));
+    return Future.delayed(const Duration(seconds: 1))
+        .then((value) => throw ExceptionNoInternetConnection());
   }
 
   @override
@@ -211,7 +213,17 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   /// check internet connection within 30 seconds
   @override
   Future checkInternetConnection() async {
-    final isOnline = (await testCloudAvailability()).isCloudOk;
+    // final isOnline = (await testCloudAvailability()).isCloudOk;
+    // final wanStatus = await ref
+    //     .read(routerRepositoryProvider)
+    //     .send(JNAPAction.getWANStatus,
+    //         auth: true, fetchRemote: true, cacheLevel: CacheLevel.noCache)
+    //     .then<RouterWANStatus?>(
+    //         (response) => RouterWANStatus.fromJson(response.output))
+    //     .onError((error, stackTrace) => null);
+    // final isOnline = wanStatus?.wanStatus == 'Connected';
+
+    final isOnline = await ref.read(cloudRepositoryProvider).testPingPng();
     if (!isOnline) {
       throw ExceptionNoInternetConnection();
     }
