@@ -21,18 +21,21 @@ import 'package:linksys_app/core/cloud/model/cloud_communication_method.dart';
 import 'package:linksys_app/core/cloud/model/cloud_network_model.dart';
 import 'package:linksys_app/core/cloud/model/cloud_session_model.dart';
 import 'package:linksys_app/providers/connectivity/_connectivity.dart';
+import 'package:linksys_app/core/jnap/providers/ip_getter/get_local_ip.dart'
+    if (dart.library.io) 'package:linksys_app/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
+    if (dart.library.html) 'package:linksys_app/core/jnap/providers/ip_getter/web_get_local_ip.dart';
 
 final cloudRepositoryProvider = Provider((ref) => LinksysCloudRepository(
       httpClient: LinksysHttpClient(getHost: () {
         if (BuildConfig.forceCommandType == ForceCommand.local) {
-          return 'https://${ref.read(connectivityProvider).connectivityInfo.gatewayIp}';
+          return getLocalIp(ref);
         }
         final routerType =
             ref.read(connectivityProvider).connectivityInfo.routerType;
         if (routerType == RouterType.others) {
           return null;
         } else {
-          return 'https://${ref.read(connectivityProvider).connectivityInfo.gatewayIp}';
+          return getLocalIp(ref);
         }
       }),
     ));

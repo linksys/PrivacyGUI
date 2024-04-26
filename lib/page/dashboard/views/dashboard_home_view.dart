@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/constants/_constants.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
@@ -22,7 +21,6 @@ import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/card/card.dart';
-import 'package:linksys_widgets/widgets/card/general_card.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
@@ -70,8 +68,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                   isLoading, state.isFirstPolling),
               const AppGap.big(),
               _networkInfoTiles(state, isLoading),
-              const AppGap.extraBig(),
-              _speedTestTile(state, isLoading),
+              // const AppGap.extraBig(),
+              // _speedTestTile(state, isLoading),
             ],
           ),
           // if (isLoading)
