@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/core/jnap/models/health_check_result.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
@@ -59,24 +60,206 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
   Widget build(BuildContext context) {
     final healthCheck = ref.watch(healthCheckProvider);
     return StyledAppPageView(
+      title: 'Speed Test',
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
-        header: const Text(
-          'Speed Test',
-          style: TextStyle(
-            fontSize: 23,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        content: _content(context, healthCheck),
+        content: switch (_status) {
+          "RUNNING" =>
+            _runningView(healthCheck.result.firstOrNull?.speedTestResult),
+          "COMPLETE" =>
+            _finishView(healthCheck.result.firstOrNull?.speedTestResult),
+          _ => _initView()
+        },
       ),
     );
+  }
+
+  Widget _gradientBackground() {
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+              gradient: LinearGradient(
+            colors: [
+              Color(0xffeff3ff),
+              Color(0xffd8e2ff),
+              Color(0xff005bc1),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          )),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+                radius: 0.3,
+                center: Alignment.center,
+                colors: [Color(0xffe9efff), Color(0x00ffffff)]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _initView() {
+    return Stack(children: [
+      _gradientBackground(),
+      Container(
+        alignment: Alignment.bottomCenter,
+        padding: EdgeInsets.only(bottom: 24),
+        child: Image(
+          image: CustomTheme.of(context).images.speedtestPowered,
+          fit: BoxFit.fitWidth,
+        ),
+      ),
+      Container(
+        alignment: Alignment.center,
+        child: InkWell(
+          onTap: () {
+            Future.delayed(const Duration(milliseconds: 500), () {
+              setState(() {
+                _status = "RUNNING";
+                _controller.forward();
+              });
+            });
+            ref
+                .read(healthCheckProvider.notifier)
+                .runHealthCheck(Module.speedtest);
+          },
+          child: Container(
+            width: 240,
+            height: 240,
+            decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Theme.of(context).colorScheme.primary),
+            child: Center(
+              child: AppText.displayLarge(
+                'GO',
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ]);
+  }
+
+  Widget _runningView(SpeedTestResult? result) {
+    final (latency, downloadBandWidth, uploadBandWidth) = _getDataText(result);
+    final isDownload = uploadBandWidth == '0';
+    final value = uploadBandWidth == '0' ? downloadBandWidth : uploadBandWidth;
+    return AnimatedMeter(
+      value: double.parse(value),
+      markers: _markers,
+      centerBuilder: (context, value) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppText.labelMedium(isDownload ? 'Download' : 'Upload'),
+            AppText.titleLarge((100 * value).toStringAsFixed(2)),
+            AppText.bodySmall('Mbps')
+          ],
+        );
+      },
+      bottomBuilder: (context, value) {
+        return Wrap(
+          alignment: WrapAlignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: BreathDot(
+                breathSpeed: const Duration(seconds: 1),
+                lightColor: Theme.of(context).colorScheme.primary,
+                borderColor: Theme.of(context).colorScheme.primary,
+                size: 12,
+                dotSize: 8,
+              ),
+            ),
+            AppText.labelMedium(
+              'Ping:',
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            AppText.bodySmall(
+              '--ms',
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _finishView(SpeedTestResult? result) {
+    final (latency, downloadBandWidth, uploadBandWidth) = _getDataText(result);
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const AppText.displaySmall("Latency"),
+            const AppGap.regular(),
+            AppText.displaySmall(latency),
+          ],
+        ),
+        const AppGap.regular(),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            AppText.displaySmall('Upload'),
+            AppText.displaySmall('Download'),
+          ],
+        ),
+        const AppGap.regular(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            AppText.displaySmall(uploadBandWidth),
+            AppText.displaySmall(downloadBandWidth),
+          ],
+        ),
+      ],
+    );
+  }
+
+  (String, String, String) _getDataText(SpeedTestResult? result) {
+    var latency = result?.latency?.toStringAsFixed(2) ?? '--';
+    var downloadBandWidth =
+        ((result?.downloadBandwidth ?? 0) / 1000.0).toStringAsFixed(2);
+    var uploadBandWidth =
+        ((result?.uploadBandwidth ?? 0) / 1000.0).toStringAsFixed(2);
+    return (latency, downloadBandWidth, uploadBandWidth);
   }
 
   Widget _content(BuildContext context, HealthCheckState state) {
     return Stack(children: [
       Container(
-        alignment: Alignment.bottomLeft,
+        decoration: BoxDecoration(
+            gradient: LinearGradient(
+          colors: [
+            Color(0xffeff3ff),
+            Color(0xffd8e2ff),
+            Color(0xff005bc1),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        )),
+      ),
+      Container(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+              radius: 0.3,
+              center: Alignment.center,
+              colors: [Color(0xffe9efff), Color(0x00ffffff)]),
+        ),
+      ),
+      Container(
+        alignment: Alignment.bottomCenter,
+        padding: EdgeInsets.only(bottom: 24),
         child: Image(
           image: CustomTheme.of(context).images.speedtestPowered,
           fit: BoxFit.fitWidth,
@@ -127,9 +310,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
 
     switch (status) {
       case "IDLE":
-        return TriLayerButton(
-          child: const Text('START'),
-          onPressed: () {
+        return InkWell(
+          onTap: () {
             Future.delayed(const Duration(milliseconds: 500), () {
               setState(() {
                 _status = "RUNNING";
@@ -140,6 +322,19 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
                 .read(healthCheckProvider.notifier)
                 .runHealthCheck(Module.speedtest);
           },
+          child: Container(
+            width: 240,
+            height: 240,
+            decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Theme.of(context).colorScheme.primary),
+            child: Center(
+              child: AppText.displayLarge(
+                'GO',
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+          ),
         );
       case "RUNNING":
         var value = Random().nextDouble();

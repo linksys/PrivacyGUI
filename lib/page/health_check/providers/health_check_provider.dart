@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/health_check/providers/health_check_state.dart';
 
 import '../../../core/jnap/actions/better_action.dart';
@@ -38,10 +39,11 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
             (timer) async {
           final result = await _getHealthCheckStatus();
           final step = _getCurrentStep(result);
+          logger.d('[SpeetTest] Get Health Check Status - $result');
           if (step.isNotEmpty) {
             final speedtestTempResult = SpeedTestResult.fromJson(
                 (result as JNAPSuccess).output['speedTestResult']);
-            state.copyWith(result: [
+            state = state.copyWith(result: [
               HealthCheckResult(
                   resultID: 0,
                   timestamp: '',
@@ -57,7 +59,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
             timer.cancel();
           } else if (result is JNAPError) {
             timer.cancel();
-            state.copyWith(result: null, error: result);
+            state = state.copyWith(result: null, error: result);
           }
         });
       }
