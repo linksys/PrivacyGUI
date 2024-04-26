@@ -24,6 +24,9 @@ import 'package:linksys_app/providers/connectivity/_connectivity.dart';
 
 final cloudRepositoryProvider = Provider((ref) => LinksysCloudRepository(
       httpClient: LinksysHttpClient(getHost: () {
+        if (BuildConfig.forceCommandType == ForceCommand.local) {
+          return 'https://${ref.read(connectivityProvider).connectivityInfo.gatewayIp}';
+        }
         final routerType =
             ref.read(connectivityProvider).connectivityInfo.routerType;
         if (routerType == RouterType.others) {
