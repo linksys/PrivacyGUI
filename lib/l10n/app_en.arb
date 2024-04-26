@@ -833,7 +833,20 @@
   "pnpSavingChangesDesc": "Your router’s WiFi will briefly turn off and then on again. If you lose connection, reconnect to your router’s WiFi to finish setup.",
   "collectingData": "Collecting data...",
   "saved": "Saved",
-  "incorrectPassword": "Incorrect password"
+  "incorrectPassword": "Incorrect password",
+  "speedTestDesc": "There are 2 ways to check your speeds",
+  "speedTestInternetToRouter": "Internet to router",
+  "speedTestInternetToRouterDesc": "Measure the speeds you signed up for with your ISP",
+  "speedTestInternetToDevice": "Internet to device",
+  "speedTestInternetToDeviceDesc": "Measure the speed from this device to your router. Useful for checking different areas of your home",
+  "speedTestExternalDesc": "Before testing your speed with a 3rd party:",
+  "speedTestExternalStep1": "Make sure you’re connected to your Wi-Fi network and not using cellular data",
+  "speedTestExternalStep2": "Remember you’re testing the speed of this device, not your network to internet speed",
+  "speedTestExternalStep3": "Use a mobile device to test the Wi-Fi in different areas of your home",
+  "speedTestExternalCloudFlare": "Test with CloudFlare",
+  "speedTestExternalFast": "Test with Fast.com",
+  "speedTestExternalOthers": "Or test with your preferred speedtest service"
+
 
 
 }

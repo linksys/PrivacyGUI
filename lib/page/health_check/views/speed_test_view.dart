@@ -149,14 +149,15 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
     final isDownload = uploadBandWidth == '0.00';
     final value =
         uploadBandWidth == '0.00' ? downloadBandWidth : uploadBandWidth;
+    final defaultMarkers = <double>[1, 5, 10, 20, 30, 50, 75, 100];
     return AnimatedMeter(
       value: double.parse(value),
-      markers: _markers,
+      markers: defaultMarkers,
       centerBuilder: (context, value) {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppText.labelMedium(isDownload ? 'Download' : 'Upload'),
+            AppText.labelMedium(step == 'latency' ? '--' : isDownload ? 'Download' : 'Upload'),
             AppText.titleLarge((value).toStringAsFixed(2)),
             AppText.bodySmall('Mbps')
           ],

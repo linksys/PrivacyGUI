@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/util/in_app_browser.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -31,26 +32,24 @@ class SpeedTestExternalView extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: Spacing.big, vertical: Spacing.extraBig),
+                      horizontal: 0, vertical: Spacing.extraBig),
                   child: Container(
-                    constraints: BoxConstraints(minWidth: 144, maxWidth: 512),
+                    width: 224,
+                    height: 56,
                     child: SvgPicture(
-                      CustomTheme.of(context).images.deviceToInternet,
+                      CustomTheme.of(context).images.internetToDevice,
                     ),
                   ),
                 ),
-                const AppText.bodyMedium('Let\'s get started'),
+                AppText.bodyMedium(loc(context).speedTestExternalDesc),
                 const AppGap.big(),
-                const AppBulletList(
+                AppBulletList(
                   style: AppBulletStyle.number,
                   itemSpacing: Spacing.big,
                   children: [
-                    AppText.bodyMedium(
-                        'Make sure you\'re connected to your Wi-Fi network and not using cellular data.'),
-                    AppText.bodyMedium(
-                        'Use a mobile device to check speeds at various areas of your home. Optional.'),
-                    AppText.bodyMedium(
-                        'See what speeds your device is getting at this location with a 3rd party service.'),
+                    AppText.bodyMedium(loc(context).speedTestExternalStep1),
+                    AppText.bodyMedium(loc(context).speedTestExternalStep2),
+                    AppText.bodyMedium(loc(context).speedTestExternalStep3),
                   ],
                 ),
                 Column(
@@ -58,14 +57,14 @@ class SpeedTestExternalView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     AppOutlinedButton.fillWidth(
-                      'Test with CloudFlare',
+                      loc(context).speedTestExternalCloudFlare,
                       onTap: () {
                         openUrl('https://speed.cloudflare.com/');
                       },
                     ),
                     const AppGap.regular(),
                     AppOutlinedButton.fillWidth(
-                      'Test with Fast.com',
+                      loc(context).speedTestExternalFast,
                       onTap: () {
                         openUrl('https://www.fast.com');
                       },
