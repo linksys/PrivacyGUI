@@ -33,7 +33,8 @@ final dashboardRoute = ShellRoute(
           LinksysRoute(
             name: RouteNamed.safeBrowsing,
             path: RoutePath.safeBrowsing,
-            config: const LinksysRouteConfig(pageAlignment: CrossAxisAlignment.start),
+            config: const LinksysRouteConfig(
+                pageAlignment: CrossAxisAlignment.start),
             builder: (context, state) => const SafeBrowsingView(),
           )
         ]),
@@ -90,6 +91,9 @@ final dashboardRoute = ShellRoute(
         LinksysRoute(
           name: RouteNamed.speedTestExternal,
           path: RoutePath.speedTestExternal,
+          config: LinksysRouteConfig(
+              pageWidth: SpecificPageWidth(width: 450),
+              pageAlignment: CrossAxisAlignment.start),
           builder: (context, state) => SpeedTestExternalView(),
         ),
         LinksysRoute(

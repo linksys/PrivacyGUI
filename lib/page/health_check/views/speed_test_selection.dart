@@ -10,7 +10,6 @@ import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class SpeedTestSelectionView extends ConsumerWidget {
@@ -33,16 +32,21 @@ class SpeedTestSelectionView extends ConsumerWidget {
         children: [
           AppText.bodyMedium(loc(context).speedTestDesc),
           const AppGap.big(),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _createVerticalCard(context, isSpeedCheckSupported),
-            _createDeviceToInternetCard(context, true),
-          ])
+          Container(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              _createInternetToRouterCard(context, isSpeedCheckSupported),
+              _createInternetToDeviceCard(context, isBehindRouter),
+            ]),
+          )
         ],
       )),
     );
   }
 
-  Widget _createVerticalCard(BuildContext context, bool isSpeedCheckSupported) {
+  Widget _createInternetToRouterCard(
+      BuildContext context, bool isSpeedCheckSupported) {
     return Opacity(
       opacity: isSpeedCheckSupported ? 1 : 0.6,
       child: Card(
@@ -54,7 +58,7 @@ class SpeedTestSelectionView extends ConsumerWidget {
               : null,
           child: Container(
             width: double.infinity,
-            constraints: BoxConstraints(minHeight: 164),
+            constraints: const BoxConstraints(minHeight: 164),
             padding: const EdgeInsets.all(Spacing.regular),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
@@ -77,7 +81,7 @@ class SpeedTestSelectionView extends ConsumerWidget {
     );
   }
 
-  Widget _createDeviceToInternetCard(
+  Widget _createInternetToDeviceCard(
       BuildContext context, bool isBehindManaged) {
     return Opacity(
       opacity: isBehindManaged ? 1 : 0.6,
@@ -90,7 +94,7 @@ class SpeedTestSelectionView extends ConsumerWidget {
               : null,
           child: Container(
             width: double.infinity,
-            constraints: BoxConstraints(minHeight: 164),
+            constraints: const BoxConstraints(minHeight: 164),
             padding: const EdgeInsets.all(Spacing.regular),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
