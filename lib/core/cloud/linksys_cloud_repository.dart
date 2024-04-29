@@ -28,14 +28,18 @@ import 'package:linksys_app/core/jnap/providers/ip_getter/get_local_ip.dart'
 final cloudRepositoryProvider = Provider((ref) => LinksysCloudRepository(
       httpClient: LinksysHttpClient(getHost: () {
         if (BuildConfig.forceCommandType == ForceCommand.local) {
-          return getLocalIp(ref);
+          var localIP = getLocalIp(ref);
+          localIP = localIP.startsWith('http') ? localIP : 'https://$localIP';
+          return localIP;
         }
         final routerType =
             ref.read(connectivityProvider).connectivityInfo.routerType;
         if (routerType == RouterType.others) {
           return null;
         } else {
-          return getLocalIp(ref);
+          var localIP = getLocalIp(ref);
+          localIP = localIP.startsWith('http') ? localIP : 'https://$localIP';
+          return localIP;
         }
       }),
     ));
