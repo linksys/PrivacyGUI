@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
+import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/buttons/button.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/panel/switch_trigger_tile.dart';
@@ -60,112 +63,183 @@ class _WifiAdvancedSettingsViewState
           },
         ),
       ],
-      child: LayoutBuilder(builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final column = width < 720
-            ? 1
-            : (ResponsiveLayout.isLayoutBreakpoint(context) ? 1 : 2);
-        return _buildGrid(column: column, width: width);
-      }),
+      child: _buildGrid(),
     );
   }
 
-  Widget _buildGrid({int column = 1, required double width}) {
-    return GridView.count(
-      crossAxisCount: column,
-      childAspectRatio: column == 1 ? (width < 550 ? 1.6 : 2.4) : 1.2,
-      mainAxisSpacing: 8.0,
-      crossAxisSpacing: 8.0,
+  Widget _buildGrid() {
+    return ListView(
       children: [
-        if (_isClientSteeringEnabled != null)
-          AppSwitchTriggerTile(
-            title: const AppText.labelLarge('Client Steering'),
-            description: const AppText.bodySmall(
-                'Let your network direct your wireless devices to the node with the strongest signal.'),
-            value: _isClientSteeringEnabled!,
-            showSwitchIcon: true,
-            decoration: BoxDecoration(
-                border: Border.all(
-                    color: Theme.of(context).colorScheme.onBackground)),
-            padding: const EdgeInsets.all(Spacing.big),
-            onChanged: (value) {
-              setState(() {
-                _isClientSteeringEnabled = value;
-              });
-            },
-          ),
-        if (_isNodeSteeringEnabled != null)
-          AppSwitchTriggerTile(
-            title: const AppText.labelLarge('Node Steering'),
-            description: const AppText.bodySmall(
-                'Allow your nodes to always connect to the node with the strongest signal. If you moce a node or one goes offline, any connected nodes will self-heal by connecting to the strongest signal available.'),
-            value: _isNodeSteeringEnabled!,
-            showSwitchIcon: true,
-            decoration: BoxDecoration(
-                border: Border.all(
-                    color: Theme.of(context).colorScheme.onBackground)),
-            padding: const EdgeInsets.all(Spacing.big),
-            onChanged: (value) {
-              setState(() {
-                _isNodeSteeringEnabled = value;
-              });
-            },
-          ),
-        if (_isIptvEnabled != null)
-          AppSwitchTriggerTile(
-            title: const AppText.labelLarge('IPTV'),
-            subtitle: const AppText.labelSmall(
-                'Please check with your ISP if IPTV service is compatible with this router.'),
-            description: const AppText.bodySmall(
-                'IPTV subscribers should turn this feature ON to get the most out of the service. Depending on your network configuration, you might have to reconnect some devices.'),
-            value: _isIptvEnabled!,
-            showSwitchIcon: true,
-            decoration: BoxDecoration(
-                border: Border.all(
-                    color: Theme.of(context).colorScheme.onBackground)),
-            padding: const EdgeInsets.all(Spacing.big),
-            onChanged: (value) {
-              setState(() {
-                _isIptvEnabled = value;
-              });
-            },
-          ),
-        if (_isDFSEnabled != null)
-          AppSwitchTriggerTile(
-            title:
-                const AppText.labelLarge('Dynamic Frequency Selection (DFS)'),
-            description: const AppText.bodySmall(
-                'If this feature is on, your router may use 5GHz channels that are shared with radar systems. When a radar is detected on your operating channel, the router will search for an unoccupied DFS channel. During this time, you may lose Wi-Fi connectivity. Another limitation is that some devices do not support DFS channels. They will need to use your 2.4GHz network because they cannot detect the 5GHz network when the router is using a DFS channel.'),
-            value: _isDFSEnabled!,
-            showSwitchIcon: true,
-            decoration: BoxDecoration(
-                border: Border.all(
-                    color: Theme.of(context).colorScheme.onBackground)),
-            padding: const EdgeInsets.all(Spacing.big),
-            onChanged: (value) {
-              setState(() {
-                _isDFSEnabled = value;
-              });
-            },
-          ),
-        if (_isMLOEnabled != null)
-          AppSwitchTriggerTile(
-            title: const AppText.labelLarge('Multi-Link Operation (MLO)'),
-            description: const AppText.bodySmall(
-                'Allow devices to use multiple bands and frequency channels simultaneously. This increases speed, reduces latency, and makes for a more reliable connection.'),
-            value: _isMLOEnabled!,
-            showSwitchIcon: true,
-            decoration: BoxDecoration(
-                border: Border.all(
-                    color: Theme.of(context).colorScheme.onBackground)),
-            padding: const EdgeInsets.all(Spacing.big),
-            onChanged: (value) {
-              setState(() {
-                _isMLOEnabled = value;
-              });
-            },
-          ),
+        ..._buildClientSteering(),
+        ..._buildNodeSteering(),
+        ..._buildIptv(),
+        ..._buildDFS(),
+        ..._buildMLO(),
       ],
     );
+  }
+
+  List<Widget> _buildClientSteering() {
+    return _isClientSteeringEnabled != null
+        ? [
+            AppSwitchTriggerTile(
+              title: AppText.labelLarge(loc(context).clientSteering),
+              description: AppText.bodyMedium(loc(context).clientSteeringDesc),
+              value: _isClientSteeringEnabled!,
+              showSwitchIcon: true,
+              decoration: BoxDecoration(
+                border: Border.all(
+                    color: Theme.of(context).colorScheme.onBackground),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(Spacing.big),
+              toggleInCenter: true,
+              onChanged: (value) {
+                setState(() {
+                  _isClientSteeringEnabled = value;
+                });
+              },
+            ),
+            const AppGap.regular()
+          ]
+        : [];
+  }
+
+  List<Widget> _buildNodeSteering() {
+    return _isNodeSteeringEnabled != null
+        ? [
+            AppSwitchTriggerTile(
+              title: AppText.labelLarge(loc(context).nodeSteering),
+              description: AppText.bodyMedium(loc(context).nodeSteeringDesc),
+              value: _isNodeSteeringEnabled!,
+              showSwitchIcon: true,
+              decoration: BoxDecoration(
+                border: Border.all(
+                    color: Theme.of(context).colorScheme.onBackground),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(Spacing.big),
+              toggleInCenter: true,
+              onChanged: (value) {
+                setState(() {
+                  _isNodeSteeringEnabled = value;
+                });
+              },
+            ),
+            const AppGap.regular()
+          ]
+        : [];
+  }
+
+  List<Widget> _buildIptv() {
+    return _isIptvEnabled != null
+        ? [
+            AppSwitchTriggerTile(
+              title: const AppText.labelLarge('IPTV'),
+              subtitle: const AppText.labelSmall(
+                  'Please check with your ISP if IPTV service is compatible with this router.'),
+              description: const AppText.bodySmall(
+                  'IPTV subscribers should turn this feature ON to get the most out of the service. Depending on your network configuration, you might have to reconnect some devices.'),
+              value: _isIptvEnabled!,
+              showSwitchIcon: true,
+              decoration: BoxDecoration(
+                border: Border.all(
+                    color: Theme.of(context).colorScheme.onBackground),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(Spacing.big),
+              toggleInCenter: true,
+              onChanged: (value) {
+                setState(() {
+                  _isIptvEnabled = value;
+                });
+              },
+            ),
+            const AppGap.regular()
+          ]
+        : [];
+  }
+
+  List<Widget> _buildDFS() {
+    return _isDFSEnabled != null
+        ? [
+            AppSwitchTriggerTile(
+              title: AppText.labelLarge(loc(context).dfs),
+              description: AppStyledText.bold(
+                loc(context).dfsDesc,
+                defaultTextStyle: Theme.of(context).textTheme.bodyLarge!,
+                color: Theme.of(context).colorScheme.primary,
+                tags: const ['a'],
+                callbackTags: {
+                  'a': (String? text, Map<String?, String?> attrs) {
+                    _showDFSModal();
+                  }
+                },
+              ),
+              value: _isDFSEnabled!,
+              showSwitchIcon: true,
+              decoration: BoxDecoration(
+                border: Border.all(
+                    color: Theme.of(context).colorScheme.onBackground),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(Spacing.big),
+              toggleInCenter: true,
+              onChanged: (value) {
+                setState(() {
+                  _isDFSEnabled = value;
+                });
+              },
+            ),
+            const AppGap.regular()
+          ]
+        : [];
+  }
+
+  List<Widget> _buildMLO() {
+    return _isMLOEnabled != null
+        ? [
+            AppSwitchTriggerTile(
+              title: AppText.labelLarge(loc(context).mlo),
+              description: AppText.bodyMedium(loc(context).mloDesc),
+              value: _isMLOEnabled!,
+              decoration: BoxDecoration(
+                border: Border.all(
+                    color: Theme.of(context).colorScheme.onBackground),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(Spacing.big),
+              toggleInCenter: true,
+              onChanged: (value) {
+                setState(() {
+                  _isMLOEnabled = value;
+                });
+              },
+            ),
+            const AppGap.regular()
+          ]
+        : [];
+  }
+
+  void _showDFSModal() {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: SizedBox(
+                width: 312, child: AppText.titleLarge(loc(context).dfs)),
+            content: SizedBox(
+                width: 312,
+                child: AppText.bodyMedium(loc(context).modalDFSDesc)),
+            actions: [
+              AppTextButton(
+                loc(context).ok,
+                onTap: () {
+                  context.pop();
+                },
+              )
+            ],
+          );
+        });
   }
 }
