@@ -25,6 +25,8 @@ final nodeDetailProvider =
 );
 
 class NodeDetailNotifier extends Notifier<NodeDetailState> {
+  Timer? _blinkTimer;
+
   @override
   NodeDetailState build() {
     final deviceManagerState = ref.watch(deviceManagerProvider);
@@ -131,14 +133,23 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
 
   Future<JNAPResult> startBlinkNodeLED(String deviceId) async {
     final repository = ref.read(routerRepositoryProvider);
-    return repository.send(JNAPAction.startBlinkNodeLed,
-        data: {'deviceID': deviceId}, auth: true);
+    return repository.send(
+      JNAPAction.startBlinkNodeLed,
+      data: {'deviceID': deviceId},
+      fetchRemote: true,
+      cacheLevel: CacheLevel.noCache,
+      auth: true,
+    );
   }
 
   Future<JNAPResult> stopBlinkNodeLED() async {
     final repository = ref.read(routerRepositoryProvider);
-    return repository.send(JNAPAction.stopBlinkNodeLed,
-        auth: true, cacheLevel: CacheLevel.noCache);
+    return repository.send(
+      JNAPAction.stopBlinkNodeLed,
+      auth: true,
+      fetchRemote: true,
+      cacheLevel: CacheLevel.noCache,
+    );
   }
 
   Future<void> toggleBlinkNode() async {
@@ -150,7 +161,8 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       startBlinkNodeLED(deviceId).then((response) {
         prefs.setString(blinkingDeviceId, deviceId);
         state = state.copyWith(blinkingStatus: BlinkingStatus.stopBlinking);
-        Timer(const Duration(seconds: 24), () {
+        _blinkTimer?.cancel();
+        _blinkTimer = Timer(const Duration(seconds: 24), () {
           stopBlinkNodeLED().then((response) {
             state = state.copyWith(blinkingStatus: BlinkingStatus.blinkNode);
           });
@@ -161,6 +173,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       });
     } else {
       stopBlinkNodeLED().then((response) {
+        _blinkTimer?.cancel();
         prefs.remove(blinkingDeviceId);
         state = state.copyWith(blinkingStatus: BlinkingStatus.blinkNode);
       }).onError((error, stackTrace) {

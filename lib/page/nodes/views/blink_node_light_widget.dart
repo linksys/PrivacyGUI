@@ -83,7 +83,7 @@ class _BlinkNodeLightWidgetState extends ConsumerState<BlinkNodeLightWidget> {
   }
 
   _stopBlink() async {
-    await _notifier.stopBlinkNodeLED();
+    await _notifier.toggleBlinkNode();
     if (mounted) {
       setState(() {
         _isBlinking = false;
