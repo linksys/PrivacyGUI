@@ -9,6 +9,7 @@ import 'package:linksys_app/page/select_network/_select_network.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/util/debug_mixin.dart';
+import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/theme/custom_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
@@ -27,10 +28,12 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
         ref.watch(authProvider.select((value) => value.value?.loginType)) ??
             LoginType.none;
     return SafeArea(
+      bottom: false,
       child: GestureDetector(
         onTap: () {
           if (increase()) {
-            context.pushNamed(RouteNamed.debug);
+            // context.pushNamed(RouteNamed.debug);
+            Utils.exportLogFile(context);
           }
         },
         child: Container(
@@ -46,21 +49,27 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    ResponsiveLayout.isLayoutBreakpoint(context)
-                        ? SvgPicture(
-                            CustomTheme.of(context).images.linksysLogoBlack,
-                            width: 20,
-                            height: 20,
+                    (loginType == LoginType.none ||
+                            ResponsiveLayout.isLayoutBreakpoint(context))
+                        ? InkWell(
+                            onTap: () {
+                              context.goNamed(RouteNamed.pnp);
+                            },
+                            child: SvgPicture(
+                              CustomTheme.of(context).images.linksysLogoBlack,
+                              width: 20,
+                              height: 20,
+                            ),
                           )
                         : const Center(),
                     Wrap(
                       children: [
                         if (loginType == LoginType.remote) _networkSelect(),
-                        if (loginType != LoginType.none)
-                          const Padding(
-                            padding: EdgeInsets.all(4.0),
-                            child: NotificationPopupWidget(),
-                          ),
+                        // if (loginType != LoginType.none)
+                        //   const Padding(
+                        //     padding: EdgeInsets.all(4.0),
+                        //     child: NotificationPopupWidget(),
+                        //   ),
                         const Padding(
                           padding: EdgeInsets.all(4.0),
                           child: GeneralSettingsWidget(),

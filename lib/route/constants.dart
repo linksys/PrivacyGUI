@@ -9,7 +9,7 @@ class RoutePath {
   static const cloudLoginPassword = 'cloudLoginPassword';
   static const cloudForgotPassword = 'cloudForgotPassword';
   static const phoneRegionCode = 'phoneRegionCode';
-  static const localLoginPassword = 'localLoginPassword';
+  static const localLoginPassword = '/localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
   static const localPasswordReset = 'localPasswordReset';
 
@@ -106,6 +106,10 @@ class RoutePath {
   static const pnpUnplugModem = 'unPlugModem';
   static const pnpMakeSureLightOff = 'makeSureLightOff';
   static const pnpWaitingModem = 'waitingModem';
+  static const pnpIspSettings = 'pnpIspSettings';
+  static const pnpIspTypeSelection = 'pnpIspTypeSelection';
+  static const pnpStaticIp = 'pnpStaticIp';
+  static const pnpIspSettingsAuth = 'pnpIspSettingsAuth';
 
   /// Safe Browsing
   static const safeBrowsing = 'safeBrowsing';
@@ -113,6 +117,10 @@ class RoutePath {
   /// Troubleshooting
   static const troubleshooting = 'troubleshooting';
   static const troubleshootingPing = 'troubleshootingPing';
+
+  /// ContactSupport
+  static const contactSupportChoose = 'contactSupportChoose';
+  static const contactSupportDetails = 'contactSupportDetails';
 
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
@@ -232,6 +240,10 @@ class RouteNamed {
   static const pnpUnplugModem = 'unPlugModem';
   static const pnpMakeSureLightOff = 'makeSureLightOff';
   static const pnpWaitingModem = 'waitingModem';
+  static const pnpIspSettings = 'pnpIspSettings';
+  static const pnpIspTypeSelection = 'pnpIspTypeSelection';
+  static const pnpStaticIp = 'pnpStaticIp';
+  static const pnpIspSettingsAuth = 'pnpIspSettingsAuth';
 
   /// Safe Browsing
   static const safeBrowsing = 'safeBrowsing';
@@ -239,6 +251,10 @@ class RouteNamed {
   /// Troubleshooting
   static const troubleshooting = 'troubleshooting';
   static const troubleshootingPing = 'troubleshootingPing';
+
+  /// ContactSupport
+  static const contactSupportChoose = 'contactSupportChoose';
+  static const contactSupportDetails = 'contactSupportDetails';
 
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';

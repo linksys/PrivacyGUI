@@ -14,12 +14,14 @@ import 'package:linksys_app/core/cloud/model/region_code.dart';
 import 'package:linksys_app/core/http/linksys_http_client.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/providers/auth/auth_exception.dart';
+import 'package:linksys_app/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum LoginType { none, local, remote }
@@ -95,6 +97,8 @@ final authProvider =
     AsyncNotifierProvider<AuthNotifier, AuthState>(() => AuthNotifier());
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
+  bool _isInit = false;
+
   AuthNotifier() : super() {
     LinksysHttpClient.onError = (error) async {
       logger.d('Http Response Error: $error');
@@ -123,7 +127,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   @override
   Future<AuthState> build() => Future.value(AuthState.empty());
 
-  Future init() async {
+  Future<AuthState?> init() async {
+    if (_isInit) {
+      logger.d('auth provider has been inited');
+      return state.value;
+    }
+    _isInit = true;
+
     state = const AsyncValue.loading();
     // check session token exist and is session token expored
 
@@ -148,9 +158,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       logger.d('check login type...');
       if (sessionToken != null) {
         loginType = LoginType.remote;
-      } else if (localPassword != null) {
-        loginType = LoginType.local;
       }
+      // don't keep local status
+      // else if (localPassword != null) {
+      //   loginType = LoginType.local;
+      // }
 
       return AuthState(
         username: username ?? '',
@@ -160,6 +172,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         localPassword: localPassword,
       );
     });
+    return state.value;
   }
 
   Future<SessionToken?> checkSessionToken() async {
@@ -256,16 +269,28 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     );
   }
 
-  Future localLogin(String password) async {
+  ///
+  /// if guardError is true, error will not throw out, instead put into state as error state
+  /// else error will throw out.
+  ///
+  Future localLogin(String password,
+      {bool pnp = false, bool guardError = true}) async {
     final previousState = state.value ?? AuthState.empty();
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final routerRepository = ref.read(routerRepositoryProvider);
       final response = await routerRepository.send(
-        JNAPAction.checkAdminPassword,
+        pnp ? JNAPAction.pnpCheckAdminPassword : JNAPAction.checkAdminPassword,
+        extraHeaders: pnp
+            ? {
+                kJNAPAuthorization:
+                    'Basic ${Utils.stringBase64Encode('admin:$password')}'
+              }
+            : {},
         data: {
           'adminPassword': password,
         },
+        cacheLevel: CacheLevel.noCache,
       );
       if (response.result == jnapResultOk) {
         const storage = FlutterSecureStorage();
@@ -277,7 +302,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       } else {
         throw response;
       }
-    });
+    }, (error) => guardError);
   }
 
   Future<void> getPasswordHint() async {

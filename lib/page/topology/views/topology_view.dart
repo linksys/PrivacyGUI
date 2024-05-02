@@ -58,7 +58,9 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
                     icon: LinksysIcons.add,
                     onTap: () {
                       context.pushNamed(RouteNamed.addNodes).then((result) {
-                        _showMoveChildNodesModal();
+                        if (result is bool && result) {
+                          _showMoveChildNodesModal();
+                        }
                       });
                     },
                   )
@@ -100,7 +102,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
       image: CustomTheme.of(context).images.devices.getByName(node.data.icon),
       status: node.data.isOnline
           ? loc(context).nDevices(node.data.connectedDeviceCount)
-          : 'Offline',
+          : loc(context).offline,
       tail: node.data.isOnline
           ? Icon(
               node.data.isWiredConnection

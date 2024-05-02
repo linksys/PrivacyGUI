@@ -1,16 +1,24 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
 import 'package:linksys_app/page/pnp/model/pnp_step.dart';
 import 'package:linksys_app/page/pnp/widgets/wifi_password_widget.dart';
 import 'package:linksys_app/page/pnp/widgets/wifi_ssid_widget.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class PersonalWiFiStep extends PnpStep {
   TextEditingController? _ssidEditController;
   TextEditingController? _passwordEditController;
 
-  PersonalWiFiStep({required super.index});
+  PersonalWiFiStep({
+    required super.index,
+    super.saveChanges,
+  });
 
   @override
   Future<void> onInit(WidgetRef ref) async {
@@ -19,12 +27,19 @@ class PersonalWiFiStep extends PnpStep {
     _ssidEditController = TextEditingController();
     _passwordEditController = TextEditingController();
 
+    final wifi = pnp.getDefaultWiFiNameAndPassphrase();
+    _ssidEditController?.text = wifi.name;
+    _passwordEditController?.text = wifi.password;
+
     _check(ref);
   }
 
   @override
   Future<Map<String, dynamic>> onNext(WidgetRef ref) async {
-    return {};
+    return {
+      'ssid': _ssidEditController?.text,
+      'password': _passwordEditController?.text,
+    };
   }
 
   @override
@@ -43,66 +58,122 @@ class PersonalWiFiStep extends PnpStep {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: WiFiSSIDField(
-              controller: _ssidEditController!,
-              label: 'Wi-Fi Name',
-              hint: 'Wi-Fi Name',
-              onCheckInput: (isValid, input) {
-                if (isValid) {
-                  ref
-                      .read(pnpProvider.notifier)
-                      .setStepData(index, data: {'ssid': input});
-                } else {
-                  ref
-                      .read(pnpProvider.notifier)
-                      .setStepData(index, data: {'ssid': ''});
-                }
-                _check(ref);
-              },
-            ),
+          WiFiSSIDField(
+            controller: _ssidEditController,
+            label: loc(context).wifiName,
+            hint: loc(context).wifiName,
+            onCheckInput: (isValid, input) {
+              // if (isValid) {
+              //   ref
+              //       .read(pnpProvider.notifier)
+              //       .setStepData(index, data: {'ssid': input});
+              // } else {
+              //   ref
+              //       .read(pnpProvider.notifier)
+              //       .setStepData(index, data: {'ssid': ''});
+              // }
+              _check(ref);
+            },
           ),
-          const AppGap.semiSmall(),
-          Container(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: WiFiPasswordField(
-              controller: _passwordEditController!,
-              label: 'Wi-Fi Password',
-              hint: 'Wi-Fi Password',
-              onCheckInput: (isValid, input) {
-                if (isValid) {
-                  ref
-                      .read(pnpProvider.notifier)
-                      .setStepData(index, data: {'password': input});
-                } else {
-                  ref
-                      .read(pnpProvider.notifier)
-                      .setStepData(index, data: {'password': ''});
-                }
-                _check(ref);
-              },
-            ),
+          const AppGap.regular(),
+          WiFiPasswordField(
+            controller: _passwordEditController,
+            label: loc(context).wifiPassword,
+            hint: loc(context).wifiPassword,
+            onCheckInput: (isValid, input) {
+              // if (isValid) {
+              //   ref
+              //       .read(pnpProvider.notifier)
+              //       .setStepData(index, data: {'password': input});
+              // } else {
+              //   ref
+              //       .read(pnpProvider.notifier)
+              //       .setStepData(index, data: {'password': ''});
+              // }
+              _check(ref);
+            },
           ),
+          const AppGap.extraBig(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                child: AppText.bodySmall(
+                  loc(context).pnpPersonalizeInfo,
+                  maxLines: 10,
+                ),
+              ),
+              AppIconButton.noPadding(
+                icon: LinksysIcons.infoCircle,
+                color: Theme.of(context).colorScheme.primary,
+                onTap: () {
+                  _showDefaultsInfoModal(context);
+                },
+              )
+            ],
+          ),
+          const AppGap.extraBig(),
         ],
       );
 
   @override
-  String title(BuildContext context) =>
-      'Personalize your Wi-Fi name and password';
+  String title(BuildContext context) => loc(context).pnpPersonalizeWiFiTitle;
 
   void _check(WidgetRef ref) {
-    final state = ref.read(pnpProvider).stepStateList[index];
-    final ssid = state?.data['ssid'] as String? ?? '';
-    final password = state?.data['password'] as String? ?? '';
+    // final state = ref.read(pnpProvider).stepStateList[index];
+    // final ssid = state?.data['ssid'] as String? ?? '';
+    // final password = state?.data['password'] as String? ?? '';
+    final ssid = _ssidEditController?.text ?? '';
+    final password = _passwordEditController?.text ?? '';
     if (ssid.isNotEmpty && password.isNotEmpty) {
-      ref
-          .read(pnpProvider.notifier)
-          .setStepStatus(index, status: StepViewStatus.data);
+      pnp.setStepStatus(index, status: StepViewStatus.data);
     } else {
-      ref
-          .read(pnpProvider.notifier)
-          .setStepStatus(index, status: StepViewStatus.error);
+      pnp.setStepStatus(index, status: StepViewStatus.error);
     }
+  }
+
+  _showDefaultsInfoModal(BuildContext context) {
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: SizedBox(
+              width: 400.0,
+              child: AppText.titleLarge(
+                  loc(context).modalPnpWiFiDefaultsInfoTitle)),
+          actions: [
+            AppTextButton(
+              loc(context).close,
+              onTap: () {
+                context.pop();
+              },
+            ),
+          ],
+          content: SizedBox(
+            child: Container(
+              width: 400.0,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.bodyMedium(
+                      loc(context).modalPnpWiFiDefaultsInfoDesc1),
+                  const AppGap.regular(),
+                  AppText.bodyMedium(
+                      loc(context).modalPnpWiFiDefaultsInfoDesc2),
+                  const AppGap.regular(),
+                  AppText.bodyMedium(
+                      loc(context).modalPnpWiFiDefaultsInfoDesc3),
+                  const AppGap.regular(),
+                  AppText.bodyMedium(
+                      loc(context).modalPnpWiFiDefaultsInfoDesc4),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }

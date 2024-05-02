@@ -16,6 +16,9 @@ const pRedirection = 'Redirection';
 const pNotificationLastSeen = 'NotificationLastSeen';
 const pNotifications = 'Notifications';
 
+const pPnpConfiguredSN = "PnPLinksysSN";
+const pPnpSetup = "PnPSetup";
+
 // secured
 const pSessionToken = 'SessionToken';
 const pSessionTokenTs = 'SessionTokenTimeStamp';

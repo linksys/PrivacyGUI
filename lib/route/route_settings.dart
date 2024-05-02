@@ -63,7 +63,7 @@ final settings = [
   LinksysRoute(
     name: RouteNamed.settingsRouterPassword,
     path: RoutePath.settingsRouterPassword,
-    builder: (context, state) => RouterPasswordView(),
+    builder: (context, state) => NetworkAdminView(),
   ),
   LinksysRoute(
     name: RouteNamed.settingsTimeZone,

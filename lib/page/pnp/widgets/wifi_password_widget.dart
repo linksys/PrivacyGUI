@@ -8,14 +8,14 @@ import 'package:linksys_widgets/widgets/input_field/validator_widget.dart';
 class WiFiPasswordField extends ConsumerStatefulWidget {
   final String? label;
   final String? hint;
-  final TextEditingController controller;
+  final TextEditingController? controller;
   final void Function(bool isValid, String input)? onCheckInput;
 
   const WiFiPasswordField({
     super.key,
     this.label,
     this.hint,
-    required this.controller,
+    this.controller,
     this.onCheckInput,
   });
 
@@ -34,14 +34,15 @@ class _WiFiPasswordFieldState extends ConsumerState<WiFiPasswordField> {
   @override
   Widget build(BuildContext context) {
     return AppPasswordField.withValidator(
+      border: const OutlineInputBorder(),
       headerText: widget.label,
       hintText: widget.hint,
       errorText: () {
-        if (widget.controller.text.isEmpty) {
+        if (widget.controller?.text.isEmpty == true) {
           return null;
         }
         final errorKeys = wifiPasswordValidator
-            .validateDetail(widget.controller.text, onlyFailed: true)
+            .validateDetail(widget.controller?.text ?? '', onlyFailed: true)
           ..removeWhere((key, value) => key == (LengthRule).toString());
         if (errorKeys.isEmpty) {
           return null;
@@ -60,7 +61,7 @@ class _WiFiPasswordFieldState extends ConsumerState<WiFiPasswordField> {
       controller: widget.controller,
       onChanged: (value) {
         final errorKeys = wifiPasswordValidator
-            .validateDetail(widget.controller.text, onlyFailed: true);
+            .validateDetail(widget.controller?.text ?? '', onlyFailed: true);
         if (value.isEmpty || errorKeys.isNotEmpty) {
           widget.onCheckInput?.call(false, value);
         } else {

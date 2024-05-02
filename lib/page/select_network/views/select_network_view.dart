@@ -10,7 +10,7 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/select_network/_select_network.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/firebase/analytics.dart';
+// import 'package:linksys_app/firebase/analytics.dart';
 import 'package:linksys_widgets/hook/icon_hooks.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
@@ -140,12 +140,12 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                     .read(dashboardManagerProvider.notifier)
                     .saveSelectedNetwork(network.network.routerSerialNumber,
                         network.network.networkId);
-                logEvent(
-                  eventName: 'ActionSelectNetwork',
-                  parameters: {
-                    'networkId': network.network.networkId,
-                  },
-                );
+                // logEvent(
+                //   eventName: 'ActionSelectNetwork',
+                //   parameters: {
+                //     'networkId': network.network.networkId,
+                //   },
+                // );
                 goRouter.goNamed('prepareDashboard');
               }
             }

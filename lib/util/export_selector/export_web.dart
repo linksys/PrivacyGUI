@@ -18,5 +18,5 @@ Future<ShareResult?> exportFile(
   html.document.body!.append(anchor);
   anchor.click();
   anchor.remove();
-  return null;
+  return const ShareResult('', ShareResultStatus.success);
 }

@@ -87,6 +87,8 @@ const kUserMfaMethods = '$kUserService/rest/accounts/self/mfa-methods';
 const kUserMfaMethodsDelete = '$kUserMfaMethods/$kVarId';
 const kUserMfaValidate = '$kUserService/rest/accounts/self/mfa-validate';
 const kUserGetAccount = '$kUserService/rest/accounts/self';
+// test ping.png
+const kTestPingPng = '/cloud/ping.png';
 
 // Device service
 const kDeviceNetworksEndpoint = '$kDeviceService/rest/networks/$kVarNetworkId';

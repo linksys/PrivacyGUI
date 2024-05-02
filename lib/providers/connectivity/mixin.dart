@@ -70,7 +70,7 @@ mixin AvailabilityChecker {
         .then((response) {
       final isCloudOk = json.decode(response.body)['cloudStatus'] == 'OK';
       return AvailabilityInfo(isCloudOk: isCloudOk);
-    });
+    }).onError((error, stackTrace) => const AvailabilityInfo(isCloudOk: false));
   }
 }
 

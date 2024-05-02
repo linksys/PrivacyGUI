@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:ios_push_notification_plugin/ios_push_notification_plugin.dart';
 import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_app/firebase/notification_helper.dart';
 import 'package:linksys_app/providers/connectivity/connectivity_provider.dart';
@@ -21,7 +19,6 @@ import 'package:linksys_app/page/landing/views/debug_device_info_view.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/dashboard/providers/smart_device_provider.dart';
-import 'package:linksys_app/firebase/analytics.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -55,10 +52,10 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
   @override
   void initState() {
     super.initState();
-    checkTokens();
-    setState(() {
-      getAppInfoLogs().then((value) => appInfo = value);
-    });
+    // checkTokens();
+    // setState(() {
+    //   getAppInfoLogs().then((value) => appInfo = value);
+    // });
   }
 
   @override
@@ -121,7 +118,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
       ..._buildBasicInfo(),
       ..._buildConnectionInfo(),
       // ..._buildCloudApp(),
-      ..._buildPushNotificationInfo(),
+      // ..._buildPushNotificationInfo(),
       // _buildSmartDeviceTile(),
     ];
   }
@@ -140,27 +137,27 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
           });
         },
       ),
-      AppFilledButton(
-        'Raise an Exception!',
-        onTap: () async {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Throw a test exception!!')));
-          // FirebaseCrashlytics.instance.crash();
-          logEvent(eventName: 'testEvent');
-          throw Exception('Test Exception!!!');
-        },
-      ),
-      AppFilledButton(
-        'Log a test event',
-        onTap: () async {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('Event logged!')));
-          // FirebaseCrashlytics.instance.crash();
-          logEvent(eventName: 'event_hello_world', parameters: {
-            'time': DateTime.now().millisecondsSinceEpoch,
-          });
-        },
-      ),
+      // AppFilledButton(
+      //   'Raise an Exception!',
+      //   onTap: () async {
+      //     ScaffoldMessenger.of(context).showSnackBar(
+      //         const SnackBar(content: Text('Throw a test exception!!')));
+      //     // FirebaseCrashlytics.instance.crash();
+      //     logEvent(eventName: 'testEvent');
+      //     throw Exception('Test Exception!!!');
+      //   },
+      // ),
+      // AppFilledButton(
+      //   'Log a test event',
+      //   onTap: () async {
+      //     ScaffoldMessenger.of(context)
+      //         .showSnackBar(const SnackBar(content: Text('Event logged!')));
+      //     // FirebaseCrashlytics.instance.crash();
+      //     logEvent(eventName: 'event_hello_world', parameters: {
+      //       'time': DateTime.now().millisecondsSinceEpoch,
+      //     });
+      //   },
+      // ),
       const AppGap.regular(),
     ];
   }

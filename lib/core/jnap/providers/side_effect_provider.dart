@@ -1,17 +1,48 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:linksys_app/constants/_constants.dart';
+import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/models/device_info.dart';
 import 'package:linksys_app/core/jnap/models/wan_status.dart';
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/logger.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+class JNAPSideEffectOverrides extends Equatable {
+  final int? retryDelayInSec;
+  final int? maxRetry;
+  final int? maxPollTimeInSec;
+  final int? timeDelayStartInSec;
+  final bool Function()? condition;
+  const JNAPSideEffectOverrides({
+    this.retryDelayInSec,
+    this.maxRetry,
+    this.maxPollTimeInSec,
+    this.timeDelayStartInSec,
+    this.condition,
+  });
+
+  JNAPSideEffectOverrides copyWith({
+    bool Function()? condition,
+  }) {
+    return JNAPSideEffectOverrides(
+      condition: condition ?? this.condition,
+    );
+  }
+
+  @override
+  bool get stringify => true;
+
+  @override
+  List<Object?> get props => [condition];
+}
 
 class JNAPSideEffect extends Equatable {
   final bool hasSideEffect;
@@ -74,28 +105,35 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     );
   }
 
-  Future<JNAPResult> handleSideEffect(JNAPResult result) async {
+  Future<JNAPResult> handleSideEffect(
+    JNAPResult result, {
+    JNAPSideEffectOverrides? overrides,
+  }) async {
     final sideEffects = (result as SideEffectGetter).getSideEffects() ?? [];
     if (sideEffects.isEmpty) {
       state = state.copyWith(hasSideEffect: false);
       return result;
     }
-    logger.d('SideEffectManager: handleSideEffect: $result');
+    logger.d('[SideEffectManager] handleSideEffect: $result');
 
     state = state.copyWith(hasSideEffect: true, reason: sideEffects[0]);
     if (sideEffects.contains('WirelessInterruption')) {
       return poll(
         pollFunc: testRouterReconnected,
-        timeDelayStartInSec: 10,
-        retryDelayInSec: 10,
-        maxPollTimeInSec: 120,
+        maxRetry: overrides?.maxRetry ?? -1,
+        timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 10,
+        retryDelayInSec: overrides?.retryDelayInSec ?? 10,
+        maxPollTimeInSec: overrides?.maxPollTimeInSec ?? 120,
+        condition: overrides?.condition,
       ).then((value) => result);
     } else {
       return poll(
         pollFunc: testRouterFullyBootedUp,
-        maxRetry: 5,
-        timeDelayStartInSec: 5,
-        retryDelayInSec: 15,
+        maxRetry: overrides?.maxRetry ?? 5,
+        timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 5,
+        retryDelayInSec: overrides?.retryDelayInSec ?? 15,
+        maxPollTimeInSec: overrides?.maxPollTimeInSec ?? -1,
+        condition: overrides?.condition,
       ).then((value) => result);
     }
   }
@@ -113,7 +151,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     bool Function()? condition,
   }) async {
     // Log poll config
-    logger.d('''Start Poll with config:
+    logger.d('''[SideEffectManager] Start Poll with config:
         retry delay: $retryDelayInSec,
         max retry: $maxRetry,
         max poll time: $maxPollTimeInSec,
@@ -125,7 +163,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     }
     final startTime = DateTime.now().millisecondsSinceEpoch;
     while (maxRetry == -1 || ++retry <= maxRetry) {
-      logger.d('poll <$retry> times');
+      logger.d('[SideEffectManager] poll <$retry> times');
       final result =
           await pollFunc.call().onError((error, stackTrace) => false);
       if (result) {
@@ -168,11 +206,13 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
 
   Future<bool> testRouterReconnected() async {
     final pref = await SharedPreferences.getInstance();
-    final cachedSerialNumber = pref.getString(pCurrentSN);
+    final cachedSerialNumber =
+        pref.getString(pCurrentSN) ?? pref.getString(pPnpConfiguredSN);
 
     final routerRepository = ref.read(routerRepositoryProvider);
     return routerRepository
-        .send(JNAPAction.getDeviceInfo, fetchRemote: true)
+        .send(JNAPAction.getDeviceInfo,
+            fetchRemote: true, cacheLevel: CacheLevel.noCache)
         .then((response) => NodeDeviceInfo.fromJson(response.output))
         .then((devceInfo) => devceInfo.serialNumber == cachedSerialNumber)
         .then(

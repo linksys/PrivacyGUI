@@ -1,6 +1,6 @@
 {
   "@@locale": "zh_Hans",
-  "app_title": "Linksys Flutter",
+  "app_title": "Linksys PrivacyGUI",
   "cloud_account_login_title": "请登录您的 Linksys 帐户",
   "cloud_account_login_with_router_password": "使用路由器密码登录",
   "enter_password": "输入密码",

@@ -81,6 +81,7 @@ class RouterRepository {
     CacheLevel? cacheLevel,
     int timeoutMs = 10000,
     JNAPRetryOptions retryOptions = const JNAPRetryOptions(),
+    JNAPSideEffectOverrides? sideEffectOverrides,
   }) async {
     cacheLevel ??= isMatchedJNAPNoCachePolicy(action)
         ? CacheLevel.noCache
@@ -96,19 +97,25 @@ class RouterRepository {
     final sideEffectManager = ref.read(sideEffectProvider.notifier);
     return CommandQueue()
         .enqueue(command)
-        .then((record) => sideEffectManager.handleSideEffect(record))
+        .then((record) => sideEffectManager.handleSideEffect(record,
+            overrides: sideEffectOverrides))
         .then((record) {
       sideEffectManager.finishSideEffect();
       return record as JNAPSuccess;
     });
   }
 
-  Future<JNAPTransactionSuccessWrap> transaction(JNAPTransactionBuilder builder,
-      {bool fetchRemote = false,
-      CacheLevel cacheLevel = CacheLevel.localCached}) async {
+  Future<JNAPTransactionSuccessWrap> transaction(
+    JNAPTransactionBuilder builder, {
+    bool fetchRemote = false,
+    CacheLevel cacheLevel = CacheLevel.localCached,
+    JNAPSideEffectOverrides? sideEffectOverrides,
+  }) async {
     final payload = builder.commands
-        .map((entry) =>
-            {'action': entry.key.actionValue, 'request': entry.value})
+        .map((entry) => {
+              'action': builder.overrides[entry.key] ?? entry.key.actionValue,
+              'request': entry.value
+            })
         .toList();
     final sideEffectManager = ref.read(sideEffectProvider.notifier);
 
@@ -118,22 +125,27 @@ class RouterRepository {
         fetchRemote: fetchRemote,
         cacheLevel: cacheLevel);
 
-    return CommandQueue()
-        .enqueue(command)
-        .then((record) => sideEffectManager.handleSideEffect(record))
-        .then((record) {
+    return CommandQueue().enqueue(command).then((
+      record,
+    ) {
+      logger.d(
+          '[sideEffectManager] check side effects: $record, ${record.runtimeType}');
+      return sideEffectManager.handleSideEffect(record,
+          overrides: sideEffectOverrides);
+    }).then((record) {
       sideEffectManager.finishSideEffect();
       return record;
     }).then((result) => result as JNAPTransactionSuccessWrap);
   }
 
   Future<TransactionHttpCommand> createTransaction(
-      List<Map<String, dynamic>> payload,
-      {bool needAuth = false,
-      required List<JNAPAction> actions,
-      bool fetchRemote = false,
-      CacheLevel cacheLevel = CacheLevel.localCached,
-      CommandType? type}) async {
+    List<Map<String, dynamic>> payload, {
+    bool needAuth = false,
+    required List<JNAPAction> actions,
+    bool fetchRemote = false,
+    CacheLevel cacheLevel = CacheLevel.localCached,
+    CommandType? type,
+  }) async {
     // final loginType = getLoginType();
     final routerType = getRouterType();
     // final communicateType = type ??
@@ -262,7 +274,8 @@ class RouterRepository {
     final newRouterType = () {
       if (type == CommandType.local) {
         return RouterType.behindManaged;
-      } else if (type == CommandType.remote) {
+      } else if (type == CommandType.remote &&
+          routerType != RouterType.behind) {
         return RouterType.others;
       } else {
         return routerType;
@@ -320,14 +333,22 @@ class RouterRepository {
         break;
       case RouterType.behind:
 
-        /// MUST Remote
+        /// Local:
+        /// X-JNAP-AUTHxxx : Basic base64
+        ///
+        /// Remote
         /// Authorization: TOKEN
         /// NetworkId: {NetworkId}
         ///
+
+        final authKey =
+            cloudLogin ? HttpHeaders.authorizationHeader : kJNAPAuthorization;
+        final authValue = cloudLogin
+            ? 'LinksysUserAuth session_token=$cloudToken'
+            : 'Basic ${Utils.stringBase64Encode('admin:${loginType == LoginType.none ? 'admin' : await getLocalPassword()}')}';
         header = {
-          HttpHeaders.authorizationHeader:
-              'LinksysUserAuth session_token=$cloudToken',
-          kJNAPNetworkId: _getNetworkId(),
+          authKey: authValue,
+          if (cloudLogin) kJNAPNetworkId: _getNetworkId(),
           kHeaderClientTypeId: kClientTypeId,
         };
         break;

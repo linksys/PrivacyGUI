@@ -2,10 +2,12 @@ import 'package:linksys_app/core/jnap/actions/better_action.dart';
 
 class JNAPTransactionBuilder {
   final List<MapEntry<JNAPAction, Map<String, dynamic>>> _commands;
+  final Map<JNAPAction, String> overrides;
   final bool auth;
 
   JNAPTransactionBuilder({
     List<MapEntry<JNAPAction, Map<String, dynamic>>> commands = const [],
+    this.overrides = const {},
     this.auth = false,
   }) : _commands = commands;
 

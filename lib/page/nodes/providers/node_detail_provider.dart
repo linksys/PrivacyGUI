@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +13,7 @@ import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/devices.dart';
 import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/page/devices/_devices.dart';
+import 'package:linksys_app/core/utils/nodes.dart';
 import 'package:linksys_app/page/nodes/_nodes.dart';
 import 'package:linksys_app/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,6 +25,8 @@ final nodeDetailProvider =
 );
 
 class NodeDetailNotifier extends Notifier<NodeDetailState> {
+  Timer? _blinkTimer;
+
   @override
   NodeDetailState build() {
     final deviceManagerState = ref.watch(deviceManagerProvider);
@@ -39,6 +42,10 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     // The target Id should never be empty
     if (targetId.isEmpty) {
       return newState;
+    }
+
+    if (isServiceSupport(JNAPService.routerLEDs3)) {
+      getLEDLight();
     }
     // Details of the specific device
     var location = '';
@@ -70,11 +77,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
                 master?.getDeviceLocation() ??
                 '');
         isWired = device.isWiredConnection();
-        signalStrength = isWired
-            ? 0
-            : ref
-                .read(deviceManagerProvider.notifier)
-                .getWirelessSignalOf(device);
+        signalStrength = device.signalDecibels ?? 0;
         serialNumber = device.unit.serialNumber ?? '';
         modelNumber = device.model.modelNumber ?? '';
         firmwareVersion = device.unit.firmwareVersion ?? '';
@@ -86,7 +89,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       }
     }
 
-    return newState.copyWith(
+    final state = newState.copyWith(
       deviceId: targetId,
       location: location,
       isMaster: isMaster,
@@ -102,7 +105,15 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       lanIpAddress: lanIpAddress,
       wanIpAddress: wanIpAddress,
     );
+
+    final map = state.toMap();
+    logger.d('XXXXX: node detail state: ${jsonEncode(map)}');
+    logger.d('XXXXX: node detail state2: ${NodeDetailState.fromMap(map)}');
+    return state;
   }
+
+  bool isSupportLedBlinking() => isServiceSupport(JNAPService.setup9);
+  bool isSupportLedMode() => isServiceSupport(JNAPService.routerLEDs4);
 
   Future<void> getLEDLight() async {
     return ref.read(deviceManagerProvider.notifier).getLEDLight().then((value) {
@@ -122,14 +133,23 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
 
   Future<JNAPResult> startBlinkNodeLED(String deviceId) async {
     final repository = ref.read(routerRepositoryProvider);
-    return repository.send(JNAPAction.startBlinkNodeLed,
-        data: {'deviceID': deviceId}, auth: true);
+    return repository.send(
+      JNAPAction.startBlinkNodeLed,
+      data: {'deviceID': deviceId},
+      fetchRemote: true,
+      cacheLevel: CacheLevel.noCache,
+      auth: true,
+    );
   }
 
   Future<JNAPResult> stopBlinkNodeLED() async {
     final repository = ref.read(routerRepositoryProvider);
-    return repository.send(JNAPAction.stopBlinkNodeLed,
-        auth: true, cacheLevel: CacheLevel.noCache);
+    return repository.send(
+      JNAPAction.stopBlinkNodeLed,
+      auth: true,
+      fetchRemote: true,
+      cacheLevel: CacheLevel.noCache,
+    );
   }
 
   Future<void> toggleBlinkNode() async {
@@ -141,7 +161,8 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       startBlinkNodeLED(deviceId).then((response) {
         prefs.setString(blinkingDeviceId, deviceId);
         state = state.copyWith(blinkingStatus: BlinkingStatus.stopBlinking);
-        Timer(const Duration(seconds: 24), () {
+        _blinkTimer?.cancel();
+        _blinkTimer = Timer(const Duration(seconds: 24), () {
           stopBlinkNodeLED().then((response) {
             state = state.copyWith(blinkingStatus: BlinkingStatus.blinkNode);
           });
@@ -152,6 +173,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       });
     } else {
       stopBlinkNodeLED().then((response) {
+        _blinkTimer?.cancel();
         prefs.remove(blinkingDeviceId);
         state = state.copyWith(blinkingStatus: BlinkingStatus.blinkNode);
       }).onError((error, stackTrace) {

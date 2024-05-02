@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
 import 'package:linksys_app/page/pnp/model/pnp_step.dart';
 import 'package:linksys_app/page/pnp/widgets/wifi_password_widget.dart';
@@ -9,6 +10,7 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 class GuestWiFiStep extends PnpStep {
   TextEditingController? _ssidEditController;
   TextEditingController? _passwordEditController;
+  bool isEnabled = false;
 
   GuestWiFiStep({required super.index});
 
@@ -19,17 +21,20 @@ class GuestWiFiStep extends PnpStep {
     _ssidEditController = TextEditingController();
     _passwordEditController = TextEditingController();
 
-    final data = ref.read(pnpProvider).stepStateList[index]?.data ?? {};
-    final String ssid = data['ssid'] ?? '';
-    final String password = data['password'] ?? '';
-
-    _ssidEditController?.text = ssid;
-    _passwordEditController?.text = password;
+    final guestWifi = pnp.getDefaultGuestWiFiNameAndPassPhrase();
+    
+    _ssidEditController?.text = guestWifi.name;
+    _passwordEditController?.text = guestWifi.password;
+    _check(ref);
   }
 
   @override
   Future<Map<String, dynamic>> onNext(WidgetRef ref) async {
-    return {};
+    return {
+      'isEnabled': isEnabled,
+      if (isEnabled) 'ssid': _ssidEditController?.text,
+      if (isEnabled) 'password': _passwordEditController?.text,
+    };
   }
 
   @override
@@ -44,106 +49,94 @@ class GuestWiFiStep extends PnpStep {
     required WidgetRef ref,
     Widget? child,
   }) {
-    final data = ref
-            .watch(pnpProvider.select((value) => value.stepStateList))[index]
-            ?.data ??
-        {};
-    bool isEnabled = data['isEnabled'] ?? false;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const AppText.bodyLarge(
-            'Turn on guest network to create separate Wi-Fi network for guests and maintain the privacy of your main network'),
-        const AppGap.semiSmall(),
-        Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppSwitch(
-              value: isEnabled,
-              onChanged: (value) {
-                update(ref, key: 'isEnabled', value: value);
-              },
-            ),
-            ...isEnabled
-                ? [
-                    Container(
-                      constraints: const BoxConstraints(maxWidth: 480),
-                      child: WiFiSSIDField(
-                        controller: _ssidEditController!,
-                        label: 'SSID',
-                        hint: 'Guest WiFi SSID',
-                        onCheckInput: (isValid, input) {
-                          if (isValid) {
-                            ref
-                                .read(pnpProvider.notifier)
-                                .setStepData(index, data: {'ssid': input});
-                          } else {
-                            ref
-                                .read(pnpProvider.notifier)
-                                .setStepData(index, data: {'ssid': ''});
-                          }
-                          _check(ref);
-                        },
-                      ),
-                    ),
-                    const AppGap.semiSmall(),
-                    Container(
-                      constraints: const BoxConstraints(maxWidth: 480),
-                      child: WiFiPasswordField(
-                        controller: _passwordEditController!,
-                        label: 'Password',
-                        hint: 'Guest WiFi Password',
-                        onCheckInput: (isValid, input) {
-                          if (isValid) {
-                            ref
-                                .read(pnpProvider.notifier)
-                                .setStepData(index, data: {'password': input});
-                          } else {
-                            ref
-                                .read(pnpProvider.notifier)
-                                .setStepData(index, data: {'password': ''});
-                          }
-                          _check(ref);
-                        },
-                      ),
-                    )
-                  ]
-                : [],
-          ],
-        ),
-      ],
-    );
+    // final data = ref
+    //         .watch(pnpProvider.select((value) => value.stepStateList))[index]
+    //         ?.data ??
+    //     {};
+    // bool isEnabled = data['isEnabled'] ?? false;
+    return StatefulBuilder(builder: (context, setState) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSwitch(
+            value: isEnabled,
+            onChanged: (value) {
+              setState(() {
+                isEnabled = value;
+              });
+              // update(ref, key: 'isEnabled', value: value);
+            },
+          ),
+          const AppGap.big(),
+          AppText.bodyLarge(loc(context).pnpGuestWiFiDesc),
+          const AppGap.big(),
+          ...isEnabled
+              ? [
+                  WiFiSSIDField(
+                    controller: _ssidEditController!,
+                    label: loc(context).guestWiFiName,
+                    hint: loc(context).guestWiFiName,
+                    onCheckInput: (isValid, input) {
+                      // if (isValid) {
+                      //   ref
+                      //       .read(pnpProvider.notifier)
+                      //       .setStepData(index, data: {'ssid': input});
+                      // } else {
+                      //   ref
+                      //       .read(pnpProvider.notifier)
+                      //       .setStepData(index, data: {'ssid': ''});
+                      // }
+                      _check(ref);
+                    },
+                  ),
+                  const AppGap.regular(),
+                  WiFiPasswordField(
+                    controller: _passwordEditController!,
+                    label: loc(context).guestWiFiPassword,
+                    hint: loc(context).guestWiFiPassword,
+                    onCheckInput: (isValid, input) {
+                      // if (isValid) {
+                      //   ref
+                      //       .read(pnpProvider.notifier)
+                      //       .setStepData(index, data: {'password': input});
+                      // } else {
+                      //   ref
+                      //       .read(pnpProvider.notifier)
+                      //       .setStepData(index, data: {'password': ''});
+                      // }
+                      _check(ref);
+                    },
+                  ),
+                  const AppGap.regular(),
+                ]
+              : [],
+        ],
+      );
+    });
   }
 
   @override
-  String title(BuildContext context) => 'Guest Network';
+  String title(BuildContext context) => loc(context).guestNetwork;
 
-  void update(WidgetRef ref, {required String key, dynamic value}) {
-    if (value == null) {
-      return;
-    }
-    final currentData = ref.read(pnpProvider).stepStateList[index]?.data ?? {};
-    ref
-        .read(pnpProvider.notifier)
-        .setStepData(index, data: Map.from(currentData)..[key] = value);
-    _check(ref);
-  }
+  // void update(WidgetRef ref, {required String key, dynamic value}) {
+  //   if (value == null) {
+  //     return;
+  //   }
+  //   final currentData = ref.read(pnpProvider).stepStateList[index]?.data ?? {};
+  //   ref
+  //       .read(pnpProvider.notifier)
+  //       .setStepData(index, data: Map.from(currentData)..[key] = value);
+  //   _check(ref);
+  // }
 
   void _check(WidgetRef ref) {
-    final state = ref.read(pnpProvider).stepStateList[index];
-    final isEnable = state?.data['isEnabled'] as bool? ?? false;
-    final ssid = state?.data['ssid'] as String? ?? '';
-    final password = state?.data['password'] as String? ?? '';
-    if (!isEnable || ssid.isNotEmpty && password.isNotEmpty) {
-      ref
-          .read(pnpProvider.notifier)
-          .setStepStatus(index, status: StepViewStatus.data);
+    final ssid = _ssidEditController?.text ?? '';
+    final password = _passwordEditController?.text ?? '';
+    if (!isEnabled || ssid.isNotEmpty && password.isNotEmpty) {
+      pnp.setStepStatus(index, status: StepViewStatus.data);
     } else {
-      ref
-          .read(pnpProvider.notifier)
-          .setStepStatus(index, status: StepViewStatus.error);
+      pnp.setStepStatus(index, status: StepViewStatus.error);
     }
   }
 }

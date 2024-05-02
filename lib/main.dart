@@ -37,7 +37,7 @@ void main() async {
   ///
   initErrorHandler();
 
-  await initFirebase();
+  // await initFirebase();
 
   container.read(linksysCacheManagerProvider);
 
@@ -65,32 +65,36 @@ initErrorHandler() {
   // Pass all uncaught errors from the framework to Crashlytics.
   FlutterError.onError = (FlutterErrorDetails details) {
     logger.e('Uncaught Flutter Error:\n', error: details);
-    if (!kIsWeb) {
-      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-    }
+    // if (!kIsWeb) {
+    //   FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    // }
   };
   PlatformDispatcher.instance.onError = (error, stack) {
     logger.e('Uncaught Error:\n', error: error, stackTrace: stack);
     logger.e(stack.toString());
-    if (!kIsWeb) {
-      FirebaseCrashlytics.instance.recordError(error, stack);
-    }
+    // if (!kIsWeb) {
+    //   FirebaseCrashlytics.instance.recordError(error, stack);
+    // }
     return true;
   };
 }
 
-initFirebase() async {
-  logger.d('Start to init Firebase Core');
-  final appConst = await PackageInfo.fromPlatform();
-  await Firebase.initializeApp(
-    options: appConst.appName.endsWith('ee')
-        ? DefaultFirebaseOptions.iosEE
-        : DefaultFirebaseOptions.currentPlatform,
-  );
+Future initFirebase() async {
+  try {
+    logger.d('Start to init Firebase Core');
+    final appConst = await PackageInfo.fromPlatform();
+    await Firebase.initializeApp(
+      options: appConst.appName.endsWith('ee')
+          ? DefaultFirebaseOptions.iosEE
+          : DefaultFirebaseOptions.currentPlatform,
+    );
 
-  await initAnalyticsDefault();
-  // await initCloudMessage();
-  logger.d('Done for init Firebase Core');
+    await initAnalyticsDefault();
+    // await initCloudMessage();
+    logger.d('Done for init Firebase Core');
+  } catch (e) {
+    logger.e('Init Firebase Core failed', error: e);
+  }
 }
 
 final container = ProviderContainer();

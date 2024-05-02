@@ -11,7 +11,6 @@ final homeRoute = LinksysRoute(
       builder: (context, state) => const DebugToolsView(),
     ),
     cloudLoginRoute,
-    localLoginRoute,
     //setupRoute
   ],
 );

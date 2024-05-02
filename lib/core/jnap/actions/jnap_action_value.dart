@@ -303,6 +303,8 @@ enum _JNAPActionValue {
   setWANPort(value: 'http://linksys.com/jnap/nodes/setup/SetWANPort'),
   getInternetConnectionStatus(
       value: 'http://linksys.com/jnap/nodes/setup/GetInternetConnectionStatus'),
+  getSimpleWiFiSettings(
+      value: 'http://linksys.com/jnap/nodes/setup/GetSimpleWiFiSettings'),
   setSimpleWiFiSettings(
       value: 'http://linksys.com/jnap/nodes/setup/SetSimpleWiFiSettings'),
   getMACAddress(value: 'http://linksys.com/jnap/nodes/setup/GetMACAddress'),
@@ -360,7 +362,11 @@ enum _JNAPActionValue {
   //ui
   getRemoteSetting(value: 'http://linksys.com/jnap/ui/GetRemoteSetting'),
   setRemoteSetting(value: 'http://linksys.com/jnap/ui/SetRemoteSetting'),
-  ;
+  getAutoConfigurationSettings(
+      value:
+          'http://linksys.com/jnap/nodes/setup/GetAutoConfigurationSettings'),
+
+  setUserAcknowledgedAutoConfiguration(value: 'http://linksys.com/jnap/nodes/setup/SetUserAcknowledgedAutoConfiguration'),;
 
   const _JNAPActionValue({required this.value});
 

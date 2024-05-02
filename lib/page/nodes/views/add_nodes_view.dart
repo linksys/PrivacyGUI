@@ -53,22 +53,39 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(addNodesProvider);
-    return state.when(error: (error, stackTrace) {
+    if (state.error != null) {
       // error handling
-      logger.e(error, stackTrace: stackTrace);
-      return _resultView(state.value);
-    }, data: (state) {
+      logger.e(state.error);
+      return _resultView(state);
+    } else if (state.isLoading) {
+      final message = _getLoadingMessages(state.loadingMessage ?? '');
+      return AppFullScreenSpinner(
+        title: message.$1,
+        text: message.$2,
+      );
+    } else {
       if (state.onboardingProceed != null) {
         return _resultView(state);
       } else {
         return _contentView();
       }
-    }, loading: () {
-      return AppFullScreenSpinner(
-        title: loc(context).addNodesSearchingNodes,
-        text: loc(context).addNodesSearchingNodesDesc,
-      );
-    });
+    }
+    // return state.err(error: (error, stackTrace) {
+    //   // error handling
+    //   logger.e(error, stackTrace: stackTrace);
+    //   return _resultView(state.value);
+    // }, data: (state) {
+    //   if (state.onboardingProceed != null) {
+    //     return _resultView(state);
+    //   } else {
+    //     return _contentView();
+    //   }
+    // }, loading: () {
+    //   return AppFullScreenSpinner(
+    //     title: loc(context).addNodesSearchingNodes,
+    //     text: loc(context).addNodesSearchingNodesDesc,
+    //   );
+    // });
   }
 
   Widget _resultView(AddNodesState? state) {
@@ -111,12 +128,22 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           const AppGap.regular(),
           AppTextButton.noPadding(
             loc(context).try_again_button,
-            onTap: () {},
+            onTap: () {
+              ref.read(addNodesProvider.notifier).startAutoOnboarding();
+            },
           ),
           const AppGap.big(),
           AppFilledButton(
             loc(context).next,
-            onTap: () {},
+            onTap: () {
+              final callback = widget.args['callback'] as VoidCallback?;
+              if (callback != null) {
+                callback.call();
+                context.pop(state?.addedNodes?.isNotEmpty ?? false);
+              } else {
+                context.pop(state?.addedNodes?.isNotEmpty ?? false);
+              }
+            },
           )
         ],
       )),
@@ -232,5 +259,19 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
             ),
           );
         });
+  }
+
+  (String, String) _getLoadingMessages(String key) {
+    return switch (key) {
+      'searching' => (
+          loc(context).addNodesSearchingNodes,
+          loc(context).addNodesSearchingNodesDesc
+        ),
+      'onboarding' => ('Onboarding nodes', 'onboarding nodes message...'),
+      _ => (
+          loc(context).addNodesSearchingNodes,
+          loc(context).addNodesSearchingNodesDesc
+        )
+    };
   }
 }

@@ -1,7 +1,10 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 // Only for 'GetGuestRadioSettings2'
-class GuestRadioSetting extends Equatable {
+class GuestRadioSettings extends Equatable {
   final bool isGuestNetworkACaptivePortal;
   final bool isGuestNetworkEnabled;
   final List<GuestRadioInfo> radios;
@@ -10,16 +13,18 @@ class GuestRadioSetting extends Equatable {
   final int? maxSimultaneousGuestsLimit;
 
   @override
-  List<Object?> get props => [
-        isGuestNetworkACaptivePortal,
-        isGuestNetworkEnabled,
-        radios,
-        maxSimultaneousGuests,
-        guestPasswordRestrictions,
-        maxSimultaneousGuestsLimit,
-      ];
+  List<Object?> get props {
+    return [
+      isGuestNetworkACaptivePortal,
+      isGuestNetworkEnabled,
+      radios,
+      maxSimultaneousGuests,
+      guestPasswordRestrictions,
+      maxSimultaneousGuestsLimit,
+    ];
+  }
 
-  const GuestRadioSetting({
+  const GuestRadioSettings({
     required this.isGuestNetworkACaptivePortal,
     required this.isGuestNetworkEnabled,
     required this.radios,
@@ -28,7 +33,7 @@ class GuestRadioSetting extends Equatable {
     this.maxSimultaneousGuestsLimit,
   });
 
-  GuestRadioSetting copyWith({
+  GuestRadioSettings copyWith({
     bool? isGuestNetworkACaptivePortal,
     bool? isGuestNetworkEnabled,
     List<GuestRadioInfo>? radios,
@@ -36,7 +41,7 @@ class GuestRadioSetting extends Equatable {
     GuestPasswordRestriction? guestPasswordRestrictions,
     int? maxSimultaneousGuestsLimit,
   }) {
-    return GuestRadioSetting(
+    return GuestRadioSettings(
       isGuestNetworkACaptivePortal:
           isGuestNetworkACaptivePortal ?? this.isGuestNetworkACaptivePortal,
       isGuestNetworkEnabled:
@@ -51,31 +56,119 @@ class GuestRadioSetting extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
       'isGuestNetworkACaptivePortal': isGuestNetworkACaptivePortal,
       'isGuestNetworkEnabled': isGuestNetworkEnabled,
-      'radios': radios,
+      'radios': radios.map((x) => x.toMap()).toList(),
       'maxSimultaneousGuests': maxSimultaneousGuests,
-      'guestPasswordRestrictions': guestPasswordRestrictions,
+      'guestPasswordRestrictions': guestPasswordRestrictions?.toMap(),
       'maxSimultaneousGuestsLimit': maxSimultaneousGuestsLimit,
     }..removeWhere((key, value) => value == null);
   }
 
-  factory GuestRadioSetting.fromJson(Map<String, dynamic> json) {
-    return GuestRadioSetting(
-      isGuestNetworkACaptivePortal: json['isGuestNetworkACaptivePortal'],
-      isGuestNetworkEnabled: json['isGuestNetworkEnabled'],
-      radios: List.from(json['radios'])
-          .map((e) => GuestRadioInfo.fromJson(e))
-          .toList(),
-      maxSimultaneousGuests: json['maxSimultaneousGuests'],
-      guestPasswordRestrictions: json['guestPasswordRestrictions'] != null
-          ? GuestPasswordRestriction.fromJson(json['guestPasswordRestrictions'])
+  factory GuestRadioSettings.fromMap(Map<String, dynamic> map) {
+    return GuestRadioSettings(
+      isGuestNetworkACaptivePortal: map['isGuestNetworkACaptivePortal'] as bool,
+      isGuestNetworkEnabled: map['isGuestNetworkEnabled'] as bool,
+      radios: List<GuestRadioInfo>.from(
+        (map['radios']).map<GuestRadioInfo>(
+          (x) => GuestRadioInfo.fromMap(x as Map<String, dynamic>),
+        ),
+      ),
+      maxSimultaneousGuests: map['maxSimultaneousGuests'] != null
+          ? map['maxSimultaneousGuests'] as int
           : null,
-      maxSimultaneousGuestsLimit: json['maxSimultaneousGuestsLimit'],
+      guestPasswordRestrictions: map['guestPasswordRestrictions'] != null
+          ? GuestPasswordRestriction.fromMap(
+              map['guestPasswordRestrictions'] as Map<String, dynamic>)
+          : null,
+      maxSimultaneousGuestsLimit: map['maxSimultaneousGuestsLimit'] != null
+          ? map['maxSimultaneousGuestsLimit'] as int
+          : null,
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory GuestRadioSettings.fromJson(String source) =>
+      GuestRadioSettings.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  bool get stringify => true;
+}
+
+class SetGuestRadioSettings extends Equatable {
+  final bool isGuestNetworkEnabled;
+  final List<GuestRadioInfo> radios;
+  final int? maxSimultaneousGuests;
+
+  const SetGuestRadioSettings({
+    required this.isGuestNetworkEnabled,
+    required this.radios,
+    this.maxSimultaneousGuests,
+  });
+
+  factory SetGuestRadioSettings.fromGuestRadioSettings(
+      GuestRadioSettings settings) {
+    return SetGuestRadioSettings(
+      isGuestNetworkEnabled: settings.isGuestNetworkEnabled,
+      radios: settings.radios,
+      maxSimultaneousGuests: settings.maxSimultaneousGuests,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        isGuestNetworkEnabled,
+        radios,
+        maxSimultaneousGuests,
+      ];
+
+  SetGuestRadioSettings copyWith({
+    bool? isGuestNetworkEnabled,
+    List<GuestRadioInfo>? radios,
+    int? maxSimultaneousGuests,
+  }) {
+    return SetGuestRadioSettings(
+      isGuestNetworkEnabled:
+          isGuestNetworkEnabled ?? this.isGuestNetworkEnabled,
+      radios: radios ?? this.radios,
+      maxSimultaneousGuests:
+          maxSimultaneousGuests ?? this.maxSimultaneousGuests,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'isGuestNetworkEnabled': isGuestNetworkEnabled,
+      'radios': radios.map((x) => x.toMap()).toList(),
+      'maxSimultaneousGuests': maxSimultaneousGuests,
+    }..removeWhere((key, value) => value == null);
+  }
+
+  factory SetGuestRadioSettings.fromMap(Map<String, dynamic> map) {
+    return SetGuestRadioSettings(
+      isGuestNetworkEnabled: map['isGuestNetworkEnabled'] as bool,
+      radios: List<GuestRadioInfo>.from(
+        (map['radios'] as List<int>).map<GuestRadioInfo>(
+          (x) => GuestRadioInfo.fromMap(x as Map<String, dynamic>),
+        ),
+      ),
+      maxSimultaneousGuests: map['maxSimultaneousGuests'] != null
+          ? map['maxSimultaneousGuests'] as int
+          : null,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory SetGuestRadioSettings.fromJson(String source) =>
+      SetGuestRadioSettings.fromMap(
+          json.decode(source) as Map<String, dynamic>);
+
+  @override
+  bool get stringify => true;
 }
 
 class GuestRadioInfo extends Equatable {
@@ -117,8 +210,21 @@ class GuestRadioInfo extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
+  @override
+  List<Object?> get props {
+    return [
+      radioID,
+      isEnabled,
+      broadcastGuestSSID,
+      guestSSID,
+      guestPassword,
+      guestWPAPassphrase,
+      canEnableRadio,
+    ];
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
       'radioID': radioID,
       'isEnabled': isEnabled,
       'broadcastGuestSSID': broadcastGuestSSID,
@@ -129,28 +235,29 @@ class GuestRadioInfo extends Equatable {
     }..removeWhere((key, value) => value == null);
   }
 
-  factory GuestRadioInfo.fromJson(Map<String, dynamic> json) {
+  factory GuestRadioInfo.fromMap(Map<String, dynamic> map) {
     return GuestRadioInfo(
-      radioID: json['radioID'],
-      isEnabled: json['isEnabled'],
-      broadcastGuestSSID: json['broadcastGuestSSID'],
-      guestSSID: json['guestSSID'],
-      guestPassword: json['guestPassword'],
-      guestWPAPassphrase: json['guestWPAPassphrase'],
-      canEnableRadio: json['canEnableRadio'],
+      radioID: map['radioID'] as String,
+      isEnabled: map['isEnabled'] as bool,
+      broadcastGuestSSID: map['broadcastGuestSSID'] as bool,
+      guestSSID: map['guestSSID'] as String,
+      guestPassword:
+          map['guestPassword'] != null ? map['guestPassword'] as String : null,
+      guestWPAPassphrase: map['guestWPAPassphrase'] != null
+          ? map['guestWPAPassphrase'] as String
+          : null,
+      canEnableRadio:
+          map['canEnableRadio'] != null ? map['canEnableRadio'] as bool : null,
     );
   }
 
+  String toJson() => json.encode(toMap());
+
+  factory GuestRadioInfo.fromJson(String source) =>
+      GuestRadioInfo.fromMap(json.decode(source) as Map<String, dynamic>);
+
   @override
-  List<Object?> get props => [
-        radioID,
-        isEnabled,
-        broadcastGuestSSID,
-        guestSSID,
-        guestPassword,
-        guestWPAPassphrase,
-        canEnableRadio,
-      ];
+  bool get stringify => true;
 }
 
 class GuestPasswordRestriction extends Equatable {
@@ -159,7 +266,7 @@ class GuestPasswordRestriction extends Equatable {
   final List<UnicodeRange> allowedCharacters;
 
   @override
-  List<Object?> get props => [
+  List<Object> get props => [
         minLength,
         maxLength,
         allowedCharacters,
@@ -183,23 +290,34 @@ class GuestPasswordRestriction extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
       'minLength': minLength,
       'maxLength': maxLength,
-      'allowedCharacters': allowedCharacters,
+      'allowedCharacters': allowedCharacters.map((x) => x.toMap()).toList(),
     }..removeWhere((key, value) => value == null);
   }
 
-  factory GuestPasswordRestriction.fromJson(Map<String, dynamic> json) {
+  factory GuestPasswordRestriction.fromMap(Map<String, dynamic> map) {
     return GuestPasswordRestriction(
-      minLength: json['minLength'],
-      maxLength: json['maxLength'],
-      allowedCharacters: List.from(json['allowedCharacters'])
-          .map((e) => UnicodeRange.fromJson(e))
-          .toList(),
+      minLength: map['minLength'] as int,
+      maxLength: map['maxLength'] as int,
+      allowedCharacters: List<UnicodeRange>.from(
+        (map['allowedCharacters']).map<UnicodeRange>(
+          (x) => UnicodeRange.fromMap(x as Map<String, dynamic>),
+        ),
+      ),
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory GuestPasswordRestriction.fromJson(String source) =>
+      GuestPasswordRestriction.fromMap(
+          json.decode(source) as Map<String, dynamic>);
+
+  @override
+  bool get stringify => true;
 }
 
 class UnicodeRange extends Equatable {
@@ -207,10 +325,7 @@ class UnicodeRange extends Equatable {
   final int highCodepoint;
 
   @override
-  List<Object?> get props => [
-        lowCodepoint,
-        highCodepoint,
-      ];
+  List<Object> get props => [lowCodepoint, highCodepoint];
 
   const UnicodeRange({
     required this.lowCodepoint,
@@ -227,17 +342,25 @@ class UnicodeRange extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
       'lowCodepoint': lowCodepoint,
       'highCodepoint': highCodepoint,
     }..removeWhere((key, value) => value == null);
   }
 
-  factory UnicodeRange.fromJson(Map<String, dynamic> json) {
+  factory UnicodeRange.fromMap(Map<String, dynamic> map) {
     return UnicodeRange(
-      lowCodepoint: json['lowCodepoint'],
-      highCodepoint: json['highCodepoint'],
+      lowCodepoint: map['lowCodepoint'] as int,
+      highCodepoint: map['highCodepoint'] as int,
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory UnicodeRange.fromJson(String source) =>
+      UnicodeRange.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  bool get stringify => true;
 }

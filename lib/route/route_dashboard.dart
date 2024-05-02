@@ -99,6 +99,9 @@ final dashboardRoute = ShellRoute(
         LinksysRoute(
           name: RouteNamed.speedTestExternal,
           path: RoutePath.speedTestExternal,
+          config: LinksysRouteConfig(
+              pageWidth: SpecificPageWidth(width: 450),
+              pageAlignment: CrossAxisAlignment.start),
           builder: (context, state) => SpeedTestExternalView(),
         ),
         LinksysRoute(

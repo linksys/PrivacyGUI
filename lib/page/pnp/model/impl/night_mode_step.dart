@@ -1,28 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/pnp/model/pnp_step.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 
 class NightModeStep extends PnpStep {
-  NightModeStep({required super.index});
+  bool _isEnabled = true;
+
+  NightModeStep({
+    required super.index,
+    super.saveChanges,
+  });
 
   @override
   Future<void> onInit(WidgetRef ref) async {
     await super.onInit(ref);
+    pnp.setStepStatus(index, status: StepViewStatus.data);
 
-    final state = ref.read(pnpProvider).stepStateList[index];
-    if (state?.data['isEnabled'] == null) {
-      ref
-          .read(pnpProvider.notifier)
-          .setStepData(index, data: {'isEnabled': true});
-    }
+    // final state = ref.read(pnpProvider).stepStateList[index];
+    // if (state?.data['isEnabled'] == null) {
+    //   ref
+    //       .read(pnpProvider.notifier)
+    //       .setStepData(index, data: {'isEnabled': true});
+    // }
   }
 
   @override
   Future<Map<String, dynamic>> onNext(WidgetRef ref) async {
-    return {};
+    return {'isEnabled': _isEnabled};
   }
+
+  // @override
+  // Future save(WidgetRef ref, Map<String, dynamic> data) async {
+  //   super.save(ref, data);
+  //   pnp.setStepStatus(index, status: StepViewStatus.loading);
+  //   // Do saving
+  //   await pnp.save();
+  //   pnp.setStepStatus(index, status: StepViewStatus.data);
+  // }
 
   @override
   void onDispose() {}
@@ -33,44 +48,51 @@ class NightModeStep extends PnpStep {
     required WidgetRef ref,
     Widget? child,
   }) {
-    final data = ref
-            .watch(pnpProvider.select((value) => value.stepStateList))[index]
-            ?.data ??
-        {};
-    bool isEnabled = data['isEnabled'] ?? true;
-    final desc = isEnabled
-        ? 'Enable Night Mode to turn off node lights automatically from 8PM - 8AM'
-        : 'Node lights are always on';
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppText.bodyLarge(desc),
-          const AppGap.semiSmall(),
-          AppSwitch.withIcon(
-            value: isEnabled,
-            onChanged: (value) {
-              update(ref, key: 'isEnabled', value: value);
-            },
-          ),
-        ],
-      ),
-    );
+    // final data = ref
+    //         .watch(pnpProvider.select((value) => value.stepStateList))[index]
+    //         ?.data ??
+    //     {};
+    // bool isEnabled = data['isEnabled'] ?? true;
+
+    return StatefulBuilder(builder: (context, setState) {
+      final desc = _isEnabled
+          ? loc(context).nightModeOnDesc
+          : loc(context).nightModeOffDesc;
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppSwitch(
+              value: _isEnabled,
+              onChanged: (value) {
+                // update(ref, key: 'isEnabled', value: value);
+                setState(() {
+                  _isEnabled = value;
+                });
+              },
+            ),
+            const AppGap.big(),
+            AppText.bodyLarge(desc),
+            const AppGap.regular(),
+          ],
+        ),
+      );
+    });
   }
 
   @override
-  String title(BuildContext context) => 'Night Mode';
+  String title(BuildContext context) => loc(context).nightMode;
 
-  void update(WidgetRef ref, {required String key, dynamic value}) {
-    if (value == null) {
-      return;
-    }
-    final currentData = ref.read(pnpProvider).stepStateList[index]?.data ?? {};
-    ref
-        .read(pnpProvider.notifier)
-        .setStepData(index, data: Map.from(currentData)..[key] = value);
-  }
+  // void update(WidgetRef ref, {required String key, dynamic value}) {
+  //   if (value == null) {
+  //     return;
+  //   }
+  //   final currentData = ref.read(pnpProvider).stepStateList[index]?.data ?? {};
+  //   ref
+  //       .read(pnpProvider.notifier)
+  //       .setStepData(index, data: Map.from(currentData)..[key] = value);
+  // }
 }

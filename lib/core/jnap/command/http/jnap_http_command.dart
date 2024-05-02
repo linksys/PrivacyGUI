@@ -38,9 +38,11 @@ class JNAPHttpCommand extends BaseHttpCommand<JNAPResult, HttpJNAPSpec> {
         if (cacheLevel == CacheLevel.localCached) {
           final prefs = await SharedPreferences.getInstance();
           final serialNumber = prefs.getString(pCurrentSN);
-          logger.d(
-              '[CacheManager] save JNAP<${spec.action}> data to $serialNumber');
-          cache.handleJNAPCached(jnap.toJson(), spec.action, serialNumber);
+          if (serialNumber != null) {
+            logger.d(
+                '[CacheManager] save JNAP<${spec.action}> data to $serialNumber');
+            cache.handleJNAPCached(jnap.toJson(), spec.action, serialNumber);
+          }
         }
         return jnap;
       }).catchError(handleJNAPError, test: errorTest);

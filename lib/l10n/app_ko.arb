@@ -1,6 +1,6 @@
 {
   "@@locale": "ko",
-  "app_title": " Linksys Flutter",
+  "app_title": "Linksys PrivacyGUI",
   "cloud_account_login_title": "Linksys 계정에 로그인하세요",
   "cloud_account_login_with_router_password": "라우터 비밀번호로 로그인하십시오",
   "email": "이메일",

@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:linksys_widgets/widgets/bullet_list/bullet_style.dart';
@@ -32,90 +33,87 @@ class _PnpLightOffViewState extends ConsumerState<PnpLightsOffView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
+      title: 'Make sure the lights are off',
+      scrollable: true,
+      enableSafeArea: (left: true, top: false, right: true, bottom: true),
       child: AppBasicLayout(
-        content: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const AppGap.big(),
-              const AppText.headlineMedium(
-                'Make sure the lights are off',
-              ),
-              const AppGap.big(),
-              const AppText.bodyMedium(
-                  'These settings are provided by your Internet Service Provider (ISP). If you aren\'t sure about yours, we recommend contacting your ISP.'),
-              Expanded(
-                child: Center(
-                  child: SvgPicture(
-                    CustomTheme.of(context).images.modemLights,
+        content:
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const AppText.bodyLarge(
+            'These settings are provided by your Internet Service Provider (ISP). If you aren\'t sure about yours, we recommend contacting your ISP.',
+          ),
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SvgPicture(
+                    CustomTheme.of(context).images.modemDevice,
                     fit: BoxFit.fitWidth,
                   ),
-                ),
+                  const AppGap.big(),
+                  const AppGap.extraBig(),
+                  Row(
+                    children: [
+                      AppTextButton(
+                        'Are the lights still on after unplugging?',
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            useRootNavigator: true,
+                            useSafeArea: true,
+                            isScrollControlled: true,
+                            showDragHandle: true,
+                            builder: (context) {
+                              return _bottomSheetContent();
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ]),
-        footer: Column(children: [
-          AppFilledButton.fillWidth(
-            'Next',
-            onTap: () {
-              context.goNamed(RouteNamed.pnpWaitingModem);
-            },
-          ),
-          AppTextButton.fillWidth(
-            'Are the lights still on after unplugging?',
-            onTap: () {
-              showModalBottomSheet(
-                context: context,
-                useRootNavigator: true,
-                useSafeArea: true,
-                isScrollControlled: true,
-                showDragHandle: true,
-                builder: (context) {
-                  return _showBottomsheet();
-                },
-              );
-            },
+            ),
           ),
         ]),
+        footer: AppFilledButton.fillWidth(
+          loc(context).next,
+          onTap: () {
+            context.goNamed(RouteNamed.pnpWaitingModem);
+          },
+        ),
       ),
     );
   }
 
-  Widget _showBottomsheet() {
+  Widget _bottomSheetContent() {
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(Spacing.semiBig),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Align(
-            alignment: Alignment.topRight,
-            child: AppIconButton(
-              icon: LinksysIcons.close,
-              onTap: () {
-                context.pop();
-              },
-            ),
-          ),
-          const AppText.headlineMedium(
+          const AppText.headlineSmall(
             'You may have a battery-powered modem that requires extra steps',
           ),
-          const AppGap.big(),
+          const AppGap.semiBig(),
           const AppText.bodyMedium(
-              'Your modem may have a backup battery. To restart, DO NOT remove the battery. Follow these instructions:'),
-          const AppGap.big(),
+            'Your modem may have a backup battery. To restart, DO NOT remove the battery. Follow these instructions:',
+          ),
+          const AppGap.semiBig(),
           AppBulletList(style: AppBulletStyle.number, children: [
+            const AppText.bodyMedium(
+              'Find the modem\'s power, reboot or restart button. Press and hold it. Do not press RESET as it may restore the modem to factory settings. If your modem does not have a power, reboot or restart button, contact your Internet Service Provider for guidance.',
+            ),
+            const AppText.bodyMedium(
+              'Wait for the modem lights to turn OFF.</b> Wait 2 minutes to allow stored memory and power to be flushed from the device. Release the button.',
+            ),
             AppStyledText.bold(
-                '<b>Find the modem\'s power, reboot or restart button. Press and hold it.</b> Do not press RESET as it may restore the modem to factory settings. If your modem does not have a power, reboot or restart button, contact your Internet Service Provider for guidance.',
-                defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
-                tags: const ['b']),
-            AppStyledText.bold(
-                '<b>Wait for the modem lights to turn OFF.</b> Wait 2 minutes to allow stored memory and power to be flushed from the device. Release the button.',
-                defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
-                tags: const ['b']),
-            AppStyledText.bold(
-                '<b>Wait for the modem to completely start up and continue setup.</b>',
-                defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
-                tags: const ['b']),
+              '<b>Wait for the modem to completely start up and continue setup.</b>',
+              defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+              tags: const ['b'],
+            ),
           ]),
         ],
       ),

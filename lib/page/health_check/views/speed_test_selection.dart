@@ -3,13 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/providers/connectivity/_connectivity.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class SpeedTestSelectionView extends ConsumerWidget {
@@ -24,37 +24,29 @@ class SpeedTestSelectionView extends ConsumerWidget {
         .read(dashboardManagerProvider.notifier)
         .isHealthCheckModuleSupported('SpeedTest');
     return StyledAppPageView(
-      title: 'Speed Check',
+      title: loc(context).speedTest,
       child: AppBasicLayout(
           content: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const AppText.bodyMedium('There are two ways to check your speeds.'),
+          AppText.bodyMedium(loc(context).speedTestDesc),
           const AppGap.big(),
-          ResponsiveLayout.isLayoutBreakpoint(context)
-              ? Column(children: [
-                  _createVerticalCard(context, isSpeedCheckSupported),
-                  _createDeviceToInternetCard(context, isBehindRouter),
-                ])
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                        child: _createVerticalCard(
-                            context, isSpeedCheckSupported)),
-                    Expanded(
-                        child: _createDeviceToInternetCard(
-                            context, isBehindRouter)),
-                  ],
-                ),
+          Container(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              _createInternetToRouterCard(context, isSpeedCheckSupported),
+              _createInternetToDeviceCard(context, isBehindRouter),
+            ]),
+          )
         ],
       )),
     );
   }
 
-  Widget _createVerticalCard(BuildContext context, bool isSpeedCheckSupported) {
+  Widget _createInternetToRouterCard(
+      BuildContext context, bool isSpeedCheckSupported) {
     return Opacity(
       opacity: isSpeedCheckSupported ? 1 : 0.6,
       child: Card(
@@ -65,23 +57,22 @@ class SpeedTestSelectionView extends ConsumerWidget {
                 }
               : null,
           child: Container(
-            constraints: BoxConstraints(minHeight: 240),
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 164),
             padding: const EdgeInsets.all(Spacing.regular),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const AppText.bodyLarge('Router to Internet'),
+                AppText.bodyLarge(loc(context).speedTestInternetToRouter),
                 const AppGap.regular(),
-                const AppText.bodySmall(
-                    'Measure the speeds you signed up for with your ISP.'),
-                const AppGap.semiBig(),
-                Center(
-                    child: SvgPicture(
-                  CustomTheme.of(context).images.routerToInternet,
-                  width: 72,
-                  height: 24,
-                )),
+                AppText.bodySmall(loc(context).speedTestInternetToRouterDesc),
+                const AppGap.big(),
+                SvgPicture(
+                  CustomTheme.of(context).images.internetToRouter,
+                  width: 192,
+                  height: 40,
+                ),
               ],
             ),
           ),
@@ -90,7 +81,7 @@ class SpeedTestSelectionView extends ConsumerWidget {
     );
   }
 
-  Widget _createDeviceToInternetCard(
+  Widget _createInternetToDeviceCard(
       BuildContext context, bool isBehindManaged) {
     return Opacity(
       opacity: isBehindManaged ? 1 : 0.6,
@@ -102,27 +93,22 @@ class SpeedTestSelectionView extends ConsumerWidget {
                 }
               : null,
           child: Container(
-            constraints: BoxConstraints(minHeight: 240),
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 164),
             padding: const EdgeInsets.all(Spacing.regular),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const AppText.bodyLarge('Device to Internet'),
+                AppText.bodyLarge(loc(context).speedTestInternetToDevice),
                 const AppGap.regular(),
-                const AppText.bodySmall(
-                    'Measure the speeds your device is currently getting.'),
-                const AppGap.semiBig(),
-                Center(
-                  child: SvgPicture(
-                    CustomTheme.of(context).images.deviceToInternet,
-                    width: 72,
-                    height: 24,
-                  ),
+                AppText.bodySmall(loc(context).speedTestInternetToDeviceDesc),
+                const AppGap.big(),
+                SvgPicture(
+                  CustomTheme.of(context).images.internetToDevice,
+                  width: 192,
+                  height: 40,
                 ),
-                const AppGap.regular(),
-                const AppText.bodySmall(
-                    'TIP This is useful when checking speeds on devices located in corners of your home.'),
               ],
             ),
           ),

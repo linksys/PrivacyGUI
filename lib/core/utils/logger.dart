@@ -24,9 +24,10 @@ class CustomOutput extends LogOutput {
     var output = '';
     for (var line in event.lines) {
       printWrapped(line);
-      if (event.level == Level.info || event.level == Level.error) {
-        output += line;
-      }
+      // if (event.level == Level.info || event.level == Level.error) {
+      //   output += line;
+      // }
+      output += line;
     }
     if (!kIsWeb && output.isNotEmpty && _file.existsSync()) {
       await _file.writeAsBytes(

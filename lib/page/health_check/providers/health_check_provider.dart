@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/health_check/providers/health_check_state.dart';
 
 import '../../../core/jnap/actions/better_action.dart';
@@ -23,6 +24,8 @@ final healthCheckProvider =
         () => HealthCheckProvider());
 
 class HealthCheckProvider extends Notifier<HealthCheckState> {
+  StreamSubscription? _streamSubscription;
+
   @override
   HealthCheckState build() => HealthCheckState.init();
 
@@ -33,34 +36,43 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
           data: {"runHealthCheckModule": module.value},
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache);
-      if (result.output['resultID'] != null) {
-        Timer.periodic(const Duration(seconds: delayHealthCheckMonitor),
-            (timer) async {
-          final result = await _getHealthCheckStatus();
-          final step = _getCurrentStep(result);
-          if (step.isNotEmpty) {
-            final speedtestTempResult = SpeedTestResult.fromJson(
-                (result as JNAPSuccess).output['speedTestResult']);
-            state.copyWith(result: [
-              HealthCheckResult(
-                  resultID: 0,
-                  timestamp: '',
-                  healthCheckModulesRequested: const ['SpeedTest'],
-                  speedTestResult: speedtestTempResult)
-            ], step: step);
-          }
-          getHealthCheckResults(module, 1);
-
-          if (result is JNAPSuccess &&
-              result.output['speedTestResult']['exitCode'] != 'Unavailable') {
-            getHealthCheckResults(module, 1);
-            timer.cancel();
-          } else if (result is JNAPError) {
-            timer.cancel();
-            state.copyWith(result: null, error: result);
-          }
-        });
+      if (result.output['resultID'] == null) {
+        // error handling
+        return;
       }
+      _streamSubscription?.cancel();
+      _streamSubscription = repo
+          .scheduledCommand(
+              action: JNAPAction.getHealthCheckStatus,
+              firstDelayInMilliSec: 0,
+              retryDelayInMilliSec: 1,
+              maxRetry: -1,
+              condition: (result) {
+                return result is JNAPSuccess &&
+                        result.output['speedTestResult']['exitCode'] !=
+                            'Unavailable' ||
+                    result is JNAPError;
+              })
+          .listen((result) {
+        logger.d('[SpeedTest] Get Health Check Result - $result');
+        if (result is JNAPError) {
+          state = state.copyWith(error: result);
+          return;
+        }
+        final step = _getCurrentStep(result);
+        if (step.isNotEmpty) {
+          final speedtestTempResult = SpeedTestResult.fromJson(
+              (result as JNAPSuccess).output['speedTestResult']);
+          state = state.copyWith(result: [
+            HealthCheckResult(
+                resultID: 0,
+                timestamp: '',
+                healthCheckModulesRequested: const ['SpeedTest'],
+                speedTestResult: speedtestTempResult)
+          ], step: step);
+        }
+        // getHealthCheckResults(module, 1);
+      });
     }
   }
 

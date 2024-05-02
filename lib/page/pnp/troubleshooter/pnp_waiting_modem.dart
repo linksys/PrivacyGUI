@@ -18,7 +18,7 @@ class PnpWaitingModemView extends ConsumerStatefulWidget {
 }
 
 class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
-  final int _maxTime = 10;
+  final int _maxTime = 150;
   late int _totalTime;
   late int _countDown;
   bool _isPlugged = false;
@@ -43,61 +43,57 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
 
   Widget _countdownPage() {
     return StyledAppPageView(
+      appBarStyle: AppBarStyle.none,
       backState: StyledBackState.none,
       child: AppBasicLayout(
         content: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const AppGap.big(),
-              const AppText.headlineMedium(
-                'Giving your modem time to contact your ISP',
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AppText.headlineSmall(
+              'Giving your modem time to contact your ISP',
+            ),
+            const AppGap.big(),
+            const AppText.bodyLarge(
+                'Your ISP needs time to issue a new IP address to your router to connect to the internet'),
+            Expanded(
+              child: Center(
+                child: _createCircleTimer(),
               ),
-              const AppGap.big(),
-              const AppText.bodyMedium(
-                  'Your ISP needs time to issue a new IP address to your router to connect to the internet.'),
-              Expanded(
-                child: Center(
-                  child: InkWell(
-                    onTap: () {
-                      setState(() {
-                        _totalTime = 10;
-                      });
-                    },
-                    child: _createCircleTimer(),
-                  ),
-                ),
-              ),
-            ]),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _plugBackPage() {
     return StyledAppPageView(
+      appBarStyle: AppBarStyle.none,
       backState: StyledBackState.none,
       child: AppBasicLayout(
         content: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const AppGap.big(),
-              AppText.headlineMedium(
-                _isPlugged
-                    ? _isCheckingInternet
-                        ? 'Checking for internet...'
-                        : 'Waiting for your modem to start up'
-                    : 'Plug your modem back in',
-              ),
-              Expanded(
-                child: Center(
-                  child: SvgPicture(
-                    CustomTheme.of(context).images.unplugModem,
-                    fit: BoxFit.fitWidth,
-                  ),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.headlineMedium(
+              _isPlugged
+                  ? _isCheckingInternet
+                      ? 'Checking for internet...'
+                      : 'Waiting for your modem to start up'
+                  : 'Plug your modem back in',
+            ),
+            Expanded(
+              child: Center(
+                child: _isPlugged ? SvgPicture(
+                  CustomTheme.of(context).images.modemWaiting,
+                  fit: BoxFit.fitWidth,
+                ) : SvgPicture(
+                  CustomTheme.of(context).images.modemPlugged,
+                  fit: BoxFit.fitWidth,
                 ),
               ),
-            ]),
+            ),
+          ],
+        ),
         footer: _isPlugged
             ? null
             : Column(children: [
@@ -125,15 +121,15 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
 
   Widget _createCircleTimer() {
     return SizedBox(
-      width: 120,
-      height: 120,
+      width: 200,
+      height: 200,
       child: Stack(
         children: [
           Positioned.fill(
             child: AppProgressBar(
               style: AppProgressBarStyle.circular,
               duration: Duration(seconds: _totalTime),
-              stroke: 2.0,
+              stroke: 1.0,
               repeat: false,
               callback: (value) {
                 setState(() {
@@ -143,8 +139,10 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
             ),
           ),
           Center(
-              child: AppText.labelLarge(
-                  _timeFormat(Duration(seconds: _countDown)))),
+            child: AppText.displaySmall(
+              _timeFormat(Duration(seconds: _countDown)),
+            ),
+          ),
         ],
       ),
     );
