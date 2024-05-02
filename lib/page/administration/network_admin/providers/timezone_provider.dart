@@ -4,7 +4,7 @@ import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/models/timezone.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/page/administration/timezone/providers/timezone_state.dart';
+import 'package:linksys_app/page/administration/network_admin/providers/timezone_state.dart';
 
 final timezoneProvider =
     NotifierProvider<TimezoneNotifier, TimezoneState>(() => TimezoneNotifier());
@@ -13,7 +13,7 @@ class TimezoneNotifier extends Notifier<TimezoneState> {
   @override
   TimezoneState build() => TimezoneState.init();
 
-  fetch() async {
+  Future fetch() async {
     final repo = ref.read(routerRepositoryProvider);
     final result = await repo.send(
       JNAPAction.getTimeSettings,

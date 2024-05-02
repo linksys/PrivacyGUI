@@ -88,23 +88,7 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             //     });
             //   },
             // ),
-            const AppGap.semiBig(),
-            AppSwitchTriggerTile(
-              value: isFwAutoUpdate,
-              title: AppText.bodyLarge('Auto Firmware Update'),
-              subtitle: AppText.bodySmall(
-                'Enable/Disable auto firmware update',
-                color: Colors.grey,
-              ),
-              onChanged: (value) {},
-              event: (value) async {
-                await ref
-                    .read(firmwareUpdateProvider.notifier)
-                    .setFirmwareUpdatePolicy(value
-                        ? FirmwareUpdateSettings.firmwareUpdatePolicyAuto
-                        : FirmwareUpdateSettings.firmwareUpdatePolicyManual);
-              },
-            ),
+            
           ],
         ),
       ),
@@ -165,11 +149,7 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             // iconData: getCharactersIcons(context).smsDefault,
             onTap: () => context.goNamed(RouteNamed.settingsRouterPassword),
           ),
-          AppSectionItemData(
-            title: 'Time Zone',
-            // iconData: getCharactersIcons(context).smsDefault,
-            onTap: () => context.goNamed(RouteNamed.settingsTimeZone),
-          ),
+          
         ],
       );
 

@@ -7,7 +7,7 @@ import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/page/administration/router_password/providers/router_password_state.dart';
+import 'package:linksys_app/page/administration/network_admin/providers/router_password_state.dart';
 
 final routerPasswordProvider =
     NotifierProvider<RouterPasswordNotifier, RouterPasswordState>(
@@ -17,7 +17,7 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
   @override
   RouterPasswordState build() => RouterPasswordState.init();
 
-  fetch() async {
+  Future fetch() async {
     final repo = ref.read(routerRepositoryProvider);
     final results = await repo.fetchIsConfigured();
     final bool isAdminDefault = JNAPTransactionSuccessWrap.getResult(
@@ -39,7 +39,6 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
     final password = await storage.read(key: pLocalPassword);
 
     state = state.copyWith(
-        isLoading: false,
         isDefault: isAdminDefault,
         isSetByUser: isSetByUser,
         adminPassword: password ?? '',
@@ -48,7 +47,6 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
 
   Future<void> setAdminPasswordWithResetCode(
       String password, String hint, String code) async {
-    state = state.copyWith(isLoading: true);
     final repo = ref.read(routerRepositoryProvider);
     return repo
         .send(
@@ -67,15 +65,14 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
     });
   }
 
-  Future setAdminPasswordWithCredentials(String password, String hint) async {
-    state = state.copyWith(isLoading: true);
+  Future setAdminPasswordWithCredentials(String password, [String? hint]) async {
     final repo = ref.read(routerRepositoryProvider);
     return repo
         .send(
       JNAPAction.coreSetAdminPassword,
       data: {
         'adminPassword': password,
-        'passwordHint': hint,
+        'passwordHint': hint ?? state.hint,
       },
       type: CommandType.local,
       auth: true,
@@ -84,11 +81,6 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
       const storage = FlutterSecureStorage();
       await storage.write(key: pLocalPassword, value: password);
       await fetch();
-    }).onError((error, stackTrace) {
-      if (error is JNAPError) {
-        // handle error
-        state = state.copyWith(error: error.error);
-      }
     });
   }
 

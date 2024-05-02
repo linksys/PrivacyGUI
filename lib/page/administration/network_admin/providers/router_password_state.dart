@@ -3,7 +3,6 @@ import 'package:equatable/equatable.dart';
 class RouterPasswordState extends Equatable {
   final String adminPassword;
   final String hint;
-  final bool isLoading;
   final bool isValid;
   final bool isDefault;
   final bool isSetByUser;
@@ -15,7 +14,6 @@ class RouterPasswordState extends Equatable {
   List<Object?> get props => [
         adminPassword,
         hint,
-        isLoading,
         isValid,
         isDefault,
         isSetByUser,
@@ -27,7 +25,6 @@ class RouterPasswordState extends Equatable {
   const RouterPasswordState({
     required this.adminPassword,
     required this.hint,
-    this.isLoading = true,
     required this.isValid,
     required this.isDefault,
     required this.isSetByUser,
@@ -52,7 +49,6 @@ class RouterPasswordState extends Equatable {
   RouterPasswordState copyWith({
     String? adminPassword,
     String? hint,
-    bool? isLoading,
     bool? isValid,
     bool? isDefault,
     bool? isSetByUser,
@@ -63,7 +59,6 @@ class RouterPasswordState extends Equatable {
     return RouterPasswordState(
       adminPassword: adminPassword ?? this.adminPassword,
       hint: hint ?? this.hint,
-      isLoading: isLoading ?? this.isLoading,
       isValid: isValid ?? this.isValid,
       isDefault: isDefault ?? this.isDefault,
       isSetByUser: isSetByUser ?? this.isSetByUser,

@@ -7,7 +7,7 @@ import 'package:linksys_app/page/components/styled/bottom_bar.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/administration/router_password/providers/_providers.dart';
+import 'package:linksys_app/page/administration/network_admin/providers/_providers.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/validator_rules/rules.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -72,16 +72,13 @@ class _LocalResetRouterPasswordViewState
                     loc(context).localResetRouterPasswordDescription),
                 const AppGap.big(),
                 AppPasswordField(
-                  
                   border: const OutlineInputBorder(),
                   withValidator: state.hasEdited,
                   validations: validations,
                   hintText: loc(context).localResetRouterPasswordTitle,
                   controller: _newPasswordController,
                   onFocusChanged: (hasFocus) {
-                    ref
-                        .read(routerPasswordProvider.notifier)
-                        .setEdited(hasFocus);
+                    ref.read(routerPasswordProvider.notifier).setEdited(hasFocus);
                   },
                   onValidationChanged: (isValid) {
                     ref

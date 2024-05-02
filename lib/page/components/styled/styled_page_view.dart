@@ -1,13 +1,36 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/card/card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
+
 import 'consts.dart';
+
+class SaveAction extends Equatable {
+  final bool enabled;
+  final void Function() onSave;
+
+  const SaveAction({required this.enabled, required this.onSave});
+
+  SaveAction copyWith({
+    bool? enabled,
+    void Function()? onSave,
+  }) {
+    return SaveAction(
+      enabled: enabled ?? this.enabled,
+      onSave: onSave ?? this.onSave,
+    );
+  }
+
+  @override
+  List<Object> get props => [enabled, onSave];
+}
 
 class PageMenu {
   final String? title;
@@ -30,6 +53,7 @@ class PageMenuItem {
 }
 
 const double kDefaultToolbarHeight = 80;
+const double kDefaultBottomHeight = 80;
 
 class StyledAppPageView extends ConsumerWidget {
   final String? title;
@@ -50,6 +74,7 @@ class StyledAppPageView extends ConsumerWidget {
   final Widget? menuWidget;
   final ScrollController? controller;
   final ({bool left, bool top, bool right, bool bottom}) enableSafeArea;
+  final SaveAction? saveAction;
 
   const StyledAppPageView({
     super.key,
@@ -71,34 +96,43 @@ class StyledAppPageView extends ConsumerWidget {
     this.menuWidget,
     this.controller,
     this.enableSafeArea = (left: true, top: true, right: true, bottom: true),
+    this.saveAction,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return AppPageView(
-      appBar: _buildAppBar(context, ref),
-      padding: padding,
-      scrollable: scrollable,
-      bottomSheet: bottomSheet,
-      bottomNavigationBar: bottomNavigationBar,
-      background: Theme.of(context).colorScheme.background,
-      enableSafeArea: (
-        left: enableSafeArea.left,
-        top: enableSafeArea.top,
-        right: enableSafeArea.right,
-        bottom: enableSafeArea.bottom,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!ResponsiveLayout.isLayoutBreakpoint(context) && hasMenu())
-            AppCard(
-              child: _createMenuWidget(context, 200),
+    return Stack(
+      children: [
+        Padding(
+          padding: EdgeInsets.only(bottom: saveAction != null ? 80.0 : 0.0),
+          child: AppPageView(
+            appBar: _buildAppBar(context, ref),
+            padding: padding,
+            scrollable: scrollable,
+            bottomSheet: bottomSheet,
+            bottomNavigationBar: bottomNavigationBar,
+            background: Theme.of(context).colorScheme.background,
+            enableSafeArea: (
+              left: enableSafeArea.left,
+              top: enableSafeArea.top,
+              right: enableSafeArea.right,
+              bottom: enableSafeArea.bottom,
             ),
-          Expanded(child: child),
-        ],
-      ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (!ResponsiveLayout.isLayoutBreakpoint(context) && hasMenu())
+                  AppCard(
+                    child: _createMenuWidget(context, 200),
+                  ),
+                Expanded(child: child),
+              ],
+            ),
+          ),
+        ),
+        _bottomSaveWidget(context),
+      ],
     );
   }
 
@@ -147,6 +181,45 @@ class StyledAppPageView extends ConsumerWidget {
     return !hasMenu() || !ResponsiveLayout.isLayoutBreakpoint(context)
         ? actions
         : ((actions ?? [])..add(_createMenuAction(context)));
+  }
+
+  Widget _bottomSaveWidget(BuildContext context) {
+    return saveAction != null
+        ? Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              color: Theme.of(context).colorScheme.background,
+              height: kDefaultBottomHeight,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: ResponsiveLayout.isLayoutBreakpoint(context)
+                        ? AppFilledButton.fillWidth(
+                            loc(context).save,
+                            onTap: saveAction?.enabled == true
+                                ? () {
+                                    saveAction?.onSave.call();
+                                  }
+                                : null,
+                          )
+                        : AppFilledButton(
+                            loc(context).save,
+                            onTap: saveAction?.enabled == true
+                                ? () {
+                                    saveAction?.onSave.call();
+                                  }
+                                : null,
+                          ),
+                  )
+                ],
+              ),
+            ),
+          )
+        : const Center();
   }
 
   Widget _createMenuAction(BuildContext context) {

@@ -213,7 +213,6 @@
   "create_ssid_view_header_description": "Make them memorable. You'll use these to connect to your WiFi network.",
   "create_ssid_view_title": "Customize WiFi name and password",
   "daily_time_limit": "Daily time limit",
-  "daylight_savings_time": "Daylight Savings Time",
   "default_gateway": "Default gateway",
   "delete_rule": "Delete rule",
   "deny_access": "Deny access",
@@ -854,6 +853,18 @@
   "dfsDesc": "If this feature is on, your router may use 5GHz channels that are shared with radar systems. When a radar is detected on your operating channel, the router will search for an unoccupied DFS channel.\n\nThis featyre may cause temporary loss of WiFi connectivity\n<a>Learn more</a>",
   "modalDFSDesc":"If your router needs to search for an unoccupied DFS channel, you may lose Wi-Fi connectivity.\n\nSome devices do not support DFS channels. They will need to use your 2.4GHz network because they cannot detect the 5GHz network when the router is using a DFS channel.",
   "mlo": "Multi-Link Operation",
-  "mloDesc": "Allow devices to use multiple bands and frequency channels simultaneously. This increases speed, reduces latency, and makes for a more reliable connection."
+  "mloDesc": "Allow devices to use multiple bands and frequency channels simultaneously. This increases speed, reduces latency, and makes for a more reliable connection.",
+  "daylightSavingsTime": "Daylight Savings Time",
+  "generalError": "Oops, something wrong here! Please try again later",
+  "passwwordUpdated": "Router password updated",
+  "networkAdmin": "Network admin",
+  "routerPasswordHint": "Router password hint",
+  "routerPasswordNew": "New router password",
+  "autoFirmwareUpdate": "Auto firmware update",
+  "routerPasswordRuleTenChars": "At least 10 characters",
+  "routerPasswordRuleLowerUpper": "Upper and lowercase letters",
+  "routerPasswordRuleOneNumber": "1 number",
+  "routerPasswordRuleSpecialChar": "1 special character"
+
 
 }

@@ -5,7 +5,7 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/bottom_bar.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/administration/router_password/providers/_providers.dart';
+import 'package:linksys_app/page/administration/network_admin/providers/_providers.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
