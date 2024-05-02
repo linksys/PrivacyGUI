@@ -96,3 +96,83 @@ Future<T?> showSimpleAppDialog<T>(
     },
   );
 }
+
+Future<T?> showSimpleAppOkDialog<T>(
+  BuildContext context, {
+  bool dismissible = true,
+  Widget? icon,
+  String? title,
+  Widget? content,
+  double? width,
+  String? okLabel,
+}) {
+  return showSimpleAppDialog<T?>(
+    context,
+    dismissible: dismissible,
+    content: content,
+    icon: icon,
+    width: width,
+    actions: [
+      AppTextButton(
+        okLabel ?? loc(context).ok,
+        onTap: () {
+          context.pop();
+        },
+      )
+    ],
+  );
+}
+
+Future<T?> showMessageAppDialog<T>(
+  BuildContext context, {
+  bool dismissible = true,
+  Widget? icon,
+  String? title,
+  String? message,
+  List<Widget>? actions,
+  double? width,
+}) {
+  return showSimpleAppDialog<T?>(
+    context,
+    dismissible: dismissible,
+    content: AlertDialog(
+      icon: icon,
+      title: title != null
+          ? SizedBox(
+              width: width ?? kDefaultDialogWidth,
+              child: AppText.titleLarge(title))
+          : null,
+      content: SizedBox(
+          width: width ?? kDefaultDialogWidth,
+          child: AppText.bodyMedium(loc(context).modalDFSDesc)),
+      actions: actions,
+    ),
+  );
+}
+
+Future<T?> showMessageAppOkDialog<T>(
+  BuildContext context, {
+  bool dismissible = true,
+  Widget? icon,
+  String? title,
+  String? message,
+  String? okLabel,
+  double? width,
+}) {
+  return showSimpleAppDialog<T?>(
+    context,
+    dismissible: dismissible,
+    title: title,
+    icon: icon,
+    content: AppText.bodyMedium(loc(context).modalDFSDesc),
+    width: width,
+    actions: [
+      AppTextButton(
+        okLabel ?? loc(context).ok,
+        onTap: () {
+          context.pop();
+        },
+      )
+    ],
+  );
+}

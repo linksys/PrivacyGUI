@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/components/shortcuts/dialogs.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
@@ -222,24 +223,7 @@ class _WifiAdvancedSettingsViewState
   }
 
   void _showDFSModal() {
-    showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: SizedBox(
-                width: 312, child: AppText.titleLarge(loc(context).dfs)),
-            content: SizedBox(
-                width: 312,
-                child: AppText.bodyMedium(loc(context).modalDFSDesc)),
-            actions: [
-              AppTextButton(
-                loc(context).ok,
-                onTap: () {
-                  context.pop();
-                },
-              )
-            ],
-          );
-        });
+    showMessageAppOkDialog(context,
+        title: loc(context).dfs, message: loc(context).modalDFSDesc);
   }
 }

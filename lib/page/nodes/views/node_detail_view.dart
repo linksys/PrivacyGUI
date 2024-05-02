@@ -11,6 +11,8 @@ import 'package:linksys_app/core/utils/extension.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
 import 'package:linksys_app/core/utils/nodes.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/components/shortcuts/dialogs.dart';
+import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/styled/styled_tab_page_view.dart';
@@ -207,8 +209,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   Widget _lightCard(NodeDetailState state) {
-    final hasBlinkFunction = ref.read(nodeDetailProvider.notifier).isSupportLedBlinking();
-    bool isSupportNodeLight = ref.read(nodeDetailProvider.notifier).isSupportLedMode();
+    final hasBlinkFunction =
+        ref.read(nodeDetailProvider.notifier).isSupportLedBlinking();
+    bool isSupportNodeLight =
+        ref.read(nodeDetailProvider.notifier).isSupportLedMode();
     if (!hasBlinkFunction && !isSupportNodeLight) {
       return const Center();
     }
@@ -240,7 +244,8 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   List<Widget> _createNodeLightTile(NodeLightSettings? nodeLightSettings) {
-    bool isSupportNodeLight = ref.read(nodeDetailProvider.notifier).isSupportLedMode();
+    bool isSupportNodeLight =
+        ref.read(nodeDetailProvider.notifier).isSupportLedMode();
     if (!isSupportNodeLight) {
       return [];
     } else {
@@ -328,194 +333,113 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Future _showEditNodeNameDialog(NodeDetailState state) {
+  void _showEditNodeNameDialog(NodeDetailState state) {
     final textController = TextEditingController()..text = state.location;
-    final hasBlinkFunction = ref.read(nodeDetailProvider.notifier).isSupportLedBlinking();
-    return showDialog(
-        context: context,
-        builder: (context) {
-          bool isLoading = false;
-          return StatefulBuilder(builder: (context, setState) {
-            return AlertDialog(
-              title: AppText.titleLarge(loc(context).nodeName),
-              actions: isLoading
-                  ? null
-                  : [
-                      AppTextButton.noPadding(
-                        loc(context).cancel,
-                        color: Theme.of(context).colorScheme.onSurface,
-                        onTap: () {
-                          context.pop();
-                        },
-                      ),
-                      AppTextButton(
-                        loc(context).save,
-                        onTap: () async {
-                          setState(() {
-                            isLoading = true;
-                          });
-                          await ref
-                              .read(nodeDetailProvider.notifier)
-                              .updateDeviceName(textController.text)
-                              .then((_) => context.pop());
-                          setState(() {
-                            isLoading = false;
-                          });
-                        },
-                      ),
-                    ],
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: isLoading
-                    ? [
-                        const Center(
-                          child: AppSpinner(
-                            size: Size(200, 200),
-                          ),
-                        ),
-                      ]
-                    : [
-                        AppTextField(
-                          headerText: loc(context).nodeName,
-                          border: const OutlineInputBorder(),
-                          controller: textController,
-                        ),
-                        if (hasBlinkFunction) ...[
-                          const AppGap.regular(),
-                          const BlinkNodeLightWidget(),
-                        ],
-                      ],
-              ),
-            );
-          });
-        });
+    final hasBlinkFunction =
+        ref.read(nodeDetailProvider.notifier).isSupportLedBlinking();
+    showSubmitAppDialog(context, title: loc(context).nodeName,
+        contentBuilder: (context, setState) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppTextField(
+            headerText: loc(context).nodeName,
+            border: const OutlineInputBorder(),
+            controller: textController,
+          ),
+          if (hasBlinkFunction) ...[
+            const AppGap.regular(),
+            const BlinkNodeLightWidget(),
+          ],
+        ],
+      );
+    }, event: () async {
+      await ref
+          .read(nodeDetailProvider.notifier)
+          .updateDeviceName(textController.text)
+          .then((_) => showSuccessSnackBar(context, loc(context).saved));
+    });
   }
 
-  Future<void> _showMoreRouterInfoModal(NodeDetailState state) {
-    return showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: AppText.titleLarge(loc(context).moreInfo.camelCapitalized()),
-            actions: [
-              AppTextButton.noPadding(
-                loc(context).close,
-                onTap: () {
-                  context.pop();
-                },
-              )
-            ],
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.labelLarge(loc(context).model),
-                AppText.bodyMedium(state.modelNumber),
-                const AppGap.regular(),
-                AppText.labelLarge(
-                    loc(context).serialNumber.camelCapitalized()),
-                AppText.bodyMedium(state.serialNumber),
-              ],
-            ),
-          );
-        });
+  void _showMoreRouterInfoModal(NodeDetailState state) {
+    showSimpleAppDialog(
+      context,
+      title: loc(context).moreInfo.camelCapitalized(),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.labelLarge(loc(context).model),
+          AppText.bodyMedium(state.modelNumber),
+          const AppGap.regular(),
+          AppText.labelLarge(loc(context).serialNumber.camelCapitalized()),
+          AppText.bodyMedium(state.serialNumber),
+        ],
+      ),
+      actions: [
+        AppTextButton.noPadding(
+          loc(context).close,
+          onTap: () {
+            context.pop();
+          },
+        )
+      ],
+    );
   }
 
-  Future _showNodeLightSelectionDialog() {
+  void _showNodeLightSelectionDialog() {
     var nodeLightStatus = NodeLightStatus.getStatus(
         ref.read(nodeDetailProvider).nodeLightSettings);
-    return showDialog(
-        context: context,
-        builder: (context) {
-          bool isLoading = false;
-
-          return StatefulBuilder(builder: (context, setState) {
-            return AlertDialog(
-              title: AppText.titleLarge(loc(context).nodeLight),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: isLoading
-                    ? [
-                        const Center(
-                          child: AppSpinner(
-                            size: Size(200, 200),
-                          ),
-                        )
-                      ]
-                    : [
-                        AppRadioList(
-                          initial: nodeLightStatus,
-                          mainAxisSize: MainAxisSize.min,
-                          items: [
-                            AppRadioListItem(
-                              title: loc(context).off,
-                              value: NodeLightStatus.off,
-                            ),
-                            AppRadioListItem(
-                              title: loc(context).nodeDetailsLedNightMode,
-                              value: NodeLightStatus.night,
-                            ),
-                            AppRadioListItem(
-                              title: loc(context).on,
-                              value: NodeLightStatus.on,
-                            ),
-                          ],
-                          onChanged: (index, selectedType) {
-                            setState(() {
-                              if (selectedType != null) {
-                                nodeLightStatus = selectedType;
-                              }
-                            });
-                          },
-                        ),
-                      ],
+    showSubmitAppDialog(context, title: loc(context).nodeLight,
+        contentBuilder: (context, setState) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppRadioList(
+            initial: nodeLightStatus,
+            mainAxisSize: MainAxisSize.min,
+            items: [
+              AppRadioListItem(
+                title: loc(context).off,
+                value: NodeLightStatus.off,
               ),
-              actions: isLoading
-                  ? null
-                  : [
-                      AppTextButton(
-                        loc(context).cancel,
-                        color: Theme.of(context).colorScheme.onSurface,
-                        onTap: () {
-                          context.pop();
-                        },
-                      ),
-                      AppTextButton(
-                        loc(context).save,
-                        onTap: () async {
-                          setState(() {
-                            isLoading = true;
-                          });
-                          NodeLightSettings settings;
-                          if (nodeLightStatus == NodeLightStatus.on) {
-                            settings = const NodeLightSettings(
-                                isNightModeEnable: false);
-                          } else if (nodeLightStatus == NodeLightStatus.off) {
-                            settings = const NodeLightSettings(
-                                isNightModeEnable: true,
-                                startHour: 0,
-                                endHour: 24);
-                          } else {
-                            settings = const NodeLightSettings(
-                                isNightModeEnable: true,
-                                startHour: 20,
-                                endHour: 8);
-                          }
-                          await ref
-                              .read(nodeDetailProvider.notifier)
-                              .setLEDLight(settings)
-                              .then((_) => context.pop());
-                          setState(() {
-                            isLoading = false;
-                          });
-                        },
-                      ),
-                    ],
-            );
-          });
-        });
+              AppRadioListItem(
+                title: loc(context).nodeDetailsLedNightMode,
+                value: NodeLightStatus.night,
+              ),
+              AppRadioListItem(
+                title: loc(context).on,
+                value: NodeLightStatus.on,
+              ),
+            ],
+            onChanged: (index, selectedType) {
+              setState(() {
+                if (selectedType != null) {
+                  nodeLightStatus = selectedType;
+                }
+              });
+            },
+          ),
+        ],
+      );
+    }, event: () async {
+      NodeLightSettings settings;
+      if (nodeLightStatus == NodeLightStatus.on) {
+        settings = const NodeLightSettings(isNightModeEnable: false);
+      } else if (nodeLightStatus == NodeLightStatus.off) {
+        settings = const NodeLightSettings(
+            isNightModeEnable: true, startHour: 0, endHour: 24);
+      } else {
+        settings = const NodeLightSettings(
+            isNightModeEnable: true, startHour: 20, endHour: 8);
+      }
+      await ref
+          .read(nodeDetailProvider.notifier)
+          .setLEDLight(settings)
+          .then((_) => showSuccessSnackBar(context, loc(context).saved));
+    });
   }
 }
