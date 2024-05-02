@@ -50,12 +50,26 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.settingsLocalNetwork,
     path: RoutePath.settingsLocalNetwork,
-    builder: (context, state) => LocalNetworkSettingsView(),
+    builder: (context, state) => const LocalNetworkSettingsView(),
     routes: [
       LinksysRoute(
         name: RouteNamed.dhcpReservation,
         path: RoutePath.dhcpReservation,
         builder: (context, state) => DHCPReservationsView(
+          args: state.extra as Map<String, dynamic>? ?? {},
+        ),
+      ),
+      LinksysRoute(
+        name: RouteNamed.dhcpServer,
+        path: RoutePath.dhcpServer,
+        builder: (context, state) => DHCPServerView(
+          args: state.extra as Map<String, dynamic>? ?? {},
+        ),
+      ),
+      LinksysRoute(
+        name: RouteNamed.localNetworkEdit,
+        path: RoutePath.localNetworkEdit,
+        builder: (context, state) => LocalNetworkEditView(
           args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),

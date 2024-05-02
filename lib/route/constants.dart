@@ -68,14 +68,16 @@ class RoutePath {
   static const accountInfo = 'accountInfo';
   static const twoStepVerification = 'twoStepVerification';
 
-  /// internet
+  /// Internet Setting
   static const mtuPicker = 'mtuPicker';
   static const macClone = 'macClone';
   static const connectionType = 'connectionType';
   static const connectionTypeSelection = 'connectionTypeSelection';
 
-  /// lan
+  /// Local Network
   static const dhcpReservation = 'dhcpReservation';
+  static const dhcpServer = 'dhcpServer';
+  static const localNetworkEdit = 'localNetworkEdit';
 
   /// mac filtering
   static const macFilteringInput = 'macFilteringInput';
@@ -192,14 +194,16 @@ class RouteNamed {
   static const accountInfo = 'accountInfo';
   static const twoStepVerification = 'twoStepVerification';
 
-  /// internet
+  /// Internet Setting
   static const mtuPicker = 'mtuPicker';
   static const macClone = 'macClone';
   static const connectionType = 'connectionType';
   static const connectionTypeSelection = 'connectionTypeSelection';
 
-  /// lan
+  /// Local Network
   static const dhcpReservation = 'dhcpReservation';
+  static const dhcpServer = 'dhcpServer';
+  static const localNetworkEdit = 'localNetworkEdit';
 
   /// mac filtering
   static const macFilteringInput = 'macFilteringInput';

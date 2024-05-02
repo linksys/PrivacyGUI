@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/utils/extension.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
+import 'package:linksys_app/page/components/responsive/responsive_bottom_button.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/administration/local_network_settings/providers/local_network_settings_provider.dart';
-import 'package:linksys_app/page/administration/local_network_settings/providers/local_network_settings_state.dart';
+import 'package:linksys_app/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
+import 'package:linksys_app/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/input_field/ip_form_field.dart';
@@ -28,7 +31,7 @@ class LocalNetworkSettingsView extends ArgumentsConsumerStatefulView {
 class _LocalNetworkSettingsViewState
     extends ConsumerState<LocalNetworkSettingsView> {
   bool _isLoading = true;
-  late LocalNetworkSettingsState currentSettings;
+  late LocalNetworkSettingsState originalSettings;
   final _hostNameController = TextEditingController();
   final _hostIpAddressController = TextEditingController();
   final _hostSubnetMaskController = TextEditingController();
@@ -46,25 +49,25 @@ class _LocalNetworkSettingsViewState
     super.initState();
     ref.read(localNetworkSettingProvider.notifier).fetch().then((value) {
       setState(() {
-        currentSettings =
+        originalSettings =
             ref.read(localNetworkSettingProvider.notifier).currentSettings();
-        _hostNameController.text = currentSettings.hostName;
-        _hostIpAddressController.text = currentSettings.ipAddress;
-        _hostSubnetMaskController.text = currentSettings.subnetMask;
-        _startIpAddressController.text = currentSettings.firstIPAddress;
-        _maxUserAllowedController.text = '${currentSettings.maxUserAllowed}';
-        _clientLeaseTimeController.text = '${currentSettings.clientLeaseTime}';
-        if (currentSettings.dns1 != null) {
-          _dns1Controller.text = currentSettings.dns1!;
+        _hostNameController.text = originalSettings.hostName;
+        _hostIpAddressController.text = originalSettings.ipAddress;
+        _hostSubnetMaskController.text = originalSettings.subnetMask;
+        _startIpAddressController.text = originalSettings.firstIPAddress;
+        _maxUserAllowedController.text = '${originalSettings.maxUserAllowed}';
+        _clientLeaseTimeController.text = '${originalSettings.clientLeaseTime}';
+        if (originalSettings.dns1 != null) {
+          _dns1Controller.text = originalSettings.dns1!;
         }
-        if (currentSettings.dns2 != null) {
-          _dns2Controller.text = currentSettings.dns2!;
+        if (originalSettings.dns2 != null) {
+          _dns2Controller.text = originalSettings.dns2!;
         }
-        if (currentSettings.dns3 != null) {
-          _dns3Controller.text = currentSettings.dns3!;
+        if (originalSettings.dns3 != null) {
+          _dns3Controller.text = originalSettings.dns3!;
         }
-        if (currentSettings.wins != null) {
-          _winsController.text = currentSettings.wins!;
+        if (originalSettings.wins != null) {
+          _winsController.text = originalSettings.wins!;
         }
         _isLoading = false;
       });
@@ -72,21 +75,142 @@ class _LocalNetworkSettingsViewState
   }
 
   @override
-  Widget build(BuildContext context) {
-    return _isLoading
-        ? AppFullScreenSpinner(
-            text: getAppLocalizations(context).processing,
-          )
-        : settingVIew(context);
+  void dispose() {
+    super.dispose();
+    _hostNameController.dispose();
+    _hostIpAddressController.dispose();
+    _hostSubnetMaskController.dispose();
+    _startIpAddressController.dispose();
+    _maxUserAllowedController.dispose();
+    _clientLeaseTimeController.dispose();
+    _dns1Controller.dispose();
+    _dns2Controller.dispose();
+    _dns3Controller.dispose();
+    _winsController.dispose();
   }
 
-  Widget settingVIew(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(localNetworkSettingProvider);
+    return _isLoading
+        ? AppFullScreenSpinner(
+            text: loc(context).processing,
+          )
+        : infoView(state);
+  }
+
+  Widget infoView(LocalNetworkSettingsState state) {
     return StyledAppPageView(
       scrollable: true,
-      title: getAppLocalizations(context).lan,
+      title: loc(context).localNetwork,
+      onBackTap: _isEdited()
+          ? () {
+              _showUnsavedAlert();
+            }
+          : null,
+      child: AppBasicLayout(
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InternetSettingCard(
+              title: loc(context).hostName,
+              description: state.hostName,
+              onTap: () {
+                context.pushNamed(RouteNamed.localNetworkEdit, extra: {
+                  'viewType': 'hostName',
+                });
+              },
+            ),
+            InternetSettingCard(
+              title: loc(context).ipAddress.capitalizeWords(),
+              description: state.ipAddress,
+              onTap: () {
+                context.pushNamed(RouteNamed.localNetworkEdit, extra: {
+                  'viewType': 'ipAddress',
+                });
+              },
+            ),
+            InternetSettingCard(
+              title: loc(context).subnetMask,
+              description: state.subnetMask,
+              onTap: () {
+                context.pushNamed(RouteNamed.localNetworkEdit, extra: {
+                  'viewType': 'subnetMask',
+                });
+              },
+            ),
+            InternetSettingCard(
+              title: loc(context).dhcpServer,
+              description:
+                  state.isDHCPEnabled ? loc(context).on : loc(context).off,
+              onTap: () {
+                context.pushNamed(RouteNamed.dhcpServer);
+              },
+            ),
+            InternetSettingCard(
+              title: loc(context).dhcpReservations,
+              onTap: () {
+                context.pushNamed(RouteNamed.dhcpReservation);
+              },
+            ),
+            responsiveGap(context),
+            responsiveBottomButton(
+              context: context,
+              onTap: _isEdited()
+                  ? () {
+                      _saveSettings();
+                    }
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _isEdited() {
+    final state = ref.read(localNetworkSettingProvider);
+    return originalSettings != state;
+  }
+
+  void _showUnsavedAlert() {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: AppText.titleLarge(loc(context).unsavedChangesTitle),
+            content: AppText.bodyMedium(loc(context).unsavedChangesDesc),
+            actions: [
+              AppTextButton(
+                loc(context).goBack,
+                color: Theme.of(context).colorScheme.onSurface,
+                onTap: () {
+                  context.pop();
+                },
+              ),
+              AppTextButton(
+                loc(context).discardChanges,
+                color: Theme.of(context).colorScheme.error,
+                onTap: () {
+                  ref
+                      .read(localNetworkSettingProvider.notifier)
+                      .updateState(originalSettings);
+                  context.pop();
+                  context.pop();
+                },
+              ),
+            ],
+          );
+        });
+  }
+
+  Widget settingView(BuildContext context) {
+    return StyledAppPageView(
+      scrollable: true,
+      title: loc(context).lan,
       actions: [
         AppTextButton(
-          getAppLocalizations(context).save,
+          loc(context).save,
           onTap: errors.isEmpty
               ? () {
                   _saveSettings();
@@ -126,17 +250,17 @@ class _LocalNetworkSettingsViewState
                     .read(localNetworkSettingProvider.notifier)
                     .routerIpAddressFinished(
                       _hostIpAddressController.text,
-                      currentSettings,
+                      originalSettings,
                     );
                 setState(() {
                   updateErrorPrompts(
                     'RouterIpAddress',
                     result.$1 ? null : 'Invalid IP address',
                   );
-                  currentSettings = result.$2;
+                  originalSettings = result.$2;
                   // Update the value of first Ip text controller
                   _startIpAddressController.text =
-                      currentSettings.firstIPAddress;
+                      originalSettings.firstIPAddress;
                 });
               },
             ),
@@ -144,7 +268,7 @@ class _LocalNetworkSettingsViewState
             // Subnet mask
             AppIPFormField(
               header: AppText.bodyLarge(
-                getAppLocalizations(context).subnetMask,
+                loc(context).subnetMask,
               ),
               octet1ReadOnly: true,
               octet2ReadOnly: true,
@@ -156,17 +280,17 @@ class _LocalNetworkSettingsViewState
                     .read(localNetworkSettingProvider.notifier)
                     .subnetMaskFinished(
                       _hostSubnetMaskController.text,
-                      currentSettings,
+                      originalSettings,
                     );
                 setState(() {
                   updateErrorPrompts(
                     'SubnetMask',
                     result.$1 ? null : 'Invalid subnet mask',
                   );
-                  currentSettings = result.$2;
+                  originalSettings = result.$2;
                   // Update the value of maxUserAllowed text controller
                   _maxUserAllowedController.text =
-                      '${currentSettings.maxUserAllowed}';
+                      '${originalSettings.maxUserAllowed}';
                 });
               },
             ),
@@ -189,14 +313,14 @@ class _LocalNetworkSettingsViewState
         Row(
           children: [
             AppText.bodyLarge(
-              getAppLocalizations(context).enabled,
+              loc(context).enabled,
             ),
             const Spacer(),
             AppSwitch(
-              value: currentSettings.isDHCPEnabled,
+              value: originalSettings.isDHCPEnabled,
               onChanged: (enabled) {
                 setState(() {
-                  currentSettings = currentSettings.copyWith(
+                  originalSettings = originalSettings.copyWith(
                     isDHCPEnabled: enabled,
                   );
                 });
@@ -206,14 +330,14 @@ class _LocalNetworkSettingsViewState
         ),
         const AppGap.regular(),
         Visibility(
-          visible: currentSettings.isDHCPEnabled,
+          visible: originalSettings.isDHCPEnabled,
           replacement: const Center(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppIPFormField(
                 header: AppText.bodyLarge(
-                  getAppLocalizations(context).start_ip_address,
+                  loc(context).startIpAddress,
                 ),
                 controller: _startIpAddressController,
                 octet1ReadOnly: true,
@@ -225,7 +349,7 @@ class _LocalNetworkSettingsViewState
                       .read(localNetworkSettingProvider.notifier)
                       .startIpFinished(
                         _startIpAddressController.text,
-                        currentSettings,
+                        originalSettings,
                       );
                   setState(() {
                     updateErrorPrompts(
@@ -234,19 +358,19 @@ class _LocalNetworkSettingsViewState
                           ? null
                           : 'Invalid Ip or the same as the Host Ip',
                     );
-                    currentSettings = result.$2;
+                    originalSettings = result.$2;
                   });
                 },
               ),
               const AppGap.regular(),
               AppText.bodyLarge(
-                'Maximum number of users: [1 - ${currentSettings.maxUserLimit}]',
+                'Maximum number of users: [1 - ${originalSettings.maxUserLimit}]',
               ),
               const AppGap.small(),
               AppTextField.minMaxNumber(
-                max: currentSettings.maxUserLimit,
+                max: originalSettings.maxUserLimit,
                 controller: _maxUserAllowedController,
-                hintText: '1 - ${currentSettings.maxUserLimit}',
+                hintText: '1 - ${originalSettings.maxUserLimit}',
                 onFocusChanged: (focused) {
                   if (focused) return;
                   // Max user input finishes
@@ -254,31 +378,31 @@ class _LocalNetworkSettingsViewState
                       .read(localNetworkSettingProvider.notifier)
                       .maxUserAllowedFinished(
                         _maxUserAllowedController.text,
-                        currentSettings,
+                        originalSettings,
                       );
                   setState(() {
                     updateErrorPrompts(
                       'MaxUserAllowed',
                       result.$1 ? null : 'Invalid number',
                     );
-                    currentSettings = result.$2;
+                    originalSettings = result.$2;
                   });
                 },
               ),
               const AppGap.regular(),
               AppText.bodyLarge(
-                'IP address range:\n${currentSettings.firstIPAddress}\nto\n${currentSettings.lastIPAddress}',
+                'IP address range:\n${originalSettings.firstIPAddress}\nto\n${originalSettings.lastIPAddress}',
               ),
               const AppGap.regular(),
               AppText.bodyLarge(
-                getAppLocalizations(context).client_lease_time,
+                loc(context).clientLeaseTime,
               ),
               AppTextField.minMaxNumber(
-                min: currentSettings.minAllowDHCPLeaseMinutes,
-                max: currentSettings.maxAllowDHCPLeaseMinutes,
+                min: originalSettings.minAllowDHCPLeaseMinutes,
+                max: originalSettings.maxAllowDHCPLeaseMinutes,
                 controller: _clientLeaseTimeController,
-                hintText: getAppLocalizations(context).client_lease_time,
-                descriptionText: getAppLocalizations(context).minutes,
+                hintText: loc(context).clientLeaseTime,
+                descriptionText: loc(context).minutes,
                 onFocusChanged: (focused) {
                   if (focused) return;
                   // Client lease time input finishes
@@ -286,20 +410,20 @@ class _LocalNetworkSettingsViewState
                       .read(localNetworkSettingProvider.notifier)
                       .clientLeaseFinished(
                         _clientLeaseTimeController.text,
-                        currentSettings,
+                        originalSettings,
                       );
                   setState(() {
                     updateErrorPrompts(
                       'LeaseTime',
                       result.$1 ? null : 'Invalid number',
                     );
-                    currentSettings = result.$2;
+                    originalSettings = result.$2;
                   });
                 },
               ),
               ..._buildDNSInputFields(),
               AppPanelWithInfo(
-                title: getAppLocalizations(context).dhcp_reservations,
+                title: loc(context).dhcpReservations.capitalizeWords(),
                 infoText: ' ',
                 onTap: () {
                   context.pushNamed(RouteNamed.dhcpReservation);
@@ -316,7 +440,7 @@ class _LocalNetworkSettingsViewState
     return [
       AppIPFormField(
         header: AppText.bodyLarge(
-          getAppLocalizations(context).static_dns1,
+          loc(context).staticDns1,
         ),
         controller: _dns1Controller,
         onFocusChanged: (focused) {
@@ -326,14 +450,14 @@ class _LocalNetworkSettingsViewState
                 .read(localNetworkSettingProvider.notifier)
                 .staticDns1Finished(
                   _dns1Controller.text,
-                  currentSettings,
+                  originalSettings,
                 );
             setState(() {
               updateErrorPrompts(
                 'DNS1',
                 result.$1 ? null : 'Invalid IP address',
               );
-              currentSettings = result.$2;
+              originalSettings = result.$2;
             });
           }
         },
@@ -341,7 +465,7 @@ class _LocalNetworkSettingsViewState
       const AppGap.regular(),
       AppIPFormField(
         header: AppText.bodyLarge(
-          getAppLocalizations(context).static_dns2_optional,
+          loc(context).static_dns2_optional,
         ),
         controller: _dns2Controller,
         onFocusChanged: (focused) {
@@ -351,14 +475,14 @@ class _LocalNetworkSettingsViewState
                 .read(localNetworkSettingProvider.notifier)
                 .staticDns2Finished(
                   _dns2Controller.text,
-                  currentSettings,
+                  originalSettings,
                 );
             setState(() {
               updateErrorPrompts(
                 'DNS2',
                 result.$1 ? null : 'Invalid IP address',
               );
-              currentSettings = result.$2;
+              originalSettings = result.$2;
             });
           }
         },
@@ -366,7 +490,7 @@ class _LocalNetworkSettingsViewState
       const AppGap.regular(),
       AppIPFormField(
         header: AppText.bodyLarge(
-          getAppLocalizations(context).static_dns3_optional,
+          loc(context).static_dns3_optional,
         ),
         controller: _dns3Controller,
         onFocusChanged: (focused) {
@@ -376,14 +500,14 @@ class _LocalNetworkSettingsViewState
                 .read(localNetworkSettingProvider.notifier)
                 .staticDns3Finished(
                   _dns3Controller.text,
-                  currentSettings,
+                  originalSettings,
                 );
             setState(() {
               updateErrorPrompts(
                 'DNS3',
                 result.$1 ? null : 'Invalid IP address',
               );
-              currentSettings = result.$2;
+              originalSettings = result.$2;
             });
           }
         },
@@ -391,7 +515,7 @@ class _LocalNetworkSettingsViewState
       const AppGap.regular(),
       AppIPFormField(
         header: AppText.bodyLarge(
-          getAppLocalizations(context).wins,
+          loc(context).wins,
         ),
         controller: _winsController,
         onFocusChanged: (focused) {
@@ -401,14 +525,14 @@ class _LocalNetworkSettingsViewState
                 .read(localNetworkSettingProvider.notifier)
                 .winsServerFinished(
                   _winsController.text,
-                  currentSettings,
+                  originalSettings,
                 );
             setState(() {
               updateErrorPrompts(
                 'WINS',
                 result.$1 ? null : 'Invalid IP address',
               );
-              currentSettings = result.$2;
+              originalSettings = result.$2;
             });
           }
         },
@@ -420,17 +544,20 @@ class _LocalNetworkSettingsViewState
     setState(() {
       _isLoading = true;
     });
+    final state = ref.read(localNetworkSettingProvider);
     ref
         .read(localNetworkSettingProvider.notifier)
-        .saveSettings(currentSettings)
+        .saveSettings(state)
         .then((value) {
+      originalSettings = state;
+      showSuccessSnackBar(context, loc(context).changesSaved);
+    }).onError((error, stackTrace) {
+      final err = error as JNAPError;
+      showFailedSnackBar(context, err.result);
+    }).whenComplete(() {
       setState(() {
         _isLoading = false;
       });
-      showSuccessSnackBar(context, 'Success!');
-    }).onError((error, stackTrace) {
-      _isLoading = false;
-      showFailedSnackBar(context, 'Failed!');
     });
   }
 
@@ -440,20 +567,5 @@ class _LocalNetworkSettingsViewState
     } else {
       errors.remove(key);
     }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _hostNameController.dispose();
-    _hostIpAddressController.dispose();
-    _hostSubnetMaskController.dispose();
-    _startIpAddressController.dispose();
-    _maxUserAllowedController.dispose();
-    _clientLeaseTimeController.dispose();
-    _dns1Controller.dispose();
-    _dns2Controller.dispose();
-    _dns3Controller.dispose();
-    _winsController.dispose();
   }
 }

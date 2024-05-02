@@ -54,7 +54,7 @@ class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {
           fetchRemote: fetchRemote,
           auth: true,
         )
-        .then((value) => RouterLANSettings.fromJson(value.output));
+        .then((value) => RouterLANSettings.fromMap(value.output));
 
     final safeBrowsingType = getSafeBrowsingType(lanSettings);
 

@@ -83,7 +83,13 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
                     ),
                   ),
                   responsiveGap(context),
-                  responsiveBottomButton(context: context, title: loc(context).save, enable: _edited(state.safeBrowsingType), onTap: _showRestartAlert),
+                  responsiveBottomButton(
+                    context: context,
+                    title: loc(context).save,
+                    onTap: _edited(state.safeBrowsingType)
+                        ? _showRestartAlert
+                        : null,
+                  ),
                 ],
               ),
             ),

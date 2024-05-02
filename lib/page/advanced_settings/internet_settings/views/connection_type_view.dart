@@ -293,8 +293,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                     responsiveBottomButton(
                       context: context,
                       title: loc(context).save,
-                      enable: _isEdited(),
-                      onTap: _showRestartAlert,
+                      onTap: _isEdited() ? _showRestartAlert : null,
                     ),
                 ],
               ),
@@ -495,7 +494,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         padding: inputPadding,
         child: AppIPFormField(
           header: AppText.bodySmall(
-            loc(context).subnetMask,
+            loc(context).subnetMask.capitalizeWords(),
           ),
           controller: _staticSubnetController,
           border: const OutlineInputBorder(),
@@ -1098,7 +1097,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         color: Theme.of(context).colorScheme.background,
       ),
       AppSettingCard.noBorder(
-        title: loc(context).subnetMask,
+        title: loc(context).subnetMask.capitalizeWords(),
         description: NetworkUtils.prefixLengthToSubnetMask(
             state.ipv4Setting.networkPrefixLength ?? 24),
         color: Theme.of(context).colorScheme.background,
@@ -1316,7 +1315,6 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 loc(context).discardChanges,
                 color: Theme.of(context).colorScheme.error,
                 onTap: () {
-                  // _setSafeBrowsing();
                   context.pop();
                   context.pop();
                 },

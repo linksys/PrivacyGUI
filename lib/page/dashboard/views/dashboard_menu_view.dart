@@ -113,6 +113,13 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             _navigateTo(RouteNamed.settingsNodes);
           }),
       AppSectionItemData(
+          title: loc(context).speedTest,
+          description: loc(context).menuSpeedTestDesc,
+          iconData: LinksysIcons.networkCheck,
+          onTap: () {
+            _navigateTo(RouteNamed.speedTestSelection);
+          }),
+      AppSectionItemData(
           title: loc(context).safeBrowsing,
           description: loc(context).menuSafeBrowsingDesc,
           iconData: LinksysIcons.encrypted,
@@ -124,18 +131,6 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           iconData: LinksysIcons.settings,
           onTap: () {
             _navigateTo(RouteNamed.dashboardAdvancedSettings);
-          }),
-      AppSectionItemData(
-          title: loc(context).familyTime,
-          description: 'This is a description for this tile',
-          iconData: LinksysIcons.familyRestroom,
-          onTap: () {}),
-      AppSectionItemData(
-          title: loc(context).speedTest,
-          description: 'This is a description for this tile',
-          iconData: LinksysIcons.networkCheck,
-          onTap: () {
-            _navigateTo(RouteNamed.speedTestSelection);
           }),
       AppSectionItemData(
           title: 'Settings',

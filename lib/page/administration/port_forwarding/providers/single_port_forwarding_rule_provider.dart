@@ -39,7 +39,7 @@ class SinglePortForwardingRuleNotifier
           JNAPAction.getLANSettings,
           auth: true,
         )
-        .then((value) => RouterLANSettings.fromJson(value.output));
+        .then((value) => RouterLANSettings.fromMap(value.output));
     _ipAddress = lanSettings.ipAddress;
     _subnetMask =
         NetworkUtils.prefixLengthToSubnetMask(lanSettings.networkPrefixLength);

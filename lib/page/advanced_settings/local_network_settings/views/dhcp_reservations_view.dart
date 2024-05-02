@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/models/lan_settings.dart';
+import 'package:linksys_app/core/utils/extension.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/troubleshooting/_troubleshooting.dart';
-import 'package:linksys_app/page/administration/local_network_settings/providers/local_network_settings_provider.dart';
-import 'package:linksys_app/page/administration/local_network_settings/providers/local_network_settings_state.dart';
-import 'package:linksys_app/page/troubleshooting/providers/troubleshooting_provider.dart';
+import 'package:linksys_app/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
+import 'package:linksys_app/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
 import 'package:linksys_app/util/extensions.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -87,7 +87,7 @@ class _SinglePortForwardingContentViewState
         ? const AppFullScreenSpinner()
         : StyledAppPageView(
             scrollable: true,
-            title: getAppLocalizations(context).dhcp_reservations,
+            title: getAppLocalizations(context).dhcpReservations.capitalizeWords(),
             actions: [
               AppTextButton.noPadding(
                 'Save',

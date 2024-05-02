@@ -1,4 +1,8 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
+
 import 'package:linksys_app/core/jnap/models/lan_settings.dart';
 
 class LocalNetworkSettingsState extends Equatable {
@@ -22,26 +26,28 @@ class LocalNetworkSettingsState extends Equatable {
   final List<DHCPReservation> dhcpReservationList;
 
   @override
-  List<Object?> get props => [
-        hostName,
-        ipAddress,
-        subnetMask,
-        isDHCPEnabled,
-        firstIPAddress,
-        lastIPAddress,
-        maxUserLimit,
-        maxUserAllowed,
-        clientLeaseTime,
-        minAllowDHCPLeaseMinutes,
-        maxAllowDHCPLeaseMinutes,
-        minNetworkPrefixLength,
-        maxNetworkPrefixLength,
-        dns1,
-        dns2,
-        dns3,
-        wins,
-        // isAutoDNS,
-      ];
+  List<Object?> get props {
+    return [
+      hostName,
+      ipAddress,
+      subnetMask,
+      isDHCPEnabled,
+      firstIPAddress,
+      lastIPAddress,
+      maxUserLimit,
+      maxUserAllowed,
+      clientLeaseTime,
+      minAllowDHCPLeaseMinutes,
+      maxAllowDHCPLeaseMinutes,
+      minNetworkPrefixLength,
+      maxNetworkPrefixLength,
+      dns1,
+      dns2,
+      dns3,
+      wins,
+      dhcpReservationList,
+    ];
+  }
 
   const LocalNetworkSettingsState({
     required this.hostName,
@@ -125,4 +131,63 @@ class LocalNetworkSettingsState extends Equatable {
       dhcpReservationList: dhcpReservationList ?? this.dhcpReservationList,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'hostName': hostName,
+      'ipAddress': ipAddress,
+      'subnetMask': subnetMask,
+      'isDHCPEnabled': isDHCPEnabled,
+      'firstIPAddress': firstIPAddress,
+      'lastIPAddress': lastIPAddress,
+      'maxUserLimit': maxUserLimit,
+      'maxUserAllowed': maxUserAllowed,
+      'clientLeaseTime': clientLeaseTime,
+      'minAllowDHCPLeaseMinutes': minAllowDHCPLeaseMinutes,
+      'maxAllowDHCPLeaseMinutes': maxAllowDHCPLeaseMinutes,
+      'minNetworkPrefixLength': minNetworkPrefixLength,
+      'maxNetworkPrefixLength': maxNetworkPrefixLength,
+      'dns1': dns1,
+      'dns2': dns2,
+      'dns3': dns3,
+      'wins': wins,
+      'dhcpReservationList': dhcpReservationList.map((x) => x.toMap()).toList(),
+    };
+  }
+
+  factory LocalNetworkSettingsState.fromMap(Map<String, dynamic> map) {
+    return LocalNetworkSettingsState(
+      hostName: map['hostName'] as String,
+      ipAddress: map['ipAddress'] as String,
+      subnetMask: map['subnetMask'] as String,
+      isDHCPEnabled: map['isDHCPEnabled'] as bool,
+      firstIPAddress: map['firstIPAddress'] as String,
+      lastIPAddress: map['lastIPAddress'] as String,
+      maxUserLimit: map['maxUserLimit'] as int,
+      maxUserAllowed: map['maxUserAllowed'] as int,
+      clientLeaseTime: map['clientLeaseTime'] as int,
+      minAllowDHCPLeaseMinutes: map['minAllowDHCPLeaseMinutes'] as int,
+      maxAllowDHCPLeaseMinutes: map['maxAllowDHCPLeaseMinutes'] as int,
+      minNetworkPrefixLength: map['minNetworkPrefixLength'] as int,
+      maxNetworkPrefixLength: map['maxNetworkPrefixLength'] as int,
+      dns1: map['dns1'] != null ? map['dns1'] as String : null,
+      dns2: map['dns2'] != null ? map['dns2'] as String : null,
+      dns3: map['dns3'] != null ? map['dns3'] as String : null,
+      wins: map['wins'] != null ? map['wins'] as String : null,
+      dhcpReservationList: List<DHCPReservation>.from(
+        (map['dhcpReservationList']).map<DHCPReservation>(
+          (x) => DHCPReservation.fromMap(x as Map<String, dynamic>),
+        ),
+      ),
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory LocalNetworkSettingsState.fromJson(String source) =>
+      LocalNetworkSettingsState.fromMap(
+          json.decode(source) as Map<String, dynamic>);
+
+  @override
+  bool get stringify => true;
 }

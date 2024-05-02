@@ -42,7 +42,7 @@ import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
 import 'package:linksys_app/providers/auth/_auth.dart';
 import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/route/router_logger.dart';
-import '../page/administration/local_network_settings/_local_network_settings.dart';
+import '../page/advanced_settings/local_network_settings/_local_network_settings.dart';
 import '../page/administration/mac_filtering/_mac_filtering.dart';
 import 'constants.dart';
 

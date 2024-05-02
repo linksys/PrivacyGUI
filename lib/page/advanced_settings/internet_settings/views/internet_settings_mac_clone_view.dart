@@ -87,24 +87,27 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
                   responsiveBottomButton(
                     context: context,
                     title: loc(context).save,
-                    enable: _isValid &&
-                        ((_isEnabled != state.macClone) ||
-                            (_valueController.text != state.macCloneAddress)),
-                    onTap: () async {
-                      setState(() {
-                        _isLoading = true;
-                      });
-                      FocusManager.instance.primaryFocus?.unfocus();
-                      await ref
-                          .read(internetSettingsProvider.notifier)
-                          .setMacAddressClone(_isEnabled, _valueController.text)
-                          .whenComplete(() {
-                        setState(() {
-                          _isLoading = false;
-                        });
-                        context.pop();
-                      });
-                    },
+                    onTap: _isValid &&
+                            ((_isEnabled != state.macClone) ||
+                                (_valueController.text !=
+                                    state.macCloneAddress))
+                        ? () async {
+                            setState(() {
+                              _isLoading = true;
+                            });
+                            FocusManager.instance.primaryFocus?.unfocus();
+                            await ref
+                                .read(internetSettingsProvider.notifier)
+                                .setMacAddressClone(
+                                    _isEnabled, _valueController.text)
+                                .whenComplete(() {
+                              setState(() {
+                                _isLoading = false;
+                              });
+                              context.pop();
+                            });
+                          }
+                        : null,
                   ),
                 ],
               ),

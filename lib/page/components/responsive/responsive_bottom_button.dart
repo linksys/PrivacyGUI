@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_widgets/widgets/base/gap.dart';
 import 'package:linksys_widgets/widgets/buttons/button.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
@@ -11,17 +12,16 @@ Widget responsiveGap(BuildContext context) {
 
 Widget responsiveBottomButton({
   required BuildContext context,
-  required String title,
-  bool enable = true,
+  String? title,
   VoidCallback? onTap,
 }) {
   return ResponsiveLayout.isLayoutBreakpoint(context)
       ? AppFilledButton.fillWidth(
-          title,
-          onTap: enable ? onTap : null,
+          title ?? loc(context).save,
+          onTap: onTap,
         )
       : AppFilledButton(
-          title,
-          onTap: enable ? onTap : null,
+          title ?? loc(context).save,
+          onTap: onTap,
         );
 }
