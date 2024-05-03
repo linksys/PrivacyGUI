@@ -30,7 +30,7 @@ class RoutePath {
   static const settingsNotification = 'notificationSettings';
   static const settingsWifi = 'wifiSettings';
   static const settingsNodes = 'nodes';
-  static const settingsRouterPassword = 'routerPassword';
+  static const settingsNetworkAdmin = 'routerAdmin';
   static const settingsTimeZone = 'timeZone';
   static const settingsInternet = 'internetSettings';
   static const settingsIpDetails = 'ipDetails';
@@ -130,7 +130,7 @@ class RoutePath {
 
   /// Device picker
   static const devicePicker = 'devicePicker';
-  
+
   /// debug
   static const debug = 'debug';
 }
@@ -167,7 +167,7 @@ class RouteNamed {
   static const settingsNotification = 'notificationSettings';
   static const settingsWifi = 'wifiSettings';
   static const settingsNodes = 'nodes';
-  static const settingsRouterPassword = 'routerPassword';
+  static const settingsNetworkAdmin = 'networkAdmin';
   static const settingsTimeZone = 'timeZone';
   static const settingsInternet = 'internetSettings';
   static const settingsIpDetails = 'ipDetails';

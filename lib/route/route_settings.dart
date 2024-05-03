@@ -61,20 +61,21 @@ final settings = [
         ),
       ]),
   LinksysRoute(
-    name: RouteNamed.settingsRouterPassword,
-    path: RoutePath.settingsRouterPassword,
-    builder: (context, state) => NetworkAdminView(),
-  ),
-  LinksysRoute(
-    name: RouteNamed.settingsTimeZone,
-    path: RoutePath.settingsTimeZone,
-    builder: (context, state) => TimezoneView(),
-  ),
-    LinksysRoute(
-        name: RouteNamed.devicePicker,
-        path: RoutePath.devicePicker,
-        builder: (context, state) => SelectDeviceView(
-          args: state.extra as Map<String, dynamic>? ?? {},
+      name: RouteNamed.settingsNetworkAdmin,
+      path: RoutePath.settingsNetworkAdmin,
+      builder: (context, state) => NetworkAdminView(),
+      routes: [
+        LinksysRoute(
+          name: RouteNamed.settingsTimeZone,
+          path: RoutePath.settingsTimeZone,
+          builder: (context, state) => TimezoneView(),
         ),
-      ),
+      ]),
+  LinksysRoute(
+    name: RouteNamed.devicePicker,
+    path: RoutePath.devicePicker,
+    builder: (context, state) => SelectDeviceView(
+      args: state.extra as Map<String, dynamic>? ?? {},
+    ),
+  ),
 ];

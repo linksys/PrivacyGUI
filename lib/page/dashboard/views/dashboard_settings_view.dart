@@ -144,11 +144,6 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
               context.pushNamed(RouteNamed.settingsNodes);
             },
           ),
-          AppSectionItemData(
-            title: 'Router Password and Hint',
-            // iconData: getCharactersIcons(context).smsDefault,
-            onTap: () => context.goNamed(RouteNamed.settingsRouterPassword),
-          ),
         ],
       );
 

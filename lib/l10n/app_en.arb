@@ -854,6 +854,7 @@
   "menuRouterAndNodesDesc": "Node name and light settings",
   "menuSpeedTestDesc": "Test your upload and download speeds",
   "menuSafeBrowsingDesc": "Block inappropriate web content",
+  "menuNetworkAdminDesc": "Router password, Firmware updates, Timezone, Warranty",
   "localNetwork": "Local Network",
   "advancedRouting": "Advanced Routing",
   "firewall": "Firewall",

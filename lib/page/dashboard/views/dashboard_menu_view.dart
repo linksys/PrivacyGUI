@@ -106,6 +106,13 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             _navigateTo(RouteNamed.settingsWifi);
           }),
       AppSectionItemData(
+          title: loc(context).networkAdmin,
+          description: loc(context).menuNetworkAdminDesc,
+          iconData: LinksysIcons.accountCircle,
+          onTap: () {
+            _navigateTo(RouteNamed.settingsNetworkAdmin);
+          }),
+      AppSectionItemData(
           title: loc(context).menuRouterAndNodes,
           description: loc(context).menuRouterAndNodesDesc,
           iconData: LinksysIcons.router,
