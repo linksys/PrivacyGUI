@@ -63,9 +63,17 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         .catchError((error, stackTrace) {},
             test: (error) => error is ExceptionInvalidAdminPassword)
         .catchError((error, stackTrace) {
-          pnp.fetchData().then((value) {
+          if (_password != null) {
+            pnp.fetchData().then((value) {
+              final ssid = pnp.getDefaultWiFiNameAndPassphrase().name;
+              context.goNamed(
+                RouteNamed.pnpNoInternetConnection,
+                extra: {'ssid': ssid},
+              );
+            });
+          } else {
             context.goNamed(RouteNamed.pnpNoInternetConnection);
-          });
+          }
         }, test: (error) => error is ExceptionNoInternetConnection)
         .catchError((error, stackTrace) {
           setState(() {

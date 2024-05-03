@@ -9,11 +9,12 @@ final pnpRoute = LinksysRoute(
   ),
   routes: [
     LinksysRoute(
-        name: RouteNamed.pnpConfig,
-        path: RoutePath.pnpConfig,
-        config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
-        builder: (context, state) => const PnpSetupView(),
-        routes: []),
+      name: RouteNamed.pnpConfig,
+      path: RoutePath.pnpConfig,
+      config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
+      builder: (context, state) => const PnpSetupView(),
+      routes: [],
+    ),
   ],
 );
 
@@ -23,7 +24,9 @@ final pnpTroubleshootingRoute = LinksysRoute(
   config: LinksysRouteConfig(
     pageWidth: SpecificPageWidth(width: 430),
   ),
-  builder: (context, state) => const PnpNoInternetConnectionView(),
+  builder: (context, state) => PnpNoInternetConnectionView(
+    args: state.extra as Map<String, dynamic>? ?? {},
+  ),
   routes: [
     LinksysRoute(
       name: RouteNamed.contactSupportChoose,

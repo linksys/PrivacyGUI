@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
+import 'package:linksys_app/page/pnp/data/pnp_exception.dart';
+import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
+import 'package:linksys_app/page/pnp/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/theme/custom_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -19,7 +22,6 @@ class PnpWaitingModemView extends ConsumerStatefulWidget {
 
 class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
   final int _maxTime = 150;
-  late int _totalTime;
   late int _countDown;
   bool _isPlugged = false;
   bool _isCheckingInternet = false;
@@ -27,7 +29,6 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
   @override
   void initState() {
     super.initState();
-    _totalTime = _maxTime;
     _countDown = _maxTime;
   }
 
@@ -83,38 +84,52 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
             ),
             Expanded(
               child: Center(
-                child: _isPlugged ? SvgPicture(
-                  CustomTheme.of(context).images.modemWaiting,
-                  fit: BoxFit.fitWidth,
-                ) : SvgPicture(
-                  CustomTheme.of(context).images.modemPlugged,
-                  fit: BoxFit.fitWidth,
-                ),
+                child: _isPlugged
+                    ? SvgPicture(
+                        CustomTheme.of(context).images.modemWaiting,
+                        fit: BoxFit.fitWidth,
+                      )
+                    : SvgPicture(
+                        CustomTheme.of(context).images.modemPlugged,
+                        fit: BoxFit.fitWidth,
+                      ),
               ),
             ),
           ],
         ),
         footer: _isPlugged
             ? null
-            : Column(children: [
-                AppFilledButton.fillWidth(
-                  'It\'s plugged in',
-                  onTap: () {
-                    setState(() {
-                      _isPlugged = true;
-                    });
-                    Future.delayed(const Duration(seconds: 3)).then((value) {
+            : Column(
+                children: [
+                  AppFilledButton.fillWidth(
+                    'It\'s plugged in',
+                    onTap: () {
                       setState(() {
-                        _isCheckingInternet = true;
+                        _isPlugged = true;
                       });
                       Future.delayed(const Duration(seconds: 3)).then((value) {
-                        context.goNamed(RouteNamed.pnp);
+                        setState(() {
+                          _isCheckingInternet = true;
+                          ref
+                              .read(pnpTroubleshooterProvider.notifier)
+                              .resetModem(true);
+                        });
+                        ref
+                            .read(pnpProvider.notifier)
+                            .checkInternetConnection()
+                            .then((value) {
+                          context.goNamed(RouteNamed.pnp);
+                        }).catchError((error, stackTrace) {
+                          context.goNamed(RouteNamed.pnpNoInternetConnection);
+                        }, test: (error) {
+                          return error is ExceptionNoInternetConnection;
+                        });
                       });
-                    });
-                  },
-                ),
-                const AppGap.regular(),
-              ]),
+                    },
+                  ),
+                  const AppGap.regular(),
+                ],
+              ),
       ),
     );
   }
@@ -128,7 +143,7 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
           Positioned.fill(
             child: AppProgressBar(
               style: AppProgressBarStyle.circular,
-              duration: Duration(seconds: _totalTime),
+              duration: Duration(seconds: _maxTime),
               stroke: 1.0,
               repeat: false,
               callback: (value) {
