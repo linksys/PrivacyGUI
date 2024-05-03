@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/providers/app_settings/app_settings_provider.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_app/util/url_helper/url_helper.dart'
     if (dart.library.io) 'package:linksys_app/util/url_helper/url_helper_mobile.dart'
@@ -20,7 +20,7 @@ class _BottomBarState extends ConsumerState<BottomBar> {
       child: IntrinsicHeight(
         child: Container(
           color: Theme.of(context).colorScheme.background,
-          constraints: BoxConstraints(minHeight: 56, maxHeight: 60),
+          constraints: const BoxConstraints(minHeight: 56, maxHeight: 60),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -43,10 +43,9 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                               '© 2024 Linksys Holdings, Inc. and/or its affiliates. All rights reserved.'),
                         ),
                         AppTextButton.noPadding(
-                          'End User License Agreement',
+                          loc(context).endUserLicenseAgreement,
                           onTap: () {
-                            openUrl(
-                                'https://www.linksys.com/support-article?articleNum=48056');
+                            openUrl('https://www.linksys.com/EULA.html');
                           },
                         ),
                         const Padding(
@@ -54,10 +53,9 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                           child: AppText.bodySmall('|'),
                         ),
                         AppTextButton.noPadding(
-                          'Terms of Service',
+                          loc(context).termsOfService,
                           onTap: () {
-                            openUrl(
-                                'https://www.linksys.com/support-article?articleNum=48053');
+                            openUrl('https://www.linksys.com/terms.html');
                           },
                         ),
                         const Padding(
@@ -65,11 +63,11 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                           child: AppText.bodySmall('|'),
                         ),
                         AppTextButton.noPadding(
-                          'Privacy Statement',
+                          loc(context).privacyAndSecurity,
                           onTap: () {
                             // TODO languages?
                             openUrl(
-                                'https://www.linksys.com/support-article/?articleNum=48370');
+                                'https://www.linksys.com/support-article?articleNum=47763');
                           },
                         ),
                         const Padding(
@@ -77,8 +75,11 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                           child: AppText.bodySmall('|'),
                         ),
                         AppTextButton.noPadding(
-                          'Third Party License',
-                          onTap: () {},
+                          loc(context).thirdPartyLicenses,
+                          onTap: () {
+                            openUrl(
+                                'https://www.linksys.com/privacy-and-security.html');
+                          },
                         ),
                       ],
                     ),

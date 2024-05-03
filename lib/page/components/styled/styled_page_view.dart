@@ -14,17 +14,20 @@ import 'consts.dart';
 
 class SaveAction extends Equatable {
   final bool enabled;
+  final String? label;
   final void Function() onSave;
 
-  const SaveAction({required this.enabled, required this.onSave});
+  const SaveAction({required this.enabled, required this.onSave, this.label});
 
   SaveAction copyWith({
     bool? enabled,
     void Function()? onSave,
+    String? label,
   }) {
     return SaveAction(
       enabled: enabled ?? this.enabled,
       onSave: onSave ?? this.onSave,
+      label: label ?? this.label,
     );
   }
 
@@ -199,7 +202,7 @@ class StyledAppPageView extends ConsumerWidget {
                     padding: const EdgeInsets.only(top: 16.0),
                     child: ResponsiveLayout.isLayoutBreakpoint(context)
                         ? AppFilledButton.fillWidth(
-                            loc(context).save,
+                            saveAction?.label ?? loc(context).save,
                             onTap: saveAction?.enabled == true
                                 ? () {
                                     saveAction?.onSave.call();
@@ -207,7 +210,7 @@ class StyledAppPageView extends ConsumerWidget {
                                 : null,
                           )
                         : AppFilledButton(
-                            loc(context).save,
+                            saveAction?.label ?? loc(context).save,
                             onTap: saveAction?.enabled == true
                                 ? () {
                                     saveAction?.onSave.call();

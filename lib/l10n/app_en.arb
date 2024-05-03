@@ -864,7 +864,32 @@
   "routerPasswordRuleTenChars": "At least 10 characters",
   "routerPasswordRuleLowerUpper": "Upper and lowercase letters",
   "routerPasswordRuleOneNumber": "1 number",
-  "routerPasswordRuleSpecialChar": "1 special character"
-
-
+  "routerPasswordRuleSpecialChar": "1 special character",
+  "endUserLicenseAgreement": "End User License Agreement",
+  "termsOfService": "Term of Service",
+  "thirdPartyLicenses": "Third Party Licenses",
+  "privacyAndSecurity": "Privacy & Security",
+  "macFiltering": "MAC Filtering",
+  "wifiMacFilters": "WiFi MAC Filters",
+  "filteredDevices": "Filtered devices",
+  "allowAccess": "Allow access",
+  "denyAccess": "Deny access",
+  "allowAccessDesc": "Only MAC addresses in the list can join the network",
+  "denyAccessDesc": "Deny access to the MAC addresses on the list",
+  "onlineDevices": "Online devices",
+  "offlineDevices": "Offline devices",
+  "selectDevices": "Select devices",
+  "nAdd": "Add ({count})",
+  "@nAdd": {
+    "description": "Number of item added",
+    "placeholders": {
+        "count": {
+          "type": "int",
+          "example": "1" 
+        }
+    }
+  },
+  "selectFromMyDeviceList": "Select from my device list",
+  "manuallyAddDevice": "Manually add device",
+  "noFilteredDevices": "You have no filtered devices"
 }

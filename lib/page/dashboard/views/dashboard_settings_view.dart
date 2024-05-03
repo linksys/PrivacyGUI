@@ -88,7 +88,6 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             //     });
             //   },
             // ),
-            
           ],
         ),
       ),
@@ -137,6 +136,11 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             onTap: () => context.goNamed(RouteNamed.wifiAdvancedSettings),
           ),
           AppSectionItemData(
+            title: 'MAC filtering',
+            iconData: LinksysIcons.wifi,
+            onTap: () => context.goNamed(RouteNamed.settingsMacFiltering),
+          ),
+          AppSectionItemData(
             title: 'Nodes',
             iconData: LinksysIcons.router,
             onTap: () {
@@ -149,7 +153,6 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             // iconData: getCharactersIcons(context).smsDefault,
             onTap: () => context.goNamed(RouteNamed.settingsRouterPassword),
           ),
-          
         ],
       );
 

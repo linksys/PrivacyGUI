@@ -108,6 +108,7 @@ Future<T?> showSimpleAppOkDialog<T>(
 }) {
   return showSimpleAppDialog<T?>(
     context,
+    title: title,
     dismissible: dismissible,
     content: content,
     icon: icon,
@@ -128,7 +129,7 @@ Future<T?> showMessageAppDialog<T>(
   bool dismissible = true,
   Widget? icon,
   String? title,
-  String? message,
+  required String message,
   List<Widget>? actions,
   double? width,
 }) {
@@ -144,7 +145,7 @@ Future<T?> showMessageAppDialog<T>(
           : null,
       content: SizedBox(
           width: width ?? kDefaultDialogWidth,
-          child: AppText.bodyMedium(loc(context).modalDFSDesc)),
+          child: AppText.bodyMedium(message)),
       actions: actions,
     ),
   );

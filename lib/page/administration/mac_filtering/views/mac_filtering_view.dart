@@ -3,13 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/picker/simple_item_picker.dart';
+import 'package:linksys_app/page/components/shortcuts/dialogs.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/administration/mac_filtering/providers/_providers.dart';
 import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/card/card.dart';
+import 'package:linksys_widgets/widgets/card/list_card.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:linksys_widgets/widgets/radios/radio_list.dart';
 
 class MacFilteringView extends ArgumentsConsumerStatelessView {
   const MacFilteringView({super.key, super.args});
@@ -37,7 +43,7 @@ class _MacFilteringContentViewState
   @override
   void initState() {
     _notifier = ref.read(macFilteringProvider.notifier);
-
+    _notifier.fetch();
     super.initState();
   }
 
@@ -51,17 +57,19 @@ class _MacFilteringContentViewState
     final state = ref.watch(macFilteringProvider);
     return StyledAppPageView(
       scrollable: true,
-      title: getAppLocalizations(context).mac_filtering,
+      title: loc(context).macFiltering,
       child: AppBasicLayout(
         content: Column(
           children: [
             const AppGap.semiBig(),
-            AppPanelWithSwitch(
-              value: state.status != MacFilterStatus.off,
-              title: getAppLocalizations(context).wifi_mac_filters,
-              onChangedEvent: (value) {
-                _notifier.setEnable(value);
-              },
+            AppCard(
+              child: AppSwitchTriggerTile(
+                value: state.mode != MacFilterMode.disabled,
+                title: AppText.labelLarge(loc(context).wifiMacFilters),
+                onChanged: (value) {
+                  _notifier.setEnable(value);
+                },
+              ),
             ),
             const AppGap.semiBig(),
             ..._buildEnabledContent(state)
@@ -72,76 +80,94 @@ class _MacFilteringContentViewState
   }
 
   List<Widget> _buildEnabledContent(MacFilteringState state) {
-    return state.status != MacFilterStatus.off
+    return state.mode != MacFilterMode.disabled
         ? [
-            AppPanelWithInfo(
-              title: getAppLocalizations(context).access,
-              infoText: state.status.name,
-              onTap: () async {
-                final String? selected = await context.pushNamed(
-                  RouteNamed.itemPicker,
-                  extra: {
-                    'items': [
-                      Item(
-                        title: getAppLocalizations(context).allow_access,
-                        description: getAppLocalizations(context)
-                            .allow_access_description,
-                        id: MacFilterStatus.allow.name,
-                      ),
-                      Item(
-                        title: getAppLocalizations(context).deny_access,
-                        description: getAppLocalizations(context)
-                            .deny_access_description,
-                        id: MacFilterStatus.deny.name,
-                      ),
-                    ],
-                    'selected': state.status.name,
-                  },
-                );
-                if (selected != null) {
-                  _notifier.setAccess(selected);
-                }
-              },
-            ),
-            AppPanelWithTrailWidget(
-              title: getAppLocalizations(context).device_ip_address,
-              trailing: AppTextButton.noPadding(
-                getAppLocalizations(context).select_device,
+            AppListCard(
+                title: AppText.labelLarge(loc(context).access),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    AppText.labelLarge(state.mode.name),
+                    const AppGap.regular(),
+                    const Icon(LinksysIcons.chevronRight)
+                  ],
+                ),
                 onTap: () async {
-                  // String? deviceIp = await ref.read(navigationsProvider.notifier)
-                  //     .pushAndWait(SelectDevicePtah());
-                },
+                  _selectAccessModal();
+                }),
+            AppListCard(
+              title: AppText.labelLarge(loc(context).filteredDevices),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  AppText.labelLarge('${state.macAddresses.length}'),
+                  const AppGap.regular(),
+                  const Icon(LinksysIcons.chevronRight)
+                ],
               ),
-            ),
-            AppSimplePanel(
-              title: getAppLocalizations(context).enter_mac_address,
               onTap: () async {
-                String? macAddress =
-                    await context.pushNamed(RouteNamed.macFilteringInput);
-                if (macAddress != null) {
-                  // TODO query devices name and save device
-                  // showSuccessSnackBar(context, 'message');
-                }
+                context.pushNamed(RouteNamed.macFilteringInput);
               },
             ),
-            _buildFilteredDevices(state),
           ]
         : [];
   }
 
-  Widget _buildFilteredDevices(MacFilteringState state) {
-    return state.selectedDevices.isEmpty
-        ? Expanded(
-            child: Center(
-              child: AppText.bodyMedium(
-                  getAppLocalizations(context).no_filtered_devices_yet),
+  void _selectAccessModal() async {
+    final initValue = ref.read(macFilteringProvider).mode;
+    MacFilterMode? selected;
+    final result = await showSimpleAppDialog<MacFilterMode?>(context,
+        title: loc(context).access,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppRadioList(
+              initial: initValue,
+              mainAxisSize: MainAxisSize.min,
+              items: [
+                AppRadioListItem(
+                  title: loc(context).allowAccess,
+                  subtitleWidget: AppText.bodyMedium(
+                    loc(context).allowAccessDesc,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  value: MacFilterMode.allow,
+                ),
+                AppRadioListItem(
+                  title: loc(context).denyAccess,
+                  subtitleWidget: AppText.bodyMedium(
+                    loc(context).denyAccessDesc,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  value: MacFilterMode.deny,
+                ),
+              ],
+              onChanged: (index, selectedType) {
+                selected = selectedType;
+              },
             ),
-          )
-        : Column(
-            children: [
-              AppText.titleLarge(getAppLocalizations(context).filtered_devices),
-              // Add filtered devices
-            ],
-          );
+          ],
+        ),
+        actions: [
+          AppTextButton(
+            loc(context).cancel,
+            onTap: () {
+              context.pop();
+            },
+          ),
+          AppTextButton(
+            loc(context).ok,
+            onTap: () {
+              context.pop(selected);
+            },
+          ),
+        ]);
+
+    if (result != null) {
+      _notifier.setAccess(result.name);
+    }
   }
 }

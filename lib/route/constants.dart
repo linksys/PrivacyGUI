@@ -98,7 +98,7 @@ class RoutePath {
   /// PnP
   static const pnp = '/pnp';
   static const pnpConfig = 'pnpConfig';
-  static const pnpNoInternetConnection = 'noInternetConnection';
+  static const pnpNoInternetConnection = '/noInternetConnection';
   static const pnpUnplugModem = 'unPlugModem';
   static const pnpMakeSureLightOff = 'makeSureLightOff';
   static const pnpWaitingModem = 'waitingModem';
@@ -124,6 +124,9 @@ class RoutePath {
   ///Channel Finder
   static const channelFinderOptimize = 'channelFinderOptimize';
 
+  /// Device picker
+  static const devicePicker = 'devicePicker';
+  
   /// debug
   static const debug = 'debug';
 }
@@ -253,6 +256,9 @@ class RouteNamed {
 
   ///Channel Finder
   static const channelFinderOptimize = 'channelFinderOptimize';
+
+  /// Device picker
+  static const devicePicker = 'devicePicker';
 
   /// debug
   static const debug = 'debug';

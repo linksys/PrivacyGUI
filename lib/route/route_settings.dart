@@ -131,7 +131,7 @@ final settings = [
       LinksysRoute(
         name: RouteNamed.macFilteringInput,
         path: RoutePath.macFilteringInput,
-        builder: (context, state) => MacFilteringEnterDeviceView(
+        builder: (context, state) => FilteredDevicesView(
           args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
@@ -214,4 +214,11 @@ final settings = [
       ),
     ],
   ),
+  LinksysRoute(
+        name: RouteNamed.devicePicker,
+        path: RoutePath.devicePicker,
+        builder: (context, state) => SelectDeviceView(
+          args: state.extra as Map<String, dynamic>? ?? {},
+        ),
+      ),
 ];
