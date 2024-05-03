@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/shortcuts/dialogs.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/buttons/button.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/panel/switch_trigger_tile.dart';
-import 'package:linksys_widgets/widgets/text/app_text.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class WifiAdvancedSettingsView extends ArgumentsConsumerStatefulView {
   const WifiAdvancedSettingsView({super.key});
@@ -30,9 +28,14 @@ class _WifiAdvancedSettingsViewState
   bool? _isDFSEnabled;
   bool? _isAirtimeFairnessEnabled;
 
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
+    setState(() {
+      _isLoading = true;
+    });
     ref.read(wifiAdvancedProvider.notifier).fetch().then((value) {
       final state = ref.read(wifiAdvancedProvider);
       setState(() {
@@ -42,30 +45,34 @@ class _WifiAdvancedSettingsViewState
         _isMLOEnabled = state.isMLOEnabled;
         _isDFSEnabled = state.isDFSEnabled;
         _isAirtimeFairnessEnabled = state.isAirtimeFairnessEnabled;
+
+        _isLoading = false;
       });
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
-      actions: [
-        AppTextButton.noPadding(
-          'Save',
-          onTap: () {
-            ref.read(wifiAdvancedProvider.notifier).save(
-                  isClientSteeringEnabled: _isClientSteeringEnabled,
-                  isNodeSteeringEnabled: _isNodeSteeringEnabled,
-                  isDFSEnabled: _isDFSEnabled,
-                  isMLOEnabled: _isMLOEnabled,
-                  isIptvEnabled: _isIptvEnabled,
-                  isAirtimeFairnessEnabled: _isAirtimeFairnessEnabled,
-                );
-          },
-        ),
-      ],
-      child: _buildGrid(),
-    );
+    return _isLoading
+        ? AppFullScreenSpinner(
+            text: loc(context).processing,
+          )
+        : StyledAppPageView(
+            appBarStyle: AppBarStyle.none,
+            saveAction: SaveAction(
+                enabled: true,
+                onSave: () {
+                  ref.read(wifiAdvancedProvider.notifier).save(
+                        isClientSteeringEnabled: _isClientSteeringEnabled,
+                        isNodeSteeringEnabled: _isNodeSteeringEnabled,
+                        isDFSEnabled: _isDFSEnabled,
+                        isMLOEnabled: _isMLOEnabled,
+                        isIptvEnabled: _isIptvEnabled,
+                        isAirtimeFairnessEnabled: _isAirtimeFairnessEnabled,
+                      );
+                }),
+            child: _buildGrid(),
+          );
   }
 
   Widget _buildGrid() {

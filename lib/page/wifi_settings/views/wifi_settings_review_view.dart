@@ -52,7 +52,7 @@ class _WifiSettingsReviewViewState
   @override
   Widget build(BuildContext context) {
     return _isLoading
-        ? AppFullScreenSpinner(text: getAppLocalizations(context).processing)
+        ? AppFullScreenSpinner(text: loc(context).processing)
         : StyledAppPageView(
             scrollable: true,
             title: getWifiTypeTitle(context, currentSettings.wifiType),

@@ -936,5 +936,6 @@
   },
   "selectFromMyDeviceList": "Select from my device list",
   "manuallyAddDevice": "Manually add device",
-  "noFilteredDevices": "You have no filtered devices"
+  "noFilteredDevices": "You have no filtered devices",
+  "guestWifi": "Guest WiFi"
 }

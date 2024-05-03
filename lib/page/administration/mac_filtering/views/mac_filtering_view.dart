@@ -5,6 +5,7 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_app/page/components/shortcuts/dialogs.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/administration/mac_filtering/providers/_providers.dart';
@@ -62,6 +63,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
           )
         : StyledAppPageView(
             scrollable: true,
+            appBarStyle: AppBarStyle.none,
             onBackTap: () {
               if (_preservedState != state) {
                 _showUnsavedAlert();
@@ -96,7 +98,6 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
             child: AppBasicLayout(
               content: Column(
                 children: [
-                  const AppGap.semiBig(),
                   AppCard(
                     child: AppSwitchTriggerTile(
                       value: state.mode != MacFilterMode.disabled,

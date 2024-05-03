@@ -27,7 +27,7 @@ import 'package:linksys_app/providers/connectivity/mixin.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final pnpProvider =
-    NotifierProvider<BasePnpNotifier, PnpState>(() => MockPnpNotifier());
+    NotifierProvider<BasePnpNotifier, PnpState>(() => PnpNotifier());
 
 abstract class BasePnpNotifier extends Notifier<PnpState> {
   @override
