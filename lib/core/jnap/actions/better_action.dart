@@ -468,6 +468,8 @@ void initBetterActions() {
       _JNAPActionValue.setTimeSettings.value;
   _betterActionMap[JNAPAction.getMACFilterSettings] =
       _JNAPActionValue.getMACFilterSettings.value;
+  _betterActionMap[JNAPAction.setMACFilterSettings] =
+      _JNAPActionValue.setMACFilterSettings.value;    
   _betterActionMap[JNAPAction.getActiveMotionSensingBots] =
       _JNAPActionValue.getActiveMotionSensingBots.value;
   _betterActionMap[JNAPAction.getMotionSensingSettings] =

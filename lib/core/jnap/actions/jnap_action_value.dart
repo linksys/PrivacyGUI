@@ -137,6 +137,8 @@ enum _JNAPActionValue {
   setTimeSettings(value: 'http://linksys.com/jnap/locale/SetTimeSettings'),
   getMACFilterSettings(
       value: 'http://linksys.com/jnap/macfilter/GetMACFilterSettings'),
+  setMACFilterSettings(
+      value: 'http://linksys.com/jnap/macfilter/SetMACFilterSettings'),
   getActiveMotionSensingBots(
       value:
           'http://linksys.com/jnap/motionsensing/GetActiveMotionSensingBots'),
@@ -366,7 +368,10 @@ enum _JNAPActionValue {
       value:
           'http://linksys.com/jnap/nodes/setup/GetAutoConfigurationSettings'),
 
-  setUserAcknowledgedAutoConfiguration(value: 'http://linksys.com/jnap/nodes/setup/SetUserAcknowledgedAutoConfiguration'),;
+  setUserAcknowledgedAutoConfiguration(
+      value:
+          'http://linksys.com/jnap/nodes/setup/SetUserAcknowledgedAutoConfiguration'),
+  ;
 
   const _JNAPActionValue({required this.value});
 

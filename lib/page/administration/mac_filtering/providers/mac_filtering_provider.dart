@@ -1,8 +1,10 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/models/mac_filter_settings.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/utils/extension.dart';
 import 'package:linksys_app/page/administration/mac_filtering/providers/mac_filtering_state.dart';
 import 'package:linksys_app/util/extensions.dart';
 
@@ -14,12 +16,13 @@ class MacFilteringNotifier extends Notifier<MacFilteringState> {
   @override
   MacFilteringState build() => MacFilteringState.init();
 
-  fetch() async {
+  Future fetch() async {
     final settings = await ref
         .read(routerRepositoryProvider)
         .send(
           JNAPAction.getMACFilterSettings,
           fetchRemote: true,
+          auth: true,
         )
         .then((result) => MACFilterSettings.fromMap(result.output));
     state = state.copyWith(
@@ -27,6 +30,19 @@ class MacFilteringNotifier extends Notifier<MacFilteringState> {
       macAddresses: settings.macAddresses,
       maxMacAddresses: settings.maxMACAddresses,
     );
+  }
+
+  Future save() async {
+    await ref.read(routerRepositoryProvider).send(
+          JNAPAction.setMACFilterSettings,
+          data: {
+            'macFilterMode': state.mode.name.capitalize(),
+            'macAddresses': state.macAddresses,
+          },
+          auth: true,
+          fetchRemote: true,
+          cacheLevel: CacheLevel.noCache,
+        );
   }
 
   setEnable(bool isEnabled) {
@@ -47,5 +63,11 @@ class MacFilteringNotifier extends Notifier<MacFilteringState> {
       ..addAll(selections)
       ..unique();
     state = state.copyWith(macAddresses: unique);
+  }
+
+  removeSelection(List<String> selection) {
+    final list = List<String>.from(state.macAddresses)
+      ..removeWhere((element) => selection.contains(element));
+    state = state.copyWith(macAddresses: list);
   }
 }

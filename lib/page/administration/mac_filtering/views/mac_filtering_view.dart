@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_app/page/components/shortcuts/dialogs.dart';
+import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/administration/mac_filtering/providers/_providers.dart';
@@ -15,35 +16,35 @@ import 'package:linksys_widgets/widgets/card/card.dart';
 import 'package:linksys_widgets/widgets/card/list_card.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:linksys_widgets/widgets/radios/radio_list.dart';
 
-class MacFilteringView extends ArgumentsConsumerStatelessView {
-  const MacFilteringView({super.key, super.args});
+class MacFilteringView extends ArgumentsConsumerStatefulView {
+  const MacFilteringView({
+    super.key,
+    super.args,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return MacFilteringContentView(
-      args: super.args,
-    );
-  }
+  ConsumerState<MacFilteringView> createState() => _MacFilteringViewState();
 }
 
-class MacFilteringContentView extends ArgumentsConsumerStatefulView {
-  const MacFilteringContentView({super.key, super.args});
-
-  @override
-  ConsumerState<MacFilteringContentView> createState() =>
-      _MacFilteringContentViewState();
-}
-
-class _MacFilteringContentViewState
-    extends ConsumerState<MacFilteringContentView> {
+class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
   late final MacFilteringNotifier _notifier;
-
+  bool _isLoading = false;
+  late MacFilteringState _preservedState;
   @override
   void initState() {
+    setState(() {
+      _isLoading = true;
+    });
     _notifier = ref.read(macFilteringProvider.notifier);
-    _notifier.fetch();
+    _notifier.fetch().then((_) {
+      _preservedState = ref.read(macFilteringProvider);
+      setState(() {
+        _isLoading = false;
+      });
+    });
     super.initState();
   }
 
@@ -55,28 +56,62 @@ class _MacFilteringContentViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(macFilteringProvider);
-    return StyledAppPageView(
-      scrollable: true,
-      title: loc(context).macFiltering,
-      child: AppBasicLayout(
-        content: Column(
-          children: [
-            const AppGap.semiBig(),
-            AppCard(
-              child: AppSwitchTriggerTile(
-                value: state.mode != MacFilterMode.disabled,
-                title: AppText.labelLarge(loc(context).wifiMacFilters),
-                onChanged: (value) {
-                  _notifier.setEnable(value);
-                },
+    return _isLoading
+        ? AppFullScreenSpinner(
+            title: loc(context).processing,
+          )
+        : StyledAppPageView(
+            scrollable: true,
+            onBackTap: () {
+              if (_preservedState != state) {
+                _showUnsavedAlert();
+              } else {
+                context.pop();
+              }
+            },
+            title: loc(context).macFiltering,
+            saveAction: SaveAction(
+                enabled: _preservedState != state,
+                onSave: () {
+                  setState(() {
+                    _isLoading = true;
+                  });
+                  _notifier
+                      .save()
+                      .then((value) {
+                        setState(() {
+                          _preservedState = ref.read(macFilteringProvider);
+                        });
+                      })
+                      .then((value) =>
+                          showSuccessSnackBar(context, loc(context).saved))
+                      .onError((error, stackTrace) => showFailedSnackBar(
+                          context, loc(context).generalError))
+                      .whenComplete(() {
+                        setState(() {
+                          _isLoading = false;
+                        });
+                      });
+                }),
+            child: AppBasicLayout(
+              content: Column(
+                children: [
+                  const AppGap.semiBig(),
+                  AppCard(
+                    child: AppSwitchTriggerTile(
+                      value: state.mode != MacFilterMode.disabled,
+                      title: AppText.labelLarge(loc(context).wifiMacFilters),
+                      onChanged: (value) {
+                        _notifier.setEnable(value);
+                      },
+                    ),
+                  ),
+                  const AppGap.semiBig(),
+                  ..._buildEnabledContent(state)
+                ],
               ),
             ),
-            const AppGap.semiBig(),
-            ..._buildEnabledContent(state)
-          ],
-        ),
-      ),
-    );
+          );
   }
 
   List<Widget> _buildEnabledContent(MacFilteringState state) {
@@ -169,5 +204,30 @@ class _MacFilteringContentViewState
     if (result != null) {
       _notifier.setAccess(result.name);
     }
+  }
+
+  _showUnsavedAlert() {
+    showMessageAppDialog(
+      context,
+      title: loc(context).unsavedChangesTitle,
+      message: loc(context).unsavedChangesDesc,
+      actions: [
+        AppTextButton(
+          loc(context).goBack,
+          color: Theme.of(context).colorScheme.onSurface,
+          onTap: () {
+            context.pop();
+          },
+        ),
+        AppTextButton(
+          loc(context).discardChanges,
+          color: Theme.of(context).colorScheme.error,
+          onTap: () {
+            context.pop();
+            context.pop();
+          },
+        ),
+      ],
+    );
   }
 }

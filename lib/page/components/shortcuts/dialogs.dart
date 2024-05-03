@@ -136,18 +136,9 @@ Future<T?> showMessageAppDialog<T>(
   return showSimpleAppDialog<T?>(
     context,
     dismissible: dismissible,
-    content: AlertDialog(
-      icon: icon,
-      title: title != null
-          ? SizedBox(
-              width: width ?? kDefaultDialogWidth,
-              child: AppText.titleLarge(title))
-          : null,
-      content: SizedBox(
-          width: width ?? kDefaultDialogWidth,
-          child: AppText.bodyMedium(message)),
-      actions: actions,
-    ),
+    title: title,
+    content: AppText.bodyMedium(message),
+    actions: actions,
   );
 }
 
