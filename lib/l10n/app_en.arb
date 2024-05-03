@@ -164,7 +164,6 @@
   "clear": "Clear",
   "clear_all_offline_devices": "Clear all offline devices?",
   "clear_all_offline_devices_desc": "These devices will reappear if they reconnect to your Wi-Fi network.",
-  "client_lease_time": "Client lease time",
   "cloud_account_double_check_title": "Are you sure? You'll need an account to use the following features:",
   "cloud_account_login_email_with_linksys_app": "Did you use this email with another Linksys app?",
   "cloud_account_login_title": "Log in to your Linksys account",
@@ -176,7 +175,6 @@
   "cloud_forgot_password_title": "We'll send you a link to reset your password.",
   "connect_to_modem_view_description": "Plug the ethernet cable into the Internet port on your router. Plug the other end into your modem, gateway or source of internet.",
   "connect_to_modem_view_title": "Connect the router to your modem or source of internet",
-  "connection_type": "Connection type",
   "connection_type_automatic": "Automatic",
   "connection_type_automatic_desc": "Creates an unique device address from your router's IPv6 prefix.",
   "connection_type_bridge": "Bridge Mode",
@@ -213,7 +211,6 @@
   "create_ssid_view_header_description": "Make them memorable. You'll use these to connect to your WiFi network.",
   "create_ssid_view_title": "Customize WiFi name and password",
   "daily_time_limit": "Daily time limit",
-  "default_gateway": "Default gateway",
   "delete_rule": "Delete rule",
   "deny_access": "Deny access",
   "deny_access_description": "Deny access to the MAC addresses on the list",
@@ -224,19 +221,19 @@
   "device_name": "Device name",
   "dhcp_ip_range": "{first} to {last}",
   "dhcp_list": "DHCP list",
-  "dhcp_reservations": "DHCP reservations",
-  "dhcp_server": "DHCP server",
   "dhcp_users_limit": "1 to {maxUsers}",
   "disabled": "Disabled",
   "dns": "DNS",
   "dns1": "DNS 1",
+  "dns2Optional": "DNS 2 (optional)",
+  "dns3Optional": "DNS 3 (optional)",
   "dns_settings": "DNS settings",
   "done": "Done",
   "dont_want_cloud_account": "I do not want an account",
   "duid": "DUID",
   "eastern_time_usa_canada": "Eastern Time (USA & Canada)",
-  "editProviderChangesDesc": "Network devices will temporarily disconnect and reconnect",
-  "editProviderChangesTitle": "These changes require restarting your Wi-Fi",
+  "restartWifiAlertDesc": "Network devices will temporarily disconnect and reconnect",
+  "restartWifiAlertTitle": "These changes require restarting your Wi-Fi",
   "email": "Email",
   "enable_biometrics": "Enable biometrics",
   "enable_local_network": "I've enabled local network access",
@@ -250,7 +247,6 @@
   "enter_isp_settings": "Manually enter ISP settings",
   "enter_isp_settings_error": "Account name and/or password incorrect. Please check and try again, or contact your ISP for support",
   "enter_isp_settings_title": "Enter ISP settings provided by your ISP",
-  "enter_mac_address": "Enter MAC address",
   "enter_password": "Enter password",
   "enter_router_password_to_change_password_hint": "Enter router password to change password hint.",
   "enter_setup_ssid_view_title": "Okay, enter the setup WiFi and password located on the bottom of your router",
@@ -303,7 +299,6 @@
   "internal_port": "Internal port",
   "internet": "Internet",
   "internet_connected_title": "Connected to internet!",
-  "internet_ipv4_address": "Internet IPv4 Address",
   "internet_schedule_view_description": "Set daily time limits and schedule blocked internet access.",
   "internet_schedules": "Internet schedules",
   "internet_settings": "Internet settings",
@@ -315,13 +310,10 @@
   "ip_details": "IP details",
   "ip_renewing": "Renewing...",
   "ipv6_address": "IPv6 address",
-  "ipv6_automatic": "IPv6 - Automatic",
   "its_connected": "It's connected",
   "japan_korea": "Japan, Korea",
   "keep_defaults": "Keep defaults",
   "kwajalein": "Kwajalein",
-  "label_ipv4": "IPv4",
-  "label_ipv6": "IPv6",
   "last_name": "Last name",
   "learn_battery_modem_link": "Learn more about restarting battery-powered modems",
   "learn_battery_modem_title": "You may have a battery-powered modem that requires a different way to reset",
@@ -356,7 +348,6 @@
   "login_to_continue": "Log in to continue.",
   "logout": "Log out",
   "looking_for_your_node": "Looking for your node…",
-  "mac_address_clone": "MAC address clone",
   "mac_filtering": "MAC filtering",
   "main": "Main",
   "manual": "Manual",
@@ -369,7 +360,7 @@
   "model": "Model",
   "mountain_time_usa_canada": "Mountain Time (USA & Canada)",
   "mtu": "MTU",
-  "mtu_size": "Size",
+  "size": "Size",
   "mumbai_kolkata_chennai_new_delhi": "Mumbai, Kolkata, Chennai, New Delhi",
   "name": "Name",
   "name_node_view_custom_name": "Custom name",
@@ -509,7 +500,6 @@
   "select_devices": "Select devices",
   "select_devices_description": "A device can only belong to one profile.",
   "send_link": "Send link",
-  "server_ipv4_address": "Server Ipv4 Address",
   "set_a_router_password": "Set a router password",
   "setup_new_router": "Set up new WiFi",
   "setup_password": "Setup Password",
@@ -528,18 +518,14 @@
   "singapore_taiwan_russia": "Singapore, Taiwan, Russia",
   "single_port_forwarding": "Single port forwarding",
   "single_port_forwarding_description": "Continuously forward traffic from a specific port to a specific device. These ports remain open.",
-  "sixth_tunnel": "6rd tunnel",
   "sms": "SMS",
   "solomon_islands": "Solomon Islands",
   "south_africa": "South Africa",
-  "start_ip_address": "Start IP address",
   "start_port": "Start port",
-  "static_dns1": "Static DNS 1",
   "static_dns2_optional": "Static DNS 2 (optional)",
   "static_dns3_optional": "Static DNS 3 (optional)",
   "static_ip_address": "Static IP Address",
   "static_ip_card_description": "Enter your static IP address for internet access",
-  "subnet_mask": "Subnet mask",
   "successExclamation": "Success!",
   "tcp": "TCP",
   "thailand_russia": "Thailand, Russia",
@@ -609,7 +595,6 @@
   "use_router_password": "Use router password instead",
   "username": "Username",
   "vlan": "VLAN",
-  "vlan_id": "VLAN ID(optional)",
   "vlan_id_desc": "You may need this to connect to this internet",
   "wait_modem_disconnect_title": "Giving your modem time to fully disconnect from your ISP...",
   "web_ui": "Web UI",
@@ -640,7 +625,6 @@
   "wifi_signal_no_signal": "No signal",
   "wifi_signal_weak": "Weak",
   "wifi_signal_weak_rssi_range": "0 to -50",
-  "wins": "WINS",
   "wired_device": "Wired device",
   "home": "Home",
   "menu": "Menu",
@@ -660,13 +644,13 @@
   "filters": "Filters",
   "nDevices": "{count, plural, other{{count} devices} zero{No devices} one{1 device}}",
   "@nDevices": {
-      "description": "Number of devices",
-      "placeholders": {
-          "count": {
-            "type": "int",
-            "example": "1" 
-          }
+    "description": "Number of devices",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
       }
+    }
   },
   "byConnection": "By connection",
   "byNode": "By node",
@@ -683,11 +667,11 @@
   "delete": "Delete",
   "nDevicesDeleteDevicesTitle": "{count, plural, other{Delete devices} one{Delete device}}",
   "@nDevicesDeleteDevicesTitle": {
-      "description": "alert dialog delete device title plural"
+    "description": "alert dialog delete device title plural"
   },
   "nDevicesDeleteDevicesDescription": "{count, plural, other{Devices can reappear in the list if reconnected to your WiFi network.} one{Device can reappear in the list if reconnected to your WiFi network.}}",
   "@nDevicesDeleteDevicesDescription": {
-      "description": "alert dialog delete device description plural"
+    "description": "alert dialog delete device description plural"
   },
   "connectTo": "Connected to",
   "connectedDevice": "Connected devices",
@@ -709,22 +693,22 @@
   "ok": "Ok",
   "nNodes": "{count, plural, other{Nodes ({count})} one{Node (1)}}",
   "@nNodes": {
-      "description": "Number of nodes",
-      "placeholders": {
-          "count": {
-            "type": "int",
-            "example": "1" 
-          }
+    "description": "Number of nodes",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
       }
+    }
   },
   "nNodesOffline": "{count, plural, other{{count} nodes offline} one{1 node offline}}",
   "@nNodesOffline": {
     "description": "Number of offline nodes",
     "placeholders": {
-        "count": {
-          "type": "int",
-          "example": "1" 
-        }
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
     }
   },
   "node": "Node",
@@ -865,6 +849,66 @@
   "routerPasswordRuleLowerUpper": "Upper and lowercase letters",
   "routerPasswordRuleOneNumber": "1 number",
   "routerPasswordRuleSpecialChar": "1 special character",
+  "menuWifiDesc": "Change Wi-Fi name and password",
+  "menuAdminDesc": "Router password, Time zone, Warranty",
+  "menuRouterAndNodesDesc": "Node name and light settings",
+  "menuSpeedTestDesc": "Test your upload and download speeds",
+  "menuSafeBrowsingDesc": "Block inappropriate web content",
+  "localNetwork": "Local Network",
+  "advancedRouting": "Advanced Routing",
+  "firewall": "Firewall",
+  "dmz": "DMZ",
+  "portForwarding": "Port Forwarding",
+  "ipv4": "IPv4",
+  "@ipv4": {
+    "description": "Do not translate"
+  },
+  "ipv6": "IPv6",
+  "@ipv6": {
+    "description": "Do not translate"
+  },
+  "connectionType": "Connection Type",
+  "internetIpv4Address": "Internet IPv4 Address:",
+  "subnetMask": "Subnet mask",
+  "defaultGateway": "Default Gateway",
+  "vlanIdOptional": "VLAN ID (optional)",
+  "serviceNameOptional": "Service name (optional)",
+  "connectionMode": "Connection Mode",
+  "connectOnDemand": "Connect on demand",
+  "keepAlive": "Keep alive",
+  "redialPeriod": "Redial Period:",
+  "maxIdleTime": "Max Idle Time:",
+  "seconds": "seconds",
+  "serverIpv4Address": "Server Ipv4 Address",
+  "obtainIPv4AddressAutomatically": "Obtain an IPv4 address automatically (DHCP)",
+  "specifyIPv4Address": "Specify an IPv4 address",
+  "toLogInLocallyWhileInBridgeMode": "To log in locally while in bridge mode, go to",
+  "prefix": "Prefix",
+  "prefixLength": "Prefix length",
+  "borderRelay": "Border relay",
+  "borderRelayLength": "Border relay length",
+  "ipv6Automatic": "IPv6 - Automatic",
+  "sixrdTunnel": "6rd tunnel",
+  "automatic": "Automatic",
+  "macAddressClone": "MAC address clone",
+  "cloneCurrentClientMac": "Clone current client's MAC",
+  "unsavedChangesTitle": "You have unsaved changes on this page",
+  "unsavedChangesDesc": "Navigating away from this page will discard any inputs.",
+  "goBack": "Go back",
+  "discardChanges": "Discard changes",
+  "changesSaved": "Changes saved",
+  "hostName": "Host name",
+  "dhcpReservations": "DHCP reservations",
+  "dhcpServer": "DHCP server",
+  "startIpAddress": "Start IP address",
+  "maximumNumberOfUsers": "Maximum number of users",
+  "to": "to",
+  "ipAddressRange": "IP Address Range",
+  "clientLeaseTime": "Client lease time",
+  "staticDns1": "Static DNS 1",
+  "staticDns2": "Static DNS 2",
+  "staticDns3": "Static DNS 3",
+  "wins": "WINS",
   "endUserLicenseAgreement": "End User License Agreement",
   "termsOfService": "Term of Service",
   "thirdPartyLicenses": "Third Party Licenses",

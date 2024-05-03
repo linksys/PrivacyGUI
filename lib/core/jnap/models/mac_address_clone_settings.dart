@@ -1,10 +1,13 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 class MACAddressCloneSettings extends Equatable {
   final bool isMACAddressCloneEnabled;
   final String? macAddress;
+
   const MACAddressCloneSettings({
     required this.isMACAddressCloneEnabled,
     this.macAddress,
@@ -21,14 +24,17 @@ class MACAddressCloneSettings extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  @override
+  List<Object?> get props => [isMACAddressCloneEnabled, macAddress];
+
+  Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'isMACAddressCloneEnabled': isMACAddressCloneEnabled,
       'macAddress': macAddress,
     }..removeWhere((key, value) => value == null);
   }
 
-  factory MACAddressCloneSettings.fromJson(Map<String, dynamic> map) {
+  factory MACAddressCloneSettings.fromMap(Map<String, dynamic> map) {
     return MACAddressCloneSettings(
       isMACAddressCloneEnabled: map['isMACAddressCloneEnabled'] as bool,
       macAddress:
@@ -36,6 +42,12 @@ class MACAddressCloneSettings extends Equatable {
     );
   }
 
+  String toJson() => json.encode(toMap());
+
+  factory MACAddressCloneSettings.fromJson(String source) =>
+      MACAddressCloneSettings.fromMap(
+          json.decode(source) as Map<String, dynamic>);
+
   @override
-  List<Object?> get props => [isMACAddressCloneEnabled, macAddress];
+  bool get stringify => true;
 }

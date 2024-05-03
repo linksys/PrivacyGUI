@@ -57,7 +57,7 @@ class SetRouterLANSettings extends Equatable {
       'networkPrefixLength': networkPrefixLength,
       'hostName': hostName,
       'isDHCPEnabled': isDHCPEnabled,
-      'dhcpSettings': dhcpSettings?.toJson(),
+      'dhcpSettings': dhcpSettings?.toMap(),
     }..removeWhere((key, value) => value == null);
   }
 
@@ -68,7 +68,7 @@ class SetRouterLANSettings extends Equatable {
       hostName: map['hostName'] as String,
       isDHCPEnabled: map['isDHCPEnabled'] as bool,
       dhcpSettings: map['dhcpSettings'] != null
-          ? DHCPSettings.fromJson(map['dhcpSettings'] as Map<String, dynamic>)
+          ? DHCPSettings.fromMap(map['dhcpSettings'] as Map<String, dynamic>)
           : null,
     );
   }

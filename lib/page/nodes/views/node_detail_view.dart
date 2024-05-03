@@ -365,7 +365,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   void _showMoreRouterInfoModal(NodeDetailState state) {
     showSimpleAppDialog(
       context,
-      title: loc(context).moreInfo.camelCapitalized(),
+      title: loc(context).moreInfo.camelCapitalize(),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.start,
@@ -374,7 +374,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           AppText.labelLarge(loc(context).model),
           AppText.bodyMedium(state.modelNumber),
           const AppGap.regular(),
-          AppText.labelLarge(loc(context).serialNumber.camelCapitalized()),
+          AppText.labelLarge(loc(context).serialNumber.camelCapitalize()),
           AppText.bodyMedium(state.serialNumber),
         ],
       ),

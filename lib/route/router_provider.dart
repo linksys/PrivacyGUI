@@ -9,7 +9,7 @@ import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/account/_account.dart';
 import 'package:linksys_app/page/administration/firewall/_firewall.dart';
-import 'package:linksys_app/page/administration/internet_settings/_internet_settings.dart';
+import 'package:linksys_app/page/advanced_settings/internet_settings/_internet_settings.dart';
 import 'package:linksys_app/page/administration/ip_details/_ip_details.dart';
 import 'package:linksys_app/page/administration/port_forwarding/_port_forwarding.dart';
 import 'package:linksys_app/page/administration/network_admin/_router_password.dart';
@@ -51,7 +51,7 @@ import 'package:linksys_app/providers/auth/_auth.dart';
 import 'package:linksys_app/providers/connectivity/_connectivity.dart';
 import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/route/router_logger.dart';
-import '../page/administration/local_network_settings/_local_network_settings.dart';
+import '../page/advanced_settings/local_network_settings/_local_network_settings.dart';
 import '../page/administration/mac_filtering/_mac_filtering.dart';
 import 'constants.dart';
 
@@ -60,6 +60,7 @@ part 'route_cloud_login.dart';
 part 'route_local_login.dart';
 part 'route_dashboard.dart';
 part 'route_settings.dart';
+part 'route_advanced_settings.dart';
 part 'route_otp.dart';
 part 'route_pnp.dart';
 part 'route_add_nodes.dart';

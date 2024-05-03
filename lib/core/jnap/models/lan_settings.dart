@@ -1,3 +1,6 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 ///
@@ -34,18 +37,20 @@ class RouterLANSettings extends Equatable {
   final int? maxAllowedDHCPLeaseMinutes;
 
   @override
-  List<Object?> get props => [
-        minNetworkPrefixLength,
-        maxNetworkPrefixLength,
-        minAllowedDHCPLeaseMinutes,
-        dhcpSettings,
-        hostName,
-        maxDHCPReservationDescriptionLength,
-        isDHCPEnabled,
-        networkPrefixLength,
-        ipAddress,
-        maxAllowedDHCPLeaseMinutes,
-      ];
+  List<Object?> get props {
+    return [
+      minNetworkPrefixLength,
+      maxNetworkPrefixLength,
+      minAllowedDHCPLeaseMinutes,
+      dhcpSettings,
+      hostName,
+      maxDHCPReservationDescriptionLength,
+      isDHCPEnabled,
+      networkPrefixLength,
+      ipAddress,
+      maxAllowedDHCPLeaseMinutes,
+    ];
+  }
 
   const RouterLANSettings({
     required this.minNetworkPrefixLength,
@@ -92,15 +97,14 @@ class RouterLANSettings extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
       'minNetworkPrefixLength': minNetworkPrefixLength,
       'maxNetworkPrefixLength': maxNetworkPrefixLength,
       'minAllowedDHCPLeaseMinutes': minAllowedDHCPLeaseMinutes,
-      'dhcpSettings': dhcpSettings.toJson(),
+      'dhcpSettings': dhcpSettings.toMap(),
       'hostName': hostName,
-      'maxDHCPReservationDescriptionLength':
-          maxDHCPReservationDescriptionLength,
+      'maxDHCPReservationDescriptionLength': maxDHCPReservationDescriptionLength,
       'isDHCPEnabled': isDHCPEnabled,
       'networkPrefixLength': networkPrefixLength,
       'ipAddress': ipAddress,
@@ -108,21 +112,27 @@ class RouterLANSettings extends Equatable {
     }..removeWhere((key, value) => value == null);
   }
 
-  factory RouterLANSettings.fromJson(Map<String, dynamic> json) {
+  factory RouterLANSettings.fromMap(Map<String, dynamic> map) {
     return RouterLANSettings(
-      minNetworkPrefixLength: json['minNetworkPrefixLength'],
-      maxNetworkPrefixLength: json['maxNetworkPrefixLength'],
-      minAllowedDHCPLeaseMinutes: json['minAllowedDHCPLeaseMinutes'],
-      dhcpSettings: DHCPSettings.fromJson(json['dhcpSettings']),
-      hostName: json['hostName'],
-      maxDHCPReservationDescriptionLength:
-          json['maxDHCPReservationDescriptionLength'],
-      isDHCPEnabled: json['isDHCPEnabled'],
-      networkPrefixLength: json['networkPrefixLength'],
-      ipAddress: json['ipAddress'],
-      maxAllowedDHCPLeaseMinutes: json['maxAllowedDHCPLeaseMinutes'],
+      minNetworkPrefixLength: map['minNetworkPrefixLength'] as int,
+      maxNetworkPrefixLength: map['maxNetworkPrefixLength'] as int,
+      minAllowedDHCPLeaseMinutes: map['minAllowedDHCPLeaseMinutes'] as int,
+      dhcpSettings: DHCPSettings.fromMap(map['dhcpSettings'] as Map<String,dynamic>),
+      hostName: map['hostName'] as String,
+      maxDHCPReservationDescriptionLength: map['maxDHCPReservationDescriptionLength'] as int,
+      isDHCPEnabled: map['isDHCPEnabled'] as bool,
+      networkPrefixLength: map['networkPrefixLength'] as int,
+      ipAddress: map['ipAddress'] as String,
+      maxAllowedDHCPLeaseMinutes: map['maxAllowedDHCPLeaseMinutes'] != null ? map['maxAllowedDHCPLeaseMinutes'] as int : null,
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory RouterLANSettings.fromJson(String source) => RouterLANSettings.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  bool get stringify => true;
 }
 
 class DHCPSettings extends Equatable {
@@ -136,8 +146,19 @@ class DHCPSettings extends Equatable {
   final String? winsServer;
 
   @override
-  List<Object?> get props =>
-      [lastClientIPAddress, leaseMinutes, reservations, firstClientIPAddress];
+  List<Object?> get props {
+    return [
+      lastClientIPAddress,
+      leaseMinutes,
+      reservations,
+      firstClientIPAddress,
+      dnsServer1,
+      dnsServer2,
+      dnsServer3,
+      winsServer,
+      firstClientIPAddress,
+    ];
+  }
 
   const DHCPSettings({
     required this.lastClientIPAddress,
@@ -172,11 +193,11 @@ class DHCPSettings extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
       'lastClientIPAddress': lastClientIPAddress,
       'leaseMinutes': leaseMinutes,
-      'reservations': reservations.map((e) => e.toJson()).toList(),
+      'reservations': reservations.map((x) => x.toMap()).toList(),
       'firstClientIPAddress': firstClientIPAddress,
       'dnsServer1': dnsServer1,
       'dnsServer2': dnsServer2,
@@ -185,20 +206,25 @@ class DHCPSettings extends Equatable {
     }..removeWhere((key, value) => value == null);
   }
 
-  factory DHCPSettings.fromJson(Map<String, dynamic> json) {
+  factory DHCPSettings.fromMap(Map<String, dynamic> map) {
     return DHCPSettings(
-      lastClientIPAddress: json['lastClientIPAddress'],
-      leaseMinutes: json['leaseMinutes'],
-      reservations: List.from(json['reservations'])
-          .map((e) => DHCPReservation.fromJson(e))
-          .toList(),
-      firstClientIPAddress: json['firstClientIPAddress'],
-      dnsServer1: json['dnsServer1'],
-      dnsServer2: json['dnsServer2'],
-      dnsServer3: json['dnsServer3'],
-      winsServer: json['winsServer'],
+      lastClientIPAddress: map['lastClientIPAddress'] as String,
+      leaseMinutes: map['leaseMinutes'] as int,
+      reservations: List<DHCPReservation>.from((map['reservations']).map<DHCPReservation>((x) => DHCPReservation.fromMap(x as Map<String,dynamic>),),),
+      firstClientIPAddress: map['firstClientIPAddress'] as String,
+      dnsServer1: map['dnsServer1'] != null ? map['dnsServer1'] as String : null,
+      dnsServer2: map['dnsServer2'] != null ? map['dnsServer2'] as String : null,
+      dnsServer3: map['dnsServer3'] != null ? map['dnsServer3'] as String : null,
+      winsServer: map['winsServer'] != null ? map['winsServer'] as String : null,
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory DHCPSettings.fromJson(String source) => DHCPSettings.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  bool get stringify => true;
 }
 
 class DHCPReservation extends Equatable {
@@ -207,7 +233,7 @@ class DHCPReservation extends Equatable {
   final String description;
 
   @override
-  List<Object?> get props => [macAddress, ipAddress, description];
+  List<Object> get props => [macAddress, ipAddress, description];
 
   const DHCPReservation({
     required this.macAddress,
@@ -227,19 +253,27 @@ class DHCPReservation extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
       'macAddress': macAddress,
       'ipAddress': ipAddress,
       'description': description,
     };
   }
 
-  factory DHCPReservation.fromJson(Map<String, dynamic> json) {
+  factory DHCPReservation.fromMap(Map<String, dynamic> map) {
     return DHCPReservation(
-      macAddress: json['macAddress'],
-      ipAddress: json['ipAddress'],
-      description: json['description'],
+      macAddress: map['macAddress'] as String,
+      ipAddress: map['ipAddress'] as String,
+      description: map['description'] as String,
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory DHCPReservation.fromJson(String source) =>
+      DHCPReservation.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  bool get stringify => true;
 }

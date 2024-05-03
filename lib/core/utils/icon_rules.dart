@@ -734,7 +734,7 @@ String iconTest(Map<String, dynamic> target) {
 
   if (iconClass is Map<String, dynamic>) {
     final modelNumber = target.getValueByPath<String>(iconClass['lookup']);
-    final capitalized = modelNumber.capitalized();
+    final capitalized = modelNumber.capitalize();
     return _iconMapping('router$capitalized');
   } else if (iconClass is String) {
     return _iconMapping(iconClass, fallback: iconClass);

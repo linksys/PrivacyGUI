@@ -43,13 +43,13 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
             ),
             const AppGap.semiBig(),
             AppTextField.outline(
-              headerText: loc(context).subnet_mask,
+              headerText: loc(context).subnetMask,
               hintText: 'e.g. 255.255.255.1',
               controller: _subnetController,
             ),
             const AppGap.semiBig(),
             AppTextField.outline(
-              headerText: loc(context).default_gateway,
+              headerText: loc(context).defaultGateway,
               hintText: 'e.g. 192.168.0.1',
               controller: _gatewayController,
             ),

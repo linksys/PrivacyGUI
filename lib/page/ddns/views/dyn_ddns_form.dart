@@ -94,10 +94,10 @@ class _DynDNSFormState extends State<DynDNSForm> {
             const AppGap.big(),
             AppDropdownMenu(
               items: DynDDNSSystem.values,
-              label: (item) => item.name.capitalized(),
+              label: (item) => item.name.capitalizeWords(),
               onChanged: (value) {
                 widget.onFormChanged.call(widget.initialValue
-                    ?.copyWith(mode: value.name.capitalized()));
+                    ?.copyWith(mode: value.name.capitalizeWords()));
               },
             ),
           ],

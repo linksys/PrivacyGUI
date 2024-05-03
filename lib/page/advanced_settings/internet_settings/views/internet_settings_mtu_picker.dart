@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/components/responsive/responsive_bottom_button.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/administration/internet_settings/providers/internet_settings_state.dart';
+import 'package:linksys_app/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:linksys_widgets/widgets/radios/radio_list.dart';
 
 class MTUPickerView extends ArgumentsConsumerStatefulView {
   const MTUPickerView({super.key, super.args});
@@ -44,38 +46,36 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      title: getAppLocalizations(context).connection_type,
-      actions: [
-        AppTextButton(
-          getAppLocalizations(context).done,
-          onTap: () {
-            FocusManager.instance.primaryFocus?.unfocus();
-            context.pop(_selected == _items[0]
-                ? 0
-                : (int.tryParse(_valueController.text)) ?? 0);
-          },
-        ),
-      ],
+      title: loc(context).connectionType,
       child: AppBasicLayout(
         content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppGap.semiBig(),
-            ..._items.map((item) {
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    _selected = item;
-                  });
-                  if (_selected == item[0]) {}
-                },
-                child: AppPanelWithValueCheck(
-                  title: _getTitle(item),
-                  valueText: '',
-                  isChecked: _selected == item,
+            AppRadioList(
+              initial: _selected,
+              items: [
+                AppRadioListItem(
+                  title: loc(context).auto,
+                  value: _items[0],
                 ),
-              );
-            }).toList(),
+                AppRadioListItem(
+                  title: loc(context).manual,
+                  value: _items[1],
+                ),
+              ],
+              onChanged: (index, item) {
+                setState(() {
+                  _selected = _items[index];
+                });
+              },
+            ),
             _buildManualInput(),
+            responsiveGap(context),
+            responsiveBottomButton(
+              context: context,
+              title: loc(context).save,
+              onTap: save,
+            ),
           ],
         ),
       ),
@@ -84,24 +84,20 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
 
   Widget _buildManualInput() {
     if (_selected == _items[1]) {
-      return AppTextField.minMaxNumber(
-        controller: _valueController,
-        headerText: getAppLocalizations(context).mtu_size,
-        hintText: getAppLocalizations(context).mtu_size,
-        inputType: TextInputType.number,
-        min: 0,
-        max: _getMaxMtu(_wanType),
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        child: AppTextField.minMaxNumber(
+          controller: _valueController,
+          border: const OutlineInputBorder(),
+          headerText: loc(context).size,
+          hintText: loc(context).size,
+          inputType: TextInputType.number,
+          min: 0,
+          max: _getMaxMtu(_wanType),
+        ),
       );
     } else {
       return const Center();
-    }
-  }
-
-  _getTitle(String value) {
-    if (value == _items[0]) {
-      return getAppLocalizations(context).auto;
-    } else {
-      return getAppLocalizations(context).manual;
     }
   }
 
@@ -120,5 +116,12 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
       default:
         return 0;
     }
+  }
+
+  void save() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    context.pop(_selected == _items[0]
+        ? 0
+        : (int.tryParse(_valueController.text)) ?? 0);
   }
 }

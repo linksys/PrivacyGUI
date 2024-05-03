@@ -15,14 +15,26 @@ extension MapExt on Map {
 }
 
 extension StringExt on String {
-  String capitalized() =>
+  /// Capitalize ONE word
+  String capitalize() =>
       '${this[0].toUpperCase()}${substring(1).toLowerCase()}';
 
-  String camelCapitalized() {
+  /// Camel capitalize words
+  String camelCapitalize() {
     return split(' ').fold(
         '',
         (previousValue, element) =>
-            '${previousValue.isEmpty ? '' : '$previousValue '}${element.capitalized()}');
+            '${previousValue.isEmpty ? '' : '$previousValue '}${element.capitalize()}');
+  }
+
+  /// Capitalize words
+  String capitalizeWords() {
+    return split(' ').map((element) => element.capitalize()).join(' ');
+  }
+
+  /// Capitalize sentences
+  String capitalizeSentence() {
+    return split('. ').map((element) => element.capitalize()).join('. ');
   }
 
   bool isJsonFormat() {
@@ -42,18 +54,6 @@ extension StringExt on String {
 
   String toMd5() {
     return md5.convert(utf8.encode(this)).toString();
-  }
-
-  String capitalize(String value) {
-    return "${value[0].toUpperCase()}${value.substring(1).toLowerCase()}";
-  }
-
-  String capitalizeWords(String value) {
-    return value.split(' ').map((element) => capitalize(element)).join(' ');
-  }
-
-  String capitalizeSentence(String value) {
-    return value.split('. ').map((element) => capitalize(element)).join('. ');
   }
 
   /// Only use this on version string
