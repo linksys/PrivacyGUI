@@ -83,7 +83,7 @@ final advancedSettings = [
       LinksysRoute(
         name: RouteNamed.macFilteringInput,
         path: RoutePath.macFilteringInput,
-        builder: (context, state) => MacFilteringEnterDeviceView(
+        builder: (context, state) => FilteredDevicesView(
           args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
