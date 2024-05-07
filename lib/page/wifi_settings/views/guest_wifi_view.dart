@@ -115,11 +115,17 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
               AppListCard(
                 title: AppText.bodyLarge(loc(context).routerPassword),
                 description: IntrinsicWidth(
-                    child: AppPasswordField(
-                  readOnly: true,
-                  border: InputBorder.none,
-                  controller: _guestPasswordController,
-                )),
+                    child: Theme(
+                        data: Theme.of(context).copyWith(
+                            inputDecorationTheme: const InputDecorationTheme(
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero)),
+                        child: AppPasswordField(
+                          readOnly: true,
+                          border: InputBorder.none,
+                          controller: _guestPasswordController,
+                          suffixIconConstraints: const BoxConstraints(),
+                        ))),
                 trailing: const Icon(LinksysIcons.edit),
                 onTap: () {
                   _showGuestWifiPasswordModal(guest.password);

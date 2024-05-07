@@ -157,14 +157,19 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           AppListCard(
             title: AppText.bodyLarge(loc(context).wifiPassword),
             description: IntrinsicWidth(
-                child: AppPasswordField(
-              readOnly: true,
-              border: InputBorder.none,
-              controller: _simplePasswordController,
-            )),
+                child: Theme(
+                    data: Theme.of(context).copyWith(
+                        inputDecorationTheme: const InputDecorationTheme(
+                            isDense: true, contentPadding: EdgeInsets.zero)),
+                    child: AppPasswordField(
+                      readOnly: true,
+                      border: InputBorder.none,
+                      controller: _simplePasswordController,
+                      suffixIconConstraints: const BoxConstraints(),
+                    ))),
             trailing: const Icon(LinksysIcons.edit),
             onTap: () {
-              _showWifiPasswordModal(mainRadio?.password ?? '', (value) {
+              _showWifiPasswordModal(mainRadio.password, (value) {
                 ref
                     .read(wifiListProvider.notifier)
                     .setWiFiPassword(value, null);
@@ -272,11 +277,16 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
         padding: EdgeInsets.zero,
         title: AppText.bodyLarge(loc(context).wifiPassword),
         description: IntrinsicWidth(
-            child: AppPasswordField(
-          readOnly: true,
-          border: InputBorder.none,
-          controller: _advancedPasswordController[radio.radioID],
-        )),
+            child: Theme(
+                data: Theme.of(context).copyWith(
+                    inputDecorationTheme: const InputDecorationTheme(
+                        isDense: true, contentPadding: EdgeInsets.zero)),
+                child: AppPasswordField(
+                  readOnly: true,
+                  border: InputBorder.none,
+                  controller: _advancedPasswordController[radio.radioID],
+                  suffixIconConstraints: const BoxConstraints(),
+                ))),
         trailing: const Icon(LinksysIcons.edit),
         onTap: () {
           _showWifiPasswordModal(radio.password, (value) {
