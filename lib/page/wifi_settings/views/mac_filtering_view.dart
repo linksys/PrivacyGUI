@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_app/page/components/shortcuts/dialogs.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/administration/mac_filtering/providers/_providers.dart';
+import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
+import 'package:linksys_app/page/wifi_settings/providers/wifi_view_provider.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
 
@@ -41,6 +41,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
     });
     _notifier = ref.read(macFilteringProvider.notifier);
     _notifier.fetch().then((_) {
+      ref.read(wifiViewProvider.notifier).setChanged(false);
       _preservedState = ref.read(macFilteringProvider);
       setState(() {
         _isLoading = false;
@@ -57,6 +58,9 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(macFilteringProvider);
+    ref.listen(macFilteringProvider, (previous, next) {
+      ref.read(wifiViewProvider.notifier).setChanged(next != _preservedState);
+    });
     return _isLoading
         ? AppFullScreenSpinner(
             title: loc(context).processing,
@@ -64,13 +68,14 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
         : StyledAppPageView(
             scrollable: true,
             appBarStyle: AppBarStyle.none,
-            onBackTap: () {
-              if (_preservedState != state) {
-                _showUnsavedAlert();
-              } else {
-                context.pop();
-              }
-            },
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            // onBackTap: () {
+            //   if (_preservedState != state) {
+            //     _showUnsavedAlert();
+            //   } else {
+            //     context.pop();
+            //   }
+            // },
             title: loc(context).macFiltering,
             saveAction: SaveAction(
                 enabled: _preservedState != state,
@@ -81,6 +86,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
                   _notifier
                       .save()
                       .then((value) {
+                        ref.read(wifiViewProvider.notifier).setChanged(false);
                         setState(() {
                           _preservedState = ref.read(macFilteringProvider);
                         });
@@ -205,30 +211,5 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
     if (result != null) {
       _notifier.setAccess(result.name);
     }
-  }
-
-  _showUnsavedAlert() {
-    showMessageAppDialog(
-      context,
-      title: loc(context).unsavedChangesTitle,
-      message: loc(context).unsavedChangesDesc,
-      actions: [
-        AppTextButton(
-          loc(context).goBack,
-          color: Theme.of(context).colorScheme.onSurface,
-          onTap: () {
-            context.pop();
-          },
-        ),
-        AppTextButton(
-          loc(context).discardChanges,
-          color: Theme.of(context).colorScheme.error,
-          onTap: () {
-            context.pop();
-            context.pop();
-          },
-        ),
-      ],
-    );
   }
 }

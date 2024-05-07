@@ -937,5 +937,14 @@
   "selectFromMyDeviceList": "Select from my device list",
   "manuallyAddDevice": "Manually add device",
   "noFilteredDevices": "You have no filtered devices",
-  "guestWifi": "Guest WiFi"
+  "guestWifi": "Guest WiFi",
+  "guestWifiEnableDesc": "Turn on Guest WiFi to allow guests to connect to the internet while keeping your main network private.",
+  "settings": "Settings",
+  "securityMode": "Security mode",
+  "wifiMode": "WiFi Mode",
+  "broadcastSSID": "Boardcast SSID",
+  "channel": "Channel",
+  "channelWidth": "Channel Width",
+  "showAdvanced": "Show advanced",
+  "showBasic": "Show basic"
 }

@@ -5,7 +5,7 @@ import 'package:linksys_app/core/jnap/command/base_command.dart';
 import 'package:linksys_app/core/jnap/models/mac_filter_settings.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/core/utils/extension.dart';
-import 'package:linksys_app/page/administration/mac_filtering/providers/mac_filtering_state.dart';
+import 'package:linksys_app/page/wifi_settings/providers/mac_filtering_state.dart';
 import 'package:linksys_app/util/extensions.dart';
 
 final macFilteringProvider =

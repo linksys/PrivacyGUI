@@ -32,18 +32,25 @@ enum ShareWifiOption {
   final String iconId;
 }
 
-class WifiDetailView extends ConsumerStatefulWidget {
-  final WifiItem item;
-  const WifiDetailView({Key? key, required this.item}) : super(key: key);
+class WiFiShareDetailView extends ConsumerStatefulWidget {
+  final String ssid;
+  final String password;
+  final int numOfDevices;
+  const WiFiShareDetailView({
+    Key? key,
+    required this.ssid,
+    required this.password,
+    required this.numOfDevices,
+  }) : super(key: key);
 
   @override
-  ConsumerState<WifiDetailView> createState() => _WifiDetailViewState();
+  ConsumerState<WiFiShareDetailView> createState() => _WiFiShareDetailViewState();
 }
 
-class _WifiDetailViewState extends ConsumerState<WifiDetailView> {
+class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
   GlobalKey globalKey = GlobalKey();
   String get sharingContent =>
-      'Connect to my WiFi Network:\n${widget.item.ssid}\n\nPassword: ${widget.item.password}';
+      'Connect to my WiFi Network:\n${widget.ssid}\n\nPassword: ${widget.password}';
 
   @override
   initState() {
@@ -66,8 +73,8 @@ class _WifiDetailViewState extends ConsumerState<WifiDetailView> {
             width: 240,
             child: QrImageView(
               data: WiFiCredential(
-                ssid: widget.item.ssid,
-                password: widget.item.password,
+                ssid: widget.ssid,
+                password: widget.password,
                 type:
                     SecurityType.wpa, //TODO: The security type is fixed for now
               ).generate(),
@@ -85,27 +92,17 @@ class _WifiDetailViewState extends ConsumerState<WifiDetailView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: AbsorbPointer(
-              absorbing: true,
-              child: AppSwitch(
-                value: widget.item.isEnabled,
-                onChanged: (value) {},
-              ),
-            ),
-          ),
           AppText.labelLarge('WiFi name'),
           const AppGap.small(),
           AppText.headlineMedium(
-            widget.item.ssid,
+            widget.ssid,
           ),
           const AppGap.regular(),
           AppText.labelLarge('Password'),
           const AppGap.small(),
-          HiddenPasswordWidget(password: widget.item.password),
+          HiddenPasswordWidget(password: widget.password),
           const AppGap.small(),
-          AppText.labelLarge('${widget.item.numOfDevices} devices connected'),
+          AppText.labelLarge('${widget.numOfDevices} devices connected'),
         ],
       ),
     );

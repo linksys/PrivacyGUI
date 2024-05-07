@@ -54,7 +54,7 @@ final dashboardRoute = ShellRoute(
         LinksysRoute(
           name: RouteNamed.wifiShare,
           path: RoutePath.wifiShare,
-          builder: (context, state) => WifiListView(),
+          builder: (context, state) => WiFiShareTabView(),
         ),
         LinksysRoute(
           name: RouteNamed.dashboardDevices,

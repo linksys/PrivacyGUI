@@ -9,21 +9,8 @@ final settings = [
   LinksysRoute(
     name: RouteNamed.settingsWifi,
     path: RoutePath.settingsWifi,
-    builder: (context, state) => WifiSelectSettingsView(),
-    routes: [
-      LinksysRoute(
-        name: RouteNamed.wifiSettingsReview,
-        path: RoutePath.wifiSettingsReview,
-        builder: (context, state) => WifiSettingsReviewView(),
-        routes: [
-          LinksysRoute(
-            name: RouteNamed.channelFinderOptimize,
-            path: RoutePath.channelFinderOptimize,
-            builder: (context, state) => WifiSettingsChannelFinderView(),
-          )
-        ],
-      ),
-    ],
+    config: const LinksysRouteConfig(noNaviRail: true),
+    builder: (context, state) => WiFiMainView(),
   ),
   LinksysRoute(
     name: RouteNamed.wifiAdvancedSettings,
