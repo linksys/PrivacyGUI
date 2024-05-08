@@ -61,7 +61,11 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
                       final results = await context
                           .pushNamed<List<DeviceListItem>?>(
                               RouteNamed.devicePicker,
-                              extra: {'type': 'mac'});
+                              extra: {
+                            'type': 'mac',
+                            'selected':
+                                ref.read(macFilteringProvider).macAddresses
+                          });
                       if (results != null) {
                         ref.read(macFilteringProvider.notifier).setSelection(
                             results.map((e) => e.macAddress).toList());

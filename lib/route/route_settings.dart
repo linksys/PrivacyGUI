@@ -7,11 +7,17 @@ final settings = [
     builder: (context, state) => NotificationSettingsView(),
   ),
   LinksysRoute(
-    name: RouteNamed.settingsWifi,
-    path: RoutePath.settingsWifi,
-    config: const LinksysRouteConfig(noNaviRail: true),
-    builder: (context, state) => WiFiMainView(),
-  ),
+      name: RouteNamed.settingsWifi,
+      path: RoutePath.settingsWifi,
+      config: const LinksysRouteConfig(noNaviRail: true),
+      builder: (context, state) => WiFiMainView(),
+      routes: [
+        LinksysRoute(
+          name: RouteNamed.macFilteringInput,
+          path: RoutePath.macFilteringInput,
+          builder: (context, state) => FilteredDevicesView(),
+        ),
+      ]),
   LinksysRoute(
     name: RouteNamed.wifiAdvancedSettings,
     path: RoutePath.wifiAdvancedSettings,

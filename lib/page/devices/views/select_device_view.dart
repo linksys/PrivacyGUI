@@ -1,3 +1,6 @@
+import 'dart:js_interop';
+
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +14,7 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/devices/providers/device_list_provider.dart';
 import 'package:linksys_widgets/widgets/page/layout/group_list_layout.dart';
+import 'package:test/test.dart';
 
 import '../providers/device_list_state.dart';
 
@@ -21,7 +25,7 @@ enum DisplaySubType {
   ipv6,
   ;
 
-  static DisplaySubType resolve(String value) => switch (value) {
+  static DisplaySubType resolve(String? value) => switch (value) {
         'mac' => DisplaySubType.mac,
         'ipv4' => DisplaySubType.ipv4,
         'ipv6' => DisplaySubType.ipv6,
@@ -34,7 +38,7 @@ enum SelectMode {
   multiple,
   ;
 
-  static SelectMode resolve(String value) => switch (value) {
+  static SelectMode resolve(String? value) => switch (value) {
         'single' => SelectMode.single,
         _ => SelectMode.multiple,
       };
@@ -52,12 +56,21 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
   late final SelectMode _selectMode;
 
   final List<DeviceListItem> selected = [];
-
   @override
   void initState() {
     super.initState();
     _subType = DisplaySubType.resolve(widget.args['type']);
     _selectMode = SelectMode.resolve(widget.args['selectMode']);
+    final selectedValues = widget.args['selected'] as List<String>? ?? [];
+    final devices = ref.read(deviceListProvider).devices;
+    final selectedItems = selectedValues
+        .map((value) {
+          return devices
+              .firstWhereOrNull((device) => _subMessage(device) == value);
+        })
+        .whereType<DeviceListItem>()
+        .toList();
+    selected.addAll(selectedItems);
   }
 
   @override
@@ -107,6 +120,12 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
                         ? 1
                         : 0.3,
                 child: AppListCard(
+                  color: selected.any((element) => element == item)
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : null,
+                  borderColor: selected.any((element) => element == item)
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
                   title: AppText.labelMedium(item.name),
                   leading: _selectMode == SelectMode.multiple
                       ? Opacity(
