@@ -14,10 +14,11 @@ class PortRangeForwardingListNotifier
   @override
   PortRangeForwardingListState build() => const PortRangeForwardingListState();
 
-  Future fetch() {
-    return ref
+  Future fetch() async {
+    ref
         .read(routerRepositoryProvider)
-        .send(JNAPAction.getPortRangeForwardingRules, auth: true)
+        .send(JNAPAction.getPortRangeForwardingRules,
+            fetchRemote: true, auth: true)
         .then<JNAPSuccess?>((value) {
       final rules = List.from(value.output['rules'])
           .map((e) => PortRangeForwardingRule.fromJson(e))

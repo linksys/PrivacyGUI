@@ -8,6 +8,7 @@ import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/page/administration/network_admin/providers/router_password_state.dart';
+import 'package:linksys_app/providers/auth/auth_provider.dart';
 
 final routerPasswordProvider =
     NotifierProvider<RouterPasswordNotifier, RouterPasswordState>(
@@ -65,20 +66,23 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
     });
   }
 
-  Future setAdminPasswordWithCredentials(String password, [String? hint]) async {
+  Future setAdminPasswordWithCredentials(String? password,
+      [String? hint]) async {
     final repo = ref.read(routerRepositoryProvider);
+    const storage = FlutterSecureStorage();
+    final pwd = password ?? ref.read(authProvider).value?.localPassword;
     return repo
         .send(
       JNAPAction.coreSetAdminPassword,
       data: {
-        'adminPassword': password,
+        'adminPassword':
+            pwd,
         'passwordHint': hint ?? state.hint,
       },
       type: CommandType.local,
       auth: true,
     )
         .then<void>((value) async {
-      const storage = FlutterSecureStorage();
       await storage.write(key: pLocalPassword, value: password);
       await fetch();
     });

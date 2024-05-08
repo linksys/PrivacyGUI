@@ -3,6 +3,7 @@ import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/models/ipv6_firewall_rule.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/page/administration/firewall/providers/ipv6_port_service_rule_state.dart';
+import 'package:linksys_app/page/administration/port_forwarding/providers/consts.dart';
 
 final ipv6PortServiceRuleProvider =
     NotifierProvider<Ipv6PortServiceRuleNotifier, Ipv6PortServiceRuleState>(
@@ -14,12 +15,12 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState> {
 
   Future goAdd(List<IPv6FirewallRule> rules) {
     return fetch().then((value) => state =
-        state.copyWith(mode: Ipv6PortServiceRuleMode.adding, rules: rules));
+        state.copyWith(mode: RuleMode.adding, rules: rules));
   }
 
   Future goEdit(List<IPv6FirewallRule> rules, IPv6FirewallRule rule) {
     return fetch().then((value) => state = state.copyWith(
-        mode: Ipv6PortServiceRuleMode.editing, rules: rules, rule: rule));
+        mode: RuleMode.editing, rules: rules, rule: rule));
   }
 
   Future fetch() async {}
@@ -27,9 +28,9 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState> {
   Future<bool> save(IPv6FirewallRule rule) async {
     final mode = state.mode;
     final rules = List<IPv6FirewallRule>.from(state.rules);
-    if (mode == Ipv6PortServiceRuleMode.adding) {
+    if (mode == RuleMode.adding) {
       rules.add(rule);
-    } else if (mode == Ipv6PortServiceRuleMode.editing) {
+    } else if (mode == RuleMode.editing) {
       int index = state.rules.indexOf(state.rule!);
       rules.replaceRange(index, index + 1, [rule]);
     }
@@ -49,7 +50,7 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState> {
 
   Future<bool> delete() async {
     final mode = state.mode;
-    if (mode == Ipv6PortServiceRuleMode.editing) {
+    if (mode == RuleMode.editing) {
       final rules = List<IPv6FirewallRule>.from(state.rules)
         ..removeWhere((element) => element == state.rule);
       final repo = ref.read(routerRepositoryProvider);
@@ -70,6 +71,6 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState> {
   }
 
   bool isEdit() {
-    return state.mode == Ipv6PortServiceRuleMode.editing;
+    return state.mode == RuleMode.editing;
   }
 }

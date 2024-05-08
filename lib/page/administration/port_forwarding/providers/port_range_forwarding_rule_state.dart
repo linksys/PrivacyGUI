@@ -1,13 +1,14 @@
 import 'package:equatable/equatable.dart';
 import 'package:linksys_app/core/jnap/models/port_range_forwarding_rule.dart';
+import 'package:linksys_app/page/administration/port_forwarding/providers/consts.dart';
 
 class PortRangeForwardingRuleState extends Equatable {
-  final PortRangeForwardingRuleMode mode;
+  final RuleMode mode;
   final List<PortRangeForwardingRule> rules;
   final PortRangeForwardingRule? rule;
 
   const PortRangeForwardingRuleState({
-    this.mode = PortRangeForwardingRuleMode.init,
+    this.mode = RuleMode.init,
     this.rules = const [],
     this.rule,
   });
@@ -16,7 +17,7 @@ class PortRangeForwardingRuleState extends Equatable {
   List<Object?> get props => [mode, rules, rule];
 
   PortRangeForwardingRuleState copyWith({
-    PortRangeForwardingRuleMode? mode,
+    RuleMode? mode,
     List<PortRangeForwardingRule>? rules,
     PortRangeForwardingRule? rule,
   }) {
@@ -26,10 +27,4 @@ class PortRangeForwardingRuleState extends Equatable {
       rule: rule ?? this.rule,
     );
   }
-}
-
-enum PortRangeForwardingRuleMode {
-  init,
-  adding,
-  editing,
 }

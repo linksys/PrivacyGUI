@@ -85,20 +85,28 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                       padding: EdgeInsets.zero,
                       showBorder: false,
                       title: AppText.bodyLarge(loc(context).routerPassword),
-                      description: IntrinsicWidth(
-                        child: loginType == LoginType.local
-                            ? AppPasswordField(
-                                readOnly: true,
-                                border: InputBorder.none,
-                                controller: _passwordController,
-                              )
-                            : AppTextField(
-                                readOnly: true,
-                                border: InputBorder.none,
-                                controller: _passwordController
-                                  ..text = '**********',
-                                secured: true,
-                              ),
+                      description: Theme(
+                        data: Theme.of(context).copyWith(
+                            inputDecorationTheme: const InputDecorationTheme(
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero)),
+                        child: IntrinsicWidth(
+                          child: loginType == LoginType.local
+                              ? AppPasswordField(
+                                  readOnly: true,
+                                  border: InputBorder.none,
+                                  controller: _passwordController,
+                                  suffixIconConstraints: const BoxConstraints(),
+                                )
+                              : AppTextField(
+                                  readOnly: true,
+                                  border: InputBorder.none,
+                                  controller: _passwordController
+                                    ..text = '**********',
+                                  secured: true,
+                                  suffixIconConstraints: const BoxConstraints(),
+                                ),
+                        ),
                       ),
                       trailing: const Icon(LinksysIcons.edit),
                       onTap: () {
@@ -113,9 +121,15 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                       description: routerPasswordState.hint.isEmpty
                           ? AppTextButton('Set one')
                           : AppText.bodyMedium(routerPasswordState.hint),
-                      onTap: () {
-                        // showSubmitAppDialog(content: Center());
-                      },
+                      trailing: loginType == LoginType.local
+                          ? const Icon(LinksysIcons.edit)
+                          : null,
+                      onTap: loginType == LoginType.local
+                          ? () {
+                              // showSubmitAppDialog(content: Center());
+                              _showRouterHintModal(routerPasswordState.hint);
+                            }
+                          : null,
                     ),
                   ]),
                 ),
@@ -193,7 +207,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
         ],
       ),
       event: () async {
-        await _save(controller.text);
+        await _save(newPassword: controller.text);
       },
       checkPositiveEnabled: () {
         return isPasswordValid;
@@ -201,10 +215,40 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
     );
   }
 
-  Future _save(String newPassword) async {
+  _showRouterHintModal(String value) {
+    TextEditingController controller = TextEditingController()..text = value;
+    bool isValid = value.isNotEmpty;
+    showSubmitAppDialog(
+      context,
+      title: loc(context).routerPassword,
+      contentBuilder: (context, setState) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppTextField(
+            border: const OutlineInputBorder(),
+            controller: controller,
+            headerText: loc(context).routerPasswordNew,
+            onChanged: (value) {
+              setState(() {
+                isValid = value.isNotEmpty;
+              });
+            },
+          ),
+        ],
+      ),
+      event: () async {
+        await _save(hint: controller.text);
+      },
+      checkPositiveEnabled: () {
+        return isValid;
+      },
+    );
+  }
+
+  Future _save({String? newPassword, String? hint}) async {
     FocusManager.instance.primaryFocus?.unfocus();
     await _routerPasswordNotifier
-        .setAdminPasswordWithCredentials(newPassword)
+        .setAdminPasswordWithCredentials(newPassword, hint)
         .then<void>((_) {
       _success();
     }).onError((error, stackTrace) {

@@ -4,12 +4,18 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/jnap/models/port_range_forwarding_rule.dart';
 import 'package:linksys_app/page/administration/port_forwarding/_port_forwarding.dart';
+import 'package:linksys_app/page/administration/port_forwarding/providers/consts.dart';
+import 'package:linksys_app/page/administration/port_forwarding/views/widgets/protocol_utils.dart';
+import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
 import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_app/utils.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/card/list_card.dart';
+import 'package:linksys_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class PortRangeForwardingRuleView extends ArgumentsConsumerStatelessView {
@@ -43,6 +49,7 @@ class _AddRuleContentViewState
   final TextEditingController _deviceIpAddressController =
       TextEditingController();
   String _protocol = 'Both';
+  bool _isEnabled = false;
   List<PortRangeForwardingRule> _rules = [];
 
   @override
@@ -56,12 +63,18 @@ class _AddRuleContentViewState
         _firstExternalPortController.text = '${rule.firstExternalPort}';
         _lastExternalPortController.text = '${rule.lastExternalPort}';
         _deviceIpAddressController.text = rule.internalServerIPAddress;
+        setState(() {
+          _isEnabled = rule.isEnabled;
+        });
       });
     } else {
       _notifier.goAdd(_rules).then((_) {
         final prefixIp =
             NetworkUtils.getIpPrefix(_notifier.ipAddress, _notifier.subnetMask);
         _deviceIpAddressController.text = prefixIp;
+        setState(() {
+          _isEnabled = true;
+        });
       });
     }
     super.initState();
@@ -82,44 +95,46 @@ class _AddRuleContentViewState
     final state = ref.watch(portRangeForwardingRuleProvider);
     return StyledAppPageView(
       scrollable: true,
-      title: getAppLocalizations(context).port_range_forwarding,
-      actions: [
-        AppTextButton(
-          getAppLocalizations(context).save,
-          onTap: () {
-            final rule = PortRangeForwardingRule(
-                isEnabled: true,
-                firstExternalPort: int.parse(_firstExternalPortController.text),
-                protocol: _protocol,
-                internalServerIPAddress: _deviceIpAddressController.text,
-                lastExternalPort: int.parse(_lastExternalPortController.text),
-                description: _ruleNameController.text);
-            _notifier.save(rule).then((value) {
-              if (value) {
-                if (_notifier.isEdit()) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    AppToastHelp.positiveToast(context,
-                        text: getAppLocalizations(context).rule_updated),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    AppToastHelp.positiveToast(context,
-                        text: getAppLocalizations(context).rule_added),
-                  );
-                }
+      title: loc(context).portRangeForwarding,
+      bottomBar: PageBottomBar(
+        isPositiveEnabled: true,
+        isNegitiveEnabled: state.mode == RuleMode.editing ? true : null,
+        negitiveLable: loc(context).delete,
+        onPositiveTap: () {
+          final rule = PortRangeForwardingRule(
+              isEnabled: _isEnabled,
+              firstExternalPort: int.parse(_firstExternalPortController.text),
+              protocol: _protocol,
+              internalServerIPAddress: _deviceIpAddressController.text,
+              lastExternalPort: int.parse(_lastExternalPortController.text),
+              description: _ruleNameController.text);
+          _notifier.save(rule).then((value) {
+            if (value) {
+              showSuccessSnackBar(
+                  context,
+                  _notifier.isEdit()
+                      ? loc(context).ruleUpdated
+                      : loc(context).ruleAdded);
 
-                context.pop(true);
-              }
-            });
-          },
-        )
-      ],
+              context.pop(true);
+            }
+          });
+        },
+        onNegitiveTap: () {
+          _notifier.delete().then((value) {
+            if (value) {
+              showSimpleSnackBar(context, loc(context).ruleDeleted);
+            }
+            context.pop(true);
+          });
+        },
+      ),
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppGap.semiBig(),
-            if (state.mode == PortRangeForwardingRuleMode.editing)
+            if (state.mode == RuleMode.editing)
               ..._buildEditContents(state)
             else
               ..._buildAddContents(state)
@@ -135,26 +150,19 @@ class _AddRuleContentViewState
 
   List<Widget> _buildEditContents(PortRangeForwardingRuleState state) {
     return [
-      AppPanelWithSwitch(
-        value: state.rule?.isEnabled ?? false,
-        title: getAppLocalizations(context).rule_enabled,
-        onChangedEvent: (value) {},
+      AppListCard(
+        title: AppText.labelLarge(loc(context).ruleEnabled),
+        trailing: AppSwitch(
+          value: _isEnabled,
+          onChanged: (value) {
+            setState(() {
+              _isEnabled = value;
+            });
+          },
+        ),
       ),
+      const AppGap.semiBig(),
       ...buildInputForms(),
-      AppTextButton(
-        getAppLocalizations(context).delete_rule,
-        onTap: () {
-          _notifier.delete().then((value) {
-            if (value) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                AppToastHelp.positiveToast(context,
-                    text: getAppLocalizations(context).rule_deleted),
-              );
-              context.pop(true);
-            }
-          });
-        },
-      ),
     ];
   }
 
@@ -162,47 +170,56 @@ class _AddRuleContentViewState
     final submaskToken = _notifier.subnetMask.split('.');
 
     return [
-      AppTextField(
-          headerText: getAppLocalizations(context).rule_name,
-          hintText: getAppLocalizations(context).rule_name,
-          controller: _ruleNameController),
-      const AppGap.semiSmall(),
+      AppTextField.outline(
+          headerText: loc(context).ruleName, controller: _ruleNameController),
+      const AppGap.semiBig(),
       AppTextField.minMaxNumber(
-        headerText: getAppLocalizations(context).start_port,
-        hintText: getAppLocalizations(context).start_port,
+        border: const OutlineInputBorder(),
+        headerText: loc(context).startPort,
         controller: _firstExternalPortController,
         max: 65535,
       ),
-      const AppGap.semiSmall(),
+      const AppGap.semiBig(),
       AppTextField.minMaxNumber(
-        headerText: getAppLocalizations(context).end_port,
-        hintText: getAppLocalizations(context).end_port,
+        border: const OutlineInputBorder(),
+        headerText: loc(context).endPort,
         controller: _lastExternalPortController,
         max: 65535,
       ),
-      const AppGap.semiSmall(),
-      AppText.labelMedium(getAppLocalizations(context).device_ip_address),
-      AppIpFieldWithDevicePicker(
+      const AppGap.semiBig(),
+      AppText.labelMedium(loc(context).ipAddress),
+      const AppGap.regular(),
+      AppIPFormField(
         controller: _deviceIpAddressController,
-        deviceList: ref
-            .read(deviceListProvider)
-            .devices
-            .where((element) => element.isOnline)
-            .toList(),
+        border: const OutlineInputBorder(),
         octet1ReadOnly: submaskToken[0] == '255',
         octet2ReadOnly: submaskToken[1] == '255',
         octet3ReadOnly: submaskToken[2] == '255',
         octet4ReadOnly: submaskToken[3] == '255',
-        selectedResult: (item) => item.ipv4Address,
       ),
-      const AppGap.semiSmall(),
-      AppPanelWithInfo(
-        title: getAppLocalizations(context).protocol,
-        infoText: getProtocolTitle(_protocol),
+      const AppGap.semiBig(),
+      AppTextButton(
+        loc(context).selectDevices,
         onTap: () async {
-          String? protocol = await context.pushNamed(
-            RouteNamed.selectProtocol,
-            extra: {'selected': _protocol},
+          final result = await context.pushNamed<List<DeviceListItem>?>(
+              RouteNamed.devicePicker,
+              extra: {'type': 'ipv4', 'selectMode': 'single'});
+
+          if (result != null) {
+            final device = result.first;
+            _deviceIpAddressController.text = device.ipv4Address;
+          }
+        },
+      ),
+      const AppGap.semiBig(),
+      AppListCard(
+        title: AppText.labelLarge(loc(context).protocol),
+        description: AppText.bodyLarge(getProtocolTitle(context, _protocol)),
+        trailing: const Icon(LinksysIcons.edit),
+        onTap: () async {
+          String? protocol = await showSelectProtocolModal(
+            context,
+            _protocol,
           );
           if (protocol != null) {
             setState(() {
@@ -212,15 +229,5 @@ class _AddRuleContentViewState
         },
       ),
     ];
-  }
-
-  String getProtocolTitle(String key) {
-    if (key == 'UDP') {
-      return getAppLocalizations(context).udp;
-    } else if (key == 'TCP') {
-      return getAppLocalizations(context).tcp;
-    } else {
-      return getAppLocalizations(context).udp_and_tcp;
-    }
   }
 }

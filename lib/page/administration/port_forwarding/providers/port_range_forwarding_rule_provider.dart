@@ -4,6 +4,7 @@ import 'package:linksys_app/core/jnap/models/lan_settings.dart';
 import 'package:linksys_app/core/jnap/models/port_range_forwarding_rule.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/page/administration/port_forwarding/_port_forwarding.dart';
+import 'package:linksys_app/page/administration/port_forwarding/providers/consts.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:linksys_app/validator_rules/input_validators.dart';
 
@@ -22,13 +23,13 @@ class PortRangeForwardingRuleNotifier
 
   Future goAdd(List<PortRangeForwardingRule> rules) {
     return fetch().then((value) => state =
-        state.copyWith(mode: PortRangeForwardingRuleMode.adding, rules: rules));
+        state.copyWith(mode: RuleMode.adding, rules: rules));
   }
 
   Future goEdit(
       List<PortRangeForwardingRule> rules, PortRangeForwardingRule rule) {
     return fetch().then((value) => state = state.copyWith(
-        mode: PortRangeForwardingRuleMode.editing, rules: rules, rule: rule));
+        mode: RuleMode.editing, rules: rules, rule: rule));
   }
 
   Future fetch() async {
@@ -45,9 +46,9 @@ class PortRangeForwardingRuleNotifier
   Future<bool> save(PortRangeForwardingRule rule) async {
     final mode = state.mode;
     final rules = List<PortRangeForwardingRule>.from(state.rules);
-    if (mode == PortRangeForwardingRuleMode.adding) {
+    if (mode == RuleMode.adding) {
       rules.add(rule);
-    } else if (mode == PortRangeForwardingRuleMode.editing) {
+    } else if (mode == RuleMode.editing) {
       int index = state.rules.indexOf(state.rule!);
       rules.replaceRange(index, index + 1, [rule]);
     }
@@ -67,7 +68,7 @@ class PortRangeForwardingRuleNotifier
 
   Future<bool> delete() async {
     final mode = state.mode;
-    if (mode == PortRangeForwardingRuleMode.editing) {
+    if (mode == RuleMode.editing) {
       final rules = List<PortRangeForwardingRule>.from(state.rules)
         ..removeWhere((element) => element == state.rule);
       final repo = ref.read(routerRepositoryProvider);
@@ -92,7 +93,7 @@ class PortRangeForwardingRuleNotifier
   }
 
   bool isEdit() {
-    return state.mode == PortRangeForwardingRuleMode.editing;
+    return state.mode == RuleMode.editing;
   }
 
   String get subnetMask => _subnetMask;

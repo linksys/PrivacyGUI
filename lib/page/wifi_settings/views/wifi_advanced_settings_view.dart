@@ -53,9 +53,10 @@ class _WifiAdvancedSettingsViewState
         : StyledAppPageView(
             appBarStyle: AppBarStyle.none,
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            saveAction: SaveAction(
-                enabled: _preservedState != ref.read(wifiAdvancedProvider),
-                onSave: () {
+            bottomBar: PageBottomBar(
+                isPositiveEnabled:
+                    _preservedState != ref.read(wifiAdvancedProvider),
+                onPositiveTap: () {
                   setState(() {
                     _isLoading = true;
                   });

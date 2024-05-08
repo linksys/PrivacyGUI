@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/card/list_card.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
@@ -28,6 +29,17 @@ enum DisplaySubType {
       };
 }
 
+enum SelectMode {
+  single,
+  multiple,
+  ;
+
+  static SelectMode resolve(String value) => switch (value) {
+        'single' => SelectMode.single,
+        _ => SelectMode.multiple,
+      };
+}
+
 class SelectDeviceView extends ArgumentsConsumerStatefulView {
   const SelectDeviceView({super.key, super.args});
 
@@ -37,12 +49,15 @@ class SelectDeviceView extends ArgumentsConsumerStatefulView {
 
 class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
   late final DisplaySubType _subType;
+  late final SelectMode _selectMode;
+
   final List<DeviceListItem> selected = [];
 
   @override
   void initState() {
     super.initState();
     _subType = DisplaySubType.resolve(widget.args['type']);
+    _selectMode = SelectMode.resolve(widget.args['selectMode']);
   }
 
   @override
@@ -59,12 +74,14 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
         state.devices.where((device) => !device.isOnline).toList();
     return StyledAppPageView(
       title: loc(context).selectDevices,
-      saveAction: SaveAction(
-          enabled: selected.isNotEmpty,
-          label: loc(context).nAdd(selected.length),
-          onSave: () {
-            context.pop(selected);
-          }),
+      bottomBar: _selectMode == SelectMode.multiple
+          ? PageBottomBar(
+              isPositiveEnabled: selected.isNotEmpty,
+              positiveLabel: loc(context).nAdd(selected.length),
+              onPositiveTap: () {
+                context.pop(selected);
+              })
+          : null,
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: GroupList<DeviceListItem>(
@@ -83,22 +100,38 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
             itemBuilder: (item) {
               final value = _subMessage(item);
               final selectable = value?.isNotEmpty ?? false;
-              return AppListCard(
-                title: AppText.labelMedium(item.name),
-                leading: Opacity(
-                  opacity: selectable ? 1 : 0.3,
-                  child: AbsorbPointer(
-                    absorbing: !selectable,
-                    child: AppCheckbox(
-                      value: selected.any((element) => element == item),
-                      onChanged: (value) {
-                        onChecked(item);
-                      },
-                    ),
-                  ),
+              return Opacity(
+                opacity: _selectMode == SelectMode.multiple
+                    ? 1
+                    : selectable
+                        ? 1
+                        : 0.3,
+                child: AppListCard(
+                  title: AppText.labelMedium(item.name),
+                  leading: _selectMode == SelectMode.multiple
+                      ? Opacity(
+                          opacity: selectable ? 1 : 0.3,
+                          child: AbsorbPointer(
+                            absorbing: !selectable,
+                            child: AppCheckbox(
+                              value: selected.any((element) => element == item),
+                              onChanged: (value) {
+                                onChecked(item);
+                              },
+                            ),
+                          ),
+                        )
+                      : null,
+                  description:
+                      selectable ? AppText.bodyMedium(value ?? '') : null,
+                  onTap: _selectMode == SelectMode.multiple
+                      ? null
+                      : selectable
+                          ? () {
+                              context.pop([item]);
+                            }
+                          : null,
                 ),
-                description:
-                    selectable ? AppText.bodyMedium(value ?? '') : null,
               );
             }),
       ),

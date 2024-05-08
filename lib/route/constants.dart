@@ -37,7 +37,7 @@ class RoutePath {
   static const settingsLocalNetwork = 'localNetworkSettings';
   static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
-  static const itemPicker = 'itemPicker';
+  static const settingsFirewall = 'firewall';
 
   /// otp
   static const otpStart = 'otp';
@@ -89,8 +89,6 @@ class RoutePath {
   static const portRangeForwardingRule = 'portRangeForwardingRule';
   static const portRangeTriggeringList = 'portRangeTriggeringList';
   static const protRangeTriggeringRule = 'portRangeTriggeringRule';
-  static const selectDevice = 'selectDevice';
-  static const selectProtocol = 'selectProtocol';
 
   /// Ipv6 port service
   static const ipv6PortServiceList = 'ipv6PortServiceList';
@@ -174,7 +172,7 @@ class RouteNamed {
   static const settingsLocalNetwork = 'localNetworkSettings';
   static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
-  static const itemPicker = 'itemPicker';
+  static const settingsFirewall = 'firewall';
 
   /// otp
   static const otpStart = 'otp';
@@ -226,7 +224,6 @@ class RouteNamed {
   static const portRangeForwardingRule = 'portRangeForwardingRule';
   static const portRangeTriggeringList = 'portRangeTriggeringList';
   static const protRangeTriggeringRule = 'portRangeTriggeringRule';
-  static const selectDevice = 'selectDevice';
   static const selectProtocol = 'selectProtocol';
 
   /// Ipv6 port service

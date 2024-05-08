@@ -66,9 +66,9 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
         : StyledAppPageView(
             appBarStyle: AppBarStyle.none,
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            saveAction: SaveAction(
-                enabled: state != _preservedState,
-                onSave: () {
+            bottomBar: PageBottomBar(
+                isPositiveEnabled: state != _preservedState,
+                onPositiveTap: () {
                   setState(() {
                     _isLoading = true;
                   });

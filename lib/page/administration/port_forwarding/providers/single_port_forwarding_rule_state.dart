@@ -1,13 +1,14 @@
 import 'package:equatable/equatable.dart';
 import 'package:linksys_app/core/jnap/models/single_port_forwarding_rule.dart';
+import 'package:linksys_app/page/administration/port_forwarding/providers/consts.dart';
 
 class SinglePortForwardingRuleState extends Equatable {
-  final SinglePortForwardingRuleMode mode;
+  final RuleMode mode;
   final List<SinglePortForwardingRule> rules;
   final SinglePortForwardingRule? rule;
 
   const SinglePortForwardingRuleState({
-    this.mode = SinglePortForwardingRuleMode.init,
+    this.mode = RuleMode.init,
     this.rules = const [],
     this.rule,
   });
@@ -16,7 +17,7 @@ class SinglePortForwardingRuleState extends Equatable {
   List<Object?> get props => [mode, rules, rule];
 
   SinglePortForwardingRuleState copyWith({
-    SinglePortForwardingRuleMode? mode,
+    RuleMode? mode,
     List<SinglePortForwardingRule>? rules,
     SinglePortForwardingRule? rule,
   }) {
@@ -28,8 +29,4 @@ class SinglePortForwardingRuleState extends Equatable {
   }
 }
 
-enum SinglePortForwardingRuleMode {
-  init,
-  adding,
-  editing,
-}
+

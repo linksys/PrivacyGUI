@@ -77,9 +77,9 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
             //   }
             // },
             title: loc(context).macFiltering,
-            saveAction: SaveAction(
-                enabled: _preservedState != state,
-                onSave: () {
+            bottomBar: PageBottomBar(
+                isPositiveEnabled: _preservedState != state,
+                onPositiveTap: () {
                   setState(() {
                     _isLoading = true;
                   });

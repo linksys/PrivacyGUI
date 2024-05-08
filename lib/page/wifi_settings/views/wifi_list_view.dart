@@ -94,12 +94,12 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             appBarStyle: AppBarStyle.none,
             scrollable: true,
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            saveAction: SaveAction(
-                enabled: _mode == WiFiListViewMode.simple
+            bottomBar: PageBottomBar(
+                isPositiveEnabled: _mode == WiFiListViewMode.simple
                     ? _preservedState?.simpleWiFi != state.simpleWiFi
                     : !const ListEquality()
                         .equals(_preservedState?.mainWiFi, state.mainWiFi),
-                onSave: () {
+                onPositiveTap: () {
                   setState(() {
                     _isLoading = true;
                   });
