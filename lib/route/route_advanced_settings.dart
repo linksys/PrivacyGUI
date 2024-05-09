@@ -7,13 +7,6 @@ final advancedSettings = [
       builder: (context, state) => const InternetSettingsView(),
       routes: [
         LinksysRoute(
-          name: RouteNamed.itemPicker,
-          path: RoutePath.itemPicker,
-          builder: (context, state) => SimpleItemPickerView(
-            args: state.uri.queryParameters,
-          ),
-        ),
-        LinksysRoute(
           name: RouteNamed.mtuPicker,
           path: RoutePath.mtuPicker,
           builder: (context, state) => MTUPickerView(
@@ -76,38 +69,10 @@ final advancedSettings = [
     ],
   ),
   LinksysRoute(
-    name: RouteNamed.settingsMacFiltering,
-    path: RoutePath.settingsMacFiltering,
-    builder: (context, state) => MacFilteringView(),
-    routes: [
-      LinksysRoute(
-        name: RouteNamed.macFilteringInput,
-        path: RoutePath.macFilteringInput,
-        builder: (context, state) => MacFilteringEnterDeviceView(
-          args: state.extra as Map<String, dynamic>? ?? {},
-        ),
-      ),
-    ],
-  ),
-  LinksysRoute(
     name: RouteNamed.settingsPort,
     path: RoutePath.settingsPort,
     builder: (context, state) => PortForwardingView(),
     routes: [
-      LinksysRoute(
-        name: RouteNamed.selectDevice,
-        path: RoutePath.selectDevice,
-        builder: (context, state) => SelectOnlineDeviceView(
-          args: state.extra as Map<String, dynamic>? ?? {},
-        ),
-      ),
-      LinksysRoute(
-        name: RouteNamed.selectProtocol,
-        path: RoutePath.selectProtocol,
-        builder: (context, state) => SelectProtocolView(
-          args: state.extra as Map<String, dynamic>? ?? {},
-        ),
-      ),
       LinksysRoute(
         name: RouteNamed.singlePortForwardingList,
         path: RoutePath.singlePortForwardingList,
@@ -150,20 +115,29 @@ final advancedSettings = [
           args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
-      LinksysRoute(
-        name: RouteNamed.ipv6PortServiceList,
-        path: RoutePath.ipv6PortServiceList,
-        builder: (context, state) => Ipv6PortServiceListView(
-          args: state.extra as Map<String, dynamic>? ?? {},
-        ),
-      ),
-      LinksysRoute(
-        name: RouteNamed.ipv6PortServiceRule,
-        path: RoutePath.ipv6PortServiceRule,
-        builder: (context, state) => Ipv6PortServiceRuleView(
-          args: state.extra as Map<String, dynamic>? ?? {},
-        ),
-      ),
     ],
   ),
+  LinksysRoute(
+      name: RouteNamed.settingsFirewall,
+      path: RoutePath.settingsFirewall,
+      builder: (context, state) => FirewallView(
+            args: state.extra as Map<String, dynamic>? ?? {},
+          ),
+      routes: [
+        LinksysRoute(
+            name: RouteNamed.ipv6PortServiceList,
+            path: RoutePath.ipv6PortServiceList,
+            builder: (context, state) => Ipv6PortServiceListView(
+                  args: state.extra as Map<String, dynamic>? ?? {},
+                ),
+            routes: [
+              LinksysRoute(
+                name: RouteNamed.ipv6PortServiceRule,
+                path: RoutePath.ipv6PortServiceRule,
+                builder: (context, state) => Ipv6PortServiceRuleView(
+                  args: state.extra as Map<String, dynamic>? ?? {},
+                ),
+              ),
+            ]),
+      ]),
 ];

@@ -5,7 +5,10 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
+import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/card/list_card.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class PortForwardingView extends ArgumentsConsumerStatelessView {
@@ -42,25 +45,30 @@ class _PortForwardingContentViewState
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      title: getAppLocalizations(context).port_forwarding,
+      title: loc(context).portForwarding,
       child: AppBasicLayout(
         content: Column(
           children: [
-            const AppGap.semiBig(),
-            AppSimplePanel(
-              title: getAppLocalizations(context).single_port_forwarding,
+            AppListCard(
+              padding: const EdgeInsets.all(Spacing.semiBig),
+              title: AppText.labelLarge(loc(context).singlePortForwarding),
+              trailing: const Icon(LinksysIcons.chevronRight),
               onTap: () {
                 context.pushNamed(RouteNamed.singlePortForwardingList);
               },
             ),
-            AppSimplePanel(
-              title: getAppLocalizations(context).port_range_forwarding,
+            AppListCard(
+              padding: const EdgeInsets.all(Spacing.semiBig),
+              title: AppText.labelLarge(loc(context).portRangeForwarding),
+              trailing: const Icon(LinksysIcons.chevronRight),
               onTap: () {
                 context.pushNamed(RouteNamed.portRangeForwardingList);
               },
             ),
-            AppSimplePanel(
-              title: getAppLocalizations(context).port_range_triggering,
+            AppListCard(
+              padding: const EdgeInsets.all(Spacing.semiBig),
+              title: AppText.labelLarge(loc(context).portRangeTriggering),
+              trailing: const Icon(LinksysIcons.chevronRight),
               onTap: () {
                 context.pushNamed(RouteNamed.portRangeTriggeringList);
               },

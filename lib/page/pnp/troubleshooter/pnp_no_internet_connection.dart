@@ -24,6 +24,7 @@ class PnpNoInternetConnectionView extends ConsumerStatefulWidget {
 
 class _PnpNoInternetConnectionState
     extends ConsumerState<PnpNoInternetConnectionView> {
+      
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
@@ -141,7 +142,7 @@ class _PnpNoInternetConnectionState
             AppFilledButton(
               'Try Again',
               onTap: () {
-                //TODO: Try again
+                context.goNamed(RouteNamed.pnp);
               },
             )
           ],

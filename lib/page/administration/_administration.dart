@@ -1,6 +1,5 @@
 export 'firewall/_firewall.dart';
 export 'ip_details/_ip_details.dart';
 export '../advanced_settings/local_network_settings/_local_network_settings.dart';
-export 'mac_filtering/_mac_filtering.dart';
 export 'port_forwarding/_port_forwarding.dart';
 export 'network_admin/_router_password.dart';

@@ -18,6 +18,7 @@ import 'package:linksys_app/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_app/page/dashboard/_dashboard.dart';
 import 'package:linksys_app/page/ddns/_ddns.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
+import 'package:linksys_app/page/devices/views/select_device_view.dart';
 import 'package:linksys_app/page/health_check/_health_check.dart';
 import 'package:linksys_app/page/landing/_landing.dart';
 
@@ -51,7 +52,6 @@ import 'package:linksys_app/providers/connectivity/_connectivity.dart';
 import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/route/router_logger.dart';
 import '../page/advanced_settings/local_network_settings/_local_network_settings.dart';
-import '../page/administration/mac_filtering/_mac_filtering.dart';
 import 'constants.dart';
 
 part 'route_home.dart';
@@ -88,6 +88,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       dashboardRoute,
       pnpRoute,
+      pnpTroubleshootingRoute,
       addNodesRoute,
     ],
     redirect: (context, state) {

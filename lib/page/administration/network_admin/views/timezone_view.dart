@@ -43,9 +43,9 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView> {
         : StyledAppPageView(
             // scrollable: true,
             title: getAppLocalizations(context).timezone,
-            saveAction: SaveAction(
-                enabled: true,
-                onSave: () {
+            bottomBar: PageBottomBar(
+                isPositiveEnabled: true,
+                onPositiveTap: () {
                   setState(() {
                     _isLoading = true;
                   });

@@ -19,6 +19,7 @@ class PortRangeTriggeringListNotifier
     repo
         .send(
       JNAPAction.getPortRangeTriggeringRules,
+      fetchRemote: true,
       auth: true,
     )
         .then<JNAPSuccess?>((value) {

@@ -140,28 +140,45 @@ class WifiAdvancedSettingsNotifier extends Notifier<WifiAdvancedSettingsState> {
     });
   }
 
-  Future save({
-    bool? isClientSteeringEnabled,
-    bool? isNodeSteeringEnabled,
-    bool? isIptvEnabled,
-    bool? isMLOEnabled,
-    bool? isDFSEnabled,
-    bool? isAirtimeFairnessEnabled,
-  }) {
+  Future save() {
     return ref
         .read(routerRepositoryProvider)
         .transaction(
           JNAPTransactionBuilder(
               commands: _buildSetCommends(
-                isClientSteeringEnabled: isClientSteeringEnabled,
-                isNodeSteeringEnabled: isNodeSteeringEnabled,
-                isIptvEnabled: isIptvEnabled,
-                isDFSEnabled: isDFSEnabled,
-                isMLOEnabled: isMLOEnabled,
-                isAirtimeFairnessEnabled: isAirtimeFairnessEnabled,
+                isClientSteeringEnabled: state.isClientSteeringEnabled,
+                isNodeSteeringEnabled: state.isNodesSteeringEnabled,
+                isIptvEnabled: state.isIptvEnabled,
+                isDFSEnabled: state.isDFSEnabled,
+                isMLOEnabled: state.isMLOEnabled,
+                isAirtimeFairnessEnabled: state.isAirtimeFairnessEnabled,
               ),
               auth: true),
         )
         .then((_) => fetch());
+  }
+
+  void setClientSteeringEnabled(bool value) {
+    state = state.copyWith(isClientSteeringEnabled: value);
+  }
+
+  void setNodesSteeringEnabled(bool value) {
+    state = state.copyWith(isNodesSteeringEnabled: value);
+  }
+
+  void setIptvEnabled(bool value) {
+    state = state.copyWith(isIptvEnabled: value);
+  }
+
+  void setDFSEnabled(bool value) {
+    state = state.copyWith(isDFSEnabled: value);
+  }
+
+  void setMLOEnabled(bool value) {
+    state = state.copyWith(isMLOEnabled: value);
+  }
+
+  void setAirtimeFairnessEnabled(bool value) {
+    state = state.copyWith(isAirtimeFairnessEnabled: value);
   }
 }

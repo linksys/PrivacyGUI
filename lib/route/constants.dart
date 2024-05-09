@@ -30,14 +30,14 @@ class RoutePath {
   static const settingsNotification = 'notificationSettings';
   static const settingsWifi = 'wifiSettings';
   static const settingsNodes = 'nodes';
-  static const settingsRouterPassword = 'routerPassword';
+  static const settingsNetworkAdmin = 'routerAdmin';
   static const settingsTimeZone = 'timeZone';
   static const settingsInternet = 'internetSettings';
   static const settingsIpDetails = 'ipDetails';
   static const settingsLocalNetwork = 'localNetworkSettings';
   static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
-  static const itemPicker = 'itemPicker';
+  static const settingsFirewall = 'firewall';
 
   /// otp
   static const otpStart = 'otp';
@@ -89,8 +89,6 @@ class RoutePath {
   static const portRangeForwardingRule = 'portRangeForwardingRule';
   static const portRangeTriggeringList = 'portRangeTriggeringList';
   static const protRangeTriggeringRule = 'portRangeTriggeringRule';
-  static const selectDevice = 'selectDevice';
-  static const selectProtocol = 'selectProtocol';
 
   /// Ipv6 port service
   static const ipv6PortServiceList = 'ipv6PortServiceList';
@@ -102,7 +100,7 @@ class RoutePath {
   /// PnP
   static const pnp = '/pnp';
   static const pnpConfig = 'pnpConfig';
-  static const pnpNoInternetConnection = 'noInternetConnection';
+  static const pnpNoInternetConnection = '/noInternetConnection';
   static const pnpUnplugModem = 'unPlugModem';
   static const pnpMakeSureLightOff = 'makeSureLightOff';
   static const pnpWaitingModem = 'waitingModem';
@@ -127,6 +125,9 @@ class RoutePath {
 
   ///Channel Finder
   static const channelFinderOptimize = 'channelFinderOptimize';
+
+  /// Device picker
+  static const devicePicker = 'devicePicker';
 
   /// debug
   static const debug = 'debug';
@@ -164,14 +165,14 @@ class RouteNamed {
   static const settingsNotification = 'notificationSettings';
   static const settingsWifi = 'wifiSettings';
   static const settingsNodes = 'nodes';
-  static const settingsRouterPassword = 'routerPassword';
+  static const settingsNetworkAdmin = 'networkAdmin';
   static const settingsTimeZone = 'timeZone';
   static const settingsInternet = 'internetSettings';
   static const settingsIpDetails = 'ipDetails';
   static const settingsLocalNetwork = 'localNetworkSettings';
   static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
-  static const itemPicker = 'itemPicker';
+  static const settingsFirewall = 'firewall';
 
   /// otp
   static const otpStart = 'otp';
@@ -223,7 +224,6 @@ class RouteNamed {
   static const portRangeForwardingRule = 'portRangeForwardingRule';
   static const portRangeTriggeringList = 'portRangeTriggeringList';
   static const protRangeTriggeringRule = 'portRangeTriggeringRule';
-  static const selectDevice = 'selectDevice';
   static const selectProtocol = 'selectProtocol';
 
   /// Ipv6 port service
@@ -261,6 +261,9 @@ class RouteNamed {
 
   ///Channel Finder
   static const channelFinderOptimize = 'channelFinderOptimize';
+
+  /// Device picker
+  static const devicePicker = 'devicePicker';
 
   /// debug
   static const debug = 'debug';

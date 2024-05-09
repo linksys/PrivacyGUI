@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/utils/logger.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/general_settings_widget/language_tile.dart';
 import 'package:linksys_app/page/components/styled/general_settings_widget/theme_tile.dart';
 import 'package:linksys_app/providers/app_settings/app_settings_provider.dart';
@@ -12,6 +12,9 @@ import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/buttons/popup_button.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:linksys_app/util/url_helper/url_helper.dart'
+    if (dart.library.io) 'package:linksys_app/util/url_helper/url_helper_mobile.dart'
+    if (dart.library.html) 'package:linksys_app/util/url_helper/url_helper_web.dart';
 
 class GeneralSettingsWidget extends ConsumerStatefulWidget {
   const GeneralSettingsWidget({super.key});
@@ -89,15 +92,38 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: AppTextButton(
-            'Linksys Pledges',
-            onTap: () {},
+            loc(context).endUserLicenseAgreement,
+            onTap: () {
+              openUrl('https://www.linksys.com/EULA.html');
+            },
           ),
         ),
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: AppTextButton(
-            'Privacy & Iegal documents',
-            onTap: () {},
+            loc(context).termsOfService,
+            onTap: () {
+              openUrl('https://www.linksys.com/terms.html');
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: AppTextButton(
+            loc(context).thirdPartyLicenses,
+            onTap: () {
+              openUrl(
+                  'https://www.linksys.com/support-article?articleNum=47763');
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: AppTextButton(
+            loc(context).privacyAndSecurity,
+            onTap: () {
+              openUrl('https://www.linksys.com/privacy-and-security.html');
+            },
           ),
         ),
         const Divider(
@@ -107,7 +133,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: AppTextButton(
-            'Log out',
+            loc(context).logout,
             onTap: () {
               ref.read(authProvider.notifier).logout();
             },

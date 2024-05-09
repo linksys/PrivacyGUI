@@ -70,24 +70,28 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
         .currentConfiguration
         .routes
         .last as LinksysRoute?;
+
+    final showNavi = pageRoute?.config == null
+        ? !autoHideNaviRail()
+        : pageRoute?.config?.noNaviRail != true;
     return StyledAppPageView(
         backState: StyledBackState.none,
         appBarStyle: AppBarStyle.none,
         handleNoConnection: true,
         handleBanner: true,
         padding: const EdgeInsets.only(),
-        bottomNavigationBar: ResponsiveLayout.isLayoutBreakpoint(context) &&
-                pageRoute?.config?.noNaviRail != true
-            ? NavigationBar(
-                selectedIndex: _selectedIndex,
-                destinations: _dashboardNaviItems
-                    .map((e) => _bottomSheetIconView(e))
-                    .toList(),
-                onDestinationSelected: _onItemTapped,
-                indicatorColor: Theme.of(context).colorScheme.primary,
-                elevation: 0,
-              )
-            : null,
+        bottomNavigationBar:
+            ResponsiveLayout.isLayoutBreakpoint(context) && showNavi
+                ? NavigationBar(
+                    selectedIndex: _selectedIndex,
+                    destinations: _dashboardNaviItems
+                        .map((e) => _bottomSheetIconView(e))
+                        .toList(),
+                    onDestinationSelected: _onItemTapped,
+                    indicatorColor: Theme.of(context).colorScheme.primary,
+                    elevation: 0,
+                  )
+                : null,
         child: _buildLayout());
   }
 
@@ -101,10 +105,14 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
         .currentConfiguration
         .routes
         .last as LinksysRoute?;
+
+    final showNavi = pageRoute?.config == null
+        ? !autoHideNaviRail()
+        : pageRoute?.config?.noNaviRail != true;
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        if (pageRoute?.config?.noNaviRail != true)
+        if (showNavi)
           DashboardNavigationRail(
             items: _dashboardNaviItems
                 .map((e) => _createNavigationRailDestination(e))
@@ -141,6 +149,18 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
       child: widget.child,
     );
   }
+
+  bool autoHideNaviRail() =>
+      (GoRouter.of(context)
+              .routerDelegate
+              .currentConfiguration
+              .matches
+              .lastOrNull
+              ?.matchedLocation
+              .split('/')
+              .length ??
+          0) >
+      2;
 
   void _onItemTapped(int index) {
     shellNavigatorKey.currentContext!

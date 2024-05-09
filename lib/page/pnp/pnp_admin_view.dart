@@ -63,7 +63,9 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         .catchError((error, stackTrace) {},
             test: (error) => error is ExceptionInvalidAdminPassword)
         .catchError((error, stackTrace) {
-          context.goNamed(RouteNamed.pnpNoInternetConnection);
+          pnp.fetchData().then((value) {
+            context.goNamed(RouteNamed.pnpNoInternetConnection);
+          });
         }, test: (error) => error is ExceptionNoInternetConnection)
         .catchError((error, stackTrace) {
           setState(() {

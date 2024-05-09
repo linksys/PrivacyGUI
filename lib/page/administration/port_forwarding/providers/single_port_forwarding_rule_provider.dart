@@ -4,6 +4,7 @@ import 'package:linksys_app/core/jnap/models/lan_settings.dart';
 import 'package:linksys_app/core/jnap/models/single_port_forwarding_rule.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
 import 'package:linksys_app/page/administration/port_forwarding/_port_forwarding.dart';
+import 'package:linksys_app/page/administration/port_forwarding/providers/consts.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:linksys_app/validator_rules/input_validators.dart';
 
@@ -23,13 +24,13 @@ class SinglePortForwardingRuleNotifier
 
   Future goAdd(List<SinglePortForwardingRule> rules) {
     return fetch().then((value) => state = state.copyWith(
-        mode: SinglePortForwardingRuleMode.adding, rules: rules));
+        mode: RuleMode.adding, rules: rules));
   }
 
   Future goEdit(
       List<SinglePortForwardingRule> rules, SinglePortForwardingRule rule) {
-    return fetch().then((value) => state.copyWith(
-        mode: SinglePortForwardingRuleMode.editing, rules: rules, rule: rule));
+    return fetch().then((value) => state = state.copyWith(
+        mode: RuleMode.editing, rules: rules, rule: rule));
   }
 
   Future fetch() async {
@@ -49,9 +50,9 @@ class SinglePortForwardingRuleNotifier
   Future<bool> save(SinglePortForwardingRule rule) async {
     final mode = state.mode;
     final rules = List<SinglePortForwardingRule>.from(state.rules);
-    if (mode == SinglePortForwardingRuleMode.adding) {
+    if (mode == RuleMode.adding) {
       rules.add(rule);
-    } else if (mode == SinglePortForwardingRuleMode.editing) {
+    } else if (mode == RuleMode.editing) {
       int index = state.rules.indexOf(state.rule!);
       rules.replaceRange(index, index + 1, [rule]);
     }
@@ -69,7 +70,7 @@ class SinglePortForwardingRuleNotifier
 
   Future<bool> delete() async {
     final mode = state.mode;
-    if (mode == SinglePortForwardingRuleMode.editing) {
+    if (mode == RuleMode.editing) {
       final rules = List<SinglePortForwardingRule>.from(state.rules)
         ..removeWhere((element) => element == state.rule);
       final repo = ref.read(routerRepositoryProvider);
@@ -95,7 +96,7 @@ class SinglePortForwardingRuleNotifier
   }
 
   bool isEdit() {
-    return state.mode == SinglePortForwardingRuleMode.editing;
+    return state.mode == RuleMode.editing;
   }
 
   String get subnetMask => _subnetMask;

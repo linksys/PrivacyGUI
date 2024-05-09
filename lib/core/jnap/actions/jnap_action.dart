@@ -89,6 +89,7 @@ enum JNAPAction {
   setTimeSettings,
   // macFilter
   getMACFilterSettings,
+  setMACFilterSettings,
   // motionSensing
   getActiveMotionSensingBots,
   getMotionSensingSettings,

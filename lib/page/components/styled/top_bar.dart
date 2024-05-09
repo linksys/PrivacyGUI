@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/page/components/styled/general_settings_widget/general_settings_widget.dart';
-import 'package:linksys_app/page/components/styled/notification_popup_widget.dart';
 import 'package:linksys_app/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:linksys_app/page/select_network/_select_network.dart';
 import 'package:linksys_app/providers/auth/auth_provider.dart';

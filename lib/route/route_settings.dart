@@ -7,24 +7,17 @@ final settings = [
     builder: (context, state) => NotificationSettingsView(),
   ),
   LinksysRoute(
-    name: RouteNamed.settingsWifi,
-    path: RoutePath.settingsWifi,
-    builder: (context, state) => WifiSelectSettingsView(),
-    routes: [
-      LinksysRoute(
-        name: RouteNamed.wifiSettingsReview,
-        path: RoutePath.wifiSettingsReview,
-        builder: (context, state) => WifiSettingsReviewView(),
-        routes: [
-          LinksysRoute(
-            name: RouteNamed.channelFinderOptimize,
-            path: RoutePath.channelFinderOptimize,
-            builder: (context, state) => WifiSettingsChannelFinderView(),
-          )
-        ],
-      ),
-    ],
-  ),
+      name: RouteNamed.settingsWifi,
+      path: RoutePath.settingsWifi,
+      config: const LinksysRouteConfig(noNaviRail: true),
+      builder: (context, state) => WiFiMainView(),
+      routes: [
+        LinksysRoute(
+          name: RouteNamed.macFilteringInput,
+          path: RoutePath.macFilteringInput,
+          builder: (context, state) => FilteredDevicesView(),
+        ),
+      ]),
   LinksysRoute(
     name: RouteNamed.wifiAdvancedSettings,
     path: RoutePath.wifiAdvancedSettings,
@@ -61,13 +54,21 @@ final settings = [
         ),
       ]),
   LinksysRoute(
-    name: RouteNamed.settingsRouterPassword,
-    path: RoutePath.settingsRouterPassword,
-    builder: (context, state) => NetworkAdminView(),
-  ),
+      name: RouteNamed.settingsNetworkAdmin,
+      path: RoutePath.settingsNetworkAdmin,
+      builder: (context, state) => NetworkAdminView(),
+      routes: [
+        LinksysRoute(
+          name: RouteNamed.settingsTimeZone,
+          path: RoutePath.settingsTimeZone,
+          builder: (context, state) => TimezoneView(),
+        ),
+      ]),
   LinksysRoute(
-    name: RouteNamed.settingsTimeZone,
-    path: RoutePath.settingsTimeZone,
-    builder: (context, state) => TimezoneView(),
+    name: RouteNamed.devicePicker,
+    path: RoutePath.devicePicker,
+    builder: (context, state) => SelectDeviceView(
+      args: state.extra as Map<String, dynamic>? ?? {},
+    ),
   ),
 ];

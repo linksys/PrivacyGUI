@@ -56,10 +56,6 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             _title(),
             const AppGap.semiBig(),
             _section(
-              _generalSettingsSection(context),
-            ),
-            const AppGap.semiBig(),
-            _section(
               _othersSettingsSection(),
             ),
             // const AppGap.semiBig(),
@@ -84,7 +80,6 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             //     });
             //   },
             // ),
-            
           ],
         ),
       ),
@@ -115,39 +110,6 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
       items: sectionItem.items,
     );
   }
-
-  _generalSettingsSection(
-    BuildContext context,
-  ) =>
-      DashboardSettingsSection(
-        title: 'GENERAL',
-        items: [
-          AppSectionItemData(
-            title: 'WiFi',
-            iconData: LinksysIcons.wifi,
-            onTap: () => context.goNamed(RouteNamed.settingsWifi),
-          ),
-          AppSectionItemData(
-            title: 'WiFi Advanced',
-            iconData: LinksysIcons.wifi,
-            onTap: () => context.goNamed(RouteNamed.wifiAdvancedSettings),
-          ),
-          AppSectionItemData(
-            title: 'Nodes',
-            iconData: LinksysIcons.router,
-            onTap: () {
-              ref.read(topologySelectedIdProvider.notifier).state = '';
-              context.pushNamed(RouteNamed.settingsNodes);
-            },
-          ),
-          AppSectionItemData(
-            title: 'Router Password and Hint',
-            // iconData: getCharactersIcons(context).smsDefault,
-            onTap: () => context.goNamed(RouteNamed.settingsRouterPassword),
-          ),
-          
-        ],
-      );
 
   _othersSettingsSection() => DashboardSettingsSection(
         title: 'OTHERS(TBC)',

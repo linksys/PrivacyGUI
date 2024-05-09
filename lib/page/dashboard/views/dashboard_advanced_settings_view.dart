@@ -58,21 +58,21 @@ class _DashboardAdvancedSettingsViewState
         // iconData: getCharactersIcons(context).nodesDefault,
         onTap: () => context.goNamed(RouteNamed.settingsLocalNetwork),
       ),
-      AppSectionItemData(
-        title: loc(context).advancedRouting,
-        // iconData: getCharactersIcons(context).infoRound,
-        onTap: () => context.goNamed(RouteNamed.settingsIpDetails),
-      ),
+      // AppSectionItemData(
+      //   title: loc(context).advancedRouting,
+      //   // iconData: getCharactersIcons(context).infoRound,
+      //   onTap: () => context.goNamed(RouteNamed.settingsIpDetails),
+      // ),
       AppSectionItemData(
         title: loc(context).firewall,
         // iconData: getCharactersIcons(context).nodesDefault,
-        onTap: () => context.goNamed(RouteNamed.settingsPort),
+        onTap: () => context.goNamed(RouteNamed.settingsFirewall),
       ),
-      AppSectionItemData(
-        title: loc(context).dmz,
-        // iconData: getCharactersIcons(context).nodesDefault,
-        onTap: () => context.goNamed(RouteNamed.settingsPort),
-      ),
+      // AppSectionItemData(
+      //   title: loc(context).dmz,
+      //   // iconData: getCharactersIcons(context).nodesDefault,
+      //   onTap: () => context.goNamed(RouteNamed.settingsPort),
+      // ),
       AppSectionItemData(
         title: loc(context).portForwarding,
         // iconData: getCharactersIcons(context).nodesDefault,
@@ -80,5 +80,4 @@ class _DashboardAdvancedSettingsViewState
       ),
     ];
   }
-
 }

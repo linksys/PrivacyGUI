@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/shortcuts/dialogs.dart';
+import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
+import 'package:linksys_app/page/wifi_settings/providers/wifi_view_provider.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/buttons/button.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/panel/switch_trigger_tile.dart';
-import 'package:linksys_widgets/widgets/text/app_text.dart';
+import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class WifiAdvancedSettingsView extends ArgumentsConsumerStatefulView {
   const WifiAdvancedSettingsView({super.key});
@@ -23,70 +22,75 @@ class WifiAdvancedSettingsView extends ArgumentsConsumerStatefulView {
 
 class _WifiAdvancedSettingsViewState
     extends ConsumerState<WifiAdvancedSettingsView> {
-  bool? _isClientSteeringEnabled;
-  bool? _isNodeSteeringEnabled;
-  bool? _isIptvEnabled;
-  bool? _isMLOEnabled;
-  bool? _isDFSEnabled;
-  bool? _isAirtimeFairnessEnabled;
+  bool _isLoading = false;
+  WifiAdvancedSettingsState? _preservedState;
 
   @override
   void initState() {
     super.initState();
+    setState(() {
+      _isLoading = true;
+    });
     ref.read(wifiAdvancedProvider.notifier).fetch().then((value) {
+      ref.read(wifiViewProvider.notifier).setChanged(false);
       final state = ref.read(wifiAdvancedProvider);
       setState(() {
-        _isClientSteeringEnabled = state.isClientSteeringEnabled;
-        _isNodeSteeringEnabled = state.isNodesSteeringEnabled;
-        _isIptvEnabled = state.isIptvEnabled;
-        _isMLOEnabled = state.isMLOEnabled;
-        _isDFSEnabled = state.isDFSEnabled;
-        _isAirtimeFairnessEnabled = state.isAirtimeFairnessEnabled;
+        _preservedState = state;
+        _isLoading = false;
       });
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
-      actions: [
-        AppTextButton.noPadding(
-          'Save',
-          onTap: () {
-            ref.read(wifiAdvancedProvider.notifier).save(
-                  isClientSteeringEnabled: _isClientSteeringEnabled,
-                  isNodeSteeringEnabled: _isNodeSteeringEnabled,
-                  isDFSEnabled: _isDFSEnabled,
-                  isMLOEnabled: _isMLOEnabled,
-                  isIptvEnabled: _isIptvEnabled,
-                  isAirtimeFairnessEnabled: _isAirtimeFairnessEnabled,
-                );
-          },
-        ),
-      ],
-      child: _buildGrid(),
-    );
+    ref.listen(wifiAdvancedProvider, (previous, next) {
+      ref.read(wifiViewProvider.notifier).setChanged(next != _preservedState);
+    });
+    return _isLoading
+        ? AppFullScreenSpinner(
+            text: loc(context).processing,
+          )
+        : StyledAppPageView(
+            appBarStyle: AppBarStyle.none,
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            bottomBar: PageBottomBar(
+                isPositiveEnabled:
+                    _preservedState != ref.read(wifiAdvancedProvider),
+                onPositiveTap: () {
+                  setState(() {
+                    _isLoading = true;
+                  });
+                  ref.read(wifiAdvancedProvider.notifier).save().then((_) {
+                    setState(() {
+                      _isLoading = false;
+                      ref.read(wifiViewProvider.notifier).setChanged(false);
+                    });
+                  });
+                }),
+            child: _buildGrid(),
+          );
   }
 
   Widget _buildGrid() {
+    final state = ref.watch(wifiAdvancedProvider);
     return ListView(
       children: [
-        ..._buildClientSteering(),
-        ..._buildNodeSteering(),
-        ..._buildIptv(),
-        ..._buildDFS(),
-        ..._buildMLO(),
+        ..._buildClientSteering(state.isClientSteeringEnabled),
+        ..._buildNodeSteering(state.isNodesSteeringEnabled),
+        ..._buildIptv(state.isIptvEnabled),
+        ..._buildDFS(state.isDFSEnabled),
+        ..._buildMLO(state.isMLOEnabled),
       ],
     );
   }
 
-  List<Widget> _buildClientSteering() {
-    return _isClientSteeringEnabled != null
+  List<Widget> _buildClientSteering(bool? value) {
+    return value != null
         ? [
             AppSwitchTriggerTile(
               title: AppText.labelLarge(loc(context).clientSteering),
               description: AppText.bodyMedium(loc(context).clientSteeringDesc),
-              value: _isClientSteeringEnabled!,
+              value: value,
               showSwitchIcon: true,
               decoration: BoxDecoration(
                 border: Border.all(
@@ -96,9 +100,9 @@ class _WifiAdvancedSettingsViewState
               padding: const EdgeInsets.all(Spacing.big),
               toggleInCenter: true,
               onChanged: (value) {
-                setState(() {
-                  _isClientSteeringEnabled = value;
-                });
+                ref
+                    .read(wifiAdvancedProvider.notifier)
+                    .setClientSteeringEnabled(value);
               },
             ),
             const AppGap.regular()
@@ -106,13 +110,13 @@ class _WifiAdvancedSettingsViewState
         : [];
   }
 
-  List<Widget> _buildNodeSteering() {
-    return _isNodeSteeringEnabled != null
+  List<Widget> _buildNodeSteering(bool? value) {
+    return value != null
         ? [
             AppSwitchTriggerTile(
               title: AppText.labelLarge(loc(context).nodeSteering),
               description: AppText.bodyMedium(loc(context).nodeSteeringDesc),
-              value: _isNodeSteeringEnabled!,
+              value: value,
               showSwitchIcon: true,
               decoration: BoxDecoration(
                 border: Border.all(
@@ -122,9 +126,9 @@ class _WifiAdvancedSettingsViewState
               padding: const EdgeInsets.all(Spacing.big),
               toggleInCenter: true,
               onChanged: (value) {
-                setState(() {
-                  _isNodeSteeringEnabled = value;
-                });
+                ref
+                    .read(wifiAdvancedProvider.notifier)
+                    .setNodesSteeringEnabled(value);
               },
             ),
             const AppGap.regular()
@@ -132,8 +136,8 @@ class _WifiAdvancedSettingsViewState
         : [];
   }
 
-  List<Widget> _buildIptv() {
-    return _isIptvEnabled != null
+  List<Widget> _buildIptv(bool? value) {
+    return value != null
         ? [
             AppSwitchTriggerTile(
               title: const AppText.labelLarge('IPTV'),
@@ -141,7 +145,7 @@ class _WifiAdvancedSettingsViewState
                   'Please check with your ISP if IPTV service is compatible with this router.'),
               description: const AppText.bodySmall(
                   'IPTV subscribers should turn this feature ON to get the most out of the service. Depending on your network configuration, you might have to reconnect some devices.'),
-              value: _isIptvEnabled!,
+              value: value,
               showSwitchIcon: true,
               decoration: BoxDecoration(
                 border: Border.all(
@@ -151,9 +155,7 @@ class _WifiAdvancedSettingsViewState
               padding: const EdgeInsets.all(Spacing.big),
               toggleInCenter: true,
               onChanged: (value) {
-                setState(() {
-                  _isIptvEnabled = value;
-                });
+                ref.read(wifiAdvancedProvider.notifier).setIptvEnabled(value);
               },
             ),
             const AppGap.regular()
@@ -161,8 +163,8 @@ class _WifiAdvancedSettingsViewState
         : [];
   }
 
-  List<Widget> _buildDFS() {
-    return _isDFSEnabled != null
+  List<Widget> _buildDFS(bool? value) {
+    return value != null
         ? [
             AppSwitchTriggerTile(
               title: AppText.labelLarge(loc(context).dfs),
@@ -177,7 +179,7 @@ class _WifiAdvancedSettingsViewState
                   }
                 },
               ),
-              value: _isDFSEnabled!,
+              value: value,
               showSwitchIcon: true,
               decoration: BoxDecoration(
                 border: Border.all(
@@ -187,9 +189,7 @@ class _WifiAdvancedSettingsViewState
               padding: const EdgeInsets.all(Spacing.big),
               toggleInCenter: true,
               onChanged: (value) {
-                setState(() {
-                  _isDFSEnabled = value;
-                });
+                ref.read(wifiAdvancedProvider.notifier).setDFSEnabled(value);
               },
             ),
             const AppGap.regular()
@@ -197,13 +197,13 @@ class _WifiAdvancedSettingsViewState
         : [];
   }
 
-  List<Widget> _buildMLO() {
-    return _isMLOEnabled != null
+  List<Widget> _buildMLO(bool? value) {
+    return value != null
         ? [
             AppSwitchTriggerTile(
               title: AppText.labelLarge(loc(context).mlo),
               description: AppText.bodyMedium(loc(context).mloDesc),
-              value: _isMLOEnabled!,
+              value: value,
               decoration: BoxDecoration(
                 border: Border.all(
                     color: Theme.of(context).colorScheme.onBackground),
@@ -212,9 +212,7 @@ class _WifiAdvancedSettingsViewState
               padding: const EdgeInsets.all(Spacing.big),
               toggleInCenter: true,
               onChanged: (value) {
-                setState(() {
-                  _isMLOEnabled = value;
-                });
+                ref.read(wifiAdvancedProvider.notifier).setMLOEnabled(value);
               },
             ),
             const AppGap.regular()

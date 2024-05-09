@@ -4,9 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/core/jnap/models/port_range_triggering_rule.dart';
 import 'package:linksys_app/page/administration/port_forwarding/_port_forwarding.dart';
+import 'package:linksys_app/page/administration/port_forwarding/providers/consts.dart';
+import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/card/list_card.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/panel/general_section.dart';
 
@@ -43,6 +46,7 @@ class _AddRuleContentViewState
   final TextEditingController _lastForwardedPortController =
       TextEditingController();
 
+  bool _isEnabled = false;
   List<PortRangeTriggeringRule> _rules = [];
 
   @override
@@ -51,14 +55,22 @@ class _AddRuleContentViewState
     _rules = widget.args['rules'] ?? [];
     final PortRangeTriggeringRule? rule = widget.args['edit'];
     if (rule != null) {
-      _ruleNameController.text = rule.description;
-      _firstTriggerPortController.text = '${rule.firstTriggerPort}';
-      _lastTriggerPortController.text = '${rule.lastTriggerPort}';
-      _firstForwardedPortController.text = '${rule.firstForwardedPort}';
-      _lastForwardedPortController.text = '${rule.lastForwardedPort}';
-      _notifier.goEdit(_rules, rule);
+      _notifier.goEdit(_rules, rule).then((_) {
+        _ruleNameController.text = rule.description;
+        _firstTriggerPortController.text = '${rule.firstTriggerPort}';
+        _lastTriggerPortController.text = '${rule.lastTriggerPort}';
+        _firstForwardedPortController.text = '${rule.firstForwardedPort}';
+        _lastForwardedPortController.text = '${rule.lastForwardedPort}';
+        setState(() {
+          _isEnabled = rule.isEnabled;
+        });
+      });
     } else {
-      _notifier.goAdd(_rules);
+      _notifier.goAdd(_rules).then((_) {
+        setState(() {
+          _isEnabled = true;
+        });
+      });
     }
     super.initState();
   }
@@ -79,45 +91,46 @@ class _AddRuleContentViewState
     final state = ref.watch(portRangeTriggeringRuleProvider);
     return StyledAppPageView(
       scrollable: true,
-      title: getAppLocalizations(context).single_port_forwarding,
-      actions: [
-        AppTextButton(
-          getAppLocalizations(context).save,
-          onTap: () {
-            final rule = PortRangeTriggeringRule(
-                isEnabled: true,
-                firstTriggerPort: int.parse(_firstTriggerPortController.text),
-                lastTriggerPort: int.parse(_lastTriggerPortController.text),
-                firstForwardedPort:
-                    int.parse(_firstForwardedPortController.text),
-                lastForwardedPort: int.parse(_lastForwardedPortController.text),
-                description: _ruleNameController.text);
-            _notifier.save(rule).then((value) {
-              if (value) {
-                if (_notifier.isEdit()) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    AppToastHelp.positiveToast(context,
-                        text: getAppLocalizations(context).rule_updated),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    AppToastHelp.positiveToast(context,
-                        text: getAppLocalizations(context).rule_added),
-                  );
-                }
+      title: loc(context).portRangeTriggering,
+      bottomBar: PageBottomBar(
+        isPositiveEnabled: true,
+        isNegitiveEnabled: state.mode == RuleMode.editing ? true : null,
+        negitiveLable: loc(context).delete,
+        onPositiveTap: () {
+          final rule = PortRangeTriggeringRule(
+              isEnabled: _isEnabled,
+              firstTriggerPort: int.parse(_firstTriggerPortController.text),
+              lastTriggerPort: int.parse(_lastTriggerPortController.text),
+              firstForwardedPort: int.parse(_firstForwardedPortController.text),
+              lastForwardedPort: int.parse(_lastForwardedPortController.text),
+              description: _ruleNameController.text);
+          _notifier.save(rule).then((value) {
+            if (value) {
+              showSuccessSnackBar(
+                  context,
+                  _notifier.isEdit()
+                      ? loc(context).ruleUpdated
+                      : loc(context).ruleAdded);
 
-                context.pop(true);
-              }
-            });
-          },
-        ),
-      ],
+              context.pop(true);
+            }
+          });
+        },
+        onNegitiveTap: () {
+          _notifier.delete().then((value) {
+            if (value) {
+              showSimpleSnackBar(context, loc(context).ruleDeleted);
+            }
+            context.pop(true);
+          });
+        },
+      ),
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppGap.semiBig(),
-            if (state.mode == PortRangeTriggeringRuleMode.editing)
+            if (state.mode == RuleMode.editing)
               ..._buildEditContents(state)
             else
               ..._buildAddContents(state)
@@ -133,53 +146,44 @@ class _AddRuleContentViewState
 
   List<Widget> _buildEditContents(PortRangeTriggeringRuleState state) {
     return [
-      AppPanelWithSwitch(
-        value: state.rule?.isEnabled ?? false,
-        title: getAppLocalizations(context).rule_enabled,
-        onChangedEvent: (value) {},
+      AppListCard(
+        title: AppText.labelLarge(loc(context).ruleEnabled),
+        trailing: AppSwitch(
+          value: _isEnabled,
+          onChanged: (value) {
+            setState(() {
+              _isEnabled = value;
+            });
+          },
+        ),
       ),
+      const AppGap.semiBig(),
       ...buildInputForms(),
-      AppTextButton(
-        getAppLocalizations(context).delete_rule,
-        onTap: () {
-          _notifier.delete().then((value) {
-            if (value) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                AppToastHelp.positiveToast(context,
-                    text: getAppLocalizations(context).rule_deleted),
-              );
-              context.pop(true);
-            }
-          });
-        },
-      ),
     ];
   }
 
   List<Widget> buildInputForms() {
     return [
-      AppTextField(
-          headerText: getAppLocalizations(context).rule_name,
-          hintText: getAppLocalizations(context).rule_name,
-          controller: _ruleNameController),
-      const AppGap.extraBig(),
+      AppTextField.outline(
+          headerText: loc(context).ruleName, controller: _ruleNameController),
+      const AppGap.semiBig(),
       AppSection.withLabel(
-        title: getAppLocalizations(context).triggered_range,
+        title: loc(context).triggeredRange,
         content: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppTextField.minMaxNumber(
-              headerText: getAppLocalizations(context).start_port,
-              hintText: getAppLocalizations(context).end_port,
+              border: const OutlineInputBorder(),
+              headerText: loc(context).startPort,
               inputType: TextInputType.number,
               controller: _firstTriggerPortController,
               max: 65535,
             ),
             const AppGap.regular(),
             AppTextField.minMaxNumber(
-              headerText: getAppLocalizations(context).end_port,
-              hintText: getAppLocalizations(context).end_port,
+              border: const OutlineInputBorder(),
+              headerText: loc(context).endPort,
               inputType: TextInputType.number,
               controller: _lastTriggerPortController,
               max: 65535,
@@ -189,22 +193,22 @@ class _AddRuleContentViewState
         ),
       ),
       AppSection.withLabel(
-        title: getAppLocalizations(context).forwarded_range,
+        title: loc(context).forwardedRange,
         content: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppTextField.minMaxNumber(
-              headerText: getAppLocalizations(context).start_port,
-              hintText: getAppLocalizations(context).end_port,
+              border: const OutlineInputBorder(),
+              headerText: loc(context).startPort,
               inputType: TextInputType.number,
               controller: _firstForwardedPortController,
               max: 65535,
             ),
             const AppGap.regular(),
             AppTextField.minMaxNumber(
-              headerText: getAppLocalizations(context).end_port,
-              hintText: getAppLocalizations(context).end_port,
+              border: const OutlineInputBorder(),
+              headerText: loc(context).endPort,
               inputType: TextInputType.number,
               controller: _lastForwardedPortController,
               max: 65535,

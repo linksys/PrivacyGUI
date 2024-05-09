@@ -1,6 +1,9 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
-class WifiItem extends Equatable {
+class WiFiItem extends Equatable {
   final WifiType wifiType;
   final WifiRadioBand radioID;
   final String ssid;
@@ -17,7 +20,7 @@ class WifiItem extends Equatable {
   final Map<WifiChannelWidth, List<int>> availableChannels;
   final int numOfDevices;
 
-  const WifiItem({
+  const WiFiItem({
     required this.wifiType,
     required this.radioID,
     required this.ssid,
@@ -35,7 +38,7 @@ class WifiItem extends Equatable {
     required this.numOfDevices,
   });
 
-  WifiItem copyWith({
+  WiFiItem copyWith({
     WifiType? wifiType,
     WifiRadioBand? radioID,
     String? ssid,
@@ -52,7 +55,7 @@ class WifiItem extends Equatable {
     Map<WifiChannelWidth, List<int>>? availableChannels,
     int? numOfDevices,
   }) {
-    return WifiItem(
+    return WiFiItem(
       wifiType: wifiType ?? this.wifiType,
       radioID: radioID ?? this.radioID,
       ssid: ssid ?? this.ssid,

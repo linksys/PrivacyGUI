@@ -3,33 +3,65 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/card/card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/base_page_view.dart';
 
+import 'package:linksys_app/localization/localization_hook.dart';
+
 import 'consts.dart';
 
-class SaveAction extends Equatable {
-  final bool enabled;
-  final void Function() onSave;
+///
+/// To display negitive item, isNegitiveEnabled should not be null
+///
+class PageBottomBar extends Equatable {
+  final bool isPositiveEnabled;
+  final bool? isNegitiveEnabled;
+  final String? positiveLabel;
+  final String? negitiveLable;
+  final void Function() onPositiveTap;
+  final void Function()? onNegitiveTap;
 
-  const SaveAction({required this.enabled, required this.onSave});
+  const PageBottomBar({
+    required this.isPositiveEnabled,
+    this.isNegitiveEnabled,
+    this.positiveLabel,
+    this.negitiveLable,
+    required this.onPositiveTap,
+    this.onNegitiveTap,
+  });
 
-  SaveAction copyWith({
-    bool? enabled,
-    void Function()? onSave,
+  PageBottomBar copyWith({
+    bool? isPositiveEnabled,
+    bool? isNegitiveEnabled,
+    String? positiveLabel,
+    String? negitiveLable,
+    void Function()? onPositiveTap,
+    void Function()? onNegitiveTap,
   }) {
-    return SaveAction(
-      enabled: enabled ?? this.enabled,
-      onSave: onSave ?? this.onSave,
+    return PageBottomBar(
+      isPositiveEnabled: isPositiveEnabled ?? this.isPositiveEnabled,
+      isNegitiveEnabled: isNegitiveEnabled ?? this.isNegitiveEnabled,
+      positiveLabel: positiveLabel ?? this.positiveLabel,
+      negitiveLable: negitiveLable ?? this.negitiveLable,
+      onPositiveTap: onPositiveTap ?? this.onPositiveTap,
+      onNegitiveTap: onNegitiveTap ?? this.onNegitiveTap,
     );
   }
 
   @override
-  List<Object> get props => [enabled, onSave];
+  List<Object?> get props {
+    return [
+      isPositiveEnabled,
+      isNegitiveEnabled,
+      positiveLabel,
+      negitiveLable,
+      onPositiveTap,
+      onNegitiveTap,
+    ];
+  }
 }
 
 class PageMenu {
@@ -74,7 +106,7 @@ class StyledAppPageView extends ConsumerWidget {
   final Widget? menuWidget;
   final ScrollController? controller;
   final ({bool left, bool top, bool right, bool bottom}) enableSafeArea;
-  final SaveAction? saveAction;
+  final PageBottomBar? bottomBar;
 
   const StyledAppPageView({
     super.key,
@@ -96,7 +128,7 @@ class StyledAppPageView extends ConsumerWidget {
     this.menuWidget,
     this.controller,
     this.enableSafeArea = (left: true, top: true, right: true, bottom: true),
-    this.saveAction,
+    this.bottomBar,
   });
 
   @override
@@ -104,7 +136,7 @@ class StyledAppPageView extends ConsumerWidget {
     return Stack(
       children: [
         Padding(
-          padding: EdgeInsets.only(bottom: saveAction != null ? 80.0 : 0.0),
+          padding: EdgeInsets.only(bottom: bottomBar != null ? 80.0 : 0.0),
           child: AppPageView(
             appBar: _buildAppBar(context, ref),
             padding: padding,
@@ -131,7 +163,7 @@ class StyledAppPageView extends ConsumerWidget {
             ),
           ),
         ),
-        _bottomSaveWidget(context),
+        _bottomWidget(context),
       ],
     );
   }
@@ -183,8 +215,8 @@ class StyledAppPageView extends ConsumerWidget {
         : ((actions ?? [])..add(_createMenuAction(context)));
   }
 
-  Widget _bottomSaveWidget(BuildContext context) {
-    return saveAction != null
+  Widget _bottomWidget(BuildContext context) {
+    return bottomBar != null
         ? Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -197,23 +229,57 @@ class StyledAppPageView extends ConsumerWidget {
                   const Divider(height: 1),
                   Padding(
                     padding: const EdgeInsets.only(top: 16.0),
-                    child: ResponsiveLayout.isLayoutBreakpoint(context)
-                        ? AppFilledButton.fillWidth(
-                            loc(context).save,
-                            onTap: saveAction?.enabled == true
+                    child: Row(
+                      children: [
+                        if (ResponsiveLayout.isLayoutBreakpoint(context)) ...[
+                          if (bottomBar?.isNegitiveEnabled != null) ...[
+                            Expanded(
+                              child: AppOutlinedButton.fillWidth(
+                                bottomBar?.negitiveLable ?? loc(context).cancel,
+                                onTap: bottomBar?.isNegitiveEnabled == true
+                                    ? () {
+                                        bottomBar?.onNegitiveTap?.call();
+                                      }
+                                    : null,
+                              ),
+                            ),
+                            const AppGap.regular(),
+                          ],
+                          Expanded(
+                            child: AppFilledButton.fillWidth(
+                              bottomBar?.positiveLabel ?? loc(context).save,
+                              onTap: bottomBar?.isPositiveEnabled == true
+                                  ? () {
+                                      bottomBar?.onPositiveTap.call();
+                                    }
+                                  : null,
+                            ),
+                          ),
+                        ],
+                        if (!ResponsiveLayout.isLayoutBreakpoint(context)) ...[
+                          if (bottomBar?.isNegitiveEnabled != null) ...[
+                            AppOutlinedButton(
+                              bottomBar?.negitiveLable ?? loc(context).cancel,
+                              color: Theme.of(context).colorScheme.error,
+                              onTap: bottomBar?.isNegitiveEnabled == true
+                                  ? () {
+                                      bottomBar?.onNegitiveTap?.call();
+                                    }
+                                  : null,
+                            ),
+                            const AppGap.regular(),
+                          ],
+                          AppFilledButton(
+                            bottomBar?.positiveLabel ?? loc(context).save,
+                            onTap: bottomBar?.isPositiveEnabled == true
                                 ? () {
-                                    saveAction?.onSave.call();
-                                  }
-                                : null,
-                          )
-                        : AppFilledButton(
-                            loc(context).save,
-                            onTap: saveAction?.enabled == true
-                                ? () {
-                                    saveAction?.onSave.call();
+                                    bottomBar?.onPositiveTap.call();
                                   }
                                 : null,
                           ),
+                        ],
+                      ],
+                    ),
                   )
                 ],
               ),

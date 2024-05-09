@@ -9,27 +9,18 @@ import 'package:linksys_app/route/constants.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
-class Ipv6PortServiceListView extends ArgumentsConsumerStatelessView {
+import '../../port_forwarding/views/widgets/_widgets.dart';
+
+class Ipv6PortServiceListView extends ArgumentsConsumerStatefulView {
   const Ipv6PortServiceListView({super.key, super.args});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Ipv6PortServiceListContentView(
-      args: super.args,
-    );
-  }
+  ConsumerState<Ipv6PortServiceListView> createState() =>
+      _Ipv6PortServiceListViewState();
 }
 
-class Ipv6PortServiceListContentView extends ArgumentsConsumerStatefulView {
-  const Ipv6PortServiceListContentView({super.key, super.args});
-
-  @override
-  ConsumerState<Ipv6PortServiceListContentView> createState() =>
-      _Ipv6PortServiceListContentViewState();
-}
-
-class _Ipv6PortServiceListContentViewState
-    extends ConsumerState<Ipv6PortServiceListContentView> {
+class _Ipv6PortServiceListViewState
+    extends ConsumerState<Ipv6PortServiceListView> {
   late final Ipv6PortServiceListNotifier _notifier;
 
   @override
@@ -50,24 +41,15 @@ class _Ipv6PortServiceListContentViewState
     final state = ref.watch(ipv6PortServiceListProvider);
     return StyledAppPageView(
       scrollable: true,
-      title: getAppLocalizations(context).port_range_forwarding,
-      actions: [
-        AppTextButton(
-          getAppLocalizations(context).edit,
-          onTap: () {
-            // TODO
-          },
-        ),
-      ],
+      title: loc(context).ipv6PortServices,
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppGap.semiBig(),
-            const AppText.bodyLarge('Ipv6 port service'),
-            if (!_notifier.isExceedMax())
-              AppTextButton(
-                getAppLocalizations(context).add_rule,
+            AppText.bodyLarge(loc(context).ipv6PortServices),
+            if (!_notifier.isExceedMax()) ...[
+              const AppGap.semiBig(),
+              AddRuleCard(
                 onTap: () {
                   context.pushNamed<bool?>(RouteNamed.ipv6PortServiceRule,
                       extra: {'rules': state.rules}).then((value) {
@@ -77,21 +59,34 @@ class _Ipv6PortServiceListContentViewState
                   });
                 },
               ),
+            ],
             const AppGap.semiBig(),
-            ...state.rules.map((e) => AppPanelWithInfo(
-                  onTap: () {
-                    context.pushNamed<bool?>(RouteNamed.ipv6PortServiceRule,
-                        extra: {'rules': state.rules, 'edit': e}).then((value) {
-                      if (value ?? false) {
-                        _notifier.fetch();
-                      }
-                    });
-                  },
-                  title: e.description,
-                  infoText: e.isEnabled
-                      ? getAppLocalizations(context).on
-                      : getAppLocalizations(context).off,
-                )),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.labelLarge(loc(context).rules),
+                const AppGap.regular(),
+                if (state.rules.isNotEmpty)
+                  ...state.rules.map(
+                    (e) => RuleItemCard(
+                      title: e.description,
+                      isEnabled: e.isEnabled,
+                      onTap: () {
+                        context.pushNamed<bool?>(RouteNamed.ipv6PortServiceRule,
+                            extra: {
+                              'rules': state.rules,
+                              'edit': e
+                            }).then((value) {
+                          if (value ?? false) {
+                            _notifier.fetch();
+                          }
+                        });
+                      },
+                    ),
+                  ),
+                if (state.rules.isEmpty) const EmptyRuleCard(),
+              ],
+            ),
           ],
         ),
       ),

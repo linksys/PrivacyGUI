@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/administration/port_forwarding/_port_forwarding.dart';
+import 'package:linksys_app/page/administration/port_forwarding/views/widgets/_widgets.dart';
+
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/route/constants.dart';
@@ -50,26 +52,17 @@ class _SinglePortForwardingContentViewState
   Widget build(BuildContext context) {
     final state = ref.watch(singlePortForwardingListProvider);
     return StyledAppPageView(
-      title: getAppLocalizations(context).single_port_forwarding,
-      actions: [
-        AppTextButton(
-          getAppLocalizations(context).edit,
-          onTap: () {
-            // TODO
-          },
-        ),
-      ],
+      title: loc(context).singlePortForwarding,
       scrollable: true,
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppGap.semiBig(),
-            AppText.bodyLarge(getAppLocalizations(context)
-                .single_port_forwarding_description),
-            if (!_notifier.isExceedMax())
-              AppTextButton(
-                getAppLocalizations(context).add_rule,
+            AppText.bodyLarge(loc(context).singlePortForwardingDescription),
+            if (!_notifier.isExceedMax()) ...[
+              const AppGap.semiBig(),
+              AddRuleCard(
                 onTap: () {
                   context.pushNamed<bool?>(RouteNamed.singlePortForwardingRule,
                       extra: {'rules': state.rules}).then((value) {
@@ -79,26 +72,34 @@ class _SinglePortForwardingContentViewState
                   });
                 },
               ),
+            ],
             const AppGap.semiBig(),
-            ...state.rules.map(
-              (e) => AppPanelWithInfo(
-                title: e.description,
-                infoText: e.isEnabled
-                    ? getAppLocalizations(context).on
-                    : getAppLocalizations(context).off,
-                forcedHidingAccessory: true,
-                onTap: () {
-                  context.pushNamed<bool?>(RouteNamed.singlePortForwardingRule,
-                      extra: {
-                        'rules': state.rules,
-                        'edit': e
-                      }).then((value) {
-                    if (value ?? false) {
-                      _notifier.fetch();
-                    }
-                  });
-                },
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.labelLarge(loc(context).rules),
+                const AppGap.regular(),
+                if (state.rules.isNotEmpty)
+                  ...state.rules.map(
+                    (e) => RuleItemCard(
+                      title: e.description,
+                      isEnabled: e.isEnabled,
+                      onTap: () {
+                        context.pushNamed<bool?>(
+                            RouteNamed.singlePortForwardingRule,
+                            extra: {
+                              'rules': state.rules,
+                              'edit': e
+                            }).then((value) {
+                          if (value ?? false) {
+                            _notifier.fetch();
+                          }
+                        });
+                      },
+                    ),
+                  ),
+                if (state.rules.isEmpty) const EmptyRuleCard(),
+              ],
             ),
           ],
         ),
