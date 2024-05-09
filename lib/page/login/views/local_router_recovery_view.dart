@@ -52,7 +52,7 @@ class _LocalRouterRecoveryViewState
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                AppText.headlineSmall(loc(context).forgot_password),
+                AppText.headlineSmall(loc(context).forgotPassword),
                 const AppGap.regular(),
                 AppText.bodyMedium(loc(context).localRouterRecoveryDescription),
                 const AppGap.big(),

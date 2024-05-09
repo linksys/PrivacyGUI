@@ -89,7 +89,7 @@ class _LocalResetRouterPasswordViewState
                 const AppGap.regular(),
                 AppTextField(
                   border: const OutlineInputBorder(),
-                  hintText: loc(context).password_hint,
+                  hintText: loc(context).routerPasswordHint,
                   controller: _hintController,
                 ),
                 const AppGap.big(),

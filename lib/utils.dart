@@ -171,43 +171,6 @@ extension DateFormatUtils on Utils {
         timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
     return '$h hr,$m min';
   }
-
-// TODO: Unit test
-  static Map<String, bool> weeklyTransform(
-      BuildContext context, List<bool> weeklyBool) {
-    final weeklyStr = [
-      getAppLocalizations(context).weekly_sunday,
-      getAppLocalizations(context).weekly_monday,
-      getAppLocalizations(context).weekly_tuesday,
-      getAppLocalizations(context).weekly_wednesday,
-      getAppLocalizations(context).weekly_thursday,
-      getAppLocalizations(context).weekly_friday,
-      getAppLocalizations(context).weekly_saturday,
-    ];
-    return weeklyBool
-        .asMap()
-        .map((key, value) => MapEntry(weeklyStr[key], value));
-  }
-
-// TODO: Unit test
-  static List<String> toWeeklyStringList(
-      BuildContext context, List<bool> weeklyBool) {
-    final weeklyStr = [
-      getAppLocalizations(context).weekly_sunday,
-      getAppLocalizations(context).weekly_monday,
-      getAppLocalizations(context).weekly_tuesday,
-      getAppLocalizations(context).weekly_wednesday,
-      getAppLocalizations(context).weekly_thursday,
-      getAppLocalizations(context).weekly_friday,
-      getAppLocalizations(context).weekly_saturday,
-    ];
-    return List.from(weeklyBool
-        .asMap()
-        .map((key, value) => MapEntry(weeklyStr[key], value))
-        .entries
-        .where((element) => element.value)
-        .map((e) => e.key));
-  }
 }
 
 // TODO: Unit test

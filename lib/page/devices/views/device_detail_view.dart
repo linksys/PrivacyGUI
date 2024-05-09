@@ -266,7 +266,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           builder: (sfbContext, sfbSetState) {
             return AlertDialog(
               title: AppText.titleLarge(
-                  loc(sfbContext).device_detail_edit_dialog_title),
+                  loc(sfbContext).deviceDetailEditDialogTitle),
               actions: _isLoading
                   ? null
                   : [
@@ -319,7 +319,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             },
           ),
           const AppGap.big(),
-          AppText.labelLarge(loc(context).select_icon),
+          AppText.labelLarge(loc(context).selectIcon),
           const AppGap.big(),
           GridView.builder(
             shrinkWrap: true,

@@ -116,7 +116,7 @@ class _SinglePortForwardingContentViewState
                 children: [
                   const AppGap.semiBig(),
                   AppSection.withLabel(
-                      title: getAppLocalizations(context).reserved_addresses,
+                      title: getAppLocalizations(context).reservedAddresses,
                       content: SizedBox(
                         width: double.infinity,
                         child: Column(
@@ -125,7 +125,7 @@ class _SinglePortForwardingContentViewState
                             _createReservedTable(_tempReserved),
                             AppTextButton.noPadding(
                               getAppLocalizations(context)
-                                  .add_device_reservations,
+                                  .addDeviceReservations,
                               onTap: () {
                                 _showAddBottomSheet();
                               },
@@ -135,7 +135,7 @@ class _SinglePortForwardingContentViewState
                       )),
                   const AppGap.semiBig(),
                   AppSection.withLabel(
-                    title: getAppLocalizations(context).dhcp_list,
+                    title: getAppLocalizations(context).dhcpList,
                     content: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

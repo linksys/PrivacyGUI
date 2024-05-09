@@ -8,29 +8,29 @@ String? generalErrorCodeHandler(BuildContext context, String code) {
     case '':
       return null;
     case errorUsernameExists:
-      return getAppLocalizations(context).error_username_already_exist;
+      return loc(context).errorUsernameAlreadyExist;
     case errorEmptyEmail:
-      return getAppLocalizations(context).error_enter_a_valid_email_format;
+      return loc(context).errorEnterAValidEmailFormat;
     case errorInvalidPassword:
-      return getAppLocalizations(context).error_incorrect_password;
+      return loc(context).errorIncorrectPassword;
     case errorInvalidCredentials:
-      return getAppLocalizations(context).error_incorrect_password;
+      return loc(context).errorIncorrectPassword;
     case errorResourceNotFound:
-      return getAppLocalizations(context).error_email_address_not_fount;
+      return loc(context).errorEmailAddressNotFound;
     case errorInvalidOtp:
-      return getAppLocalizations(context).error_invalid_otp;
+      return loc(context).errorInvalidOtp;
     case errorExpiredOtp:
-      return getAppLocalizations(context).error_expired_otp;
+      return loc(context).errorExpiredOtp;
     case errorExceedThreshold:
-      return getAppLocalizations(context).error_otp_exceeds_threshold;
+      return loc(context).errorOtpExceedsThreshold;
     case errorInvalidPhone:
-      return getAppLocalizations(context).error_invalid_phone_number;
+      return loc(context).errorInvalidPhoneNumber;
     case errorJNAPUnauthorized:
-      return getAppLocalizations(context).error_incorrect_password;
+      return loc(context).errorIncorrectPassword;
     case errorAdminAccountLocked:
-      return loc(context).local_login_too_many_attempts_title;
+      return loc(context).localLoginTooManyAttemptsTitle;
     default:
       logger.e('Unhandled Error: $code');
-      return getAppLocalizations(context).unknown_error_code(code);
+      return loc(context).unknownErrorCode(code);
   }
 }

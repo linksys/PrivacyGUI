@@ -54,7 +54,7 @@ class _PnpNoInternetConnectionState
             _titleView(context),
             const AppGap.regular(),
             AppText.bodyLarge(
-              loc(context).no_internet_connection_description,
+              loc(context).noInternetConnectionDescription,
             ),
             const AppGap.big(),
             //TODO: Add condition check for Linksys Support
@@ -155,7 +155,7 @@ class _PnpNoInternetConnectionState
     final isRouterNoInternet = true;
     final titleString = isRouterNoInternet
         ? '{Linksys00999} has no internet connection'
-        : loc(context).no_internet_connection_title;
+        : loc(context).noInternetConnectionTitle;
     return AppText.headlineSmall(
       titleString,
     );

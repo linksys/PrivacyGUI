@@ -49,7 +49,7 @@ class _DashboardAdvancedSettingsViewState
   List<AppSectionItemData> _initAdvancedSettingsItems() {
     return [
       AppSectionItemData(
-        title: loc(context).internet_settings.capitalizeWords(),
+        title: loc(context).internetSettings.capitalizeWords(),
         // iconData: getCharactersIcons(context).profileDefault,
         onTap: () => context.goNamed(RouteNamed.settingsInternet),
       ),

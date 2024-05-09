@@ -62,23 +62,10 @@ final dashboardRoute = ShellRoute(
           builder: (context, state) => DashboardDevices(),
           routes: [
             LinksysRoute(
-                name: RouteNamed.deviceDetails,
-                path: RoutePath.deviceDetails,
-                builder: (context, state) => DeviceDetailView(),
-                routes: [
-                  LinksysRoute(
-                      name: RouteNamed.changeDeviceName,
-                      path: RoutePath.changeDeviceName,
-                      builder: (context, state) => ChangeDeviceNameView()),
-                  LinksysRoute(
-                      name: RouteNamed.changeDeviceAvatar,
-                      path: RoutePath.changeDeviceAvatar,
-                      builder: (context, state) => ChangeDeviceAvatarView()),
-                  LinksysRoute(
-                      name: RouteNamed.offlineDevices,
-                      path: RoutePath.offlineDevices,
-                      builder: (context, state) => OfflineDevicesView()),
-                ]),
+              name: RouteNamed.deviceDetails,
+              path: RoutePath.deviceDetails,
+              builder: (context, state) => DeviceDetailView(),
+            ),
           ],
         ),
         LinksysRoute(

@@ -306,14 +306,14 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
             showBorder: false,
             padding: EdgeInsets.zero,
             title:
-                getAppLocalizations(context).node_detail_label_firmware_version,
+                getAppLocalizations(context).firmwareVersion,
             description: _checkEmptyValue(state.firmwareVersion),
             trailing: Visibility(
                 visible: isFwUpToDate,
                 replacement: AppText.bodyLarge(
                     updateInfo?.availableUpdate?.firmwareVersion ?? ''),
                 child: AppText.labelSmall(
-                    getAppLocalizations(context).up_to_date)),
+                    getAppLocalizations(context).upToDate)),
           ),
           const AppGap.regular(),
           AppTextButton(

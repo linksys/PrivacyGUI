@@ -7,7 +7,6 @@ class RoutePath {
   /// login
   static const cloudLoginAccount = 'cloudLoginAccount';
   static const cloudLoginPassword = 'cloudLoginPassword';
-  static const cloudForgotPassword = 'cloudForgotPassword';
   static const phoneRegionCode = 'phoneRegionCode';
   static const localLoginPassword = '/localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
@@ -33,7 +32,6 @@ class RoutePath {
   static const settingsNetworkAdmin = 'routerAdmin';
   static const settingsTimeZone = 'timeZone';
   static const settingsInternet = 'internetSettings';
-  static const settingsIpDetails = 'ipDetails';
   static const settingsLocalNetwork = 'localNetworkSettings';
   static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
@@ -60,9 +58,6 @@ class RoutePath {
 
   /// device
   static const deviceDetails = 'deviceDetails';
-  static const changeDeviceName = 'changeDeviceName';
-  static const changeDeviceAvatar = 'changeDeviceAvatar';
-  static const offlineDevices = 'offlineDevices';
 
   /// account
   static const accountInfo = 'accountInfo';
@@ -142,7 +137,6 @@ class RouteNamed {
   /// login
   static const cloudLoginAccount = 'cloudLoginAccount';
   static const cloudLoginPassword = 'cloudLoginPassword';
-  static const cloudForgotPassword = 'cloudForgotPassword';
   static const phoneRegionCode = 'phoneRegionCode';
   static const localLoginPassword = 'localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
@@ -168,7 +162,6 @@ class RouteNamed {
   static const settingsNetworkAdmin = 'networkAdmin';
   static const settingsTimeZone = 'timeZone';
   static const settingsInternet = 'internetSettings';
-  static const settingsIpDetails = 'ipDetails';
   static const settingsLocalNetwork = 'localNetworkSettings';
   static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
@@ -195,9 +188,6 @@ class RouteNamed {
 
   ///device
   static const deviceDetails = 'deviceDetails';
-  static const changeDeviceName = 'changeDeviceName';
-  static const changeDeviceAvatar = 'changeDeviceAvatar';
-  static const offlineDevices = 'offlineDevices';
 
   /// account
   static const accountInfo = 'accountInfo';

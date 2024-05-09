@@ -149,7 +149,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
       scrollable: true,
       child: AppBasicLayout(
         header: BasicHeader(
-          title: getAppLocalizations(context).otp_add_phone_number,
+          title: getAppLocalizations(context).otpAddPhoneNumber,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,7 +224,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppFilledButton.fillWidth(
-              getAppLocalizations(context).otp_send_code,
+              getAppLocalizations(context).sendCode,
               onTap: hasInput ? _checkPhoneNumber : null,
             ),
           ],

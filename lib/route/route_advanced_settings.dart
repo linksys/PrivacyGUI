@@ -36,11 +36,6 @@ final advancedSettings = [
         ),
       ]),
   LinksysRoute(
-    name: RouteNamed.settingsIpDetails,
-    path: RoutePath.settingsIpDetails,
-    builder: (context, state) => IpDetailsView(),
-  ),
-  LinksysRoute(
     name: RouteNamed.settingsLocalNetwork,
     path: RoutePath.settingsLocalNetwork,
     builder: (context, state) => const LocalNetworkSettingsView(),

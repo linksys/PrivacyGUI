@@ -44,7 +44,7 @@ class PnpIspTypeSelectionView extends ConsumerWidget {
               },
             ),
             ISPTypeCard(
-              title: loc(context).pppoe,
+              title: loc(context).connectionTypePppoe,
               description:
                   'Point-to-Point Protocol over Ethernet is a specification for connecting multiple computer users on an Ethernet local area network to a remote site.',
               isCurrentlyApplying: true,

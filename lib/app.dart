@@ -66,7 +66,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     router.routerDelegate.addListener(_onReceiveRouteChanged);
 
     return MaterialApp.router(
-      onGenerateTitle: (context) => loc(context).app_title,
+      onGenerateTitle: (context) => loc(context).appTitle,
       theme: linksysLightThemeData,
       darkTheme: linksysDarkThemeData,
       themeMode: appSettings.themeMode,

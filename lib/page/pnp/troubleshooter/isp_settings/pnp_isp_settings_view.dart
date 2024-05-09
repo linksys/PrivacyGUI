@@ -41,7 +41,7 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
             ),
             const AppGap.extraBig(),
             AppTextField.outline(
-              headerText: loc(context).account_name,
+              headerText: loc(context).accountName,
               controller: _accountNameController,
             ),
             const AppGap.semiBig(),
