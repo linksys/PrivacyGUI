@@ -966,6 +966,10 @@
   "endPort": "End port",
   "triggeredRange": "Triggered range",
   "forwardedRange": "Forwarded range",
-  "ipv6PortServices": "IPv6 port services"
+  "ipv6PortServices": "IPv6 port services",
+  "ethernet": "Ethernet",
+  "wanIPAddress": "WAN IP Address",
+  "lanIPAddress": "LAN IP Address",
+  "sharedCopied": "Copied to clipboard!"
 
 }

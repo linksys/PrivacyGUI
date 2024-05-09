@@ -32,7 +32,10 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
     final nodes = ref.watch(deviceManagerProvider).nodeDevices;
     final radios = ref
         .watch(dashboardManagerProvider.select((value) => value.mainRadios))
-        .unique((x) => x.band);
+        .unique((x) => x.band)
+        .map((e) => e.band)
+        .toList()
+      ..add('Ethernet');
     final filterConfig = ref.watch(deviceFilterConfigProvider);
     final selectedNodeId = filterConfig.nodeFilter;
     final selectedBand = filterConfig.bandFilter;
@@ -109,16 +112,16 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
               //     onSelected: (data, value) {
               //       ref.read(ssidFilterProvider.notifier).state = data;
               //     }),
-              FilteredChipsWidget<RouterRadio>(
+              FilteredChipsWidget<String>(
                   title: loc(context).byRadio,
                   dataList: radios,
-                  chipName: (data) => data?.band ?? '',
-                  checkIsSelected: (data) => selectConnection
-                      ? selectedBand.contains(data?.band)
-                      : false,
+                  chipName: (data) =>
+                      data == 'Ethernet' ? loc(context).ethernet : (data ?? ''),
+                  checkIsSelected: (data) =>
+                      selectConnection ? selectedBand.contains(data) : false,
                   onSelected: selectConnection
                       ? (data, value) {
-                          final band = data?.band;
+                          final band = data;
                           if (band == null) {
                             return;
                           }

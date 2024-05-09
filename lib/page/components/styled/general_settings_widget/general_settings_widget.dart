@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/styled/general_settings_widget/language_tile.dart';
 import 'package:linksys_app/page/components/styled/general_settings_widget/theme_tile.dart';
 import 'package:linksys_app/providers/app_settings/app_settings_provider.dart';
 import 'package:linksys_app/providers/auth/_auth.dart';
-import 'package:linksys_app/util/extensions.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/buttons/popup_button.dart';
@@ -52,14 +49,9 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: LanguageTile(
-                  locale: locale ?? const Locale('en', 'US'),
+                  locale: locale ?? const Locale('en'),
                   onTap: () {
                     controller.close();
-                    showModalBottomSheet(
-                        context: context,
-                        builder: (context) {
-                          return _localeList();
-                        });
                   },
                 ),
               ),
@@ -144,36 +136,5 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
     } else {
       return [];
     }
-  }
-
-  // NEED TO revisit
-  Widget _localeList() {
-    const localeList = AppLocalizations.supportedLocales;
-    saveLocale(Locale locale) {
-      final appSettings = ref.read(appSettingsProvider);
-
-      ref.read(appSettingsProvider.notifier).state =
-          appSettings.copyWith(locale: locale);
-    }
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      child: Card(
-        child: ListView.builder(
-            itemCount: localeList.length,
-            itemBuilder: (context, index) {
-              final locale = localeList[index];
-              return ListTile(
-                hoverColor:
-                    Theme.of(context).colorScheme.background.withOpacity(.5),
-                title: AppText.labelLarge(locale.displayText),
-                onTap: () {
-                  saveLocale(locale);
-                  context.pop();
-                },
-              );
-            }),
-      ),
-    );
   }
 }

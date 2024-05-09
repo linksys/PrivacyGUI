@@ -94,4 +94,8 @@ extension DeviceUtil on RawDevice {
             ?.firstWhereOrNull((element) => element.interfaceType == 'Wired') !=
         null;
   }
+
+  bool isOnline() {
+    return connections.isNotEmpty;
+  }
 }
