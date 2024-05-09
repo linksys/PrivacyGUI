@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/responsive/responsive_bottom_button.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/advanced_settings/internet_settings/_internet_settings.dart';
@@ -48,6 +47,26 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
   Widget build(BuildContext context) {
     return StyledAppPageView(
       title: loc(context).macAddressClone,
+      saveAction: SaveAction(
+        enabled: _isValid &&
+            ((_isEnabled != state.macClone) ||
+                (_valueController.text != state.macCloneAddress)),
+        onSave: () async {
+          setState(() {
+            _isLoading = true;
+          });
+          FocusManager.instance.primaryFocus?.unfocus();
+          await ref
+              .read(internetSettingsProvider.notifier)
+              .setMacAddressClone(_isEnabled, _valueController.text)
+              .whenComplete(() {
+            setState(() {
+              _isLoading = false;
+            });
+            context.pop();
+          });
+        },
+      ),
       child: _isLoading
           ? const AppFullScreenSpinner()
           : AppBasicLayout(
@@ -83,32 +102,6 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
                         // TODO: Clone current client's MAC
                       },
                     ),
-                  responsiveGap(context),
-                  responsiveBottomButton(
-                    context: context,
-                    title: loc(context).save,
-                    onTap: _isValid &&
-                            ((_isEnabled != state.macClone) ||
-                                (_valueController.text !=
-                                    state.macCloneAddress))
-                        ? () async {
-                            setState(() {
-                              _isLoading = true;
-                            });
-                            FocusManager.instance.primaryFocus?.unfocus();
-                            await ref
-                                .read(internetSettingsProvider.notifier)
-                                .setMacAddressClone(
-                                    _isEnabled, _valueController.text)
-                                .whenComplete(() {
-                              setState(() {
-                                _isLoading = false;
-                              });
-                              context.pop();
-                            });
-                          }
-                        : null,
-                  ),
                 ],
               ),
             ),

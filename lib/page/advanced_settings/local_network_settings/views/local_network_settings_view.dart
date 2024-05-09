@@ -5,7 +5,6 @@ import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/utils/extension.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
-import 'package:linksys_app/page/components/responsive/responsive_bottom_button.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
@@ -103,6 +102,10 @@ class _LocalNetworkSettingsViewState
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).localNetwork,
+      saveAction: SaveAction(
+        enabled: _isEdited(),
+        onSave: _saveSettings,
+      ),
       onBackTap: _isEdited()
           ? () {
               _showUnsavedAlert();
@@ -152,15 +155,6 @@ class _LocalNetworkSettingsViewState
               onTap: () {
                 context.pushNamed(RouteNamed.dhcpReservation);
               },
-            ),
-            responsiveGap(context),
-            responsiveBottomButton(
-              context: context,
-              onTap: _isEdited()
-                  ? () {
-                      _saveSettings();
-                    }
-                  : null,
             ),
           ],
         ),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/responsive/responsive_bottom_button.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
@@ -47,6 +46,10 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
   Widget build(BuildContext context) {
     return StyledAppPageView(
       title: loc(context).connectionType,
+      saveAction: SaveAction(
+        enabled: true,
+        onSave: save,
+      ),
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,12 +73,6 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
               },
             ),
             _buildManualInput(),
-            responsiveGap(context),
-            responsiveBottomButton(
-              context: context,
-              title: loc(context).save,
-              onTap: save,
-            ),
           ],
         ),
       ),

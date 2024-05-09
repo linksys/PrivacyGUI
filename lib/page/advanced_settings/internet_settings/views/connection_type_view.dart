@@ -7,7 +7,6 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:linksys_app/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:linksys_app/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
-import 'package:linksys_app/page/components/responsive/responsive_bottom_button.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
@@ -223,6 +222,10 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
     return StyledAppPageView(
       scrollable: true,
       title: title,
+      saveAction: SaveAction(
+        enabled: _isEdited(),
+        onSave: _showRestartAlert,
+      ),
       onBackTap: _isEdited()
           ? () {
               _showUnsavedAlert();
@@ -288,13 +291,6 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                             },
                     ),
                   const AppGap.regular(),
-                  if (isEditing) responsiveGap(context),
-                  if (isEditing)
-                    responsiveBottomButton(
-                      context: context,
-                      title: loc(context).save,
-                      onTap: _isEdited() ? _showRestartAlert : null,
-                    ),
                 ],
               ),
             ),

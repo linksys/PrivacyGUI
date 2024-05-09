@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/responsive/responsive_bottom_button.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
@@ -48,6 +47,10 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
         : StyledAppPageView(
             scrollable: true,
             title: loc(context).safeBrowsing,
+            saveAction: SaveAction(
+              enabled: _edited(state.safeBrowsingType),
+              onSave: _showRestartAlert,
+            ),
             child: AppBasicLayout(
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,14 +84,6 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
                             : null,
                       ),
                     ),
-                  ),
-                  responsiveGap(context),
-                  responsiveBottomButton(
-                    context: context,
-                    title: loc(context).save,
-                    onTap: _edited(state.safeBrowsingType)
-                        ? _showRestartAlert
-                        : null,
                   ),
                 ],
               ),

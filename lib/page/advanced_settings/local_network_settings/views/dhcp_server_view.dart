@@ -5,7 +5,6 @@ import 'package:linksys_app/core/utils/extension.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:linksys_app/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
-import 'package:linksys_app/page/components/responsive/responsive_bottom_button.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -72,6 +71,13 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).dhcpServer.capitalizeWords(),
+      saveAction: SaveAction(
+        enabled: _isEdited(),
+        onSave: () {
+          ref.read(localNetworkSettingProvider.notifier).updateState(state);
+          context.pop();
+        },
+      ),
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,18 +99,6 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             Visibility(
               visible: state.isDHCPEnabled,
               child: dhcpSettings(),
-            ),
-            responsiveGap(context),
-            responsiveBottomButton(
-              context: context,
-              onTap: _isEdited()
-                  ? () {
-                      ref
-                          .read(localNetworkSettingProvider.notifier)
-                          .updateState(state);
-                      context.pop();
-                    }
-                  : null,
             ),
           ],
         ),

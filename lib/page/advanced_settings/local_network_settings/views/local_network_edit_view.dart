@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/utils/extension.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/advanced_settings/local_network_settings/_local_network_settings.dart';
-import 'package:linksys_app/page/components/responsive/responsive_bottom_button.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
@@ -27,6 +26,7 @@ class _LocalNetworkEditViewState extends ConsumerState<LocalNetworkEditView> {
   String _originalValue = '';
   String? _errorDesc;
   bool _enableButton = false;
+  void Function() _onSave = () {};
   final _textController = TextEditingController();
 
   @override
@@ -36,6 +36,7 @@ class _LocalNetworkEditViewState extends ConsumerState<LocalNetworkEditView> {
     _viewType = widget.args['viewType'] ?? '';
     _originalValue = getCurrentValue(_viewType);
     _textController.text = _originalValue;
+    _setOnSaveFunction();
   }
 
   @override
@@ -50,6 +51,10 @@ class _LocalNetworkEditViewState extends ConsumerState<LocalNetworkEditView> {
     return StyledAppPageView(
       scrollable: true,
       title: getTitle(_viewType),
+      saveAction: SaveAction(
+        enabled: _enableButton,
+        onSave: _onSave,
+      ),
       child: AppBasicLayout(
         content: _content(_viewType),
       ),
@@ -72,6 +77,57 @@ class _LocalNetworkEditViewState extends ConsumerState<LocalNetworkEditView> {
       'ipAddress' => loc(context).ipAddress.capitalizeWords(),
       'subnetMask' => loc(context).subnetMask.capitalizeWords(),
       _ => ''
+    };
+  }
+
+  void _setOnSaveFunction() {
+    _onSave = switch (_viewType) {
+      'hostName' => () {
+          ref
+              .read(localNetworkSettingProvider.notifier)
+              .updateHostName(_textController.text);
+          context.pop();
+        },
+      'ipAddress' => () {
+          final state = ref.read(localNetworkSettingProvider);
+          // Host IP input finishes
+          final result = ref
+              .read(localNetworkSettingProvider.notifier)
+              .routerIpAddressFinished(
+                _textController.text,
+                state,
+              );
+          if (result.$1 == false) {
+            setState(() {
+              _errorDesc = 'Invalid IP address';
+            });
+          } else {
+            ref
+                .read(localNetworkSettingProvider.notifier)
+                .updateState(result.$2);
+            context.pop();
+          }
+        },
+      'subnetMask' => () {
+          final state = ref.read(localNetworkSettingProvider);
+          // Host IP input finishes
+          final result =
+              ref.read(localNetworkSettingProvider.notifier).subnetMaskFinished(
+                    _textController.text,
+                    state,
+                  );
+          if (result.$1 == false) {
+            setState(() {
+              _errorDesc = 'Invalid subnet mask';
+            });
+          } else {
+            ref
+                .read(localNetworkSettingProvider.notifier)
+                .updateState(result.$2);
+            context.pop();
+          }
+        },
+      _ => () {}
     };
   }
 
@@ -112,18 +168,6 @@ class _LocalNetworkEditViewState extends ConsumerState<LocalNetworkEditView> {
             }
           },
         ),
-        responsiveGap(context),
-        responsiveBottomButton(
-          context: context,
-          onTap: _enableButton
-              ? () {
-                  ref
-                      .read(localNetworkSettingProvider.notifier)
-                      .updateHostName(_textController.text);
-                  context.pop();
-                }
-              : null,
-        ),
       ],
     );
   }
@@ -155,32 +199,6 @@ class _LocalNetworkEditViewState extends ConsumerState<LocalNetworkEditView> {
               });
             }
           },
-        ),
-        responsiveGap(context),
-        responsiveBottomButton(
-          context: context,
-          onTap: _enableButton
-              ? () {
-                  final state = ref.read(localNetworkSettingProvider);
-                  // Host IP input finishes
-                  final result = ref
-                      .read(localNetworkSettingProvider.notifier)
-                      .routerIpAddressFinished(
-                        _textController.text,
-                        state,
-                      );
-                  if (result.$1 == false) {
-                    setState(() {
-                      _errorDesc = 'Invalid IP address';
-                    });
-                  } else {
-                    ref
-                        .read(localNetworkSettingProvider.notifier)
-                        .updateState(result.$2);
-                    context.pop();
-                  }
-                }
-              : null,
         ),
       ],
     );
@@ -215,32 +233,6 @@ class _LocalNetworkEditViewState extends ConsumerState<LocalNetworkEditView> {
               });
             }
           },
-        ),
-        responsiveGap(context),
-        responsiveBottomButton(
-          context: context,
-          onTap: _enableButton
-              ? () {
-                  final state = ref.read(localNetworkSettingProvider);
-                  // Host IP input finishes
-                  final result = ref
-                      .read(localNetworkSettingProvider.notifier)
-                      .subnetMaskFinished(
-                        _textController.text,
-                        state,
-                      );
-                  if (result.$1 == false) {
-                    setState(() {
-                      _errorDesc = 'Invalid subnet mask';
-                    });
-                  } else {
-                    ref
-                        .read(localNetworkSettingProvider.notifier)
-                        .updateState(result.$2);
-                    context.pop();
-                  }
-                }
-              : null,
         ),
       ],
     );
