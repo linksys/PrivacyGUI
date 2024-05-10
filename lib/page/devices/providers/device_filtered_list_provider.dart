@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
-import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/devices/providers/device_filtered_list_state.dart';
 import 'package:linksys_app/page/devices/providers/device_list_provider.dart';
 import 'package:linksys_app/util/extensions.dart';
@@ -12,7 +11,6 @@ final filteredDeviceListProvider = Provider((ref) {
   final nodeId = config.nodeFilter;
   final band = config.bandFilter;
   final connection = config.connectionFilter;
-  logger.d('XXXXXX: ${deviceListState.devices}');
   final filteredDevices = deviceListState.devices
       // .where(
       //   (device) => ssidFilter == null ? true : device.type == ssidFilter,

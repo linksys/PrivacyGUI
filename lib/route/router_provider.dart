@@ -138,7 +138,7 @@ class RouterNotifier extends ChangeNotifier {
     } else {
       shouldGoPnp = false;
     }
-    logger.d('XXXXX: go pnp? $shouldGoPnp, state uri: <${state.uri}>');
+    logger.d('go pnp? $shouldGoPnp, state uri: <${state.uri}>');
     if (shouldGoPnp) {
       return _goPnp(state.uri.query);
     } else {

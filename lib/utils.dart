@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
@@ -33,13 +34,14 @@ class Utils {
       text: 'Linksys Log',
       subject: 'Log file',
     ).then((result) {
-      if (result?.status == ShareResultStatus.success) {
+      if (result?.status == ShareResultStatus.success && !kIsWeb) {
         Storage.deleteFile(Storage.logFileUri);
         Storage.createLoggerFile();
       }
       showSnackBar(context, content: Text("Share result: ${result?.status}"));
     });
   }
+
   static String maskJsonValue(String raw, List<String> keys) {
     final pattern = '"?(${keys.join('|')})"?\\s*:\\s*"?([\\s\\S]*?)"?(?=,|})';
     RegExp regex = RegExp(pattern, multiLine: true);
