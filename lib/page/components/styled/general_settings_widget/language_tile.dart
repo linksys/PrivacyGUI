@@ -9,6 +9,7 @@ import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class LanguageTile extends ConsumerStatefulWidget {
+  final void Function(Locale locale)? onSelected;
   final void Function()? onTap;
   final Locale locale;
   final IconData icon;
@@ -16,6 +17,7 @@ class LanguageTile extends ConsumerStatefulWidget {
 
   const LanguageTile({
     super.key,
+    this.onSelected,
     this.onTap,
     required this.locale,
     this.icon = LinksysIcons.language,
@@ -34,7 +36,9 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
         showSimpleAppDialog(
           context,
           content: _localeList(),
-        );
+        ).then((locale) {
+          widget.onSelected?.call(locale);
+        });
         widget.onTap?.call();
       },
       child: _displayLocale(widget.locale),
@@ -57,12 +61,6 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
   // NEED TO revisit
   Widget _localeList() {
     const localeList = AppLocalizations.supportedLocales;
-    saveLocale(Locale locale) {
-      final appSettings = ref.read(appSettingsProvider);
-
-      ref.read(appSettingsProvider.notifier).state =
-          appSettings.copyWith(locale: locale);
-    }
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -75,8 +73,7 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
                   Theme.of(context).colorScheme.background.withOpacity(.5),
               title: AppText.labelLarge(locale.displayText),
               onTap: () {
-                saveLocale(locale);
-                context.pop();
+                context.pop(locale);
               },
             );
           }),

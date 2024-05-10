@@ -53,6 +53,12 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                   onTap: () {
                     controller.close();
                   },
+                  onSelected: (locale) {
+                    final appSettings = ref.read(appSettingsProvider);
+
+                    ref.read(appSettingsProvider.notifier).state =
+                        appSettings.copyWith(locale: locale);
+                  },
                 ),
               ),
               const AppGap.regular(),
