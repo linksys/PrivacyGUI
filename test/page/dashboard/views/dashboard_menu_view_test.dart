@@ -36,7 +36,7 @@ void main() {
     final titleFinder = find.text('Menu');
     expect(titleFinder, findsOneWidget);
     final menuCardFinder = find.byType(AppMenuCard);
-    expect(menuCardFinder, findsNWidgets(7));
+    expect(menuCardFinder, findsNWidgets(8));
   });
 
   testResponsiveWidgets(
