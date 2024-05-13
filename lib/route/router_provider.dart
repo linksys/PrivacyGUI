@@ -33,7 +33,8 @@ import 'package:linksys_app/page/pnp/troubleshooter/views/contact_support/contac
 import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
 import 'package:linksys_app/page/pnp/pnp_admin_view.dart';
 import 'package:linksys_app/page/pnp/pnp_setup_view.dart';
-import 'package:linksys_app/page/pnp/troubleshooter/views/isp_settings/pnp_isp_settings_view.dart';
+import 'package:linksys_app/page/pnp/troubleshooter/views/isp_settings/pnp_isp_settings_auth_view.dart';
+import 'package:linksys_app/page/pnp/troubleshooter/views/isp_settings/pnp_pppoe_view.dart';
 import 'package:linksys_app/page/pnp/troubleshooter/views/isp_settings/pnp_isp_type_selection_view.dart';
 import 'package:linksys_app/page/pnp/troubleshooter/views/isp_settings/pnp_static_ip_view.dart';
 import 'package:linksys_app/page/pnp/troubleshooter/views/pnp_lights_off.dart';

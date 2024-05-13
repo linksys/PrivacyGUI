@@ -9,7 +9,7 @@ import 'package:linksys_app/page/pnp/data/pnp_step_state.dart';
 
 class PnpState extends Equatable {
   final NodeDeviceInfo? deviceInfo;
-  final String password;
+  final String? attachedPassword;
   final Map<int, PnpStepState> stepStateList;
   final bool isUnconfigured;
   final Map<JNAPAction, JNAPResult> data;
@@ -17,7 +17,7 @@ class PnpState extends Equatable {
 
   const PnpState({
     required this.deviceInfo,
-    required this.password,
+    this.attachedPassword,
     this.stepStateList = const {},
     this.isUnconfigured = false,
     this.data = const {},
@@ -26,7 +26,7 @@ class PnpState extends Equatable {
 
   PnpState copyWith({
     NodeDeviceInfo? deviceInfo,
-    String? password,
+    String? attachedPassword,
     Map<int, PnpStepState>? stepStateList,
     bool? isUnconfigured,
     Map<JNAPAction, JNAPResult>? data,
@@ -34,7 +34,7 @@ class PnpState extends Equatable {
   }) {
     return PnpState(
       deviceInfo: deviceInfo ?? this.deviceInfo,
-      password: password ?? this.password,
+      attachedPassword: attachedPassword ?? this.attachedPassword,
       stepStateList: stepStateList ?? this.stepStateList,
       isUnconfigured: isUnconfigured ?? this.isUnconfigured,
       data: data ?? this.data,
@@ -45,7 +45,7 @@ class PnpState extends Equatable {
   @override
   List<Object?> get props => [
         deviceInfo,
-        password,
+        attachedPassword,
         stepStateList,
         isUnconfigured,
         data,

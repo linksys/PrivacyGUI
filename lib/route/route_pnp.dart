@@ -91,6 +91,18 @@ final pnpTroubleshootingRoute = LinksysRoute(
             pageWidth: SpecificPageWidth(width: 430),
           ),
           builder: (context, state) => const PnpStaticIpView(),
+          routes: [
+            LinksysRoute(
+              name: RouteNamed.pnpIspSettingsAuth,
+              path: RoutePath.pnpIspSettingsAuth,
+              config: LinksysRouteConfig(
+                pageWidth: SpecificPageWidth(width: 430),
+              ),
+              builder: (context, state) => PnpIspSettingsAuthView(
+                args: state.extra as Map<String, dynamic>? ?? {},
+              ),
+            )
+          ],
         ),
         LinksysRoute(
           name: RouteNamed.pnpIspSettings,
@@ -98,7 +110,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
           config: LinksysRouteConfig(
             pageWidth: SpecificPageWidth(width: 430),
           ),
-          builder: (context, state) => PnpIspSettingsView(
+          builder: (context, state) => PnpPPPOEView(
             args: state.extra as Map<String, dynamic>? ?? {},
           ),
         ),

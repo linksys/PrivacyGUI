@@ -471,7 +471,7 @@ extension RouterRepositoryUtil on RouterRepository {
   LoginType getLoginType() =>
       ref.read(authProvider).value?.loginType ?? LoginType.none;
 
-  bool isLogin() =>
+  bool isLoggedIn() =>
       (ref.read(authProvider).value?.loginType ?? LoginType.none) !=
       LoginType.none;
 

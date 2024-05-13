@@ -33,7 +33,7 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   @override
   PnpState build() => const PnpState(
         deviceInfo: null,
-        password: '',
+        attachedPassword: '',
       );
 
   ///
@@ -89,6 +89,7 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   Future save();
   Future testConnectionReconnected();
   Future fetchDevices();
+  void setAttachedPassword(String? password);
 
   // Personal WiFi
   ({String name, String password, String security})
@@ -174,6 +175,11 @@ class MockPnpNotifier extends BasePnpNotifier {
   Future fetchDevices() {
     return Future.delayed(const Duration(seconds: 1)).then((_) {});
   }
+
+  @override
+  void setAttachedPassword(String? password) {
+    state = state.copyWith(attachedPassword: password);
+  }
 }
 
 class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
@@ -202,12 +208,15 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     if (password == null) {
       throw ExceptionInvalidAdminPassword();
     }
-    final auth = ref.read(authProvider.notifier);
-
-    await auth.localLogin(password, pnp: true, guardError: false).catchError(
-        (error) => throw ExceptionInvalidAdminPassword(),
-        test: (error) =>
-            error is JNAPError && error.result == errorJNAPUnauthorized);
+    await ref
+        .read(authProvider.notifier)
+        .localLogin(password, pnp: true, guardError: false)
+        .then((value) {
+      // Clear the password in pnp state once logging in successfully
+      setAttachedPassword(null);
+    }).catchError((error) => throw ExceptionInvalidAdminPassword(),
+            test: (error) =>
+                error is JNAPError && error.result == errorJNAPUnauthorized);
   }
 
   /// check internet connection within 30 seconds
@@ -520,5 +529,10 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           .toList();
       state = state.copyWith(childNodes: deviceList);
     });
+  }
+
+  @override
+  void setAttachedPassword(String? password) {
+    state = state.copyWith(attachedPassword: password);
   }
 }

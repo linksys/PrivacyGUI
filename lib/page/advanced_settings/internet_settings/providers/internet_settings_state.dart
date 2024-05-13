@@ -104,8 +104,12 @@ class InternetSettingsState extends Equatable {
   final String? macCloneAddress;
 
   @override
-  List<Object?> get props =>
-      [ipv4Setting, ipv6Setting, macClone, macCloneAddress];
+  List<Object?> get props => [
+        ipv4Setting,
+        ipv6Setting,
+        macClone,
+        macCloneAddress,
+      ];
 
   const InternetSettingsState({
     required this.ipv4Setting,

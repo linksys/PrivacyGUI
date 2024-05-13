@@ -48,7 +48,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     final pnp = ref.read(pnpProvider.notifier);
     // check path include local password
     _password = widget.args['p'] as String?;
-
+    if (_password != null) {
+      // keep the admin password anyway if it exists
+      pnp.setAttachedPassword(_password!);
+    }
     // verify admin password is valid
     pnp
         .fetchDeviceInfo()

@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:linksys_app/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:linksys_app/route/constants.dart';
+import 'package:linksys_app/utils.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 class PnpStaticIpView extends ConsumerStatefulWidget {
@@ -22,6 +27,17 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
   final _dns1Controller = TextEditingController();
   final _dns2Controller = TextEditingController();
   var _hasExtraDNS = false;
+  String? errorMessage;
+
+  @override
+  void dispose() {
+    _ipController.dispose();
+    _subnetController.dispose();
+    _gatewayController.dispose();
+    _dns1Controller.dispose();
+    _dns2Controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,28 +52,43 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
               'These settings are for users with a manually-assigned static IP address.',
             ),
             const AppGap.extraBig(),
-            AppTextField.outline(
-              headerText: loc(context).ipAddress,
-              hintText: 'e.g. 192.168.1.1',
+            if (errorMessage != null)
+              AppText.bodyLarge(
+                errorMessage!,
+                color: Theme.of(context).colorScheme.error,
+              ),
+            const AppGap.extraBig(),
+            AppIPFormField(
+              header: AppText.bodyLarge(
+                loc(context).ipAddress,
+              ),
               controller: _ipController,
+              border: const OutlineInputBorder(),
+              onFocusChanged: (isFocused) {},
             ),
             const AppGap.semiBig(),
-            AppTextField.outline(
-              headerText: loc(context).subnetMask,
-              hintText: 'e.g. 255.255.255.1',
+            AppIPFormField(
+              header: AppText.bodyLarge(
+                loc(context).subnetMask,
+              ),
               controller: _subnetController,
+              border: const OutlineInputBorder(),
             ),
             const AppGap.semiBig(),
-            AppTextField.outline(
-              headerText: loc(context).defaultGateway,
-              hintText: 'e.g. 192.168.0.1',
+            AppIPFormField(
+              header: AppText.bodyLarge(
+                loc(context).defaultGateway,
+              ),
               controller: _gatewayController,
+              border: const OutlineInputBorder(),
             ),
             const AppGap.semiBig(),
-            AppTextField.outline(
-              headerText: loc(context).dns1,
-              hintText: 'e.g. 192.168.0.1',
+            AppIPFormField(
+              header: AppText.bodyLarge(
+                loc(context).dns1,
+              ),
               controller: _dns1Controller,
+              border: const OutlineInputBorder(),
             ),
             Visibility(
               visible: _hasExtraDNS,
@@ -78,10 +109,12 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                 padding: const EdgeInsets.only(
                   top: Spacing.semiBig,
                 ),
-                child: AppTextField.outline(
-                  headerText: 'DNS 2',
-                  hintText: 'e.g. 192.168.0.1',
+                child: AppIPFormField(
+                  header: const AppText.bodyLarge(
+                    'DNS 2',
+                  ),
                   controller: _dns2Controller,
+                  border: const OutlineInputBorder(),
                 ),
               ),
             ),
@@ -90,11 +123,36 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
         ),
         footer: AppFilledButton.fillWidth(
           loc(context).next,
-          onTap: () {
-            //
-          },
+          onTap: onNext,
         ),
       ),
     );
+  }
+
+  void onNext() {
+    var newState = ref.read(internetSettingsProvider).copyWith();
+    newState = newState.copyWith(
+      ipv4Setting: newState.ipv4Setting.copyWith(
+        ipv4ConnectionType: WanType.static.type,
+        staticIpAddress: _ipController.text,
+        networkPrefixLength: NetworkUtils.subnetMaskToPrefixLength(
+          _subnetController.text,
+        ),
+        staticGateway: _gatewayController.text,
+        staticDns1: _dns1Controller.text,
+        staticDns2:
+            _dns2Controller.text.isNotEmpty ? _dns2Controller.text : null,
+      ),
+    );
+    context.pushNamed(
+      RouteNamed.pnpIspSettingsAuth,
+      extra: {'newSettings': newState},
+    ).then((error) {
+      if (error is String) {
+        setState(() {
+          errorMessage = error;
+        });
+      }
+    });
   }
 }
