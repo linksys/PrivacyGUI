@@ -101,28 +101,6 @@ class _DHCPReservationsContentViewState
                 });
               },
             ),
-            actions: [
-              AppTextButton.noPadding(
-                'Save',
-                onTap: !listEquals(_tempReserved, dhcpReservedList)
-                    ? () {
-                        setState(() {
-                          _isLoading = true;
-                        });
-                        ref
-                            .read(localNetworkSettingProvider.notifier)
-                            .saveSettings(_currentSettings.copyWith(
-                                dhcpReservationList: _tempReserved))
-                            .then((_) {
-                          setState(() {
-                            _init();
-                            _isLoading = false;
-                          });
-                        });
-                      }
-                    : null,
-              ),
-            ],
             child: AppBasicLayout(
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,7 +131,7 @@ class _DHCPReservationsContentViewState
                               _tempReserved.add(item);
                             });
                           }
-                        });
+                        }).toList();
                       }
                     },
                   ),

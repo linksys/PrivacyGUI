@@ -171,7 +171,7 @@ class _DHCPReservationsEditViewState
           },
         ),
         AppTextButton(
-          loc(context).restart,
+          loc(context).delete,
           color: Theme.of(context).colorScheme.error,
           onTap: () {
             context.pop();
