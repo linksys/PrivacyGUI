@@ -182,21 +182,6 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         case WanType.dhcp:
           break;
         case WanType.pppoe:
-          final getPortConnectionStatusResult =
-              await repo.send(JNAPAction.getPortConnectionStatus, auth: true);
-          final getPortConnectionStatus = GetPortConnectionStatus.fromJson(
-              getPortConnectionStatusResult.output);
-          final connectedPortConnectionStatus =
-              getPortConnectionStatus.portConnectionStatus.firstWhereOrNull(
-                  (element) => element.connectionState == 'Connected');
-          if (connectedPortConnectionStatus != null) {
-            await repo.send(
-              JNAPAction.setWANPort,
-              data: WANPort(portId: connectedPortConnectionStatus.portId)
-                  .toJson(),
-              auth: true,
-            );
-          }
           final behavior =
               newState.ipv4Setting.behavior ?? PPPConnectionBehavior.keepAlive;
           final vlanId = newState.ipv4Setting.vlanId;

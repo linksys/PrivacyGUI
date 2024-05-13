@@ -105,8 +105,8 @@ final pnpTroubleshootingRoute = LinksysRoute(
           ],
         ),
         LinksysRoute(
-          name: RouteNamed.pnpIspSettings,
-          path: RoutePath.pnpIspSettings,
+          name: RouteNamed.pnpPPPOE,
+          path: RoutePath.pnpPPPOE,
           config: LinksysRouteConfig(
             pageWidth: SpecificPageWidth(width: 430),
           ),

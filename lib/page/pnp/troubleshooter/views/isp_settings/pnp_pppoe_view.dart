@@ -44,6 +44,7 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
   Widget build(BuildContext context) {
     return StyledAppPageView(
       title: 'Enter ISP settings',
+      scrollable: true,
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

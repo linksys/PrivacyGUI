@@ -24,11 +24,13 @@ class PnpIspTypeSelectionView extends ConsumerStatefulWidget {
 
 class _PnpIspTypeSelectionViewState extends ConsumerState {
   bool _isLoading = true;
+  bool _hasVLan = false;
 
   @override
   void initState() {
     ref.read(internetSettingsProvider.notifier).fetch().then((state) {
       setState(() {
+        _hasVLan = state.ipv4Setting.wanTaggingSettingsEnable ?? false;
         _isLoading = false;
       });
     });
@@ -56,6 +58,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
               loc(context).ok,
               onTap: () {
                 _saveToDHCP();
+                context.pop();
               },
             ),
           ],
@@ -111,9 +114,10 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                     title: loc(context).connectionTypePppoe,
                     description:
                         'Point-to-Point Protocol over Ethernet is a specification for connecting multiple computer users on an Ethernet local area network to a remote site.',
-                    isCurrentlyApplying: wanType == WanType.pppoe,
+                    isCurrentlyApplying:
+                        (wanType == WanType.pppoe && !_hasVLan),
                     tapAction: () {
-                      context.goNamed(RouteNamed.pnpIspSettings,
+                      context.goNamed(RouteNamed.pnpPPPOE,
                           extra: {'needVlanId': false});
                     },
                   ),
@@ -121,9 +125,9 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                     title: 'PPPoE over VLAN',
                     description:
                         'Sometimes your ISP may require you to have a PPPoE over VLAN to access the internet.',
-                    isCurrentlyApplying: wanType == WanType.pppoe,
+                    isCurrentlyApplying: (wanType == WanType.pppoe && _hasVLan),
                     tapAction: () {
-                      context.goNamed(RouteNamed.pnpIspSettings,
+                      context.goNamed(RouteNamed.pnpPPPOE,
                           extra: {'needVlanId': true});
                     },
                   ),
