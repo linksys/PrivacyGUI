@@ -4,87 +4,87 @@ import 'package:linksys_app/localization/localization_hook.dart';
 String getTimeZoneRegionName(BuildContext context, timezoneId) {
   switch (timezoneId) {
     case 'GMT0-NO-DST':
-      return getAppLocalizations(context).timezone_gambia_liberia_morocco;
+      return getAppLocalizations(context).timezoneGambiaLiberiaMorocco;
     case 'GST-4-NO-DST':
-      return getAppLocalizations(context).timezone_armenia;
+      return getAppLocalizations(context).timezoneArmenia;
     case 'EST5-NO-DST':
-      return getAppLocalizations(context).timezone_indiana_east_colombia_panama;
+      return getAppLocalizations(context).timezoneIndianaEastColombiaPanama;
     case 'AEST-10':
-      return getAppLocalizations(context).timezone_australia;
+      return getAppLocalizations(context).timezoneAustralia;
     case 'MST7-NO-DST':
-      return getAppLocalizations(context).timezone_arizona;
+      return getAppLocalizations(context).timezoneArizona;
     case 'PKT-5-NO-DST':
-      return getAppLocalizations(context).timezone_pakistan_russia;
+      return getAppLocalizations(context).timezonePakistanRussia;
     case 'ALMT-6-NO-DST':
-      return getAppLocalizations(context).timezone_bangladesh_russia;
+      return getAppLocalizations(context).timezoneBangladeshRussia;
     case 'AZOT1':
-      return getAppLocalizations(context).timezone_azores;
+      return getAppLocalizations(context).timezoneAzores;
     case 'BRT3':
-      return getAppLocalizations(context).timezone_brazil_east_greenland;
+      return getAppLocalizations(context).timezoneBrazilEastGreenland;
     case 'HST10-NO-DST':
-      return getAppLocalizations(context).timezone_hawaii;
+      return getAppLocalizations(context).timezoneHawaii;
     case 'CST6':
-      return getAppLocalizations(context).timezone_central_time_usa_and_canada;
+      return getAppLocalizations(context).timezoneCentralTimeUsaAndCanada;
     case 'PST8':
-      return getAppLocalizations(context).timezone_pacific_time_usa_and_canada;
+      return getAppLocalizations(context).timezonePacificTimeUsaAndCanada;
     case 'JST-9-NO-DST':
-      return getAppLocalizations(context).timezone_japan_korea;
+      return getAppLocalizations(context).timezoneJapanKorea;
     case 'EST5':
-      return getAppLocalizations(context).timezone_eastern_time_usa_and_canada;
+      return getAppLocalizations(context).timezoneEasternTimeUsaAndCanada;
     case 'ICT-7-NO-DST':
-      return getAppLocalizations(context).timezone_thailand_russia;
+      return getAppLocalizations(context).timezoneThailandRussia;
     case 'HKT-8-NO-DST':
       return getAppLocalizations(context)
-          .timezone_china_hong_kong_australia_western;
+          .timezoneChinaHongKongAustraliaWestern;
     case 'WST11-NO-DST':
-      return getAppLocalizations(context).timezone_midway_island_samoa;
+      return getAppLocalizations(context).timezoneMidwayIslandSamoa;
     case 'FJT-12-NO-DST':
-      return getAppLocalizations(context).timezone_fiji;
+      return getAppLocalizations(context).timezoneFiji;
     case 'NZST-12':
-      return getAppLocalizations(context).timezone_new_zealand;
+      return getAppLocalizations(context).timezoneNewZealand;
     case 'SBT-11-NO-DST':
-      return getAppLocalizations(context).timezone_solomon_islands;
+      return getAppLocalizations(context).timezoneSolomonIslands;
     case 'CET-1':
-      return getAppLocalizations(context).timezone_france_germany_italy;
+      return getAppLocalizations(context).timezoneFranceGermanyItaly;
     case 'MAT2-NO-DST':
-      return getAppLocalizations(context).timezone_mid_atlantic;
+      return getAppLocalizations(context).timezoneMidAtlantic;
     case 'MHT12-NO-DST':
-      return getAppLocalizations(context).timezone_kwajalein;
+      return getAppLocalizations(context).timezoneKwajalein;
     case 'AST-3-NO-DST':
-      return getAppLocalizations(context).timezone_turkey_iraq_jordan_kuwait;
+      return getAppLocalizations(context).timezoneTurkeyIraqJordanKuwait;
     case 'CET-1-NO-DST':
-      return getAppLocalizations(context).timezone_tunisia;
+      return getAppLocalizations(context).timezoneTunisia;
     case 'ART3-NO-DST':
-      return getAppLocalizations(context).timezone_guyana;
+      return getAppLocalizations(context).timezoneGuyana;
     case 'IST-05:30-NO-DST':
       return getAppLocalizations(context)
-          .timezone_mumbai_kolkata_chennai_new_delhi;
+          .timezoneMumbaiKolkataChennaiNewDelhi;
     case 'VET4-NO-DST':
-      return getAppLocalizations(context).timezone_bolivia_venezuela;
+      return getAppLocalizations(context).timezoneBoliviaVenezuela;
     case 'GMT0':
-      return getAppLocalizations(context).timezone_england;
+      return getAppLocalizations(context).timezoneEngland;
     case 'SAST-2-NO-DST':
-      return getAppLocalizations(context).timezone_south_africa;
+      return getAppLocalizations(context).timezoneSouthAfrica;
     case 'AKST9':
-      return getAppLocalizations(context).timezone_alaska;
+      return getAppLocalizations(context).timezoneAlaska;
     case 'MST7':
-      return getAppLocalizations(context).timezone_mountain_time_usa_and_canada;
+      return getAppLocalizations(context).timezoneMountainTimeUsaAndCanada;
     case 'CLT4':
-      return getAppLocalizations(context).timezone_chile_time_chile_antarctica;
+      return getAppLocalizations(context).timezoneChileTimeChileAntarctica;
     case 'AST4':
       return getAppLocalizations(context)
-          .timezone_atlantic_time_canada_greenland_atlantic_islands;
+          .timezoneAtlanticTimeCanadaGreenlandAtlanticIslands;
     case 'NST03:30':
-      return getAppLocalizations(context).timezone_newfoundland;
+      return getAppLocalizations(context).timezoneNewfoundland;
     case 'EET-2':
-      return getAppLocalizations(context).timezone_greece_ukraine_romania;
+      return getAppLocalizations(context).timezoneGreeceUkraineRomania;
     case 'GST-10-NO-DST':
-      return getAppLocalizations(context).timezone_guam_russia;
+      return getAppLocalizations(context).timezoneGuamRussia;
     case 'CST6-NO-DST':
-      return getAppLocalizations(context).timezone_mexico;
+      return getAppLocalizations(context).timezoneMexico;
     case 'SGT-8':
     case 'SGT-8-NO-DST':
-      return getAppLocalizations(context).timezone_singapore_taiwan_russia;
+      return getAppLocalizations(context).timezoneSingaporeTaiwanRussia;
     default:
       return '';
   }

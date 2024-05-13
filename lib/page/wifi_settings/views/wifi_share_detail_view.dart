@@ -3,16 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/customs/hidden_password_widget.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/consts.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
-import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
 import 'package:linksys_app/util/wifi_credential.dart';
+import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:linksys_widgets/widgets/card/info_card.dart';
+import 'package:linksys_widgets/widgets/card/list_card.dart';
 
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -44,7 +47,8 @@ class WiFiShareDetailView extends ConsumerStatefulWidget {
   }) : super(key: key);
 
   @override
-  ConsumerState<WiFiShareDetailView> createState() => _WiFiShareDetailViewState();
+  ConsumerState<WiFiShareDetailView> createState() =>
+      _WiFiShareDetailViewState();
 }
 
 class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
@@ -87,24 +91,40 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
   }
 
   Widget _wifiInfoSection() {
-    return Padding(
-      padding: const EdgeInsets.all(Spacing.regular),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.labelLarge('WiFi name'),
-          const AppGap.small(),
-          AppText.headlineMedium(
-            widget.ssid,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppInfoCard(
+          title: loc(context).wifiName,
+          description: widget.ssid,
+        ),
+        const AppGap.small(),
+        AppListCard(
+          title: AppText.bodySmall(loc(context).wifiPassword),
+          description: IntrinsicWidth(
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                  inputDecorationTheme: const InputDecorationTheme(
+                      isDense: true, contentPadding: EdgeInsets.zero)),
+              child: AppPasswordField(
+                readOnly: true,
+                border: InputBorder.none,
+                controller: TextEditingController()..text = widget.password,
+                suffixIconConstraints: const BoxConstraints(),
+              ),
+            ),
           ),
-          const AppGap.regular(),
-          AppText.labelLarge('Password'),
-          const AppGap.small(),
-          HiddenPasswordWidget(password: widget.password),
-          const AppGap.small(),
-          AppText.labelLarge('${widget.numOfDevices} devices connected'),
-        ],
-      ),
+          trailing: AppIconButton(
+            icon: LinksysIcons.add,
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: widget.password)).then(
+                  (value) =>
+                      showSuccessSnackBar(context, loc(context).sharedCopied));
+            },
+          ),
+        ),
+        // AppText.labelLarge('${widget.numOfDevices} devices connected'),
+      ],
     );
   }
 
@@ -230,9 +250,9 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppGap.regular(),
-            Card(child: _wifiInfoSection()),
-            const AppGap.big(),
-            _optionSection(),
+            _wifiInfoSection(),
+            // const AppGap.big(),
+            // _optionSection(),
             const AppGap.big(),
             _qrcodeSection(),
           ],

@@ -88,7 +88,7 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
   }
 
   String _createTitle(OtpState state) {
-    return getAppLocalizations(context).otp_send_method_choice_title;
+    return getAppLocalizations(context).otpSendMethodChoiceTitle;
   }
 
   _checkPhoneExist(

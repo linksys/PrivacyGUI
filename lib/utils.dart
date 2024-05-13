@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
@@ -33,13 +34,14 @@ class Utils {
       text: 'Linksys Log',
       subject: 'Log file',
     ).then((result) {
-      if (result?.status == ShareResultStatus.success) {
+      if (result?.status == ShareResultStatus.success && !kIsWeb) {
         Storage.deleteFile(Storage.logFileUri);
         Storage.createLoggerFile();
       }
       showSnackBar(context, content: Text("Share result: ${result?.status}"));
     });
   }
+
   static String maskJsonValue(String raw, List<String> keys) {
     final pattern = '"?(${keys.join('|')})"?\\s*:\\s*"?([\\s\\S]*?)"?(?=,|})';
     RegExp regex = RegExp(pattern, multiLine: true);
@@ -170,43 +172,6 @@ extension DateFormatUtils on Utils {
     final String m =
         timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
     return '$h hr,$m min';
-  }
-
-// TODO: Unit test
-  static Map<String, bool> weeklyTransform(
-      BuildContext context, List<bool> weeklyBool) {
-    final weeklyStr = [
-      getAppLocalizations(context).weekly_sunday,
-      getAppLocalizations(context).weekly_monday,
-      getAppLocalizations(context).weekly_tuesday,
-      getAppLocalizations(context).weekly_wednesday,
-      getAppLocalizations(context).weekly_thursday,
-      getAppLocalizations(context).weekly_friday,
-      getAppLocalizations(context).weekly_saturday,
-    ];
-    return weeklyBool
-        .asMap()
-        .map((key, value) => MapEntry(weeklyStr[key], value));
-  }
-
-// TODO: Unit test
-  static List<String> toWeeklyStringList(
-      BuildContext context, List<bool> weeklyBool) {
-    final weeklyStr = [
-      getAppLocalizations(context).weekly_sunday,
-      getAppLocalizations(context).weekly_monday,
-      getAppLocalizations(context).weekly_tuesday,
-      getAppLocalizations(context).weekly_wednesday,
-      getAppLocalizations(context).weekly_thursday,
-      getAppLocalizations(context).weekly_friday,
-      getAppLocalizations(context).weekly_saturday,
-    ];
-    return List.from(weeklyBool
-        .asMap()
-        .map((key, value) => MapEntry(weeklyStr[key], value))
-        .entries
-        .where((element) => element.value)
-        .map((e) => e.key));
   }
 }
 

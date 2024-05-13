@@ -50,7 +50,7 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
       padding: const EdgeInsets.symmetric(horizontal: Spacing.zero),
       child: AppDeviceListCard(
         isSelected: widget.isItemSelected?.call(item) ?? false,
-        title: '${item.name} [${item.signalStrength}]',
+        title: item.name,
         description: ResponsiveLayout.isMobile(context) || !item.isOnline
             ? null
             : item.upstreamDevice,
@@ -58,7 +58,9 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
             ? null
             : !item.isOnline
                 ? null
-                : item.band,
+                : item.isWired
+                    ? null
+                    : item.band,
         leading: IconDeviceCategoryExt.resolveByName(item.icon),
         trailing: item.isOnline
             ? getWifiSignalIconData(

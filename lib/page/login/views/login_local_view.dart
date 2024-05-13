@@ -97,7 +97,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
           } else {
             // delay time will be absent if remaining attempts reach to 0
             // No need to count down
-            _errorMessage = loc(context).local_login_too_many_attempts_title;
+            _errorMessage = loc(context).localLoginTooManyAttemptsTitle;
           }
         }
       } else {
@@ -115,7 +115,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
       //TODO: Localize the string
       return 'Incorrect Router Password. Try again in ${_delayTime}s. Remaining attempts: $_remainingAttempts.';
     } else {
-      return loc(context).local_login_incorrect_router_password;
+      return loc(context).localLoginIncorrectRouterPassword;
     }
   }
 
@@ -163,7 +163,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                   child: AppPasswordField(
                     border: const OutlineInputBorder(),
                     controller: _passwordController,
-                    hintText: loc(context).router_password,
+                    hintText: loc(context).routerPassword,
                     onChanged: (value) {
                       setState(() {
                         _shouldEnableLoginButton();
@@ -180,7 +180,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                       width: 200,
                       child: ExpansionTile(
                         title: AppText.bodySmall(
-                          getAppLocalizations(context).show_hint,
+                          getAppLocalizations(context).showHint,
                           color: Theme.of(context).colorScheme.primary,
                         ),
                         tilePadding: EdgeInsets.zero,
@@ -194,7 +194,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                   ),
                 const AppGap.big(),
                 AppTextButton.noPadding(
-                  loc(context).forgot_password,
+                  loc(context).forgotPassword,
                   onTap: () {
                     context.pushNamed(RouteNamed.localRouterRecovery);
                   },

@@ -6,66 +6,54 @@ ConnectionTypeData toConnectionTypeData(BuildContext context, String type) {
     case 'DHCP':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connection_type_dhcp,
-        description: getAppLocalizations(context).connection_type_dhcp_desc,
+        title: getAppLocalizations(context).connectionTypeDhcp,
       );
     case 'Static':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connection_type_static,
-        description: getAppLocalizations(context).connection_type_static_desc,
+        title: getAppLocalizations(context).connectionTypeStatic,
       );
     case 'PPPoE':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connection_type_pppoe,
-        description: getAppLocalizations(context).connection_type_pppoe_desc,
+        title: getAppLocalizations(context).connectionTypePppoe,
       );
     case 'PPTP':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connection_type_pptp,
-        description: getAppLocalizations(context).connection_type_pptp_desc,
+        title: getAppLocalizations(context).connectionTypePptp,
       );
     case 'L2TP':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connection_type_l2tp,
-        description: getAppLocalizations(context).connection_type_l2tp_desc,
+        title: getAppLocalizations(context).connectionTypeL2tp,
       );
     case 'Bridge':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connection_type_bridge,
-        description: getAppLocalizations(context).connection_type_bridge_desc,
+        title: getAppLocalizations(context).connectionTypeBridge,
       );
     case 'Automatic':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connection_type_automatic,
-        description:
-            getAppLocalizations(context).connection_type_automatic_desc,
+        title: getAppLocalizations(context).connectionTypeAutomatic,
       );
     case 'Pass-through':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connection_type_pass_through,
-        description:
-            getAppLocalizations(context).connection_type_pass_through_desc,
+        title: getAppLocalizations(context).connectionTypePassThrough,
       );
     default:
-      return ConnectionTypeData(type: type, title: ' ', description: ' ');
+      return ConnectionTypeData(type: type, title: ' ');
   }
 }
 
 class ConnectionTypeData {
   final String type;
   final String title;
-  final String description;
 
   const ConnectionTypeData({
     required this.type,
     required this.title,
-    required this.description,
   });
 }

@@ -72,7 +72,6 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
           .send(
             JNAPAction.getDeviceInfo,
             fetchRemote: true,
-            cacheLevel: CacheLevel.noCache,
           )
           .then<String>(
               (value) => NodeDeviceInfo.fromJson(value.output).serialNumber);
@@ -86,7 +85,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
         .loadCache(serialNumber: serialNumber ?? '');
     final nodeDeviceInfo = await ref
         .read(dashboardManagerProvider.notifier)
-        .checkDeviceInfo(serialNumber)
+        .checkDeviceInfo(null)
         .then<NodeDeviceInfo?>((value) => value)
         .onError((error, stackTrace) => null);
     if (nodeDeviceInfo != null) {
@@ -100,7 +99,8 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
     } else {
       // TODO #LINKSYS Error handling for unable to get deviceinfo
       logger.i('PREPARE :: Error handling for unable to get deviceinfo');
-      router.goNamed(RouteNamed.cloudLoginAccount, extra: {'error': 'Unexpected'});
+      router.goNamed(RouteNamed.cloudLoginAccount,
+          extra: {'error': 'Unexpected'});
     }
   }
 }

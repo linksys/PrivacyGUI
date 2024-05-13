@@ -89,3 +89,4 @@ artifacts/webApp
 test/**/goldens/*
 # mock
 test/**/*.mocks.dart
+untranslated.txt

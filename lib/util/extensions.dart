@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'package:linksys_app/util/languages.dart';
+
 extension Unique<E, Id> on List<E> {
   List<E> unique([Id Function(E element)? id, bool inplace = true]) {
     final ids = Set();
@@ -23,13 +25,8 @@ extension DurationExt on Duration {
 }
 
 extension LocaleExt on Locale {
-  String get displayText => switch ((languageCode, countryCode, scriptCode)) {
-        ('en') => 'English (United States)',
-        ('ja', null, null) => '日本語',
-        ('fr', null, null) => 'Francais (France)',
-        ('ko', null, null) => 'Korean',
-        ('zh', null, 'Hans') => '簡體中文',
-        ('zh', null, 'Hant') => '繁體中文',
-        _ => 'English (United States)',
-      };
+  String get displayText {
+    final localStr = toLanguageTag();
+    return getLanguageData(localStr)['name'] as String;
+  }
 }

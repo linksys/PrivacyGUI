@@ -460,7 +460,7 @@ class _LocalNetworkSettingsViewState
       const AppGap.regular(),
       AppIPFormField(
         header: AppText.bodyLarge(
-          loc(context).static_dns2_optional,
+          loc(context).staticDns2Optional,
         ),
         controller: _dns2Controller,
         onFocusChanged: (focused) {
@@ -485,7 +485,7 @@ class _LocalNetworkSettingsViewState
       const AppGap.regular(),
       AppIPFormField(
         header: AppText.bodyLarge(
-          loc(context).static_dns3_optional,
+          loc(context).staticDns3Optional,
         ),
         controller: _dns3Controller,
         onFocusChanged: (focused) {

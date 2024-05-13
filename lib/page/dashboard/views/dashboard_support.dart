@@ -120,7 +120,7 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
         ),
         const AppGap.regular(),
         AppTextField.outline(
-          headerText: getAppLocalizations(context).first_name,
+          headerText: getAppLocalizations(context).firstName,
           controller: firstNameController,
           onChanged: (text) {
             _onInputChanged();
@@ -128,7 +128,7 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
         ),
         const AppGap.regular(),
         AppTextField.outline(
-          headerText: getAppLocalizations(context).last_name,
+          headerText: getAppLocalizations(context).lastName,
           controller: lastNameController,
           onChanged: (text) {
             _onInputChanged();

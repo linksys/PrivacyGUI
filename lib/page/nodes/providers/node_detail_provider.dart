@@ -106,9 +106,6 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       wanIpAddress: wanIpAddress,
     );
 
-    final map = state.toMap();
-    logger.d('XXXXX: node detail state: ${jsonEncode(map)}');
-    logger.d('XXXXX: node detail state2: ${NodeDetailState.fromMap(map)}');
     return state;
   }
 

@@ -1,14 +1,13 @@
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:linksys_app/constants/_constants.dart';
 import 'package:logger/logger.dart';
 import 'package:linksys_app/core/utils/storage.dart';
 import 'package:linksys_app/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 final logger = Logger(
     filter: ProductionFilter(),
@@ -35,17 +34,20 @@ class CustomOutput extends LogOutput {
               .codeUnits,
           mode: FileMode.writeOnlyAppend);
     } else if (kIsWeb && output.isNotEmpty) {
-      final SharedPreferences sp = await SharedPreferences.getInstance();
-      String content = sp.getString(pWebLog) ?? '';
-      await sp.setString(pWebLog,
-          '$content\n${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(output.toString()))}\n');
+      // final SharedPreferences sp = await SharedPreferences.getInstance();
+      // String content = sp.getString(pWebLog) ?? '';
+      // await sp.setString(pWebLog,
+      //     '$content\n${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(output.toString()))}\n');
+
+      recordLog(Utils.maskSensitiveJsonValues(
+          Utils.replaceHttpScheme(output.toString())));
     }
   }
 
   void printWrapped(String text) {
-    print(text);
-    // final pattern = RegExp('.{1,800}'); // 800 is the size of each chunk
-    // pattern.allMatches(text).forEach((match) => print(match.group(0)));
+    if (kDebugMode) {
+      print(text);
+    }
   }
 }
 
@@ -53,11 +55,11 @@ initLog() async {
   if (kDebugMode && !kIsWeb) {
     print(await getAppInfoLogs());
   }
-  if (kIsWeb) {
-    print('Init logs');
-    final SharedPreferences sp = await SharedPreferences.getInstance();
-    await sp.remove(pWebLog);
-  }
+  // if (kIsWeb) {
+  //   print('Init logs');
+  //   final SharedPreferences sp = await SharedPreferences.getInstance();
+  //   await sp.remove(pWebLog);
+  // }
 }
 
 Future<String> getAppInfoLogs() async {
@@ -136,4 +138,59 @@ String getScreenInfo(BuildContext context) {
     '---------------------------------',
   ];
   return data.join('\n');
+}
+
+Map<String, List<(int, String)>> logCache = {};
+const int maxLogSize = 2000;
+const String tagRegex = r'\[(\w*)\]:(.*)';
+
+void recordLog(String log) async {
+  _recordLog(log);
+
+  // tag record
+  final extracted = _extratTagLog(log);
+  if (extracted != null) {
+    _recordLog(extracted.$2, tag: extracted.$1);
+  }
+}
+
+void _recordLog(String log, {String tag = 'app'}) {
+  final logList = logCache[tag] ?? [];
+  if (logList.length + 1 >= maxLogSize) {
+    logList.removeAt(0);
+  }
+  logList.add((DateTime.now().millisecondsSinceEpoch, log));
+  logCache[tag] = logList;
+}
+
+String getLogs({String tag = 'app'}) {
+  final logList = logCache[tag] ?? [];
+  return logList
+      .sorted((a, b) => a.$1.compareTo(b.$1))
+      .map((e) => e.$2)
+      .join('\n');
+}
+
+String getFullLogs() {
+  final keys = List.from(logCache.keys)..remove('app');
+  return '''
+${keys.map((e) => '$e = [${getLogs(tag: e)}],\n')}
+${getLogs()}\n
+''';
+}
+
+(String, String)? _extratTagLog(String log) {
+  final match = RegExp(tagRegex).firstMatch(log);
+  if (match == null) {
+    return null;
+  }
+  final tag = match.group(1);
+  final message = match.group(2);
+  if (tag == null) {
+    return null;
+  }
+  if (message == null) {
+    return null;
+  }
+  return (tag, message);
 }

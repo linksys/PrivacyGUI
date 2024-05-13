@@ -27,7 +27,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
   Widget build(BuildContext context) {
     return StyledAppPageView(
       scrollable: true,
-      title: loc(context).static_ip_address,
+      title: loc(context).staticIPAddress,
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

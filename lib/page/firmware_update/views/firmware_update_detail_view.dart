@@ -81,14 +81,14 @@ class _FirmwareUpdateDetailViewState
                     content: FirmwareUpdateTableView(
                       nodeStatusList: nodeStatusList,
                     ),
-                    headerAction: AppIconButton.noPadding(
-                      icon: LinksysIcons.refresh,
-                      onTap: () {
-                        ref
-                            .read(firmwareUpdateProvider.notifier)
-                            .checkFirmwareUpdateStream();
-                      },
-                    ),
+                    // headerAction: AppIconButton.noPadding(
+                    //   icon: LinksysIcons.refresh,
+                    //   onTap: () {
+                    //     ref
+                    //         .read(firmwareUpdateProvider.notifier)
+                    //         .checkFirmwareUpdateStream();
+                    //   },
+                    // ),
                   ),
                   const Spacer(),
                   AppFilledButton.fillWidth(

@@ -15,6 +15,7 @@ import 'package:linksys_app/providers/connectivity/connectivity_provider.dart';
 import 'package:linksys_app/page/dashboard/providers/smart_device_provider.dart';
 import 'package:linksys_app/route/route_model.dart';
 import 'package:linksys_app/route/router_provider.dart';
+import 'package:linksys_app/util/languages.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -57,18 +58,19 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     logger.d('App:: build: $_currentRoute');
 
     final appSettings = ref.watch(appSettingsProvider);
-
+    final systemLocaleStr = Intl.getCurrentLocale();
+    final systemLocale = Locale(getLanguageData(systemLocaleStr)['value']);
     ref.read(smartDeviceProvider.notifier).init();
     final router = ref.watch(routerProvider);
     router.routerDelegate.removeListener(_onReceiveRouteChanged);
     router.routerDelegate.addListener(_onReceiveRouteChanged);
 
     return MaterialApp.router(
-      onGenerateTitle: (context) => loc(context).app_title,
+      onGenerateTitle: (context) => loc(context).appTitle,
       theme: linksysLightThemeData,
       darkTheme: linksysDarkThemeData,
       themeMode: appSettings.themeMode,
-      locale: appSettings.locale ?? Locale(Intl.getCurrentLocale()),
+      locale: appSettings.locale ?? systemLocale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => Material(

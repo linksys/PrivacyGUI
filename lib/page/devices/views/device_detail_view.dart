@@ -13,7 +13,7 @@ import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/const/spacing.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/card/card.dart';
-import 'package:linksys_widgets/widgets/card/device_info_card.dart';
+import 'package:linksys_widgets/widgets/card/info_card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/spinner.dart';
@@ -146,10 +146,12 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppText.bodySmall(loc(context).signalStrength),
-                    const AppGap.small(),
-                    AppText.labelLarge(
-                      _formatEmptyValue('${state.item.signalStrength} dBM'),
-                    ),
+                    if (!state.item.isWired) ...[
+                      const AppGap.small(),
+                      AppText.labelLarge(
+                        _formatEmptyValue('${state.item.signalStrength} dBM'),
+                      ),
+                    ],
                   ],
                 ),
                 const Spacer(),
@@ -168,16 +170,17 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   Widget _detailSection(ExternalDeviceDetailState state) {
     return Column(
       children: [
-        AppDeviceInfoCard(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.semiBig,
-            vertical: Spacing.regular,
+        if (!state.item.isWired)
+          AppInfoCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.semiBig,
+              vertical: Spacing.regular,
+            ),
+            title: loc(context).wifi,
+            description:
+                _formatEmptyValue('${state.item.ssid} (${state.item.band})'),
           ),
-          title: loc(context).wifi,
-          description:
-              _formatEmptyValue('${state.item.ssid} (${state.item.band})'),
-        ),
-        AppDeviceInfoCard(
+        AppInfoCard(
           padding: const EdgeInsets.fromLTRB(
             Spacing.semiBig,
             Spacing.regular,
@@ -193,7 +196,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             },
           ),
         ),
-        AppDeviceInfoCard(
+        AppInfoCard(
           padding: const EdgeInsets.symmetric(
             horizontal: Spacing.semiBig,
             vertical: Spacing.regular,
@@ -201,7 +204,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           title: loc(context).macAddress,
           description: _formatEmptyValue(state.item.macAddress),
         ),
-        AppDeviceInfoCard(
+        AppInfoCard(
           padding: const EdgeInsets.symmetric(
             horizontal: Spacing.semiBig,
             vertical: Spacing.regular,
@@ -219,7 +222,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         // crossAxisAlignment: CrossAxisAlignment.start,
         // mainAxisSize: MainAxisSize.min,
         children: [
-          AppDeviceInfoCard(
+          AppInfoCard(
             showBorder: false,
             padding: const EdgeInsets.fromLTRB(
               Spacing.semiSmall,
@@ -234,7 +237,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             height: 8,
             thickness: 1,
           ),
-          AppDeviceInfoCard(
+          AppInfoCard(
             showBorder: false,
             padding: const EdgeInsets.fromLTRB(
               Spacing.semiSmall,
@@ -263,7 +266,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           builder: (sfbContext, sfbSetState) {
             return AlertDialog(
               title: AppText.titleLarge(
-                  loc(sfbContext).device_detail_edit_dialog_title),
+                  loc(sfbContext).deviceDetailEditDialogTitle),
               actions: _isLoading
                   ? null
                   : [
@@ -316,7 +319,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             },
           ),
           const AppGap.big(),
-          AppText.labelLarge(loc(context).select_icon),
+          AppText.labelLarge(loc(context).selectIcon),
           const AppGap.big(),
           GridView.builder(
             shrinkWrap: true,

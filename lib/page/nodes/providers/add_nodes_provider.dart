@@ -60,14 +60,14 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
           onCompleted: () {
             // Complete
             logger.d(
-                'XXXXX: [pollAutoOnboardingStatus]getAutoOnboardingStatus complete!');
+                '[AddNodes]: [pollAutoOnboardingStatus]getAutoOnboardingStatus complete!');
           },
           auth: true,
         );
   }
 
   Future startAutoOnboarding() async {
-    logger.d('XXXXX: startAutoOnboarding');
+    logger.d('[AddNodes]: startAutoOnboarding');
     final benchMark = BenchMarkLogger(name: 'AutoOnboarding');
     benchMark.start();
 
@@ -91,7 +91,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     await for (final result in pollAutoOnboardingStatus()) {
       // Update onboarding status
       logger.d(
-          'XXXXX: [pollAutoOnboardingStatus] getAutoOnboardingStatus: $result');
+          '[AddNodes]: [pollAutoOnboardingStatus] getAutoOnboardingStatus: $result');
 
       if (result is JNAPSuccess) {
         if (result.output['autoOnboardingStatus'] == 'Onboarding') {
@@ -128,7 +128,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
                   false,
             )
             .toList();
-        logger.d('XXXXX: [pollForNodesOnline] added devices: $addedDevices');
+        logger.d('[AddNodes]: [pollForNodesOnline] added devices: $addedDevices');
       }
     } else {
       // put original slave nodes
@@ -138,7 +138,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     final polling = ref.read(pollingProvider.notifier);
     await polling.forcePolling().then((value) => polling.startPolling());
     logger.d(
-        'XXXXX: add nodes state: nodesSnapshot: $nodeSnapshot, onboardingProceed: $onboardingProceed, anyOnboarded: $anyOnboarded, addedDevices: $addedDevices');
+        '[AddNodes]: add nodes state: nodesSnapshot: $nodeSnapshot, onboardingProceed: $onboardingProceed, anyOnboarded: $anyOnboarded, addedDevices: $addedDevices');
     benchMark.end();
 
     state = state.copyWith(
@@ -156,7 +156,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     List<String> onboardedMACList,
   ) {
     logger.d(
-        'XXXXX: [pollForNodesOnline] start, onboardedMACList: $onboardedMACList');
+        '[AddNodes]: [pollForNodesOnline] start, onboardedMACList: $onboardedMACList');
     final repo = ref.read(routerRepositoryProvider);
     return repo
         .scheduledCommand(
@@ -180,7 +180,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
                             knownInterface.macAddress == mac) ??
                         false));
                 logger.d(
-                    'XXXXX: [pollForNodesOnline] are All MACs in device list? $allFound');
+                    '[AddNodes]: [pollForNodesOnline] are All MACs in device list? $allFound');
                 // see any additional nodes || nodes in the mac list all has connections.
                 bool ret = deviceList
                     .where((device) =>
@@ -191,17 +191,17 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
                     .every((device) {
                   final hasConnections = device.connections.isNotEmpty;
                   logger.d(
-                      'XXXXX: [pollForNodesOnline] <${device.getDeviceLocation()}> has connections: $hasConnections');
+                      '[AddNodes]: [pollForNodesOnline] <${device.getDeviceLocation()}> has connections: $hasConnections');
                   return hasConnections;
                 });
                 logger.d(
-                    'XXXXX: [pollForNodesOnline] are all onboarded nodes has connections? $ret');
+                    '[AddNodes]: [pollForNodesOnline] are all onboarded nodes has connections? $ret');
                 return allFound && ret;
               }
               return false;
             },
             onCompleted: () {
-              logger.d('XXXXX: [pollForNodesOnline] complete');
+              logger.d('[AddNodes]: [pollForNodesOnline] complete');
             })
         .transform(
       StreamTransformer<JNAPResult, List<RawDevice>>.fromHandlers(

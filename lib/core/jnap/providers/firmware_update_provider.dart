@@ -90,7 +90,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
             .max;
     if (_checkFirmwareUpdatePeriod(lastCheckTime) && !force) {
       logger.i(
-          'FIRMWARE:: Skip checking firmware update avaliable: last check time {${DateTime.fromMillisecondsSinceEpoch(lastCheckTime)}}');
+          '[FIRMWARE]: Skip checking firmware update avaliable: last check time {${DateTime.fromMillisecondsSinceEpoch(lastCheckTime)}}');
       yield [];
     } else {
       final action = isServiceSupport(JNAPService.nodesFirmwareUpdate)
@@ -145,7 +145,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
         stopCondition: (result) =>
             _checkFirmwareUpdateComplete(result, targetFirmwareUpdateRecords),
         onCompleted: () {
-          logger.i('FIRMWARE:: update firmware COMPLETED!');
+          logger.i('[FIRMWARE]: update firmware COMPLETED!');
           final polling = ref.read(pollingProvider.notifier);
           polling.forcePolling().then((_) {
             polling.startPolling();
@@ -154,7 +154,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
             benchmark.end();
           });
         }).listen((statusList) {
-      logger.i('FIRMWARE:: update firmware state: $statusList');
+      logger.i('[FIRMWARE]: update firmware state: $statusList');
       state = state.copyWith(nodesStatus: statusList);
     });
   }
@@ -176,10 +176,10 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
           !statusList.any((status) => status.pendingOperation != null);
       final isDataConsitent = _isRecordConsistent(statusList, records);
       logger.i(
-          'FIRMWARE:: check are all finished: $statusList, $isSatisfied, $isDataConsitent');
+          '[FIRMWARE]: check are all finished: $statusList, $isSatisfied, $isDataConsitent');
       return isSatisfied && isDataConsitent;
     } else {
-      logger.i('FIRMWARE:: error: $result, maybe reboot');
+      logger.i('[FIRMWARE]: error: $result, maybe reboot');
       return false;
     }
   }
@@ -231,7 +231,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
             onCompleted: onCompleted,
             auth: true)
         .map((result) {
-      logger.i('FIRMWARE:: check firmware update status: $result');
+      logger.i('[FIRMWARE]: check firmware update status: $result');
       if (result is! JNAPSuccess) {
         throw result;
       }

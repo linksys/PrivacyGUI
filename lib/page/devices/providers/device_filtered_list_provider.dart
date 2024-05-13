@@ -11,7 +11,6 @@ final filteredDeviceListProvider = Provider((ref) {
   final nodeId = config.nodeFilter;
   final band = config.bandFilter;
   final connection = config.connectionFilter;
-
   final filteredDevices = deviceListState.devices
       // .where(
       //   (device) => ssidFilter == null ? true : device.type == ssidFilter,
@@ -64,7 +63,8 @@ class DeviceFilterConfigNotifier extends Notifier<DeviceFilterConfigState> {
       .mainRadios
       .unique((x) => x.band)
       .map((e) => e.band)
-      .toList();
+      .toList()
+    ..add('Ethernet');
 
   void updateConnectionFilter(bool value) {
     state = state.copyWith(connectionFilter: value);

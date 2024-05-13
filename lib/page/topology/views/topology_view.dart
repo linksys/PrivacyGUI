@@ -200,7 +200,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
               _doRemoveNode(node).then((result) {
                 showSimpleSnackBar(context, loc(context).nodeRemoved);
               }).onError((error, stackTrace) {
-                showSimpleSnackBar(context, loc(context).unknown_error);
+                showSimpleSnackBar(context, loc(context).unknownError);
               });
             }
           });

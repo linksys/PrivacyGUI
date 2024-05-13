@@ -1,15 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
 import 'package:linksys_app/core/jnap/models/firmware_update_status_nodes.dart';
 import 'package:linksys_app/core/jnap/models/node_light_settings.dart';
 import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
 import 'package:linksys_app/core/utils/extension.dart';
 import 'package:linksys_app/core/utils/icon_rules.dart';
-import 'package:linksys_app/core/utils/nodes.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/components/shortcuts/dialogs.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
@@ -26,12 +22,11 @@ import 'package:linksys_widgets/icons/linksys_icons.dart';
 import 'package:linksys_widgets/theme/_theme.dart';
 import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/card/card.dart';
-import 'package:linksys_widgets/widgets/card/device_info_card.dart';
+import 'package:linksys_widgets/widgets/card/info_card.dart';
 import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'package:collection/collection.dart';
-import 'package:linksys_widgets/widgets/progress_bar/spinner.dart';
 import 'package:linksys_widgets/widgets/radios/radio_list.dart';
 
 import 'blink_node_light_widget.dart';
@@ -196,7 +191,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               ),
             ),
             // const AppGap.regular(),
-            AppDeviceInfoCard(
+            AppInfoCard(
               title: loc(context).connectTo,
               description: _checkEmptyValue(state.upstreamDevice),
               showBorder: false,
@@ -251,7 +246,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     } else {
       final title = loc(context).nodeLight;
       return [
-        AppDeviceInfoCard(
+        AppInfoCard(
           title: title,
           showBorder: false,
           padding: EdgeInsets.zero,
@@ -282,18 +277,18 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppDeviceInfoCard(
+          AppInfoCard(
             showBorder: false,
             padding: EdgeInsets.zero,
-            title: getAppLocalizations(context).ipAddress,
+            title: getAppLocalizations(context).lanIPAddress,
             description: state.lanIpAddress,
           ),
           if (state.isMaster) ...[
             const AppGap.semiSmall(),
-            AppDeviceInfoCard(
+            AppInfoCard(
               showBorder: false,
               padding: EdgeInsets.zero,
-              title: getAppLocalizations(context).ipAddress,
+              title: getAppLocalizations(context).wanIPAddress,
               description: state.wanIpAddress,
             ),
           ],
@@ -307,18 +302,18 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           // ),
           const AppGap.semiSmall(),
 
-          AppDeviceInfoCard(
+          AppInfoCard(
             showBorder: false,
             padding: EdgeInsets.zero,
             title:
-                getAppLocalizations(context).node_detail_label_firmware_version,
+                getAppLocalizations(context).firmwareVersion,
             description: _checkEmptyValue(state.firmwareVersion),
             trailing: Visibility(
                 visible: isFwUpToDate,
                 replacement: AppText.bodyLarge(
                     updateInfo?.availableUpdate?.firmwareVersion ?? ''),
                 child: AppText.labelSmall(
-                    getAppLocalizations(context).up_to_date)),
+                    getAppLocalizations(context).upToDate)),
           ),
           const AppGap.regular(),
           AppTextButton(

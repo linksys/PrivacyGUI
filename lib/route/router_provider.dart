@@ -10,11 +10,9 @@ import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/page/account/_account.dart';
 import 'package:linksys_app/page/administration/firewall/_firewall.dart';
 import 'package:linksys_app/page/advanced_settings/internet_settings/_internet_settings.dart';
-import 'package:linksys_app/page/administration/ip_details/_ip_details.dart';
 import 'package:linksys_app/page/administration/port_forwarding/_port_forwarding.dart';
 import 'package:linksys_app/page/administration/network_admin/_router_password.dart';
 import 'package:linksys_app/page/components/picker/region_picker_view.dart';
-import 'package:linksys_app/page/components/picker/simple_item_picker.dart';
 import 'package:linksys_app/page/dashboard/_dashboard.dart';
 import 'package:linksys_app/page/ddns/_ddns.dart';
 import 'package:linksys_app/page/devices/_devices.dart';
@@ -140,7 +138,7 @@ class RouterNotifier extends ChangeNotifier {
     } else {
       shouldGoPnp = false;
     }
-    logger.d('XXXXX: go pnp? $shouldGoPnp, state uri: <${state.uri}>');
+    logger.d('go pnp? $shouldGoPnp, state uri: <${state.uri}>');
     if (shouldGoPnp) {
       return _goPnp(state.uri.query);
     } else {
