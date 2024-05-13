@@ -220,14 +220,14 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
     bool isValid = value.isNotEmpty;
     showSubmitAppDialog(
       context,
-      title: loc(context).routerPassword,
+      title: loc(context).routerPasswordHint,
       contentBuilder: (context, setState) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           AppTextField(
             border: const OutlineInputBorder(),
             controller: controller,
-            headerText: loc(context).routerPasswordNew,
+            headerText: loc(context).routerPasswordHint,
             onChanged: (value) {
               setState(() {
                 isValid = value.isNotEmpty;

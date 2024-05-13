@@ -328,7 +328,6 @@ class LinksysHttpClient extends http.BaseClient
 
 bool _defaultWhen(http.BaseResponse response) {
   try {
-    logger.d('response: ${response.statusCode}');
     if (response.statusCode == 503) {
       return true;
     }

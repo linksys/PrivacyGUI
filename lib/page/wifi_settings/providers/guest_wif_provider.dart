@@ -26,7 +26,7 @@ class GuestWifiNotifier extends Notifier<GuestWiFiState> {
   Future<GuestWiFiState> fetch([bool force = false]) async {
     final guestRadioInfo = await ref
         .read(routerRepositoryProvider)
-        .send(JNAPAction.getGuestRadioSettings, fetchRemote: force)
+        .send(JNAPAction.getGuestRadioSettings, fetchRemote: force, auth: true)
         .then((response) => GuestRadioSettings.fromMap(response.output));
     state = state.copyWith(
         isEnabled: guestRadioInfo.isGuestNetworkEnabled,
@@ -38,7 +38,7 @@ class GuestWifiNotifier extends Notifier<GuestWiFiState> {
   Future<GuestWiFiState> save() async {
     final guestRadioInfo = await ref
         .read(routerRepositoryProvider)
-        .send(JNAPAction.getGuestRadioSettings)
+        .send(JNAPAction.getGuestRadioSettings, auth: true)
         .then((response) => GuestRadioSettings.fromMap(response.output));
     final setGuestRadioSettings =
         SetGuestRadioSettings.fromGuestRadioSettings(guestRadioInfo);
@@ -55,6 +55,7 @@ class GuestWifiNotifier extends Notifier<GuestWiFiState> {
           data: newSetGuestRadioSettings.toMap(),
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
+          auth: true,
         );
     return await fetch(true);
   }
