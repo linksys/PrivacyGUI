@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/jnap/router_repository.dart';
+import 'package:linksys_app/core/utils/logger.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
@@ -32,7 +34,7 @@ class _PnpIspSettingsAuthViewState
   late final InternetSettingsState newSettings;
   bool _isLoading = true;
   String? _inputPasswordError;
-  late StreamSubscription subscription;
+  StreamSubscription? subscription;
 
   @override
   void initState() {
@@ -87,7 +89,7 @@ class _PnpIspSettingsAuthViewState
         .saveIpv4(newSettings)
         .then((value) {
       // Saving successfully, check if the new settings valid
-      subscription.cancel();
+      subscription?.cancel();
       subscription = ref
           .read(pnpTroubleshooterProvider.notifier)
           .checkNewSettings(
@@ -109,7 +111,7 @@ class _PnpIspSettingsAuthViewState
                   context.pop(_getErrorMessage(wanType));
                 }, test: (error) => error is ExceptionNoInternetConnection);
               }
-              subscription.cancel();
+              subscription?.cancel();
             },
           )
           .listen((isValid) {
@@ -123,10 +125,11 @@ class _PnpIspSettingsAuthViewState
           // Keep the error record until the check loop is fulfilled or runs out of the re-try quota
         }
       });
-    }).onError((error, stackTrace) {
+    }).catchError((error) {
+      logger.e('Save Ipv4 settings error: $error');
       // Saving new settings failed
       context.pop('Fail to save the new settings');
-    });
+    }, test: (error) => error is JNAPError);
   }
 
   String _getErrorMessage(WanType wanType) {

@@ -54,7 +54,9 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
             ),
             AppTextButton(
               loc(context).ok,
-              onTap: _saveToDHCP,
+              onTap: () {
+                _saveToDHCP();
+              },
             ),
           ],
         );
@@ -106,7 +108,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                     },
                   ),
                   ISPTypeCard(
-                    title: loc(context).pppoe,
+                    title: loc(context).connectionTypePppoe,
                     description:
                         'Point-to-Point Protocol over Ethernet is a specification for connecting multiple computer users on an Ethernet local area network to a remote site.',
                     isCurrentlyApplying: wanType == WanType.pppoe,
