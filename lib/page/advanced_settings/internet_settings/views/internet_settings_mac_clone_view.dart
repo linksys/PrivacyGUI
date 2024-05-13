@@ -47,11 +47,11 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
   Widget build(BuildContext context) {
     return StyledAppPageView(
       title: loc(context).macAddressClone,
-      saveAction: SaveAction(
-        enabled: _isValid &&
+      bottomBar: PageBottomBar(
+        isPositiveEnabled: _isValid &&
             ((_isEnabled != state.macClone) ||
                 (_valueController.text != state.macCloneAddress)),
-        onSave: () async {
+        onPositiveTap: () async {
           setState(() {
             _isLoading = true;
           });

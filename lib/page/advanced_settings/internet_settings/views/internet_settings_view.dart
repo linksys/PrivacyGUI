@@ -2,9 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
+import 'package:linksys_app/page/advanced_settings/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/card/card.dart';
-import 'package:linksys_widgets/widgets/card/setting_card.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -123,31 +122,5 @@ class _InternetSettingsContentViewState
               ),
             ),
           );
-  }
-}
-
-class InternetSettingCard extends StatelessWidget {
-  final String title;
-  final String? description;
-  final bool showBorder;
-  final VoidCallback? onTap;
-
-  const InternetSettingCard({
-    Key? key,
-    required this.title,
-    this.description,
-    this.showBorder = true,
-    this.onTap,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return AppSettingCard(
-      title: title,
-      description: description,
-      showBorder: showBorder,
-      trailing: const Icon(LinksysIcons.chevronRight),
-      onTap: onTap,
-    );
   }
 }

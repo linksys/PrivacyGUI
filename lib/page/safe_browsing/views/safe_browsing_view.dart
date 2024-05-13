@@ -47,9 +47,9 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
         : StyledAppPageView(
             scrollable: true,
             title: loc(context).safeBrowsing,
-            saveAction: SaveAction(
-              enabled: _edited(state.safeBrowsingType),
-              onSave: _showRestartAlert,
+            bottomBar: PageBottomBar(
+              isPositiveEnabled: _edited(state.safeBrowsingType),
+              onPositiveTap: _showRestartAlert,
             ),
             child: AppBasicLayout(
               content: Column(

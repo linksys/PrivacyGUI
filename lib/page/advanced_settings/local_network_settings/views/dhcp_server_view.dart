@@ -71,9 +71,9 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).dhcpServer.capitalizeWords(),
-      saveAction: SaveAction(
-        enabled: _isEdited(),
-        onSave: () {
+      bottomBar: PageBottomBar(
+        isPositiveEnabled: _isEdited(),
+        onPositiveTap: () {
           ref.read(localNetworkSettingProvider.notifier).updateState(state);
           context.pop();
         },

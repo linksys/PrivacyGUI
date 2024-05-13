@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:linksys_app/core/jnap/result/jnap_result.dart';
 import 'package:linksys_app/core/utils/extension.dart';
 import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
+import 'package:linksys_app/page/advanced_settings/widgets/_widgets.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
@@ -102,9 +102,9 @@ class _LocalNetworkSettingsViewState
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).localNetwork,
-      saveAction: SaveAction(
-        enabled: _isEdited(),
-        onSave: _saveSettings,
+      bottomBar: PageBottomBar(
+        isPositiveEnabled: _isEdited(),
+        onPositiveTap: _saveSettings,
       ),
       onBackTap: _isEdited()
           ? () {
@@ -152,6 +152,7 @@ class _LocalNetworkSettingsViewState
             ),
             InternetSettingCard(
               title: loc(context).dhcpReservations,
+              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
               onTap: () {
                 context.pushNamed(RouteNamed.dhcpReservation);
               },

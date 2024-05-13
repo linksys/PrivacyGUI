@@ -76,6 +76,7 @@ class RoutePath {
 
   /// Local Network
   static const dhcpReservation = 'dhcpReservation';
+  static const dhcpReservationEdit = 'dhcpReservationEdit';
   static const dhcpServer = 'dhcpServer';
   static const localNetworkEdit = 'localNetworkEdit';
 
@@ -211,6 +212,7 @@ class RouteNamed {
 
   /// Local Network
   static const dhcpReservation = 'dhcpReservation';
+  static const dhcpReservationEdit = 'dhcpReservationEdit';
   static const dhcpServer = 'dhcpServer';
   static const localNetworkEdit = 'localNetworkEdit';
 

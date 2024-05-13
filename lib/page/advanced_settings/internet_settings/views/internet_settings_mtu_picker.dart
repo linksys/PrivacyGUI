@@ -46,9 +46,9 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
   Widget build(BuildContext context) {
     return StyledAppPageView(
       title: loc(context).connectionType,
-      saveAction: SaveAction(
-        enabled: true,
-        onSave: save,
+      bottomBar: PageBottomBar(
+        isPositiveEnabled: true,
+        onPositiveTap: save,
       ),
       child: AppBasicLayout(
         content: Column(

@@ -51,9 +51,9 @@ class _LocalNetworkEditViewState extends ConsumerState<LocalNetworkEditView> {
     return StyledAppPageView(
       scrollable: true,
       title: getTitle(_viewType),
-      saveAction: SaveAction(
-        enabled: _enableButton,
-        onSave: _onSave,
+      bottomBar: PageBottomBar(
+        isPositiveEnabled: _enableButton,
+        onPositiveTap: _onSave,
       ),
       child: AppBasicLayout(
         content: _content(_viewType),

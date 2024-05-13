@@ -139,7 +139,6 @@
   "app_title": "Linksys PrivacyGUI",
   "arizona": "Arizona",
   "armenia": "Armenia",
-  "assign_ip_address": "Assign IP address",
   "atlantic_time_canada_greenland_atlantic_islands": "Atlantic Time (Canada, Greenland, Atlantic Islands)",
   "australia": "Australia",
   "auto": "Auto",
@@ -470,7 +469,6 @@
   "release_ip_description": "To release and renew the WAN IP address, connect to {ssid}.",
   "remote_access": "Remote access",
   "reservations_added": "Reservations added",
-  "reserved_addresses": "Reserved addresses",
   "restart": "Restart",
   "restart_modem_card_description": "Some ISPs require a fresh start to connect a new router",
   "restart_modem_card_title": "Restart your modem",
@@ -966,6 +964,15 @@
   "endPort": "End port",
   "triggeredRange": "Triggered range",
   "forwardedRange": "Forwarded range",
-  "ipv6PortServices": "IPv6 port services"
-
+  "ipv6PortServices": "IPv6 port services",
+  "dhcpReservationDescption": "Use DHCP reservations to make a device use the same IP address",
+  "selectFromMyDHCPList": "Select from my DHCP list",
+  "manuallyAddReservation": "Manually add reservation",
+  "reservedAddresses": "Reserved addresses",
+  "youHaveNoDHCPReservations": "You have no DHCP reservations",
+  "editDHCPReservation": "Edit DHCP Reservation",
+  "addDHCPReservation": "Add DHCP Reservation",
+  "assignIpAddress": "Assign IP Address",
+  "deleteReservation": "Delete reservation?",
+  "thisActionCannotBeUndone": "This action cannot be undone."
 }

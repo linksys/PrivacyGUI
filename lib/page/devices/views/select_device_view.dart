@@ -23,12 +23,14 @@ enum DisplaySubType {
   mac,
   ipv4,
   ipv6,
+  ipv4AndMac,
   ;
 
   static DisplaySubType resolve(String? value) => switch (value) {
         'mac' => DisplaySubType.mac,
         'ipv4' => DisplaySubType.ipv4,
         'ipv6' => DisplaySubType.ipv6,
+        'ipv4AndMac' => DisplaySubType.ipv4AndMac,
         _ => DisplaySubType.none,
       };
 }
@@ -112,7 +114,7 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
             ],
             itemBuilder: (item) {
               final value = _subMessage(item);
-              final selectable = value?.isNotEmpty ?? false;
+              final selectable = _selectable(item);
               return Opacity(
                 opacity: _selectMode == SelectMode.multiple
                     ? 1
@@ -144,7 +146,11 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
                   description:
                       selectable ? AppText.bodyMedium(value ?? '') : null,
                   onTap: _selectMode == SelectMode.multiple
-                      ? null
+                      ? selectable
+                          ? () {
+                              onChecked(item);
+                            }
+                          : null
                       : selectable
                           ? () {
                               context.pop([item]);
@@ -172,5 +178,16 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
         DisplaySubType.mac => item.macAddress,
         DisplaySubType.ipv4 => item.ipv4Address,
         DisplaySubType.ipv6 => item.ipv6Address,
+        DisplaySubType.ipv4AndMac =>
+          'IP: ${item.ipv4Address}\nMAC: ${item.macAddress}',
+      };
+
+  bool _selectable(DeviceListItem item) => switch (_subType) {
+        DisplaySubType.none => false,
+        DisplaySubType.mac => item.macAddress.isNotEmpty,
+        DisplaySubType.ipv4 => item.ipv4Address.isNotEmpty,
+        DisplaySubType.ipv6 => item.ipv6Address.isNotEmpty,
+        DisplaySubType.ipv4AndMac =>
+          item.ipv4Address.isNotEmpty && item.macAddress.isNotEmpty,
       };
 }

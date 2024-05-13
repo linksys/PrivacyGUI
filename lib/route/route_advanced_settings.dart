@@ -53,6 +53,13 @@ final advancedSettings = [
         ),
       ),
       LinksysRoute(
+        name: RouteNamed.dhcpReservationEdit,
+        path: RoutePath.dhcpReservationEdit,
+        builder: (context, state) => DHCPReservationsEditView(
+          args: state.extra as Map<String, dynamic>? ?? {},
+        ),
+      ),
+      LinksysRoute(
         name: RouteNamed.dhcpServer,
         path: RoutePath.dhcpServer,
         builder: (context, state) => DHCPServerView(

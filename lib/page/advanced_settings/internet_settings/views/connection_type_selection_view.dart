@@ -6,7 +6,6 @@ import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
 import 'package:linksys_app/util/string_mapping.dart';
 import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
 import 'package:linksys_widgets/widgets/card/setting_card.dart';
 import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
 

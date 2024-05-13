@@ -7,6 +7,7 @@ import 'package:linksys_app/localization/localization_hook.dart';
 import 'package:linksys_app/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:linksys_app/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:linksys_app/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
+import 'package:linksys_app/page/advanced_settings/widgets/_widgets.dart';
 import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
 import 'package:linksys_app/page/components/styled/styled_page_view.dart';
 import 'package:linksys_app/page/components/views/arguments_view.dart';
@@ -222,9 +223,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
     return StyledAppPageView(
       scrollable: true,
       title: title,
-      saveAction: SaveAction(
-        enabled: _isEdited(),
-        onSave: _showRestartAlert,
+      bottomBar: PageBottomBar(
+        isPositiveEnabled: _isEdited(),
+        onPositiveTap: _showRestartAlert,
       ),
       onBackTap: _isEdited()
           ? () {

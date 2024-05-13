@@ -24,11 +24,12 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
 
   LocalNetworkSettingsState currentSettings() => state.copyWith();
 
-  Future<LocalNetworkSettingsState> fetch() async {
+  Future<LocalNetworkSettingsState> fetch({bool fetchRemote = false}) async {
     final repo = ref.read(routerRepositoryProvider);
     final lanSettings = await repo
         .send(
           JNAPAction.getLANSettings,
+          fetchRemote: fetchRemote,
           auth: true,
         )
         .then((value) => RouterLANSettings.fromMap(value.output));
@@ -48,7 +49,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       maxUserAllowed,
     );
 
-    state = state.copyWith(
+    state = LocalNetworkSettingsState.init().copyWith(
       hostName: lanSettings.hostName,
       ipAddress: lanSettings.ipAddress,
       subnetMask: subnetMaskString,
@@ -76,7 +77,8 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   Future<void> saveSettings(LocalNetworkSettingsState settings) {
     final newSettings = SetRouterLANSettings(
       ipAddress: settings.ipAddress,
-      networkPrefixLength: NetworkUtils.subnetMaskToPrefixLength(settings.subnetMask),
+      networkPrefixLength:
+          NetworkUtils.subnetMaskToPrefixLength(settings.subnetMask),
       hostName: settings.hostName,
       isDHCPEnabled: settings.isDHCPEnabled,
       dhcpSettings: DHCPSettings(
@@ -97,28 +99,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       auth: true,
       data: newSettings.toMap()..removeWhere((key, value) => value == null),
     )
-        .then((result) {
+        .then((result) async {
       // Update the state
-      state = state.copyWith(
-        hostName: settings.hostName,
-        ipAddress: settings.ipAddress,
-        subnetMask: settings.subnetMask,
-        isDHCPEnabled: settings.isDHCPEnabled,
-        firstIPAddress: settings.firstIPAddress,
-        lastIPAddress: settings.lastIPAddress,
-        maxUserLimit: settings.maxUserLimit,
-        maxUserAllowed: settings.maxUserAllowed,
-        clientLeaseTime: settings.clientLeaseTime,
-        minAllowDHCPLeaseMinutes: settings.minAllowDHCPLeaseMinutes,
-        maxAllowDHCPLeaseMinutes: settings.maxAllowDHCPLeaseMinutes,
-        minNetworkPrefixLength: settings.minNetworkPrefixLength,
-        maxNetworkPrefixLength: settings.maxNetworkPrefixLength,
-        dns1: settings.dns1,
-        dns2: settings.dns2,
-        dns3: settings.dns3,
-        wins: settings.wins,
-        dhcpReservationList: settings.dhcpReservationList,
-      );
+      await fetch(fetchRemote: true);
     });
   }
 
