@@ -109,6 +109,46 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     state = state.copyWith(hostName: hostName);
   }
 
+  void updateDHCPReservationList(
+      List<DHCPReservation> addedDHCPReservationList) {
+    final filteredList = addedDHCPReservationList
+        .where((element) => !isReservationOverlap(item: element));
+    final List<DHCPReservation> newList = [
+      ...state.dhcpReservationList,
+      ...filteredList
+    ];
+    state = state.copyWith(dhcpReservationList: newList);
+  }
+
+  bool updateDHCPReservationOfIndex(DHCPReservation item, int index) {
+    List<DHCPReservation> newList = List.from(state.dhcpReservationList);
+    bool succeed = false;
+    if (item.ipAddress == 'DELETE') {
+      newList.remove(item);
+      succeed = true;
+    } else if (!isReservationOverlap(item: item, index: index)) {
+      newList[index] = item;
+      succeed = true;
+    }
+    if (succeed) {
+      state = state.copyWith(dhcpReservationList: newList);
+    }
+    return succeed;
+  }
+
+  bool isReservationOverlap({required DHCPReservation item, int? index}) {
+    final overlap = state.dhcpReservationList.where((element) {
+      // Not compare with self if on editing
+      if (index != null &&
+          state.dhcpReservationList.indexOf(element) == index) {
+        return false;
+      }
+      return element.ipAddress == item.ipAddress ||
+          element.macAddress == item.macAddress;
+    }).toList();
+    return overlap.isNotEmpty;
+  }
+
   void updateState(LocalNetworkSettingsState newState) {
     state = newState.copyWith();
   }
