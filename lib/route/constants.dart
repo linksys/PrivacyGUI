@@ -73,7 +73,6 @@ class RoutePath {
   static const dhcpReservation = 'dhcpReservation';
   static const dhcpReservationEdit = 'dhcpReservationEdit';
   static const dhcpServer = 'dhcpServer';
-  static const localNetworkEdit = 'localNetworkEdit';
 
   /// mac filtering
   static const macFilteringInput = 'macFilteringInput';
@@ -204,7 +203,6 @@ class RouteNamed {
   static const dhcpReservation = 'dhcpReservation';
   static const dhcpReservationEdit = 'dhcpReservationEdit';
   static const dhcpServer = 'dhcpServer';
-  static const localNetworkEdit = 'localNetworkEdit';
 
   /// mac filtering
   static const macFilteringInput = 'macFilteringInput';

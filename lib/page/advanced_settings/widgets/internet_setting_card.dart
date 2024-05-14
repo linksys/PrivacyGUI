@@ -5,6 +5,7 @@ import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 class InternetSettingCard extends StatelessWidget {
   final String title;
   final String? description;
+  final Widget? trailing;
   final bool showBorder;
   final EdgeInsets? padding;
   final VoidCallback? onTap;
@@ -13,6 +14,7 @@ class InternetSettingCard extends StatelessWidget {
     Key? key,
     required this.title,
     this.description,
+    this.trailing,
     this.showBorder = true,
     this.padding,
     this.onTap,
@@ -25,7 +27,7 @@ class InternetSettingCard extends StatelessWidget {
       description: description,
       showBorder: showBorder,
       padding: padding,
-      trailing: const Icon(LinksysIcons.chevronRight),
+      trailing: trailing ?? const Icon(LinksysIcons.chevronRight),
       onTap: onTap,
     );
   }

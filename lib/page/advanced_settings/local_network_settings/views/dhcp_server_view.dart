@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -71,6 +72,14 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).dhcpServer.capitalizeWords(),
+      onBackTap: _isEdited()
+          ? () async {
+              final goBack = await _showUnsavedAlert();
+              if (goBack == true) {
+                context.pop();
+              }
+            }
+          : null,
       bottomBar: PageBottomBar(
         isPositiveEnabled: _isEdited(),
         onPositiveTap: () {
@@ -339,6 +348,30 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
                 state = result.$2;
               });
             }
+          },
+        ),
+      ],
+    );
+  }
+
+  Future<bool?> _showUnsavedAlert() {
+    return showMessageAppDialog<bool>(
+      context,
+      title: loc(context).unsavedChangesTitle,
+      message: loc(context).unsavedChangesDesc,
+      actions: [
+        AppTextButton(
+          loc(context).goBack,
+          color: Theme.of(context).colorScheme.onSurface,
+          onTap: () {
+            context.pop();
+          },
+        ),
+        AppTextButton(
+          loc(context).discardChanges,
+          color: Theme.of(context).colorScheme.error,
+          onTap: () {
+            context.pop(true);
           },
         ),
       ],

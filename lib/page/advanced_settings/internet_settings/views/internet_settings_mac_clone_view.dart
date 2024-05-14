@@ -45,31 +45,31 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
-      title: loc(context).macAddressClone,
-      bottomBar: PageBottomBar(
-        isPositiveEnabled: _isValid &&
-            ((_isEnabled != state.macClone) ||
-                (_valueController.text != state.macCloneAddress)),
-        onPositiveTap: () async {
-          setState(() {
-            _isLoading = true;
-          });
-          FocusManager.instance.primaryFocus?.unfocus();
-          await ref
-              .read(internetSettingsProvider.notifier)
-              .setMacAddressClone(_isEnabled, _valueController.text)
-              .whenComplete(() {
-            setState(() {
-              _isLoading = false;
-            });
-            context.pop();
-          });
-        },
-      ),
-      child: _isLoading
-          ? const AppFullScreenSpinner()
-          : AppBasicLayout(
+    return _isLoading
+        ? const AppFullScreenSpinner()
+        : StyledAppPageView(
+            title: loc(context).macAddressClone,
+            bottomBar: PageBottomBar(
+              isPositiveEnabled: _isValid &&
+                  ((_isEnabled != state.macClone) ||
+                      (_valueController.text != state.macCloneAddress)),
+              onPositiveTap: () async {
+                setState(() {
+                  _isLoading = true;
+                });
+                FocusManager.instance.primaryFocus?.unfocus();
+                await ref
+                    .read(internetSettingsProvider.notifier)
+                    .setMacAddressClone(_isEnabled, _valueController.text)
+                    .whenComplete(() {
+                  setState(() {
+                    _isLoading = false;
+                  });
+                  context.pop();
+                });
+              },
+            ),
+            child: AppBasicLayout(
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -87,8 +87,8 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
                   ),
                   if (_isEnabled)
                     AppTextField.macAddress(
-                      border: const OutlineInputBorder(),
                       controller: _valueController,
+                      border: const OutlineInputBorder(),
                       onChanged: (value) {
                         setState(() {
                           _isValid = _macValidator.validate(value);
@@ -111,6 +111,6 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
                 ],
               ),
             ),
-    );
+          );
   }
 }
