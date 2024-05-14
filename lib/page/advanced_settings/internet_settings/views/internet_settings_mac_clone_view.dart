@@ -87,6 +87,7 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
                   ),
                   if (_isEnabled)
                     AppTextField.macAddress(
+                      border: const OutlineInputBorder(),
                       controller: _valueController,
                       onChanged: (value) {
                         setState(() {
@@ -99,7 +100,12 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
                     AppTextButton.noPadding(
                       loc(context).cloneCurrentClientMac,
                       onTap: () {
-                        // TODO: Clone current client's MAC
+                        ref
+                            .read(internetSettingsProvider.notifier)
+                            .getMyMACAddress()
+                            .then((value) {
+                          _valueController.text = value ?? '';
+                        });
                       },
                     ),
                 ],
