@@ -11,8 +11,10 @@ import 'package:privacy_gui/core/jnap/models/remote_setting.dart';
 import 'package:privacy_gui/core/jnap/models/wan_port.dart';
 import 'package:privacy_gui/core/jnap/models/wan_settings.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -401,6 +403,19 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         macClone: macAddressCloneSettings.isMACAddressCloneEnabled,
         macCloneAddress: macAddressCloneSettings.macAddress,
       );
+    });
+  }
+
+  Future<String?> getMyMACAddress() {
+    final repo = ref.read(routerRepositoryProvider);
+    return repo
+        .send(JNAPAction.getLocalDevice, auth: true, fetchRemote: true)
+        .then((result) {
+      final deviceID = result.output['deviceID'];
+      return ref
+          .read(deviceManagerProvider)
+          .deviceList
+          .firstWhereOrNull((device) => device.deviceID == deviceID)?.getMacAddress();
     });
   }
 }
