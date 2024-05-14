@@ -1,4 +1,4 @@
-import 'package:linksys_app/core/utils/storage.dart';
+import 'package:privacy_gui/core/utils/storage.dart';
 import 'package:share_plus/share_plus.dart';
 
 Future<ShareResult?> exportFile(

@@ -4,12 +4,12 @@ import 'dart:math' as math;
 
 import 'package:collection/collection.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:linksys_app/core/bluetooth/exceptions.dart';
-import 'package:linksys_app/core/jnap/command/base_command.dart';
-import 'package:linksys_app/core/jnap/command/bt_base_command.dart';
-import 'package:linksys_app/core/jnap/jnap_command_executor_mixin.dart';
-import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/core/utils/logger.dart';
+import 'package:privacy_gui/core/bluetooth/exceptions.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/command/bt_base_command.dart';
+import 'package:privacy_gui/core/jnap/jnap_command_executor_mixin.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 part 'bluetooth_command_wrap.dart';
 

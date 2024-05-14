@@ -1,7 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
-import 'package:linksys_app/core/jnap/models/firmware_update_status.dart';
+import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
 
 class NodesFirmwareUpdateStatus extends FirmwareUpdateStatus {
   final String deviceUUID;

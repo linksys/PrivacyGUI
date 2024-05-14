@@ -1,4 +1,4 @@
-import 'package:linksys_app/utils.dart';
+import 'package:privacy_gui/utils.dart';
 
 abstract class ValidationRule {
   String get name => runtimeType.toString();

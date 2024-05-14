@@ -2,17 +2,17 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/models/health_check_result.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/health_check/providers/health_check_provider.dart';
-import 'package:linksys_app/page/health_check/providers/health_check_state.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/animation/breath_dot.dart';
-import 'package:linksys_widgets/widgets/container/animated_meter.dart';
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
+import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/animation/breath_dot.dart';
+import 'package:privacygui_widgets/widgets/container/animated_meter.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'speed_test_button.dart';
 
@@ -157,7 +157,11 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppText.labelMedium(step == 'latency' ? '--' : isDownload ? 'Download' : 'Upload'),
+            AppText.labelMedium(step == 'latency'
+                ? '--'
+                : isDownload
+                    ? 'Download'
+                    : 'Upload'),
             AppText.titleLarge((value).toStringAsFixed(2)),
             AppText.bodySmall('Mbps')
           ],

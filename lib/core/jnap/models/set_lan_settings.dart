@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:linksys_app/core/jnap/models/lan_settings.dart';
+import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 
 // {
 //   "ipAddress": "192.0.2.1",

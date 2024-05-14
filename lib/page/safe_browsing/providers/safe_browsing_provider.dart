@@ -1,16 +1,16 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/command/base_command.dart';
-import 'package:linksys_app/core/jnap/models/device_info.dart';
-import 'package:linksys_app/core/jnap/models/lan_settings.dart';
-import 'package:linksys_app/core/jnap/models/set_lan_settings.dart';
-import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
-import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/core/utils/extension.dart';
-import 'package:linksys_app/page/safe_browsing/providers/safe_browsing_state.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/models/device_info.dart';
+import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
+import 'package:privacy_gui/core/jnap/models/set_lan_settings.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/page/safe_browsing/providers/safe_browsing_state.dart';
 
 final safeBrowsingProvider =
     NotifierProvider<SafeBrowsingNotifier, SafeBrowsingState>(
@@ -144,7 +144,8 @@ class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {
         if (compatibilityItems.isEmpty) return false;
         final compatibleFW = compatibilityItems.first.compatibleFW;
         if (compatibleFW != null) {
-          if (deviceInfo.firmwareVersion.compareToVersion(compatibleFW.min) >= 0) {
+          if (deviceInfo.firmwareVersion.compareToVersion(compatibleFW.min) >=
+              0) {
             final max = compatibleFW.max;
             if (max != null) {
               if (deviceInfo.firmwareVersion.compareToVersion(max) <= 0) {

@@ -1,12 +1,12 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
-import 'package:linksys_app/core/utils/devices.dart';
-import 'package:linksys_app/core/utils/icon_rules.dart';
-import 'package:linksys_app/page/devices/_devices.dart';
-import 'package:linksys_app/page/devices/extensions/icon_device_category_ext.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
+import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/page/devices/_devices.dart';
+import 'package:privacy_gui/page/devices/extensions/icon_device_category_ext.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 final offlineDeviceListProvider = Provider((ref) {
   final deviceListState = ref.watch(deviceListProvider);

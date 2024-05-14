@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
-import 'package:linksys_app/page/pnp/model/pnp_step.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/radios/radio_list.dart';
+import 'package:privacy_gui/page/pnp/data/pnp_provider.dart';
+import 'package:privacy_gui/page/pnp/model/pnp_step.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
 class SafeBrowsingStep extends PnpStep {
   SafeBrowsingStep({required super.index});

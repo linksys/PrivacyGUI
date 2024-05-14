@@ -1,14 +1,14 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/models/firmware_update_status.dart';
-import 'package:linksys_app/core/jnap/models/firmware_update_status_nodes.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
-import 'package:linksys_app/core/utils/devices.dart';
-import 'package:linksys_app/core/utils/icon_rules.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
+import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
+import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacygui_widgets/hook/icon_hooks.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class FirmwareUpdateTableView extends ConsumerStatefulWidget {
   final List<(LinksysDevice, FirmwareUpdateStatus)> nodeStatusList;

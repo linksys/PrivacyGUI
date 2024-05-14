@@ -1,8 +1,7 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_app/core/cloud/model/cloud_communication_method.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_communication_method.dart';
 
 enum OtpStep { init, chooseOtpMethod, inputOtp, addPhone, finish }
-
 
 class OtpState extends Equatable {
   const OtpState({

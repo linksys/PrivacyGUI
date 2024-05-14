@@ -4,13 +4,13 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:linksys_app/firebase/notification_helper.dart';
-import 'package:linksys_app/firebase/notification_provider.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/buttons/popup_button.dart';
-import 'package:linksys_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:privacy_gui/firebase/notification_helper.dart';
+import 'package:privacy_gui/firebase/notification_provider.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/buttons/popup_button.dart';
+import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
 
 class NotificationPopupWidget extends ConsumerStatefulWidget {
   const NotificationPopupWidget({super.key});

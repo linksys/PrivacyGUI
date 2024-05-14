@@ -1,5 +1,5 @@
 import 'package:collection/collection.dart';
-import 'package:linksys_app/core/jnap/models/device.dart';
+import 'package:privacy_gui/core/jnap/models/device.dart';
 
 extension DeviceUtil on RawDevice {
   String getDeviceLocation() {

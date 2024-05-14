@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/styled/general_settings_widget/language_tile.dart';
-import 'package:linksys_app/page/components/styled/general_settings_widget/theme_tile.dart';
-import 'package:linksys_app/providers/app_settings/app_settings_provider.dart';
-import 'package:linksys_app/providers/auth/_auth.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/buttons/popup_button.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/styled/general_settings_widget/language_tile.dart';
+import 'package:privacy_gui/page/components/styled/general_settings_widget/theme_tile.dart';
+import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
+import 'package:privacy_gui/providers/auth/_auth.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/buttons/popup_button.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:linksys_app/util/url_helper/url_helper.dart'
-    if (dart.library.io) 'package:linksys_app/util/url_helper/url_helper_mobile.dart'
-    if (dart.library.html) 'package:linksys_app/util/url_helper/url_helper_web.dart';
+import 'package:privacy_gui/util/url_helper/url_helper.dart'
+    if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
+    if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
 
 class GeneralSettingsWidget extends ConsumerStatefulWidget {
   const GeneralSettingsWidget({super.key});

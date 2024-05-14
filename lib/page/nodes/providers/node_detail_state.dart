@@ -4,9 +4,9 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
-import 'package:linksys_app/core/jnap/models/node_light_settings.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 
 enum BlinkingStatus {
   blinkNode('Blink Node'),

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/advanced_settings/internet_settings/providers/_providers.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_app/utils.dart';
-import 'package:linksys_widgets/theme/const/spacing.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/utils.dart';
+import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class PnpStaticIpView extends ConsumerStatefulWidget {
   const PnpStaticIpView({

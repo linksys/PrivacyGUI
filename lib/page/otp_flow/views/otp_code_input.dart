@@ -4,19 +4,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/core/cloud/model/cloud_session_model.dart';
-import 'package:linksys_app/core/cloud/model/error_response.dart';
-import 'package:linksys_app/core/cloud/model/cloud_communication_method.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/util/error_code_handler.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
-import 'package:sms_receiver_plugin/sms_receiver_plugin.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
+import 'package:privacy_gui/core/cloud/model/error_response.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_communication_method.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/util/error_code_handler.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 import '../providers/_providers.dart';
 
@@ -37,23 +36,23 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
   bool _rememberMe = false;
   SessionToken? _sessionToken; // for mfa login
   bool isAdd = false;
-  _startListenOtp() async {
-    if (Platform.isAndroid) {
-      _subscription = SmsReceiverPlugin().smsReceiverStream.listen((message) {
-        logger.d('receive message: $message');
-        RegExp regex = RegExp(r"(\d{6})");
-        final code = regex.allMatches(message).first.group(0);
-        logger.d('receive code: $code');
-        _otpController.text = code ?? '';
-      });
-    }
-  }
+  // _startListenOtp() async {
+  //   if (Platform.isAndroid) {
+  //     _subscription = SmsReceiverPlugin().smsReceiverStream.listen((message) {
+  //       logger.d('receive message: $message');
+  //       RegExp regex = RegExp(r"(\d{6})");
+  //       final code = regex.allMatches(message).first.group(0);
+  //       logger.d('receive code: $code');
+  //       _otpController.text = code ?? '';
+  //     });
+  //   }
+  // }
 
   @override
   initState() {
     super.initState();
     _otpController = TextEditingController();
-    _startListenOtp();
+    // _startListenOtp();
     final state = ref.read(otpProvider);
     _onInit(state);
     isAdd = widget.args['function'] == 'add';
@@ -92,8 +91,8 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
                   CommunicationMethodType.sms.name.toUpperCase()
               ? getAppLocalizations(context)
                   .otpEnterCodeSmsTitle(state.selectedMethod?.target ?? '')
-              : getAppLocalizations(context).otpEnterCodeEmailTitle(
-                  state.selectedMethod?.target ?? ''),
+              : getAppLocalizations(context)
+                  .otpEnterCodeEmailTitle(state.selectedMethod?.target ?? ''),
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,8 +120,8 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
                 },
               ),
             const AppGap.regular(),
-            AppTextButton.noPadding(
-                getAppLocalizations(context).resendCode, onTap: () {
+            AppTextButton.noPadding(getAppLocalizations(context).resendCode,
+                onTap: () {
               _setLoading(true);
               _onSend(state.selectedMethod!, state.token)
                   .then((_) => _showCodeResentHint())

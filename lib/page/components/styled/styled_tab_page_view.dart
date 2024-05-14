@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 
-import 'package:linksys_widgets/widgets/page/base_page_view.dart';
-import 'package:linksys_widgets/widgets/page/layout/tab_layout.dart';
+import 'package:privacygui_widgets/widgets/page/base_page_view.dart';
+import 'package:privacygui_widgets/widgets/page/layout/tab_layout.dart';
 
 import 'consts.dart';
 

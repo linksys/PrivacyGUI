@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-@Deprecated('Use #package:linksys_widgets/panel/AppSection instead')
+@Deprecated('Use #package:privacygui_widgets/panel/AppSection instead')
 class SectionTile extends ConsumerWidget {
   const SectionTile({
     Key? key,

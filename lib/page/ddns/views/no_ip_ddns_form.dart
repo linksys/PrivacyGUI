@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_app/core/jnap/models/no_ip_settings.dart';
-import 'package:linksys_widgets/widgets/input_field/app_text_field.dart';
+import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
+import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 
 class NoIPDNSForm extends StatefulWidget {
   final NoIPSettings? initialValue;

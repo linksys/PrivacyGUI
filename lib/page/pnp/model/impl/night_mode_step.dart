@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/pnp/model/pnp_step.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/pnp/model/pnp_step.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class NightModeStep extends PnpStep {
   bool _isEnabled = true;

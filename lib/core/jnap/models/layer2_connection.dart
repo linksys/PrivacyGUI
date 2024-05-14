@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:linksys_app/core/jnap/models/wirless_connection.dart';
+import 'package:privacy_gui/core/jnap/models/wirless_connection.dart';
 
 class Layer2Connection extends Equatable {
   final String macAddress;

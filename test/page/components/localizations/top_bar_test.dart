@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/providers/app_settings/app_settings.dart';
-import 'package:linksys_app/providers/app_settings/app_settings_provider.dart';
-import 'package:linksys_app/providers/auth/_auth.dart';
-import 'package:linksys_app/providers/auth/auth_provider.dart';
-import 'package:linksys_app/route/route_model.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
+import 'package:privacy_gui/providers/app_settings/app_settings.dart';
+import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
+import 'package:privacy_gui/providers/auth/_auth.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 import '../../../common/mock_firebase_messaging.dart';
 import '../../../common/test_responsive_widget.dart';
@@ -114,7 +114,7 @@ void main() async {
     },
   );
 
-    testLocalizations(
+  testLocalizations(
     'Test top bar with popup with system theme when not log in yet',
     (tester, locale) async {
       final provider = ProviderContainer();

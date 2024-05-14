@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 
 String getTimeZoneRegionName(BuildContext context, timezoneId) {
   switch (timezoneId) {
@@ -34,8 +34,7 @@ String getTimeZoneRegionName(BuildContext context, timezoneId) {
     case 'ICT-7-NO-DST':
       return getAppLocalizations(context).timezoneThailandRussia;
     case 'HKT-8-NO-DST':
-      return getAppLocalizations(context)
-          .timezoneChinaHongKongAustraliaWestern;
+      return getAppLocalizations(context).timezoneChinaHongKongAustraliaWestern;
     case 'WST11-NO-DST':
       return getAppLocalizations(context).timezoneMidwayIslandSamoa;
     case 'FJT-12-NO-DST':
@@ -57,8 +56,7 @@ String getTimeZoneRegionName(BuildContext context, timezoneId) {
     case 'ART3-NO-DST':
       return getAppLocalizations(context).timezoneGuyana;
     case 'IST-05:30-NO-DST':
-      return getAppLocalizations(context)
-          .timezoneMumbaiKolkataChennaiNewDelhi;
+      return getAppLocalizations(context).timezoneMumbaiKolkataChennaiNewDelhi;
     case 'VET4-NO-DST':
       return getAppLocalizations(context).timezoneBoliviaVenezuela;
     case 'GMT0':

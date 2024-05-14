@@ -4,12 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg_test/flutter_svg_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/page/components/styled/top_bar.dart';
-import 'package:linksys_app/providers/auth/_auth.dart';
-import 'package:linksys_app/providers/auth/auth_provider.dart';
-import 'package:linksys_app/route/route_model.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/theme/custom_theme.dart';
+import 'package:privacy_gui/page/components/styled/top_bar.dart';
+import 'package:privacy_gui/providers/auth/_auth.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/custom_theme.dart';
 
 import '../../../common/config.dart';
 import '../../../common/mock_firebase_messaging.dart';

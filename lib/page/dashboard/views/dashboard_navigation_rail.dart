@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:linksys_widgets/theme/custom_theme.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/theme/custom_theme.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class DashboardNavigationRail extends ConsumerStatefulWidget {
   final List<NavigationRailDestination> items;

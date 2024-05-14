@@ -95,7 +95,7 @@
         },
         {
             "name": "Linksys widget storybook",
-            "cwd": "packages/linksys_widgets/example",
+            "cwd": "packages/privacygui_widgets/example",
             "request": "launch",
             "type": "dart",
             "program": "lib/storybook.dart"

@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/progress_bar/spinner.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/pnp/data/pnp_provider.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 enum StepViewStatus {
   data,

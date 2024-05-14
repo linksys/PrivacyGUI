@@ -1,4 +1,4 @@
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 
 const noCacheJNAPRegex = '(?:/Set)';
 

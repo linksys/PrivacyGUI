@@ -1,4 +1,4 @@
-import 'package:linksys_app/page/topology/_topology.dart';
+import 'package:privacy_gui/page/topology/_topology.dart';
 
 final _onlineRoot = OnlineTopologyNode(
   data: const TopologyModel(isOnline: true, location: 'Internet'),

@@ -4,14 +4,13 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
-import 'package:linksys_widgets/theme/material/theme_data.dart';
-
+import 'package:privacygui_widgets/theme/material/theme_data.dart';
 
 final mockLightThemeData =
     linksysLightThemeData.copyWith(textTheme: mockLinksysDarkTextTheme);
 final mockDarkThemeData =
     linksysDarkThemeData.copyWith(textTheme: mockLinksysLightTextTheme);
-    
+
 ///
 /// This is used to help to generate snapshots with localizations
 /// The font is different than Application using.

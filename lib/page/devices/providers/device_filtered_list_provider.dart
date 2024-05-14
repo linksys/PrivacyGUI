@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
-import 'package:linksys_app/page/devices/providers/device_filtered_list_state.dart';
-import 'package:linksys_app/page/devices/providers/device_list_provider.dart';
-import 'package:linksys_app/util/extensions.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/page/devices/providers/device_filtered_list_state.dart';
+import 'package:privacy_gui/page/devices/providers/device_list_provider.dart';
+import 'package:privacy_gui/util/extensions.dart';
 
 final filteredDeviceListProvider = Provider((ref) {
   final config = ref.watch(deviceFilterConfigProvider);

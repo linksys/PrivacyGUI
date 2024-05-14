@@ -6,17 +6,17 @@
 import 'dart:async' as _i7;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
-import 'package:linksys_app/core/jnap/models/firmware_update_status.dart'
+import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart'
     as _i10;
-import 'package:linksys_app/core/jnap/models/node_light_settings.dart' as _i8;
-import 'package:linksys_app/core/jnap/providers/device_manager_state.dart'
+import 'package:privacy_gui/core/jnap/models/node_light_settings.dart' as _i8;
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart'
     as _i6;
-import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart'
+import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart'
     as _i9;
-import 'package:linksys_app/core/jnap/providers/firmware_update_state.dart'
+import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart'
     as _i5;
-import 'package:linksys_app/core/jnap/result/jnap_result.dart' as _i4;
-import 'package:linksys_app/page/nodes/_nodes.dart' as _i3;
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart' as _i4;
+import 'package:privacy_gui/page/nodes/_nodes.dart' as _i3;
 import 'package:mockito/mockito.dart' as _i1;
 
 // ignore_for_file: type=lint
@@ -78,7 +78,8 @@ class _FakeFirmwareUpdateState_3 extends _i1.SmartFake
 /// A class which mocks [NodeDetailNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockNodeDetailNotifier extends _i2.Notifier<_i3.NodeDetailState> with _i1.Mock
+class MockNodeDetailNotifier extends _i2.Notifier<_i3.NodeDetailState>
+    with _i1.Mock
     implements _i3.NodeDetailNotifier {
   @override
   _i2.NotifierProviderRef<_i3.NodeDetailState> get ref => (super.noSuchMethod(
@@ -302,7 +303,8 @@ class MockNodeDetailNotifier extends _i2.Notifier<_i3.NodeDetailState> with _i1.
 /// A class which mocks [FirmwareUpdateNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockFirmwareUpdateNotifier extends _i2.Notifier<_i5.FirmwareUpdateState> with _i1.Mock
+class MockFirmwareUpdateNotifier extends _i2.Notifier<_i5.FirmwareUpdateState>
+    with _i1.Mock
     implements _i9.FirmwareUpdateNotifier {
   @override
   _i2.NotifierProviderRef<_i5.FirmwareUpdateState> get ref =>

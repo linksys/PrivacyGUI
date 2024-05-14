@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/providers/connectivity/connectivity_provider.dart';
-import 'package:linksys_app/util/permission.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/widgets/base/gap.dart';
-import 'package:linksys_widgets/widgets/text/app_text.dart';
+import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
+import 'package:privacy_gui/util/permission.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/base/gap.dart';
+import 'package:privacygui_widgets/widgets/text/app_text.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class NetworkCheckView extends ConsumerStatefulWidget {

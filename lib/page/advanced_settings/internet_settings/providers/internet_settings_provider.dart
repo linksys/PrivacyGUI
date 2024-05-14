@@ -1,19 +1,19 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/constants/pref_key.dart';
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
-import 'package:linksys_app/core/jnap/models/get_port_connection_status.dart';
-import 'package:linksys_app/core/jnap/models/ipv6_automatic_settings.dart';
-import 'package:linksys_app/core/jnap/models/ipv6_settings.dart';
-import 'package:linksys_app/core/jnap/models/mac_address_clone_settings.dart';
-import 'package:linksys_app/core/jnap/models/remote_setting.dart';
-import 'package:linksys_app/core/jnap/models/wan_port.dart';
-import 'package:linksys_app/core/jnap/models/wan_settings.dart';
-import 'package:linksys_app/core/jnap/models/wan_status.dart';
-import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/extensions/_extensions.dart';
+import 'package:privacy_gui/core/jnap/models/get_port_connection_status.dart';
+import 'package:privacy_gui/core/jnap/models/ipv6_automatic_settings.dart';
+import 'package:privacy_gui/core/jnap/models/ipv6_settings.dart';
+import 'package:privacy_gui/core/jnap/models/mac_address_clone_settings.dart';
+import 'package:privacy_gui/core/jnap/models/remote_setting.dart';
+import 'package:privacy_gui/core/jnap/models/wan_port.dart';
+import 'package:privacy_gui/core/jnap/models/wan_settings.dart';
+import 'package:privacy_gui/core/jnap/models/wan_status.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final internetSettingsProvider =

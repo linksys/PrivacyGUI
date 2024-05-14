@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
-import 'package:linksys_app/page/pnp/model/pnp_step.dart';
-import 'package:linksys_app/page/pnp/widgets/wifi_password_widget.dart';
-import 'package:linksys_app/page/pnp/widgets/wifi_ssid_widget.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/pnp/data/pnp_provider.dart';
+import 'package:privacy_gui/page/pnp/model/pnp_step.dart';
+import 'package:privacy_gui/page/pnp/widgets/wifi_password_widget.dart';
+import 'package:privacy_gui/page/pnp/widgets/wifi_ssid_widget.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class GuestWiFiStep extends PnpStep {
   TextEditingController? _ssidEditController;
@@ -22,7 +22,7 @@ class GuestWiFiStep extends PnpStep {
     _passwordEditController = TextEditingController();
 
     final guestWifi = pnp.getDefaultGuestWiFiNameAndPassPhrase();
-    
+
     _ssidEditController?.text = guestWifi.name;
     _passwordEditController?.text = guestWifi.password;
     _check(ref);

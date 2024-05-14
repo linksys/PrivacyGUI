@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/page/components/styled/banner_info.dart';
-import 'package:linksys_app/route/router_provider.dart';
-import 'package:linksys_widgets/widgets/banner/banner_style.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/components/styled/banner_info.dart';
+import 'package:privacy_gui/route/router_provider.dart';
+import 'package:privacygui_widgets/widgets/banner/banner_style.dart';
 
 final bannerProvider =
     NotifierProvider<BannerNotifier, BannerInfo>(() => BannerNotifier());

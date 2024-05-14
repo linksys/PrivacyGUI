@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_app/providers/connectivity/_connectivity.dart';
+import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 
 class ConnectivityState extends Equatable {
   const ConnectivityState(

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/page/dashboard/views/dashboard_shell.dart';
-import 'package:linksys_app/route/route_model.dart';
-import 'package:linksys_widgets/theme/custom_responsive.dart';
+import 'package:privacy_gui/page/dashboard/views/dashboard_shell.dart';
+import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacygui_widgets/theme/custom_responsive.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'testable_widget.dart';

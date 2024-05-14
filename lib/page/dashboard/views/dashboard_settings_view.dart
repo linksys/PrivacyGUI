@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/constants/pref_key.dart';
-import 'package:linksys_app/core/jnap/models/firmware_update_settings.dart';
-import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
-// import 'package:linksys_app/firebase/notification_helper.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/topology/_topology.dart';
-import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
+import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+// import 'package:privacy_gui/firebase/notification_helper.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/topology/_topology.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/panel/general_section.dart';
-import 'package:linksys_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/panel/general_section.dart';
+import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 typedef OnMenuItemClick = void Function(int index, AppSectionItemData item);

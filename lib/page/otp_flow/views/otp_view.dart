@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/core/cloud/model/cloud_communication_method.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/otp_flow/providers/_providers.dart';
-import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
-
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_communication_method.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class OtpFlowView extends ArgumentsConsumerStatefulView {
   const OtpFlowView({

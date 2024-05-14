@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/constants/_constants.dart';
-import 'package:linksys_app/constants/jnap_const.dart';
-import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/command/base_command.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/core/utils/nodes.dart';
-import 'package:linksys_app/page/select_network/models/cloud_network_model.dart';
+import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/constants/jnap_const.dart';
+import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/nodes.dart';
+import 'package:privacy_gui/page/select_network/models/cloud_network_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final selectNetworkProvider =

@@ -1,4 +1,4 @@
-name: linksys_app
+name: privacy_gui
 description: A new Flutter project.
 
 # The following line prevents the package from being accidentally published to
@@ -75,16 +75,8 @@ dependencies:
   collection: ^1.16.0
   in_app_purchase: ^3.0.8
   flutter_secure_storage: ^6.0.0
-  universal_link_plugin:
-    path: plugins/universal_link_plugin
-  connecting_wifi_plugin:
-    path: plugins/connecting_wifi_plugin
-  sms_receiver_plugin:
-    path: plugins/sms_receiver_plugin
-  ios_push_notification_plugin:
-    path: plugins/ios_push_notification_plugin
-  linksys_widgets:
-    path: packages/linksys_widgets
+  privacygui_widgets:
+    path: plugins/widgets
   flutter_slidable: ^2.0.0
   flutter_blue_plus: ^1.4.0
   multicast_dns: ^0.3.2+2

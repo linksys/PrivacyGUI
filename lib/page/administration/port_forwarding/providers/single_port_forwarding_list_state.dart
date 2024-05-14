@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_app/core/jnap/models/single_port_forwarding_rule.dart';
+import 'package:privacy_gui/core/jnap/models/single_port_forwarding_rule.dart';
 
 class SinglePortForwardingListState extends Equatable {
   const SinglePortForwardingListState({

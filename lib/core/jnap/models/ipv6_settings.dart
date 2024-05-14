@@ -2,7 +2,7 @@
 
 import 'package:equatable/equatable.dart';
 
-import 'package:linksys_app/core/jnap/models/ipv6_automatic_settings.dart';
+import 'package:privacy_gui/core/jnap/models/ipv6_automatic_settings.dart';
 
 class GetIPv6Settings extends Equatable {
   final String wanType;

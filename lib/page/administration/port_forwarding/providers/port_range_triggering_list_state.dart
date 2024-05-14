@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_app/core/jnap/models/port_range_triggering_rule.dart';
+import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
 
 class PortRangeTriggeringListState extends Equatable {
   const PortRangeTriggeringListState({

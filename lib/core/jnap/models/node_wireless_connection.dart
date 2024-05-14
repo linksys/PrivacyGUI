@@ -2,7 +2,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
-import 'package:linksys_app/core/jnap/models/layer2_connection.dart';
+import 'package:privacy_gui/core/jnap/models/layer2_connection.dart';
 
 class NodeWirelessConnections extends Equatable {
   final String deviceID;

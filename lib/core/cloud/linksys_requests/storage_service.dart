@@ -1,5 +1,5 @@
 import 'package:http/http.dart';
-import 'package:linksys_app/core/http/linksys_http_client.dart';
+import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:http_parser/http_parser.dart';
 
 import '../../../constants/_constants.dart';
@@ -21,13 +21,13 @@ extension StorageService on LinksysHttpClient {
       'meta',
       meta.codeUnits,
       filename: 'meta.txt',
-      contentType: MediaType('text','plain'),
+      contentType: MediaType('text', 'plain'),
     );
     final logMultipart = MultipartFile.fromBytes(
       'log',
       log.codeUnits,
       filename: 'log.txt',
-      contentType: MediaType('text','plain'),
+      contentType: MediaType('text', 'plain'),
     );
     return await upload(Uri.parse(endpoint), [metaMultipart, logMultipart],
         headers: header);

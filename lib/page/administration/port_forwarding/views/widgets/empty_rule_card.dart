@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_widgets/widgets/card/card.dart';
-import 'package:linksys_widgets/widgets/text/app_text.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
 class EmptyRuleCard extends StatelessWidget {
   const EmptyRuleCard({super.key});

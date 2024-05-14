@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:http/http.dart';
-import 'package:linksys_app/core/http/linksys_http_client.dart';
+import 'package:privacy_gui/core/http/linksys_http_client.dart';
 
 import '../../../constants/_constants.dart';
 

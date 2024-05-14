@@ -5,8 +5,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
-import 'package:linksys_app/core/utils/storage.dart';
-import 'package:linksys_app/utils.dart';
+import 'package:privacy_gui/core/utils/storage.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 final logger = Logger(

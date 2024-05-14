@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/cloud/model/cloud_account.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/account/providers/account_provider.dart';
-import 'package:linksys_app/page/account/providers/account_state.dart';
-import 'package:linksys_app/providers/auth/_auth.dart';
-import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_widgets/theme/const/spacing.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/panel/general_section.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_account.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/account/providers/account_provider.dart';
+import 'package:privacy_gui/page/account/providers/account_state.dart';
+import 'package:privacy_gui/providers/auth/_auth.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/panel/general_section.dart';
 
 class AccountView extends ConsumerStatefulWidget {
   const AccountView({super.key});
@@ -86,7 +86,6 @@ class _AccountViewState extends ConsumerState<AccountView> {
   }
 
   Widget _securitySection(AccountState state) {
-
     return AppSection(
       header: const AppText.titleLarge(
         'Security',

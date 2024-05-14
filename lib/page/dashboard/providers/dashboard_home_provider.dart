@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:linksys_app/core/jnap/providers/dashboard_manager_state.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
-import 'package:linksys_app/core/utils/icon_rules.dart';
-import 'package:linksys_app/page/dashboard/providers/dashboard_home_state.dart';
-import 'package:linksys_app/utils.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
+import 'package:privacy_gui/utils.dart';
 
 final dashboardHomeProvider =
     NotifierProvider<DashboardHomeNotifier, DashboardHomeState>(

@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:linksys_app/utils.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:test/test.dart';
 
 import 'test_data/const_test_data.dart';
@@ -391,7 +391,8 @@ void main() {
       const endTimeInSecond = 67500; // 6:45 PM
       const expected = '05:00 pm - 06:45 pm';
 
-      final formattedInterval = DateFormatUtils.formatTimeInterval(startTimeInSecond, endTimeInSecond);
+      final formattedInterval = DateFormatUtils.formatTimeInterval(
+          startTimeInSecond, endTimeInSecond);
       expect(formattedInterval, expected);
     });
 
@@ -400,16 +401,20 @@ void main() {
       const endTimeInSecond = 3600; // 1:00 AM
       const expected = '11:59 pm - 01:00 am next day';
 
-      final formattedInterval = DateFormatUtils.formatTimeInterval(startTimeInSecond, endTimeInSecond);
+      final formattedInterval = DateFormatUtils.formatTimeInterval(
+          startTimeInSecond, endTimeInSecond);
       expect(formattedInterval, expected);
     });
 
-    test('formatTimeInterval: formats time interval spanning midnight correctly', () {
+    test(
+        'formatTimeInterval: formats time interval spanning midnight correctly',
+        () {
       const startTimeInSecond = 79200; // 10 PM
       const endTimeInSecond = 10800; // 3 AM
       const expected = '10:00 pm - 03:00 am next day';
 
-      final formattedInterval = DateFormatUtils.formatTimeInterval(startTimeInSecond, endTimeInSecond);
+      final formattedInterval = DateFormatUtils.formatTimeInterval(
+          startTimeInSecond, endTimeInSecond);
       expect(formattedInterval, expected);
     });
 
@@ -418,7 +423,8 @@ void main() {
       const endTimeInSecond = 43200; // 12:00 PM
       const expected = '12:00 pm - 12:00 pm';
 
-      final formattedInterval = DateFormatUtils.formatTimeInterval(startTimeInSecond, endTimeInSecond);
+      final formattedInterval = DateFormatUtils.formatTimeInterval(
+          startTimeInSecond, endTimeInSecond);
       expect(formattedInterval, expected);
     });
 
@@ -492,7 +498,9 @@ void main() {
       expect(formattedBytes, expected);
     });
 
-    test('formatBytes: formats bytes in kilobytes range with specified decimals', () {
+    test(
+        'formatBytes: formats bytes in kilobytes range with specified decimals',
+        () {
       const bytes = 1234;
       const expected = '1.205 Kb';
 
@@ -500,7 +508,9 @@ void main() {
       expect(formattedBytes, expected);
     });
 
-    test('formatBytes: formats bytes in megabytes range with specified decimals', () {
+    test(
+        'formatBytes: formats bytes in megabytes range with specified decimals',
+        () {
       const bytes = 1234567;
       const expected = '1.1774 Mb';
 
@@ -508,7 +518,9 @@ void main() {
       expect(formattedBytes, expected);
     });
 
-    test('formatBytes: formats bytes in gigabytes range with specified decimals', () {
+    test(
+        'formatBytes: formats bytes in gigabytes range with specified decimals',
+        () {
       const bytes = 1234567890;
       const expected = '1.15 Gb';
 
@@ -527,7 +539,8 @@ void main() {
       num bytes = 1125899906842625; // 1 petabyte
       const expected = '1.00 Pb';
 
-      final formattedBytes = NetworkUtils.formatBytes(bytes.toInt(), decimals: 2);
+      final formattedBytes =
+          NetworkUtils.formatBytes(bytes.toInt(), decimals: 2);
       expect(formattedBytes, expected);
     });
 
@@ -566,7 +579,8 @@ void main() {
       expect(NetworkUtils.isValidIpAddress(''), false);
     });
 
-    test('ipToNum: converts valid IPv4 address to numerical representation', () {
+    test('ipToNum: converts valid IPv4 address to numerical representation',
+        () {
       const ipAddress = '192.168.1.1';
       const expected = 3232235777;
 
@@ -596,7 +610,8 @@ void main() {
       }
     });
 
-    test('numToIp: converts valid numerical representation to IPv4 address', () {
+    test('numToIp: converts valid numerical representation to IPv4 address',
+        () {
       const num = 3232235521;
       const expected = '192.168.0.1';
 
@@ -610,12 +625,14 @@ void main() {
       expect(NetworkUtils.numToIp(4294967296), expected);
     });
 
-    test('ipInRange: correctly identifies address within range (inclusive)', () {
+    test('ipInRange: correctly identifies address within range (inclusive)',
+        () {
       const ipAddress = '192.168.1.10';
       const ipAddressMin = '192.168.1.1';
       const ipAddressMax = '192.168.1.15';
 
-      final isIn = NetworkUtils.ipInRange(ipAddress, ipAddressMin, ipAddressMax);
+      final isIn =
+          NetworkUtils.ipInRange(ipAddress, ipAddressMin, ipAddressMax);
       expect(isIn, true);
     });
 
@@ -624,7 +641,8 @@ void main() {
       const ipAddressMin = '192.168.1.1';
       const ipAddressMax = '192.168.1.10';
 
-      final isIn = NetworkUtils.ipInRange(ipAddress, ipAddressMin, ipAddressMax);
+      final isIn =
+          NetworkUtils.ipInRange(ipAddress, ipAddressMin, ipAddressMax);
       expect(isIn, true);
     });
 
@@ -633,7 +651,8 @@ void main() {
       const ipAddressMin = '192.168.1.1';
       const ipAddressMax = '192.168.1.10';
 
-      final isIn = NetworkUtils.ipInRange(ipAddress, ipAddressMin, ipAddressMax);
+      final isIn =
+          NetworkUtils.ipInRange(ipAddress, ipAddressMin, ipAddressMax);
       expect(isIn, true);
     });
 
@@ -642,7 +661,8 @@ void main() {
       const ipAddressMin = '192.168.1.1';
       const ipAddressMax = '192.168.1.10';
 
-      final isIn = NetworkUtils.ipInRange(ipAddress, ipAddressMin, ipAddressMax);
+      final isIn =
+          NetworkUtils.ipInRange(ipAddress, ipAddressMin, ipAddressMax);
       expect(isIn, false);
     });
 
@@ -651,9 +671,15 @@ void main() {
       const ipAddressMin = '192.168.1.1';
       const ipAddressMax = '192.168.1.10';
 
-      expect(() => NetworkUtils.ipInRange(invalidIp, ipAddressMin, ipAddressMax), throwsArgumentError);
-      expect(() => NetworkUtils.ipInRange(ipAddressMin, invalidIp, ipAddressMax), throwsArgumentError);
-      expect(() => NetworkUtils.ipInRange(ipAddressMin, ipAddressMax, invalidIp), throwsArgumentError);
+      expect(
+          () => NetworkUtils.ipInRange(invalidIp, ipAddressMin, ipAddressMax),
+          throwsArgumentError);
+      expect(
+          () => NetworkUtils.ipInRange(ipAddressMin, invalidIp, ipAddressMax),
+          throwsArgumentError);
+      expect(
+          () => NetworkUtils.ipInRange(ipAddressMin, ipAddressMax, invalidIp),
+          throwsArgumentError);
     });
 
     test('ipInRange: handles reversed range (min > max)', () {
@@ -661,7 +687,9 @@ void main() {
       const ipAddressMin = '192.168.1.10';
       const ipAddressMax = '192.168.1.5';
 
-      expect(() => NetworkUtils.ipInRange(ipAddress, ipAddressMin, ipAddressMax), throwsArgumentError);
+      expect(
+          () => NetworkUtils.ipInRange(ipAddress, ipAddressMin, ipAddressMax),
+          throwsArgumentError);
     });
 
     test('isValidSubnetMask: identifies valid subnet masks', () {
@@ -701,41 +729,74 @@ void main() {
     });
 
     test('throws exception for invalid maxNetworkPrefixLength', () {
-      expect(() => NetworkUtils.isValidSubnetMask('255.255.255.0', maxNetworkPrefixLength: -1),
+      expect(
+          () => NetworkUtils.isValidSubnetMask('255.255.255.0',
+              maxNetworkPrefixLength: -1),
           throwsException);
     });
 
-    test('isValidSubnetMask: throws error for invalid minNetworkPrefixLength', () {
-      expect(() => NetworkUtils.isValidSubnetMask('255.255.255.0', minNetworkPrefixLength: 0),
+    test('isValidSubnetMask: throws error for invalid minNetworkPrefixLength',
+        () {
+      expect(
+          () => NetworkUtils.isValidSubnetMask('255.255.255.0',
+              minNetworkPrefixLength: 0),
           throwsException);
-      expect(() => NetworkUtils.isValidSubnetMask('255.255.255.0', minNetworkPrefixLength: 32),
+      expect(
+          () => NetworkUtils.isValidSubnetMask('255.255.255.0',
+              minNetworkPrefixLength: 32),
           throwsException);
     });
 
-    test('isValidSubnetMask: throws error for invalid maxNetworkPrefixLength', () {
-      expect(() => NetworkUtils.isValidSubnetMask('255.255.255.0', maxNetworkPrefixLength: 0),
+    test('isValidSubnetMask: throws error for invalid maxNetworkPrefixLength',
+        () {
+      expect(
+          () => NetworkUtils.isValidSubnetMask('255.255.255.0',
+              maxNetworkPrefixLength: 0),
           throwsException);
-      expect(() => NetworkUtils.isValidSubnetMask('255.255.255.0', maxNetworkPrefixLength: 32),
+      expect(
+          () => NetworkUtils.isValidSubnetMask('255.255.255.0',
+              maxNetworkPrefixLength: 32),
           throwsException);
     });
 
     test('isValidSubnetMask: throws error for invalid min/max combination', () {
-      expect(() => NetworkUtils.isValidSubnetMask('255.255.255.0', minNetworkPrefixLength: 24, maxNetworkPrefixLength: 23),
+      expect(
+          () => NetworkUtils.isValidSubnetMask('255.255.255.0',
+              minNetworkPrefixLength: 24, maxNetworkPrefixLength: 23),
           throwsException);
     });
 
-    test('isValidSubnetMask: handles valid subnet masks within specified range', () {
-      expect(NetworkUtils.isValidSubnetMask('255.255.255.128', minNetworkPrefixLength: 25, maxNetworkPrefixLength: 27), true);
-      expect(NetworkUtils.isValidSubnetMask('255.255.255.0', minNetworkPrefixLength: 24, maxNetworkPrefixLength: 24), true);
-      expect( NetworkUtils.isValidSubnetMask('255.255.255.128', minNetworkPrefixLength: 25, maxNetworkPrefixLength: 30), true);
+    test('isValidSubnetMask: handles valid subnet masks within specified range',
+        () {
+      expect(
+          NetworkUtils.isValidSubnetMask('255.255.255.128',
+              minNetworkPrefixLength: 25, maxNetworkPrefixLength: 27),
+          true);
+      expect(
+          NetworkUtils.isValidSubnetMask('255.255.255.0',
+              minNetworkPrefixLength: 24, maxNetworkPrefixLength: 24),
+          true);
+      expect(
+          NetworkUtils.isValidSubnetMask('255.255.255.128',
+              minNetworkPrefixLength: 25, maxNetworkPrefixLength: 30),
+          true);
     });
 
-    test('isValidSubnetMask: handles invalid subnet masks outside specified range', () {
-      expect(NetworkUtils.isValidSubnetMask('255.255.255.128', minNetworkPrefixLength: 26, maxNetworkPrefixLength: 30), false);
-      expect(NetworkUtils.isValidSubnetMask('255.255.255.0', minNetworkPrefixLength: 25, maxNetworkPrefixLength: 30), false);
+    test(
+        'isValidSubnetMask: handles invalid subnet masks outside specified range',
+        () {
+      expect(
+          NetworkUtils.isValidSubnetMask('255.255.255.128',
+              minNetworkPrefixLength: 26, maxNetworkPrefixLength: 30),
+          false);
+      expect(
+          NetworkUtils.isValidSubnetMask('255.255.255.0',
+              minNetworkPrefixLength: 25, maxNetworkPrefixLength: 30),
+          false);
     });
 
-    test('getIpPrefix: calculates correct prefix for valid IP and subnet mask', () {
+    test('getIpPrefix: calculates correct prefix for valid IP and subnet mask',
+        () {
       const ipAddress = '192.168.1.10';
       const subnetMask = '255.255.255.0';
       const expectedPrefix = '192.168.1.0';
@@ -757,28 +818,32 @@ void main() {
       const invalidIp = 'invalid_ip';
       const subnetMask = '255.255.255.0';
 
-      expect(() => NetworkUtils.getIpPrefix(invalidIp, subnetMask), throwsArgumentError);
+      expect(() => NetworkUtils.getIpPrefix(invalidIp, subnetMask),
+          throwsArgumentError);
     });
 
     test('getIpPrefix: handles invalid subnet mask', () {
       const ipAddress = '192.168.1.10';
       const invalidMask = 'invalid_mask';
 
-      expect(() => NetworkUtils.getIpPrefix(ipAddress, invalidMask), throwsArgumentError);
+      expect(() => NetworkUtils.getIpPrefix(ipAddress, invalidMask),
+          throwsArgumentError);
     });
 
     test('getIpPrefix: handles mismatched IP and subnet mask lengths', () {
       const ipAddress = '192.168.1.10';
       const invalidMask = '255.255'; // Missing last octet
 
-      expect(() => NetworkUtils.getIpPrefix(ipAddress, invalidMask), throwsArgumentError);
+      expect(() => NetworkUtils.getIpPrefix(ipAddress, invalidMask),
+          throwsArgumentError);
     });
 
     test('getIpPrefix: handles non-contiguous subnet mask ones', () {
       const ipAddress = '192.168.1.10';
       const invalidMask = '255.255.255.191'; // Not a contiguous sequence
 
-      expect(() => NetworkUtils.getIpPrefix(ipAddress, invalidMask), throwsArgumentError);
+      expect(() => NetworkUtils.getIpPrefix(ipAddress, invalidMask),
+          throwsArgumentError);
     });
 
     // test('getIpPrefix: handles invalid IP-subnet mask combinations', () {
@@ -788,5 +853,4 @@ void main() {
     //   expect(() => NetworkUtils.getIpPrefix(ipAddress, subnetMask), throwsArgumentError);
     // });
   });
-
 }

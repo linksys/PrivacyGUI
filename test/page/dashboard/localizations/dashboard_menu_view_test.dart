@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:linksys_app/page/dashboard/_dashboard.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
+import 'package:privacy_gui/page/dashboard/_dashboard.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 import '../../../common/config.dart';
 import '../../../common/mock_firebase_messaging.dart';

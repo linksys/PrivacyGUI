@@ -3,23 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/constants/_constants.dart';
-import 'package:linksys_app/constants/default_country_codes.dart';
-import 'package:linksys_app/core/cloud/model/cloud_account.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/core/cloud/model/cloud_communication_method.dart';
-import 'package:linksys_app/core/cloud/model/cloud_phone.dart';
-import 'package:linksys_app/core/cloud/model/region_code.dart';
-import 'package:linksys_app/page/components/layouts/basic_header.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_app/util/error_code_handler.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_widgets/theme/const/spacing.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/constants/default_country_codes.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_account.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_communication_method.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_phone.dart';
+import 'package:privacy_gui/core/cloud/model/region_code.dart';
+import 'package:privacy_gui/page/components/layouts/basic_header.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/error_code_handler.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'dart:convert';
 
 class OtpAddPhoneView extends ArgumentsConsumerStatefulView {
@@ -45,7 +45,6 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
     countryName: 'United States',
     countryCallingCode: 1,
   ); // Default
-
 
   /* =============
 

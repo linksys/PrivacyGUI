@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_app/page/devices/_devices.dart';
-import 'package:linksys_app/util/extensions.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/theme/const/spacing.dart';
-import 'package:linksys_widgets/theme/custom_theme.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/card/general_card.dart';
-import 'package:linksys_widgets/widgets/panel/custom_animated_box.dart';
+import 'package:privacy_gui/page/devices/_devices.dart';
+import 'package:privacy_gui/util/extensions.dart';
+import 'package:privacygui_widgets/hook/icon_hooks.dart';
+import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/theme/custom_theme.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/general_card.dart';
+import 'package:privacygui_widgets/widgets/panel/custom_animated_box.dart';
 
 enum DevicePickerType {
   grid,

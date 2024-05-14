@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:linksys_app/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 class BenchMarkLogger {
   final String name;

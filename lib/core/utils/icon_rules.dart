@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
-import 'package:linksys_app/core/utils/extension.dart';
-import 'package:linksys_app/core/utils/icon_device_category.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/core/utils/icon_device_category.dart';
 
 const List<Map<String, dynamic>> iconRules = [
   {
@@ -714,7 +714,8 @@ String deviceIconTest(Map<String, dynamic> target) {
     'pc' =>
       IconDeviceCategory.computer,
     _ => IconDeviceCategory.unknown
-  }.name;
+  }
+      .name;
 }
 
 ///

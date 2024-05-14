@@ -1,6 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
-import 'package:linksys_app/page/topology/_topology.dart';
+import 'package:privacy_gui/page/topology/_topology.dart';
 
 class TopologyState {
   final RouterTreeNode onlineRoot;

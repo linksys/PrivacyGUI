@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/models/lan_settings.dart';
-import 'package:linksys_app/core/jnap/models/set_lan_settings.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
-import 'package:linksys_app/utils.dart';
-import 'package:linksys_app/validator_rules/input_validators.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
+import 'package:privacy_gui/core/jnap/models/set_lan_settings.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
+import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/validator_rules/input_validators.dart';
 
 final localNetworkSettingProvider =
     NotifierProvider<LocalNetworkSettingsNotifier, LocalNetworkSettingsState>(

@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:linksys_app/core/cloud/model/cloud_account.dart';
-import 'package:linksys_app/core/cloud/model/cloud_communication_method.dart';
-import 'package:linksys_app/page/account/providers/account_state.dart';
-import 'package:linksys_app/constants/_constants.dart';
-import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_account.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_communication_method.dart';
+import 'package:privacy_gui/page/account/providers/account_state.dart';
+import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
 
 final accountProvider =
     NotifierProvider<AccountNotifier, AccountState>(() => AccountNotifier());

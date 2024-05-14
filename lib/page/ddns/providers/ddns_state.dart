@@ -1,11 +1,11 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
 import 'package:equatable/equatable.dart';
-import 'package:linksys_app/core/jnap/models/ddns_settings_model.dart';
+import 'package:privacy_gui/core/jnap/models/ddns_settings_model.dart';
 
-import 'package:linksys_app/core/jnap/models/dyn_dns_settings.dart';
-import 'package:linksys_app/core/jnap/models/no_ip_settings.dart';
-import 'package:linksys_app/core/jnap/models/tzo_settings.dart';
+import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
+import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
+import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
 
 const String dynDNSProviderName = 'DynDNS';
 const String noIPDNSProviderName = 'No-IP';

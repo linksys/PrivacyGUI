@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_app/core/jnap/models/health_check_result.dart';
-import 'package:linksys_app/core/jnap/models/radio_info.dart';
-import 'package:linksys_app/core/jnap/models/guest_radio_settings.dart';
+import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
+import 'package:privacy_gui/core/jnap/models/radio_info.dart';
+import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 
 class DashboardManagerState extends Equatable {
   final List<RouterRadio> mainRadios;

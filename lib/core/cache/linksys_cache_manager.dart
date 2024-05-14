@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'cache_manager_base.dart'
     if (dart.library.io) 'cache_manager_mobile.dart'
     if (dart.library.html) 'cache_manager_web.dart';
-import 'package:linksys_app/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 enum DataSource { fromCache, fromRemote }
 

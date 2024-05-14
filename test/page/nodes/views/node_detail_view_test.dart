@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
-import 'package:linksys_app/core/jnap/providers/firmware_update_state.dart';
-import 'package:linksys_app/page/nodes/_nodes.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
+import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
+import 'package:privacy_gui/page/nodes/_nodes.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
@@ -62,8 +62,8 @@ void main() {
     final nameFinder = find.text('Router123');
     expect(nameFinder, findsOneWidget);
 
-    final routerImageFinder = find.image(CustomTheme.of(context).images.devices.routerMx6200);
+    final routerImageFinder =
+        find.image(CustomTheme.of(context).images.devices.routerMx6200);
     expect(routerImageFinder, findsOneWidget);
-
   }, variants: responsiveDesktopVariants);
 }

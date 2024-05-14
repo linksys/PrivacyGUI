@@ -3,21 +3,17 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
-import 'package:linksys_widgets/widgets/banner/banner_style.dart';
-
-
-
+import 'package:privacygui_widgets/widgets/banner/banner_style.dart';
 
 class BannerInfo extends Equatable {
- final bool isDiaplay;
- final BannerStyle style;
- final String text;
+  final bool isDiaplay;
+  final BannerStyle style;
+  final String text;
   const BannerInfo({
     required this.isDiaplay,
     required this.style,
     required this.text,
   });
-
 
   BannerInfo copyWith({
     bool? isDiaplay,
@@ -42,14 +38,17 @@ class BannerInfo extends Equatable {
   factory BannerInfo.fromMap(Map<String, dynamic> map) {
     return BannerInfo(
       isDiaplay: map['isDiaplay'] as bool,
-      style: BannerStyle.values.firstWhereOrNull((value) => value == map['style']) ?? BannerStyle.success,
+      style: BannerStyle.values
+              .firstWhereOrNull((value) => value == map['style']) ??
+          BannerStyle.success,
       text: map['text'] as String,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory BannerInfo.fromJson(String source) => BannerInfo.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory BannerInfo.fromJson(String source) =>
+      BannerInfo.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

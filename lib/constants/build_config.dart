@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
-import 'package:linksys_app/constants/_constants.dart';
-import 'package:linksys_app/core/utils/logger.dart';
+import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum CloudEnvironment {

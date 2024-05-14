@@ -1,4 +1,4 @@
-import 'package:linksys_app/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
 
 mixin JNAPCommandExecutor<R> {
   int _timeoutMs = 10000;

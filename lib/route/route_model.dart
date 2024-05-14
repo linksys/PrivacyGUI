@@ -2,9 +2,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
-import 'package:linksys_app/page/components/styled/top_bar.dart';
+import 'package:privacy_gui/page/components/styled/top_bar.dart';
 
 sealed class PageWidth {}
 

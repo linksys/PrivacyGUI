@@ -3,20 +3,20 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
-import 'package:linksys_app/firebase/notification_provider.dart';
-import 'package:linksys_app/page/components/layouts/idle_checker.dart';
-import 'package:linksys_app/providers/root/root_config.dart';
-import 'package:linksys_app/providers/root/root_provider.dart';
-import 'package:linksys_widgets/widgets/banner/banner_view.dart';
+import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/firebase/notification_provider.dart';
+import 'package:privacy_gui/page/components/layouts/idle_checker.dart';
+import 'package:privacy_gui/providers/root/root_config.dart';
+import 'package:privacy_gui/providers/root/root_provider.dart';
+import 'package:privacygui_widgets/widgets/banner/banner_view.dart';
 
-import 'package:linksys_app/constants/build_config.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/page/components/customs/debug_overlay_view.dart';
-import 'package:linksys_app/page/components/styled/banner_provider.dart';
-import 'package:linksys_app/route/route_model.dart';
-import 'package:linksys_app/utils.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/components/customs/debug_overlay_view.dart';
+import 'package:privacy_gui/page/components/styled/banner_provider.dart';
+import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacy_gui/utils.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class AppRootContainer extends ConsumerStatefulWidget {
   final Widget? child;

@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/actions/jnap_transaction.dart';
-import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/core/utils/nodes.dart';
-import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/nodes.dart';
+import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 
 final wifiAdvancedProvider =
     NotifierProvider<WifiAdvancedSettingsNotifier, WifiAdvancedSettingsState>(

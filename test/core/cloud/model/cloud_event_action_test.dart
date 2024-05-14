@@ -1,4 +1,4 @@
-import 'package:linksys_app/core/cloud/model/cloud_event_action.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_event_action.dart';
 import 'package:test/test.dart';
 
 void main() {

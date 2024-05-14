@@ -3,15 +3,15 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
-import 'package:linksys_app/core/cloud/model/create_ticket.dart';
-import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
-import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/core/utils/devices.dart';
-import 'package:linksys_app/page/dashboard/providers/dashboard_support_state.dart';
-import 'package:linksys_app/page/troubleshooting/providers/troubleshooting_provider.dart';
+import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
+import 'package:privacy_gui/core/cloud/model/create_ticket.dart';
+import 'package:privacy_gui/core/jnap/extensions/_extensions.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_support_state.dart';
+import 'package:privacy_gui/page/troubleshooting/providers/troubleshooting_provider.dart';
 import '../../../util/export_selector/export_base.dart'
     if (dart.library.io) '../../../util/export_selector/export_mobile.dart'
     if (dart.library.html) '../../../util/export_selector/export_web.dart';

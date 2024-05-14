@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/actions/jnap_transaction.dart';
-import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/core/utils/bench_mark.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/core/utils/nodes.dart';
+import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/bench_mark.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/nodes.dart';
 
 const int pollDurationInSec = 120;
 const int pollFirstDelayInSec = 1;
