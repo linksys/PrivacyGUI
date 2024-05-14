@@ -1,7 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:equatable/equatable.dart';
 
-import 'package:linksys_app/page/pnp/model/pnp_step.dart';
+import 'package:privacy_gui/page/pnp/model/pnp_step.dart';
 
 class PnpStepState extends Equatable {
   final StepViewStatus status;

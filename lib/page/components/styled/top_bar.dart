@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/page/components/styled/general_settings_widget/general_settings_widget.dart';
-import 'package:linksys_app/page/dashboard/providers/dashboard_home_provider.dart';
-import 'package:linksys_app/page/select_network/_select_network.dart';
-import 'package:linksys_app/providers/auth/auth_provider.dart';
-import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_app/util/debug_mixin.dart';
-import 'package:linksys_app/utils.dart';
-import 'package:linksys_widgets/theme/custom_theme.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacy_gui/page/components/styled/general_settings_widget/general_settings_widget.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
+import 'package:privacy_gui/page/select_network/_select_network.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/debug_mixin.dart';
+import 'package:privacy_gui/utils.dart';
+import 'package:privacygui_widgets/theme/custom_theme.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class TopBar extends ConsumerStatefulWidget {
   const TopBar({super.key});

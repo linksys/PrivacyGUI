@@ -8,9 +8,9 @@ import 'dart:convert' as _i6;
 import 'dart:typed_data' as _i9;
 
 import 'package:http/http.dart' as _i2;
-import 'package:linksys_app/core/http/linksys_http_client.dart' as _i3;
-import 'package:linksys_app/core/jnap/command/base_command.dart' as _i7;
-import 'package:linksys_app/core/jnap/spec/jnap_spec.dart' as _i8;
+import 'package:privacy_gui/core/http/linksys_http_client.dart' as _i3;
+import 'package:privacy_gui/core/jnap/command/base_command.dart' as _i7;
+import 'package:privacy_gui/core/jnap/spec/jnap_spec.dart' as _i8;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i4;
 

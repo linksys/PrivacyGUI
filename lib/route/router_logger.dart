@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 final routerLoggerProvider = Provider((ref) {
   return RouterLogger();
 });
 
 class RouterLogger extends NavigatorObserver {
-
   /// The [Navigator] pushed `route`.
   ///
   /// The route immediately below that one, and thus the previously active

@@ -2,12 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/io_client.dart';
-import 'package:linksys_app/core/cloud/linksys_requests/device_service.dart';
-import 'package:linksys_app/core/cloud/linksys_requests/storage_service.dart';
-import 'package:linksys_app/core/http/linksys_http_client.dart';
+import 'package:privacy_gui/core/cloud/linksys_requests/device_service.dart';
+import 'package:privacy_gui/core/cloud/linksys_requests/storage_service.dart';
+import 'package:privacy_gui/core/http/linksys_http_client.dart';
 
 void main() {
-
   ///
   /// This test is used to test cloud API
   ///
@@ -25,9 +24,6 @@ void main() {
     );
     final token = jsonDecode(response.body)['clientDevice']['linksysToken'];
     final uplodadResponse = await client.deviceUpload(
-        deviceToken: token,
-        serialNumber: serialNumber,
-        meta: '{}',
-        log: '456');
+        deviceToken: token, serialNumber: serialNumber, meta: '{}', log: '456');
   }, skip: true);
 }

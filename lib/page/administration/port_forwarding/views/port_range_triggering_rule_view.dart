@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/core/jnap/models/port_range_triggering_rule.dart';
-import 'package:linksys_app/page/administration/port_forwarding/_port_forwarding.dart';
-import 'package:linksys_app/page/administration/port_forwarding/providers/consts.dart';
-import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/card/list_card.dart';
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_widgets/widgets/panel/general_section.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
+import 'package:privacy_gui/page/administration/port_forwarding/_port_forwarding.dart';
+import 'package:privacy_gui/page/administration/port_forwarding/providers/consts.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacygui_widgets/widgets/panel/general_section.dart';
 
 class PortRangeTriggeringRuleView extends ArgumentsConsumerStatelessView {
   const PortRangeTriggeringRuleView({super.key, super.args});

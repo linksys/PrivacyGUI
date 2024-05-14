@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 
-import 'package:linksys_app/core/jnap/models/wan_status.dart';
+import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 
 enum WanType {
   dhcp(type: 'DHCP'),

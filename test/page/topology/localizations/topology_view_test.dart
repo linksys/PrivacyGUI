@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:linksys_app/page/topology/_topology.dart';
+import 'package:privacy_gui/page/topology/_topology.dart';
 import 'package:mockito/mockito.dart';
 
 import '../../../common/mock_firebase_messaging.dart';
@@ -41,10 +41,13 @@ void main() async {
         (tester, locale) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState2);
 
-      final widget = testableSingleRoute(overrides: [
-        topologyProvider.overrideWith(() => mockTopologyNotifier),
-      ], child: const TopologyView(),
-        locale: locale,);
+      final widget = testableSingleRoute(
+        overrides: [
+          topologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        child: const TopologyView(),
+        locale: locale,
+      );
       await tester.pumpWidget(widget);
     });
 
@@ -52,10 +55,13 @@ void main() async {
         (tester, locale) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState3);
 
-      final widget = testableSingleRoute(overrides: [
-        topologyProvider.overrideWith(() => mockTopologyNotifier),
-      ], child: const TopologyView(),
-        locale: locale,);
+      final widget = testableSingleRoute(
+        overrides: [
+          topologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        child: const TopologyView(),
+        locale: locale,
+      );
       await tester.pumpWidget(widget);
     });
 
@@ -63,10 +69,13 @@ void main() async {
         (tester, locale) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState4);
 
-      final widget = testableSingleRoute(overrides: [
-        topologyProvider.overrideWith(() => mockTopologyNotifier),
-      ], child: const TopologyView(),
-        locale: locale,);
+      final widget = testableSingleRoute(
+        overrides: [
+          topologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        child: const TopologyView(),
+        locale: locale,
+      );
       await tester.pumpWidget(widget);
     });
 
@@ -74,10 +83,13 @@ void main() async {
         (tester, locale) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState5);
 
-      final widget = testableSingleRoute(overrides: [
-        topologyProvider.overrideWith(() => mockTopologyNotifier),
-      ], child: const TopologyView(),
-        locale: locale,);
+      final widget = testableSingleRoute(
+        overrides: [
+          topologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        child: const TopologyView(),
+        locale: locale,
+      );
       await tester.pumpWidget(widget);
     });
 
@@ -85,10 +97,13 @@ void main() async {
         (tester, locale) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState5);
 
-      final widget = testableSingleRoute(overrides: [
-        topologyProvider.overrideWith(() => mockTopologyNotifier),
-      ], child: const TopologyView(),
-        locale: locale,);
+      final widget = testableSingleRoute(
+        overrides: [
+          topologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        child: const TopologyView(),
+        locale: locale,
+      );
       await tester.pumpWidget(widget);
     });
   });
@@ -98,12 +113,13 @@ void main() async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyStateOffline1);
       when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
       final widget = testableSingleRoute(
-          themeMode: ThemeMode.dark,
-          overrides: [
-            topologyProvider.overrideWith(() => mockTopologyNotifier),
-          ],
-          child: const TopologyView(),
-        locale: locale,);
+        themeMode: ThemeMode.dark,
+        overrides: [
+          topologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        child: const TopologyView(),
+        locale: locale,
+      );
       await tester.pumpWidget(widget);
     });
 
@@ -112,30 +128,39 @@ void main() async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyStateOffline2);
       when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
 
-      final widget = testableSingleRoute(overrides: [
-        topologyProvider.overrideWith(() => mockTopologyNotifier),
-      ], child: const TopologyView(),
-        locale: locale,);
+      final widget = testableSingleRoute(
+        overrides: [
+          topologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        child: const TopologyView(),
+        locale: locale,
+      );
       await tester.pumpWidget(widget);
     });
 
     testLocalizations('topology view - 3 offline nodes',
         (tester, locale) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyStateOffline3);
-      final widget = testableSingleRoute(overrides: [
-        topologyProvider.overrideWith(() => mockTopologyNotifier),
-      ], child: const TopologyView(),
-        locale: locale,);
+      final widget = testableSingleRoute(
+        overrides: [
+          topologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        child: const TopologyView(),
+        locale: locale,
+      );
       await tester.pumpWidget(widget);
     });
 
     testLocalizations('topology view - 4 offline nodes',
         (tester, locale) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyStateOffline4);
-      final widget = testableSingleRoute(overrides: [
-        topologyProvider.overrideWith(() => mockTopologyNotifier),
-      ], child: const TopologyView(),
-        locale: locale,);
+      final widget = testableSingleRoute(
+        overrides: [
+          topologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        child: const TopologyView(),
+        locale: locale,
+      );
       await tester.pumpWidget(widget);
     });
 

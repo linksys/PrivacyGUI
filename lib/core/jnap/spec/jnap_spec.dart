@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 
 import 'command_spec.dart';
 

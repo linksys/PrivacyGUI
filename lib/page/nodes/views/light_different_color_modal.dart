@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_app/constants/color_const.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/nodes/views/light_info_tile.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/bullet_list/bullet_list.dart';
-import 'package:linksys_widgets/widgets/bullet_list/bullet_style.dart';
+import 'package:privacy_gui/constants/color_const.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/nodes/views/light_info_tile.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
+import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
 
 class LightDifferentColorModal extends StatelessWidget {
   const LightDifferentColorModal({super.key});

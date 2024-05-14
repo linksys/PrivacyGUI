@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/validator_rules/rules.dart';
-import 'package:linksys_app/validator_rules/input_validators.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/input_field/validator_widget.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
+import 'package:privacy_gui/validator_rules/input_validators.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
 
 class WiFiPasswordField extends ConsumerStatefulWidget {
   final String? label;

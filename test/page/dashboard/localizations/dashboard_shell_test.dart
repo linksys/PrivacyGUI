@@ -2,8 +2,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:linksys_app/page/components/styled/consts.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 
 import '../../../common/mock_firebase_messaging.dart';
 import '../../../common/test_responsive_widget.dart';
@@ -20,9 +20,7 @@ void main() async {
     await tester.pumpWidget(
       testableRouteShellWidget(
         child: StyledAppPageView(
-            appBarStyle: AppBarStyle.none,
-            child: Container(
-            )),
+            appBarStyle: AppBarStyle.none, child: Container()),
         locale: locale,
       ),
     );

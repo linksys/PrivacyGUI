@@ -1,6 +1,6 @@
-import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/core/jnap/spec/jnap_spec.dart';
-import 'package:linksys_app/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/spec/jnap_spec.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
 
 abstract class BaseBTCommand<R, S extends JNAPCommandSpec>
     extends BaseCommand<R, S> {

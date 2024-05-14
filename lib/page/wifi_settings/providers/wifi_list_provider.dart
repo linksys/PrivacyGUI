@@ -1,17 +1,17 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/models/radio_info.dart';
-import 'package:linksys_app/core/jnap/models/set_radio_settings.dart';
-import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:linksys_app/core/jnap/providers/dashboard_manager_state.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
-import 'package:linksys_app/page/wifi_settings/providers/_providers.dart';
-import 'package:linksys_app/page/wifi_settings/providers/wifi_state.dart';
-import 'package:linksys_app/page/wifi_settings/views/wifi_list_view.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/models/radio_info.dart';
+import 'package:privacy_gui/core/jnap/models/set_radio_settings.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/_providers.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_list_view.dart';
 
 final wifiListProvider = NotifierProvider<WifiListNotifier, WiFiState>(
   () => WifiListNotifier(),

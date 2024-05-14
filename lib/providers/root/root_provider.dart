@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/providers/root/root_config.dart';
+import 'package:privacy_gui/providers/root/root_config.dart';
 
 final rootProvider =
     NotifierProvider<RootNotifier, AppRootConfig>(() => RootNotifier());

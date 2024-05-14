@@ -1,3 +1,4 @@
-[submodule "packages"]
-	path = packages
-	url = https://git.lswf.net/scm/git/linksys-widgets-flutter
+
+[submodule "plugins/widgets"]
+	path = plugins/widgets
+	url = https://github.com/linksys/PrivacyGUI-Widgets

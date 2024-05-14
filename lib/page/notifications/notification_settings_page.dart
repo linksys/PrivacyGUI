@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/cloud/model/cloud_event_subscription.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/dashboard/providers/smart_device_provider.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_event_subscription.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/dashboard/providers/smart_device_provider.dart';
 
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/panel/general_section.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/panel/general_section.dart';
 
 class NotificationSettingsView extends ConsumerStatefulWidget {
   const NotificationSettingsView({Key? key}) : super(key: key);

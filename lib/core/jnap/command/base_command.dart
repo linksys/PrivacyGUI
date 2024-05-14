@@ -1,9 +1,8 @@
 import 'dart:async';
 
-import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
-import 'package:linksys_app/core/jnap/jnap_command_executor_mixin.dart';
-import 'package:linksys_app/core/jnap/spec/jnap_spec.dart';
-
+import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
+import 'package:privacy_gui/core/jnap/jnap_command_executor_mixin.dart';
+import 'package:privacy_gui/core/jnap/spec/jnap_spec.dart';
 
 enum CacheLevel { localCached, noCache }
 

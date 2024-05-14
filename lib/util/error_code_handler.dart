@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_app/constants/error_code.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/core/utils/logger.dart';
+import 'package:privacy_gui/constants/error_code.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 String? generalErrorCodeHandler(BuildContext context, String code) {
   switch (code) {

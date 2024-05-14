@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/safe_browsing/providers/_providers.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/card/setting_card.dart';
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
-import 'package:linksys_widgets/widgets/radios/radio_list.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/safe_browsing/providers/_providers.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
 class SafeBrowsingView extends ArgumentsConsumerStatefulView {
   const SafeBrowsingView({

@@ -1,4 +1,4 @@
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 
 class JNAPTransactionBuilder {
   final List<MapEntry<JNAPAction, Map<String, dynamic>>> _commands;

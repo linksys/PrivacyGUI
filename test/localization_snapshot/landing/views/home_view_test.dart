@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
-import 'package:linksys_app/page/landing/views/_views.dart';
-
+import 'package:privacy_gui/page/landing/views/_views.dart';
 
 import '../../../common/test_localization.dart';
 import '../../../common/testable_router.dart';

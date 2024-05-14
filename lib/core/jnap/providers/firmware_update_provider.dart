@@ -6,18 +6,18 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/command/base_command.dart';
-import 'package:linksys_app/core/jnap/models/firmware_update_settings.dart';
-import 'package:linksys_app/core/jnap/models/firmware_update_status.dart';
-import 'package:linksys_app/core/jnap/models/firmware_update_status_nodes.dart';
-import 'package:linksys_app/core/jnap/providers/firmware_update_state.dart';
-import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
-import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/core/utils/bench_mark.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/core/utils/nodes.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
+import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
+import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
+import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/bench_mark.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/nodes.dart';
 
 final firmwareUpdateProvider =
     NotifierProvider<FirmwareUpdateNotifier, FirmwareUpdateState>(

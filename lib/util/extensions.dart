@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:linksys_app/util/languages.dart';
+import 'package:privacy_gui/util/languages.dart';
 
 extension Unique<E, Id> on List<E> {
   List<E> unique([Id Function(E element)? id, bool inplace = true]) {

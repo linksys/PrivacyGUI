@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
-import 'package:linksys_app/core/cloud/model/cloud_linkup.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/panel/general_expansion.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_linkup.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/panel/general_expansion.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 const tempData = {
   "subject": "Here's what we are working on next...",

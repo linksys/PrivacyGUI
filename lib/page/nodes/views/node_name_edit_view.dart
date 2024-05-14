@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/devices/_devices.dart';
-import 'package:linksys_app/page/nodes/providers/node_detail_id_provider.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/devices/_devices.dart';
+import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class NodeNameEditView extends ArgumentsConsumerStatefulView {
   const NodeNameEditView({

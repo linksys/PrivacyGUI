@@ -2,18 +2,18 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/theme/const/spacing.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/bullet_list/bullet_list.dart';
-import 'package:linksys_widgets/widgets/bullet_list/bullet_style.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_app/util/url_helper/url_helper.dart'
-    if (dart.library.io) 'package:linksys_app/util/url_helper/url_helper_mobile.dart'
-    if (dart.library.html) 'package:linksys_app/util/url_helper/url_helper_web.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
+import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacy_gui/util/url_helper/url_helper.dart'
+    if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
+    if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
 
 class SpeedTestExternalView extends StatelessWidget {
   const SpeedTestExternalView({super.key});
@@ -57,7 +57,9 @@ class SpeedTestExternalView extends StatelessWidget {
                     ? _externalButtonsMobile(context)
                     : _externalButtonsDesktop(context),
                 const AppGap.big(),
-                Center(child: AppText.bodyMedium(loc(context).speedTestExternalOthers))
+                Center(
+                    child: AppText.bodyMedium(
+                        loc(context).speedTestExternalOthers))
               ],
             ),
           ),

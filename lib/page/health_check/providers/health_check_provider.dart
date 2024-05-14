@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/command/base_command.dart';
-import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/page/health_check/providers/health_check_state.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 
 import '../../../core/jnap/actions/better_action.dart';
 import '../../../core/jnap/models/health_check_result.dart';

@@ -1,7 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:linksys_app/constants/_constants.dart';
+import 'package:privacy_gui/constants/_constants.dart';
 
 class SmartDevicesPrefsHelper {
   static String getNidKey(SharedPreferences prefs, {required String key}) {

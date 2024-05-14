@@ -2,20 +2,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/dashboard/views/dashboard_navigation_rail.dart';
-import 'package:linksys_app/route/route_model.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/dashboard/views/dashboard_navigation_rail.dart';
+import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/page/components/styled/consts.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_app/route/router_provider.dart';
-import 'package:linksys_app/util/debug_mixin.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/route/router_provider.dart';
+import 'package:privacy_gui/util/debug_mixin.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 enum NaviType {
   home,

@@ -2,20 +2,20 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/advanced_settings/internet_settings/providers/_providers.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/pnp/data/pnp_exception.dart';
-import 'package:linksys_app/page/pnp/data/pnp_provider.dart';
-import 'package:linksys_app/page/pnp/troubleshooter/providers/pnp_troubleshooter_provider.dart';
-import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/pnp/data/pnp_exception.dart';
+import 'package:privacy_gui/page/pnp/data/pnp_provider.dart';
+import 'package:privacy_gui/page/pnp/troubleshooter/providers/pnp_troubleshooter_provider.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class PnpIspSettingsAuthView extends ArgumentsConsumerStatefulView {
   const PnpIspSettingsAuthView({
@@ -128,11 +128,13 @@ class _PnpIspSettingsAuthViewState
                     .read(pnpProvider.notifier)
                     .checkInternetConnection()
                     .then((value) {
-                  logger.i('[PNP Troubleshooter]: Check internet connection with new settings - OK');
+                  logger.i(
+                      '[PNP Troubleshooter]: Check internet connection with new settings - OK');
                   // Internet connection is OK
                   context.goNamed(RouteNamed.pnp);
                 }).catchError((error) {
-                  logger.e('[PNP Troubleshooter]: Check internet connection with new settings - Failed');
+                  logger.e(
+                      '[PNP Troubleshooter]: Check internet connection with new settings - Failed');
                   // Internet connection is Not OK
                   context.pop(_getErrorMessage(wanType));
                 }, test: (error) => error is ExceptionNoInternetConnection);

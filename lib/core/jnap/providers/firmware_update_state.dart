@@ -3,9 +3,9 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:linksys_app/core/jnap/models/firmware_update_settings.dart';
-import 'package:linksys_app/core/jnap/models/firmware_update_status.dart';
-import 'package:linksys_app/core/jnap/models/firmware_update_status_nodes.dart';
+import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
+import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
+import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
 
 class FirmwareUpdateState extends Equatable {
   final FirmwareUpdateSettings settings;

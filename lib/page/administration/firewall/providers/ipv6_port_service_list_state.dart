@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_app/core/jnap/models/ipv6_firewall_rule.dart';
+import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
 
 class Ipv6PortServiceListState extends Equatable {
   const Ipv6PortServiceListState({

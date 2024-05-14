@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:equatable/equatable.dart';
-import 'package:linksys_app/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:multicast_dns/multicast_dns.dart';
 
 class DiscoverDevice extends Equatable {

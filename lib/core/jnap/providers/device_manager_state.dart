@@ -2,18 +2,17 @@
 import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
-import 'package:linksys_app/core/jnap/models/back_haul_info.dart';
-import 'package:linksys_app/core/jnap/models/device.dart';
-import 'package:linksys_app/core/jnap/models/radio_info.dart';
-import 'package:linksys_app/core/jnap/models/wan_status.dart';
-import 'package:linksys_app/core/jnap/models/wirless_connection.dart';
+import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
+import 'package:privacy_gui/core/jnap/models/device.dart';
+import 'package:privacy_gui/core/jnap/models/radio_info.dart';
+import 'package:privacy_gui/core/jnap/models/wan_status.dart';
+import 'package:privacy_gui/core/jnap/models/wirless_connection.dart';
 
 class LinksysDevice extends RawDevice {
   final List<LinksysDevice> connectedDevices;
   final WifiConnectionType connectedWifiType;
   final int? signalDecibels;
   final LinksysDevice? upstream;
-  
 
   const LinksysDevice({
     required super.connections,

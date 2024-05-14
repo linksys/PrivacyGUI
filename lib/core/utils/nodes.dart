@@ -106,9 +106,9 @@
 
     */
 import 'package:collection/collection.dart';
-import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/main.dart';
+import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/main.dart';
 
 const List<Map<String, dynamic>> _velopModelMap = [
   {

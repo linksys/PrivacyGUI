@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_app/util/url_helper/url_helper.dart'
-    if (dart.library.io) 'package:linksys_app/util/url_helper/url_helper_mobile.dart'
-    if (dart.library.html) 'package:linksys_app/util/url_helper/url_helper_web.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacy_gui/util/url_helper/url_helper.dart'
+    if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
+    if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
 
 class BottomBar extends ConsumerStatefulWidget {
   const BottomBar({super.key});

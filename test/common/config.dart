@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:linksys_app/util/extensions.dart';
+import 'package:privacy_gui/util/extensions.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'screen.dart';

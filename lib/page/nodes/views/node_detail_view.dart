@@ -1,33 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/jnap/models/firmware_update_status_nodes.dart';
-import 'package:linksys_app/core/jnap/models/node_light_settings.dart';
-import 'package:linksys_app/core/jnap/providers/firmware_update_provider.dart';
-import 'package:linksys_app/core/utils/extension.dart';
-import 'package:linksys_app/core/utils/icon_rules.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/shortcuts/dialogs.dart';
-import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
-import 'package:linksys_app/page/components/styled/consts.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/styled/styled_tab_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/devices/_devices.dart';
-import 'package:linksys_app/page/nodes/_nodes.dart';
-import 'package:linksys_app/page/nodes/views/connected_device_widget.dart';
-import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/card/card.dart';
-import 'package:linksys_widgets/widgets/card/info_card.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
+import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
+import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/devices/_devices.dart';
+import 'package:privacy_gui/page/nodes/_nodes.dart';
+import 'package:privacy_gui/page/nodes/views/connected_device_widget.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacygui_widgets/hook/icon_hooks.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/card/info_card.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'package:collection/collection.dart';
-import 'package:linksys_widgets/widgets/radios/radio_list.dart';
+import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
 import 'blink_node_light_widget.dart';
 
@@ -305,15 +305,14 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           AppInfoCard(
             showBorder: false,
             padding: EdgeInsets.zero,
-            title:
-                getAppLocalizations(context).firmwareVersion,
+            title: getAppLocalizations(context).firmwareVersion,
             description: _checkEmptyValue(state.firmwareVersion),
             trailing: Visibility(
                 visible: isFwUpToDate,
                 replacement: AppText.bodyLarge(
                     updateInfo?.availableUpdate?.firmwareVersion ?? ''),
-                child: AppText.labelSmall(
-                    getAppLocalizations(context).upToDate)),
+                child:
+                    AppText.labelSmall(getAppLocalizations(context).upToDate)),
           ),
           const AppGap.regular(),
           AppTextButton(

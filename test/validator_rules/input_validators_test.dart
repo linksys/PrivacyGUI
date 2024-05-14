@@ -1,4 +1,4 @@
-import 'package:linksys_app/validator_rules/input_validators.dart';
+import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -734,7 +734,7 @@ void main() {
       final results3 = validator.validateDetail(
         '3600', // One hour
         onlyFailed: true,
-      ); 
+      );
       expect(results3.isEmpty, true);
     });
   });

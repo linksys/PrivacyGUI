@@ -1,6 +1,6 @@
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html';
-import 'package:linksys_app/core/cache/cache_manager.dart';
+import 'package:privacy_gui/core/cache/cache_manager.dart';
 
 class FlutterCacheManager implements CacheManager {
   final Storage _localStorage = window.localStorage;

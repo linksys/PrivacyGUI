@@ -2,7 +2,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
-import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 
 @immutable
 class DeviceListState {

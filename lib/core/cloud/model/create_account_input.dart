@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_app/core/cloud/model/cloud_account.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_account.dart';
 
 class CreateAccountInput extends Equatable {
   final String username;

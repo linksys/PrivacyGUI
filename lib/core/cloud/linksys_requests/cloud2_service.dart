@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:http/http.dart';
 import 'package:http_parser/http_parser.dart';
-import 'package:linksys_app/constants/cloud_const.dart';
-import 'package:linksys_app/core/cloud/model/create_ticket.dart';
-import 'package:linksys_app/core/http/linksys_http_client.dart';
+import 'package:privacy_gui/constants/cloud_const.dart';
+import 'package:privacy_gui/core/cloud/model/create_ticket.dart';
+import 'package:privacy_gui/core/http/linksys_http_client.dart';
 
 extension Cloud2Service on LinksysHttpClient {
   Future<Response> createTicket(

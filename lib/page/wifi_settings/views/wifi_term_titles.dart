@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 
 String getWifiTypeTitle(BuildContext context, WifiType type) {
   switch (type) {

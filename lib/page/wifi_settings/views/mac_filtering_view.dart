@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/shortcuts/dialogs.dart';
-import 'package:linksys_app/page/components/shortcuts/snack_bar.dart';
-import 'package:linksys_app/page/components/styled/consts.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/wifi_settings/_wifi_settings.dart';
-import 'package:linksys_app/page/wifi_settings/providers/wifi_view_provider.dart';
-import 'package:linksys_app/route/constants.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/card/card.dart';
-import 'package:linksys_widgets/widgets/card/list_card.dart';
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_widgets/widgets/panel/switch_trigger_tile.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
-import 'package:linksys_widgets/widgets/radios/radio_list.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
 class MacFilteringView extends ArgumentsConsumerStatefulView {
   const MacFilteringView({

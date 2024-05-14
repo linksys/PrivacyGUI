@@ -3,21 +3,21 @@ import 'package:animated_list_plus/transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:linksys_app/core/utils/icon_rules.dart';
-import 'package:linksys_app/page/components/styled/consts.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/select_network/_select_network.dart';
-import 'package:linksys_app/providers/auth/auth_provider.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-// import 'package:linksys_app/firebase/analytics.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/theme/const/spacing.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/select_network/_select_network.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+// import 'package:privacy_gui/firebase/analytics.dart';
+import 'package:privacygui_widgets/hook/icon_hooks.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class SelectNetworkView extends ArgumentsConsumerStatefulView {
   const SelectNetworkView({super.key});

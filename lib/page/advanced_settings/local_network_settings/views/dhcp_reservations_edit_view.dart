@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/jnap/models/lan_settings.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/shortcuts/dialogs.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/validator_rules/input_validators.dart';
-import 'package:linksys_app/validator_rules/rules.dart';
-import 'package:linksys_widgets/widgets/base/gap.dart';
-import 'package:linksys_widgets/widgets/buttons/button.dart';
-import 'package:linksys_widgets/widgets/input_field/app_text_field.dart';
-import 'package:linksys_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_widgets/widgets/text/app_text.dart';
+import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/validator_rules/input_validators.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
+import 'package:privacygui_widgets/widgets/base/gap.dart';
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
+import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
 class DHCPReservationsEditView extends ArgumentsConsumerStatefulView {
   const DHCPReservationsEditView({super.key, super.args});

@@ -2,7 +2,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
-import 'package:linksys_widgets/widgets/topology/tree_node.dart';
+import 'package:privacygui_widgets/widgets/topology/tree_node.dart';
 
 typedef RouterTreeNode = AppTreeNode<TopologyModel>;
 

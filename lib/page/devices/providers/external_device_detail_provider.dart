@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/page/devices/_devices.dart';
+import 'package:privacy_gui/page/devices/_devices.dart';
 
 final externalDeviceDetailProvider =
     NotifierProvider<ExternalDeviceDetailNotifier, ExternalDeviceDetailState>(

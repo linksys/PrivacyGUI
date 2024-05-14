@@ -7,14 +7,14 @@ import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
-import 'package:linksys_app/constants/_constants.dart';
-import 'package:linksys_app/core/jnap/jnap_command_executor_mixin.dart';
-import 'package:linksys_app/core/jnap/command/base_command.dart';
-import 'package:linksys_app/core/jnap/command/http/base_http_command.dart';
-import 'package:linksys_app/core/utils/extension.dart';
-import 'package:linksys_app/core/utils/logger.dart';
+import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/jnap/jnap_command_executor_mixin.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/command/http/base_http_command.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:http/io_client.dart';
-import 'package:linksys_app/core/utils/storage.dart';
+import 'package:privacy_gui/core/utils/storage.dart';
 import '../cloud/model/error_response.dart';
 import 'client/get_client.dart'
     if (dart.library.io) 'client/mobile_client.dart'

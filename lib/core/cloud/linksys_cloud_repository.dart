@@ -2,28 +2,28 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:linksys_app/constants/_constants.dart';
-import 'package:linksys_app/core/cloud/linksys_requests/asset_service.dart';
-import 'package:linksys_app/core/cloud/linksys_requests/cloud2_service.dart';
-import 'package:linksys_app/core/cloud/linksys_requests/event_service.dart';
-import 'package:linksys_app/core/cloud/linksys_requests/ping_service.dart';
-import 'package:linksys_app/core/cloud/linksys_requests/smart_device_service.dart';
-import 'package:linksys_app/core/cloud/model/cloud_event_action.dart';
-import 'package:linksys_app/core/cloud/model/cloud_event_subscription.dart';
-import 'package:linksys_app/core/cloud/model/cloud_linkup.dart';
-import 'package:linksys_app/core/cloud/model/create_ticket.dart';
-import 'package:linksys_app/core/http/linksys_http_client.dart';
-import 'package:linksys_app/core/cloud/linksys_requests/authorization_service.dart';
-import 'package:linksys_app/core/cloud/linksys_requests/device_service.dart';
-import 'package:linksys_app/core/cloud/linksys_requests/user_service.dart';
-import 'package:linksys_app/core/cloud/model/cloud_account.dart';
-import 'package:linksys_app/core/cloud/model/cloud_communication_method.dart';
-import 'package:linksys_app/core/cloud/model/cloud_network_model.dart';
-import 'package:linksys_app/core/cloud/model/cloud_session_model.dart';
-import 'package:linksys_app/providers/connectivity/_connectivity.dart';
-import 'package:linksys_app/core/jnap/providers/ip_getter/get_local_ip.dart'
-    if (dart.library.io) 'package:linksys_app/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
-    if (dart.library.html) 'package:linksys_app/core/jnap/providers/ip_getter/web_get_local_ip.dart';
+import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/cloud/linksys_requests/asset_service.dart';
+import 'package:privacy_gui/core/cloud/linksys_requests/cloud2_service.dart';
+import 'package:privacy_gui/core/cloud/linksys_requests/event_service.dart';
+import 'package:privacy_gui/core/cloud/linksys_requests/ping_service.dart';
+import 'package:privacy_gui/core/cloud/linksys_requests/smart_device_service.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_event_action.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_event_subscription.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_linkup.dart';
+import 'package:privacy_gui/core/cloud/model/create_ticket.dart';
+import 'package:privacy_gui/core/http/linksys_http_client.dart';
+import 'package:privacy_gui/core/cloud/linksys_requests/authorization_service.dart';
+import 'package:privacy_gui/core/cloud/linksys_requests/device_service.dart';
+import 'package:privacy_gui/core/cloud/linksys_requests/user_service.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_account.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_communication_method.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_network_model.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
+import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
+import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
+    if (dart.library.io) 'package:privacy_gui/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
+    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
 
 final cloudRepositoryProvider = Provider((ref) => LinksysCloudRepository(
       httpClient: LinksysHttpClient(getHost: () {

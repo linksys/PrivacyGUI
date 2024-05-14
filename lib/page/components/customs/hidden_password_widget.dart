@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class HiddenPasswordWidget extends ConsumerStatefulWidget {
   final String password;
@@ -25,9 +25,8 @@ class _HiddenPasswordWidgetState extends ConsumerState<HiddenPasswordWidget> {
         ),
         const AppGap.semiSmall(),
         AppIconButton(
-          icon: isPwSecure
-              ? LinksysIcons.visibility
-              : LinksysIcons.visibilityOff,
+          icon:
+              isPwSecure ? LinksysIcons.visibility : LinksysIcons.visibilityOff,
           onTap: () {
             setState(() {
               isPwSecure = !isPwSecure;

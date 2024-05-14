@@ -6,7 +6,7 @@
 import 'dart:async' as _i4;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
-import 'package:linksys_app/page/topology/_topology.dart' as _i3;
+import 'package:privacy_gui/page/topology/_topology.dart' as _i3;
 import 'package:mockito/mockito.dart' as _i1;
 
 // ignore_for_file: type=lint
@@ -46,7 +46,9 @@ class _FakeTopologyState_1 extends _i1.SmartFake implements _i3.TopologyState {
 /// A class which mocks [TopologyNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockTopologyNotifier extends _i2.Notifier<_i3.TopologyState> with _i1.Mock implements _i3.TopologyNotifier {
+class MockTopologyNotifier extends _i2.Notifier<_i3.TopologyState>
+    with _i1.Mock
+    implements _i3.TopologyNotifier {
   @override
   _i2.NotifierProviderRef<_i3.TopologyState> get ref => (super.noSuchMethod(
         Invocation.getter(#ref),

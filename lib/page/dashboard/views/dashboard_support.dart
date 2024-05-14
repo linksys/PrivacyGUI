@@ -1,17 +1,16 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/constants/_constants.dart';
-import 'package:linksys_app/core/cloud/model/error_response.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/styled/consts.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/dashboard/providers/dashboard_support_provider.dart';
-import 'package:linksys_app/validator_rules/_validator_rules.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/cloud/model/error_response.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_support_provider.dart';
+import 'package:privacy_gui/validator_rules/_validator_rules.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:phonenumbers/phonenumbers.dart';
 
 class DashboardSupportView extends ArgumentsConsumerStatefulView {

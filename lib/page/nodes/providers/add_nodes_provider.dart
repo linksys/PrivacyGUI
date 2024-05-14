@@ -2,17 +2,17 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/models/device.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
-import 'package:linksys_app/core/jnap/providers/polling_provider.dart';
-import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/core/utils/bench_mark.dart';
-import 'package:linksys_app/core/utils/devices.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/page/nodes/providers/add_nodes_state.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/models/device.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/bench_mark.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
 
 final addNodesProvider =
     NotifierProvider.autoDispose<AddNodesNotifier, AddNodesState>(
@@ -128,7 +128,8 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
                   false,
             )
             .toList();
-        logger.d('[AddNodes]: [pollForNodesOnline] added devices: $addedDevices');
+        logger
+            .d('[AddNodes]: [pollForNodesOnline] added devices: $addedDevices');
       }
     } else {
       // put original slave nodes

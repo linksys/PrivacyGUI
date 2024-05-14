@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/models/ipv6_firewall_rule.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/page/administration/firewall/providers/ipv6_port_service_list_state.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/page/administration/firewall/providers/ipv6_port_service_list_state.dart';
 
 final ipv6PortServiceListProvider =
     NotifierProvider<Ipv6PortServiceListNotifier, Ipv6PortServiceListState>(

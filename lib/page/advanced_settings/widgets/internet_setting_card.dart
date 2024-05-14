@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/widgets/card/setting_card.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 
 class InternetSettingCard extends StatelessWidget {
   final String title;

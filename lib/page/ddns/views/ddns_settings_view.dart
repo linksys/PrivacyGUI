@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/models/dyn_dns_settings.dart';
-import 'package:linksys_app/core/jnap/models/no_ip_settings.dart';
-import 'package:linksys_app/core/jnap/models/tzo_settings.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/ddns/views/_views.dart';
+import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
+import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
+import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/ddns/views/_views.dart';
 
-import 'package:linksys_app/page/ddns/providers/ddns_provider.dart';
-import 'package:linksys_app/page/ddns/providers/ddns_state.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
-import 'package:linksys_widgets/widgets/dropdown/dropdown_menu.dart';
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:privacy_gui/page/ddns/providers/ddns_provider.dart';
+import 'package:privacy_gui/page/ddns/providers/ddns_state.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/dropdown/dropdown_menu.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class DDNSSettingsView extends ArgumentsConsumerStatefulView {
   const DDNSSettingsView({
@@ -220,4 +220,3 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
           );
   }
 }
-

@@ -1,12 +1,12 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/command/base_command.dart';
-import 'package:linksys_app/core/jnap/models/mac_filter_settings.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/core/utils/extension.dart';
-import 'package:linksys_app/page/wifi_settings/providers/mac_filtering_state.dart';
-import 'package:linksys_app/util/extensions.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/models/mac_filter_settings.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/mac_filtering_state.dart';
+import 'package:privacy_gui/util/extensions.dart';
 
 final macFilteringProvider =
     NotifierProvider<MacFilteringNotifier, MacFilteringState>(

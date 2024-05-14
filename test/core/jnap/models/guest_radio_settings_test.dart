@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:linksys_app/core/jnap/models/guest_radio_settings.dart';
+import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 
 void main() {
   group('Test GuestRadioSettings converter', () {

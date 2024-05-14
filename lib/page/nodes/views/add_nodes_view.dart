@@ -3,27 +3,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/core/utils/devices.dart';
-import 'package:linksys_app/core/utils/icon_rules.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/page/nodes/providers/add_nodes_state.dart';
-import 'package:linksys_widgets/hook/icon_hooks.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/bullet_list/bullet_list.dart';
-import 'package:linksys_widgets/widgets/bullet_list/bullet_style.dart';
-import 'package:linksys_widgets/widgets/card/node_list_card.dart';
-import 'package:linksys_widgets/widgets/dialogs/multiple_page_alert_dialog.dart';
-import 'package:linksys_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:linksys_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
+import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
+import 'package:privacygui_widgets/hook/icon_hooks.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
+import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
+import 'package:privacygui_widgets/widgets/card/node_list_card.dart';
+import 'package:privacygui_widgets/widgets/dialogs/multiple_page_alert_dialog.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-import 'package:linksys_app/constants/_constants.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/components/styled/styled_page_view.dart';
-import 'package:linksys_app/page/components/views/arguments_view.dart';
-import 'package:linksys_app/page/nodes/providers/add_nodes_provider.dart';
-import 'package:linksys_app/page/nodes/views/light_different_color_modal.dart';
-import 'package:linksys_app/page/nodes/views/light_info_tile.dart';
+import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/nodes/providers/add_nodes_provider.dart';
+import 'package:privacy_gui/page/nodes/views/light_different_color_modal.dart';
+import 'package:privacy_gui/page/nodes/views/light_info_tile.dart';
 
 class AddNodesView extends ArgumentsConsumerStatefulView {
   const AddNodesView({

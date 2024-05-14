@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:linksys_app/core/jnap/models/device.dart';
+import 'package:privacy_gui/core/jnap/models/device.dart';
 
 class AddNodesState extends Equatable {
   final bool? onboardingProceed;

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_app/core/jnap/models/dyn_dns_settings.dart';
-import 'package:linksys_app/core/utils/extension.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/dropdown/dropdown_menu.dart';
+import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/dropdown/dropdown_menu.dart';
 
 enum DynDDNSSystem {
   dynamic,

@@ -1,12 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/providers/connectivity/_connectivity.dart';
-import 'package:linksys_app/providers/connectivity/connectivity_provider.dart';
-import 'package:linksys_app/util/permission.dart';
-import 'package:linksys_app/utils.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
+import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
+import 'package:privacy_gui/util/permission.dart';
+import 'package:privacy_gui/utils.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 import '../../../constants/build_config.dart';
 

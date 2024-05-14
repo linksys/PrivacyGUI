@@ -6,17 +6,17 @@ import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_app/util/smart_device_prefs_helper.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/util/smart_device_prefs_helper.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:linksys_app/constants/_constants.dart';
-import 'package:linksys_app/core/cloud/linksys_cloud_repository.dart';
-import 'package:linksys_app/core/cloud/model/cloud_account.dart';
-import 'package:linksys_app/core/cloud/model/cloud_event_action.dart';
-import 'package:linksys_app/core/cloud/model/cloud_event_subscription.dart';
-import 'package:linksys_app/firebase/notification_receiver.dart';
+import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_account.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_event_action.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_event_subscription.dart';
+import 'package:privacy_gui/firebase/notification_receiver.dart';
 
 const defaultSubscriptionEvents = CloudEventType.values;
 

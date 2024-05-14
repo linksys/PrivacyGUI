@@ -1,11 +1,10 @@
-
 import 'package:flutter/material.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/theme/const/spacing.dart';
-import 'package:linksys_widgets/widgets/base/gap.dart';
-import 'package:linksys_widgets/widgets/card/list_card.dart';
-import 'package:linksys_widgets/widgets/text/app_text.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/base/gap.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
 class RuleItemCard extends StatelessWidget {
   final String title;

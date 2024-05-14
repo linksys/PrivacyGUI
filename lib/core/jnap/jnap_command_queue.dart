@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:collection';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/cache/linksys_cache_manager.dart';
-import 'package:linksys_app/core/utils/logger.dart';
+import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 import 'command/base_command.dart';
 
@@ -44,11 +44,8 @@ class CommandQueue {
     final command = _queue.removeFirst();
     logger.d(
         'Command Queue <${_queue.length}>:: handle command: ${command.runtimeType}, ${command.spec.action}');
-    command
-        .publish()
-        .then((value) => command.complete(value))
-        .onError(
-            (error, stackTrace) => command.completeError(error, stackTrace));
+    command.publish().then((value) => command.complete(value)).onError(
+        (error, stackTrace) => command.completeError(error, stackTrace));
     _emptyRetry = 0;
   }
 
@@ -77,5 +74,4 @@ class CommandQueue {
       _timer?.cancel();
     }
   }
-
 }

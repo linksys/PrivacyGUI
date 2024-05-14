@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/models/firmware_update_status.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
-import 'package:linksys_app/core/utils/devices.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class FirmwareUpdateProcessView extends ConsumerStatefulWidget {
   final (LinksysDevice, FirmwareUpdateStatus)? current;

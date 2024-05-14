@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:linksys_app/core/cache/cache_manager.dart';
+import 'package:privacy_gui/core/cache/cache_manager.dart';
 import 'package:path_provider/path_provider.dart';
 
 class FlutterCacheManager implements CacheManager {

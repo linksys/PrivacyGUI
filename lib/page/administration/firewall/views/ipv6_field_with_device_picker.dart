@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linksys_app/page/components/picker/device_picker.dart';
-import 'package:linksys_app/page/devices/_devices.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/widgets/buttons/button.dart';
-import 'package:linksys_widgets/widgets/input_field/ipv6_form_field.dart';
+import 'package:privacy_gui/page/components/picker/device_picker.dart';
+import 'package:privacy_gui/page/devices/_devices.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'package:privacygui_widgets/widgets/input_field/ipv6_form_field.dart';
 
 class AppIpv6FieldWithDevicePicker extends StatelessWidget {
   final TextEditingController controller;

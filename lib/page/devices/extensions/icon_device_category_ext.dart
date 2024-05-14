@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:linksys_app/core/utils/icon_device_category.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
+import 'package:privacy_gui/core/utils/icon_device_category.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 extension IconDeviceCategoryExt on IconDeviceCategory {
   IconData reslove() => switch (this) {

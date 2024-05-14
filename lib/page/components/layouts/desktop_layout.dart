@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:linksys_app/core/utils/logger.dart';
-import 'package:linksys_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class DesktopLayout extends StatefulWidget {
   final Widget child;
@@ -76,7 +76,8 @@ class _DesktopLayoutState extends State<DesktopLayout> {
         Flexible(
           child: Center(
             child: Container(
-              constraints: BoxConstraints(maxWidth: ResponsiveLayout.tabletBreakpoint),
+              constraints:
+                  BoxConstraints(maxWidth: ResponsiveLayout.tabletBreakpoint),
               child: widget.child,
             ),
           ),

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:linksys_app/core/cloud/model/cloud_account.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_account.dart';
 
 void main() {
   testWidgets('cloud account convert', (tester) async {

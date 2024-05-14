@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
-import 'package:linksys_app/page/topology/_topology.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/theme/_theme.dart';
-import 'package:linksys_widgets/widgets/topology/tree_item.dart';
+import 'package:privacy_gui/page/topology/_topology.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/topology/tree_item.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 

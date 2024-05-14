@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/providers/app_settings/app_settings_provider.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class ThemeTile extends ConsumerStatefulWidget {
   const ThemeTile({
@@ -41,7 +41,7 @@ class _ThemeTileState extends ConsumerState<ThemeTile> {
         ref.watch(appSettingsProvider.select((value) => value.themeMode));
     return InkWell(
       onTap: () {
-                final appSettings = ref.read(appSettingsProvider);
+        final appSettings = ref.read(appSettingsProvider);
         final nextThemeMode = appSettings.themeMode == ThemeMode.system
             ? ThemeMode.dark
             : appSettings.themeMode == ThemeMode.dark

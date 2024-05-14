@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:linksys_app/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 Future<String> getLog(BuildContext context) async {
   // final SharedPreferences sp = await SharedPreferences.getInstance();

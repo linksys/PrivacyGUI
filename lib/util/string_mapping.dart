@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 
 ConnectionTypeData toConnectionTypeData(BuildContext context, String type) {
   switch (type) {

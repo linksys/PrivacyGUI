@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_provider.dart';
-import 'package:linksys_app/core/jnap/providers/device_manager_state.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/devices/_devices.dart';
-import 'package:linksys_app/util/extensions.dart';
-import 'package:linksys_widgets/icons/linksys_icons.dart';
-import 'package:linksys_widgets/theme/const/spacing.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
-import 'package:linksys_app/core/utils/devices.dart';
-import 'package:linksys_widgets/widgets/panel/general_section.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/devices/_devices.dart';
+import 'package:privacy_gui/util/extensions.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
+import 'package:privacygui_widgets/widgets/panel/general_section.dart';
 
 class DevicesFilterWidget extends ConsumerStatefulWidget {
   const DevicesFilterWidget({super.key});

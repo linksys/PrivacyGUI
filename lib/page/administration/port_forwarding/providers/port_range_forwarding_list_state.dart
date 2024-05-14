@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:linksys_app/core/jnap/models/port_range_forwarding_rule.dart';
+import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
 
 class PortRangeForwardingListState extends Equatable {
   const PortRangeForwardingListState({

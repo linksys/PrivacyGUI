@@ -2,13 +2,13 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:linksys_app/constants/_constants.dart';
-import 'package:linksys_app/core/jnap/actions/better_action.dart';
-import 'package:linksys_app/core/jnap/extensions/_extensions.dart';
-import 'package:linksys_app/core/jnap/result/jnap_result.dart';
-import 'package:linksys_app/core/jnap/router_repository.dart';
-import 'package:linksys_app/page/administration/network_admin/providers/router_password_state.dart';
-import 'package:linksys_app/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/extensions/_extensions.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/page/administration/network_admin/providers/router_password_state.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 final routerPasswordProvider =
     NotifierProvider<RouterPasswordNotifier, RouterPasswordState>(
@@ -75,8 +75,7 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
         .send(
       JNAPAction.coreSetAdminPassword,
       data: {
-        'adminPassword':
-            pwd,
+        'adminPassword': pwd,
         'passwordHint': hint ?? state.hint,
       },
       type: CommandType.local,

@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:linksys_app/localization/localization_hook.dart';
-import 'package:linksys_app/page/nodes/_nodes.dart';
-import 'package:linksys_widgets/widgets/_widgets.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/nodes/_nodes.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class BlinkNodeLightWidget extends ConsumerStatefulWidget {
   final int max;
