@@ -207,19 +207,14 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
                   setState(() {
                     _processing = true;
                   });
-                  // ref
-                  //     .read(pnpProvider.notifier)
-                  //     .checkAdminPassword(_textEditController.text)
-                  //     .then((_) {
-                  //   context.pushNamed(RouteNamed.pnpConfig);
-                  // })
                   adminPasswordFlow(_textEditController.text)
+                  .then((_) {
+                    context.goNamed(RouteNamed.pnpConfig);
+                  })
                       .onError((error, stackTrace) {
                     setState(() {
                       _error = error;
                     });
-                  }).then((_) {
-                    context.goNamed(RouteNamed.pnpConfig);
                   }).whenComplete(() {
                     setState(() {
                       _processing = false;
