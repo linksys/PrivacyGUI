@@ -267,7 +267,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           loc(context).addNodesSearchingNodes,
           loc(context).addNodesSearchingNodesDesc
         ),
-      'onboarding' => ('Onboarding nodes', 'onboarding nodes message...'),
+      'onboarding' => ('Onboarding nodes', 'Bringing your nodes online'),
       _ => (
           loc(context).addNodesSearchingNodes,
           loc(context).addNodesSearchingNodesDesc
