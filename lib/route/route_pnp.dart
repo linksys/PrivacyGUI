@@ -57,12 +57,12 @@ final pnpTroubleshootingRoute = LinksysRoute(
       builder: (context, state) => const PnpUnplugModemView(),
       routes: [
         LinksysRoute(
-          name: RouteNamed.pnpMakeSureLightOff,
-          path: RoutePath.pnpMakeSureLightOff,
+          name: RouteNamed.pnpModemLightsOff,
+          path: RoutePath.pnpModemLightsOff,
           config: LinksysRouteConfig(
             pageWidth: SpecificPageWidth(width: 430),
           ),
-          builder: (context, state) => const PnpLightsOffView(),
+          builder: (context, state) => const PnpModemLightsOffView(),
           routes: [
             LinksysRoute(
               name: RouteNamed.pnpWaitingModem,

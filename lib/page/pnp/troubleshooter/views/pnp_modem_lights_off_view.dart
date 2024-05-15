@@ -12,14 +12,14 @@ import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 
-class PnpLightsOffView extends ConsumerStatefulWidget {
-  const PnpLightsOffView({Key? key}) : super(key: key);
+class PnpModemLightsOffView extends ConsumerStatefulWidget {
+  const PnpModemLightsOffView({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<PnpLightsOffView> createState() => _PnpLightOffViewState();
+  ConsumerState<PnpModemLightsOffView> createState() => _PnpLightOffViewState();
 }
 
-class _PnpLightOffViewState extends ConsumerState<PnpLightsOffView> {
+class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
   @override
   void initState() {
     super.initState();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -116,6 +117,7 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
   }
 
   void _onNext() {
+    logger.i('[PNP Troubleshooter]: Set the router into PPPOE mode');
     var newState = ref.read(internetSettingsProvider).copyWith();
     newState = newState.copyWith(
       ipv4Setting: newState.ipv4Setting.copyWith(

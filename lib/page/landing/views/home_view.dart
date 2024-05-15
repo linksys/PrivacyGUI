@@ -59,12 +59,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
     return Stack(
       children: [
         Center(
-          child: GestureDetector(
-            child: SvgPicture(CustomTheme.of(context).images.linksysWordmark),
-            onTap: () {
-              context.goNamed(RouteNamed.pnp);
-            },
-          ),
+          child: SvgPicture(CustomTheme.of(context).images.linksysWordmark),
         ),
       ],
     );

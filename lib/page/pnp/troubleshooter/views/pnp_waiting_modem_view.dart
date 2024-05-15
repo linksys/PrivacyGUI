@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/pnp/data/pnp_exception.dart';
 import 'package:privacy_gui/page/pnp/data/pnp_provider.dart';
@@ -33,13 +34,13 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
   }
 
   @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return _countDown != 0 ? _countdownPage() : _plugBackPage();
+    if (_countDown != 0) {
+      logger.i('Start to count down after unplugging the modem');
+      return _countdownPage();
+    } else {
+      return _plugBackPage();
+    }
   }
 
   Widget _countdownPage() {
@@ -104,10 +105,11 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
                   AppFilledButton.fillWidth(
                     'It\'s plugged in',
                     onTap: () {
+                      logger.i('[PNP Troubleshooter]: Waiting for the modem to start up after plugging it back');
                       setState(() {
                         _isPlugged = true;
                       });
-                      Future.delayed(const Duration(seconds: 3)).then((value) {
+                      Future.delayed(const Duration(seconds: 5)).then((value) {
                         setState(() {
                           _isCheckingInternet = true;
                           ref
@@ -118,8 +120,12 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
                             .read(pnpProvider.notifier)
                             .checkInternetConnection()
                             .then((value) {
+                          logger.i(
+                              '[PNP Troubleshooter]: Internet connection is OK after resetting the modem');
                           context.goNamed(RouteNamed.pnp);
                         }).catchError((error, stackTrace) {
+                          logger.e(
+                              '[PNP Troubleshooter]: Internet connection still fails after resetting the modem');
                           context.goNamed(RouteNamed.pnpNoInternetConnection);
                         }, test: (error) {
                           return error is ExceptionNoInternetConnection;

@@ -97,9 +97,9 @@ class RoutePath {
   static const pnp = '/pnp';
   static const pnpConfig = 'pnpConfig';
   static const pnpNoInternetConnection = '/pnpNoInternetConnection';
-  static const pnpUnplugModem = 'unPlugModem';
-  static const pnpMakeSureLightOff = 'makeSureLightOff';
-  static const pnpWaitingModem = 'waitingModem';
+  static const pnpUnplugModem = 'pnpUnplugModem';
+  static const pnpModemLightsOff = 'pnpModemLightsOff';
+  static const pnpWaitingModem = 'pnpWaitingModem';
   static const pnpPPPOE = 'pnpPPPOE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
@@ -229,9 +229,9 @@ class RouteNamed {
   static const pnp = 'pnp';
   static const pnpConfig = 'pnpConfig';
   static const pnpNoInternetConnection = 'noInternetConnection';
-  static const pnpUnplugModem = 'unPlugModem';
-  static const pnpMakeSureLightOff = 'makeSureLightOff';
-  static const pnpWaitingModem = 'waitingModem';
+  static const pnpUnplugModem = 'pnpUnplugModem';
+  static const pnpModemLightsOff = 'pnpModemLightsOff';
+  static const pnpWaitingModem = 'pnpWaitingModem';
   static const pnpPPPOE = 'pnpPPPOE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
