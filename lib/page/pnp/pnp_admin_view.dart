@@ -66,6 +66,8 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         .catchError((error, stackTrace) {},
             test: (error) => error is ExceptionInvalidAdminPassword)
         .catchError((error, stackTrace) {
+          logger.e(
+              '[PNP Troubleshooter]: Internet connection failed - initiate troubleshooter ${(_password != null) ? 'with' : 'without'} credential');
           if (_password != null) {
             pnp.fetchData().then((value) {
               final ssid = pnp.getDefaultWiFiNameAndPassphrase().name;
@@ -73,6 +75,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
                 RouteNamed.pnpNoInternetConnection,
                 extra: {'ssid': ssid},
               );
+            }).onError((error, stackTrace) {
+              logger.e(
+                  '[PNP Troubleshooter]: fetch data failed (Getting SSID): $error');
+              context.goNamed(RouteNamed.pnpNoInternetConnection);
             });
           } else {
             context.goNamed(RouteNamed.pnpNoInternetConnection);

@@ -37,11 +37,11 @@ import 'package:privacy_gui/page/pnp/troubleshooter/views/isp_settings/pnp_isp_s
 import 'package:privacy_gui/page/pnp/troubleshooter/views/isp_settings/pnp_pppoe_view.dart';
 import 'package:privacy_gui/page/pnp/troubleshooter/views/isp_settings/pnp_isp_type_selection_view.dart';
 import 'package:privacy_gui/page/pnp/troubleshooter/views/isp_settings/pnp_static_ip_view.dart';
-import 'package:privacy_gui/page/pnp/troubleshooter/views/pnp_lights_off.dart';
-import 'package:privacy_gui/page/pnp/troubleshooter/views/pnp_unplug_modem.dart';
-import 'package:privacy_gui/page/pnp/troubleshooter/views/pnp_waiting_modem.dart';
+import 'package:privacy_gui/page/pnp/troubleshooter/views/pnp_modem_lights_off_view.dart';
+import 'package:privacy_gui/page/pnp/troubleshooter/views/pnp_unplug_modem_view.dart';
+import 'package:privacy_gui/page/pnp/troubleshooter/views/pnp_waiting_modem_view.dart';
 import 'package:privacy_gui/page/safe_browsing/views/safe_browsing_view.dart';
-import 'package:privacy_gui/page/pnp/troubleshooter/views/pnp_no_internet_connection.dart';
+import 'package:privacy_gui/page/pnp/troubleshooter/views/pnp_no_internet_connection_view.dart';
 import 'package:privacy_gui/page/select_network/_select_network.dart';
 import 'package:privacy_gui/page/topology/_topology.dart';
 import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';

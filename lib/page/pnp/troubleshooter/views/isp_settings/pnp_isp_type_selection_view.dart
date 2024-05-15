@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -68,12 +69,13 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
   }
 
   void _saveToDHCP() {
+    logger.i('[PNP Troubleshooter]: Set the router into DHCP mode');
     var newState = ref.read(internetSettingsProvider).copyWith();
     newState = newState.copyWith(
       ipv4Setting: newState.ipv4Setting.copyWith(
         ipv4ConnectionType: WanType.dhcp.type,
       ),
-    );
+    );    
     context.pushNamed(
       RouteNamed.pnpIspSettingsAuth,
       extra: {'newSettings': newState},
@@ -89,22 +91,22 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
         : StyledAppPageView(
             appBarStyle: AppBarStyle.back,
             title:
-                'What type of ISP ', //'What type of ISP settings do you have?',
+                loc(context).pnpIspTypeSelectionTitle,
             child: AppBasicLayout(
               content: ListView(
                 shrinkWrap: true,
                 children: [
                   ISPTypeCard(
-                    title: 'DHCP (default)',
+                    title: loc(context).dhcpDefault,
                     description:
-                        'Dynamic Host Configuration Protocol (DHCP) automatically assigns IP addresses to devices connected to the network.',
+                        loc(context).pnpIspTypeSelectionDhcpDesc,
                     isCurrentlyApplying: wanType == WanType.dhcp,
                     tapAction: wanType == WanType.dhcp ? null : _showDHCPAlert,
                   ),
                   ISPTypeCard(
-                    title: 'Static IP',
+                    title: loc(context).connectionTypeStatic,
                     description:
-                        'A static Internet Protocol (IP) address is a permanent number assigned to a computer by an internet Service Provider (ISP).',
+                        loc(context).pnpIspTypeSelectionStaticDesc,
                     isCurrentlyApplying: wanType == WanType.static,
                     tapAction: () {
                       context.goNamed(RouteNamed.pnpStaticIp);
@@ -113,7 +115,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                   ISPTypeCard(
                     title: loc(context).connectionTypePppoe,
                     description:
-                        'Point-to-Point Protocol over Ethernet is a specification for connecting multiple computer users on an Ethernet local area network to a remote site.',
+                        loc(context).pnpIspTypeSelectionPppoeDesc,
                     isCurrentlyApplying:
                         (wanType == WanType.pppoe && !_hasVLan),
                     tapAction: () {
@@ -122,9 +124,9 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                     },
                   ),
                   ISPTypeCard(
-                    title: 'PPPoE over VLAN',
+                    title: loc(context).pppoeVlan,
                     description:
-                        'Sometimes your ISP may require you to have a PPPoE over VLAN to access the internet.',
+                        loc(context).pnpIspTypeSelectionPppoeVlanDesc,
                     isCurrentlyApplying: (wanType == WanType.pppoe && _hasVLan),
                     tapAction: () {
                       context.goNamed(RouteNamed.pnpPPPOE,

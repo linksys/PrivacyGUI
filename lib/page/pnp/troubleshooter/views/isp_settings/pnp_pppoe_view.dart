@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -43,14 +44,14 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      title: 'Enter ISP settings',
+      title: loc(context).pnpPppoeTitle,
       scrollable: true,
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppText.bodyLarge(
-              'Your PPPoE account name and password are provided by your Internet Service Provider (ISP). If you aren’t sure about yours, we recommend contacting your ISP.',
+            AppText.bodyLarge(
+              loc(context).pnpPppoeDesc,
             ),
             const AppGap.extraBig(),
             if (errorMessage != null)
@@ -75,7 +76,7 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
                 children: [
                   const AppGap.extraBig(),
                   AppTextButton.noPadding(
-                    '+ Add VLAN ID',
+                    loc(context).pnpPppoeAddVlan,
                     onTap: () {
                       setState(() {
                         hasVlanID = true;
@@ -89,13 +90,13 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
                 children: [
                   const AppGap.semiBig(),
                   AppTextField.outline(
-                    headerText: 'VLAN ID',
+                    headerText: loc(context).vlanIdOptional,
                     controller: _vlanController,
                     inputType: TextInputType.number,
                   ),
                   const AppGap.extraBig(),
                   AppTextButton.noPadding(
-                    '- Remove VLAN ID',
+                    loc(context).pnpPppoeRemoveVlan,
                     onTap: () {
                       setState(() {
                         hasVlanID = false;
@@ -116,6 +117,7 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
   }
 
   void _onNext() {
+    logger.i('[PNP Troubleshooter]: Set the router into PPPOE mode');
     var newState = ref.read(internetSettingsProvider).copyWith();
     newState = newState.copyWith(
       ipv4Setting: newState.ipv4Setting.copyWith(
