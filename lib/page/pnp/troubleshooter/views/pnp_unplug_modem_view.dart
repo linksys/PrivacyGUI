@@ -31,15 +31,15 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      title: 'Unplug your modem',
+      title: loc(context).pnpUnplugModemTitle,
       scrollable: true,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppText.bodyLarge(
-              'These settings are provided by your Internet Service Provider (ISP). If you aren\'t sure about yours, we recommend contacting your ISP.',
+            AppText.bodyLarge(
+              loc(context).pnpUnplugModemDesc,
             ),
             Expanded(
               child: Center(
@@ -55,7 +55,7 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
                     Row(
                       children: [
                         AppTextButton(
-                          'Not sure which device is the modem?',
+                          loc(context).pnpUnplugModemTip,
                           onTap: () {
                             showModalBottomSheet(
                               context: context,
@@ -93,16 +93,16 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const AppText.headlineSmall(
-            'Identifying your modem',
+          AppText.headlineSmall(
+            loc(context).pnpUnplugModemTipTitle,
           ),
           const AppGap.semiBig(),
-          const AppText.bodyMedium(
-            'Modems are usually connected to the internet via a coaxial cable or phone cable coming into your home.',
+          AppText.bodyMedium(
+            loc(context).pnpUnplugModemTipDesc1,
           ),
           const AppGap.semiBig(),
-          const AppText.bodyMedium(
-            'Modems can be horizontal or vertical depending on the brand.',
+          AppText.bodyMedium(
+            loc(context).pnpUnplugModemTipDesc2,
           ),
           const AppGap.regular(),
           const AppGap.extraBig(),

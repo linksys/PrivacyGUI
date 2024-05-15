@@ -33,14 +33,14 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      title: 'Make sure the lights are off',
+      title: loc(context).pnpModemLightsOffTitle,
       scrollable: true,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
       child: AppBasicLayout(
         content:
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const AppText.bodyLarge(
-            'These settings are provided by your Internet Service Provider (ISP). If you aren\'t sure about yours, we recommend contacting your ISP.',
+          AppText.bodyLarge(
+            loc(context).pnpModemLightsOffDesc,
           ),
           Expanded(
             child: Center(
@@ -56,7 +56,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
                   Row(
                     children: [
                       AppTextButton(
-                        'Are the lights still on after unplugging?',
+                        loc(context).pnpModemLightsOffTip,
                         onTap: () {
                           showModalBottomSheet(
                             context: context,
@@ -94,23 +94,23 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const AppText.headlineSmall(
-            'You may have a battery-powered modem that requires extra steps',
+          AppText.headlineSmall(
+            loc(context).pnpModemLightsOffTipTitle,
           ),
           const AppGap.semiBig(),
-          const AppText.bodyMedium(
-            'Your modem may have a backup battery. To restart, DO NOT remove the battery. Follow these instructions:',
+          AppText.bodyMedium(
+            loc(context).pnpModemLightsOffTipDesc,
           ),
           const AppGap.semiBig(),
           AppBulletList(style: AppBulletStyle.number, children: [
-            const AppText.bodyMedium(
-              'Find the modem\'s power, reboot or restart button. Press and hold it. Do not press RESET as it may restore the modem to factory settings. If your modem does not have a power, reboot or restart button, contact your Internet Service Provider for guidance.',
+            AppText.bodyMedium(
+              loc(context).pnpModemLightsOffTipStep1,
             ),
-            const AppText.bodyMedium(
-              'Wait for the modem lights to turn OFF.</b> Wait 2 minutes to allow stored memory and power to be flushed from the device. Release the button.',
+            AppText.bodyMedium(
+              loc(context).pnpModemLightsOffTipStep2,
             ),
             AppStyledText.bold(
-              '<b>Wait for the modem to completely start up and continue setup.</b>',
+              loc(context).pnpModemLightsOffTipStep3,
               defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
               tags: const ['b'],
             ),

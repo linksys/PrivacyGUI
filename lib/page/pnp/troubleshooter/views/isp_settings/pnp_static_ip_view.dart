@@ -49,8 +49,8 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppText.bodyLarge(
-              'These settings are for users with a manually-assigned static IP address.',
+            AppText.bodyLarge(
+              loc(context).pnpStaticIpDesc,
             ),
             const AppGap.extraBig(),
             if (errorMessage != null)
@@ -98,7 +98,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                   top: Spacing.extraBig,
                 ),
                 child: AppTextButton.noPadding(
-                  '+ Add DNS',
+                  loc(context).addDns,
                   onTap: () {
                     setState(() {
                       _hasExtraDNS = true;
@@ -111,8 +111,8 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                   top: Spacing.semiBig,
                 ),
                 child: AppIPFormField(
-                  header: const AppText.bodyLarge(
-                    'DNS 2',
+                  header: AppText.bodyLarge(
+                    loc(context).dns2Optional,
                   ),
                   controller: _dns2Controller,
                   border: const OutlineInputBorder(),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/pnp/data/pnp_exception.dart';
 import 'package:privacy_gui/page/pnp/data/pnp_provider.dart';
@@ -51,12 +52,9 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppText.headlineSmall(
-              'Giving your modem time to contact your ISP',
-            ),
+            AppText.headlineSmall(loc(context).pnpWaitingModemTitle),
             const AppGap.big(),
-            const AppText.bodyLarge(
-                'Your ISP needs time to issue a new IP address to your router to connect to the internet'),
+            AppText.bodyLarge(loc(context).pnpWaitingModemDesc),
             Expanded(
               child: Center(
                 child: _createCircleTimer(),
@@ -79,9 +77,9 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
             AppText.headlineMedium(
               _isPlugged
                   ? _isCheckingInternet
-                      ? 'Checking for internet...'
-                      : 'Waiting for your modem to start up'
-                  : 'Plug your modem back in',
+                      ? loc(context).pnpWaitingModemCheckingInternet
+                      : loc(context).pnpWaitingModemWaitStartUp
+                  : loc(context).pnpWaitingModemPlugBack,
             ),
             Expanded(
               child: Center(
@@ -103,9 +101,10 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
             : Column(
                 children: [
                   AppFilledButton.fillWidth(
-                    'It\'s plugged in',
+                    loc(context).pnpWaitingModemPluggedIn,
                     onTap: () {
-                      logger.i('[PNP Troubleshooter]: Waiting for the modem to start up after plugging it back');
+                      logger.i(
+                          '[PNP Troubleshooter]: Waiting for the modem to start up after plugging it back');
                       setState(() {
                         _isPlugged = true;
                       });
