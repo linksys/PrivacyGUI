@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -156,12 +157,17 @@ class _PnpIspSettingsAuthViewState
           // Keep the error record until the check loop is fulfilled or runs out of the re-try quota
         }
       });
-    }).catchError((error) {
-      logger
-          .e('[PNP Troubleshooter]: Failed to save the new settings - $error');
-      // Saving new settings failed
-      context.pop('Failed to save the new settings');
-    }, test: (error) => (error is JNAPError || error is TimeoutException));
+    }).catchError(
+      (error) {
+        logger.e(
+            '[PNP Troubleshooter]: Failed to save the new settings - $error');
+        // Saving new settings failed
+        context.pop('Failed to save the new settings');
+      },
+      test: (error) => (error is JNAPError ||
+          error is TimeoutException ||
+          error is ClientException),
+    );
   }
 
   String _getErrorMessage(WanType wanType) {
@@ -184,6 +190,7 @@ class _PnpIspSettingsAuthViewState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppTextField.outline(
+                    secured: true,
                     headerText: loc(context).password,
                     controller: _passwordController,
                   ),
