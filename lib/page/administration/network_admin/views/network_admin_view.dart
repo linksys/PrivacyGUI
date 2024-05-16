@@ -95,7 +95,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                               ? AppPasswordField(
                                   readOnly: true,
                                   border: InputBorder.none,
-                                  controller: _passwordController,
+                                  controller: _passwordController..text = routerPasswordState.adminPassword,
                                   suffixIconConstraints: const BoxConstraints(),
                                 )
                               : AppTextField(
@@ -119,17 +119,8 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                       showBorder: false,
                       title: AppText.bodyLarge(loc(context).routerPasswordHint),
                       description: routerPasswordState.hint.isEmpty
-                          ? AppTextButton('Set one')
+                          ? const AppText.labelLarge('Set one')
                           : AppText.bodyMedium(routerPasswordState.hint),
-                      trailing: loginType == LoginType.local
-                          ? const Icon(LinksysIcons.edit)
-                          : null,
-                      onTap: loginType == LoginType.local
-                          ? () {
-                              // showSubmitAppDialog(content: Center());
-                              _showRouterHintModal(routerPasswordState.hint);
-                            }
-                          : null,
                     ),
                   ]),
                 ),

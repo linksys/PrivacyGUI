@@ -106,11 +106,16 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                   ref
                       .read(wifiListProvider.notifier)
                       .save(_mode)
-                      .then((_) =>
-                          showSuccessSnackBar(context, loc(context).saved))
-                      .onError((error, stackTrace) => loc(context).generalError)
+                      .then((_) {
+                        ref.read(wifiViewProvider.notifier).setChanged(false);
+                        setState(() {
+                          _preservedState = state;
+                        });
+                        showSuccessSnackBar(context, loc(context).saved);
+                      })
+                      .onError((error, stackTrace) => showFailedSnackBar(
+                          context, loc(context).generalError))
                       .whenComplete(() => setState(() {
-                            _preservedState = state;
                             _isLoading = false;
                           }));
                 }),
