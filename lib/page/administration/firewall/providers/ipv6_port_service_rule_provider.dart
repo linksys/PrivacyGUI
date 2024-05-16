@@ -35,16 +35,13 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState> {
       rules.replaceRange(index, index + 1, [rule]);
     }
     final repo = ref.read(routerRepositoryProvider);
-    final result = await repo
-        .send(
-          JNAPAction.setIPv6FirewallRules,
-          auth: true,
-          data: {
-            'rules': rules.map((e) => e.toJson()).toList(),
-          },
-        )
-        .then((value) => true)
-        .onError((error, stackTrace) => false);
+    final result = await repo.send(
+      JNAPAction.setIPv6FirewallRules,
+      auth: true,
+      data: {
+        'rules': rules.map((e) => e.toMap()).toList(),
+      },
+    ).then((value) => true);
     return result;
   }
 
@@ -54,16 +51,13 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState> {
       final rules = List<IPv6FirewallRule>.from(state.rules)
         ..removeWhere((element) => element == state.rule);
       final repo = ref.read(routerRepositoryProvider);
-      final result = await repo
-          .send(
-            JNAPAction.setIPv6FirewallRules,
-            auth: true,
-            data: {
-              'rules': rules.map((e) => e.toJson()).toList(),
-            },
-          )
-          .then((value) => true)
-          .onError((error, stackTrace) => false);
+      final result = await repo.send(
+        JNAPAction.setIPv6FirewallRules,
+        auth: true,
+        data: {
+          'rules': rules.map((e) => e.toMap()).toList(),
+        },
+      ).then((value) => true);
       return result;
     } else {
       return false;

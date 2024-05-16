@@ -51,9 +51,9 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
       setState(() {
         _isLoading = false;
       });
+      final provider = ref.read(routerPasswordProvider);
+      _passwordController.text = provider.adminPassword;
     });
-    final provider = ref.read(routerPasswordProvider);
-    _passwordController.text = provider.adminPassword;
   }
 
   @override
@@ -110,7 +110,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                       ),
                       trailing: const Icon(LinksysIcons.edit),
                       onTap: () {
-                        _showRouterPasswordModal();
+                        _showRouterPasswordModal(routerPasswordState.hint);
                       },
                     ),
                     const Divider(),
@@ -171,8 +171,11 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
           );
   }
 
-  _showRouterPasswordModal() {
+  _showRouterPasswordModal(String? hint) {
     TextEditingController controller = TextEditingController();
+    TextEditingController hintController = TextEditingController()
+      ..text = hint ?? '';
+
     bool isPasswordValid = false;
     showSubmitAppDialog(
       context,
@@ -204,10 +207,17 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
               });
             },
           ),
+          const AppGap.big(),
+          AppTextField(
+            border: const OutlineInputBorder(),
+            controller: hintController,
+            headerText: loc(context).routerPasswordHintOptional,
+            onChanged: (value) {},
+          ),
         ],
       ),
       event: () async {
-        await _save(newPassword: controller.text);
+        await _save(newPassword: controller.text, hint: hintController.text);
       },
       checkPositiveEnabled: () {
         return isPasswordValid;
