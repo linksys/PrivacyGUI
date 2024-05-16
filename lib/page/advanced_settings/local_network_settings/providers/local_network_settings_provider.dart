@@ -1,3 +1,6 @@
+import 'dart:html';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
@@ -100,6 +103,16 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       data: newSettings.toMap()..removeWhere((key, value) => value == null),
     )
         .then((result) async {
+      final newIpAddress = settings.ipAddress;
+      if (newIpAddress != state.ipAddress) {
+        if (kIsWeb) {
+          String url = window.location.href;
+          url.replaceFirst('myrouter.info', newIpAddress);
+          url.replaceFirst(state.ipAddress, newIpAddress);
+          window.location.href = url;
+        }
+      }
+
       // Update the state
       await fetch(fetchRemote: true);
     });
@@ -124,7 +137,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     List<DHCPReservation> newList = List.from(state.dhcpReservationList);
     bool succeed = false;
     if (item.ipAddress == 'DELETE') {
-      newList.remove(item);
+      newList.removeAt(index);
       succeed = true;
     } else if (!isReservationOverlap(item: item, index: index)) {
       newList[index] = item;

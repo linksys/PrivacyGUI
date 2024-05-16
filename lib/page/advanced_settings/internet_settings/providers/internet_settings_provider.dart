@@ -1,4 +1,7 @@
+import 'dart:html';
+
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
@@ -14,6 +17,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/_local_network_settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final internetSettingsProvider =
@@ -197,10 +201,17 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           final setWanSettingsResult = JNAPTransactionSuccessWrap.getResult(
               JNAPAction.setWANSettings, Map.fromEntries(results));
           final redirection = setWanSettingsResult?.output["redirection"];
+          final redirectUrl = '${redirection["hostName"]}.${redirection["domain"]}';
           await SharedPreferences.getInstance().then((prefs) {
-            prefs.setString(pRedirection,
-                "http://${redirection["hostName"]}.${redirection["domain"]}");
+            prefs.setString(pRedirection, "https://$redirectUrl");
           });
+          if (kIsWeb) {
+            final ipAddress = ref.read(localNetworkSettingProvider).ipAddress;
+            String url = window.location.href;
+            url.replaceFirst('myrouter.info', redirectUrl);
+            url.replaceFirst(ipAddress, redirectUrl);
+            window.location.href = url;
+          }
         }
         await fetch(fetchRemote: true);
       });
