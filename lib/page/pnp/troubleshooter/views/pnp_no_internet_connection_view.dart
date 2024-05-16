@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -141,18 +142,11 @@ class _PnpNoInternetConnectionState
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: Spacing.big),
-              child: AppTextButton(
-                'Log into router',
-                onTap: () {
-                  //TODO: Go to login local view
-                },
-              ),
-            ),
+            const AppGap.big(),
             AppFilledButton(
               loc(context).tryAgain,
               onTap: () {
+                logger.d('[PNP Troubleshooter]: Try again internet connection');
                 context.goNamed(RouteNamed.pnp);
               },
             )

@@ -66,6 +66,7 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
             ),
             const AppGap.semiBig(),
             AppTextField.outline(
+              secured: true,
               headerText: loc(context).password,
               controller: _passwordController,
             ),
