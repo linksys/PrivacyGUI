@@ -48,13 +48,16 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     final pnp = ref.read(pnpProvider.notifier);
     // check path include local password
     _password = widget.args['p'] as String?;
-    if (_password != null) {
-      // keep the admin password anyway if it exists
-      pnp.setAttachedPassword(_password!);
-    }
+
     // verify admin password is valid
     pnp
         .fetchDeviceInfo()
+        .then((_) {
+          if (_password != null) {
+            // keep the admin password anyway if it exists
+            pnp.setAttachedPassword(_password!);
+          }
+        })
         .then((_) => pnp.checkInternetConnection())
         .then((_) {
           setState(() {
@@ -63,6 +66,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         })
         .then((_) => pnp.checkRouterConfigured())
         .then((_) => adminPasswordFlow(_password))
+        .then((_) => context.goNamed(RouteNamed.pnpConfig))
         .catchError((error, stackTrace) {},
             test: (error) => error is ExceptionInvalidAdminPassword)
         .catchError((error, stackTrace) {
@@ -207,11 +211,9 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
                   setState(() {
                     _processing = true;
                   });
-                  adminPasswordFlow(_textEditController.text)
-                  .then((_) {
+                  adminPasswordFlow(_textEditController.text).then((_) {
                     context.goNamed(RouteNamed.pnpConfig);
-                  })
-                      .onError((error, stackTrace) {
+                  }).onError((error, stackTrace) {
                     setState(() {
                       _error = error;
                     });
