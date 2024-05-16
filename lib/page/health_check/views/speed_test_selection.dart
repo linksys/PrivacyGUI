@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -19,7 +20,8 @@ class SpeedTestSelectionView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final routerType = ref.watch(connectivityProvider
         .select((value) => value.connectivityInfo.routerType));
-    final isBehindRouter = routerType == RouterType.behindManaged;
+    final isBehindRouter = routerType == RouterType.behindManaged ||
+        BuildConfig.forceCommandType == ForceCommand.local;
     final isSpeedCheckSupported = ref
         .read(dashboardManagerProvider.notifier)
         .isHealthCheckModuleSupported('SpeedTest');

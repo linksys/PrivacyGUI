@@ -12,10 +12,10 @@ class Ipv6PortServiceListNotifier extends Notifier<Ipv6PortServiceListState> {
   @override
   Ipv6PortServiceListState build() => const Ipv6PortServiceListState();
 
-  Future fetch() {
+  Future fetch([bool force = false]) {
     return ref
         .read(routerRepositoryProvider)
-        .send(JNAPAction.getIPv6FirewallRules, auth: true)
+        .send(JNAPAction.getIPv6FirewallRules, auth: true, fetchRemote: force)
         .then((value) {
       final rules = List.from(value.output['rules'])
           .map((e) => IPv6FirewallRule.fromMap(e))

@@ -551,6 +551,7 @@
   "addDHCPReservation": "Add DHCP Reservation",
   "assignIpAddress": "Assign IP Address",
   "deleteReservation": "Delete reservation?",
-  "thisActionCannotBeUndone": "This action cannot be undone."
+  "thisActionCannotBeUndone": "This action cannot be undone.",
+  "routerPasswordHintOptional": "Router password hint (Optional)"
 
 }

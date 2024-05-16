@@ -110,6 +110,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                           showSuccessSnackBar(context, loc(context).saved))
                       .onError((error, stackTrace) => loc(context).generalError)
                       .whenComplete(() => setState(() {
+                            _preservedState = state;
                             _isLoading = false;
                           }));
                 }),
