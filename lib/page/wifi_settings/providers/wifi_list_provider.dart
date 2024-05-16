@@ -28,7 +28,7 @@ class WifiListNotifier extends Notifier<WiFiState> {
   Future<WiFiState> fetch([bool force = false]) async {
     final radioInfo = await ref
         .read(routerRepositoryProvider)
-        .send(JNAPAction.getRadioInfo, fetchRemote: force)
+        .send(JNAPAction.getRadioInfo, fetchRemote: force, auth: true)
         .then((result) => GetRadioInfo.fromMap(result.output));
     final deviceManagerState = ref.read(deviceManagerProvider);
     final wifiItems = radioInfo.radios
