@@ -186,6 +186,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
     return routerRepository.send(
       JNAPAction.reboot,
       cacheLevel: CacheLevel.noCache,
+      auth: true,
     );
   }
 
