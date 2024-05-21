@@ -70,7 +70,7 @@ class _InternetSettingsContentViewState
         ? const AppFullScreenSpinner()
         : StyledAppPageView(
             scrollable: true,
-            title: getAppLocalizations(context).internetSettings,
+            title: loc(context).internetSettings,
             child: AppBasicLayout(
               content: Column(
                 children: [

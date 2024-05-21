@@ -69,7 +69,6 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
   Future setAdminPasswordWithCredentials(String? password,
       [String? hint]) async {
     final repo = ref.read(routerRepositoryProvider);
-    const storage = FlutterSecureStorage();
     final pwd = password ?? ref.read(authProvider).value?.localPassword;
     return repo
         .send(
@@ -82,7 +81,9 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
       auth: true,
     )
         .then<void>((value) async {
-      await storage.write(key: pLocalPassword, value: password);
+      await ref
+          .read(authProvider.notifier)
+          .localLogin(pwd ?? '', guardError: false);
       await fetch();
     });
   }

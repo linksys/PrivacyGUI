@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -83,6 +84,11 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
                               }
                             : null,
                       ),
+                      onTap: enableSafeBrowsing
+                          ? () {
+                              _showProviderSelector(state.hasFortinet);
+                            }
+                          : null,
                     ),
                   ),
                 ],
@@ -146,30 +152,27 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
   }
 
   void _showRestartAlert() {
-    showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: AppText.titleLarge(loc(context).restartWifiAlertTitle),
-            content: AppText.bodyMedium(loc(context).restartWifiAlertDesc),
-            actions: [
-              AppTextButton(
-                loc(context).cancel,
-                color: Theme.of(context).colorScheme.onSurface,
-                onTap: () {
-                  context.pop();
-                },
-              ),
-              AppTextButton(
-                loc(context).restart,
-                onTap: () {
-                  _setSafeBrowsing();
-                  context.pop();
-                },
-              ),
-            ],
-          );
-        });
+    showSimpleAppDialog(
+      context,
+      title: loc(context).restartWifiAlertTitle,
+      content: AppText.bodyMedium(loc(context).restartWifiAlertDesc),
+      actions: [
+        AppTextButton(
+          loc(context).cancel,
+          color: Theme.of(context).colorScheme.onSurface,
+          onTap: () {
+            context.pop();
+          },
+        ),
+        AppTextButton(
+          loc(context).restart,
+          onTap: () {
+            _setSafeBrowsing();
+            context.pop();
+          },
+        ),
+      ],
+    );
   }
 
   String _getTextFormSafeBrowsingType(SafeBrowsingType type) {

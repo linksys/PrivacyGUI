@@ -41,6 +41,69 @@ class RouterWANSettings extends Equatable {
     this.wanTaggingSettings,
   });
 
+  factory RouterWANSettings.dhcp({required int mtu}) {
+    return RouterWANSettings(
+      wanType: 'DHCP',
+      mtu: mtu,
+    );
+  }
+
+  factory RouterWANSettings.pppoe(
+      {required int mtu,
+      required PPPoESettings pppoeSettings,
+      required SinglePortVLANTaggingSettings wanTaggingSettings}) {
+    return RouterWANSettings(
+      wanType: 'PPPoE',
+      mtu: mtu,
+      pppoeSettings: pppoeSettings,
+      wanTaggingSettings: wanTaggingSettings,
+    );
+  }
+
+  factory RouterWANSettings.pptp(
+      {required int mtu,
+      required TPSettings tpSettings,
+      required SinglePortVLANTaggingSettings wanTaggingSettings}) {
+    return RouterWANSettings(
+      wanType: 'PPTP',
+      mtu: mtu,
+      tpSettings: tpSettings,
+      wanTaggingSettings: wanTaggingSettings,
+    );
+  }
+
+  factory RouterWANSettings.l2tp(
+      {required int mtu,
+      required TPSettings tpSettings}) {
+    return RouterWANSettings(
+      wanType: 'L2TP',
+      mtu: mtu,
+      tpSettings: tpSettings,
+    );
+  }
+
+  factory RouterWANSettings.static(
+      {required int mtu,
+      required StaticSettings staticSettings,
+      required SinglePortVLANTaggingSettings wanTaggingSettings}) {
+    return RouterWANSettings(
+      wanType: 'Static',
+      mtu: mtu,
+      staticSettings: staticSettings,
+      wanTaggingSettings: wanTaggingSettings,
+    );
+  }
+
+  factory RouterWANSettings.bridge(
+      {int mtu = 0,
+      required BridgeSettings bridgeSettings}) {
+    return RouterWANSettings(
+      wanType: 'Bridge',
+      mtu: mtu,
+      bridgeSettings: bridgeSettings,
+    );
+  }
+
   RouterWANSettings copyWith({
     String? wanType,
     PPPoESettings? pppoeSettings,

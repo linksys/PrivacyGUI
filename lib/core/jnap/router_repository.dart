@@ -80,20 +80,23 @@ class RouterRepository {
     bool fetchRemote = false,
     CacheLevel? cacheLevel,
     int timeoutMs = 10000,
-    JNAPRetryOptions retryOptions = const JNAPRetryOptions(),
+    int retries = 1,
     JNAPSideEffectOverrides? sideEffectOverrides,
   }) async {
     cacheLevel ??= isMatchedJNAPNoCachePolicy(action)
         ? CacheLevel.noCache
         : CacheLevel.localCached;
-    final command = await createCommand(action.actionValue,
-        data: data,
-        extraHeaders: extraHeaders,
-        needAuth: auth,
-        type: type,
-        fetchRemote: fetchRemote,
-        cacheLevel: cacheLevel,
-        timeoutMs: timeoutMs);
+    final command = await createCommand(
+      action.actionValue,
+      data: data,
+      extraHeaders: extraHeaders,
+      needAuth: auth,
+      type: type,
+      fetchRemote: fetchRemote,
+      cacheLevel: cacheLevel,
+      timeoutMs: timeoutMs,
+      retries: retries,
+    );
     final sideEffectManager = ref.read(sideEffectProvider.notifier);
     return CommandQueue()
         .enqueue(command)
@@ -109,6 +112,8 @@ class RouterRepository {
     JNAPTransactionBuilder builder, {
     bool fetchRemote = false,
     CacheLevel cacheLevel = CacheLevel.localCached,
+    int timeoutMs = 10000,
+    int retries = 1,
     JNAPSideEffectOverrides? sideEffectOverrides,
   }) async {
     final payload = builder.commands
@@ -119,11 +124,15 @@ class RouterRepository {
         .toList();
     final sideEffectManager = ref.read(sideEffectProvider.notifier);
 
-    final command = await createTransaction(payload,
-        actions: builder.commands.map((e) => e.key).toList(),
-        needAuth: builder.auth,
-        fetchRemote: fetchRemote,
-        cacheLevel: cacheLevel);
+    final command = await createTransaction(
+      payload,
+      actions: builder.commands.map((e) => e.key).toList(),
+      needAuth: builder.auth,
+      fetchRemote: fetchRemote,
+      cacheLevel: cacheLevel,
+      timeoutMs: timeoutMs,
+      retries: retries,
+    );
 
     return CommandQueue().enqueue(command).then((
       record,
@@ -144,6 +153,8 @@ class RouterRepository {
     required List<JNAPAction> actions,
     bool fetchRemote = false,
     CacheLevel cacheLevel = CacheLevel.localCached,
+    int timeoutMs = 10000,
+    int retries = 1,
     CommandType? type,
   }) async {
     // final loginType = getLoginType();
@@ -164,7 +175,9 @@ class RouterRepository {
     if (url.isNotEmpty) {
       return TransactionHttpCommand(
         url: url,
-        executor: executor,
+        executor: executor
+          ..timeoutMs = timeoutMs
+          ..retries = retries,
         actions: actions,
         payload: payload,
         extraHeader: header,
@@ -185,6 +198,7 @@ class RouterRepository {
     bool fetchRemote = false,
     CacheLevel cacheLevel = CacheLevel.localCached,
     int timeoutMs = 10000,
+    int retries = 1,
   }) async {
     if (isEnableBTSetup) {
       return _createBTCommand(action,
@@ -202,6 +216,7 @@ class RouterRepository {
         fetchRemote: fetchRemote,
         cacheLevel: cacheLevel,
         timeoutMs: timeoutMs,
+        retries: retries,
       );
     }
   }
@@ -396,6 +411,7 @@ class RouterRepository {
     CommandType? type,
     bool fetchRemote = false,
     CacheLevel cacheLevel = CacheLevel.localCached,
+    int retries = 1,
     int timeoutMs = 10000,
   }) async {
     final routerType = getRouterType();
@@ -416,7 +432,9 @@ class RouterRepository {
     if (url.isNotEmpty) {
       return JNAPHttpCommand(
           url: url,
-          executor: executor..timeoutMs = timeoutMs,
+          executor: executor
+            ..timeoutMs = timeoutMs
+            ..retries = retries,
           action: action,
           data: data,
           extraHeader: header,

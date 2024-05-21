@@ -51,9 +51,6 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                     (loginType == LoginType.none ||
                             ResponsiveLayout.isLayoutBreakpoint(context))
                         ? InkWell(
-                            onTap: () {
-                              context.goNamed(RouteNamed.pnp);
-                            },
                             child: SvgPicture(
                               CustomTheme.of(context).images.linksysLogoBlack,
                               width: 20,

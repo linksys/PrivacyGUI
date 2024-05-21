@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/administration/firewall/_firewall.dart';
 import 'package:privacy_gui/page/administration/port_forwarding/providers/consts.dart';
@@ -120,6 +121,11 @@ class _AddRuleContentViewState
 
               context.pop(true);
             }
+          }).onError((error, stackTrace) {
+            logger.e('IpV6 Port service error:',
+                error: error, stackTrace: stackTrace);
+            showFailedSnackBar(
+                context, loc(context).unknownErrorCode(error ?? ''));
           });
         },
         onNegitiveTap: () {
@@ -128,6 +134,11 @@ class _AddRuleContentViewState
               showSimpleSnackBar(context, loc(context).ruleDeleted);
             }
             context.pop(true);
+          }).onError((error, stackTrace) {
+            logger.e('IpV6 Port service error:',
+                error: error, stackTrace: stackTrace);
+            showFailedSnackBar(
+                context, loc(context).unknownErrorCode(error ?? ''));
           });
         },
       ),

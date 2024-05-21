@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -33,7 +34,7 @@ class _PnpIspSettingsAuthViewState
   final _passwordController = TextEditingController();
   late final InternetSettingsState newSettings;
   bool _isLoading = true;
-  String? _spinnerText;
+  String? _spinnerText; //TODO: all spinner text is not confirmed
   String? _inputPasswordError;
   StreamSubscription? subscription;
 
@@ -83,7 +84,7 @@ class _PnpIspSettingsAuthViewState
       logger.e('[PNP Troubleshooter]: Login failed - Invalid admin password!');
       // Login failed, show password input form with an error
       setState(() {
-        _inputPasswordError = 'Invalid password';
+        _inputPasswordError = loc(context).errorIncorrectPassword;
         _isLoading = false;
       });
     }, test: (error) => error is ExceptionInvalidAdminPassword);
@@ -91,7 +92,7 @@ class _PnpIspSettingsAuthViewState
 
   Future<void> _saveNewSettings() {
     setState(() {
-      _spinnerText = 'Saving the new settings...';
+      _spinnerText = loc(context).savingChanges;
     });
     String? settingError;
     final wanType = WanType.resolve(
@@ -156,20 +157,25 @@ class _PnpIspSettingsAuthViewState
           // Keep the error record until the check loop is fulfilled or runs out of the re-try quota
         }
       });
-    }).catchError((error) {
-      logger
-          .e('[PNP Troubleshooter]: Failed to save the new settings - $error');
-      // Saving new settings failed
-      context.pop('Failed to save the new settings');
-    }, test: (error) => (error is JNAPError || error is TimeoutException));
+    }).catchError(
+      (error) {
+        logger.e(
+            '[PNP Troubleshooter]: Failed to save the new settings - $error');
+        // Saving new settings failed
+        context.pop('Failed to save the new settings');
+      },
+      test: (error) => (error is JNAPError ||
+          error is TimeoutException ||
+          error is ClientException),
+    );
   }
 
   String _getErrorMessage(WanType wanType) {
     if (wanType == WanType.static || wanType == WanType.dhcp) {
-      return 'Couldn’t establish a connection. Please check your info and try again.';
+      return loc(context).pnpErrorForStaticIpAndDhcp;
     } else {
       // This case must be PPPOE
-      return 'Account name or password incorrect. Please try again.';
+      return loc(context).pnpErrorForPppoe;
     }
   }
 
@@ -178,12 +184,13 @@ class _PnpIspSettingsAuthViewState
     return _isLoading
         ? AppFullScreenSpinner(text: _spinnerText)
         : StyledAppPageView(
-            title: 'Enter your router’s password to proceed',
+            title: loc(context).pnpIspSettingsAuthTitle,
             child: AppBasicLayout(
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppTextField.outline(
+                    secured: true,
                     headerText: loc(context).password,
                     controller: _passwordController,
                   ),
@@ -195,7 +202,7 @@ class _PnpIspSettingsAuthViewState
                     ),
                   const AppGap.extraBig(),
                   AppTextButton.noPadding(
-                    'Where is it?',
+                    loc(context).pnpRouterLoginWhereIsIt,
                     onTap: () {
                       //TODO: Where is it?
                     },

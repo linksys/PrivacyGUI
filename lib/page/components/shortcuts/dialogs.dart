@@ -43,6 +43,7 @@ Future<T?> showSubmitAppDialog<T>(
               : [
                   AppTextButton(
                     negitiveLabel ?? loc(context).cancel,
+                    color: Theme.of(context).colorScheme.onSurface,
                     onTap: () {
                       context.pop();
                     },

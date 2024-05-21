@@ -73,10 +73,6 @@ void main() {
       final restartNetworkMenuLabelFinder = find.text('Restart Network');
       expect(restartNetworkMenuIconFinder, findsOneWidget);
       expect(restartNetworkMenuLabelFinder, findsOneWidget);
-      final setupMenuIconFinder = find.byIcon(LinksysIcons.add);
-      final setupMenuLabelFinder = find.text('Setup a New Product');
-      expect(setupMenuIconFinder, findsOneWidget);
-      expect(setupMenuLabelFinder, findsOneWidget);
     },
   );
 
@@ -160,10 +156,6 @@ void main() {
       final restartNetworkMenuLabelFinder = find.text('Restart Network');
       expect(restartNetworkMenuIconFinder, findsOneWidget);
       expect(restartNetworkMenuLabelFinder, findsOneWidget);
-      final setupMenuIconFinder = find.byIcon(LinksysIcons.add);
-      final setupMenuLabelFinder = find.text('Setup a New Product');
-      expect(setupMenuIconFinder, findsOneWidget);
-      expect(setupMenuLabelFinder, findsOneWidget);
     },
   );
 

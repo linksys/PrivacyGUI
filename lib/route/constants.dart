@@ -73,7 +73,6 @@ class RoutePath {
   static const dhcpReservation = 'dhcpReservation';
   static const dhcpReservationEdit = 'dhcpReservationEdit';
   static const dhcpServer = 'dhcpServer';
-  static const localNetworkEdit = 'localNetworkEdit';
 
   /// mac filtering
   static const macFilteringInput = 'macFilteringInput';
@@ -97,9 +96,9 @@ class RoutePath {
   static const pnp = '/pnp';
   static const pnpConfig = 'pnpConfig';
   static const pnpNoInternetConnection = '/pnpNoInternetConnection';
-  static const pnpUnplugModem = 'unPlugModem';
-  static const pnpMakeSureLightOff = 'makeSureLightOff';
-  static const pnpWaitingModem = 'waitingModem';
+  static const pnpUnplugModem = 'pnpUnplugModem';
+  static const pnpModemLightsOff = 'pnpModemLightsOff';
+  static const pnpWaitingModem = 'pnpWaitingModem';
   static const pnpPPPOE = 'pnpPPPOE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
@@ -204,7 +203,6 @@ class RouteNamed {
   static const dhcpReservation = 'dhcpReservation';
   static const dhcpReservationEdit = 'dhcpReservationEdit';
   static const dhcpServer = 'dhcpServer';
-  static const localNetworkEdit = 'localNetworkEdit';
 
   /// mac filtering
   static const macFilteringInput = 'macFilteringInput';
@@ -229,9 +227,9 @@ class RouteNamed {
   static const pnp = 'pnp';
   static const pnpConfig = 'pnpConfig';
   static const pnpNoInternetConnection = 'noInternetConnection';
-  static const pnpUnplugModem = 'unPlugModem';
-  static const pnpMakeSureLightOff = 'makeSureLightOff';
-  static const pnpWaitingModem = 'waitingModem';
+  static const pnpUnplugModem = 'pnpUnplugModem';
+  static const pnpModemLightsOff = 'pnpModemLightsOff';
+  static const pnpWaitingModem = 'pnpWaitingModem';
   static const pnpPPPOE = 'pnpPPPOE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';

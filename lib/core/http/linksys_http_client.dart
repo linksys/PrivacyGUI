@@ -31,7 +31,6 @@ class LinksysHttpClient extends http.BaseClient
 
   LinksysHttpClient({
     IOClient? client,
-    int retries = 1,
     String? Function()? getHost,
     FutureOr<bool> Function(http.BaseResponse) when = _defaultWhen,
     FutureOr<bool> Function(Object, StackTrace) whenError = _defaultWhenError,
@@ -39,18 +38,14 @@ class LinksysHttpClient extends http.BaseClient
     FutureOr<void> Function(BaseRequest, http.BaseResponse?, int retryCount)?
         onRetry,
   })  : _inner = client ?? getClient(),
-        _retries = retries,
         _when = when,
         _whenError = whenError,
         _delay = delay,
         _onRetry = onRetry,
-        _getHost = getHost {
-    RangeError.checkNotNegative(_retries, 'retries');
-  }
+        _getHost = getHost;
 
   LinksysHttpClient.withCert(
     SecurityContext context, {
-    int retries = 1,
     FutureOr<bool> Function(http.BaseResponse) when = _defaultWhen,
     FutureOr<bool> Function(Object, StackTrace) whenError = _defaultWhenError,
     Duration Function(int retryCount) delay = _defaultDelay,
@@ -58,7 +53,6 @@ class LinksysHttpClient extends http.BaseClient
         onRetry,
   }) : this(
           client: IOClient(HttpClient(context: context)),
-          retries: retries,
           when: when,
           whenError: whenError,
           delay: delay,
@@ -66,9 +60,6 @@ class LinksysHttpClient extends http.BaseClient
         );
 
   final BaseClient _inner;
-
-  /// The number of times a request should be retried.
-  final int _retries;
 
   /// The callback that determines whether a request should be retried.
   final FutureOr<bool> Function(http.BaseResponse) _when;
@@ -138,7 +129,7 @@ class LinksysHttpClient extends http.BaseClient
             .timeout(Duration(milliseconds: timeoutMs));
       } catch (error, stackTrace) {
         logger.e('Http Request Error: $error');
-        if (i == _retries || !await _whenError(error, stackTrace)) {
+        if (i == retries || !await _whenError(error, stackTrace)) {
           //
           onError?.call(ErrorResponse.convert(error));
           rethrow;
@@ -146,7 +137,7 @@ class LinksysHttpClient extends http.BaseClient
       }
 
       if (response != null) {
-        if (i == _retries || !await _when(response)) return response;
+        if (i == retries || !await _when(response)) return response;
 
         // Make sure the response stream is listened to so that we don't leave
         // dangling connections.
