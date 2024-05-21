@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -73,23 +74,23 @@ class _PnpNoInternetConnectionState
                 onTap: () {
                   context.goNamed(RouteNamed.contactSupportChoose);
                 },
-                child: const Row(
+                child: Row(
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           AppText.labelLarge(
-                            'Need help?',
+                            loc(context).needHelp,
                           ),
-                          AppGap.small(),
+                          const AppGap.small(),
                           AppText.bodyMedium(
-                            'Contact Linksys support',
+                            loc(context).pnpNoInternetConnectionContactSupport,
                           ),
                         ],
                       ),
                     ),
-                    Icon(LinksysIcons.chevronRight),
+                    const Icon(LinksysIcons.chevronRight),
                   ],
                 ),
               ),
@@ -97,23 +98,23 @@ class _PnpNoInternetConnectionState
               onTap: () {
                 context.goNamed(RouteNamed.pnpUnplugModem);
               },
-              child: const Row(
+              child: Row(
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         AppText.labelLarge(
-                          'Restart your modem',
+                          loc(context).pnpNoInternetConnectionRestartModem,
                         ),
-                        AppGap.small(),
+                        const AppGap.small(),
                         AppText.bodyMedium(
-                          'Some ISPs require this when setting up a new router',
+                          loc(context).pnpNoInternetConnectionRestartModemDesc,
                         ),
                       ],
                     ),
                   ),
-                  Icon(LinksysIcons.chevronRight),
+                  const Icon(LinksysIcons.chevronRight),
                 ],
               ),
             ),
@@ -121,38 +122,31 @@ class _PnpNoInternetConnectionState
               onTap: () {
                 context.goNamed(RouteNamed.pnpIspTypeSelection);
               },
-              child: const Row(
+              child: Row(
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         AppText.labelLarge(
-                          'Enter ISP settings',
+                          loc(context).pnpNoInternetConnectionEnterISP,
                         ),
-                        AppGap.small(),
+                        const AppGap.small(),
                         AppText.bodyMedium(
-                          'Enter Static IP or PPPoE settings provided by your ISP',
+                          loc(context).pnpNoInternetConnectionEnterISPDesc,
                         ),
                       ],
                     ),
                   ),
-                  Icon(LinksysIcons.chevronRight),
+                  const Icon(LinksysIcons.chevronRight),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: Spacing.big),
-              child: AppTextButton(
-                'Log into router',
-                onTap: () {
-                  //TODO: Go to login local view
-                },
-              ),
-            ),
+            const AppGap.big(),
             AppFilledButton(
-              'Try Again',
+              loc(context).tryAgain,
               onTap: () {
+                logger.d('[PNP Troubleshooter]: Try again internet connection');
                 context.goNamed(RouteNamed.pnp);
               },
             )

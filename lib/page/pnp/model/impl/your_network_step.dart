@@ -17,7 +17,9 @@ class YourNetworkStep extends PnpStep {
   YourNetworkStep({
     required super.index,
     super.saveChanges,
-  });
+  }) {
+    canBack(false);
+  }
 
   @override
   String nextLable(BuildContext context) => getAppLocalizations(context).done;

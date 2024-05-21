@@ -1,18 +1,15 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/devices/providers/device_list_state.dart';
-import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/util/extensions.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -43,28 +40,10 @@ class DHCPReservationsContentView extends ArgumentsConsumerStatefulView {
 class _DHCPReservationsContentViewState
     extends ConsumerState<DHCPReservationsContentView> {
   bool _isLoading = false;
-  final List<DhcpClientModel> _checked = [];
-  List<DHCPReservation> _tempReserved = [];
-
-  late LocalNetworkSettingsState _currentSettings;
 
   @override
   void initState() {
     super.initState();
-    _currentSettings =
-        ref.read(localNetworkSettingProvider.notifier).currentSettings();
-    _isLoading = true;
-    Future.doWhile(() => !mounted)
-        .then((_) async =>
-            await ref.read(troubleshootingProvider.notifier).fetch())
-        .then((_) async =>
-            await ref.read(localNetworkSettingProvider.notifier).fetch())
-        .then((_) {
-      _init();
-      setState(() {
-        _isLoading = false;
-      });
-    });
   }
 
   @override
@@ -74,109 +53,90 @@ class _DHCPReservationsContentViewState
 
   @override
   Widget build(BuildContext context) {
-    // final dhcpClientList = ref.watch(troubleshootingProvider).dhcpClientList;
-    final dhcpReservedList =
-        ref.watch(localNetworkSettingProvider).dhcpReservationList;
-
+    final dhcpReservedList = ref.watch(localNetworkSettingProvider
+        .select((value) => value.dhcpReservationList));
     return _isLoading
         ? const AppFullScreenSpinner()
         : StyledAppPageView(
             scrollable: true,
             title: loc(context).dhcpReservations.capitalizeWords(),
-            bottomBar: PageBottomBar(
-              isPositiveEnabled: !listEquals(_tempReserved, dhcpReservedList),
-              onPositiveTap: () {
-                setState(() {
-                  _isLoading = true;
-                });
-                ref
-                    .read(localNetworkSettingProvider.notifier)
-                    .saveSettings(_currentSettings.copyWith(
-                        dhcpReservationList: _tempReserved))
-                    .then((_) {
-                  setState(() {
-                    _init();
-                    _isLoading = false;
-                  });
-                });
-              },
-            ),
             child: AppBasicLayout(
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.bodyLarge(loc(context).dhcpReservationDescption),
                   const AppGap.semiBig(),
-                  AppSettingCard(
-                    title: loc(context).selectFromMyDHCPList,
-                    trailing: const Icon(LinksysIcons.add),
-                    onTap: () async {
-                      final result = await context
-                          .pushNamed<List<DeviceListItem>?>(
-                              RouteNamed.devicePicker,
-                              extra: {
-                            'type': 'ipv4AndMac',
-                            'selectMode': 'multiple',
-                          });
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppSettingCard(
+                          title: loc(context).selectFromMyDHCPList,
+                          trailing: const Icon(LinksysIcons.add),
+                          onTap: () async {
+                            final result = await context
+                                .pushNamed<List<DeviceListItem>?>(
+                                    RouteNamed.devicePicker,
+                                    extra: {
+                                  'type': 'ipv4AndMac',
+                                  'selectMode': 'multiple',
+                                });
 
-                      if (result != null) {
-                        result.map((e) {
-                          final item = DHCPReservation(
-                            description: e.name,
-                            ipAddress: e.ipv4Address,
-                            macAddress: e.macAddress,
-                          );
-                          if (!_tempReserved.contains(item)) {
-                            setState(() {
-                              _tempReserved.add(item);
-                            });
-                          }
-                        }).toList();
-                      }
-                    },
-                  ),
-                  AppSettingCard(
-                    title: loc(context).manuallyAddReservation,
-                    trailing: const Icon(LinksysIcons.add),
-                    onTap: () async {
-                      final result = await context.pushNamed<DHCPReservation?>(
-                          RouteNamed.dhcpReservationEdit,
-                          extra: {
-                            'viewType': 'add',
-                          });
-                      if (result != null) {
-                        if (!_tempReserved.contains(result)) {
-                          setState(() {
-                            _tempReserved.add(result);
-                          });
-                        }
-                      }
-                    },
+                            if (result != null) {
+                              final addedList = result.map((e) {
+                                return DHCPReservation(
+                                  description:
+                                      e.name.replaceAll(RegExp(r' '), ''),
+                                  ipAddress: e.ipv4Address,
+                                  macAddress: e.macAddress,
+                                );
+                              }).toList();
+                              ref
+                                  .read(localNetworkSettingProvider.notifier)
+                                  .updateDHCPReservationList(addedList);
+                            }
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: AppSettingCard(
+                          title: loc(context).manuallyAddReservation,
+                          trailing: const Icon(LinksysIcons.add),
+                          onTap: () async {
+                            final result = await context
+                                .pushNamed<DHCPReservation?>(
+                                    RouteNamed.dhcpReservationEdit,
+                                    extra: {
+                                  'viewType': 'add',
+                                });
+                            if (result != null) {
+                              final isReservationOverlap = ref
+                                  .read(localNetworkSettingProvider.notifier)
+                                  .isReservationOverlap(item: result);
+                              if (!isReservationOverlap) {
+                                ref
+                                    .read(localNetworkSettingProvider.notifier)
+                                    .updateDHCPReservationList([result]);
+                              } else {
+                                showFailedSnackBar(
+                                  context,
+                                  'DHCP reservation overlap',
+                                );
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                   const AppGap.big(),
                   AppText.labelLarge(
                       loc(context).reservedAddresses.capitalizeWords()),
                   const AppGap.regular(),
-                  ...reservedAddresses(_tempReserved),
+                  ...reservedAddresses(dhcpReservedList),
                 ],
               ),
             ),
           );
-  }
-
-  void _init() {
-    final dhcpReservedList =
-        ref.read(localNetworkSettingProvider).dhcpReservationList;
-    final dhcpClientList = ref.read(troubleshootingProvider).dhcpClientList;
-    _checked.addAll(dhcpClientList.where((element) =>
-        dhcpReservedList.map((e) => e.macAddress).contains(element.mac)));
-    _tempReserved = [
-      ...dhcpReservedList,
-      ..._checked
-          .map((e) => DHCPReservation(
-              macAddress: e.mac, ipAddress: e.ipAddress, description: e.name))
-          .toList()
-    ].unique((e) => e.macAddress);
   }
 
   List<Widget> reservedAddresses(List<DHCPReservation> reserved) {
@@ -205,31 +165,37 @@ class _DHCPReservationsContentViewState
                     "IP: ${item.ipAddress}\nMAC: ${item.macAddress}"),
                 trailing: AppIconButton(
                   icon: LinksysIcons.edit,
-                  onTap: () async {
-                    final result = await context.pushNamed<DHCPReservation?>(
-                        RouteNamed.dhcpReservationEdit,
-                        extra: {
-                          'viewType': 'edit',
-                          'item': item,
-                        });
-                    if (result != null) {
-                      if (result.ipAddress == 'DELETE') {
-                        setState(() {
-                          _tempReserved.remove(item);
-                        });
-                      } else if (!_tempReserved.contains(result)) {
-                        setState(() {
-                          _tempReserved[index] = result;
-                        });
-                      }
-                    }
+                  onTap: () {
+                    goDHCPReservationEdit(item, index);
                   },
                 ),
+                onTap: () {
+                  goDHCPReservationEdit(item, index);
+                },
               );
             },
           ),
         ),
       ];
+    }
+  }
+
+  void goDHCPReservationEdit(DHCPReservation item, int index) async {
+    final result = await context
+        .pushNamed<DHCPReservation?>(RouteNamed.dhcpReservationEdit, extra: {
+      'viewType': 'edit',
+      'item': item,
+    });
+    if (result != null) {
+      final succeed = ref
+          .read(localNetworkSettingProvider.notifier)
+          .updateDHCPReservationOfIndex(result, index);
+      if (!succeed) {
+        showFailedSnackBar(
+          context,
+          'DHCP reservation overlap',
+        );
+      }
     }
   }
 }

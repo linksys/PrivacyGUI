@@ -54,7 +54,7 @@ class _Ipv6PortServiceListViewState
                   context.pushNamed<bool?>(RouteNamed.ipv6PortServiceRule,
                       extra: {'rules': state.rules}).then((value) {
                     if (value ?? false) {
-                      _notifier.fetch();
+                      _notifier.fetch(true);
                     }
                   });
                 },
@@ -78,7 +78,7 @@ class _Ipv6PortServiceListViewState
                               'edit': e
                             }).then((value) {
                           if (value ?? false) {
-                            _notifier.fetch();
+                            _notifier.fetch(true);
                           }
                         });
                       },
