@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
 import 'package:privacy_gui/page/advanced_settings/widgets/_widgets.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -220,40 +221,43 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
     final title =
         '${viewType == InternetSettingsViewType.ipv4 ? loc(context).ipv4 : loc(context).ipv6} ${loc(context).connectionType}';
     final wanType = WanType.resolve(state.ipv4Setting.ipv4ConnectionType);
-    return StyledAppPageView(
-      scrollable: true,
-      title: title,
-      bottomBar: PageBottomBar(
-        isPositiveEnabled: _isEdited(),
-        onPositiveTap: _showRestartAlert,
-      ),
-      onBackTap: _isEdited()
-          ? () {
-              _showUnsavedAlert();
-            }
-          : null,
-      actions: [
-        AppTextButton(
-          isEditing ? loc(context).cancel : loc(context).edit,
-          onTap: isEditing
-              ? () {
-                  setState(() {
-                    isEditing = false;
-                    state = ref.read(internetSettingsProvider).copyWith();
-                  });
-                }
-              : () {
-                  setState(() {
-                    isEditing = true;
-                  });
-                },
-        ),
-      ],
-      child: isLoading
-          ? AppFullScreenSpinner(
-              title: loadingTitle,
-            )
-          : AppBasicLayout(
+    return isLoading
+        ? AppFullScreenSpinner(
+            title: loadingTitle,
+          )
+        : StyledAppPageView(
+            scrollable: true,
+            title: title,
+            bottomBar: PageBottomBar(
+              isPositiveEnabled: _isEdited(),
+              onPositiveTap: _showRestartAlert,
+            ),
+            onBackTap: _isEdited()
+                ? () async {
+                    final goBack = await _showUnsavedAlert();
+                    if (goBack == true) {
+                      context.pop();
+                    }
+                  }
+                : null,
+            actions: [
+              AppTextButton(
+                isEditing ? loc(context).cancel : loc(context).edit,
+                onTap: isEditing
+                    ? () {
+                        setState(() {
+                          isEditing = false;
+                          state = ref.read(internetSettingsProvider).copyWith();
+                        });
+                      }
+                    : () {
+                        setState(() {
+                          isEditing = true;
+                        });
+                      },
+              ),
+            ],
+            child: AppBasicLayout(
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -295,7 +299,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 ],
               ),
             ),
-    );
+          );
   }
 
   Widget _content() {
@@ -1293,32 +1297,28 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
     }
   }
 
-  _showUnsavedAlert() {
-    showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: AppText.titleLarge(loc(context).unsavedChangesTitle),
-            content: AppText.bodyMedium(loc(context).unsavedChangesDesc),
-            actions: [
-              AppTextButton(
-                loc(context).goBack,
-                color: Theme.of(context).colorScheme.onSurface,
-                onTap: () {
-                  context.pop();
-                },
-              ),
-              AppTextButton(
-                loc(context).discardChanges,
-                color: Theme.of(context).colorScheme.error,
-                onTap: () {
-                  context.pop();
-                  context.pop();
-                },
-              ),
-            ],
-          );
-        });
+  Future<bool?> _showUnsavedAlert() {
+    return showMessageAppDialog<bool>(
+      context,
+      title: loc(context).unsavedChangesTitle,
+      message: loc(context).unsavedChangesDesc,
+      actions: [
+        AppTextButton(
+          loc(context).goBack,
+          color: Theme.of(context).colorScheme.onSurface,
+          onTap: () {
+            context.pop();
+          },
+        ),
+        AppTextButton(
+          loc(context).discardChanges,
+          color: Theme.of(context).colorScheme.error,
+          onTap: () {
+            context.pop(true);
+          },
+        ),
+      ],
+    );
   }
 
   bool _isEdited() {

@@ -1,6 +1,5 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
-import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -192,6 +191,8 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
           JNAPAction.getWANStatus,
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
+          timeoutMs: 3000,
+          retries: 0,
         )
         .then((response) => RouterWANStatus.fromJson(response.output))
         .then((status) {
@@ -212,7 +213,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     final routerRepository = ref.read(routerRepositoryProvider);
     return routerRepository
         .send(JNAPAction.getDeviceInfo,
-            fetchRemote: true, cacheLevel: CacheLevel.noCache)
+            fetchRemote: true, cacheLevel: CacheLevel.noCache, timeoutMs: 3000)
         .then((response) => NodeDeviceInfo.fromJson(response.output))
         .then((devceInfo) => devceInfo.serialNumber == cachedSerialNumber)
         .then(

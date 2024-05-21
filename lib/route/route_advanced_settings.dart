@@ -61,13 +61,6 @@ final advancedSettings = [
           args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
-      LinksysRoute(
-        name: RouteNamed.localNetworkEdit,
-        path: RoutePath.localNetworkEdit,
-        builder: (context, state) => LocalNetworkEditView(
-          args: state.extra as Map<String, dynamic>? ?? {},
-        ),
-      ),
     ],
   ),
   LinksysRoute(
