@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/topology/providers/topology_provider.dart';
@@ -191,9 +192,18 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                   .showSpinner(tag: 'reboot', force: true);
 
               context.pop();
-              ref.read(topologyProvider.notifier).reboot().then((value) {
-                ref.read(rootProvider.notifier).hideSpinner(tag: 'reboot');
-              });
+              ref
+                  .read(topologyProvider.notifier)
+                  .reboot()
+                  .then((value) {
+                    showSuccessSnackBar(
+                        context, loc(context).successExclamation);
+                  })
+                  .onError((error, stackTrace) => showFailedSnackBar(
+                      context, loc(context).unknownErrorCode(error ?? '')))
+                  .whenComplete(() {
+                    ref.read(rootProvider.notifier).hideSpinner(tag: 'reboot');
+                  });
             },
           ),
           AppFilledButton(
