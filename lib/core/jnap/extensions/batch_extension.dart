@@ -24,6 +24,7 @@ extension BatchCommands on RouterRepository {
         const MapEntry(JNAPAction.isAdminPasswordSetByUser, {}),
         const MapEntry(JNAPAction.isAdminPasswordDefault, {}),
       ], auth: true),
+      fetchRemote: true,
     ).then((successWrap) => successWrap.data);
   }
 
