@@ -88,9 +88,9 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
 
   Widget _handleSpinner(AppRootConfig config) {
     if (config.spinnerTag != null) {
-      return AppFullScreenSpinner();
+      return AppFullScreenSpinner(title: config.singleMessage);
     } else {
-      return Center();
+      return const Center();
     }
   }
 
