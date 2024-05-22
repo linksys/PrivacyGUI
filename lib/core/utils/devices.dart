@@ -62,7 +62,7 @@ extension DeviceUtil on RawDevice {
     if (knownInterfaces != null) {
       final knownInterface = knownInterfaces!.firstWhereOrNull((element) =>
           element.band != null || element.interfaceType != 'Unknown');
-      macAddress = knownInterface?.macAddress ?? '';
+      macAddress = (knownInterface?? knownInterfaces!.first).macAddress ?? '';
     } else if (knownMACAddresses != null) {
       // This case is only for a part of old routers that does not support 'GetDevices3' action
       macAddress = knownMACAddresses!.firstOrNull ?? '';

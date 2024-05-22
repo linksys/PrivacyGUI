@@ -185,6 +185,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
     final routerRepository = ref.read(routerRepositoryProvider);
     return routerRepository.send(
       JNAPAction.reboot,
+      fetchRemote: true,
       cacheLevel: CacheLevel.noCache,
       auth: true,
     );

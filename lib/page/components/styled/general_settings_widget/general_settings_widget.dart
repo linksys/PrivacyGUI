@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/components/styled/general_settings_widget/langu
 import 'package:privacy_gui/page/components/styled/general_settings_widget/theme_tile.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
+import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/buttons/popup_button.dart';
@@ -29,6 +30,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
             LoginType.none;
 
     return AppPopupButton(
+      parent: shellNavigatorKey.currentContext,
       button: const Icon(
         LinksysIcons.person,
         size: 20,
