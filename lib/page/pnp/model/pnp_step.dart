@@ -19,15 +19,16 @@ abstract class PnpStep {
   final Future Function()? saveChanges;
   late final BasePnpNotifier pnp;
   bool _canGoNext = true;
+  bool _canBack = true;
 
   PnpStep({required this.index, this.saveChanges});
 
   // Title for displaying on the stepper
   String title(BuildContext context);
   // Override to custom the next copy
-  String nextLable(BuildContext context) => getAppLocalizations(context).next;
+  String nextLable(BuildContext context) => loc(context).next;
   // Override to custom the back copy
-  String previousLable(BuildContext context) => 'back';
+  String previousLable(BuildContext context) => loc(context).back;
 
   /// Save the data to [PnpProvider] when the next button been clicked.
   /// The [data] is coming from [onNext].
@@ -39,6 +40,10 @@ abstract class PnpStep {
 
   void canGoNext(bool value) {
     _canGoNext = value;
+  }
+
+  void canBack(bool value) {
+    _canBack = value;
   }
 
   /// Init this step, override it if there has pre-process data.
@@ -75,13 +80,17 @@ abstract class PnpStep {
                 StepViewStatus.loading;
             return Row(
               children: [
-                AppTextButton(
-                  previousLable(context),
-                  onTap: (currentIndex == 0 || status == StepViewStatus.loading)
-                      ? null
-                      : details.onStepCancel,
-                ),
-                const AppGap.regular(),
+                if (_canBack) ...[
+                  AppTextButton(
+                    previousLable(context),
+                    onTap: (currentIndex == 0 ||
+                            status == StepViewStatus.loading ||
+                            !_canBack)
+                        ? null
+                        : details.onStepCancel,
+                  ),
+                  const AppGap.regular(),
+                ],
                 AppFilledButton(
                   nextLable(context),
                   onTap: status != StepViewStatus.data

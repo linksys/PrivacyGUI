@@ -10,7 +10,7 @@ import 'package:riverpod/riverpod.dart';
 import 'package:test/test.dart';
 import 'package:http/http.dart' as http;
 
-import 'linksys_cloud_repository_test.mocks.dart';
+import 'linksys_cloud_repository_test_mocks.dart';
 
 @GenerateNiceMocks(
     [MockSpec<LinksysHttpClient>(onMissingStub: OnMissingStub.returnDefault)])

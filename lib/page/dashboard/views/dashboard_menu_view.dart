@@ -45,8 +45,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             onTap: () {
               _restartNetwork();
             }),
-        PageMenuItem(
-            label: loc(context).menuSetupANewProduct, icon: LinksysIcons.add)
+        // PageMenuItem(
+        //     label: loc(context).menuSetupANewProduct, icon: LinksysIcons.add)
       ]),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,

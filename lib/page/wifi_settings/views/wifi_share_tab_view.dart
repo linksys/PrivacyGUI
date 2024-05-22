@@ -15,6 +15,14 @@ class WiFiShareTabView extends ConsumerStatefulWidget {
 
 class _WiFiShareTabViewState extends ConsumerState<WiFiShareTabView> {
   @override
+  void initState() {
+    super.initState();
+
+    ref.read(wifiListProvider.notifier).fetch();
+    ref.read(guestWifiProvider.notifier).fetch();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = ref.watch(wifiListProvider);
     final guest = ref.watch(guestWifiProvider);

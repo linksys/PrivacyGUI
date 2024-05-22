@@ -483,7 +483,10 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     final result = await ref
         .read(routerRepositoryProvider)
         .send(JNAPAction.getDeviceInfo,
-            fetchRemote: true, cacheLevel: CacheLevel.noCache)
+            fetchRemote: true,
+            cacheLevel: CacheLevel.noCache,
+            retries: 0,
+            timeoutMs: 3000)
         .onError((error, stackTrace) {
       // Can't get device info
       throw ExceptionNeedToReconnect();

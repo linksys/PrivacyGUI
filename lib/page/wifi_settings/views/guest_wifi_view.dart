@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -78,7 +79,9 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
                       _preservedState = state;
                       _isLoading = false;
                     });
-                  });
+                    showSuccessSnackBar(context, loc(context).saved);
+                  }).onError((error, stackTrace) => showFailedSnackBar(
+                      context, loc(context).unknownErrorCode(error ?? '')));
                 }),
             child: _guestWiFiContent(),
           );

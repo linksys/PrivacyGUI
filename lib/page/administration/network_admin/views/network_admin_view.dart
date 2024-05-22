@@ -51,9 +51,9 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
       setState(() {
         _isLoading = false;
       });
+      final provider = ref.read(routerPasswordProvider);
+      _passwordController.text = provider.adminPassword;
     });
-    final provider = ref.read(routerPasswordProvider);
-    _passwordController.text = provider.adminPassword;
   }
 
   @override
@@ -95,7 +95,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                               ? AppPasswordField(
                                   readOnly: true,
                                   border: InputBorder.none,
-                                  controller: _passwordController,
+                                  controller: _passwordController..text = routerPasswordState.adminPassword,
                                   suffixIconConstraints: const BoxConstraints(),
                                 )
                               : AppTextField(
@@ -110,7 +110,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                       ),
                       trailing: const Icon(LinksysIcons.edit),
                       onTap: () {
-                        _showRouterPasswordModal();
+                        _showRouterPasswordModal(routerPasswordState.hint);
                       },
                     ),
                     const Divider(),
@@ -119,17 +119,8 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                       showBorder: false,
                       title: AppText.bodyLarge(loc(context).routerPasswordHint),
                       description: routerPasswordState.hint.isEmpty
-                          ? AppTextButton('Set one')
+                          ? const AppText.labelLarge('Set one')
                           : AppText.bodyMedium(routerPasswordState.hint),
-                      trailing: loginType == LoginType.local
-                          ? const Icon(LinksysIcons.edit)
-                          : null,
-                      onTap: loginType == LoginType.local
-                          ? () {
-                              // showSubmitAppDialog(content: Center());
-                              _showRouterHintModal(routerPasswordState.hint);
-                            }
-                          : null,
                     ),
                   ]),
                 ),
@@ -171,8 +162,11 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
           );
   }
 
-  _showRouterPasswordModal() {
+  _showRouterPasswordModal(String? hint) {
     TextEditingController controller = TextEditingController();
+    TextEditingController hintController = TextEditingController()
+      ..text = hint ?? '';
+
     bool isPasswordValid = false;
     showSubmitAppDialog(
       context,
@@ -204,10 +198,17 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
               });
             },
           ),
+          const AppGap.big(),
+          AppTextField(
+            border: const OutlineInputBorder(),
+            controller: hintController,
+            headerText: loc(context).routerPasswordHintOptional,
+            onChanged: (value) {},
+          ),
         ],
       ),
       event: () async {
-        await _save(newPassword: controller.text);
+        await _save(newPassword: controller.text, hint: hintController.text);
       },
       checkPositiveEnabled: () {
         return isPasswordValid;
