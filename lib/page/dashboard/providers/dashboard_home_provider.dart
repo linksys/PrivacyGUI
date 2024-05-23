@@ -3,6 +3,7 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/utils.dart';
@@ -32,6 +33,8 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     final numOfWifi = _getNumberOfAvailableWifi(dashboardManagerState);
     // Get node number in the mesh
     final numOfNodes = deviceManagerState.nodeDevices.length;
+    final isAnyNodesOffline =
+        deviceManagerState.nodeDevices.any((element) => !element.isOnline());
     // Get online external devices number
     final onlineDevices = deviceManagerState.externalDevices
         .where((device) => device.connections.isNotEmpty)
@@ -65,6 +68,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       isWanConnected: isWanConnected,
       isFirstPolling: isFirstPolling,
       masterIcon: masterIcon,
+      isAnyNodesOffline: isAnyNodesOffline,
       uploadResult: uploadResult,
       downloadResult: downloadResult,
     );

@@ -1,11 +1,18 @@
+import 'package:collection/collection.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
+import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/firmware_update/_firmware_update.dart';
@@ -14,6 +21,7 @@ import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dar
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/dashboard/providers/smart_device_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/extensions.dart';
 import 'package:privacy_gui/util/smart_device_prefs_helper.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -21,6 +29,8 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/theme/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
@@ -48,6 +58,10 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     final state = ref.watch(dashboardHomeProvider);
     final wanStatus = ref.watch(nodeWanStatusProvider);
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
+    final master = ref
+        .watch(deviceManagerProvider)
+        .deviceList
+        .firstWhereOrNull((device) => device.isAuthority);
     return StyledAppPageView(
       scrollable: true,
       appBarStyle: AppBarStyle.none,
@@ -58,23 +72,58 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         right: Spacing.regular,
         bottom: Spacing.regular,
       ),
-      child: Stack(
-        children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _homeTitle(state.mainWifiSsid, wanStatus == NodeWANStatus.online,
-                  isLoading, state.isFirstPolling),
-              const AppGap.big(),
-              _networkInfoTiles(state, isLoading),
-              // const AppGap.extraBig(),
-              // _speedTestTile(state, isLoading),
-            ],
-          ),
-          // if (isLoading)
-          //   const AppFullScreenSpinner(),
-        ],
+      child: ResponsiveLayout.isLayoutBreakpoint(context)
+          ? Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _homeTitle(
+                    state.mainWifiSsid,
+                    wanStatus == NodeWANStatus.online,
+                    isLoading,
+                    state.isFirstPolling),
+                const AppGap.extraBig(),
+                _routerImage(isLoading, master),
+                const AppGap.extraBig(),
+                const Spacer(),
+                _networkInfoTiles(state, isLoading),
+                // const AppGap.extraBig(),
+                // _speedTestTile(state, isLoading),
+              ],
+            )
+          : Row(
+              children: [
+                Column(
+                  children: [
+                    _homeTitle(
+                        state.mainWifiSsid,
+                        wanStatus == NodeWANStatus.online,
+                        isLoading,
+                        state.isFirstPolling),
+                    const AppGap.extraBig(),
+                    _routerImage(isLoading, master),
+                  ],
+                ),
+                Expanded(child: _networkInfoTiles(state, isLoading)),
+              ],
+            ),
+    );
+  }
+
+  Widget _routerImage(bool isLoading, LinksysDevice? master) {
+    final routerImage = CustomTheme.of(context).images.devicesxl.getByName(
+        routerIconTestByModel(modelNumber: master?.modelNumber ?? ''));
+    return Center(
+      child: SizedBox(
+        width: 300,
+        height: 300,
+        child: isLoading || routerImage == null
+            ? const AppSpinner(
+                size: Size.fromWidth(300),
+              )
+            : Image(
+                image: routerImage,
+              ),
       ),
     );
   }
@@ -85,7 +134,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _ssid(ssid, isLoading),
+        // _ssid(ssid, isLoading),
+        _title(),
         const AppGap.regular(),
         Stack(
           children: [
@@ -103,14 +153,19 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               duration: const Duration(milliseconds: 500),
               child: Row(
                 children: [
-                  const AppText.titleLarge(
-                    'Internet ',
-                  ),
-                  AppText.titleLarge(
-                    isOnline ? 'online' : 'offline',
+                  Icon(
+                    isOnline ? LinksysIcons.public : LinksysIcons.publicOff,
                     color: isOnline
                         ? Theme.of(context).colorScheme.primary
-                        : Colors.red,
+                        : Theme.of(context).colorScheme.error,
+                  ),
+                  AppText.titleLarge(
+                    isOnline
+                        ? loc(context).internetConnected
+                        : loc(context).internetOffline,
+                    color: isOnline
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.error,
                   ),
                 ],
               ),
@@ -146,6 +201,21 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           );
   }
 
+  Widget _title() {
+    final now = TimeOfDay.now();
+    const noon = TimeOfDay(hour: 12, minute: 0);
+    const night = TimeOfDay(hour: 18, minute: 0);
+    String text;
+    if (now.compareTo(noon) < 0) {
+      text = 'Good morning!';
+    } else if (now.compareTo(night) < 0) {
+      text = 'Good afternoon!';
+    } else {
+      text = 'Good night';
+    }
+    return AppText.headlineSmall(text);
+  }
+
   Widget _networkInfoTiles(DashboardHomeState state, bool isLoading) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 0),
@@ -153,8 +223,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Flexible(child: _wifiInfoTile(state.numOfWifi, isLoading)),
           Flexible(child: _nodesInfoTile(state, isLoading)),
+          Flexible(child: _wifiInfoTile(state.numOfWifi, isLoading)),
           Flexible(
               child: _devicesInfoTile(
                   state.numOfOnlineExternalDevices, isLoading)),
@@ -166,7 +236,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   Widget _wifiInfoTile(int wifiCount, bool isLoading) {
     return _infoTile(
       iconData: LinksysIcons.wifi,
-      text: 'WiFi $wifiCount',
+      text: loc(context).wifi,
+      count: wifiCount,
       isLoading: isLoading,
       onTap: () {
         context.pushNamed(RouteNamed.wifiShare);
@@ -175,12 +246,18 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   }
 
   Widget _nodesInfoTile(DashboardHomeState state, bool isLoading) {
-    final image =
-        CustomTheme.of(context).images.devices.getByName(state.masterIcon);
     return _infoTile(
-      image: image,
-      text: 'Nodes ${state.numOfNodes}',
+      iconData: LinksysIcons.networkNode,
+      text: loc(context).nodes,
+      count: state.numOfNodes,
       isLoading: isLoading,
+      sub: state.isAnyNodesOffline
+          ? Icon(
+              LinksysIcons.infoCircle,
+              size: 24,
+              color: Theme.of(context).colorScheme.error,
+            )
+          : null,
       onTap: () {
         ref.read(topologySelectedIdProvider.notifier).state = '';
         context.pushNamed(RouteNamed.settingsNodes);
@@ -190,7 +267,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   Widget _devicesInfoTile(int numOfOnlineExternalDevices, bool isLoading) {
     return _infoTile(
-      text: '$numOfOnlineExternalDevices devices',
+      text: loc(context).devices,
+      count: numOfOnlineExternalDevices,
       iconData: LinksysIcons.devices,
       isLoading: isLoading,
       onTap: () {
@@ -201,17 +279,16 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   Widget _infoTile({
     required String text,
-    IconData? iconData,
-    ImageProvider? image,
+    required int count,
+    required IconData iconData,
+    Widget? sub,
     VoidCallback? onTap,
     bool isLoading = false,
   }) {
     return Container(
-      constraints: BoxConstraints(
+      constraints: const BoxConstraints(
         minWidth: 200,
-        maxWidth: 380,
-        minHeight: 160,
-        maxHeight: 240,
+        minHeight: 136,
       ),
       child: isLoading
           ? Card(
@@ -223,20 +300,20 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (iconData != null)
-                    Icon(
-                      iconData,
-                      size: 70,
-                    ),
-                  if (image != null)
-                    Image(
-                      image: image,
-                      width: 70,
-                      height: 70,
-                    ),
-                  // const AppGap.regular(),
-                  AppText.labelLarge(text),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Icon(
+                        iconData,
+                        size: 24,
+                      ),
+                      if (sub != null) sub,
+                    ],
+                  ),
+                  AppText.titleSmall(text),
+                  AppText.displaySmall('$count'),
                 ],
               ),
             ),
