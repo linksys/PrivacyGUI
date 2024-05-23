@@ -9,6 +9,7 @@ class DashboardHomeState {
   final bool isWanConnected;
   final bool isFirstPolling;
   final String masterIcon;
+  final bool isAnyNodesOffline;
   final ({String value, String unit}) uploadResult;
   final ({String value, String unit}) downloadResult;
 
@@ -20,6 +21,7 @@ class DashboardHomeState {
     this.isWanConnected = false,
     this.isFirstPolling = false,
     this.masterIcon = '',
+    this.isAnyNodesOffline = false,
     this.uploadResult = (value: '', unit: ''),
     this.downloadResult = (value: '', unit: ''),
   });
@@ -32,6 +34,7 @@ class DashboardHomeState {
     bool? isWanConnected,
     bool? isFirstPolling,
     String? masterIcon,
+    bool? isAnyNodesOffline,
     ({String value, String unit})? uploadResult,
     ({String value, String unit})? downloadResult,
   }) {
@@ -44,6 +47,7 @@ class DashboardHomeState {
       isWanConnected: isWanConnected ?? this.isWanConnected,
       isFirstPolling: isFirstPolling ?? this.isFirstPolling,
       masterIcon: masterIcon ?? this.masterIcon,
+      isAnyNodesOffline: isAnyNodesOffline ?? this.isAnyNodesOffline,
       uploadResult: uploadResult ?? this.uploadResult,
       downloadResult: downloadResult ?? this.downloadResult,
     );
