@@ -11,8 +11,13 @@ import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
 enum ContactSupportRegion {
+  //TODO: A large area will contain more than one regions
   us(phone: '(800) 326-7114'),
-  canada(phone: '1-800-326-7114');
+  canada(phone: '1-800-326-7114'),
+  latinAmerica(phone: '01 800 681 1811'),
+  europe(phone: '022 008 298'),
+  middleEastAndAfrica(phone: '800 844 5905'),
+  asiaPacific(phone: '886-2-2656-3377');
 
   final String phone;
 
@@ -26,6 +31,14 @@ enum ContactSupportRegion {
         return 'United States';
       case canada:
         return 'Canada';
+      case latinAmerica:
+        return 'Latin America';
+      case europe:
+        return 'Europe';
+      case middleEastAndAfrica:
+        return 'Middle East and Africa';
+      case asiaPacific:
+        return 'Asia Pacific';
       default:
     }
   }

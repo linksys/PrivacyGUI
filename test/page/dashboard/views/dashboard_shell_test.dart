@@ -34,8 +34,8 @@ final mockDashboardRoute = ShellRoute(
           const Center(child: AppText.bodyLarge('Home View')),
     ),
     LinksysRoute(
-      name: RouteNamed.dashboardSupport,
-      path: RoutePath.dashboardSupport,
+      name: RouteNamed.callbackDescription,
+      path: RoutePath.callbackDescription,
       builder: (context, state) =>
           const Center(child: AppText.bodyLarge('Support View')),
     ),

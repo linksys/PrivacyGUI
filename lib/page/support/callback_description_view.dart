@@ -4,7 +4,6 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_support_provider.dart';
@@ -13,15 +12,15 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:phonenumbers/phonenumbers.dart';
 
-class DashboardSupportView extends ArgumentsConsumerStatefulView {
-  const DashboardSupportView({Key? key}) : super(key: key);
+class CallbackDescriptionView extends ArgumentsConsumerStatefulView {
+  const CallbackDescriptionView({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<DashboardSupportView> createState() =>
-      _DashboardSupportViewState();
+  ConsumerState<CallbackDescriptionView> createState() =>
+      _CallbackDescriptionViewState();
 }
 
-class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
+class _CallbackDescriptionViewState extends ConsumerState<CallbackDescriptionView> {
   bool isLoading = false;
   final phoneNumberController =
       PhoneNumberEditingController.fromCountryCode('US');
@@ -66,8 +65,7 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
         ? const AppFullScreenSpinner()
         : StyledAppPageView(
             scrollable: true,
-            backState: StyledBackState.none,
-            title: 'Support',
+            title: 'Tell us about your issue',
             child: BuildConfig.cloudEnv == 'qa'
                 ? showList
                     ? _buildTicketList()
