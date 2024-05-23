@@ -33,6 +33,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
       path: RoutePath.contactSupportChoose,
       config: LinksysRouteConfig(
         pageWidth: SpecificPageWidth(width: 430),
+        pageAlignment: CrossAxisAlignment.start,
       ),
       builder: (context, state) => const ContactSupportSelectionView(),
       routes: [
@@ -41,6 +42,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
           path: RoutePath.contactSupportDetails,
           config: LinksysRouteConfig(
             pageWidth: SpecificPageWidth(width: 430),
+            pageAlignment: CrossAxisAlignment.start,
           ),
           builder: (context, state) => ContactSupportDetailView(
             args: state.extra as Map<String, dynamic>? ?? {},

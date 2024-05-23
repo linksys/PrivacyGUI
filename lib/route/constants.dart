@@ -15,10 +15,10 @@ class RoutePath {
   /// dashboard
   static const dashboardHome = '/dashboardHome';
   static const dashboardMenu = '/dashboardMenu';
+  static const dashboardSupport = '/dashboardSupport';
   static const dashboardDevices = 'dashboardDevices';
   static const dashboardSettings = 'dashboardSettings';
   static const dashboardAdvancedSettings = 'dashboardAdvancedSettings';
-  static const dashboardSupport = '/dashboardSupport';
 
   /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';
@@ -111,10 +111,12 @@ class RoutePath {
   static const troubleshooting = 'troubleshooting';
   static const troubleshootingPing = 'troubleshootingPing';
 
-  /// ContactSupport
+  /// Support
+  static const faqList = 'faqList';
   static const contactSupportChoose = 'contactSupportChoose';
   static const contactSupportDetails = 'contactSupportDetails';
-
+  static const callbackDescription = 'callbackDescription';
+  
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
 
@@ -145,9 +147,9 @@ class RouteNamed {
   /// dashboard
   static const dashboardMenu = 'dashboardMenu';
   static const dashboardHome = 'dashboardHome';
+  static const dashboardSupport = 'dashboardSupport';
   static const dashboardDevices = 'dashboardDevices';
   static const dashboardSettings = 'dashboardSettings';
-  static const dashboardSupport = 'dashboardSupport';
   static const dashboardAdvancedSettings = 'dashboardAdvancedSettings';
 
   /// speed test
@@ -242,9 +244,11 @@ class RouteNamed {
   static const troubleshooting = 'troubleshooting';
   static const troubleshootingPing = 'troubleshootingPing';
 
-  /// ContactSupport
+  /// Support
+  static const faqList = 'faqList';
   static const contactSupportChoose = 'contactSupportChoose';
   static const contactSupportDetails = 'contactSupportDetails';
+  static const callbackDescription = 'callbackDescription';  
 
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
