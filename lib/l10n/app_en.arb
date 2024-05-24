@@ -586,5 +586,11 @@
   "goodAfternoon": "Good afternoon!",
   "goodEvening": "Good evening!",
   "troubleshoot": "Troubleshoot",
-  "newFirmwareAvailable": "Firmware update available"
+  "newFirmwareAvailable": "Firmware update available",
+  "unitedState": "United States",
+  "canada": "Canada",
+  "latinAmerica": "Latin America",
+  "europe": "Europe",
+  "middleEastAndAfrica": "Middle East and Africa",
+  "asiaPacific": "Asia Pacific"
 }
