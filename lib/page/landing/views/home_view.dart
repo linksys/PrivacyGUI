@@ -92,8 +92,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
         children: [
           Center(
             child: FutureBuilder(
-                future:
-                    PackageInfo.fromPlatform().then((value) => value.version),
+                future: getVersion(),
                 initialData: '-',
                 builder: (context, data) {
                   var version = 'version ${data.data}';

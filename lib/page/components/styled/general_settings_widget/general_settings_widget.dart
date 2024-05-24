@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/language_tile.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/theme_tile.dart';
@@ -71,8 +75,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
               const AppGap.regular(),
               ..._displayAdditional(loginType),
               FutureBuilder(
-                  future:
-                      PackageInfo.fromPlatform().then((value) => value.version),
+                  future: getVersion(full: true),
                   initialData: '-',
                   builder: (context, data) {
                     return AppText.bodySmall(
