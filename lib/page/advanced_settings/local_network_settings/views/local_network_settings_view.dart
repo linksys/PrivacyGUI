@@ -152,7 +152,7 @@ class _LocalNetworkSettingsViewState
             if (value.isEmpty) {
               setState(() {
                 enableButton = false;
-                errorDesc = 'Host name can not be empty.';
+                errorDesc = loc(context).hostNameCannotEmpty;
               });
             } else if (value != hostName) {
               setState(() {
@@ -197,7 +197,7 @@ class _LocalNetworkSettingsViewState
                 if (value.isEmpty) {
                   setState(() {
                     enableButton = false;
-                    errorDesc = 'IP address can not be empty.';
+                    errorDesc = loc(context).invalidIpAddress;
                   });
                 } else if (value == ipAddress) {
                   setState(() {
@@ -208,7 +208,7 @@ class _LocalNetworkSettingsViewState
                   final result = routerIpAddressFinished(textController.text);
                   if (result.$1 == false) {
                     setState(() {
-                      errorDesc = 'Invalid IP address';
+                      errorDesc = loc(context).invalidIpAddress;
                       enableButton = false;
                     });
                   } else {
@@ -228,7 +228,7 @@ class _LocalNetworkSettingsViewState
         final result = routerIpAddressFinished(textController.text);
         if (result.$1 == false) {
           setState(() {
-            errorDesc = 'Invalid IP address';
+            errorDesc = loc(context).invalidIpAddress;
           });
         } else {
           ref.read(localNetworkSettingProvider.notifier).updateState(result.$2);
@@ -271,7 +271,7 @@ class _LocalNetworkSettingsViewState
                 if (value.isEmpty) {
                   setState(() {
                     enableButton = false;
-                    errorDesc = 'IP address can not be empty.';
+                    errorDesc = loc(context).invalidIpAddress;
                   });
                 } else if (value == subnetMask) {
                   setState(() {
@@ -283,7 +283,7 @@ class _LocalNetworkSettingsViewState
                   if (result.$1 == false) {
                     setState(() {
                       enableButton = false;
-                      errorDesc = 'Invalid subnet mask';
+                      errorDesc = loc(context).invalidSubnetMask;
                     });
                   } else {
                     setState(() {
@@ -301,7 +301,7 @@ class _LocalNetworkSettingsViewState
         final result = subnetMaskFinished(textController.text);
         if (result.$1 == false) {
           setState(() {
-            errorDesc = 'Invalid subnet mask';
+            errorDesc = loc(context).invalidSubnetMask;
           });
         } else {
           ref.read(localNetworkSettingProvider.notifier).updateState(result.$2);

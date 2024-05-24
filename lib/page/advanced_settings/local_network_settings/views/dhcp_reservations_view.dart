@@ -119,7 +119,7 @@ class _DHCPReservationsContentViewState
                               } else {
                                 showFailedSnackBar(
                                   context,
-                                  'DHCP reservation overlap',
+                                  loc(context).ipOrMacAddressOverlap,
                                 );
                               }
                             }
@@ -193,7 +193,7 @@ class _DHCPReservationsContentViewState
       if (!succeed) {
         showFailedSnackBar(
           context,
-          'DHCP reservation overlap',
+          loc(context).ipOrMacAddressOverlap,
         );
       }
     }
