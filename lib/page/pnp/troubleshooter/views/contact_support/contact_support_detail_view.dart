@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/pnp/troubleshooter/views/contact_support/contact_support_selection_view.dart';
@@ -41,18 +42,18 @@ class ContactSupportDetailView extends ArgumentsConsumerStatelessView {
                     ),
                   ],
                 ),
-                const Padding(
-                  padding: EdgeInsets.only(
+                Padding(
+                  padding: const EdgeInsets.only(
                     left: 40,
                     top: Spacing.semiSmall,
                   ),
-                  child: AppText.bodyMedium('24 hours, 7 days a week'),
+                  child: AppText.bodyMedium(
+                      loc(context).callSupportDetailTwentyFourSeven),
                 ),
               ],
             ),
             const AppGap.extraBig(),
-            const AppText.bodyLarge(
-                'For prompt service, have your product type, model and serial number handy.'),
+            AppText.bodyLarge(loc(context).callSupportDetailDesc),
           ],
         ),
       ),
