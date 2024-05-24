@@ -29,26 +29,26 @@ class DashboardSupportView extends ArgumentsConsumerStatelessView {
           children: [
             SupportOptionCard(
               icon: const Icon(LinksysIcons.faq),
-              title: 'View FAQ',
-              description: 'Read most common help articles sorted by topic',
+              title: loc(context).dashboardSupportFAQTitle,
+              description: loc(context).dashboardSupportFAQDesc,
               tapAction: () {
                 context.pushNamed(RouteNamed.faqList);
               },
             ),
             SupportOptionCard(
               icon: const Icon(LinksysIcons.supportAgent),
-              title: 'Get a Callback',
-              description: 'Skip waiting. Send a message and a Linksys support agent will call you.',
+              title: loc(context).dashboardSupportCallbackTitle,
+              description: loc(context).dashboardSupportCallbackDesc,
               tapAction: () {
                 context.pushNamed(RouteNamed.callbackDescription);
               },
             ),
             SupportOptionCard(
               icon: const Icon(LinksysIcons.call),
-              title: 'Call Support',
-              description: 'Wait times apply',
+              title: loc(context).dashboardSupportCallSupportTitle,
+              description: loc(context).dashboardSupportCallSupportDesc,
               tapAction: () {
-                context.pushNamed(RouteNamed.contactSupportChoose);
+                context.pushNamed(RouteNamed.contactSupportSelection);
               },
             ),
           ],

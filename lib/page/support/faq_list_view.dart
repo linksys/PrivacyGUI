@@ -17,14 +17,14 @@ class FaqListView extends ArgumentsConsumerStatelessView {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return StyledAppPageView(
-      title: 'FAQs',
+      title: loc(context).faqs,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
       child: AppBasicLayout(
         content: ListView(
           shrinkWrap: true,
           children: [
             AppExpansionCard(
-              title: 'Setup',
+              title: loc(context).setup,
               expandedIcon: LinksysIcons.add,
               collapsedIcon: LinksysIcons.remove,
               children: [
@@ -42,7 +42,7 @@ class FaqListView extends ArgumentsConsumerStatelessView {
               ],
             ),
             AppExpansionCard(
-              title: 'Connectivity',
+              title: loc(context).connectivity,
               expandedIcon: LinksysIcons.add,
               collapsedIcon: LinksysIcons.remove,
               children: [
@@ -52,15 +52,15 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         AppTextButton(
-                          'Child node keeps losing connection',
+                          loc(context).faqListLoseChildNode,
                           onTap: () {
-                            //
+                            // TODO: Add link
                           },
                         ),
                         AppTextButton(
-                          'Devices losing connection',
+                          loc(context).faqListLoseDevices,
                           onTap: () {
-                            //
+                            // TODO: Add link
                           },
                         ),
                       ],
@@ -71,19 +71,19 @@ class FaqListView extends ArgumentsConsumerStatelessView {
               ],
             ),
             AppExpansionCard(
-              title: 'Speed',
+              title: loc(context).speed,
               expandedIcon: LinksysIcons.add,
               collapsedIcon: LinksysIcons.remove,
               children: [],
             ),
             AppExpansionCard(
-              title: 'Password & Access',
+              title: loc(context).passwordAndAccess,
               expandedIcon: LinksysIcons.add,
               collapsedIcon: LinksysIcons.remove,
               children: [],
             ),
             AppExpansionCard(
-              title: 'Hardware',
+              title: loc(context).hardware,
               expandedIcon: LinksysIcons.add,
               collapsedIcon: LinksysIcons.remove,
               children: [],

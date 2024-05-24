@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -53,14 +54,14 @@ class ContactSupportSelectionView extends ArgumentsConsumerStatelessView {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return StyledAppPageView(
-      title: 'Choose your region',
+      title: loc(context).callSupportSelectionTitle,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
       child: AppBasicLayout(
         content: ListView.builder(
           itemCount: ContactSupportRegion.values.length,
           itemBuilder: (context, index) => AppCard(
             onTap: () {
-              context.goNamed(
+              context.pushNamed(
                 RouteNamed.contactSupportDetails,
                 extra: {
                   'region': ContactSupportRegion.values[index],

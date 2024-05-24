@@ -53,6 +53,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     pnp
         .fetchDeviceInfo()
         .then((_) {
+          logger.i('[PnP]: Get device info successfully');
           if (_password != null) {
             // keep the admin password anyway if it exists
             pnp.setAttachedPassword(_password!);
@@ -60,15 +61,20 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         })
         .then((_) => pnp.checkInternetConnection())
         .then((_) {
+          logger.i('[PnP]: Internet connection - OK');
           setState(() {
             _internetConnected = true;
           });
         })
         .then((_) => pnp.checkRouterConfigured())
         .then((_) => adminPasswordFlow(_password))
-        .then((_) => context.goNamed(RouteNamed.pnpConfig))
-        .catchError((error, stackTrace) {},
-            test: (error) => error is ExceptionInvalidAdminPassword)
+        .then((_) {
+          logger.i('[PnP]: Logged in with admin password successfully');
+          context.goNamed(RouteNamed.pnpConfig);
+        })
+        .catchError((error, stackTrace) {
+          logger.e('[PnP]: Invalid given admin password!');
+        }, test: (error) => error is ExceptionInvalidAdminPassword)
         .catchError((error, stackTrace) {
           logger.e(
               '[PNP Troubleshooter]: Internet connection failed - initiate troubleshooter ${(_password != null) ? 'with' : 'without'} credential');
@@ -96,7 +102,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           });
         }, test: (error) => error is ExceptionRouterUnconfigured)
         .onError((error, stackTrace) {
-          logger.e('[pnp] Uncaught Error',
+          logger.e('[PnP] Uncaught Error',
               error: error, stackTrace: stackTrace);
           context.goNamed(RouteNamed.pnpNoInternetConnection);
         });
