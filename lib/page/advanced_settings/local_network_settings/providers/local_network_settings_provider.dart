@@ -124,7 +124,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     List<DHCPReservation> newList = List.from(state.dhcpReservationList);
     bool succeed = false;
     if (item.ipAddress == 'DELETE') {
-      newList.remove(item);
+      newList.removeAt(index);
       succeed = true;
     } else if (!isReservationOverlap(item: item, index: index)) {
       newList[index] = item;
