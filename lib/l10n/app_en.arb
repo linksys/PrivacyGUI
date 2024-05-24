@@ -557,6 +557,10 @@
   "textMessage": "Text message",
   "internetConnected": "Internet connected",
   "internetOffline": "Internet offline",
-  "nodes": "Nodes"
-
+  "nodes": "Nodes",
+  "goodMorning": "Good morning!",
+  "goodAfternoon": "Good afternoon!",
+  "goodEvening": "Good evening!",
+  "troubleshoot": "Troubleshoot",
+  "newFirmwareAvailable": "Firmware update available"
 }
