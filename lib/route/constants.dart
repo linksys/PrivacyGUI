@@ -113,7 +113,7 @@ class RoutePath {
 
   /// Support
   static const faqList = 'faqList';
-  static const contactSupportChoose = 'contactSupportChoose';
+  static const contactSupportSelection = 'contactSupportSelection';
   static const contactSupportDetails = 'contactSupportDetails';
   static const callbackDescription = 'callbackDescription';
   
@@ -246,7 +246,7 @@ class RouteNamed {
 
   /// Support
   static const faqList = 'faqList';
-  static const contactSupportChoose = 'contactSupportChoose';
+  static const contactSupportSelection = 'contactSupportSelection';
   static const contactSupportDetails = 'contactSupportDetails';
   static const callbackDescription = 'callbackDescription';  
 

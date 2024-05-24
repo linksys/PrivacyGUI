@@ -48,7 +48,7 @@ class DashboardSupportView extends ArgumentsConsumerStatelessView {
               title: 'Call Support',
               description: 'Wait times apply',
               tapAction: () {
-                context.pushNamed(RouteNamed.contactSupportChoose);
+                context.pushNamed(RouteNamed.contactSupportSelection);
               },
             ),
           ],

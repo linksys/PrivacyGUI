@@ -80,7 +80,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
         footer: AppFilledButton.fillWidth(
           loc(context).next,
           onTap: () {
-            context.goNamed(RouteNamed.pnpWaitingModem);
+            context.pushNamed(RouteNamed.pnpWaitingModem);
           },
         ),
       ),

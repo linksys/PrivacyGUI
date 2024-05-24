@@ -60,7 +60,7 @@ class ContactSupportSelectionView extends ArgumentsConsumerStatelessView {
           itemCount: ContactSupportRegion.values.length,
           itemBuilder: (context, index) => AppCard(
             onTap: () {
-              context.goNamed(
+              context.pushNamed(
                 RouteNamed.contactSupportDetails,
                 extra: {
                   'region': ContactSupportRegion.values[index],

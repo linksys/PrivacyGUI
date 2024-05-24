@@ -29,8 +29,8 @@ final pnpTroubleshootingRoute = LinksysRoute(
   ),
   routes: [
     LinksysRoute(
-      name: RouteNamed.contactSupportChoose,
-      path: RoutePath.contactSupportChoose,
+      name: RouteNamed.contactSupportSelection,
+      path: RoutePath.contactSupportSelection,
       config: LinksysRouteConfig(
         pageWidth: SpecificPageWidth(width: 430),
         pageAlignment: CrossAxisAlignment.start,

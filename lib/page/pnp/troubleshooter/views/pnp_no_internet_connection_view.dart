@@ -72,7 +72,7 @@ class _PnpNoInternetConnectionState
             if (state.hasResetModem)
               AppCard(
                 onTap: () {
-                  context.goNamed(RouteNamed.contactSupportChoose);
+                  context.pushNamed(RouteNamed.contactSupportSelection);
                 },
                 child: Row(
                   children: [
@@ -96,7 +96,7 @@ class _PnpNoInternetConnectionState
               ),
             AppCard(
               onTap: () {
-                context.goNamed(RouteNamed.pnpUnplugModem);
+                context.pushNamed(RouteNamed.pnpUnplugModem);
               },
               child: Row(
                 children: [
@@ -120,7 +120,7 @@ class _PnpNoInternetConnectionState
             ),
             AppCard(
               onTap: () {
-                context.goNamed(RouteNamed.pnpIspTypeSelection);
+                context.pushNamed(RouteNamed.pnpIspTypeSelection);
               },
               child: Row(
                 children: [
