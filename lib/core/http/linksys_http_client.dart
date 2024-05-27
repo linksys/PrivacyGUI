@@ -244,9 +244,10 @@ class LinksysHttpClient extends http.BaseClient
   }
 
   Future<Response> upload(Uri url, List<MultipartFile> multipartList,
-      {Map<String, String>? headers}) async {
+      {Map<String, String>? headers, Map<String, String>? fields}) async {
     final request = http.MultipartRequest("POST", url);
     request.headers.addEntries(headers?.entries ?? []);
+    request.fields.addAll(fields ?? {});
     request.files.addAll(multipartList);
     final response = await _sendUnstreamedRequest(request);
     _logResponse(
