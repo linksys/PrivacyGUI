@@ -35,7 +35,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
         onBackTap: () async {
           final isCurrentChanged =
               ref.read(wifiViewProvider).isCurrentViewStateChanged;
-          if (isCurrentChanged && (await _showUnsavedAlert() != true)) {
+          if (isCurrentChanged && (await showUnsavedAlert(context) != true)) {
             return;
           }
           context.pop();
@@ -49,7 +49,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
                 onTap: () async {
                   final isCurrentChanged =
                       ref.read(wifiViewProvider).isCurrentViewStateChanged;
-                  if (isCurrentChanged && (await _showUnsavedAlert() != true)) {
+                  if (isCurrentChanged && (await showUnsavedAlert(context) != true)) {
                     return;
                   }
                   setState(() {
@@ -80,28 +80,4 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
         _WiFiSubMenus.advanced => const WifiAdvancedSettingsView(),
         _WiFiSubMenus.filtering => const MacFilteringView(),
       };
-
-  Future<bool?> _showUnsavedAlert() {
-    return showMessageAppDialog<bool>(
-      context,
-      title: loc(context).unsavedChangesTitle,
-      message: loc(context).unsavedChangesDesc,
-      actions: [
-        AppTextButton(
-          loc(context).goBack,
-          color: Theme.of(context).colorScheme.onSurface,
-          onTap: () {
-            context.pop();
-          },
-        ),
-        AppTextButton(
-          loc(context).discardChanges,
-          color: Theme.of(context).colorScheme.error,
-          onTap: () {
-            context.pop(true);
-          },
-        ),
-      ],
-    );
-  }
 }

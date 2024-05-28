@@ -234,7 +234,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             ),
             onBackTap: _isEdited()
                 ? () async {
-                    final goBack = await _showUnsavedAlert();
+                    final goBack = await showUnsavedAlert(context);
                     if (goBack == true) {
                       context.pop();
                     }
@@ -1295,30 +1295,6 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
     } else {
       return ref.read(internetSettingsProvider.notifier).saveIpv6(state);
     }
-  }
-
-  Future<bool?> _showUnsavedAlert() {
-    return showMessageAppDialog<bool>(
-      context,
-      title: loc(context).unsavedChangesTitle,
-      message: loc(context).unsavedChangesDesc,
-      actions: [
-        AppTextButton(
-          loc(context).goBack,
-          color: Theme.of(context).colorScheme.onSurface,
-          onTap: () {
-            context.pop();
-          },
-        ),
-        AppTextButton(
-          loc(context).discardChanges,
-          color: Theme.of(context).colorScheme.error,
-          onTap: () {
-            context.pop(true);
-          },
-        ),
-      ],
-    );
   }
 
   bool _isEdited() {

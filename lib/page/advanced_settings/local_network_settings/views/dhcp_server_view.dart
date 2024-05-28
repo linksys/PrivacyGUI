@@ -74,7 +74,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
       title: loc(context).dhcpServer.capitalizeWords(),
       onBackTap: _isEdited()
           ? () async {
-              final goBack = await _showUnsavedAlert();
+              final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
                 context.pop();
               }
@@ -346,30 +346,6 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
                 state = result.$2;
               });
             }
-          },
-        ),
-      ],
-    );
-  }
-
-  Future<bool?> _showUnsavedAlert() {
-    return showMessageAppDialog<bool>(
-      context,
-      title: loc(context).unsavedChangesTitle,
-      message: loc(context).unsavedChangesDesc,
-      actions: [
-        AppTextButton(
-          loc(context).goBack,
-          color: Theme.of(context).colorScheme.onSurface,
-          onTap: () {
-            context.pop();
-          },
-        ),
-        AppTextButton(
-          loc(context).discardChanges,
-          color: Theme.of(context).colorScheme.error,
-          onTap: () {
-            context.pop(true);
           },
         ),
       ],
