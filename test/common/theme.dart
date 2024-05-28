@@ -328,6 +328,8 @@ final _testFonts = <String, String>{
   'NoToSans': 'test/fonts/NotoSans-Regular.ttf',
   'NoToSansKR': 'test/fonts/NotoSansKR-Regular.ttf',
   'NoToSansTC': 'test/fonts/NotoSansTC-Regular.ttf',
+  'NoToSansAR': 'test/fonts/NotoSansArabic-Regular.ttf',
+  'NoToSansTh': 'test/fonts/NotoSansThai-Regular.ttf'
 };
 
 ///
