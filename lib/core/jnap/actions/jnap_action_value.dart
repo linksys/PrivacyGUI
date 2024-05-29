@@ -75,6 +75,8 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/firewall/GetIPv6FirewallRules'),
   setIPv6FirewallRules(
       value: 'http://linksys.com/jnap/firewall/SetIPv6FirewallRules'),
+  getFirewallSettings(value: 'http://linksys.com/jnap/firewall/GetFirewallSettings'),
+  setFirewallSettings(value: 'http://linksys.com/jnap/firewall/SetFirewallSettings'),
   getFirmwareUpdateStatus(
       value: 'http://linksys.com/jnap/firmwareupdate/GetFirmwareUpdateStatus'),
 
