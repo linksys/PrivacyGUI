@@ -74,7 +74,7 @@ class _DashboardAdvancedSettingsViewState
         onTap: () => context.goNamed(RouteNamed.settingsDMZ),
       ),
       AppSectionItemData(
-        title: loc(context).portForwarding,
+        title: loc(context).portSettings,
         // iconData: getCharactersIcons(context).nodesDefault,
         onTap: () => context.goNamed(RouteNamed.settingsPort),
       ),

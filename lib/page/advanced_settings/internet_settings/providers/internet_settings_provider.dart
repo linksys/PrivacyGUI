@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/extensions/_extensions.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_automatic_settings.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_settings.dart';
+import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/models/mac_address_clone_settings.dart';
 import 'package:privacy_gui/core/jnap/models/remote_setting.dart';
 import 'package:privacy_gui/core/jnap/models/wan_settings.dart';
@@ -21,6 +22,9 @@ final internetSettingsProvider =
         () => InternetSettingsNotifier());
 
 class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
+  String? _hostname;
+  String? get hostname => _hostname;
+
   @override
   InternetSettingsState build() => InternetSettingsState.init();
 
@@ -51,7 +55,13 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
     final macAddressCloneSettings = macAddressCloneSettingsResult == null
         ? null
         : MACAddressCloneSettings.fromMap(macAddressCloneSettingsResult.output);
-
+    // LAN settings
+    final lanResult = JNAPTransactionSuccessWrap.getResult(
+        JNAPAction.getLANSettings, Map.fromEntries(results));
+    final lanSettings =
+        lanResult == null ? null : RouterLANSettings.fromMap(lanResult.output);
+    _hostname = lanSettings?.hostName;
+    
     switch (WanType.resolve(wanSettings?.wanType ?? '')) {
       case WanType.dhcp:
         break;

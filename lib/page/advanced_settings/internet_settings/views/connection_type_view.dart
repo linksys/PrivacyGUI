@@ -312,6 +312,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
 
   Widget _editingCard() {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InternetSettingCard(
           title: viewType == InternetSettingsViewType.ipv4
@@ -376,7 +378,13 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       WanType.static => _staticIpEditing(),
       WanType.pptp => _pptpEditing(),
       WanType.l2tp => _l2tpEditing(),
-      WanType.bridge => [],
+      WanType.bridge => [
+          const AppGap.big(),
+          AppStyledText.bold(
+              '${loc(context).toLogInLocallyWhileInBridgeMode}http://${ref.read(internetSettingsProvider.notifier).hostname}.local',
+              defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+              tags: const ['b'])
+        ],
       _ => [],
     };
   }

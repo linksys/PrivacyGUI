@@ -1,7 +1,5 @@
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -13,7 +11,6 @@ import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/buttons/popup_button.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:privacy_gui/util/url_helper/url_helper.dart'
     if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
     if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';

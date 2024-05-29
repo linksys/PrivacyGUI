@@ -49,7 +49,8 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
                 onTap: () async {
                   final isCurrentChanged =
                       ref.read(wifiViewProvider).isCurrentViewStateChanged;
-                  if (isCurrentChanged && (await showUnsavedAlert(context) != true)) {
+                  if (isCurrentChanged &&
+                      (await showUnsavedAlert(context) != true)) {
                     return;
                   }
                   setState(() {

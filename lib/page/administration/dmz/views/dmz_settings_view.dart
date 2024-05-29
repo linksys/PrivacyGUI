@@ -202,6 +202,9 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                 value: DMZSourceType.range),
           ],
           onChanged: (index, value) {
+            if (value == state.sourceType) {
+              return;
+            }
             if (value != null) {
               ref.read(dmzSettingsProvider.notifier).setSourceType(value);
             }
@@ -284,6 +287,9 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                   value: DMZDestinationType.mac),
             ],
             onChanged: (index, value) {
+              if (value == state.destinationType) {
+                return;
+              }
               if (value != null) {
                 ref
                     .read(dmzSettingsProvider.notifier)
