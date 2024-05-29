@@ -53,7 +53,7 @@ class SpeedTestExternalView extends StatelessWidget {
                     AppText.bodyMedium(loc(context).speedTestExternalStep3),
                   ],
                 ),
-                ResponsiveLayout.isLayoutBreakpoint(context)
+                ResponsiveLayout.isMobileLayout(context)
                     ? _externalButtonsMobile(context)
                     : _externalButtonsDesktop(context),
                 const AppGap.big(),

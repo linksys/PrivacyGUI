@@ -153,13 +153,16 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
         .length;
     // check firmware update up to 480 seconds for per router
     _sub = _startCheckFirmwareUpdateStatus(
-        retryTimes: 48 * availableCount,
+        retryTimes: 180 * availableCount,
         stopCondition: (result) =>
             _checkFirmwareUpdateComplete(result, targetFirmwareUpdateRecords),
         onCompleted: () {
           logger.i('[FIRMWARE]: update firmware COMPLETED!');
           final polling = ref.read(pollingProvider.notifier);
-          polling.forcePolling().then((_) {
+          polling
+              .forcePolling()
+              .then((_) => checkFirmwareUpdateStatus())
+              .then((_) {
             polling.startPolling();
             _sub?.cancel();
             state = state.copyWith(isUpdating: false);
@@ -238,7 +241,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
         .scheduledCommand(
             action: action,
             maxRetry: retryTimes ?? -1,
-            retryDelayInMilliSec: retryDelayInMilliSec ?? 10000,
+            retryDelayInMilliSec: retryDelayInMilliSec ?? 3000,
             condition: stopCondition,
             onCompleted: onCompleted,
             auth: true)

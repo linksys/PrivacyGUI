@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/firmware_update/views/firmware_update_detail_view.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
@@ -167,5 +168,14 @@ Future<T?> showMessageAppOkDialog<T>(
         },
       )
     ],
+  );
+}
+
+showFirmwareUpdateDialog(BuildContext context) {
+  return showAdaptiveDialog(
+    context: context,
+    builder: (context) {
+      return const FirmwareUpdateDetailView();
+    },
   );
 }

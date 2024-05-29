@@ -5,9 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/firmware_update/_firmware_update.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
 
 class FirmwareUpdateDetailView extends ConsumerStatefulWidget {
@@ -52,65 +53,82 @@ class _FirmwareUpdateDetailViewState
 
     return Center(
       child: Container(
-        padding: EdgeInsets.all(120),
+        padding: ResponsiveLayout.isMobileLayout(context)
+            ? const EdgeInsets.all(80)
+            : const EdgeInsets.all(120),
         color: Theme.of(context).colorScheme.background,
         child: isUpdating
-            ? FirmwareUpdateProcessView(
-                current: current,
+            ? SizedBox(
+                width: double.infinity,
+                child: FirmwareUpdateProcessView(
+                  current: current,
+                ),
               )
             : Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.titleMedium('Firmware Update'),
+                  AppText.titleMedium(loc(context).firmware),
                   const AppGap.big(),
-                  AppText.bodyMedium('Get the latest feature and fixed.'),
+                  AppText.bodyMedium(loc(context).firmwareUpdateDesc1),
                   const AppGap.regular(),
-                  AppText.bodyMedium(
-                      'Your router will restart once the update is complete. Devices will reconnect on their own.'),
+                  AppText.bodyMedium(loc(context).firmwareUpdateDesc2),
                   const AppGap.regular(),
-                  AppText.bodyMedium(
-                      'The Linksys app might restart once your system is ready again.'),
+                  AppText.bodyMedium(loc(context).firmwareUpdateDesc3),
                   const AppGap.extraBig(),
-                  // ..._nodeStatusList.map((e) {
-                  //   return AppText.bodyLarge(
-                  //       '${e.$1.getDeviceName()} - ${e.$1.unit.firmwareVersion} - ${e.$2.availableUpdate?.firmwareVersion}');
-                  // }).toList(),
                   AppSection.withLabel(
-                    title: 'Details',
+                    title: loc(context).details,
                     content: FirmwareUpdateTableView(
                       nodeStatusList: nodeStatusList,
                     ),
-                    // headerAction: AppIconButton.noPadding(
-                    //   icon: LinksysIcons.refresh,
-                    //   onTap: () {
-                    //     ref
-                    //         .read(firmwareUpdateProvider.notifier)
-                    //         .checkFirmwareUpdateStream();
-                    //   },
-                    // ),
                   ),
                   const Spacer(),
-                  AppFilledButton.fillWidth(
-                    'Update',
-                    onTap: isUpdating || !isFirmwareUpdateAvailable
-                        ? null
-                        : () {
-                            ref
-                                .read(firmwareUpdateProvider.notifier)
-                                .updateFirmware();
-                          },
-                  ),
-                  const AppGap.regular(),
-                  AppFilledButton.fillWidth(
-                    'Cancel',
-                    onTap: () {
-                      context.pop();
-                    },
-                  ),
+                  ResponsiveLayout(
+                      desktop: Row(
+                        children: [
+                          Expanded(
+                            child: _updateButton(isUpdating ||
+                                    !isFirmwareUpdateAvailable
+                                ? null
+                                : () {
+                                    ref
+                                        .read(firmwareUpdateProvider.notifier)
+                                        .updateFirmware();
+                                  }),
+                          ),
+                          const AppGap.regular(),
+                          Expanded(
+                            child: _cancelButton(),
+                          ),
+                        ],
+                      ),
+                      mobile: Column(
+                        children: [
+                          _updateButton(isUpdating || !isFirmwareUpdateAvailable
+                              ? null
+                              : () {
+                                  ref
+                                      .read(firmwareUpdateProvider.notifier)
+                                      .updateFirmware();
+                                }),
+                          const AppGap.regular(),
+                          _cancelButton(),
+                        ],
+                      )),
                 ],
               ),
       ),
     );
   }
+
+  Widget _updateButton(VoidCallback? onTap) => AppFilledButton.fillWidth(
+        loc(context).update,
+        onTap: onTap,
+      );
+  Widget _cancelButton() => AppFilledButton.fillWidth(
+        loc(context).cancel,
+        onTap: () {
+          context.pop();
+        },
+      );
 }

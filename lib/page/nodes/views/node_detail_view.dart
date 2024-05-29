@@ -280,7 +280,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           AppInfoCard(
             showBorder: false,
             padding: EdgeInsets.zero,
-            title: getAppLocalizations(context).lanIPAddress,
+            title: loc(context).lanIPAddress,
             description: state.lanIpAddress,
           ),
           if (state.isMaster) ...[
@@ -288,7 +288,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
             AppInfoCard(
               showBorder: false,
               padding: EdgeInsets.zero,
-              title: getAppLocalizations(context).wanIPAddress,
+              title: loc(context).wanIPAddress,
               description: state.wanIpAddress,
             ),
           ],
@@ -305,14 +305,20 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           AppInfoCard(
             showBorder: false,
             padding: EdgeInsets.zero,
-            title: getAppLocalizations(context).firmwareVersion,
+            title: loc(context).firmwareVersion,
             description: _checkEmptyValue(state.firmwareVersion),
             trailing: Visibility(
                 visible: isFwUpToDate,
-                replacement: AppText.bodyLarge(
-                    updateInfo?.availableUpdate?.firmwareVersion ?? ''),
-                child:
-                    AppText.labelSmall(getAppLocalizations(context).upToDate)),
+                replacement: InkWell(
+                  child: AppText.labelSmall(
+                    loc(context).updateAvailable,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  onTap: () {
+                    showFirmwareUpdateDialog(context);
+                  },
+                ),
+                child: AppText.labelSmall(loc(context).upToDate)),
           ),
           const AppGap.regular(),
           AppTextButton(
