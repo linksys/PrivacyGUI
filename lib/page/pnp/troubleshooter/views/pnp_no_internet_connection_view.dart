@@ -72,7 +72,7 @@ class _PnpNoInternetConnectionState
             if (state.hasResetModem)
               AppCard(
                 onTap: () {
-                  context.pushNamed(RouteNamed.contactSupportSelection);
+                  context.pushNamed(RouteNamed.callSupportMainRegion);
                 },
                 child: Row(
                   children: [

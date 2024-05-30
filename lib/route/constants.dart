@@ -114,8 +114,8 @@ class RoutePath {
 
   /// Support
   static const faqList = 'faqList';
-  static const contactSupportSelection = 'contactSupportSelection';
-  static const contactSupportDetails = 'contactSupportDetails';
+  static const callSupportMainRegion = 'callSupportMainRegion';
+  static const callSupportMoreRegion = 'callSupportMoreRegion';
   static const callbackDescription = 'callbackDescription';
   
   /// DDNS
@@ -248,8 +248,8 @@ class RouteNamed {
 
   /// Support
   static const faqList = 'faqList';
-  static const contactSupportSelection = 'contactSupportSelection';
-  static const contactSupportDetails = 'contactSupportDetails';
+  static const callSupportMainRegion = 'callSupportMainRegion';
+  static const callSupportMoreRegion = 'callSupportMoreRegion';
   static const callbackDescription = 'callbackDescription';  
 
   /// DDNS
