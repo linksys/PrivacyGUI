@@ -81,49 +81,49 @@ enum CallSupportRegion {
   String getTitle(BuildContext context) {
     switch (this) {
       case us:
-        return 'United States';
+        return loc(context).unitedState;
       case canada:
-        return 'Canada';
+        return loc(context).canada;
       case latinAmerica:
-        return 'Latin America';
+        return loc(context).latinAmerica;
       case mexico:
-        return 'Mexico';
+        return loc(context).mexico;
       case europe:
-        return 'Europe';
+        return loc(context).europe;
       case belgium:
-        return 'Belgium';
+        return loc(context).belgium;
       case denmark:
-        return 'Denmark';
+        return loc(context).denmark;
       case netherlands:
-        return 'Netherlands';
+        return loc(context).netherlands;
       case norway:
-        return 'Norway';
+        return loc(context).norway;
       case sweden:
-        return 'Sweden';
+        return loc(context).sweden;
       case uk:
-        return 'United Kingdom';
+        return loc(context).unitedKingdom;
       case middleEastAndAfrica:
-        return 'Middle East and Africa';
+        return loc(context).middleEastAndAfrica;
       case saudiArabia:
-        return 'Saudi Arabia';
+        return loc(context).saudiArabia;
       case unitedArabEmirates:
-        return 'United Arab Emirates';
+        return loc(context).unitedArabEmirates;
       case asiaPacific:
-        return 'Asia Pacific';
+        return loc(context).asiaPacific;
       case taiwan:
-        return 'Taiwan';
+        return loc(context).taiwan;
       case hongkong:
-        return 'Hong Kong';
+        return loc(context).hongkong;
       case china:
-        return 'China';
+        return loc(context).china;
       case japan:
-        return 'Japan';
+        return loc(context).japan;
       case singapore:
-        return 'Singapore';
+        return loc(context).singapore;
       case australia:
-        return 'Australia';
+        return loc(context).australia;
       case newZealand:
-        return 'New Zealand';
+        return loc(context).newZealand;
       default:
         return '';
     }
