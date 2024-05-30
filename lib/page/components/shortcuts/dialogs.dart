@@ -169,3 +169,27 @@ Future<T?> showMessageAppOkDialog<T>(
     ],
   );
 }
+
+Future<bool?> showUnsavedAlert(BuildContext context, {String? title, String? message}) {
+    return showMessageAppDialog<bool>(
+      context,
+      title: title ?? loc(context).unsavedChangesTitle,
+      message: message ?? loc(context).unsavedChangesDesc,
+      actions: [
+        AppTextButton(
+          loc(context).goBack,
+          color: Theme.of(context).colorScheme.onSurface,
+          onTap: () {
+            context.pop();
+          },
+        ),
+        AppTextButton(
+          loc(context).discardChanges,
+          color: Theme.of(context).colorScheme.error,
+          onTap: () {
+            context.pop(true);
+          },
+        ),
+      ],
+    );
+  }

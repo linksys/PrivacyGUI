@@ -36,6 +36,7 @@ class RoutePath {
   static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
   static const settingsFirewall = 'firewall';
+  static const settingsDMZ = 'dmz';
 
   /// otp
   static const otpStart = 'otp';
@@ -168,6 +169,7 @@ class RouteNamed {
   static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
   static const settingsFirewall = 'firewall';
+  static const settingsDMZ = 'dmz';
 
   /// otp
   static const otpStart = 'otp';

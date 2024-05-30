@@ -71,7 +71,7 @@ class _LocalNetworkSettingsViewState
       ),
       onBackTap: _isEdited()
           ? () async {
-              final goBack = await _showUnsavedAlert();
+              final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
                 context.pop();
               }
@@ -317,33 +317,6 @@ class _LocalNetworkSettingsViewState
           subnetMask,
           state,
         );
-  }
-
-  Future<bool?> _showUnsavedAlert() {
-    return showMessageAppDialog<bool>(
-      context,
-      title: loc(context).unsavedChangesTitle,
-      message: loc(context).unsavedChangesDesc,
-      actions: [
-        AppTextButton(
-          loc(context).goBack,
-          color: Theme.of(context).colorScheme.onSurface,
-          onTap: () {
-            context.pop();
-          },
-        ),
-        AppTextButton(
-          loc(context).discardChanges,
-          color: Theme.of(context).colorScheme.error,
-          onTap: () {
-            ref
-                .read(localNetworkSettingProvider.notifier)
-                .updateState(originalSettings);
-            context.pop(true);
-          },
-        ),
-      ],
-    );
   }
 
   void _saveSettings() {

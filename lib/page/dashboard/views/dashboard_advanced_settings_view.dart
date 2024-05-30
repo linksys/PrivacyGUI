@@ -68,13 +68,13 @@ class _DashboardAdvancedSettingsViewState
         // iconData: getCharactersIcons(context).nodesDefault,
         onTap: () => context.goNamed(RouteNamed.settingsFirewall),
       ),
-      // AppSectionItemData(
-      //   title: loc(context).dmz,
-      //   // iconData: getCharactersIcons(context).nodesDefault,
-      //   onTap: () => context.goNamed(RouteNamed.settingsPort),
-      // ),
       AppSectionItemData(
-        title: loc(context).portForwarding,
+        title: loc(context).dmz,
+        // iconData: getCharactersIcons(context).nodesDefault,
+        onTap: () => context.goNamed(RouteNamed.settingsDMZ),
+      ),
+      AppSectionItemData(
+        title: loc(context).portSettings,
         // iconData: getCharactersIcons(context).nodesDefault,
         onTap: () => context.goNamed(RouteNamed.settingsPort),
       ),
