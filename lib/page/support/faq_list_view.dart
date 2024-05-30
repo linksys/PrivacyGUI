@@ -30,7 +30,7 @@ class FaqListView extends ArgumentsConsumerStatelessView {
               children: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppTextButton('Can\'t add child nodes to network', onTap: () {
+                  AppTextButton(loc(context).faqListCannotAddChildNode, onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333430#Q1PlaceNodes');
                   }),
@@ -55,11 +55,11 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333430#Q3DeviceConnection');
                   }),
-                  AppTextButton('Devices cannot connect to WiFi', onTap: () {
+                  AppTextButton(loc(context).faqListDeviceNoWiFi, onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=316292');
                   }),
-                  AppTextButton('Devices not connecting to best node',
+                  AppTextButton(loc(context).faqListDeviceNoBestNode,
                       onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333430#Q4DeviceNode');
@@ -72,16 +72,16 @@ class FaqListView extends ArgumentsConsumerStatelessView {
               children: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppTextButton('My internet speed is slow', onTap: () {
+                  AppTextButton(loc(context).faqListMyInternetSlow, onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333431#q2');
                   }),
-                  AppTextButton('Specific device\'s speed is slow', onTap: () {
+                  AppTextButton(loc(context).faqListSpecificDeviceSlow, onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333431#q3');
                   }),
                   AppTextButton(
-                      'Internet speed dropped after adding another node',
+                      loc(context).faqListSlowAfterAddNode,
                       onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333431#q4');
@@ -94,20 +94,20 @@ class FaqListView extends ArgumentsConsumerStatelessView {
               children: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppTextButton('Log in to router using router password',
+                  AppTextButton(loc(context).faqListLogInByRouterPassword,
                       onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333431#q2');
                   }),
-                  AppTextButton('Forgot router password', onTap: () {
+                  AppTextButton(loc(context).faqListForgotRouterPassword, onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=274484#q4');
                   }),
-                  AppTextButton('Change WiFi name or password', onTap: () {
+                  AppTextButton(loc(context).faqListChangeWiFiNamePassword, onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=203471');
                   }),
-                  AppTextButton('Access router locally through a web browser',
+                  AppTextButton(loc(context).faqListAccessByWebBrowser,
                       onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=274484#q3');
@@ -120,28 +120,28 @@ class FaqListView extends ArgumentsConsumerStatelessView {
               children: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppTextButton('What do the lights on my node mean?',
+                  AppTextButton(loc(context).faqListWhatLightsMean,
                       onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=217443');
                   }),
-                  AppTextButton('How to factory reset your node', onTap: () {
+                  AppTextButton(loc(context).faqListHowToFactoryReset, onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=224178');
                   }),
-                  AppTextButton('Node keeps restarting', onTap: () {
+                  AppTextButton(loc(context).faqListNodeKeepRestarting, onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333429#Restarting');
                   }),
-                  AppTextButton('Node lights not working', onTap: () {
+                  AppTextButton(loc(context).faqListLightsNotWorking, onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333429#LightNotWorking');
                   }),
-                  AppTextButton('Node not turning on', onTap: () {
+                  AppTextButton(loc(context).faqListNodeNotTurnOn, onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333429#NotTurningOn');
                   }),
-                  AppTextButton('Ethernet ports not working', onTap: () {
+                  AppTextButton(loc(context).faqListEthernetPortNotWorking, onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333429#PortsNotWorking');
                   }),
