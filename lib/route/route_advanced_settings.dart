@@ -135,4 +135,11 @@ final advancedSettings = [
               ),
             ]),
       ]),
+      LinksysRoute(
+                name: RouteNamed.settingsDMZ,
+                path: RoutePath.settingsDMZ,
+                builder: (context, state) => DMZSettingsView(
+                  args: state.extra as Map<String, dynamic>? ?? {},
+                ),
+              ),
 ];

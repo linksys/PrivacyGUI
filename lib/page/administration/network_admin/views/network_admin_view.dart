@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/administration/network_admin/providers/timezone_provider.dart';
+import 'package:privacy_gui/page/administration/network_admin/providers/timezone_state.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -14,6 +16,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/administration/network_admin/providers/_providers.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/timezone.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -143,11 +146,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                 ),
                 AppListCard(
                   title: AppText.bodyLarge(loc(context).timezone),
-                  description: AppText.labelLarge(timezoneState
-                      .supportedTimezones
-                      .firstWhere((element) =>
-                          element.timeZoneID == timezoneState.timezoneId)
-                      .description),
+                  description: AppText.labelLarge(_getTimezone(timezoneState)),
                   trailing: const Icon(LinksysIcons.chevronRight),
                   onTap: () {
                     context
@@ -191,6 +190,13 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
               ],
             ),
           );
+  }
+
+  String _getTimezone(TimezoneState timezoneState) {
+    final timezone = timezoneState.supportedTimezones.firstWhereOrNull(
+            (element) => element.timeZoneID == timezoneState.timezoneId) ??
+        timezoneState.supportedTimezones[0];
+    return '(${getTimezoneGMT(timezone.description)}) ${getTimeZoneRegionName(context, timezone.timeZoneID)}';
   }
 
   _showRouterPasswordModal(String? hint) {

@@ -234,7 +234,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             ),
             onBackTap: _isEdited()
                 ? () async {
-                    final goBack = await _showUnsavedAlert();
+                    final goBack = await showUnsavedAlert(context);
                     if (goBack == true) {
                       context.pop();
                     }
@@ -312,6 +312,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
 
   Widget _editingCard() {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InternetSettingCard(
           title: viewType == InternetSettingsViewType.ipv4
@@ -376,7 +378,13 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       WanType.static => _staticIpEditing(),
       WanType.pptp => _pptpEditing(),
       WanType.l2tp => _l2tpEditing(),
-      WanType.bridge => [],
+      WanType.bridge => [
+          const AppGap.big(),
+          AppStyledText.bold(
+              '${loc(context).toLogInLocallyWhileInBridgeMode}http://${ref.read(internetSettingsProvider.notifier).hostname}.local',
+              defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+              tags: const ['b'])
+        ],
       _ => [],
     };
   }
@@ -1295,30 +1303,6 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
     } else {
       return ref.read(internetSettingsProvider.notifier).saveIpv6(state);
     }
-  }
-
-  Future<bool?> _showUnsavedAlert() {
-    return showMessageAppDialog<bool>(
-      context,
-      title: loc(context).unsavedChangesTitle,
-      message: loc(context).unsavedChangesDesc,
-      actions: [
-        AppTextButton(
-          loc(context).goBack,
-          color: Theme.of(context).colorScheme.onSurface,
-          onTap: () {
-            context.pop();
-          },
-        ),
-        AppTextButton(
-          loc(context).discardChanges,
-          color: Theme.of(context).colorScheme.error,
-          onTap: () {
-            context.pop(true);
-          },
-        ),
-      ],
-    );
   }
 
   bool _isEdited() {

@@ -23,6 +23,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/info_card.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -191,7 +192,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               ),
             ),
             // const AppGap.regular(),
-            AppInfoCard(
+            AppSettingCard(
               title: loc(context).connectTo,
               description: _checkEmptyValue(state.upstreamDevice),
               showBorder: false,
@@ -246,7 +247,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     } else {
       final title = loc(context).nodeLight;
       return [
-        AppInfoCard(
+        AppSettingCard(
           title: title,
           showBorder: false,
           padding: EdgeInsets.zero,
@@ -277,7 +278,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppInfoCard(
+          AppSettingCard(
             showBorder: false,
             padding: EdgeInsets.zero,
             title: loc(context).lanIPAddress,
@@ -285,7 +286,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           ),
           if (state.isMaster) ...[
             const AppGap.semiSmall(),
-            AppInfoCard(
+            AppSettingCard(
               showBorder: false,
               padding: EdgeInsets.zero,
               title: loc(context).wanIPAddress,
@@ -302,7 +303,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           // ),
           const AppGap.semiSmall(),
 
-          AppInfoCard(
+          AppSettingCard(
             showBorder: false,
             padding: EdgeInsets.zero,
             title: loc(context).firmwareVersion,

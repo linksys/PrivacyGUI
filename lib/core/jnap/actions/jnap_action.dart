@@ -60,6 +60,8 @@ enum JNAPAction {
   setIPv6FirewallRules,
   getFirewallSettings,
   setFirewallSettings,
+  getDMZSettings,
+  setDMZSettings,
   // firmwareUpdate
   getFirmwareUpdateStatus,
   getNodesFirmwareUpdateStatus,

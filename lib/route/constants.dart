@@ -36,6 +36,7 @@ class RoutePath {
   static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
   static const settingsFirewall = 'firewall';
+  static const settingsDMZ = 'dmz';
 
   /// otp
   static const otpStart = 'otp';
@@ -113,8 +114,8 @@ class RoutePath {
 
   /// Support
   static const faqList = 'faqList';
-  static const contactSupportSelection = 'contactSupportSelection';
-  static const contactSupportDetails = 'contactSupportDetails';
+  static const callSupportMainRegion = 'callSupportMainRegion';
+  static const callSupportMoreRegion = 'callSupportMoreRegion';
   static const callbackDescription = 'callbackDescription';
   
   /// DDNS
@@ -168,6 +169,7 @@ class RouteNamed {
   static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
   static const settingsFirewall = 'firewall';
+  static const settingsDMZ = 'dmz';
 
   /// otp
   static const otpStart = 'otp';
@@ -246,8 +248,8 @@ class RouteNamed {
 
   /// Support
   static const faqList = 'faqList';
-  static const contactSupportSelection = 'contactSupportSelection';
-  static const contactSupportDetails = 'contactSupportDetails';
+  static const callSupportMainRegion = 'callSupportMainRegion';
+  static const callSupportMoreRegion = 'callSupportMoreRegion';
   static const callbackDescription = 'callbackDescription';  
 
   /// DDNS

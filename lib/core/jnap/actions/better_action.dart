@@ -428,6 +428,10 @@ void initBetterActions() {
       _JNAPActionValue.getFirewallSettings.value;
   _betterActionMap[JNAPAction.setFirewallSettings] =
       _JNAPActionValue.setFirewallSettings.value;
+  _betterActionMap[JNAPAction.getDMZSettings] =
+      _JNAPActionValue.getDMZSettings.value;
+  _betterActionMap[JNAPAction.setDMZSettings] =
+      _JNAPActionValue.setDMZSettings.value;
   _betterActionMap[JNAPAction.getFirmwareUpdateStatus] =
       _JNAPActionValue.getFirmwareUpdateStatus.value;
   _betterActionMap[JNAPAction.getNodesFirmwareUpdateStatus] =
