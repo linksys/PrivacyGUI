@@ -1,4 +1,7 @@
+import 'dart:html';
+
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
@@ -15,6 +18,8 @@ import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
+    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
 
 final internetSettingsProvider =
     NotifierProvider<InternetSettingsNotifier, InternetSettingsState>(
@@ -197,10 +202,10 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           final setWanSettingsResult = JNAPTransactionSuccessWrap.getResult(
               JNAPAction.setWANSettings, Map.fromEntries(results));
           final redirection = setWanSettingsResult?.output["redirection"];
-          await SharedPreferences.getInstance().then((prefs) {
-            prefs.setString(pRedirection,
-                "http://${redirection["hostName"]}.${redirection["domain"]}");
-          });
+          if (kIsWeb) {
+            assignWebLocation(
+                'https://${redirection["hostName"]}.${redirection["domain"]}');
+          }
         }
         await fetch(fetchRemote: true);
       });
