@@ -91,12 +91,7 @@ class _LocalRouterRecoveryViewState
                         color: Theme.of(context).colorScheme.error,
                       ),
                     ),
-                  const AppGap.big(),
-                  AppTextButton.noPadding(
-                    loc(context).localRouterRecoveryHint,
-                    onTap: () {},
-                  ),
-                  const AppGap.big(),
+                  const AppGap.extraBig(),
                   AppFilledButton(
                     loc(context).textContinue,
                     onTap: userInputCode.length == 5
