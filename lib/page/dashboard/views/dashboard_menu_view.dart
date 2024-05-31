@@ -181,7 +181,9 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   }
 
   void _restartNetwork() {
-    context.pop();
+    if (ResponsiveLayout.isMobileLayout(context)) {
+      context.pop();
+    }
     showMessageAppDialog(
       context,
       dismissible: true,
