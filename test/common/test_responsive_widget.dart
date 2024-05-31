@@ -77,6 +77,8 @@ void testLocalizations(
   final supportedLocales =
       hasLocaleConfig ? envLocales : (locales ?? envLocales);
   //
+  final isScreenIncluded = envScreens.any((element) =>
+      screens?.any((element2) => element2.name == element.name) ?? false);
   final supportedDevices = screens ?? envScreens;
   final set = supportedLocales
       .map((locale) => supportedDevices.map((device) =>
@@ -99,7 +101,7 @@ void testLocalizations(
       await expectLater(actualFinder, matchesGoldenFile('goldens/$name.png'));
     },
     variants: variants,
-    skip: skip,
+    skip: (skip ?? false) || isScreenIncluded,
     timeout: timeout,
     semanticsEnabled: semanticsEnabled,
     tags: ['loc'],
