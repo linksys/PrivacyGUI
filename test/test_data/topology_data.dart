@@ -349,7 +349,7 @@ final testTopologyStateOffline2 = TopologyState(
       ..parent = _onlineRoot
       ..children.clear()),
   offlineRoot: OfflineTopologyNode(
-      data: const TopologyModel(isOnline: true, location: 'Offline'),
+      data: const TopologyModel(isOnline: false, location: 'Offline'),
       children: [
         _slaveOfflineNode1..children.clear(),
         _slaveOfflineNode2..children.clear()
@@ -372,7 +372,7 @@ final testTopologyStateOffline3 = TopologyState(
           ..parent = _masterNode,
       ])),
   offlineRoot: OfflineTopologyNode(
-      data: const TopologyModel(isOnline: true, location: 'Offline'),
+      data: const TopologyModel(isOnline: false, location: 'Offline'),
       children: [
         _slaveOfflineNode3..children.clear(),
         _slaveOfflineNode4..children.clear(),
@@ -393,7 +393,7 @@ final testTopologyStateOffline4 = TopologyState(
           ..parent = _masterNode,
       ])),
   offlineRoot: OfflineTopologyNode(
-      data: const TopologyModel(isOnline: true, location: 'Offline'),
+      data: const TopologyModel(isOnline: false, location: 'Offline'),
       children: [
         _slaveOfflineNode2..children.clear(),
         _slaveOfflineNode3..children.clear(),
@@ -410,7 +410,7 @@ final testTopologyStateOffline5 = TopologyState(
       ..parent = _onlineRoot
       ..children.clear()),
   offlineRoot: OfflineTopologyNode(
-      data: const TopologyModel(isOnline: true, location: 'Offline'),
+      data: const TopologyModel(isOnline: false, location: 'Offline'),
       children: [
         _slaveOfflineNode1..children.clear(),
         _slaveOfflineNode2..children.clear(),

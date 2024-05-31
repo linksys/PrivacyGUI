@@ -178,7 +178,7 @@ class StyledAppPageView extends ConsumerWidget {
       case AppBarStyle.back:
         return LinksysAppBar.withBack(
           context: context,
-          title: title == null ? null : AppText.titleLarge(title),
+          title: title == null ? null : AppText.titleLarge(title, maxLines: 3,),
           toolbarHeight: toolbarHeight,
           onBackTap: isBackEnabled()
               ? (onBackTap ??

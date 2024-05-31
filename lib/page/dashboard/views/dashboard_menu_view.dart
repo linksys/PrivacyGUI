@@ -11,7 +11,6 @@ import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/topology/providers/topology_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
-import 'package:privacy_gui/providers/root/root_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -22,7 +21,6 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 import 'package:privacygui_widgets/widgets/panel/custom_animated_box.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
 class DashboardMenuView extends ConsumerStatefulWidget {
   const DashboardMenuView({Key? key}) : super(key: key);
