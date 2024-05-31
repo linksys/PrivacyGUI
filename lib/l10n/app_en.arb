@@ -53,7 +53,6 @@
   "localResetRouterPasswordSuccessNext": "Go back to Login",
   "localResetRouterPasswordTitle": "New router password",
   "localRouterRecoveryDescription": "To set a new router password, enter the 5-digit recovery key.",
-  "localRouterRecoveryHint": "Show me where",
   "location": "Location to check your WiFi status. We do not record or use location data for other purposes",
   "login": "Log in",
   "logout": "Log out",
