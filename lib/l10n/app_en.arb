@@ -673,5 +673,20 @@
   "dmzViewDHCP": "View DHCP Client Table",
   "specifiedRange": "Specified Range",
   "dmzSourceRangeError": "The end IP address must be larger or equal to the start IP address",
-  "invalidMACAddress": "Invalid MAC address."
+  "invalidMACAddress": "Invalid MAC address.",
+  "updateAvailable": "Update available",
+  "firmwareUpdate": "Firmware update",
+  "firmwareUpdateDesc1": "Get the latest feature and fixed.",
+  "firmwareUpdateDesc2": "Your router will restart once the update is complete. Devices will reconnect on their own.",
+  "firmwareUpdateDesc3": "The Linksys app might restart once your system is ready again.",
+  "update": "Update",
+  "firmwareDownloadingTitle": "Downloading...",
+  "firmwareInstallingTitle": "Installing...",
+  "firmwareRebootingTitle": "Restarting...",
+  "firmwareDownloadingMessage1": "You can use your WiFi during this update.",
+  "firmwareDownloadingMessage2": "But things might be slower than usual while we improve your system.",
+  "firmwareDownloadingMessage3": "This will take about 15 minutes, after which your WiFi will restart.",
+  "firmwareRestartingMessage1": "Restarting your WiFi",
+  "firmwareRestartingMessage2": "Future updates will happen overnight - automatically - and only take a few minutes.",
+  "firmwareRestartingMessage3": "This takes 2-3 minutes."
 }

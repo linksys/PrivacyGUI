@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/firmware_update/_firmware_update.dart';
@@ -86,16 +87,18 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             )
           : Row(
               children: [
-                Column(
-                  children: [
-                    _homeTitle(
-                        state.mainWifiSsid,
-                        wanStatus == NodeWANStatus.online,
-                        isLoading,
-                        state.isFirstPolling),
-                    const AppGap.extraBig(),
-                    _routerImage(isLoading, master),
-                  ],
+                Expanded(
+                  child: Column(
+                    children: [
+                      _homeTitle(
+                          state.mainWifiSsid,
+                          wanStatus == NodeWANStatus.online,
+                          isLoading,
+                          state.isFirstPolling),
+                      const AppGap.extraBig(),
+                      _routerImage(isLoading, master),
+                    ],
+                  ),
                 ),
                 Expanded(child: _networkInfoTiles(state, isLoading)),
               ],
@@ -168,19 +171,23 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           ],
         ),
         if (!isLoading && !isOnline) _troubleshooting(),
-        if (isOnline && hasNewFirmware())
+        if (isOnline && hasNewFirmware()) ...[
+          const AppGap.regular(),
           AppCard(
-            child: AppTextButton(
-              loc(context).newFirmwareAvailable,
-              onTap: () {
-                showAdaptiveDialog(
-                    context: context,
-                    builder: (context) {
-                      return FirmwareUpdateDetailView();
-                    });
-              },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                AppText.labelLarge(
+                  loc(context).newFirmwareAvailable,
+                ),
+                const Icon(LinksysIcons.chevronRight)
+              ],
             ),
+            onTap: () {
+              showFirmwareUpdateDialog(context);
+            },
           ),
+        ]
       ],
     );
   }

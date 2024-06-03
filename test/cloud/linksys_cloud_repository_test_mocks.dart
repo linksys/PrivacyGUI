@@ -448,46 +448,6 @@ class MockLinksysHttpClient extends _i1.Mock implements _i3.LinksysHttpClient {
       ) as _i5.Future<bool>);
 
   @override
-  _i5.Future<_i2.Response> upload(
-    Uri? url,
-    List<_i2.MultipartFile>? multipartList, {
-    Map<String, String>? headers,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #upload,
-          [
-            url,
-            multipartList,
-          ],
-          {#headers: headers},
-        ),
-        returnValue: _i5.Future<_i2.Response>.value(_FakeResponse_1(
-          this,
-          Invocation.method(
-            #upload,
-            [
-              url,
-              multipartList,
-            ],
-            {#headers: headers},
-          ),
-        )),
-        returnValueForMissingStub:
-            _i5.Future<_i2.Response>.value(_FakeResponse_1(
-          this,
-          Invocation.method(
-            #upload,
-            [
-              url,
-              multipartList,
-            ],
-            {#headers: headers},
-          ),
-        )),
-      ) as _i5.Future<_i2.Response>);
-
-  @override
   void dropCommand(String? id) => super.noSuchMethod(
         Invocation.method(
           #dropCommand,

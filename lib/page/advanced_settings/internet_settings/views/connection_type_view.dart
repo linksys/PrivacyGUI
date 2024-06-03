@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
@@ -12,6 +14,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/url_helper/url_helper.dart';
 import 'package:privacy_gui/utils.dart';
@@ -26,6 +29,8 @@ import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
+import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
+    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
 
 class ConnectionTypeView extends ArgumentsConsumerStatefulView {
   const ConnectionTypeView({super.key, super.args});
@@ -218,6 +223,12 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(redirectionProvider, (previous, next) {
+      if (kIsWeb && previous != next && next != null) {
+                logger.d('Redirect to $next');
+        assignWebLocation(next);
+      }
+    });
     final title =
         '${viewType == InternetSettingsViewType.ipv4 ? loc(context).ipv4 : loc(context).ipv6} ${loc(context).connectionType}';
     final wanType = WanType.resolve(state.ipv4Setting.ipv4ConnectionType);
