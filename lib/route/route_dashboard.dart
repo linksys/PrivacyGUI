@@ -133,7 +133,7 @@ final dashboardRoute = ShellRoute(
           // config: LinksysRouteConfig(
           //   pageWidth: SpecificPageWidth(width: 430),
           // ),
-          builder: (context, state) => const CallbackDescriptionView(),
+          builder: (context, state) => const CallbackView(),
         ),
       ],
     ),

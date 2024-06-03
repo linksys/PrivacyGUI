@@ -10,7 +10,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
-import 'package:privacy_gui/page/dashboard/providers/dashboard_support_state.dart';
+import 'package:privacy_gui/page/support/providers/support_state.dart';
 import 'package:privacy_gui/page/troubleshooting/providers/troubleshooting_provider.dart';
 import '../../../util/export_selector/export_base.dart'
     if (dart.library.io) '../../../util/export_selector/export_mobile.dart'
@@ -23,18 +23,35 @@ class SupportNotifier extends Notifier<SupportState> {
   @override
   SupportState build() => SupportState.init();
 
-  Future fetchTickets() {
+  Future fetchTickets() async {
     final routerIdentityInfo = getDeviceIdentityInfo();
     final serialNumber = routerIdentityInfo['serialNumber'] ?? '';
     final modelNumber = routerIdentityInfo['modelNumber'] ?? '';
     final macAddress = routerIdentityInfo['macAddress'] ?? '';
-    return deviceRegistrations(
+    await deviceRegistrations(
             serialNumber: serialNumber,
             modelNumber: modelNumber,
             macAddress: macAddress)
         .then((token) => ref
             .read(cloudRepositoryProvider)
-            .getTickets(linksysToken: token, serialNumber: serialNumber));
+            .getTickets(linksysToken: token, serialNumber: serialNumber))
+        .then((result) {
+      final ticketList = result.map((e) => Ticket.fromMap(e)).toList();
+      final hasOpenTicket = ticketList.any((ticket) =>
+          ticket.status != 'Resolved' &&
+          ticket.status != 'Timeout' &&
+          ticket.status != 'Failed');
+      CallbackViewType viewType = CallbackViewType.callLog;
+      if (!hasOpenTicket) {
+        viewType = CallbackViewType.request;
+      }
+
+      state = state.copyWith(
+        ticketList: ticketList,
+        hasOpenTicket: hasOpenTicket,
+        callbackViewType: viewType,
+      );
+    });
   }
 
   Future startCreateTicket(
@@ -72,10 +89,13 @@ class SupportNotifier extends Notifier<SupportState> {
 
     // Uplodad collected data and do jnap SendSysinfoEmail with ticketId
     await upload(
-        ticketId: ticketId,
-        linksysToken: token,
-        serialNumber: serialNumber,
-        data: jsonEncode(dataMap));
+      ticketId: ticketId,
+      linksysToken: token,
+      serialNumber: serialNumber,
+      data: jsonEncode(dataMap),
+    ).then((value) {
+      state = state.copyWith(justCreatedANewIssue: true);
+    });
   }
 
   Map<String, String> getDeviceIdentityInfo() {
@@ -90,10 +110,11 @@ class SupportNotifier extends Notifier<SupportState> {
     };
   }
 
-  Future<String> deviceRegistrations(
-      {required String serialNumber,
-      required String modelNumber,
-      required String macAddress}) async {
+  Future<String> deviceRegistrations({
+    required String serialNumber,
+    required String modelNumber,
+    required String macAddress,
+  }) async {
     final cloudRepository = ref.read(cloudRepositoryProvider);
     final token = await cloudRepository.deviceRegistrations(
         serialNumber: serialNumber,
@@ -156,5 +177,13 @@ class SupportNotifier extends Notifier<SupportState> {
   Future download(BuildContext context) async {
     final dataMap = await fetchDeviceInfo();
     await exportFile(content: jsonEncode(dataMap), fileName: 'device-jnap');
+  }
+
+  void updateCallbackViewType(CallbackViewType type) {
+    state = state.copyWith(callbackViewType: type);
+  }
+
+  void justCreatedANewIssue(bool justCreated) {
+    state = state.copyWith(justCreatedANewIssue: justCreated);
   }
 }
