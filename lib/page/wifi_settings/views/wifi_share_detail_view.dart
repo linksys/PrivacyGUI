@@ -71,7 +71,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
       backState: StyledBackState.none,
       scrollable: true,
       padding: const EdgeInsets.symmetric(horizontal: Spacing.semiBig),
-      menuWidget: ResponsiveLayout.isLayoutBreakpoint(context)
+      menuWidget: ResponsiveLayout.isMobileLayout(context)
           ? null
           : IntrinsicWidth(child: _qrcodeSection()),
       child: AppBasicLayout(
@@ -81,9 +81,9 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
             _wifiInfoSection(),
             // const AppGap.big(),
             // _optionSection(),
-            if (ResponsiveLayout.isLayoutBreakpoint(context))
+            if (ResponsiveLayout.isMobileLayout(context))
               AppCard(child: _qrcodeSection()),
-            if (!ResponsiveLayout.isLayoutBreakpoint(context))
+            if (!ResponsiveLayout.isMobileLayout(context))
               AppCard(child: _shareSection()),
           ],
         ),
@@ -109,8 +109,8 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
             key: globalKey,
             child: Container(
               color: Colors.white,
-              height: ResponsiveLayout.isLayoutBreakpoint(context) ? 240 : 200,
-              width: ResponsiveLayout.isLayoutBreakpoint(context) ? 240 : 200,
+              height: ResponsiveLayout.isMobileLayout(context) ? 240 : 200,
+              width: ResponsiveLayout.isMobileLayout(context) ? 240 : 200,
               child: QrImageView(
                 data: WiFiCredential(
                   ssid: widget.ssid,
@@ -123,7 +123,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
           ),
           const AppGap.semiBig(),
           const Divider(),
-          if (ResponsiveLayout.isLayoutBreakpoint(context)) _shareSection(),
+          if (ResponsiveLayout.isMobileLayout(context)) _shareSection(),
         ],
       ),
     );

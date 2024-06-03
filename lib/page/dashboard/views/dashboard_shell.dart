@@ -81,7 +81,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
         handleBanner: true,
         padding: const EdgeInsets.only(),
         bottomNavigationBar:
-            ResponsiveLayout.isLayoutBreakpoint(context) && showNavi
+            ResponsiveLayout.isMobileLayout(context) && showNavi
                 ? NavigationBar(
                     selectedIndex: _selectedIndex,
                     destinations: _dashboardNaviItems

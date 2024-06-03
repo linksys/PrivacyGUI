@@ -65,7 +65,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         right: Spacing.regular,
         bottom: Spacing.regular,
       ),
-      child: ResponsiveLayout.isLayoutBreakpoint(context)
+      child: ResponsiveLayout.isMobileLayout(context)
           ? Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,

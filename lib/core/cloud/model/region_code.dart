@@ -1,5 +1,8 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 
-class RegionCode {
+import 'package:equatable/equatable.dart';
+
+class RegionCode extends Equatable {
   final String countryCode;
   final String countryName;
   final int countryCallingCode;
@@ -270,4 +273,7 @@ class RegionCode {
     "ZW": '\u{1F1FF}\u{1F1FC}',
     "AX": '\u{1F1E6}\u{1F1FD}',
   };
+
+  @override
+  List<Object> get props => [countryCode, countryName, countryCallingCode];
 }

@@ -49,7 +49,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     (loginType == LoginType.none ||
-                            ResponsiveLayout.isLayoutBreakpoint(context))
+                            ResponsiveLayout.isMobileLayout(context))
                         ? InkWell(
                             child: SvgPicture(
                               CustomTheme.of(context).images.linksysLogoBlack,
