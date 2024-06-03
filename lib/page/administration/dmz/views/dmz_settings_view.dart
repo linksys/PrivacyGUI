@@ -108,7 +108,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
             ),
             if (state.settings.isDMZEnabled)
               AppCard(
-                  child: ResponsiveLayout.isLayoutBreakpoint(context)
+                  child: ResponsiveLayout.isMobileLayout(context)
                       ? Column(
                           children: [
                             _sourceIPWidget(state),

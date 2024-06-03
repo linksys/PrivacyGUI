@@ -44,7 +44,7 @@ import 'package:privacy_gui/page/pnp/troubleshooter/views/pnp_waiting_modem_view
 import 'package:privacy_gui/page/safe_browsing/views/safe_browsing_view.dart';
 import 'package:privacy_gui/page/pnp/troubleshooter/views/pnp_no_internet_connection_view.dart';
 import 'package:privacy_gui/page/select_network/_select_network.dart';
-import 'package:privacy_gui/page/support/callback_description_view.dart';
+import 'package:privacy_gui/page/support/views/callback_view.dart';
 import 'package:privacy_gui/page/support/faq_list_view.dart';
 import 'package:privacy_gui/page/topology/_topology.dart';
 import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';

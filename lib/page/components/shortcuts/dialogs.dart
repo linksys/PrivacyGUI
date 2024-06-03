@@ -157,7 +157,7 @@ Future<T?> showMessageAppOkDialog<T>(
     dismissible: dismissible,
     title: title,
     icon: icon,
-    content: AppText.bodyMedium(loc(context).modalDFSDesc),
+    content: AppText.bodyMedium(message ?? ''),
     width: width,
     actions: [
       AppTextButton(
