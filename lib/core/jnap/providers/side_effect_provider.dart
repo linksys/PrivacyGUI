@@ -123,7 +123,12 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
         retryDelayInSec: overrides?.retryDelayInSec ?? 10,
         maxPollTimeInSec: overrides?.maxPollTimeInSec ?? 120,
         condition: overrides?.condition,
-      ).then((value) => result);
+      ).then((value) => result).catchError(
+        (error) {
+          throw JNAPSideEffectError(result);
+        },
+        test: (error) => error is JNAPSideEffectError,
+      );
     } else {
       return poll(
         pollFunc: testRouterFullyBootedUp,
@@ -132,7 +137,12 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
         retryDelayInSec: overrides?.retryDelayInSec ?? 15,
         maxPollTimeInSec: overrides?.maxPollTimeInSec ?? -1,
         condition: overrides?.condition,
-      ).then((value) => result);
+      ).then((value) => result).catchError(
+        (error) {
+          throw JNAPSideEffectError(result);
+        },
+        test: (error) => error is JNAPSideEffectError,
+      );
     }
   }
 
@@ -244,5 +254,7 @@ final sideEffectProvider = NotifierProvider<SideEffectNotifier, JNAPSideEffect>(
     () => SideEffectNotifier());
 
 class JNAPSideEffectError extends JNAPError {
-  const JNAPSideEffectError() : super(result: 'JNAP handle side effect error');
+  final JNAPResult? attach;
+  const JNAPSideEffectError([this.attach])
+      : super(result: 'JNAP handle side effect error');
 }

@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/widgets/_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -11,12 +13,15 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
+import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
+    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
 
 class LocalNetworkSettingsView extends ArgumentsConsumerStatefulView {
   const LocalNetworkSettingsView({
@@ -53,6 +58,12 @@ class _LocalNetworkSettingsViewState
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(redirectionProvider, (previous, next) {
+      if (kIsWeb && next != null && originalSettings.ipAddress != next) {
+        logger.d('Redirect to $next');
+        assignWebLocation(next);
+      }
+    });
     final state = ref.watch(localNetworkSettingProvider);
     return _isLoading
         ? AppFullScreenSpinner(

@@ -158,35 +158,30 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                     });
                   },
                 ),
-                AppListCard(
-                  title: AppText.bodyLarge('Manual Firmware update'),
-                  // description: AppText.labelLarge(timezoneState
-                  //     .supportedTimezones
-                  //     .firstWhere((element) =>
-                  //         element.timeZoneID == timezoneState.timezoneId)
-                  //     .description),
-                  trailing: const Icon(LinksysIcons.add),
-                  onTap: () async {
-                    final result = await FilePicker.platform.pickFiles();
-                    if (result != null) {
-                      final file = result.files.single;
-                      logger.d(
-                          'XXXXX: Manual Firmware update: file: ${file.name}');
-                      ref
-                          .read(firmwareUpdateProvider.notifier)
-                          .manualFirmwareUpdate(file.name, file.bytes ?? [])
-                          .then((value) {
-                        if (value) {
-                          showSuccessSnackBar(
-                              context, 'Firmware update success');
-                        } else {
-                          showFailedSnackBar(
-                              context, 'Error updating firmware');
-                        }
-                      });
-                    }
-                  },
-                ),
+                // AppListCard(
+                //   title: AppText.bodyLarge('Manual Firmware update'),
+                //   trailing: const Icon(LinksysIcons.add),
+                //   onTap: () async {
+                //     final result = await FilePicker.platform.pickFiles();
+                //     if (result != null) {
+                //       final file = result.files.single;
+                //       logger.d(
+                //           'XXXXX: Manual Firmware update: file: ${file.name}');
+                //       ref
+                //           .read(firmwareUpdateProvider.notifier)
+                //           .manualFirmwareUpdate(file.name, file.bytes ?? [])
+                //           .then((value) {
+                //         if (value) {
+                //           showSuccessSnackBar(
+                //               context, 'Firmware update success');
+                //         } else {
+                //           showFailedSnackBar(
+                //               context, 'Error updating firmware');
+                //         }
+                //       });
+                //     }
+                //   },
+                // ),
               ],
             ),
           );

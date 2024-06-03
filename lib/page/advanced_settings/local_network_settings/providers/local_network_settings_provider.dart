@@ -3,12 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/models/set_lan_settings.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
+import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
-import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
-    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
 
 final localNetworkSettingProvider =
     NotifierProvider<LocalNetworkSettingsNotifier, LocalNetworkSettingsState>(
@@ -102,15 +103,20 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       JNAPAction.setLANSettings,
       auth: true,
       data: newSettings.toMap()..removeWhere((key, value) => value == null),
+      sideEffectOverrides: const JNAPSideEffectOverrides(maxRetry: 5),
     )
         .then((result) async {
-      if (currentIPAddress != newSettings.ipAddress && kIsWeb) {
-        assignWebLocation('https://${newSettings.ipAddress}');
-      } else {
-        // Update the state
-        await fetch(fetchRemote: true);
-      }
-    });
+      // Update the state
+      await fetch(fetchRemote: true);
+    }).catchError(
+      (error) {
+        if (kIsWeb) {
+          ref.read(redirectionProvider.notifier).state =
+              'https://${newSettings.ipAddress}';
+        }
+      },
+      test: (error) => error is JNAPSideEffectError,
+    );
   }
 
   void updateHostName(String hostName) {
