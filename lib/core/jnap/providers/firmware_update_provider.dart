@@ -1,10 +1,17 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart';
+import 'package:http_parser/http_parser.dart';
+import 'package:privacy_gui/constants/jnap_const.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/http/linksys_http_client.dart';
 
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
@@ -18,6 +25,11 @@ import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
+    if (dart.library.io) 'package:privacy_gui/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
+    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
+import 'package:privacy_gui/utils.dart';
 
 final firmwareUpdateProvider =
     NotifierProvider<FirmwareUpdateNotifier, FirmwareUpdateState>(
@@ -141,13 +153,16 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
         .length;
     // check firmware update up to 480 seconds for per router
     _sub = _startCheckFirmwareUpdateStatus(
-        retryTimes: 48 * availableCount,
+        retryTimes: 180 * availableCount,
         stopCondition: (result) =>
             _checkFirmwareUpdateComplete(result, targetFirmwareUpdateRecords),
         onCompleted: () {
           logger.i('[FIRMWARE]: update firmware COMPLETED!');
           final polling = ref.read(pollingProvider.notifier);
-          polling.forcePolling().then((_) {
+          polling
+              .forcePolling()
+              .then((_) => checkFirmwareUpdateStatus())
+              .then((_) {
             polling.startPolling();
             _sub?.cancel();
             state = state.copyWith(isUpdating: false);
@@ -226,7 +241,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
         .scheduledCommand(
             action: action,
             maxRetry: retryTimes ?? -1,
-            retryDelayInMilliSec: retryDelayInMilliSec ?? 10000,
+            retryDelayInMilliSec: retryDelayInMilliSec ?? 3000,
             condition: stopCondition,
             onCompleted: onCompleted,
             auth: true)
@@ -246,5 +261,36 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
   bool _checkFirmwareUpdatePeriod(int lastCheckTime) {
     final period = firmwareCheckPeriod.inMilliseconds;
     return (DateTime.now().millisecondsSinceEpoch - lastCheckTime) < period;
+  }
+
+  Future<bool> manualFirmwareUpdate(String filename, List<int> bytes) async {
+    final client = LinksysHttpClient();
+    final localPwd = ref.read(authProvider).value?.localPassword ??
+        await const FlutterSecureStorage().read(key: pLocalPassword) ??
+        '';
+    final multiPart = MultipartFile.fromBytes(
+      'upload',
+      bytes,
+      filename: filename,
+      contentType: MediaType('application', 'octet-stream'),
+    );
+    return client
+        .upload(Uri.parse('https://${getLocalIp(ref)}/jcgi/'), [
+          // MultipartFile.fromBytes(kJNAPAction, 'updatefirmware'.codeUnits),
+          // MultipartFile.fromBytes(kJNAPAuthorization,
+          //     'Basic ${Utils.stringBase64Encode('admin:$localPwd')}'.codeUnits),
+          multiPart,
+        ], fields: {
+          kJNAPAction: 'updatefirmware',
+          kJNAPAuthorization:
+              'Basic ${Utils.stringBase64Encode('admin:$localPwd')}'
+        })
+        .then((response) =>
+            response.statusCode == 200 &&
+            jsonDecode(response.body)['result'] == 'OK')
+        .onError((error, stackTrace) {
+          logger.d('Manual Firmware update error: $error');
+          return false;
+        });
   }
 }

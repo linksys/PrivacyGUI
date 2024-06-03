@@ -9,6 +9,7 @@ import 'package:privacygui_widgets/widgets/card/menu_card.dart';
 
 import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
+import '../../../common/testable_router.dart';
 import '../../../common/testable_widget.dart';
 import '../../../mock_notifiers/mock_auth_notifier.dart';
 
@@ -164,7 +165,7 @@ void main() {
     variants: responsiveMobileVariants,
     (tester) async {
       await tester.pumpWidget(
-        testableWidget(
+        testableSingleRoute(
           child: const DashboardMenuView(),
         ),
       );
@@ -186,7 +187,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // check dialog displayed
-      final dialogFinder = find.byType(Dialog);
+      final dialogFinder = find.byType(AlertDialog);
       expect(dialogFinder, findsOneWidget);
 
       // check contents on the dialog

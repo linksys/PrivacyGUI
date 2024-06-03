@@ -58,6 +58,10 @@ enum JNAPAction {
   setSinglePortForwardingRules,
   getIPv6FirewallRules,
   setIPv6FirewallRules,
+  getFirewallSettings,
+  setFirewallSettings,
+  getDMZSettings,
+  setDMZSettings,
   // firmwareUpdate
   getFirmwareUpdateStatus,
   getNodesFirmwareUpdateStatus,

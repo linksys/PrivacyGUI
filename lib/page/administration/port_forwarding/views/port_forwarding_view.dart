@@ -45,7 +45,7 @@ class _PortForwardingContentViewState
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      title: loc(context).portForwarding,
+      title: loc(context).portSettings,
       child: AppBasicLayout(
         content: Column(
           children: [

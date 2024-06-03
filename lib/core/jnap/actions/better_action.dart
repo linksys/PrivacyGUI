@@ -424,6 +424,14 @@ void initBetterActions() {
       _JNAPActionValue.getIPv6FirewallRules.value;
   _betterActionMap[JNAPAction.setIPv6FirewallRules] =
       _JNAPActionValue.setIPv6FirewallRules.value;
+  _betterActionMap[JNAPAction.getFirewallSettings] =
+      _JNAPActionValue.getFirewallSettings.value;
+  _betterActionMap[JNAPAction.setFirewallSettings] =
+      _JNAPActionValue.setFirewallSettings.value;
+  _betterActionMap[JNAPAction.getDMZSettings] =
+      _JNAPActionValue.getDMZSettings.value;
+  _betterActionMap[JNAPAction.setDMZSettings] =
+      _JNAPActionValue.setDMZSettings.value;
   _betterActionMap[JNAPAction.getFirmwareUpdateStatus] =
       _JNAPActionValue.getFirmwareUpdateStatus.value;
   _betterActionMap[JNAPAction.getNodesFirmwareUpdateStatus] =
@@ -469,7 +477,7 @@ void initBetterActions() {
   _betterActionMap[JNAPAction.getMACFilterSettings] =
       _JNAPActionValue.getMACFilterSettings.value;
   _betterActionMap[JNAPAction.setMACFilterSettings] =
-      _JNAPActionValue.setMACFilterSettings.value;    
+      _JNAPActionValue.setMACFilterSettings.value;
   _betterActionMap[JNAPAction.getActiveMotionSensingBots] =
       _JNAPActionValue.getActiveMotionSensingBots.value;
   _betterActionMap[JNAPAction.getMotionSensingSettings] =

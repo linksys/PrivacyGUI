@@ -48,7 +48,7 @@ class DashboardSupportView extends ArgumentsConsumerStatelessView {
               title: loc(context).dashboardSupportCallSupportTitle,
               description: loc(context).dashboardSupportCallSupportDesc,
               tapAction: () {
-                context.pushNamed(RouteNamed.contactSupportSelection);
+                context.pushNamed(RouteNamed.callSupportMainRegion);
               },
             ),
           ],

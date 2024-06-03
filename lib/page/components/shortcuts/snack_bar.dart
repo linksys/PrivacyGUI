@@ -48,7 +48,7 @@ showSnackBar(BuildContext context,
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       behavior: SnackBarBehavior.floating,
-      margin: ResponsiveLayout.isLayoutBreakpoint(context)
+      margin: ResponsiveLayout.isMobileLayout(context)
           ? const EdgeInsets.only(left: 24, right: 24, bottom: 24)
           : EdgeInsets.only(
               left: MediaQuery.of(context).size.width * 0.6,
