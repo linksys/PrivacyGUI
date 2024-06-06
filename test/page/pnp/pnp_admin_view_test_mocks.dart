@@ -414,14 +414,14 @@ class MockPnpNotifier extends _i2.Notifier<_i3.PnpState> with _i1.Mock implement
       ) as ({String name, String password}));
 
   @override
-  _i13.Future<dynamic> save() => (super.noSuchMethod(
+  _i13.Future<void> save() => (super.noSuchMethod(
         Invocation.method(
           #save,
           [],
         ),
-        returnValue: _i13.Future<dynamic>.value(),
-        returnValueForMissingStub: _i13.Future<dynamic>.value(),
-      ) as _i13.Future<dynamic>);
+        returnValue: _i13.Future<void>.value(),
+        returnValueForMissingStub: _i13.Future<void>.value(),
+      ) as _i13.Future<void>);
 
   @override
   _i13.Future<dynamic> testConnectionReconnected() => (super.noSuchMethod(

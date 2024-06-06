@@ -3,19 +3,27 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i8;
+import 'dart:async' as _i12;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart' as _i9;
-import 'package:privacy_gui/core/cloud/model/region_code.dart' as _i10;
+import 'package:privacy_gui/core/jnap/actions/better_action.dart' as _i14;
+import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart' as _i16;
+import 'package:privacy_gui/core/jnap/command/base_command.dart' as _i9;
+import 'package:privacy_gui/core/jnap/command/http/base_http_command.dart'
+    as _i7;
+import 'package:privacy_gui/core/jnap/jnap_command_executor_mixin.dart' as _i5;
 import 'package:privacy_gui/core/jnap/models/device_info.dart' as _i4;
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
-    as _i6;
+    as _i10;
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart'
     as _i3;
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart' as _i7;
-import 'package:privacy_gui/providers/auth/auth_provider.dart' as _i5;
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart' as _i11;
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart'
+    as _i15;
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart' as _i6;
+import 'package:privacy_gui/core/jnap/router_repository.dart' as _i13;
+import 'package:privacy_gui/core/jnap/spec/jnap_spec.dart' as _i8;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -63,9 +71,9 @@ class _FakeNodeDeviceInfo_2 extends _i1.SmartFake
         );
 }
 
-class _FakeAsyncNotifierProviderRef_3<T> extends _i1.SmartFake
-    implements _i2.AsyncNotifierProviderRef<T> {
-  _FakeAsyncNotifierProviderRef_3(
+class _FakeRef_3<State extends Object?> extends _i1.SmartFake
+    implements _i2.Ref<State> {
+  _FakeRef_3(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -74,8 +82,9 @@ class _FakeAsyncNotifierProviderRef_3<T> extends _i1.SmartFake
         );
 }
 
-class _FakeAsyncValue_4<T> extends _i1.SmartFake implements _i2.AsyncValue<T> {
-  _FakeAsyncValue_4(
+class _FakeJNAPCommandExecutor_4<R> extends _i1.SmartFake
+    implements _i5.JNAPCommandExecutor<R> {
+  _FakeJNAPCommandExecutor_4(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -84,8 +93,41 @@ class _FakeAsyncValue_4<T> extends _i1.SmartFake implements _i2.AsyncValue<T> {
         );
 }
 
-class _FakeAuthState_5 extends _i1.SmartFake implements _i5.AuthState {
-  _FakeAuthState_5(
+class _FakeJNAPSuccess_5 extends _i1.SmartFake implements _i6.JNAPSuccess {
+  _FakeJNAPSuccess_5(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeJNAPTransactionSuccessWrap_6 extends _i1.SmartFake
+    implements _i6.JNAPTransactionSuccessWrap {
+  _FakeJNAPTransactionSuccessWrap_6(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeTransactionHttpCommand_7 extends _i1.SmartFake
+    implements _i7.TransactionHttpCommand {
+  _FakeTransactionHttpCommand_7(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeBaseCommand_8<R, S extends _i8.JNAPSpec<dynamic>>
+    extends _i1.SmartFake implements _i9.BaseCommand<R, S> {
+  _FakeBaseCommand_8(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -98,7 +140,7 @@ class _FakeAuthState_5 extends _i1.SmartFake implements _i5.AuthState {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockDashboardManagerNotifier extends _i2.Notifier<_i3.DashboardManagerState> with _i1.Mock
-    implements _i6.DashboardManagerNotifier {
+    implements _i10.DashboardManagerNotifier {
   @override
   _i2.NotifierProviderRef<_i3.DashboardManagerState> get ref =>
       (super.noSuchMethod(
@@ -160,7 +202,7 @@ class MockDashboardManagerNotifier extends _i2.Notifier<_i3.DashboardManagerStat
 
   @override
   _i3.DashboardManagerState createState(
-          {_i7.CoreTransactionData? pollingResult}) =>
+          {_i11.CoreTransactionData? pollingResult}) =>
       (super.noSuchMethod(
         Invocation.method(
           #createState,
@@ -186,7 +228,7 @@ class MockDashboardManagerNotifier extends _i2.Notifier<_i3.DashboardManagerStat
       ) as _i3.DashboardManagerState);
 
   @override
-  _i8.Future<void> saveSelectedNetwork(
+  _i12.Future<void> saveSelectedNetwork(
     String? serialNumber,
     String? networkId,
   ) =>
@@ -198,18 +240,19 @@ class MockDashboardManagerNotifier extends _i2.Notifier<_i3.DashboardManagerStat
             networkId,
           ],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i12.Future<void>.value(),
+        returnValueForMissingStub: _i12.Future<void>.value(),
+      ) as _i12.Future<void>);
 
   @override
-  _i8.Future<_i4.NodeDeviceInfo> checkDeviceInfo(String? serialNumber) =>
+  _i12.Future<_i4.NodeDeviceInfo> checkDeviceInfo(String? serialNumber) =>
       (super.noSuchMethod(
         Invocation.method(
           #checkDeviceInfo,
           [serialNumber],
         ),
-        returnValue: _i8.Future<_i4.NodeDeviceInfo>.value(_FakeNodeDeviceInfo_2(
+        returnValue:
+            _i12.Future<_i4.NodeDeviceInfo>.value(_FakeNodeDeviceInfo_2(
           this,
           Invocation.method(
             #checkDeviceInfo,
@@ -217,14 +260,14 @@ class MockDashboardManagerNotifier extends _i2.Notifier<_i3.DashboardManagerStat
           ),
         )),
         returnValueForMissingStub:
-            _i8.Future<_i4.NodeDeviceInfo>.value(_FakeNodeDeviceInfo_2(
+            _i12.Future<_i4.NodeDeviceInfo>.value(_FakeNodeDeviceInfo_2(
           this,
           Invocation.method(
             #checkDeviceInfo,
             [serialNumber],
           ),
         )),
-      ) as _i8.Future<_i4.NodeDeviceInfo>);
+      ) as _i12.Future<_i4.NodeDeviceInfo>);
 
   @override
   bool isHealthCheckModuleSupported(String? module) => (super.noSuchMethod(
@@ -254,319 +297,335 @@ class MockDashboardManagerNotifier extends _i2.Notifier<_i3.DashboardManagerStat
       ) as bool);
 }
 
-/// A class which mocks [AuthNotifier].
+/// A class which mocks [RouterRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockAuthNotifier extends _i2.AsyncNotifier<_i5.AuthState> with _i1.Mock implements _i5.AuthNotifier {
+class MockRouterRepository extends _i1.Mock implements _i13.RouterRepository {
   @override
-  _i2.AsyncNotifierProviderRef<_i5.AuthState> get ref => (super.noSuchMethod(
+  _i2.Ref<Object?> get ref => (super.noSuchMethod(
         Invocation.getter(#ref),
-        returnValue: _FakeAsyncNotifierProviderRef_3<_i5.AuthState>(
+        returnValue: _FakeRef_3<Object?>(
           this,
           Invocation.getter(#ref),
         ),
-        returnValueForMissingStub:
-            _FakeAsyncNotifierProviderRef_3<_i5.AuthState>(
+        returnValueForMissingStub: _FakeRef_3<Object?>(
           this,
           Invocation.getter(#ref),
         ),
-      ) as _i2.AsyncNotifierProviderRef<_i5.AuthState>);
+      ) as _i2.Ref<Object?>);
 
   @override
-  _i2.AsyncValue<_i5.AuthState> get state => (super.noSuchMethod(
-        Invocation.getter(#state),
-        returnValue: _FakeAsyncValue_4<_i5.AuthState>(
+  _i5.JNAPCommandExecutor<dynamic> get executor => (super.noSuchMethod(
+        Invocation.getter(#executor),
+        returnValue: _FakeJNAPCommandExecutor_4<dynamic>(
           this,
-          Invocation.getter(#state),
+          Invocation.getter(#executor),
         ),
-        returnValueForMissingStub: _FakeAsyncValue_4<_i5.AuthState>(
+        returnValueForMissingStub: _FakeJNAPCommandExecutor_4<dynamic>(
           this,
-          Invocation.getter(#state),
+          Invocation.getter(#executor),
         ),
-      ) as _i2.AsyncValue<_i5.AuthState>);
+      ) as _i5.JNAPCommandExecutor<dynamic>);
 
   @override
-  set state(_i2.AsyncValue<_i5.AuthState>? newState) => super.noSuchMethod(
+  set enableBTSetup(bool? isEnable) => super.noSuchMethod(
         Invocation.setter(
-          #state,
-          newState,
+          #enableBTSetup,
+          isEnable,
         ),
         returnValueForMissingStub: null,
       );
 
   @override
-  _i8.Future<_i5.AuthState> get future => (super.noSuchMethod(
-        Invocation.getter(#future),
-        returnValue: _i8.Future<_i5.AuthState>.value(_FakeAuthState_5(
-          this,
-          Invocation.getter(#future),
-        )),
-        returnValueForMissingStub:
-            _i8.Future<_i5.AuthState>.value(_FakeAuthState_5(
-          this,
-          Invocation.getter(#future),
-        )),
-      ) as _i8.Future<_i5.AuthState>);
-
-  @override
-  _i8.Future<_i5.AuthState> build() => (super.noSuchMethod(
-        Invocation.method(
-          #build,
-          [],
-        ),
-        returnValue: _i8.Future<_i5.AuthState>.value(_FakeAuthState_5(
-          this,
-          Invocation.method(
-            #build,
-            [],
-          ),
-        )),
-        returnValueForMissingStub:
-            _i8.Future<_i5.AuthState>.value(_FakeAuthState_5(
-          this,
-          Invocation.method(
-            #build,
-            [],
-          ),
-        )),
-      ) as _i8.Future<_i5.AuthState>);
-
-  @override
-  _i8.Future<_i5.AuthState?> init() => (super.noSuchMethod(
-        Invocation.method(
-          #init,
-          [],
-        ),
-        returnValue: _i8.Future<_i5.AuthState?>.value(),
-        returnValueForMissingStub: _i8.Future<_i5.AuthState?>.value(),
-      ) as _i8.Future<_i5.AuthState?>);
-
-  @override
-  _i8.Future<_i9.SessionToken?> checkSessionToken() => (super.noSuchMethod(
-        Invocation.method(
-          #checkSessionToken,
-          [],
-        ),
-        returnValue: _i8.Future<_i9.SessionToken?>.value(),
-        returnValueForMissingStub: _i8.Future<_i9.SessionToken?>.value(),
-      ) as _i8.Future<_i9.SessionToken?>);
-
-  @override
-  _i8.Future<_i9.SessionToken?> handleSessionTokenError(
-    Object? error,
-    StackTrace? trace,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #handleSessionTokenError,
-          [
-            error,
-            trace,
-          ],
-        ),
-        returnValue: _i8.Future<_i9.SessionToken?>.value(),
-        returnValueForMissingStub: _i8.Future<_i9.SessionToken?>.value(),
-      ) as _i8.Future<_i9.SessionToken?>);
-
-  @override
-  _i8.Future<_i9.SessionToken?> refreshToken(String? refreshToken) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #refreshToken,
-          [refreshToken],
-        ),
-        returnValue: _i8.Future<_i9.SessionToken?>.value(),
-        returnValueForMissingStub: _i8.Future<_i9.SessionToken?>.value(),
-      ) as _i8.Future<_i9.SessionToken?>);
-
-  @override
-  _i8.Future<dynamic> cloudLogin({
-    required String? username,
-    required String? password,
-    _i9.SessionToken? sessionToken,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #cloudLogin,
-          [],
-          {
-            #username: username,
-            #password: password,
-            #sessionToken: sessionToken,
-          },
-        ),
-        returnValue: _i8.Future<dynamic>.value(),
-        returnValueForMissingStub: _i8.Future<dynamic>.value(),
-      ) as _i8.Future<dynamic>);
-
-  @override
-  _i8.Future<_i5.AuthState> updateCredientials({
-    _i9.SessionToken? sessionToken,
-    String? username,
-    String? password,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #updateCredientials,
-          [],
-          {
-            #sessionToken: sessionToken,
-            #username: username,
-            #password: password,
-          },
-        ),
-        returnValue: _i8.Future<_i5.AuthState>.value(_FakeAuthState_5(
-          this,
-          Invocation.method(
-            #updateCredientials,
-            [],
-            {
-              #sessionToken: sessionToken,
-              #username: username,
-              #password: password,
-            },
-          ),
-        )),
-        returnValueForMissingStub:
-            _i8.Future<_i5.AuthState>.value(_FakeAuthState_5(
-          this,
-          Invocation.method(
-            #updateCredientials,
-            [],
-            {
-              #sessionToken: sessionToken,
-              #username: username,
-              #password: password,
-            },
-          ),
-        )),
-      ) as _i8.Future<_i5.AuthState>);
-
-  @override
-  _i8.Future<dynamic> localLogin(
-    String? password, {
-    bool? pnp = false,
-    bool? guardError = true,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #localLogin,
-          [password],
-          {
-            #pnp: pnp,
-            #guardError: guardError,
-          },
-        ),
-        returnValue: _i8.Future<dynamic>.value(),
-        returnValueForMissingStub: _i8.Future<dynamic>.value(),
-      ) as _i8.Future<dynamic>);
-
-  @override
-  _i8.Future<void> getPasswordHint() => (super.noSuchMethod(
-        Invocation.method(
-          #getPasswordHint,
-          [],
-        ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
-
-  @override
-  _i8.Future<void> createAdminPassword(
-    String? password,
-    String? hint,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #createAdminPassword,
-          [
-            password,
-            hint,
-          ],
-        ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
-
-  @override
-  _i8.Future<dynamic> logout() => (super.noSuchMethod(
-        Invocation.method(
-          #logout,
-          [],
-        ),
-        returnValue: _i8.Future<dynamic>.value(),
-        returnValueForMissingStub: _i8.Future<dynamic>.value(),
-      ) as _i8.Future<dynamic>);
-
-  @override
-  bool isCloudLogin() => (super.noSuchMethod(
-        Invocation.method(
-          #isCloudLogin,
-          [],
-        ),
+  bool get isEnableBTSetup => (super.noSuchMethod(
+        Invocation.getter(#isEnableBTSetup),
         returnValue: false,
         returnValueForMissingStub: false,
       ) as bool);
 
   @override
-  _i8.Future<List<_i10.RegionCode>> fetchRegionCodes() => (super.noSuchMethod(
-        Invocation.method(
-          #fetchRegionCodes,
-          [],
-        ),
-        returnValue:
-            _i8.Future<List<_i10.RegionCode>>.value(<_i10.RegionCode>[]),
-        returnValueForMissingStub:
-            _i8.Future<List<_i10.RegionCode>>.value(<_i10.RegionCode>[]),
-      ) as _i8.Future<List<_i10.RegionCode>>);
-
-  @override
-  _i8.Future<_i5.AuthState> update(
-    _i8.FutureOr<_i5.AuthState> Function(_i5.AuthState)? cb, {
-    _i8.FutureOr<_i5.AuthState> Function(
-      Object,
-      StackTrace,
-    )? onError,
+  _i12.Future<_i6.JNAPSuccess> send(
+    _i14.JNAPAction? action, {
+    Map<String, dynamic>? data = const {},
+    Map<String, String>? extraHeaders = const {},
+    bool? auth = false,
+    _i13.CommandType? type,
+    bool? fetchRemote = false,
+    _i9.CacheLevel? cacheLevel,
+    int? timeoutMs = 10000,
+    int? retries = 1,
+    _i15.JNAPSideEffectOverrides? sideEffectOverrides,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
-          #update,
-          [cb],
-          {#onError: onError},
+          #send,
+          [action],
+          {
+            #data: data,
+            #extraHeaders: extraHeaders,
+            #auth: auth,
+            #type: type,
+            #fetchRemote: fetchRemote,
+            #cacheLevel: cacheLevel,
+            #timeoutMs: timeoutMs,
+            #retries: retries,
+            #sideEffectOverrides: sideEffectOverrides,
+          },
         ),
-        returnValue: _i8.Future<_i5.AuthState>.value(_FakeAuthState_5(
+        returnValue: _i12.Future<_i6.JNAPSuccess>.value(_FakeJNAPSuccess_5(
           this,
           Invocation.method(
-            #update,
-            [cb],
-            {#onError: onError},
+            #send,
+            [action],
+            {
+              #data: data,
+              #extraHeaders: extraHeaders,
+              #auth: auth,
+              #type: type,
+              #fetchRemote: fetchRemote,
+              #cacheLevel: cacheLevel,
+              #timeoutMs: timeoutMs,
+              #retries: retries,
+              #sideEffectOverrides: sideEffectOverrides,
+            },
           ),
         )),
         returnValueForMissingStub:
-            _i8.Future<_i5.AuthState>.value(_FakeAuthState_5(
+            _i12.Future<_i6.JNAPSuccess>.value(_FakeJNAPSuccess_5(
           this,
           Invocation.method(
-            #update,
-            [cb],
-            {#onError: onError},
+            #send,
+            [action],
+            {
+              #data: data,
+              #extraHeaders: extraHeaders,
+              #auth: auth,
+              #type: type,
+              #fetchRemote: fetchRemote,
+              #cacheLevel: cacheLevel,
+              #timeoutMs: timeoutMs,
+              #retries: retries,
+              #sideEffectOverrides: sideEffectOverrides,
+            },
           ),
         )),
-      ) as _i8.Future<_i5.AuthState>);
+      ) as _i12.Future<_i6.JNAPSuccess>);
 
   @override
-  bool updateShouldNotify(
-    _i2.AsyncValue<_i5.AuthState>? previous,
-    _i2.AsyncValue<_i5.AuthState>? next,
-  ) =>
+  _i12.Future<_i6.JNAPTransactionSuccessWrap> transaction(
+    _i16.JNAPTransactionBuilder? builder, {
+    bool? fetchRemote = false,
+    _i9.CacheLevel? cacheLevel = _i9.CacheLevel.localCached,
+    int? timeoutMs = 10000,
+    int? retries = 1,
+    _i15.JNAPSideEffectOverrides? sideEffectOverrides,
+  }) =>
       (super.noSuchMethod(
         Invocation.method(
-          #updateShouldNotify,
-          [
-            previous,
-            next,
-          ],
+          #transaction,
+          [builder],
+          {
+            #fetchRemote: fetchRemote,
+            #cacheLevel: cacheLevel,
+            #timeoutMs: timeoutMs,
+            #retries: retries,
+            #sideEffectOverrides: sideEffectOverrides,
+          },
         ),
-        returnValue: false,
-        returnValueForMissingStub: false,
-      ) as bool);
+        returnValue: _i12.Future<_i6.JNAPTransactionSuccessWrap>.value(
+            _FakeJNAPTransactionSuccessWrap_6(
+          this,
+          Invocation.method(
+            #transaction,
+            [builder],
+            {
+              #fetchRemote: fetchRemote,
+              #cacheLevel: cacheLevel,
+              #timeoutMs: timeoutMs,
+              #retries: retries,
+              #sideEffectOverrides: sideEffectOverrides,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i12.Future<_i6.JNAPTransactionSuccessWrap>.value(
+                _FakeJNAPTransactionSuccessWrap_6(
+          this,
+          Invocation.method(
+            #transaction,
+            [builder],
+            {
+              #fetchRemote: fetchRemote,
+              #cacheLevel: cacheLevel,
+              #timeoutMs: timeoutMs,
+              #retries: retries,
+              #sideEffectOverrides: sideEffectOverrides,
+            },
+          ),
+        )),
+      ) as _i12.Future<_i6.JNAPTransactionSuccessWrap>);
+
+  @override
+  _i12.Future<_i7.TransactionHttpCommand> createTransaction(
+    List<Map<String, dynamic>>? payload, {
+    bool? needAuth = false,
+    required List<_i14.JNAPAction>? actions,
+    bool? fetchRemote = false,
+    _i9.CacheLevel? cacheLevel = _i9.CacheLevel.localCached,
+    int? timeoutMs = 10000,
+    int? retries = 1,
+    _i13.CommandType? type,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #createTransaction,
+          [payload],
+          {
+            #needAuth: needAuth,
+            #actions: actions,
+            #fetchRemote: fetchRemote,
+            #cacheLevel: cacheLevel,
+            #timeoutMs: timeoutMs,
+            #retries: retries,
+            #type: type,
+          },
+        ),
+        returnValue: _i12.Future<_i7.TransactionHttpCommand>.value(
+            _FakeTransactionHttpCommand_7(
+          this,
+          Invocation.method(
+            #createTransaction,
+            [payload],
+            {
+              #needAuth: needAuth,
+              #actions: actions,
+              #fetchRemote: fetchRemote,
+              #cacheLevel: cacheLevel,
+              #timeoutMs: timeoutMs,
+              #retries: retries,
+              #type: type,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i12.Future<_i7.TransactionHttpCommand>.value(
+                _FakeTransactionHttpCommand_7(
+          this,
+          Invocation.method(
+            #createTransaction,
+            [payload],
+            {
+              #needAuth: needAuth,
+              #actions: actions,
+              #fetchRemote: fetchRemote,
+              #cacheLevel: cacheLevel,
+              #timeoutMs: timeoutMs,
+              #retries: retries,
+              #type: type,
+            },
+          ),
+        )),
+      ) as _i12.Future<_i7.TransactionHttpCommand>);
+
+  @override
+  _i12.Future<
+      _i9
+      .BaseCommand<_i6.JNAPResult, _i8.JNAPCommandSpec<dynamic>>> createCommand(
+    String? action, {
+    Map<String, dynamic>? data = const {},
+    Map<String, String>? extraHeaders = const {},
+    bool? needAuth = false,
+    _i13.CommandType? type,
+    bool? fetchRemote = false,
+    _i9.CacheLevel? cacheLevel = _i9.CacheLevel.localCached,
+    int? timeoutMs = 10000,
+    int? retries = 1,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #createCommand,
+          [action],
+          {
+            #data: data,
+            #extraHeaders: extraHeaders,
+            #needAuth: needAuth,
+            #type: type,
+            #fetchRemote: fetchRemote,
+            #cacheLevel: cacheLevel,
+            #timeoutMs: timeoutMs,
+            #retries: retries,
+          },
+        ),
+        returnValue: _i12.Future<
+                _i9.BaseCommand<_i6.JNAPResult,
+                    _i8.JNAPCommandSpec<dynamic>>>.value(
+            _FakeBaseCommand_8<_i6.JNAPResult, _i8.JNAPCommandSpec<dynamic>>(
+          this,
+          Invocation.method(
+            #createCommand,
+            [action],
+            {
+              #data: data,
+              #extraHeaders: extraHeaders,
+              #needAuth: needAuth,
+              #type: type,
+              #fetchRemote: fetchRemote,
+              #cacheLevel: cacheLevel,
+              #timeoutMs: timeoutMs,
+              #retries: retries,
+            },
+          ),
+        )),
+        returnValueForMissingStub: _i12.Future<
+                _i9.BaseCommand<_i6.JNAPResult,
+                    _i8.JNAPCommandSpec<dynamic>>>.value(
+            _FakeBaseCommand_8<_i6.JNAPResult, _i8.JNAPCommandSpec<dynamic>>(
+          this,
+          Invocation.method(
+            #createCommand,
+            [action],
+            {
+              #data: data,
+              #extraHeaders: extraHeaders,
+              #needAuth: needAuth,
+              #type: type,
+              #fetchRemote: fetchRemote,
+              #cacheLevel: cacheLevel,
+              #timeoutMs: timeoutMs,
+              #retries: retries,
+            },
+          ),
+        )),
+      ) as _i12.Future<
+          _i9.BaseCommand<_i6.JNAPResult, _i8.JNAPCommandSpec<dynamic>>>);
+
+  @override
+  _i12.Stream<_i6.JNAPResult> scheduledCommand({
+    required _i14.JNAPAction? action,
+    int? retryDelayInMilliSec = 5000,
+    int? maxRetry = 10,
+    int? firstDelayInMilliSec = 3000,
+    Map<String, dynamic>? data = const {},
+    bool Function(_i6.JNAPResult)? condition,
+    dynamic Function()? onCompleted,
+    bool? auth = false,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #scheduledCommand,
+          [],
+          {
+            #action: action,
+            #retryDelayInMilliSec: retryDelayInMilliSec,
+            #maxRetry: maxRetry,
+            #firstDelayInMilliSec: firstDelayInMilliSec,
+            #data: data,
+            #condition: condition,
+            #onCompleted: onCompleted,
+            #auth: auth,
+          },
+        ),
+        returnValue: _i12.Stream<_i6.JNAPResult>.empty(),
+        returnValueForMissingStub: _i12.Stream<_i6.JNAPResult>.empty(),
+      ) as _i12.Stream<_i6.JNAPResult>);
 }

@@ -186,31 +186,34 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
     return Center(
       child: AppCard(
         padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              LinksysIcons.wifi,
-              color: Theme.of(context).colorScheme.primary,
-              size: 48,
-            ),
-            const AppGap.regular(),
-            AppText.headlineSmall(loc(context).pnpWiFiReady(wifiSSID)),
-            const AppGap.regular(),
-            if (_needToReconnect)
-              AppText.bodyMedium(loc(context).pnpWiFiReadyConnectToNewWiFi),
-            const AppGap.extraBig(),
-            AppFilledButton(
-              loc(context).done,
-              onTap: () {
-                // Check router connected propor, then go to dashboard
-                testConnection(success: () {
-                  context.goNamed(RouteNamed.prepareDashboard);
-                });
-              },
-            )
-          ],
+        child: SizedBox(
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                LinksysIcons.wifi,
+                color: Theme.of(context).colorScheme.primary,
+                size: 48,
+              ),
+              const AppGap.regular(),
+              AppText.headlineSmall(loc(context).pnpWiFiReady(wifiSSID)),
+              const AppGap.regular(),
+              if (_needToReconnect)
+                AppText.bodyMedium(loc(context).pnpWiFiReadyConnectToNewWiFi),
+              const AppGap.extraBig(),
+              AppFilledButton(
+                loc(context).done,
+                onTap: () {
+                  // Check router connected propor, then go to dashboard
+                  testConnection(success: () {
+                    context.goNamed(RouteNamed.prepareDashboard);
+                  });
+                },
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -288,6 +291,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
       showSimpleSnackBar(
           context, 'Unexceped error! <${(error as JNAPError).error}>');
     }, test: (error) => error is JNAPError).whenComplete(() async {
+      logger.d('[pnp] Save complete, $isUnconfigured, $_setupStep');
+
       if (isUnconfigured) {
         // if is unconfigured scenario and no need to reconnect to the router, continue add nodes flow
         if (_setupStep != _PnpSetupStep.needReconnect) {
@@ -310,6 +315,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   }
 
   Future _finishAddNodes() async {
+    logger.d('[pnp] finish add nodes');
     setState(() {
       _setupStep = _PnpSetupStep.showWiFi;
     });

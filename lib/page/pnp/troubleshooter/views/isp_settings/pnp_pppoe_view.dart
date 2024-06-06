@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -78,6 +79,7 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
                   const AppGap.extraBig(),
                   AppTextButton.noPadding(
                     loc(context).pnpPppoeAddVlan,
+                    icon: LinksysIcons.add,
                     onTap: () {
                       setState(() {
                         hasVlanID = true;
@@ -98,6 +100,7 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
                   const AppGap.extraBig(),
                   AppTextButton.noPadding(
                     loc(context).pnpPppoeRemoveVlan,
+                    icon: LinksysIcons.remove,
                     onTap: () {
                       setState(() {
                         hasVlanID = false;

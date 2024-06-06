@@ -99,6 +99,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           if (state?.addedNodes?.isEmpty == true)
             AppStyledText.link(
               loc(context).addNodesNoNodesFound,
+              key: const ValueKey('troubleshoot'),
               defaultTextStyle: Theme.of(context)
                   .textTheme
                   .bodyMedium!

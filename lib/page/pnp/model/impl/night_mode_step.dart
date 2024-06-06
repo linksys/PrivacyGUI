@@ -16,7 +16,7 @@ class NightModeStep extends PnpStep {
   Future<void> onInit(WidgetRef ref) async {
     await super.onInit(ref);
     pnp.setStepStatus(index, status: StepViewStatus.data);
-
+    canGoNext(saveChanges == null);
     // final state = ref.read(pnpProvider).stepStateList[index];
     // if (state?.data['isEnabled'] == null) {
     //   ref

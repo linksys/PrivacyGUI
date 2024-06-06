@@ -194,8 +194,7 @@ class CallSupportMainRegionView extends ArgumentsConsumerStatelessView {
             context.pushNamed(
               RouteNamed.callSupportMoreRegion,
               extra: {
-                'main': region.getTitle(context),
-                'moreRegions': moreRegions,
+                'region': region,
               },
             );
           }
@@ -239,9 +238,12 @@ class CallSupportMainRegionView extends ArgumentsConsumerStatelessView {
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   const AppGap.regular(),
-                  AppText.titleLarge(
-                    number,
-                    color: Theme.of(context).colorScheme.primary,
+                  Flexible(
+                    child: AppText.titleLarge(
+                      number,
+                      color: Theme.of(context).colorScheme.primary,
+                      maxLines: 2,
+                    ),
                   ),
                 ],
               ),
@@ -257,6 +259,7 @@ class CallSupportMainRegionView extends ArgumentsConsumerStatelessView {
           ),
           const AppGap.extraBig(),
           AppText.bodyLarge(loc(context).callSupportDetailDesc),
+          AppText.bodyLarge(loc(context).callSupportDetailDesc2),
         ],
       ),
     );

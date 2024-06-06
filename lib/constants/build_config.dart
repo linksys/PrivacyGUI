@@ -66,19 +66,18 @@ Future<String> getVersion({bool full = false}) async {
   if (!full) {
     return version;
   }
-  final build =
-      await getBuildNumber().then((value) => value.isNotEmpty ? '.$value' : '');
+  final build = await getBuildNumber().then((value) => '.$value');
   return '$version$build';
 }
 
-Future<String> getBuildNumber() async {
-  var buildNumber = '';
+Future<int> getBuildNumber() async {
+  int buildNumber = 0;
   final json = await rootBundle
       .loadString('assets/resources/versions.json')
       .then((value) => jsonDecode(value))
       .onError((error, stackTrace) => null);
   if (json != null) {
-    buildNumber = json['build_number'] as String? ?? '';
+    buildNumber = json['build_number'] as int? ?? 0;
   }
   return buildNumber;
 }

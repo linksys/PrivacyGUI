@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "Подключен",
   "pnpWaitingModemCheckingInternet": "Проверка интернет-подключения...",
   "pnpIspTypeSelectionTitle": "Какой тип настроек интернет-провайдера у вас есть?",
+  "pnpIspTypeSelectionStaticDesc": "Статический адрес интернет-протокола (IP) (Статический IP адрес) — это постоянный номер, присвоенный сети интернет-провайдером (ISP).",
+  "pnpIspTypeSelectionPppoeDesc": "Протокол PPPoE (Point-to-Point Protocol over Ethernet) служит для подключения нескольких пользователей локальной сети к удаленному сайту.",
   "pnpIspTypeSelectionPppoeVlanDesc": "Иногда ваш интернет-провайдер может потребовать, чтобы ваше устройство поддерживало PPPoE через VLAN для доступа в Интернет.",
   "pnpPppoeTitle": "Ввести настройки интернет-провайдера",
+  "pnpPppoeDesc": "Эти настройки предоставляются вашим интернет-провайдером (ISP). При возникновении сомнений мы рекомендуем обращаться к вашему интернет-провайдеру.",
+  "pnpPppoeAddVlan": "Добавить VLAN ID",
   "pppoeVlan": "PPPoE через VLAN",
   "saved": "Сохранено",
   "incorrectPassword": "Неверный пароль",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "Порты Ethernet не работают",
   "callSupportSelectionTitle": "Выберите свой регион",
   "callSupportDetailTwentyFourSeven": "круглосуточно, без выходных",
+  "callSupportDetailDesc": "Для быстрого обслуживания будьте готовы назвать тип устройства, модель и серийный номер.",
   "setup": "Установка",
   "connectivity": "Подключения",
   "speed": "Скорость",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "Возможно, у вас модем с питанием от батареи, что требует дополнительных действий",
   "pnpModemLightsOffTipDesc": "Возможно, модем оснащен резервной батареей. Для перезагрузки НЕ извлекайте батарею. Следуйте этим инструкциям:",
   "pnpWaitingModemWaitStartUp": "Ожидание запуска модема",
+  "pnpPppoeRemoveVlan": "Удалить VLAN ID",
   "pnpStaticIpDesc": "Эти настройки предназначены для пользователей с назначенным вручную статическим IP-адресом.",
   "pnpErrorForStaticIpAndDhcp": "Не удалось установить соединение. Проверьте свои данные и повторите попытку.",
   "pnpErrorForPppoe": "Неверное имя учетной записи или пароль. Повторите попытку.",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "IP-адрес места назначения:",
   "dmzViewDHCP": "Просмотр таблицы клиентов службы DHCP",
   "specifiedRange": "Определенный диапазон",
-  "invalidMACAddress": "Недопустимый MAC-адрес."
+  "invalidMACAddress": "Недопустимый MAC-адрес.",
+  "noInternetConnectionWithSSIDTitle": "{ssid} не подключен к Интернету"
 }

@@ -17,16 +17,17 @@ echo "*********************Generating Localization snapshots********************
 echo "Locales: $locales"
 echo "Screens: $screens"
 
+mkdir ./snapshots/
 if [ -z "$file" ]; then
-  echo "Target file: $file"
-  flutter test --tags=loc --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" 
+  flutter test --file-reporter json:snapshots/tests.json --tags=loc --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" 
+  dart test_scripts/test_result_parser.dart snapshots/tests.json snapshots/localizations-test-reports.html
 else
+  echo "Target file: $file"
   flutter test $file --tags=loc --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" 
 fi
 echo 'Generating Localization snapshots Finished!******************************************'
 
 echo all screenshots to "snapshots" folder
-mkdir ./snapshots/
 for dir in $(find ./ -iname 'goldens' -type d); do
   echo $dir
   if [ "$copy" = true ]; then

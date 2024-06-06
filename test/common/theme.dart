@@ -326,6 +326,7 @@ final List<String> _fallbackFontFamily = List.from(_testFonts.keys);
 ///
 final _testFonts = <String, String>{
   'NoToSans': 'test/fonts/NotoSans-Regular.ttf',
+  'NoToSansEL': 'test/fonts/NotoSansEL-Regular.ttf',
   'NoToSansKR': 'test/fonts/NotoSansKR-Regular.ttf',
   'NoToSansTC': 'test/fonts/NotoSansTC-Regular.ttf',
   'NoToSansSC': 'test/fonts/NotoSansSC-Regular.ttf',

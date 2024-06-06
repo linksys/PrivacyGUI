@@ -158,8 +158,8 @@ class ISPTypeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppCard(
       onTap: tapAction,
-      child: SizedBox(
-        height: 110,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 110),
         child: Row(
           children: [
             Expanded(

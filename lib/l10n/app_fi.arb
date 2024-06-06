@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "Virta on kytketty",
   "pnpWaitingModemCheckingInternet": "Tarkistetaan Internet-yhteyttä...",
   "pnpIspTypeSelectionTitle": "Minkä tyyppiset ISP-asetuksesi ovat?",
+  "pnpIspTypeSelectionStaticDesc": "Staattinen IP-osoite (staattinen IP-protokolla) on Internet-palveluntarjoajan verkolle määrittämä pysyvä numero.",
+  "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet (PPPoE) on konfiguraatio, jossa useita tietokoneita kytketään Ethernet-lähiverkosta etäsijaintiin.",
   "pnpIspTypeSelectionPppoeVlanDesc": "Joskus Internet-palveluntarjoajan Internet-yhteys edellyttää PPPoE over VLAN -kytkentää.",
   "pnpPppoeTitle": "Anna ISP-asetukset",
+  "pnpPppoeDesc": "Nämä asetukset olet saanut Internet-palveluntarjoajaltasi (ISP). Jos et olet varma asetuksista, ota yhteyttä Internet-palveluntarjoajaan.",
+  "pnpPppoeAddVlan": "Lisää VLAN-tunnus",
   "pppoeVlan": "PPPoE VLAN:n yli",
   "saved": "Tallennettu",
   "incorrectPassword": "Väärä salasana",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "Ethernet-portit eivät toimi",
   "callSupportSelectionTitle": "Valitse alueesi",
   "callSupportDetailTwentyFourSeven": "Vuorokauden ympäri viikon jokaisena päivänä",
+  "callSupportDetailDesc": "Palvelun nopeuttamiseksi ota tuotteen tyyppi, malli ja sarjanumero valmiiksi esille.",
   "setup": "Asennus",
   "connectivity": "Liitettävyys",
   "speed": "Nopeus",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "Sinulla saattaa olla akkukäyttöinen modeemi, joka vaatii lisätoimia.",
   "pnpModemLightsOffTipDesc": "Modeemissasi voi olla vara-akku. Jos haluat käynnistää laitteen uudelleen, ÄLÄ irrota akkua. Toimi seuraavasti:",
   "pnpWaitingModemWaitStartUp": "Odotetaan, että modeemi on käynnistynyt",
+  "pnpPppoeRemoveVlan": "Poista VLAN-tunnus",
   "pnpStaticIpDesc": "Nämä asetukset koskevat käyttäjiä, joilla on manuaalisesti määritetty kiinteä IP-osoite.",
   "pnpErrorForStaticIpAndDhcp": "Yhteyttä ei voitu muodostaa. Tarkista tiedot ja yritä uudelleen.",
   "pnpErrorForPppoe": "Tilin nimi tai salasana on väärä. Yritä uudelleen.",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "Kohteen IP-osoite:",
   "dmzViewDHCP": "Näytä DHCP-asiakastaulukko",
   "specifiedRange": "Määritetty alue",
-  "invalidMACAddress": "Virheellinen MAC-osoite."
+  "invalidMACAddress": "Virheellinen MAC-osoite.",
+  "noInternetConnectionWithSSIDTitle": "{ssid} ei internet-yhteyttä"
 }

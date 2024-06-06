@@ -18,7 +18,7 @@ import '../../../common/mock_firebase_messaging.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../test_data/device_info_test_data.dart';
-import 'login_local_view_test.mocks.dart';
+import 'login_local_view_test_mocks.dart';
 
 @GenerateNiceMocks(
     [MockSpec<DashboardManagerNotifier>(), MockSpec<RouterRepository>()])

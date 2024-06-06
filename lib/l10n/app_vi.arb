@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "Đã cắm nguồn",
   "pnpWaitingModemCheckingInternet": "Đang kiểm tra Internet...",
   "pnpIspTypeSelectionTitle": "Bạn có loại cài đặt ISP nào?",
+  "pnpIspTypeSelectionStaticDesc": "Địa chỉ Giao thức Internet (IP) tĩnh (địa chỉ IP tĩnh) là một số cố định được nhà cung cấp dịch vụ Internet (ISP) gán cho mạng.",
+  "pnpIspTypeSelectionPppoeDesc": "Giao thức Điểm nối Điểm qua Ethernet là tiêu chuẩn cho kết nối nhiều người dùng máy tính trên mạng cục bộ Ethernet tới một trang từ xa.",
   "pnpIspTypeSelectionPppoeVlanDesc": "Đôi khi, ISP có thể yêu cầu bạn phải có PPPoE qua VLAN để truy nhập Internet.",
   "pnpPppoeTitle": "Nhập cài đặt ISP",
+  "pnpPppoeDesc": "Những cài đặt này được cung cấp bởi Nhà cung cấp dịch vụ Internet (ISP). Nếu bạn không chắc chắn về các cài đặt của mình, chúng tôi khuyên bạn nên liên hệ với ISP.",
+  "pnpPppoeAddVlan": "Thêm VLAN ID",
   "pppoeVlan": "PPPoE qua VLAN",
   "saved": "Đã lưu",
   "incorrectPassword": "Mật khẩu không đúng",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "Cổng Ethernet không hoạt động",
   "callSupportSelectionTitle": "Chọn khu vực của bạn",
   "callSupportDetailTwentyFourSeven": "24 giờ/ngày, 7 ngày/tuần",
+  "callSupportDetailDesc": "Để được hỗ trợ nhanh nhất, vui lòng chuẩn bị sẵn thông tin về loại sản phẩm, mã sản phẩm và số sê-ri.",
   "setup": "Thiết lập",
   "connectivity": "Kết nối",
   "speed": "Tốc độ",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "Nếu có modem chạy bằng pin, bạn sẽ cần thực hiện thêm các bước bổ sung",
   "pnpModemLightsOffTipDesc": "Modem của bạn có thể có pin dự phòng. Để khởi động lại, KHÔNG tháo pin. Làm theo các hướng dẫn sau:",
   "pnpWaitingModemWaitStartUp": "Đang chờ modem khởi động",
+  "pnpPppoeRemoveVlan": "Xóa VLAN ID",
   "pnpStaticIpDesc": "Những cài đặt này dành cho người dùng có địa chỉ IP tĩnh được gán thủ công.",
   "pnpErrorForStaticIpAndDhcp": "Không thể thiết lập kết nối. Vui lòng kiểm tra thông tin của bạn và thử lại.",
   "pnpErrorForPppoe": "Tên tài khoản hoặc mật khẩu không đúng. Vui lòng thử lại.",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "Địa chỉ IP Đích:",
   "dmzViewDHCP": "Xem Bảng Máy khách DHCP",
   "specifiedRange": "Dải đã xác định",
-  "invalidMACAddress": "Địa chỉ MAC không hợp lệ."
+  "invalidMACAddress": "Địa chỉ MAC không hợp lệ.",
+  "noInternetConnectionWithSSIDTitle": "{ssid} không có kết nối Internet"
 }

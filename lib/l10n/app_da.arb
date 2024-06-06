@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "Den er tilsluttet",
   "pnpWaitingModemCheckingInternet": "Søger efter internet ...",
   "pnpIspTypeSelectionTitle": "Hvilken type indstillinger fra din internetudbyder har du?",
+  "pnpIspTypeSelectionStaticDesc": "En statisk internetprotokol adresse (statisk IP-adresse) er et permanent nummer, der er tildelt et netværk af en internetudbyder (ISP).",
+  "pnpIspTypeSelectionPppoeDesc": "Point-to-Point-protokollen over ethernet er en specifikation til forbindelse af flere computerbrugere på et ethernet-lokalnetværk til et eksternt websted.",
   "pnpIspTypeSelectionPppoeVlanDesc": "Nogle gange kan din internetudbyder kræve, at du har PPPoE over VLAN for at få adgang til internettet.",
   "pnpPppoeTitle": "Indtast indstillinger for internetudbyder",
+  "pnpPppoeDesc": "Disse oplysninger fås af din internetudbyder. Hvis du ikke er sikker på indstillingerne, anbefaler vi, at du kontakter din internetudbyder.",
+  "pnpPppoeAddVlan": "Tilføj VLAN-id",
   "pppoeVlan": "PPPoE over VLAN",
   "saved": "Gemt",
   "incorrectPassword": "Forkert adgangskode",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "Ethernet-porte virker ikke",
   "callSupportSelectionTitle": "Vælg dit område",
   "callSupportDetailTwentyFourSeven": "24/7",
+  "callSupportDetailDesc": "Vi kan betjene dig straks, når du har oplysningerne om produkttype, model og serienummer ved hånden.",
   "setup": "Installation",
   "connectivity": "Tilslutning",
   "speed": "Hastighed",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "Du har muligvis et batteridrevet modem, som kræver ekstra opsætning",
   "pnpModemLightsOffTipDesc": "Dit modem har muligvis et reservebatteri. Du må IKKE tage batteriet ud for at genstarte det. Følg disse anvisninger:",
   "pnpWaitingModemWaitStartUp": "Venter på at dit modem er startet helt op",
+  "pnpPppoeRemoveVlan": "Fjern VLAN-id",
   "pnpStaticIpDesc": "Disse indstillinger er til brugere med en manuelt tildelt statisk IP-adresse.",
   "pnpErrorForStaticIpAndDhcp": "Der kunne ikke oprettes forbindelse. Kontrollér oplysningerne, og prøv igen.",
   "pnpErrorForPppoe": "Kontonavnet eller adgangskoden er forkert. Prøv igen.",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "Destinations-IP-adresse:",
   "dmzViewDHCP": "Vis DHCP-klienttabel",
   "specifiedRange": "Angivet interval",
-  "invalidMACAddress": "Ugyldig MAC-adresse."
+  "invalidMACAddress": "Ugyldig MAC-adresse.",
+  "noInternetConnectionWithSSIDTitle": "{ssid} har ikke forbindelse til internettet"
 }

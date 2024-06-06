@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "È collegato",
   "pnpWaitingModemCheckingInternet": "Verifica della connessione Internet...",
   "pnpIspTypeSelectionTitle": "Che tipo di impostazioni sono previste dall'ISP?",
+  "pnpIspTypeSelectionStaticDesc": "Un indirizzo IP statico è un numero sempre uguale assegnato a una rete da un fornitore di servizi Internet (ISP).",
+  "pnpIspTypeSelectionPppoeDesc": "Il protocollo Point-to-Point Protocol over Ethernet (PPPoE) è una specifica per la connessione di più utenti a un sito remoto mediante una LAN Ethernet.",
   "pnpIspTypeSelectionPppoeVlanDesc": "Talvolta l'ISP richiede il PPPoE su VLAN per l'accesso a Internet.",
   "pnpPppoeTitle": "Inserisci le impostazioni dell’ISP",
+  "pnpPppoeDesc": "Queste impostazioni sono fornite dal provider di servizi Internet (ISP). Se non sei sicuro di quali siano le tue, ti consigliamo di contattare il tuo ISP.",
+  "pnpPppoeAddVlan": "Aggiungi ID VLAN",
   "pppoeVlan": "PPPoE su VLAN",
   "saved": "Salvate",
   "incorrectPassword": "Password errata.",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "Le porte Ethernet non funzionano",
   "callSupportSelectionTitle": "Scegli il tuo Paese",
   "callSupportDetailTwentyFourSeven": "24 ore su 24, 7 giorni su 7",
+  "callSupportDetailDesc": "Per garantirti un servizio veloce, ti chiediamo di avere a portata di mano il tipo, modello e numero seriale del prodotto.",
   "setup": "Installazione",
   "connectivity": "Connettività",
   "speed": "Velocità",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "Il tuo modem potrebbe essere alimentato a batteria e necessitare di ulteriore assistenza",
   "pnpModemLightsOffTipDesc": "Il modem potrebbe essere dotato di una batteria di backup. Per riavviarlo, NON rimuovere la batteria. Segui le istruzioni riportate di seguito:",
   "pnpWaitingModemWaitStartUp": "In attesa dell'avvio completo del modem",
+  "pnpPppoeRemoveVlan": "Rimuovi ID VLAN",
   "pnpStaticIpDesc": "Queste impostazioni sono per gli utenti con un indirizzo IP statico assegnato manualmente.",
   "pnpErrorForStaticIpAndDhcp": "Impossibile stabilire una connessione. Verifica la connessione e riprova.",
   "pnpErrorForPppoe": "Il nome account o la password sono errati. Riprova.",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "Indirizzo IP di destinazione:",
   "dmzViewDHCP": "Visualizza Tabella client DHCP",
   "specifiedRange": "Intervallo specifico",
-  "invalidMACAddress": "Indirizzo MAC non valido."
+  "invalidMACAddress": "Indirizzo MAC non valido.",
+  "noInternetConnectionWithSSIDTitle": "{ssid} non è connessa a Internet"
 }
