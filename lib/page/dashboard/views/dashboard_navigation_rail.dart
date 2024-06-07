@@ -30,7 +30,7 @@ class _DashboardNavigationRailState
 
   @override
   Widget build(BuildContext context) {
-    bool isMobile = ResponsiveLayout.isLayoutBreakpoint(context);
+    bool isMobile = ResponsiveLayout.isMobileLayout(context);
     return NavigationRail(
       leading: isMobile
           ? null

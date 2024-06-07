@@ -52,7 +52,13 @@ Widget testableSingleRoute({
   final router = GoRouter(
     navigatorKey: globalKey,
     initialLocation: '/',
-    routes: [LinksysRoute(path: '/', builder: (context, state) => child)],
+    routes: [
+      LinksysRoute(
+        path: '/',
+        config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
+        builder: (context, state) => child,
+      ),
+    ],
   );
 
   return testableRouter(

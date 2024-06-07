@@ -24,6 +24,7 @@ extension BatchCommands on RouterRepository {
         const MapEntry(JNAPAction.isAdminPasswordSetByUser, {}),
         const MapEntry(JNAPAction.isAdminPasswordDefault, {}),
       ], auth: true),
+      fetchRemote: true,
     ).then((successWrap) => successWrap.data);
   }
 
@@ -45,6 +46,7 @@ extension BatchCommands on RouterRepository {
         const MapEntry(JNAPAction.getWANSettings, {}),
         const MapEntry(JNAPAction.getWANStatus, {}),
         const MapEntry(JNAPAction.getMACAddressCloneSettings, {}),
+        const MapEntry(JNAPAction.getLANSettings, {}),
       ], auth: true),
     ).then((successWrap) => successWrap.data);
   }

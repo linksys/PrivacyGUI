@@ -95,7 +95,7 @@ void main() async {
 
     testLocalizations('topology view - 6 online nodes hybrid',
         (tester, locale) async {
-      when(mockTopologyNotifier.build()).thenReturn(testTopologyState5);
+      when(mockTopologyNotifier.build()).thenReturn(testTopologyState6);
 
       final widget = testableSingleRoute(
         overrides: [

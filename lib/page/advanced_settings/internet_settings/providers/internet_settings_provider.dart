@@ -1,19 +1,24 @@
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/extensions/_extensions.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_automatic_settings.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_settings.dart';
+import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/models/mac_address_clone_settings.dart';
 import 'package:privacy_gui/core/jnap/models/remote_setting.dart';
 import 'package:privacy_gui/core/jnap/models/wan_settings.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
+import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final internetSettingsProvider =
@@ -21,6 +26,9 @@ final internetSettingsProvider =
         () => InternetSettingsNotifier());
 
 class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
+  String? _hostname;
+  String? get hostname => _hostname;
+
   @override
   InternetSettingsState build() => InternetSettingsState.init();
 
@@ -51,6 +59,12 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
     final macAddressCloneSettings = macAddressCloneSettingsResult == null
         ? null
         : MACAddressCloneSettings.fromMap(macAddressCloneSettingsResult.output);
+    // LAN settings
+    final lanResult = JNAPTransactionSuccessWrap.getResult(
+        JNAPAction.getLANSettings, Map.fromEntries(results));
+    final lanSettings =
+        lanResult == null ? null : RouterLANSettings.fromMap(lanResult.output);
+    _hostname = lanSettings?.hostName;
 
     switch (WanType.resolve(wanSettings?.wanType ?? '')) {
       case WanType.dhcp:
@@ -188,25 +202,47 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       if (additionalSetting != null) {
         transactions.add(additionalSetting);
       }
-
+      final currentWanType =
+          WanType.resolve(state.ipv4Setting.ipv4ConnectionType);
+      if (currentWanType == WanType.bridge) {
+        ref.read(redirectionProvider.notifier).state = 'https://localhost';
+      } else {
+        ref.read(redirectionProvider.notifier).state = null;
+      }
       return ref
           .read(routerRepositoryProvider)
           .doTransaction(transactions, fetchRemote: true)
           .then((results) async {
-        if (wanType == WanType.bridge) {
-          final setWanSettingsResult = JNAPTransactionSuccessWrap.getResult(
-              JNAPAction.setWANSettings, Map.fromEntries(results));
-          final redirection = setWanSettingsResult?.output["redirection"];
-          await SharedPreferences.getInstance().then((prefs) {
-            prefs.setString(pRedirection,
-                "http://${redirection["hostName"]}.${redirection["domain"]}");
-          });
-        }
+        _handleWebRedirection(results);
         await fetch(fetchRemote: true);
-      });
+      }).catchError(
+        (error) {
+          final sideEffectError = error as JNAPSideEffectError;
+          if (sideEffectError.attach is JNAPTransactionSuccessWrap) {
+            JNAPTransactionSuccessWrap result =
+                sideEffectError.attach as JNAPTransactionSuccessWrap;
+            _handleWebRedirection(result.data);
+          }
+        },
+        test: (error) => error is JNAPSideEffectError,
+      );
     } else {
       throw const JNAPError(result: 'Empty wanType', error: 'Empty wanType');
     }
+  }
+
+  void _handleWebRedirection(List<MapEntry<JNAPAction, JNAPResult>> data) {
+    final setWanSettingsResult = JNAPTransactionSuccessWrap.getResult(
+        JNAPAction.setWANSettings, Map.fromEntries(data));
+    final redirection = setWanSettingsResult?.output["redirection"];
+    if (kIsWeb && redirection != null) {
+      final redirectionUrl =
+          'https://${redirection["hostName"]}.${redirection["domain"]}';
+      ref.read(redirectionProvider.notifier).state = redirectionUrl;
+      logger.d('Set Bridge: $redirectionUrl');
+      return;
+    }
+    ref.read(redirectionProvider.notifier).state = null;
   }
 
   RouterWANSettings _createIpv4WanSettings(

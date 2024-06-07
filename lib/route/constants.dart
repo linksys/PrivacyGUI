@@ -15,10 +15,10 @@ class RoutePath {
   /// dashboard
   static const dashboardHome = '/dashboardHome';
   static const dashboardMenu = '/dashboardMenu';
+  static const dashboardSupport = '/dashboardSupport';
   static const dashboardDevices = 'dashboardDevices';
   static const dashboardSettings = 'dashboardSettings';
   static const dashboardAdvancedSettings = 'dashboardAdvancedSettings';
-  static const dashboardSupport = '/dashboardSupport';
 
   /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';
@@ -36,6 +36,7 @@ class RoutePath {
   static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
   static const settingsFirewall = 'firewall';
+  static const settingsDMZ = 'dmz';
 
   /// otp
   static const otpStart = 'otp';
@@ -111,10 +112,12 @@ class RoutePath {
   static const troubleshooting = 'troubleshooting';
   static const troubleshootingPing = 'troubleshootingPing';
 
-  /// ContactSupport
-  static const contactSupportChoose = 'contactSupportChoose';
-  static const contactSupportDetails = 'contactSupportDetails';
-
+  /// Support
+  static const faqList = 'faqList';
+  static const callSupportMainRegion = 'callSupportMainRegion';
+  static const callSupportMoreRegion = 'callSupportMoreRegion';
+  static const callbackDescription = 'callbackDescription';
+  
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
 
@@ -145,9 +148,9 @@ class RouteNamed {
   /// dashboard
   static const dashboardMenu = 'dashboardMenu';
   static const dashboardHome = 'dashboardHome';
+  static const dashboardSupport = 'dashboardSupport';
   static const dashboardDevices = 'dashboardDevices';
   static const dashboardSettings = 'dashboardSettings';
-  static const dashboardSupport = 'dashboardSupport';
   static const dashboardAdvancedSettings = 'dashboardAdvancedSettings';
 
   /// speed test
@@ -166,6 +169,7 @@ class RouteNamed {
   static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
   static const settingsFirewall = 'firewall';
+  static const settingsDMZ = 'dmz';
 
   /// otp
   static const otpStart = 'otp';
@@ -242,9 +246,11 @@ class RouteNamed {
   static const troubleshooting = 'troubleshooting';
   static const troubleshootingPing = 'troubleshootingPing';
 
-  /// ContactSupport
-  static const contactSupportChoose = 'contactSupportChoose';
-  static const contactSupportDetails = 'contactSupportDetails';
+  /// Support
+  static const faqList = 'faqList';
+  static const callSupportMainRegion = 'callSupportMainRegion';
+  static const callSupportMoreRegion = 'callSupportMoreRegion';
+  static const callbackDescription = 'callbackDescription';  
 
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';

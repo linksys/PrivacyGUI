@@ -323,7 +323,9 @@ class LinksysCloudRepository {
   Future<bool> testPingPng() {
     return _httpClient
         .testPingPng()
-        .then((response) => response.statusCode == HttpStatus.ok)
+        .then((response) =>
+            response.statusCode == HttpStatus.ok &&
+            response.headers['content-type'] == 'image/png')
         .onError((error, stackTrace) => false);
   }
 }

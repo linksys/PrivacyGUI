@@ -158,11 +158,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       logger.d('check login type...');
       if (sessionToken != null) {
         loginType = LoginType.remote;
+      } else if (localPassword != null) {
+        loginType = LoginType.local;
       }
-      // don't keep local status
-      // else if (localPassword != null) {
-      //   loginType = LoginType.local;
-      // }
 
       return AuthState(
         username: username ?? '',

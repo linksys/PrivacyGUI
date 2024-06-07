@@ -154,7 +154,7 @@ class StyledAppPageView extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (!ResponsiveLayout.isLayoutBreakpoint(context) && hasMenu())
+                if (!ResponsiveLayout.isMobileLayout(context) && hasMenu())
                   AppCard(
                     child: _createMenuWidget(context, 200),
                   ),
@@ -178,7 +178,13 @@ class StyledAppPageView extends ConsumerWidget {
       case AppBarStyle.back:
         return LinksysAppBar.withBack(
           context: context,
-          title: title == null ? null : AppText.titleLarge(title),
+          title: title == null
+              ? null
+              : AppText.titleLarge(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.fade,
+                ),
           toolbarHeight: toolbarHeight,
           onBackTap: isBackEnabled()
               ? (onBackTap ??
@@ -210,7 +216,7 @@ class StyledAppPageView extends ConsumerWidget {
   }
 
   List<Widget>? _buildActions(BuildContext context) {
-    return !hasMenu() || !ResponsiveLayout.isLayoutBreakpoint(context)
+    return !hasMenu() || !ResponsiveLayout.isMobileLayout(context)
         ? actions
         : ((actions ?? [])..add(_createMenuAction(context)));
   }
@@ -231,7 +237,7 @@ class StyledAppPageView extends ConsumerWidget {
                     padding: const EdgeInsets.only(top: 16.0),
                     child: Row(
                       children: [
-                        if (ResponsiveLayout.isLayoutBreakpoint(context)) ...[
+                        if (ResponsiveLayout.isMobileLayout(context)) ...[
                           if (bottomBar?.isNegitiveEnabled != null) ...[
                             Expanded(
                               child: AppOutlinedButton.fillWidth(
@@ -256,7 +262,7 @@ class StyledAppPageView extends ConsumerWidget {
                             ),
                           ),
                         ],
-                        if (!ResponsiveLayout.isLayoutBreakpoint(context)) ...[
+                        if (!ResponsiveLayout.isMobileLayout(context)) ...[
                           if (bottomBar?.isNegitiveEnabled != null) ...[
                             AppOutlinedButton(
                               bottomBar?.negitiveLable ?? loc(context).cancel,

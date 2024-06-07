@@ -35,6 +35,8 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     Map<String, dynamic>? getGuestRadioSettingsData;
     Map<String, dynamic>? getHealthCheckResultsData;
     Map<String, dynamic>? getHealthCheckModuleData;
+    Map<String, dynamic>? getSystemStats;
+    Map<String, dynamic>? getEthernetPortConnections;
 
     final result = pollingResult?.data;
     if (result != null) {
@@ -48,6 +50,11 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
           (result[JNAPAction.getHealthCheckResults] as JNAPSuccess?)?.output;
       getHealthCheckModuleData =
           (result[JNAPAction.getSupportedHealthCheckModules] as JNAPSuccess?)
+              ?.output;
+      getSystemStats =
+          (result[JNAPAction.getSystemStats] as JNAPSuccess?)?.output;
+      getEthernetPortConnections =
+          (result[JNAPAction.getEthernetPortConnections] as JNAPSuccess?)
               ?.output;
     }
 
@@ -69,6 +76,20 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
       newState =
           _getHealthCheckModuleResult(newState, getHealthCheckModuleData);
     }
+
+    if (getSystemStats != null) {
+      final uptimeSeconds = getSystemStats['uptimeSeconds'];
+      newState = newState.copyWith(uptimes: uptimeSeconds);
+    }
+
+    if (getEthernetPortConnections != null) {
+      final lanPortConnections =
+          List<String>.from(getEthernetPortConnections['lanPortConnections']);
+      final wanPortConnection = getEthernetPortConnections['wanPortConnection'];
+      newState = newState.copyWith(
+          lanConnections: lanPortConnections, wanConnection: wanPortConnection);
+    }
+
     return newState;
   }
 

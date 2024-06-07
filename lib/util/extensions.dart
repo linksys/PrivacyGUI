@@ -1,5 +1,4 @@
-import 'dart:ui';
-
+import 'package:flutter/material.dart';
 import 'package:privacy_gui/util/languages.dart';
 
 extension Unique<E, Id> on List<E> {
@@ -21,6 +20,14 @@ extension DurationExt on Duration {
     String twoDigitMinutes = twoDigits(inMinutes.remainder(60).abs());
     String twoDigitSeconds = twoDigits(inSeconds.remainder(60).abs());
     return "$negativeSign${twoDigits(inHours)}:$twoDigitMinutes:$twoDigitSeconds";
+  }
+}
+
+extension TimeOfDayExt on TimeOfDay {
+  int compareTo(TimeOfDay other) {
+    final double1 = hour + minute / 60.0;
+    final double2 = other.hour + minute / 60.0;
+    return double1.compareTo(double2);
   }
 }
 

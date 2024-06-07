@@ -55,20 +55,22 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
                   const AppGap.extraBig(),
                   Row(
                     children: [
-                      AppTextButton(
-                        loc(context).pnpModemLightsOffTip,
-                        onTap: () {
-                          showModalBottomSheet(
-                            context: context,
-                            useRootNavigator: true,
-                            useSafeArea: true,
-                            isScrollControlled: true,
-                            showDragHandle: true,
-                            builder: (context) {
-                              return _bottomSheetContent();
-                            },
-                          );
-                        },
+                      Flexible(
+                        child: AppTextButton(
+                          loc(context).pnpModemLightsOffTip,
+                          onTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              useRootNavigator: true,
+                              useSafeArea: true,
+                              isScrollControlled: true,
+                              showDragHandle: true,
+                              builder: (context) {
+                                return _bottomSheetContent();
+                              },
+                            );
+                          },
+                        ),
                       ),
                     ],
                   ),
@@ -80,7 +82,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
         footer: AppFilledButton.fillWidth(
           loc(context).next,
           onTap: () {
-            context.goNamed(RouteNamed.pnpWaitingModem);
+            context.pushNamed(RouteNamed.pnpWaitingModem);
           },
         ),
       ),

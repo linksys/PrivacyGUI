@@ -52,6 +52,7 @@ class SelectDeviceView extends ArgumentsConsumerStatefulView {
 class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
   late final DisplaySubType _subType;
   late final SelectMode _selectMode;
+  late final bool _onlineOnly;
 
   final List<DeviceListItem> selected = [];
   @override
@@ -59,6 +60,7 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
     super.initState();
     _subType = DisplaySubType.resolve(widget.args['type']);
     _selectMode = SelectMode.resolve(widget.args['selectMode']);
+    _onlineOnly = widget.args['onlineOnly'] ?? false;
     final selectedValues = widget.args['selected'] as List<String>? ?? [];
     final devices = ref.read(deviceListProvider).devices;
     final selectedItems = selectedValues
@@ -102,11 +104,12 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
                 label: loc(context).onlineDevices,
                 items: onlineDevices,
               ),
-              GroupItem(
-                key: const ObjectKey('offline'),
-                label: loc(context).offlineDevices,
-                items: offlineDevices,
-              ),
+              if (!_onlineOnly)
+                GroupItem(
+                  key: const ObjectKey('offline'),
+                  label: loc(context).offlineDevices,
+                  items: offlineDevices,
+                ),
             ],
             itemBuilder: (item) {
               final value = _subMessage(item);

@@ -74,7 +74,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
       title: loc(context).dhcpServer.capitalizeWords(),
       onBackTap: _isEdited()
           ? () async {
-              final goBack = await _showUnsavedAlert();
+              final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
                 context.pop();
               }
@@ -152,7 +152,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             setState(() {
               updateErrorPrompts(
                 'StartIpAddress',
-                result.$1 ? null : 'Invalid Ip or the same as the Host Ip',
+                result.$1 ? null : loc(context).invalidIpOrSameAsHostIp,
               );
               state = result.$2;
             });
@@ -182,14 +182,12 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             setState(() {
               updateErrorPrompts(
                 'MaxUserAllowed',
-                result.$1 ? null : 'Invalid number',
+                result.$1 ? null : loc(context).invalidNumber,
               );
               state = result.$2;
             });
           },
         ),
-        // const AppGap.small(),
-        // AppText.bodySmall('1 ${loc(context).to} ${state.maxUserLimit}'),
         const AppGap.big(),
         _ipAddressRange(),
         const AppGap.big(),
@@ -212,7 +210,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             setState(() {
               updateErrorPrompts(
                 'LeaseTime',
-                result.$1 ? null : 'Invalid number',
+                result.$1 ? null : loc(context).invalidNumber,
               );
               state = result.$2;
             });
@@ -265,7 +263,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
               setState(() {
                 updateErrorPrompts(
                   'DNS1',
-                  result.$1 ? null : 'Invalid IP address',
+                  result.$1 ? null : loc(context).invalidIpAddress,
                 );
                 state = result.$2;
               });
@@ -291,7 +289,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
               setState(() {
                 updateErrorPrompts(
                   'DNS2',
-                  result.$1 ? null : 'Invalid IP address',
+                  result.$1 ? null : loc(context).invalidIpAddress,
                 );
                 state = result.$2;
               });
@@ -317,7 +315,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
               setState(() {
                 updateErrorPrompts(
                   'DNS3',
-                  result.$1 ? null : 'Invalid IP address',
+                  result.$1 ? null : loc(context).invalidIpAddress,
                 );
                 state = result.$2;
               });
@@ -343,35 +341,11 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
               setState(() {
                 updateErrorPrompts(
                   'WINS',
-                  result.$1 ? null : 'Invalid IP address',
+                  result.$1 ? null : loc(context).invalidIpAddress,
                 );
                 state = result.$2;
               });
             }
-          },
-        ),
-      ],
-    );
-  }
-
-  Future<bool?> _showUnsavedAlert() {
-    return showMessageAppDialog<bool>(
-      context,
-      title: loc(context).unsavedChangesTitle,
-      message: loc(context).unsavedChangesDesc,
-      actions: [
-        AppTextButton(
-          loc(context).goBack,
-          color: Theme.of(context).colorScheme.onSurface,
-          onTap: () {
-            context.pop();
-          },
-        ),
-        AppTextButton(
-          loc(context).discardChanges,
-          color: Theme.of(context).colorScheme.error,
-          onTap: () {
-            context.pop(true);
           },
         ),
       ],

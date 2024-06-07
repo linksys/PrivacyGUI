@@ -60,46 +60,49 @@ class _LocalResetRouterPasswordViewState
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: Center(
-          child: AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppText.headlineSmall(
-                    loc(context).localResetRouterPasswordTitle),
-                const AppGap.regular(),
-                AppText.bodyMedium(
-                    loc(context).localResetRouterPasswordDescription),
-                const AppGap.big(),
-                AppPasswordField(
-                  border: const OutlineInputBorder(),
-                  withValidator: state.hasEdited,
-                  validations: validations,
-                  hintText: loc(context).localResetRouterPasswordTitle,
-                  controller: _newPasswordController,
-                  onFocusChanged: (hasFocus) {
-                    ref
-                        .read(routerPasswordProvider.notifier)
-                        .setEdited(hasFocus);
-                  },
-                  onValidationChanged: (isValid) {
-                    ref
-                        .read(routerPasswordProvider.notifier)
-                        .setValidate(isValid);
-                  },
-                ),
-                const AppGap.regular(),
-                AppTextField(
-                  border: const OutlineInputBorder(),
-                  hintText: loc(context).routerPasswordHint,
-                  controller: _hintController,
-                ),
-                const AppGap.big(),
-                AppFilledButton(
-                  loc(context).save,
-                  onTap: state.isValid ? _save : null,
-                )
-              ],
+          child: SizedBox(
+            width: 289,
+            child: AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppText.headlineSmall(
+                      loc(context).localResetRouterPasswordTitle),
+                  const AppGap.regular(),
+                  AppText.bodyMedium(
+                      loc(context).localResetRouterPasswordDescription),
+                  const AppGap.big(),
+                  AppPasswordField(
+                    border: const OutlineInputBorder(),
+                    withValidator: state.hasEdited,
+                    validations: validations,
+                    hintText: loc(context).localResetRouterPasswordTitle,
+                    controller: _newPasswordController,
+                    onFocusChanged: (hasFocus) {
+                      ref
+                          .read(routerPasswordProvider.notifier)
+                          .setEdited(hasFocus);
+                    },
+                    onValidationChanged: (isValid) {
+                      ref
+                          .read(routerPasswordProvider.notifier)
+                          .setValidate(isValid);
+                    },
+                  ),
+                  const AppGap.regular(),
+                  AppTextField(
+                    border: const OutlineInputBorder(),
+                    hintText: loc(context).routerPasswordHint,
+                    controller: _hintController,
+                  ),
+                  const AppGap.big(),
+                  AppFilledButton(
+                    loc(context).save,
+                    onTap: state.isValid ? _save : null,
+                  )
+                ],
+              ),
             ),
           ),
         ),

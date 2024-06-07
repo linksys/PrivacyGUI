@@ -1,9 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/models/set_lan_settings.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
+import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 
@@ -75,6 +79,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   }
 
   Future<void> saveSettings(LocalNetworkSettingsState settings) {
+    final currentIPAddress = state.ipAddress;
     final newSettings = SetRouterLANSettings(
       ipAddress: settings.ipAddress,
       networkPrefixLength:
@@ -98,11 +103,20 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       JNAPAction.setLANSettings,
       auth: true,
       data: newSettings.toMap()..removeWhere((key, value) => value == null),
+      sideEffectOverrides: const JNAPSideEffectOverrides(maxRetry: 5),
     )
         .then((result) async {
       // Update the state
       await fetch(fetchRemote: true);
-    });
+    }).catchError(
+      (error) {
+        if (kIsWeb) {
+          ref.read(redirectionProvider.notifier).state =
+              'https://${newSettings.ipAddress}';
+        }
+      },
+      test: (error) => error is JNAPSideEffectError,
+    );
   }
 
   void updateHostName(String hostName) {
@@ -124,7 +138,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     List<DHCPReservation> newList = List.from(state.dhcpReservationList);
     bool succeed = false;
     if (item.ipAddress == 'DELETE') {
-      newList.remove(item);
+      newList.removeAt(index);
       succeed = true;
     } else if (!isReservationOverlap(item: item, index: index)) {
       newList[index] = item;

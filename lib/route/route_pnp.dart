@@ -29,20 +29,20 @@ final pnpTroubleshootingRoute = LinksysRoute(
   ),
   routes: [
     LinksysRoute(
-      name: RouteNamed.contactSupportChoose,
-      path: RoutePath.contactSupportChoose,
-      config: LinksysRouteConfig(
-        pageWidth: SpecificPageWidth(width: 430),
+      name: RouteNamed.callSupportMainRegion,
+      path: RoutePath.callSupportMainRegion,
+      config: const LinksysRouteConfig(
+        pageAlignment: CrossAxisAlignment.start,
       ),
-      builder: (context, state) => const ContactSupportSelectionView(),
+      builder: (context, state) => const CallSupportMainRegionView(),
       routes: [
         LinksysRoute(
-          name: RouteNamed.contactSupportDetails,
-          path: RoutePath.contactSupportDetails,
-          config: LinksysRouteConfig(
-            pageWidth: SpecificPageWidth(width: 430),
+          name: RouteNamed.callSupportMoreRegion,
+          path: RoutePath.callSupportMoreRegion,
+          config: const LinksysRouteConfig(
+            pageAlignment: CrossAxisAlignment.start,
           ),
-          builder: (context, state) => ContactSupportDetailView(
+          builder: (context, state) => CallSupportMoreRegionView(
             args: state.extra as Map<String, dynamic>? ?? {},
           ),
         )

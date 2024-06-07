@@ -2,10 +2,10 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
-import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -27,17 +27,15 @@ class _FirmwareUpdateTableViewState
     return Table(
       columnWidths: const {
         0: IntrinsicColumnWidth(flex: 3),
-        1: IntrinsicColumnWidth(flex: 2),
-        2: IntrinsicColumnWidth(flex: 2),
-        3: IntrinsicColumnWidth(flex: 1),
+        1: IntrinsicColumnWidth(flex: 3),
+        2: IntrinsicColumnWidth(flex: 1),
       },
       children: [
         TableRow(
           children: [
-            TableCell(child: AppText.labelMedium('Node')),
-            TableCell(child: AppText.labelMedium('Current Version')),
-            TableCell(child: AppText.labelMedium('Discoverd Version')),
-            TableCell(child: AppText.labelMedium('Model')),
+            TableCell(child: AppText.labelMedium(loc(context).node)),
+            TableCell(child: AppText.labelMedium(loc(context).firmwareVersion)),
+            TableCell(child: AppText.labelMedium(loc(context).model)),
           ],
         ),
         ...widget.nodeStatusList.mapIndexed((index, child) {
@@ -47,50 +45,58 @@ class _FirmwareUpdateTableViewState
                 verticalAlignment: TableCellVerticalAlignment.middle,
                 child: Row(
                   children: [
-                    Stack(
-                      children: [
-                        Image(
-                          image:
-                              CustomTheme.of(context).images.devices.getByName(
-                                    routerIconTestByModel(
-                                        modelNumber:
-                                            child.$1.model.modelNumber ?? ''),
-                                  ),
-                          fit: BoxFit.cover,
-                          width: 72,
-                          height: 72,
-                        ),
-                      ],
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Image(
+                        image: CustomTheme.of(context).images.devices.getByName(
+                              routerIconTestByModel(
+                                  modelNumber:
+                                      child.$1.model.modelNumber ?? ''),
+                            ),
+                        fit: BoxFit.cover,
+                        width: 72,
+                        height: 72,
+                      ),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText.bodyLarge(child.$1.getDeviceName()),
-                        child.$2.availableUpdate != null
-                            ? AppText.bodyMedium(
-                                'Update available',
-                                color: Theme.of(context).colorScheme.error,
-                              )
-                            : const AppText.bodyMedium(
-                                'Up to date',
-                                color: Colors.green,
-                              )
-                      ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AppText.bodyMedium(child.$1.getDeviceName()),
+                          child.$2.availableUpdate != null
+                              ? AppText.bodyMedium(
+                                  loc(context).updateAvailable,
+                                  color: Theme.of(context).colorScheme.error,
+                                  maxLines: 5,
+                                )
+                              : AppText.bodyMedium(
+                                  loc(context).upToDate,
+                                  color: Colors.green,
+                                  maxLines: 5,
+                                )
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
               TableCell(
-                  verticalAlignment: TableCellVerticalAlignment.middle,
-                  child:
-                      AppText.bodyLarge(child.$1.unit.firmwareVersion ?? '')),
+                verticalAlignment: TableCellVerticalAlignment.middle,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.bodyMedium(child.$1.unit.firmwareVersion ?? ''),
+                    if (child.$2.availableUpdate != null) ...[
+                      const Icon(Icons.arrow_drop_down),
+                      AppText.bodyMedium(
+                          child.$2.availableUpdate?.firmwareVersion ?? ''),
+                    ],
+                  ],
+                ),
+              ),
               TableCell(
                   verticalAlignment: TableCellVerticalAlignment.middle,
-                  child: AppText.bodyLarge(
-                      child.$2.availableUpdate?.firmwareVersion ?? '')),
-              TableCell(
-                  verticalAlignment: TableCellVerticalAlignment.middle,
-                  child: AppText.bodyLarge(child.$1.modelNumber ?? '')),
+                  child: AppText.bodyMedium(child.$1.modelNumber ?? '')),
             ],
           );
         }),

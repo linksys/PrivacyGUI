@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/firmware_update/views/firmware_update_detail_view.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
@@ -157,7 +158,7 @@ Future<T?> showMessageAppOkDialog<T>(
     dismissible: dismissible,
     title: title,
     icon: icon,
-    content: AppText.bodyMedium(loc(context).modalDFSDesc),
+    content: AppText.bodyMedium(message ?? ''),
     width: width,
     actions: [
       AppTextButton(
@@ -167,5 +168,38 @@ Future<T?> showMessageAppOkDialog<T>(
         },
       )
     ],
+  );
+}
+
+Future<bool?> showUnsavedAlert(BuildContext context, {String? title, String? message}) {
+    return showMessageAppDialog<bool>(
+      context,
+      title: title ?? loc(context).unsavedChangesTitle,
+      message: message ?? loc(context).unsavedChangesDesc,
+      actions: [
+        AppTextButton(
+          loc(context).goBack,
+          color: Theme.of(context).colorScheme.onSurface,
+          onTap: () {
+            context.pop();
+          },
+        ),
+        AppTextButton(
+          loc(context).discardChanges,
+          color: Theme.of(context).colorScheme.error,
+          onTap: () {
+            context.pop(true);
+          },
+        ),
+      ],
+    );
+  }
+
+showFirmwareUpdateDialog(BuildContext context) {
+  return showAdaptiveDialog(
+    context: context,
+    builder: (context) {
+      return const FirmwareUpdateDetailView();
+    },
   );
 }

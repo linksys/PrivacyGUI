@@ -5,7 +5,7 @@ import 'package:privacy_gui/page/pnp/model/pnp_step.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class NightModeStep extends PnpStep {
-  bool _isEnabled = true;
+  bool _isEnabled = false;
 
   NightModeStep({
     required super.index,
@@ -16,7 +16,7 @@ class NightModeStep extends PnpStep {
   Future<void> onInit(WidgetRef ref) async {
     await super.onInit(ref);
     pnp.setStepStatus(index, status: StepViewStatus.data);
-
+    canGoNext(saveChanges == null);
     // final state = ref.read(pnpProvider).stepStateList[index];
     // if (state?.data['isEnabled'] == null) {
     //   ref

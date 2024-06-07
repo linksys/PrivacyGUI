@@ -105,6 +105,9 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
                             .getMyMACAddress()
                             .then((value) {
                           _valueController.text = value ?? '';
+                          setState(() {
+                            _isValid = _macValidator.validate(value ?? '');
+                          });
                         });
                       },
                     ),

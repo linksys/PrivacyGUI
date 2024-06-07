@@ -3,6 +3,7 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/utils.dart';
@@ -25,13 +26,34 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     DeviceManagerState deviceManagerState,
   ) {
     var newState = const DashboardHomeState();
-    // Get main Wi-Fi SSID
-    final ssid =
-        dashboardManagerState.mainRadios.firstOrNull?.settings.ssid ?? 'Home';
-    // Get available Wi-Fi radios
-    final numOfWifi = _getNumberOfAvailableWifi(dashboardManagerState);
-    // Get node number in the mesh
-    final numOfNodes = deviceManagerState.nodeDevices.length;
+    // Get WiFi list
+    final wifiList = dashboardManagerState.mainRadios
+        .map((e) => DashboardWiFiItem.fromMainRadios(
+            [e],
+            deviceManagerState.mainWifiDevices.where((device) {
+              final deviceBand = ref
+                  .read(deviceManagerProvider.notifier)
+                  .getBandConnectedBy(device);
+              return device.connections.isNotEmpty && deviceBand == e.band;
+            }).length))
+        .toList();
+    if (dashboardManagerState.guestRadios.isNotEmpty) {
+      wifiList
+        .add(DashboardWiFiItem.fromGuestRadios(
+            dashboardManagerState.guestRadios,
+            deviceManagerState.guestWifiDevices
+                .where((device) => device.connections.isNotEmpty)
+                .length));
+    }
+    // Guest WiFi
+
+    // Get Node list
+    final nodeList = deviceManagerState.nodeDevices;
+    final isAnyNodesOffline =
+        deviceManagerState.nodeDevices.any((element) => !element.isOnline());
+    // Uptime transform
+    final uptime = DateFormatUtils.formatDuration(
+        Duration(seconds: dashboardManagerState.uptimes));
     // Get online external devices number
     final onlineDevices = deviceManagerState.externalDevices
         .where((device) => device.connections.isNotEmpty)
@@ -58,13 +80,15 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     );
 
     return newState.copyWith(
-      mainWifiSsid: ssid,
-      numOfWifi: numOfWifi,
-      numOfNodes: numOfNodes,
-      numOfOnlineExternalDevices: numOfOnlineExternalDevices,
+      wifis: wifiList,
+      nodes: nodeList,
+      uptime: uptime,
+      wanPortConnection: dashboardManagerState.wanConnection,
+      lanPortConnections: dashboardManagerState.lanConnections,
       isWanConnected: isWanConnected,
       isFirstPolling: isFirstPolling,
       masterIcon: masterIcon,
+      isAnyNodesOffline: isAnyNodesOffline,
       uploadResult: uploadResult,
       downloadResult: downloadResult,
     );

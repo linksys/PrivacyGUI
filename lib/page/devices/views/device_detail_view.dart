@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -14,7 +19,9 @@ import 'package:privacygui_widgets/theme/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/info_card.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/loadable_widget/loadable_widget.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
@@ -113,54 +120,27 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
               size: 40,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 8, 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AppText.labelLarge(state.item.name),
-                ),
-                AppIconButton(
-                  icon: LinksysIcons.edit,
-                  onTap: _showEditingDialog,
-                )
-              ],
+          AppSettingCard.noBorder(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+            title: state.item.name,
+            trailing: AppIconButton(
+              icon: LinksysIcons.edit,
+              onTap: _showEditingDialog,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.bodySmall(loc(context).connectTo),
-                const AppGap.small(),
-                AppText.labelLarge(state.item.upstreamDevice),
-              ],
-            ),
+          AppSettingCard.noBorder(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+            title: loc(context).connectTo,
+            description: state.item.upstreamDevice,
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-            child: Row(
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppText.bodySmall(loc(context).signalStrength),
-                    if (!state.item.isWired) ...[
-                      const AppGap.small(),
-                      AppText.labelLarge(
-                        _formatEmptyValue('${state.item.signalStrength} dBM'),
-                      ),
-                    ],
-                  ],
-                ),
-                const Spacer(),
-                Icon(getWifiSignalIconData(
-                  context,
-                  state.item.isWired ? null : state.item.signalStrength,
-                )),
-              ],
-            ),
+          AppSettingCard.noBorder(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+            title: loc(context).signalStrength,
+            description: _formatEmptyValue('${state.item.signalStrength} dBM'),
+            trailing: Icon(getWifiSignalIconData(
+              context,
+              state.item.isWired ? null : state.item.signalStrength,
+            )),
           ),
         ],
       ),
@@ -171,7 +151,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     return Column(
       children: [
         if (!state.item.isWired)
-          AppInfoCard(
+          AppSettingCard(
             padding: const EdgeInsets.symmetric(
               horizontal: Spacing.semiBig,
               vertical: Spacing.regular,
@@ -180,7 +160,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             description:
                 _formatEmptyValue('${state.item.ssid} (${state.item.band})'),
           ),
-        AppInfoCard(
+        AppSettingCard(
           padding: const EdgeInsets.fromLTRB(
             Spacing.semiBig,
             Spacing.regular,
@@ -189,14 +169,14 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           ),
           title: loc(context).ipAddress,
           description: _formatEmptyValue(state.item.ipv4Address),
-          trailing: AppTextButton(
-            loc(context).reserveDHCP,
-            onTap: () {
-              //TODO: Show ReserveDHCP view
+          trailing: AppLoadableWidget.textButton(
+            title: loc(context).reserveDHCP,
+            onTap: () async {
+              await handleReserveDhcp(state.item);
             },
           ),
         ),
-        AppInfoCard(
+        AppSettingCard(
           padding: const EdgeInsets.symmetric(
             horizontal: Spacing.semiBig,
             vertical: Spacing.regular,
@@ -204,7 +184,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           title: loc(context).macAddress,
           description: _formatEmptyValue(state.item.macAddress),
         ),
-        AppInfoCard(
+        AppSettingCard(
           padding: const EdgeInsets.symmetric(
             horizontal: Spacing.semiBig,
             vertical: Spacing.regular,
@@ -222,7 +202,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         // crossAxisAlignment: CrossAxisAlignment.start,
         // mainAxisSize: MainAxisSize.min,
         children: [
-          AppInfoCard(
+          AppSettingCard(
             showBorder: false,
             padding: const EdgeInsets.fromLTRB(
               Spacing.semiSmall,
@@ -237,7 +217,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             height: 8,
             thickness: 1,
           ),
-          AppInfoCard(
+          AppSettingCard(
             showBorder: false,
             padding: const EdgeInsets.fromLTRB(
               Spacing.semiSmall,
@@ -357,7 +337,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     final newName = _deviceNameController.text;
     if (newName.isEmpty) {
       setState(() {
-        _errorMessage = 'The name must not be empty';
+        _errorMessage = loc(context).theNameMustNotBeEmpty;
       });
       return;
     }
@@ -396,5 +376,87 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
 
   String _formatEmptyValue(String? value) {
     return (value == null || value.isEmpty) ? '--' : value;
+  }
+
+  Future<dynamic> handleReserveDhcp(DeviceListItem item) async {
+    final notifier = ref.read(localNetworkSettingProvider.notifier);
+    // Fetch lan setting
+    await notifier.fetch();
+    final dhcpReservationList =
+        ref.read(localNetworkSettingProvider).dhcpReservationList;
+    final dhcpReservationItem = DHCPReservation(
+      description: item.name.replaceAll(RegExp(r' '), ''),
+      ipAddress: item.ipv4Address,
+      macAddress: item.macAddress,
+    );
+    if (dhcpReservationList.contains(dhcpReservationItem)) {
+      // Show alert to delete
+      final delete = await _showDeleteAlert();
+      if (delete) {
+        final index = dhcpReservationList.indexOf(dhcpReservationItem);
+        notifier.updateDHCPReservationOfIndex(
+            dhcpReservationItem.copyWith(ipAddress: 'DELETE'), index);
+        await _saveDhcpResevervationSetting();
+      }
+    } else {
+      final isOverlap =
+          notifier.isReservationOverlap(item: dhcpReservationItem);
+      if (isOverlap) {
+        // Show overlap
+        showFailedSnackBar(
+          context,
+          loc(context).ipOrMacAddressOverlap,
+        );
+      } else {
+        // Save setting
+        notifier.updateDHCPReservationList([dhcpReservationItem]);
+        await _saveDhcpResevervationSetting();
+      }
+    }
+  }
+
+  Future<bool> _showDeleteAlert() async {
+    return await showSimpleAppDialog(
+      context,
+      title: loc(context).deleteReservation,
+      content: AppText.bodyMedium(loc(context).thisActionCannotBeUndone),
+      actions: [
+        AppTextButton(
+          loc(context).cancel,
+          color: Theme.of(context).colorScheme.onSurface,
+          onTap: () {
+            context.pop(false);
+          },
+        ),
+        AppTextButton(
+          loc(context).delete,
+          color: Theme.of(context).colorScheme.error,
+          onTap: () {
+            context.pop(true);
+          },
+        ),
+      ],
+    );
+  }
+
+  Future _saveDhcpResevervationSetting() async {
+    final state = ref.read(localNetworkSettingProvider);
+    await ref
+        .read(localNetworkSettingProvider.notifier)
+        .saveSettings(state)
+        .then((_) {
+      // show succeed
+      showSuccessSnackBar(
+        context,
+        loc(context).changesSaved,
+      );
+    }).catchError((error) {
+      // show error
+      final err = error as JNAPError;
+      showFailedSnackBar(
+        context,
+        err.result,
+      );
+    }, test: (error) => error is JNAPError);
   }
 }

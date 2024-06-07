@@ -18,7 +18,7 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
   @override
   RouterPasswordState build() => RouterPasswordState.init();
 
-  Future fetch() async {
+  Future fetch([bool force = false]) async {
     final repo = ref.read(routerRepositoryProvider);
     final results = await repo.fetchIsConfigured();
     final bool isAdminDefault = JNAPTransactionSuccessWrap.getResult(
@@ -32,7 +32,7 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
     String passwordHint = '';
     if (isSetByUser) {
       passwordHint = await repo
-          .send(JNAPAction.getAdminPasswordHint)
+          .send(JNAPAction.getAdminPasswordHint, fetchRemote: force)
           .then((result) => result.output['passwordHint'] ?? '')
           .onError((error, stackTrace) => '');
     }
@@ -84,7 +84,7 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
       await ref
           .read(authProvider.notifier)
           .localLogin(pwd ?? '', guardError: false);
-      await fetch();
+      await fetch(true);
     });
   }
 

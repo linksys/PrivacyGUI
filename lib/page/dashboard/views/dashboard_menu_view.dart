@@ -2,22 +2,25 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/components/shortcuts/spinners.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/topology/providers/topology_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
-import 'package:privacy_gui/providers/root/root_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/menu_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 import 'package:privacygui_widgets/widgets/panel/custom_animated_box.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
 class DashboardMenuView extends ConsumerStatefulWidget {
   const DashboardMenuView({Key? key}) : super(key: key);
@@ -176,34 +179,49 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   }
 
   void _restartNetwork() {
-    showAdaptiveDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => AlertDialog.adaptive(
-        title: AppText.labelLarge(loc(context).alertExclamation),
-        content: AppText.bodyMedium(loc(context).menuRestartNetworkMessage),
-        actions: [
-          AppFilledButton(
-            loc(context).ok,
-            onTap: () {
-              ref
-                  .read(rootProvider.notifier)
-                  .showSpinner(tag: 'reboot', force: true);
+    if (ResponsiveLayout.isMobileLayout(context)) {
+      context.pop();
+    }
+    showMessageAppDialog(
+      context,
+      dismissible: true,
+      title: loc(context).alertExclamation,
+      message: loc(context).menuRestartNetworkMessage,
+      actions: [
+        AppFilledButton(
+          loc(context).ok,
+          onTap: () {
+            context.pop();
 
-              context.pop();
-              ref.read(topologyProvider.notifier).reboot().then((value) {
-                ref.read(rootProvider.notifier).hideSpinner(tag: 'reboot');
-              });
-            },
-          ),
-          AppFilledButton(
-            loc(context).cancel,
-            onTap: () {
-              context.pop();
-            },
-          )
-        ],
-      ),
+            final spinner = showFullScreenSpinner(
+                shellNavigatorKey.currentContext ?? context,
+                messages: [
+                  '${loc(context).restarting}.',
+                  '${loc(context).restarting}..',
+                  '${loc(context).restarting}...'
+                ]);
+            ref.read(pollingProvider.notifier).stopPolling();
+            ref
+                .read(topologyProvider.notifier)
+                .reboot()
+                .then((value) {
+                  showSuccessSnackBar(context, loc(context).successExclamation);
+                })
+                .onError((error, stackTrace) => showFailedSnackBar(
+                    context, loc(context).unknownErrorCode(error ?? '')))
+                .whenComplete(() {
+                  ref.read(pollingProvider.notifier).startPolling();
+                  spinner.remove();
+                });
+          },
+        ),
+        AppOutlinedButton(
+          loc(context).cancel,
+          onTap: () {
+            context.pop();
+          },
+        )
+      ],
     );
   }
 }

@@ -112,8 +112,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
 
   String getCountdownPrompt() {
     if (_remainingAttempts != null && _delayTime != null) {
-      //TODO: Localize the string
-      return 'Incorrect Router Password. Try again in ${_delayTime}s. Remaining attempts: $_remainingAttempts.';
+      return '${loc(context).localLoginIncorrectRouterPassword}\n${loc(context).localLoginTryAgainIn(_delayTime!)}\n${loc(context).localLoginRemainingAttempts(_remainingAttempts!)}';
     } else {
       return loc(context).localLoginIncorrectRouterPassword;
     }
@@ -179,7 +178,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                     child: SizedBox(
                       width: 200,
                       child: ExpansionTile(
-                        title: AppText.bodySmall(
+                        title: AppText.labelMedium(
                           getAppLocalizations(context).showHint,
                           color: Theme.of(context).colorScheme.primary,
                         ),
@@ -188,7 +187,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                         trailing: const SizedBox(),
                         expandedAlignment: Alignment.centerLeft,
                         expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                        children: [Text(_passwordHint!)],
+                        children: [AppText.bodySmall(_passwordHint!)],
                       ),
                     ),
                   ),

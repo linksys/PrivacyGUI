@@ -112,7 +112,30 @@ final dashboardRoute = ShellRoute(
     LinksysRoute(
       name: RouteNamed.dashboardSupport,
       path: RoutePath.dashboardSupport,
-      builder: (context, state) => DashboardSupportView(),
+      config: LinksysRouteConfig(
+        pageWidth: SpecificPageWidth(width: 430),
+        pageAlignment: CrossAxisAlignment.start,
+      ),
+      builder: (context, state) => const DashboardSupportView(),
+      routes: [
+        LinksysRoute(
+          name: RouteNamed.faqList,
+          path: RoutePath.faqList,
+          config: LinksysRouteConfig(
+            pageWidth: SpecificPageWidth(width: 430),
+            pageAlignment: CrossAxisAlignment.start,
+          ),
+          builder: (context, state) => const FaqListView(),
+        ),
+        LinksysRoute(
+          name: RouteNamed.callbackDescription,
+          path: RoutePath.callbackDescription,
+          // config: LinksysRouteConfig(
+          //   pageWidth: SpecificPageWidth(width: 430),
+          // ),
+          builder: (context, state) => const CallbackView(),
+        ),
+      ],
     ),
   ],
 );

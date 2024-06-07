@@ -72,7 +72,7 @@ class _PnpNoInternetConnectionState
             if (state.hasResetModem)
               AppCard(
                 onTap: () {
-                  context.goNamed(RouteNamed.contactSupportChoose);
+                  context.pushNamed(RouteNamed.callSupportMainRegion);
                 },
                 child: Row(
                   children: [
@@ -96,7 +96,7 @@ class _PnpNoInternetConnectionState
               ),
             AppCard(
               onTap: () {
-                context.goNamed(RouteNamed.pnpUnplugModem);
+                context.pushNamed(RouteNamed.pnpUnplugModem);
               },
               child: Row(
                 children: [
@@ -120,7 +120,7 @@ class _PnpNoInternetConnectionState
             ),
             AppCard(
               onTap: () {
-                context.goNamed(RouteNamed.pnpIspTypeSelection);
+                context.pushNamed(RouteNamed.pnpIspTypeSelection);
               },
               child: Row(
                 children: [
@@ -158,7 +158,7 @@ class _PnpNoInternetConnectionState
 
   AppText _titleView(BuildContext context) {
     final titleString = _ssid != null
-        ? '$_ssid has no internet connection'
+        ? loc(context).noInternetConnectionWithSSIDTitle(_ssid!)
         : loc(context).noInternetConnectionTitle;
     return AppText.headlineSmall(titleString);
   }

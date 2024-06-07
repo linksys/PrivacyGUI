@@ -2,9 +2,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/customs/hidden_password_widget.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -14,8 +14,11 @@ import 'package:privacy_gui/util/wifi_credential.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/info_card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -61,31 +64,90 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
     super.initState();
   }
 
-  Widget _qrcodeSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const AppText.labelLarge(
-          'JOIN THIS NETWORK',
+  @override
+  Widget build(BuildContext context) {
+    return StyledAppPageView(
+      appBarStyle: AppBarStyle.none,
+      backState: StyledBackState.none,
+      scrollable: true,
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.semiBig),
+      menuWidget: ResponsiveLayout.isMobileLayout(context)
+          ? null
+          : IntrinsicWidth(child: _qrcodeSection()),
+      child: AppBasicLayout(
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _wifiInfoSection(),
+            // const AppGap.big(),
+            // _optionSection(),
+            if (ResponsiveLayout.isMobileLayout(context))
+              AppCard(child: _qrcodeSection()),
+            if (!ResponsiveLayout.isMobileLayout(context))
+              AppCard(child: _shareSection()),
+          ],
         ),
-        const AppGap.regular(),
-        RepaintBoundary(
-          key: globalKey,
-          child: Container(
-            color: Colors.white,
-            height: 240,
-            width: 240,
-            child: QrImageView(
-              data: WiFiCredential(
-                ssid: widget.ssid,
-                password: widget.password,
-                type:
-                    SecurityType.wpa, //TODO: The security type is fixed for now
-              ).generate(),
+        crossAxisAlignment: CrossAxisAlignment.start,
+      ),
+    );
+  }
+
+  Widget _qrcodeSection() {
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppText.labelLarge(loc(context).wifiShareQRScan),
+          ),
+          const Divider(),
+          const AppGap.semiBig(),
+          RepaintBoundary(
+            key: globalKey,
+            child: Container(
+              color: Colors.white,
+              height: ResponsiveLayout.isMobileLayout(context) ? 240 : 200,
+              width: ResponsiveLayout.isMobileLayout(context) ? 240 : 200,
+              child: QrImageView(
+                data: WiFiCredential(
+                  ssid: widget.ssid,
+                  password: widget.password,
+                  type: SecurityType
+                      .wpa, //TODO: The security type is fixed for now
+                ).generate(),
+              ),
             ),
           ),
-        ),
-        const AppGap.regular(),
+          const AppGap.semiBig(),
+          const Divider(),
+          if (ResponsiveLayout.isMobileLayout(context)) _shareSection(),
+        ],
+      ),
+    );
+  }
+
+  Widget _shareSection() {
+    return Row(
+      children: [
+        Expanded(
+            child: AppTextButton(
+          loc(context).textMessage,
+          icon: LinksysIcons.sms,
+          onTap: () {
+            _shareBySMS();
+          },
+        )),
+        Expanded(
+            child: AppTextButton(
+          loc(context).email,
+          icon: LinksysIcons.mail,
+          onTap: () {
+            _shareByEmail();
+          },
+        )),
       ],
     );
   }
@@ -94,13 +156,13 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppInfoCard(
+        AppSettingCard(
           title: loc(context).wifiName,
           description: widget.ssid,
         ),
         const AppGap.small(),
         AppListCard(
-          title: AppText.bodySmall(loc(context).wifiPassword),
+          title: AppText.bodyMedium(loc(context).wifiPassword),
           description: IntrinsicWidth(
             child: Theme(
               data: Theme.of(context).copyWith(
@@ -115,7 +177,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
             ),
           ),
           trailing: AppIconButton(
-            icon: LinksysIcons.add,
+            icon: LinksysIcons.copyAll,
             onTap: () {
               Clipboard.setData(ClipboardData(text: widget.password)).then(
                   (value) =>
@@ -126,27 +188,6 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
         // AppText.labelLarge('${widget.numOfDevices} devices connected'),
       ],
     );
-  }
-
-  Widget _optionSection() {
-    final List<ShareWifiOption> options = [
-      ShareWifiOption.clipboard,
-      ShareWifiOption.qrCode,
-      ShareWifiOption.textMessage,
-      ShareWifiOption.email,
-      ShareWifiOption.more,
-    ];
-
-    return Column(
-        children: List.generate(options.length, (index) {
-      return AppSimplePanel(
-        title: options[index].displayTitle,
-        // icon: getCharactersIcons(context).getByName(options[index].iconId),
-        onTap: () {
-          _onOptionTapped(options[index]);
-        },
-      );
-    }));
   }
 
   void _shareByClipboard() {
@@ -216,49 +257,5 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
     ).then((result) {
       logger.d('Share WiFi - More options: result=${result.status}');
     });
-  }
-
-  void _onOptionTapped(ShareWifiOption option) {
-    switch (option) {
-      case ShareWifiOption.clipboard:
-        _shareByClipboard();
-        break;
-      case ShareWifiOption.qrCode:
-        _shareByQrCode();
-        break;
-      case ShareWifiOption.textMessage:
-        _shareBySMS();
-        break;
-      case ShareWifiOption.email:
-        _shareByEmail();
-        break;
-      case ShareWifiOption.more:
-        _shareByOtherWays();
-        break;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      backState: StyledBackState.none,
-      scrollable: true,
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.semiBig),
-      child: AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const AppGap.regular(),
-            _wifiInfoSection(),
-            // const AppGap.big(),
-            // _optionSection(),
-            const AppGap.big(),
-            _qrcodeSection(),
-          ],
-        ),
-        crossAxisAlignment: CrossAxisAlignment.start,
-      ),
-    );
   }
 }
