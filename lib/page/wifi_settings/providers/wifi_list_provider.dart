@@ -33,9 +33,8 @@ class WifiListNotifier extends Notifier<WiFiState> {
     final deviceManagerState = ref.read(deviceManagerProvider);
     final wifiItems = radioInfo.radios
         .map(
-          (radio) => _convertToWiFiItem(
-              radio,
-              deviceManagerState.mainWifiDevices.where((device) {
+          (radio) => WiFiItem.fromRadio(radio,
+              numOfDevices: deviceManagerState.mainWifiDevices.where((device) {
                 final deviceBand = ref
                     .read(deviceManagerProvider.notifier)
                     .getBandConnectedBy(device);
@@ -55,9 +54,8 @@ class WifiListNotifier extends Notifier<WiFiState> {
   ) {
     final wifiItems = dashboardManagerState.mainRadios
         .map(
-          (radio) => _convertToWiFiItem(
-              radio,
-              deviceManagerState.mainWifiDevices.where((device) {
+          (radio) => WiFiItem.fromRadio(radio,
+              numOfDevices: deviceManagerState.mainWifiDevices.where((device) {
                 final deviceBand = ref
                     .read(deviceManagerProvider.notifier)
                     .getBandConnectedBy(device);
@@ -70,41 +68,6 @@ class WifiListNotifier extends Notifier<WiFiState> {
     return WiFiState(
       mainWiFi: wifiItems,
       simpleWiFi: wifiItems.first,
-    );
-  }
-
-  WiFiItem _convertToWiFiItem(RouterRadio radio, int numOfDevices) {
-    return WiFiItem(
-      wifiType: WifiType.main,
-      radioID: WifiRadioBand.getByValue(radio.radioID),
-      ssid: radio.settings.ssid,
-      password: radio.settings.wpaPersonalSettings?.passphrase ?? '',
-      securityType: WifiSecurityType.getByValue(radio.settings.security),
-      wirelessMode: WifiWirelessMode.getByValue(radio.settings.mode),
-      defaultMixedMode: radio.defaultMixedMode != null
-          ? WifiWirelessMode.getByValue(radio.defaultMixedMode!)
-          : null,
-      channelWidth: WifiChannelWidth.getByValue(radio.settings.channelWidth),
-      channel: radio.settings.channel,
-      isBroadcast: radio.settings.broadcastSSID,
-      isEnabled: radio.settings.isEnabled,
-      availableSecurityTypes: radio.supportedSecurityTypes
-          .map((e) => WifiSecurityType.getByValue(e))
-          //Remove "WEP" and "WPA-Enterprise" types from UI for now
-          .where((e) => e.isOpenVariant || e.isWpaPersonalVariant)
-          .toList(),
-      availableWirelessModes: radio.supportedModes
-          .map((e) => WifiWirelessMode.getByValue(e))
-          .toList(),
-      availableChannels:
-          Map.fromIterable(radio.supportedChannelsForChannelWidths, key: (e) {
-        final channelWidth =
-            (e as SupportedChannelsForChannelWidths).channelWidth;
-        return WifiChannelWidth.getByValue(channelWidth);
-      }, value: ((e) {
-        return (e as SupportedChannelsForChannelWidths).channels;
-      })),
-      numOfDevices: numOfDevices,
     );
   }
 

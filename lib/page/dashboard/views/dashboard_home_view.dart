@@ -1,22 +1,23 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/firmware_update/_firmware_update.dart';
 import 'package:privacy_gui/page/topology/_topology.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/util/extensions.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -66,43 +67,64 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         right: Spacing.regular,
         bottom: Spacing.regular,
       ),
-      child: ResponsiveLayout.isMobileLayout(context)
-          ? Column(
-              mainAxisAlignment: MainAxisAlignment.start,
+      child: ResponsiveLayout(
+        desktop: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            _homeTitle(state.uptime, wanStatus == NodeWANStatus.online,
+                isLoading, state.isFirstPolling),
+            const AppGap.big(),
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _homeTitle(
-                    state.mainWifiSsid,
-                    wanStatus == NodeWANStatus.online,
-                    isLoading,
-                    state.isFirstPolling),
-                const AppGap.extraBig(),
-                _routerImage(isLoading, master),
-                const AppGap.extraBig(),
-                const Spacer(),
-                _networkInfoTiles(state, isLoading),
-                // const AppGap.extraBig(),
-                // _speedTestTile(state, isLoading),
-              ],
-            )
-          : Row(
-              children: [
                 Expanded(
+                  flex: 2,
                   child: Column(
                     children: [
-                      _homeTitle(
-                          state.mainWifiSsid,
-                          wanStatus == NodeWANStatus.online,
-                          isLoading,
-                          state.isFirstPolling),
-                      const AppGap.extraBig(),
-                      _routerImage(isLoading, master),
+                      _portsAndSpeedCard(
+                        state,
+                        isSupportSpeedCheck: false,
+                        isLoading: isLoading,
+                      ),
+                      _buildWiFiGridView(state.wifis, isLoading),
                     ],
                   ),
                 ),
-                Expanded(child: _networkInfoTiles(state, isLoading)),
+                Expanded(
+                    child: Column(
+                  children: [
+                    _nodeInfoCard(state, isLoading),
+                    // _networkInfoTiles(state, isLoading),
+                    _networkInfoTiles(state, isLoading),
+                  ],
+                )),
               ],
             ),
+          ],
+        ),
+        mobile: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _homeTitle(state.uptime, wanStatus == NodeWANStatus.online,
+                isLoading, state.isFirstPolling),
+            const AppGap.extraBig(),
+            _nodeInfoCard(state, isLoading),
+            const AppGap.extraBig(),
+            const Spacer(),
+            _portsAndSpeedCard(
+              state,
+              isSupportSpeedCheck: false,
+              isLoading: isLoading,
+            ),
+            _buildWiFiGridView(state.wifis, isLoading),
+
+            _networkInfoTiles(state, isLoading),
+            // const AppGap.extraBig(),
+            // _speedTestTile(state, isLoading),
+          ],
+        ),
+      ),
     );
   }
 
@@ -125,16 +147,11 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   }
 
   Widget _homeTitle(
-      String ssid, bool isOnline, bool isLoading, bool isFirstPolling) {
+      String? uptime, bool isOnline, bool isLoading, bool isFirstPolling) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // _ssid(ssid, isLoading),
-        if (isOnline) ...[
-          _title(),
-          const AppGap.regular(),
-        ],
         Stack(
           children: [
             AnimatedOpacity(
@@ -150,21 +167,37 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               opacity: isFirstPolling ? 0.0 : 1.0,
               duration: const Duration(milliseconds: 500),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(
-                    isOnline ? LinksysIcons.public : LinksysIcons.publicOff,
-                    color: isOnline
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.error,
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.circle,
+                        color: isOnline
+                            ? Theme.of(context).colorSchemeExt.green
+                            : Theme.of(context).colorScheme.error,
+                      ),
+                      const AppGap.semiBig(),
+                      AppText.titleLarge(
+                        isOnline
+                            ? loc(context).internetOnline
+                            : loc(context).internetOffline,
+                        color: isOnline
+                            ? Theme.of(context).colorScheme.onSurface
+                            : Theme.of(context).colorScheme.error,
+                      ),
+                    ],
                   ),
-                  AppText.titleLarge(
-                    isOnline
-                        ? loc(context).internetConnected
-                        : loc(context).internetOffline,
-                    color: isOnline
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.error,
-                  ),
+                  if (isOnline && uptime != null)
+                    Row(
+                      children: [
+                        Icon(Icons.alarm,
+                            color: Theme.of(context).colorScheme.onSurface),
+                        const AppGap.regular(),
+                        AppText.bodyMedium(uptime,
+                            color: Theme.of(context).colorScheme.onSurface),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -192,35 +225,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _ssid(String ssid, bool isLoading) {
-    return isLoading
-        ? Shimmer(
-            gradient: _shimmerGradient,
-            child: AppText.displaySmall(
-              ssid,
-            ),
-          )
-        : AppText.displaySmall(
-            ssid,
-          );
-  }
-
-  Widget _title() {
-    final now = TimeOfDay.now();
-    const morning = TimeOfDay(hour: 6, minute: 0);
-    const noon = TimeOfDay(hour: 12, minute: 0);
-    const evening = TimeOfDay(hour: 18, minute: 0);
-    String text;
-    if (now.compareTo(morning) > 0 && now.compareTo(noon) < 0) {
-      text = loc(context).goodMorning;
-    } else if (now.compareTo(evening) < 0) {
-      text = loc(context).goodAfternoon;
-    } else {
-      text = loc(context).goodEvening;
-    }
-    return AppText.headlineSmall(text);
-  }
-
   Widget _networkInfoTiles(DashboardHomeState state, bool isLoading) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 0),
@@ -229,10 +233,14 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Flexible(child: _nodesInfoTile(state, isLoading)),
-          Flexible(child: _wifiInfoTile(state.numOfWifi, isLoading)),
+          Flexible(child: _wifiInfoTile(state.wifis.length, isLoading)),
           Flexible(
               child: _devicesInfoTile(
-                  state.numOfOnlineExternalDevices, isLoading)),
+                  state.wifis.fold(
+                      0,
+                      (previousValue, element) =>
+                          previousValue += element.numOfConnectedDevices),
+                  isLoading)),
         ],
       ),
     );
@@ -254,7 +262,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     return _infoTile(
       iconData: LinksysIcons.networkNode,
       text: loc(context).nodes,
-      count: state.numOfNodes,
+      count: state.nodes.length,
       isLoading: isLoading,
       sub: state.isAnyNodesOffline
           ? Icon(
@@ -296,10 +304,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         minHeight: 136,
       ),
       child: isLoading
-          ? Card(
-              elevation: 10,
-              child: Shimmer(gradient: _shimmerGradient, child: Container()),
-            )
+          ? Shimmer(gradient: _shimmerGradient, child: AppCard(child: Container(),))
           : AppCard(
               onTap: onTap,
               child: Column(
@@ -330,6 +335,193 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       title: AppText.labelLarge(loc(context).troubleshoot),
       trailing: const Icon(LinksysIcons.chevronRight),
       onTap: () {},
+    );
+  }
+
+  Widget _nodeInfoCard(DashboardHomeState state, bool isLoading) {
+    final master =
+        state.nodes.firstWhereOrNull((element) => element.isAuthority);
+    return isLoading
+        ? Shimmer(
+            gradient: _shimmerGradient,
+            child: AppCard(
+                child: Container(
+              height: 360,
+            )))
+        : AppCard(
+            child: Column(
+              children: [
+                if (!isLoading && master != null)
+                  _routerImage(isLoading, master),
+                const AppGap.semiBig(),
+                ...state.nodes.map((e) => _nodeCard(e)),
+              ],
+            ),
+          );
+  }
+
+  Widget _nodeCard(LinksysDevice node) {
+    return AppListCard(
+      title: AppText.titleMedium(node.getDeviceLocation()),
+      description: AppText.bodyMedium(
+          loc(context).nDevices(node.connectedDevices.length)),
+      leading: Icon(
+          node.isAuthority ? LinksysIcons.router : LinksysIcons.networkNode),
+      trailing: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Icon(node.isAuthority
+              ? LinksysIcons.ethernet
+              : getWifiSignalIconData(context, node.signalDecibels)),
+          if (!node.isAuthority) AppText.bodySmall('${node.signalDecibels} dBM')
+        ],
+      ),
+      showBorder: false,
+    );
+  }
+
+  Widget _buildWiFiGridView(List<DashboardWiFiItem> items, bool isLoading) {
+    final crossAxisCount = ResponsiveLayout.isMobileLayout(context) ? 1 : 2;
+    const mainSpacing = 4.0;
+    const itemHeight = 200.0;
+    final mainAxisCount = (items.length / crossAxisCount);
+    return SizedBox(
+      height: isLoading
+          ? itemHeight * 2 + mainSpacing * 1
+          : mainAxisCount * itemHeight +
+              ((mainAxisCount == 0 ? 1 : mainAxisCount) - 1) * mainSpacing,
+      child: GridView.builder(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: mainSpacing,
+          crossAxisSpacing: 4,
+          // childAspectRatio: (3 / 2),
+          mainAxisExtent: itemHeight,
+        ),
+        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        itemCount: isLoading ? 4 : items.length,
+        itemBuilder: (context, index) {
+          if (isLoading) {
+            return Shimmer(
+                child: AppCard(
+                  child: Container(),
+                ),
+                gradient: _shimmerGradient);
+          } else {
+            final item = items[index];
+            return SizedBox(height: itemHeight, child: _wifiCard(item));
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _wifiCard(DashboardWiFiItem item) {
+    return AppCard(
+        child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(LinksysIcons.home),
+            const AppGap.regular(),
+            AppText.bodyMedium(
+              item.isGuest
+                  ? loc(context).guest
+                  : item.radios
+                      .map((e) => e.replaceAll('RADIO_', ''))
+                      .join('/'),
+            ),
+          ],
+        ),
+        const AppGap.semiBig(),
+        AppText.titleMedium(item.ssid),
+        const AppGap.semiBig(),
+        Row(
+          children: [
+            const Icon(LinksysIcons.devices),
+            const AppGap.regular(),
+            AppText.labelLarge(
+              loc(context).nDevices(item.numOfConnectedDevices),
+            ),
+          ],
+        )
+      ],
+    ));
+  }
+
+  Widget _portsAndSpeedCard(DashboardHomeState state,
+      {required bool isSupportSpeedCheck, bool isLoading = false}) {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 150),
+      child: isLoading
+          ? Shimmer(
+              gradient: _shimmerGradient,
+              child: AppCard(
+                child: Container(),
+              ))
+          : AppCard(
+              child: Column(
+              children: [
+                Row(
+                  // mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ...state.lanPortConnections
+                        .mapIndexed((index, e) => _portWidget(
+                            e == 'None' ? null : e,
+                            loc(context).indexedPort(index + 1),
+                            false))
+                        .toList(),
+                    _portWidget(state.wanPortConnection, loc(context).wan, true)
+                  ],
+                )
+              ],
+            )),
+    );
+  }
+
+  Widget _portWidget(String? connection, String label, bool isWan) {
+    return Expanded(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                connection == null ? Icons.circle : Icons.check_circle,
+                color: connection == null
+                    ? null
+                    : Theme.of(context).colorSchemeExt.green,
+              ),
+              const AppGap.semiSmall(),
+              AppText.labelMedium(label),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: SvgPicture(
+              connection == null
+                  ? CustomTheme.of(context).images.imgPortOff
+                  : CustomTheme.of(context).images.imgPortOn,
+              width: 40,
+              height: 40,
+            ),
+          ),
+          if (connection != null) AppText.bodySmall(connection),
+          if (isWan) AppText.labelMedium(loc(context).internet),
+          if (isWan)
+            Divider(
+                height: 8,
+                indent: 24,
+                endIndent: 24,
+                color: Theme.of(context).colorSchemeExt.orange),
+        ],
+      ),
     );
   }
 

@@ -688,5 +688,8 @@
   "firmwareDownloadingMessage3": "This will take about 15 minutes, after which your WiFi will restart.",
   "firmwareRestartingMessage1": "Restarting your WiFi",
   "firmwareRestartingMessage2": "Future updates will happen overnight - automatically - and only take a few minutes.",
-  "firmwareRestartingMessage3": "This takes 2-3 minutes."
+  "firmwareRestartingMessage3": "This takes 2-3 minutes.",
+  "internetOnline": "Internet Online",
+  "wan": "WAN",
+  "indexedPort": "Port {index}"
 }
