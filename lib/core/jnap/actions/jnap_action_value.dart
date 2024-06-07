@@ -75,8 +75,10 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/firewall/GetIPv6FirewallRules'),
   setIPv6FirewallRules(
       value: 'http://linksys.com/jnap/firewall/SetIPv6FirewallRules'),
-  getFirewallSettings(value: 'http://linksys.com/jnap/firewall/GetFirewallSettings'),
-  setFirewallSettings(value: 'http://linksys.com/jnap/firewall/SetFirewallSettings'),
+  getFirewallSettings(
+      value: 'http://linksys.com/jnap/firewall/GetFirewallSettings'),
+  setFirewallSettings(
+      value: 'http://linksys.com/jnap/firewall/SetFirewallSettings'),
   getDMZSettings(value: 'http://linksys.com/jnap/firewall/GetDMZSettings'),
   setDMZSettings(value: 'http://linksys.com/jnap/firewall/SetDMZSettings'),
   getFirmwareUpdateStatus(
@@ -248,6 +250,8 @@ enum _JNAPActionValue {
   renewDHCPWANLease(value: 'http://linksys.com/jnap/router/RenewDHCPWANLease'),
   renewDHCPIPv6Lease(
       value: 'http://linksys.com/jnap/router/RenewDHCPIPv6WANLease'),
+  getEthernetPortConnections(
+      value: 'http://linksys.com/jnap/router/GetEthernetPortConnections'),
   getManagementSettings(
       value: 'http://linksys.com/jnap/routermanagement/GetManagementSettings'),
   getManagementSettings2(

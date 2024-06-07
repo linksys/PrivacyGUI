@@ -126,6 +126,8 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       const MapEntry(JNAPAction.getFirmwareUpdateSettings, {}),
       const MapEntry(JNAPAction.getBackhaulInfo, {}),
       const MapEntry(JNAPAction.getWANStatus, {}),
+      const MapEntry(JNAPAction.getEthernetPortConnections, {}),
+      const MapEntry(JNAPAction.getSystemStats, {}),
       const MapEntry(JNAPAction.getDeviceInfo, {}),
     ];
     if (isServiceSupport(JNAPService.healthCheckManager)) {

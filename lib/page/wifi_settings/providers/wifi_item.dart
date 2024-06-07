@@ -2,9 +2,9 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 
 class WiFiItem extends Equatable {
-  final WifiType wifiType;
   final WifiRadioBand radioID;
   final String ssid;
   final String password;
@@ -21,7 +21,6 @@ class WiFiItem extends Equatable {
   final int numOfDevices;
 
   const WiFiItem({
-    required this.wifiType,
     required this.radioID,
     required this.ssid,
     required this.password,
@@ -37,6 +36,40 @@ class WiFiItem extends Equatable {
     required this.availableChannels,
     required this.numOfDevices,
   });
+
+  factory WiFiItem.fromRadio(RouterRadio radio, {int numOfDevices = 0}) {
+    return WiFiItem(
+      radioID: WifiRadioBand.getByValue(radio.radioID),
+      ssid: radio.settings.ssid,
+      password: radio.settings.wpaPersonalSettings?.passphrase ?? '',
+      securityType: WifiSecurityType.getByValue(radio.settings.security),
+      wirelessMode: WifiWirelessMode.getByValue(radio.settings.mode),
+      defaultMixedMode: radio.defaultMixedMode != null
+          ? WifiWirelessMode.getByValue(radio.defaultMixedMode!)
+          : null,
+      channelWidth: WifiChannelWidth.getByValue(radio.settings.channelWidth),
+      channel: radio.settings.channel,
+      isBroadcast: radio.settings.broadcastSSID,
+      isEnabled: radio.settings.isEnabled,
+      availableSecurityTypes: radio.supportedSecurityTypes
+          .map((e) => WifiSecurityType.getByValue(e))
+          //Remove "WEP" and "WPA-Enterprise" types from UI for now
+          .where((e) => e.isOpenVariant || e.isWpaPersonalVariant)
+          .toList(),
+      availableWirelessModes: radio.supportedModes
+          .map((e) => WifiWirelessMode.getByValue(e))
+          .toList(),
+      availableChannels:
+          Map.fromIterable(radio.supportedChannelsForChannelWidths, key: (e) {
+        final channelWidth =
+            (e as SupportedChannelsForChannelWidths).channelWidth;
+        return WifiChannelWidth.getByValue(channelWidth);
+      }, value: ((e) {
+        return (e as SupportedChannelsForChannelWidths).channels;
+      })),
+      numOfDevices: numOfDevices,
+    );
+  }
 
   WiFiItem copyWith({
     WifiType? wifiType,
@@ -56,7 +89,6 @@ class WiFiItem extends Equatable {
     int? numOfDevices,
   }) {
     return WiFiItem(
-      wifiType: wifiType ?? this.wifiType,
       radioID: radioID ?? this.radioID,
       ssid: ssid ?? this.ssid,
       password: password ?? this.password,
@@ -80,14 +112,14 @@ class WiFiItem extends Equatable {
   bool get stringify => true;
 
   @override
-  List<Object> get props {
+  List<Object?> get props {
     return [
-      wifiType,
       radioID,
       ssid,
       password,
       securityType,
       wirelessMode,
+      defaultMixedMode,
       channelWidth,
       channel,
       isBroadcast,
@@ -98,6 +130,61 @@ class WiFiItem extends Equatable {
       numOfDevices,
     ];
   }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'radioID': radioID.value,
+      'ssid': ssid,
+      'password': password,
+      'securityType': securityType.value,
+      'wirelessMode': wirelessMode.value,
+      'defaultMixedMode': defaultMixedMode?.value,
+      'channelWidth': channelWidth.value,
+      'channel': channel,
+      'isBroadcast': isBroadcast,
+      'isEnabled': isEnabled,
+      'availableSecurityTypes':
+          availableSecurityTypes.map((x) => x.value).toList(),
+      'availableWirelessModes':
+          availableWirelessModes.map((x) => x.value).toList(),
+      'availableChannels': availableChannels,
+      'numOfDevices': numOfDevices,
+    };
+  }
+
+  factory WiFiItem.fromMap(Map<String, dynamic> map) {
+    return WiFiItem(
+      radioID: WifiRadioBand.getByValue(map['radioID'] as String),
+      ssid: map['ssid'] as String,
+      password: map['password'] as String,
+      securityType: WifiSecurityType.getByValue(map['securityType']),
+      wirelessMode: WifiWirelessMode.getByValue(map['wirelessMode']),
+      defaultMixedMode: map['defaultMixedMode'] != null
+          ? WifiWirelessMode.getByValue(map['defaultMixedMode'])
+          : null,
+      channelWidth: WifiChannelWidth.getByValue(map['channelWidth']),
+      channel: map['channel'] as int,
+      isBroadcast: map['isBroadcast'] as bool,
+      isEnabled: map['isEnabled'] as bool,
+      availableSecurityTypes: List<WifiSecurityType>.from(
+        (map['availableSecurityTypes'] as List).map<WifiSecurityType>(
+          (x) => WifiSecurityType.getByValue(x),
+        ),
+      ),
+      availableWirelessModes: List<WifiWirelessMode>.from(
+        (map['availableWirelessModes'] as List)
+            .map<WifiWirelessMode>((x) => WifiWirelessMode.getByValue(x)),
+      ),
+      availableChannels: Map<WifiChannelWidth, List<int>>.from(
+          (map['availableChannels'] as Map<WifiChannelWidth, List<int>>)),
+      numOfDevices: map['numOfDevices'] as int,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory WiFiItem.fromJson(String source) =>
+      WiFiItem.fromMap(json.decode(source) as Map<String, dynamic>);
 }
 
 enum WifiType {

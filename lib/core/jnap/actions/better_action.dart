@@ -574,6 +574,8 @@ void initBetterActions() {
       _JNAPActionValue.renewDHCPWANLease.value;
   _betterActionMap[JNAPAction.renewDHCPIPv6WANLease] =
       _JNAPActionValue.renewDHCPIPv6Lease.value;
+  _betterActionMap[JNAPAction.getEthernetPortConnections] =
+      _JNAPActionValue.getEthernetPortConnections.value;
   _betterActionMap[JNAPAction.btGetScanUnconfiguredResult] =
       _JNAPActionValue.btGetScanUnconfiguredResult2.value;
   _betterActionMap[JNAPAction.btRequestScanUnconfigured] =
