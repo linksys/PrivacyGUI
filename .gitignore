@@ -93,3 +93,4 @@ test/**/*.mocks.dart
 #
 untranslated.txt
 packages
+snapshots/*

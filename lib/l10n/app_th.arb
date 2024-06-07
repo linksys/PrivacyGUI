@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "เสียบปลั๊กแล้ว",
   "pnpWaitingModemCheckingInternet": "กำลังตรวจหาอินเทอร์เน็ต...",
   "pnpIspTypeSelectionTitle": "คุณมีการตั้งค่า ISP ประเภทไหน",
+  "pnpIspTypeSelectionStaticDesc": "แอดเดรสอินเทอร์เน็ตโปรโตคอล (IP) แบบสแตติก (IP แอดเดรสแบบสแตติก) เป็นหมายเลขถาวรที่ผู้ให้บริการอินเทอร์เน็ต (ISP) มอบหมายให้กับเครือข่ายหนึ่งๆ",
+  "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over ethernet เป็นคุณสมบัติเฉพาะสำหรับเชื่อมต่อผู้ใช้คอมพิวเตอร์หลายคนเข้าด้วยกันบนเครือข่ายอีเธอร์เน็ตภายในกับไซต์ระยะไกล",
   "pnpIspTypeSelectionPppoeVlanDesc": "บางครั้ง ISP ของคุณอาจกำหนดให้คุณต้องมี PPPoE over VLAN เพื่อเข้าถึงอินเทอร์เน็ต",
   "pnpPppoeTitle": "ป้อนการตั้งค่า ISP",
+  "pnpPppoeDesc": "การตั้งค่านี้ถูกกำหนดโดยผู้ให้บริการอินเทอร์เน็ต (ISP) ของคุณ หากคุณไม่แน่ใจว่าทราบรายละเอียดการตั้งค่าของคุณ เราขอแนะนำให้คุณติดต่อ ISP",
+  "pnpPppoeAddVlan": "เพิ่ม VLAN ID",
   "pppoeVlan": "PPPoE over VLAN",
   "saved": "บันทึกแล้ว",
   "incorrectPassword": "รหัสผ่านไม่ถูกต้อง",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "พอร์ตอีเธอร์เน็ตไม่ทำงาน",
   "callSupportSelectionTitle": "เลือกภูมิภาคของคุณ",
   "callSupportDetailTwentyFourSeven": "บริการ 24 ชั่วโมงทุกวัน",
+  "callSupportDetailDesc": "เพื่อการบริการที่รวดเร็ว ให้เก็บข้อมูลประเภทผลิตภัณฑ์ของคุณ รุ่น และหมายเลขซีเรียลไว้ใกล้มือ",
   "setup": "การติดตั้ง",
   "connectivity": "การเชื่อมต่อ",
   "speed": "ความเร็ว",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "คุณอาจมีโมเด็มแบบใช้แบตเตอรีที่ต้องมีขั้นตอนเพิ่มเติม",
   "pnpModemLightsOffTipDesc": "โมเด็มของคุณอาจมีแบตเตอรีสำรอง หากต้องการรีสตาร์ท อย่าถอดแบตเตอรีออก ให้ทำตามคำแนะนำต่อไปนี้",
   "pnpWaitingModemWaitStartUp": "กำลังรอโมเด็มของคุณให้พร้อมใช้งาน",
+  "pnpPppoeRemoveVlan": "นำ VLAN ID ออก",
   "pnpStaticIpDesc": "การตั้งค่านี้ใช้สำหรับผู้ใช้ที่มี IP แอดเดรสแบบสแตติกที่กำหนดด้วยตนเองเท่านั้น",
   "pnpErrorForStaticIpAndDhcp": "ไม่สามารถทำการเชื่อมต่อ โปรดตรวจสอบข้อมูลของคุณ แล้วลองอีกครั้ง",
   "pnpErrorForPppoe": "ชื่อแอคเคาท์หรือรหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้ง",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "IP แอดเดรสปลายทาง:",
   "dmzViewDHCP": "ดูตารางไคลเอนต์ DHCP",
   "specifiedRange": "ช่วงที่ระบุ",
-  "invalidMACAddress": "แอดเดรส MAC ไม่ถูกต้อง"
+  "invalidMACAddress": "แอดเดรส MAC ไม่ถูกต้อง",
+  "noInternetConnectionWithSSIDTitle": "{ssid} ไม่มีการเชื่อมต่ออินเทอร์เน็ต"
 }

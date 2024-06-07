@@ -158,7 +158,7 @@ class _PnpNoInternetConnectionState
 
   AppText _titleView(BuildContext context) {
     final titleString = _ssid != null
-        ? '$_ssid has no internet connection'
+        ? loc(context).noInternetConnectionWithSSIDTitle(_ssid!)
         : loc(context).noInternetConnectionTitle;
     return AppText.headlineSmall(titleString);
   }

@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "Está conectada",
   "pnpWaitingModemCheckingInternet": "Verificando a internet...",
   "pnpIspTypeSelectionTitle": "Que tipo de configurações de ISP você tem?",
+  "pnpIspTypeSelectionStaticDesc": "Um endereço estático (static IP address) de Protocolo de Internet (IP) é um número permanente atribuído a uma rede por um provedor de serviço de internet (ISP).",
+  "pnpIspTypeSelectionPppoeDesc": "Protocolo de ponto a ponto pela ethernet é uma especificação para a conexão de vários usuários de computador em uma rede local de ethernet para um local remoto.",
   "pnpIspTypeSelectionPppoeVlanDesc": "Às vezes seu ISP pode exigir que você tenha um PPPoE sobre VLAN para acessar a internet.",
   "pnpPppoeTitle": "Insira as Configurações do ISP",
+  "pnpPppoeDesc": "Estas configurações são fornecidas pelo Provedor de Serviço de Internet (ISP). Se você não tiver certeza de qual é o seu, recomendamos fazer contato com o ISP.",
+  "pnpPppoeAddVlan": "Adicionar VLAN ID",
   "pppoeVlan": "PPPoE sobre VLAN",
   "saved": "Salvo",
   "incorrectPassword": "Senha incorreta",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "As portas Ethernet não estão funcionando",
   "callSupportSelectionTitle": "Escolha sua região",
   "callSupportDetailTwentyFourSeven": "24 horas por dia",
+  "callSupportDetailDesc": "Para receber atendimento rápido, tenha em mãos o tipo, modelo e número de série do produto.",
   "setup": "Configuração",
   "connectivity": "Conectividade",
   "speed": "Velocidade",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "Você pode ter um modem carregado por bateria que exige passos extras",
   "pnpModemLightsOffTipDesc": "Seu modem pode ter uma bateria reserva. Para reiniciar, NÃO remova a bateria. Siga estas instruções:",
   "pnpWaitingModemWaitStartUp": "Esperar o modem iniciar",
+  "pnpPppoeRemoveVlan": "Remover VLAN ID",
   "pnpStaticIpDesc": "Estas configurações são para usuário com endereço de IP estático atribuído manualmente.",
   "pnpErrorForStaticIpAndDhcp": "Não foi possível estabelecer uma conexão Verifique suas informações e tente novamente",
   "pnpErrorForPppoe": "Nome da conta ou senha incorretos. Tente novamente.",
@@ -387,5 +393,6 @@
   "dmzDestinationIPAddress": "Endereço IP de destino:",
   "dmzViewDHCP": "Exibir tabela de clientes DHCP",
   "specifiedRange": "Intervalo especificado",
-  "invalidMACAddress": "Endereço MAC inválido."
+  "invalidMACAddress": "Endereço MAC inválido.",
+  "noInternetConnectionWithSSIDTitle": "{ssid} não tem conexão à internet"
 }

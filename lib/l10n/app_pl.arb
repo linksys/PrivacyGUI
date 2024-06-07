@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "Jest podłączony",
   "pnpWaitingModemCheckingInternet": "Sprawdzanie połączenia z Internetem...",
   "pnpIspTypeSelectionTitle": "Jakiego rodzaju ustawień wymaga Twój dostawca usług internetowych?",
+  "pnpIspTypeSelectionStaticDesc": "Statyczny adres protokołu internetowego (IP) (statyczny adres IP) to stały numer przypisany do sieci przez dostawcę usług internetowych (ISP).",
+  "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet to protokół używany przy łączeniu wielu użytkowników w lokalnej sieci Ethernet z lokalizacją zewnętrzną.",
   "pnpIspTypeSelectionPppoeVlanDesc": "Czasami dostawca usług internetowych może wymagać korzystania z protokołu PPPoE over VLAN.",
   "pnpPppoeTitle": "Wprowadź ustawienia dostawcy usług internetowych",
+  "pnpPppoeDesc": "Ustawienia te są dostarczane przez dostawcę usług internetowych. Jeśli nie masz pewności co do swoich ustawień, zalecamy skontaktowanie się z dostawcą usług internetowych.",
+  "pnpPppoeAddVlan": "Dodaj identyfikator VLAN",
   "pppoeVlan": "PPPoE over VLAN",
   "saved": "Zapisano",
   "incorrectPassword": "Niewłaściwe hasło",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "Porty Ethernet nie działają",
   "callSupportSelectionTitle": "Wybierz swój region",
   "callSupportDetailTwentyFourSeven": "24 godziny na dobę, 7 dni w tygodniu",
+  "callSupportDetailDesc": "Aby uzyskać jak najszybszą pomoc, przygotuj informacje o typie, modelu i numerze seryjnym produktu.",
   "setup": "Konfiguracja",
   "connectivity": "Połączenia",
   "speed": "Szybkość",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "Być może posiadasz modem zasilany z baterii, który wymaga dodatkowych czynności",
   "pnpModemLightsOffTipDesc": "Twój modem może mieć baterię zapasową. Aby ponownie uruchomić urządzenie, NIE WOLNO wyjmować baterii. Postępuj zgodnie z poniższymi instrukcjami:",
   "pnpWaitingModemWaitStartUp": "Oczekiwanie na uruchomienie modemu",
+  "pnpPppoeRemoveVlan": "Usuń VLAN ID",
   "pnpStaticIpDesc": "Te ustawienia są przeznaczone dla użytkowników z ręcznie przypisanym statycznym adresem IP.",
   "pnpErrorForStaticIpAndDhcp": "Nie można nawiązać połączenia. Sprawdź swoje dane i spróbuj ponownie.",
   "pnpErrorForPppoe": "Nazwa konta lub hasło są nieprawidłowe. Spróbuj ponownie.",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "Docelowy adres IP:",
   "dmzViewDHCP": "Wyświetl tablicę klientów DHCP",
   "specifiedRange": "Określony zakres",
-  "invalidMACAddress": "Nieprawidłowy adres MAC."
+  "invalidMACAddress": "Nieprawidłowy adres MAC.",
+  "noInternetConnectionWithSSIDTitle": "{ssid} nie ma połączenia z Internetem"
 }

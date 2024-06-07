@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "إنه متصل",
   "pnpWaitingModemCheckingInternet": "جارٍ التحقق من الإنترنت...",
   "pnpIspTypeSelectionTitle": "ما نوع إعدادات موفر خدمة الإنترنت \"ISP\" لديك؟",
+  "pnpIspTypeSelectionStaticDesc": "يُعد عنوان بروتوكول الإنترنت الثابت (IP) (عنوان IP الثابت) رقم دائم يتم تعيينه لشبكة بواسطة موفر خدمة الإنترنت (ISP).",
+  "pnpIspTypeSelectionPppoeDesc": "يُعد بروتوكول نقطة إلى نقطة عبر الإيثرنت أحد مواصفات توصيل العديد من مستخدمي الكمبيوتر على شبكة اتصال إيثرنت محلية بموقع بعيد.",
   "pnpIspTypeSelectionPppoeVlanDesc": "في بعض الأحيان قد يطلب منك موفر خدمة الإنترنت أن يكون لديك PPPOE عبر VLAN \"شبكة محلية ظاهرية\" للوصول إلى الإنترنت.",
   "pnpPppoeTitle": "إدخال إعدادات ISP",
+  "pnpPppoeDesc": "يتم توفير هذه الإعدادات عن طريق موفر خدمة الإنترنت (ISP). إذا لم تكن متأكدًا منها، فنوصيك بالاتصال بموفر خدمة الإنترنت.",
+  "pnpPppoeAddVlan": "إضافة معرف VLAN",
   "pppoeVlan": "PPPoE عبر VLAN \"شبكة محلية ظاهرية\"",
   "saved": "تم الحفظ",
   "incorrectPassword": "كلمة مرور غير صحيحة.",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "منافذ Ethernet لا تعمل",
   "callSupportSelectionTitle": "اختر منطقتك",
   "callSupportDetailTwentyFourSeven": "24 ساعة، 7 أيام في الأسبوع",
+  "callSupportDetailDesc": "للحصول على الخدمة بسرعة، قم بتحضير المعلومات الخاصة بنوع المنتج والطراز والرقم التسلسلي.",
   "setup": "الإعداد",
   "connectivity": "الاتصال",
   "speed": "السرعة",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "قد يكون لديك مودم يعمل بالبطارية ويتطلب تنفيذ خطوات إضافية",
   "pnpModemLightsOffTipDesc": "قد يحتوي المودم الخاص بك على بطارية احتياطية. لإعادة التشغيل، لا تقم بإزالة البطارية. اتبع هذه التعليمات:",
   "pnpWaitingModemWaitStartUp": "انتظر حتى يبدأ المودم الخاص بك بالعمل",
+  "pnpPppoeRemoveVlan": "إزالة VLAN ID",
   "pnpStaticIpDesc": "هذه الإعدادات مخصصة للمستخدمين الذين لديهم عنوان IP ثابت تم تعيينه يدويًا.",
   "pnpErrorForStaticIpAndDhcp": "تعذر إنشاء اتصال. الرجاء التحقق من معلوماتك والمحاولة مرة أخرى.",
   "pnpErrorForPppoe": "اسم الحساب أو كلمة المرور غير صحيحة. الرجاء إعادة المحاولة.",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "عنوان IP للوجهة:",
   "dmzViewDHCP": "عرض جدول عملاء DHCP",
   "specifiedRange": "النطاق المحدد",
-  "invalidMACAddress": "عنوان MAC غير صالح."
+  "invalidMACAddress": "عنوان MAC غير صالح.",
+  "noInternetConnectionWithSSIDTitle": "لا يمتلك {ssid} اتصالًا بالإنترنت"
 }

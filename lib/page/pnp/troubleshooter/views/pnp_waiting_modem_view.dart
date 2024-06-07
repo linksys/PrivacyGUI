@@ -37,7 +37,6 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
   @override
   Widget build(BuildContext context) {
     if (_countDown != 0) {
-      logger.i('Start to count down after unplugging the modem');
       return _countdownPage();
     } else {
       return _plugBackPage();

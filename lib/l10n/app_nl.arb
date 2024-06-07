@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "De stekker zit in het stopcontact",
   "pnpWaitingModemCheckingInternet": "Internetverbinding zoeken...",
   "pnpIspTypeSelectionTitle": "Welke instellingen heeft u van uw internetprovider gekregen?",
+  "pnpIspTypeSelectionStaticDesc": "Een vast internetprotocoladres (IP-adres) is een onveranderlijk nummer dat door een internetprovider aan een netwerk is toegewezen.",
+  "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet wordt gebruikt om meerdere computergebruikers op een lokaal LAN-netwerk te verbinden met een externe site.",
   "pnpIspTypeSelectionPppoeVlanDesc": "Bij sommige internetproviders moet u een PPPoE via VLAN hebben om toegang te krijgen tot het internet.",
   "pnpPppoeTitle": "Instellingen van uw internetprovider invoeren",
+  "pnpPppoeDesc": "Deze instellingen heeft u ontvangen van uw internetprovider. Als u twijfelt over uw instellingen, kunt u het best contact opnemen met uw internetprovider.",
+  "pnpPppoeAddVlan": "VLAN-id toevoegen",
   "pppoeVlan": "PPPoE via VLAN",
   "saved": "Opgeslagen",
   "incorrectPassword": "Onjuist wachtwoord",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "Ethernet-poorten werken niet",
   "callSupportSelectionTitle": "Kies uw regio",
   "callSupportDetailTwentyFourSeven": "24 uur per dag, 7 dagen per week",
+  "callSupportDetailDesc": "Houd voor snelle service uw producttype, model en serienummer bij de hand.",
   "setup": "Installatie",
   "connectivity": "Connectiviteit",
   "speed": "Snelheid",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "Mogelijk heeft u een modem op batterijen waarvoor extra stappen nodig zijn",
   "pnpModemLightsOffTipDesc": "Mogelijk beschikt uw modem over een reservebatterij. Verwijder de batterij NIET als u opnieuw wilt opstarten. Volg onderstaande instructies:",
   "pnpWaitingModemWaitStartUp": "Wachten tot uw modem is opgestart",
+  "pnpPppoeRemoveVlan": "VLAN-id verwijderen",
   "pnpStaticIpDesc": "Deze instellingen zijn bedoeld voor gebruikers met een handmatig toegewezen vast IP-adres.",
   "pnpErrorForStaticIpAndDhcp": "Kan geen verbinding tot stand brengen. Controleer uw gegevens en probeer het opnieuw.",
   "pnpErrorForPppoe": "Accountnaam of wachtwoord is onjuist. Probeer het opnieuw.",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "Doel-IP-adres:",
   "dmzViewDHCP": "Clienttabel DHCP weergeven",
   "specifiedRange": "Opgegeven bereik",
-  "invalidMACAddress": "Ongeldig MAC-adres."
+  "invalidMACAddress": "Ongeldig MAC-adres.",
+  "noInternetConnectionWithSSIDTitle": "{ssid} heeft geen internetverbinding"
 }

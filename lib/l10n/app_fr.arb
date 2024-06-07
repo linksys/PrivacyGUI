@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "Tout est bien branché",
   "pnpWaitingModemCheckingInternet": "Vérification de la connexion Internet...",
   "pnpIspTypeSelectionTitle": "Quel type de paramètres FAI avez-vous en votre possession&nbsp;?",
+  "pnpIspTypeSelectionStaticDesc": "Une adresse IP statique est un numéro automatiquement attribué à un réseau par un fournisseur d’accès à Internet (FAI).",
+  "pnpIspTypeSelectionPppoeDesc": "Le protocole Point-to-Point Protocol over Ethernet est une spécification permettant de connecter plusieurs utilisateurs d’ordinateurs sur un réseau local Ethernet à un site distant.",
   "pnpIspTypeSelectionPppoeVlanDesc": "Il arrive que votre FAI vous demande d’avoir un PPPoE sur VLAN pour accéder à Internet.",
   "pnpPppoeTitle": "Renseignez les paramètres&nbsp;du FAI",
+  "pnpPppoeDesc": "Ces paramètres vous ont été communiqués par votre fournisseur d’accès à Internet (FAI). En cas de doute, contactez votre FAI.",
+  "pnpPppoeAddVlan": "Ajoutez un ID VLAN",
   "pppoeVlan": "PPPoE sur VLAN",
   "saved": "Enregistré",
   "incorrectPassword": "Mot de passe incorrect",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "Les ports Ethernet ne fonctionnent pas",
   "callSupportSelectionTitle": "Choisissez votre région",
   "callSupportDetailTwentyFourSeven": "24 heures sur 24, 7 jours sur 7",
+  "callSupportDetailDesc": "Pour une assistance rapide, veuillez avoir sous la main le type de produit, le modèle et le numéro de série.",
   "setup": "Configuration",
   "connectivity": "Connectivité",
   "speed": "Vitesse",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "Vous disposez peut-être d’un modem alimenté par une batterie qui nécessite des étapes supplémentaires",
   "pnpModemLightsOffTipDesc": "Votre modem est peut-être équipé d’une batterie de secours. Pour redémarrer, NE retirez PAS la batterie. Procédez comme suit&nbsp;:",
   "pnpWaitingModemWaitStartUp": "Dans l’attente du démarrage de votre modem",
+  "pnpPppoeRemoveVlan": "Supprimez l’ID du VLAN",
   "pnpStaticIpDesc": "Ces paramètres sont destinés aux utilisateurs possédant une adresse&nbsp;IP statique assignée manuellement.",
   "pnpErrorForStaticIpAndDhcp": "Impossible d’établir une connexion. Vérifiez vos informations et réessayez.",
   "pnpErrorForPppoe": "Nom du compte ou mot de passe incorrect. Veuillez réessayer.",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "Adresse IP de destination :",
   "dmzViewDHCP": "Voir le tableau des clients DHCP",
   "specifiedRange": "Plage spécifiée",
-  "invalidMACAddress": "Adresse MAC incorrecte."
+  "invalidMACAddress": "Adresse MAC incorrecte.",
+  "noInternetConnectionWithSSIDTitle": "{ssid} n’est pas connecté à Internet"
 }

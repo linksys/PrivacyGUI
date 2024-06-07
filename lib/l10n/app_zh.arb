@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "已连接好",
   "pnpWaitingModemCheckingInternet": "正在检查互联网…",
   "pnpIspTypeSelectionTitle": "您的ISP设置是什么类型？",
+  "pnpIspTypeSelectionStaticDesc": "静态互联网协议（IP）地址（静态IP地址）是由互联网服务提供商（ISP）分配给网络的永久性数字地址。",
+  "pnpIspTypeSelectionPppoeDesc": "以太网点对点协议（PPPoE）是用于将一个以太网局域网中多个计算机用户连接至远程站点的协议规范。",
   "pnpIspTypeSelectionPppoeVlanDesc": "有时候，您的ISP可能要求您提供虚拟局域网PPPoE才能访问互联网。",
   "pnpPppoeTitle": "输入ISP设置",
+  "pnpPppoeDesc": "这些设置由您的互联网服务提供商（ISP）提供。如果您不确定您的设置，我们建议您联系您的ISP。",
+  "pnpPppoeAddVlan": "添加VLAN ID",
   "pppoeVlan": "虚拟局域网PPPoE",
   "saved": "已保存",
   "incorrectPassword": "密码错误",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "以太网端口不运行",
   "callSupportSelectionTitle": "请选择您所在区域",
   "callSupportDetailTwentyFourSeven": "24/7全天候",
+  "callSupportDetailDesc": "如需尽快解决问题，请随时准备好您的产品类型、型号和序列号等信息。",
   "setup": "安装",
   "connectivity": "连接",
   "speed": "速度",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "您的调制解调器可能属于电池供电类型，因此您可能需要额外的步骤",
   "pnpModemLightsOffTipDesc": "您的调制解调器可能有备用电池。重新启动时，请勿拆卸电池。请按照指示进行操作：",
   "pnpWaitingModemWaitStartUp": "正在等待您的调制解调器重启",
+  "pnpPppoeRemoveVlan": "移除VLAN ID",
   "pnpStaticIpDesc": "这些设置适用于手动分配静态IP地址的用户。",
   "pnpErrorForStaticIpAndDhcp": "无法建立连接。请检查您的信息，然后重试。",
   "pnpErrorForPppoe": "帐户名称或密码不正确。请重试。",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "目标IP地址：",
   "dmzViewDHCP": "查看DHCP客户端列表",
   "specifiedRange": "指定的范围",
-  "invalidMACAddress": "无效的MAC地址。"
+  "invalidMACAddress": "无效的MAC地址。",
+  "noInternetConnectionWithSSIDTitle": "{ssid}没有互联网连接"
 }
