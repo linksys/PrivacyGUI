@@ -66,15 +66,15 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
     final state = ref.watch(dmzSettingsProvider);
     return StyledAppPageView(
         title: loc(context).dmz,
-        onBackTap: () {
-          if (_preservedState != ref.read(dmzSettingsProvider)) {
-            showUnsavedAlert(context).then((value) {
-              if (value == true) {
-                context.pop();
+        onBackTap: _preservedState != ref.read(dmzSettingsProvider)
+            ? () {
+                showUnsavedAlert(context).then((value) {
+                  if (value == true) {
+                    context.pop();
+                  }
+                });
               }
-            });
-          }
-        },
+            : null,
         scrollable: true,
         bottomBar: PageBottomBar(
             isPositiveEnabled: _preservedState != state &&
