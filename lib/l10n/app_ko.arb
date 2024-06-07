@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "다음에 연결되어 있음:",
   "pnpWaitingModemCheckingInternet": "인터넷 확인 중...",
   "pnpIspTypeSelectionTitle": "어떤 종류의 ISP 설정이 있습니까?",
+  "pnpIspTypeSelectionStaticDesc": "정적 인터넷 프로토콜(IP) 주소(정적 IP 주소)는 인터넷 서비스 제공자(ISP)가 네트워크에 할당한 영구 번호입니다.",
+  "pnpIspTypeSelectionPppoeDesc": "이더넷을 통한 지점 간 프로토콜은 이더넷 로컬 영역 네트워크의 여러 컴퓨터 사용자를 원격 사이트에 연결하기 위한 사양입니다.",
   "pnpIspTypeSelectionPppoeVlanDesc": "때로는 ISP가 인터넷에 액세스하기 위해 VLAN을 통한 PPPoE를 요구할 수도 있습니다.",
   "pnpPppoeTitle": "ISP 설정 입력",
+  "pnpPppoeDesc": "이러한 설정은 인터넷 서비스 제공자(ISP)를 통해 제공됩니다. 자신의 설정에 대해 잘 모르는 경우, ISP에 연락하도록 권장합니다.",
+  "pnpPppoeAddVlan": "VLAN ID 추가",
   "pppoeVlan": "PPPoE over VLAN",
   "saved": "저장됨",
   "incorrectPassword": "잘못된 암호",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "이더넷 포트가 작동하지 않음",
   "callSupportSelectionTitle": "해당 지역 선택",
   "callSupportDetailTwentyFourSeven": "24시간, 매주 7일",
+  "callSupportDetailDesc": "신속한 서비스를 위해, 제품 유형, 모델 및 일련 번호를 적어 두십시오.",
   "setup": "설정",
   "connectivity": "연결성",
   "speed": "속도",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "추가 단계가 필요한 배터리 구동 모뎀이 있을 수 있습니다.",
   "pnpModemLightsOffTipDesc": "모뎀에 백업 배터리가 있을 수 있습니다. 다시 시작하려면 배터리를 제거하지 마십시오. 다음 지침을 따르십시오.",
   "pnpWaitingModemWaitStartUp": "모뎀이 시작될 때까지 기다리는 중입니다.",
+  "pnpPppoeRemoveVlan": "VLAN ID 제거",
   "pnpStaticIpDesc": "이 설정은 수동으로 할당된 고정 IP 주소 사용자를 위한 것입니다.",
   "pnpErrorForStaticIpAndDhcp": "연결을 설정할 수 없습니다. 정보를 확인한 후 다시 시도하십시오.",
   "pnpErrorForPppoe": "계정 이름이나 암호가 잘못되었습니다. 다시 시도하세요.",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "대상 IP 주소:",
   "dmzViewDHCP": "DHCP 클라이언트 테이블 보기",
   "specifiedRange": "지정된 범위",
-  "invalidMACAddress": "잘못된 MAC 주소입니다."
+  "invalidMACAddress": "잘못된 MAC 주소입니다.",
+  "noInternetConnectionWithSSIDTitle": "{ssid}가 인터넷에 연결되어 있지 않습니다."
 }

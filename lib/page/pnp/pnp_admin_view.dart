@@ -74,6 +74,11 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         })
         .catchError((error, stackTrace) {
           logger.e('[PnP]: Invalid given admin password!');
+          setState(() {
+            _internetChecked = true;
+            _inputError = '';
+            _password = null;
+          });
         }, test: (error) => error is ExceptionInvalidAdminPassword)
         .catchError((error, stackTrace) {
           logger.e(
@@ -162,6 +167,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           onTap: () {
             adminPasswordFlow(_password).then((_) {
               context.goNamed(RouteNamed.pnpConfig);
+            }).onError((error, stackTrace) {
+              setState(() {
+                _isFactoryReset = false;
+              });
             });
           },
         ),
@@ -257,7 +266,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
                         modelNumber: deviceInfo?.modelNumber ?? 'LN11')),
                 height: 160,
                 width: 160,
-                fit: BoxFit.fitWidth,
+                fit: BoxFit.contain,
               ),
               AnimatedContainer(
                 duration: const Duration(seconds: 1),
@@ -288,18 +297,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     ];
   }
 
-  Future adminPasswordFlow(String? password) => ref
-          .read(pnpProvider.notifier)
-          .checkAdminPassword(password)
-          .catchError((error, stackTrace) {
-        setState(() {
-          _internetChecked = true;
-          _isFactoryReset = false;
-          _inputError = '';
-          _password = null;
-        });
-        throw error;
-      }, test: (error) => error is ExceptionInvalidAdminPassword);
+  Future adminPasswordFlow(String? password) {
+    logger.d('admin password flow: $password');
+    return ref.read(pnpProvider.notifier).checkAdminPassword(password);
+  }
 
   _showRouterPasswordModal() {
     return showDialog(

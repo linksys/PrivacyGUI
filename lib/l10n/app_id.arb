@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "Sudah dicolokkan",
   "pnpWaitingModemCheckingInternet": "Memeriksa ketersediaan internet...",
   "pnpIspTypeSelectionTitle": "Jenis ISP apa yang Anda miliki?",
+  "pnpIspTypeSelectionStaticDesc": "Alamat Protokol Internet (IP) statis (alamat IP statis) adalah nomor permanen yang diatur pada jaringan oleh penyedia layanan internet (ISP).",
+  "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet adalah spesifikasi untuk menyambungkan beberapa pengguna komputer pada jaringan area lokal ethernet ke situs jarak jauh.",
   "pnpIspTypeSelectionPppoeVlanDesc": "Terkadang ISP mewajibkan Anda menggunakan PPPoE lewat VLAN untuk mengakses internet.",
   "pnpPppoeTitle": "Masukkan Pengaturan ISP",
+  "pnpPppoeDesc": "Pengaturan ini diberikan oleh Penyedia Layanan Internet (ISP) Anda. Jika tidak yakin terkait pengaturan tersebut, kami sarankan untuk menghubungi ISP Anda.",
+  "pnpPppoeAddVlan": "Tambahkan ID VLAN",
   "pppoeVlan": "PPPoE lewat VLAN",
   "saved": "Disimpan",
   "incorrectPassword": "Kata sandi salah.",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "Port Ethernet tidak bekerja",
   "callSupportSelectionTitle": "Pilih wilayah Anda",
   "callSupportDetailTwentyFourSeven": "24 jam sehari, 7 hari seminggu",
+  "callSupportDetailDesc": "Untuk layanan cepat, persiapkan informasi jenis produk, nomor model dan nomor seri.",
   "setup": "Persiapan",
   "connectivity": "Konektivitas",
   "speed": "Kecepatan",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "Anda mungkin memiliki modem bertenaga baterai yang memerlukan langkah tambahan",
   "pnpModemLightsOffTipDesc": "Modem Anda mungkin memiliki baterai cadangan. Untuk memulai ulang, JANGAN cabut baterai. Ikuti instruksi berikut:",
   "pnpWaitingModemWaitStartUp": "Menunggu modem Anda hidup",
+  "pnpPppoeRemoveVlan": "Hapus ID VLAN",
   "pnpStaticIpDesc": "Pengaturan ini adalah untuk pengguna dengan alamat IP statis manual.",
   "pnpErrorForStaticIpAndDhcp": "“Tidak dapat melakukan sambungan. Periksa Info Anda, lalu coba lagi.",
   "pnpErrorForPppoe": "Nama akun atau kata sandi salah. Coba lagi.",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "Alamat IP Tujuan:",
   "dmzViewDHCP": "Lihat Tabel Klien DHCP",
   "specifiedRange": "Rentang yang Ditetapkan",
-  "invalidMACAddress": "Alamat MAC tidak valid."
+  "invalidMACAddress": "Alamat MAC tidak valid.",
+  "noInternetConnectionWithSSIDTitle": "{ssid} tidak memiliki sambungan internet"
 }

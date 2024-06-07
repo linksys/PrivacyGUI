@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -20,8 +21,9 @@ class CallSupportMoreRegionView extends ArgumentsConsumerStatelessView {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final title = args['main'] as String;
-    final regionList = args['moreRegions'] as List<CallSupportRegion>;
+    final region = args['region'] as CallSupportRegion;
+    final title = region.getTitle(context);
+    final regionList = region.moreRegions();
 
     return StyledAppPageView(
       title: title,
@@ -103,9 +105,12 @@ class CallSupportMoreRegionView extends ArgumentsConsumerStatelessView {
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   const AppGap.regular(),
-                  AppText.titleLarge(
-                    number,
-                    color: Theme.of(context).colorScheme.primary,
+                  Flexible(
+                    child: AppText.titleLarge(
+                      number,
+                      color: Theme.of(context).colorScheme.primary,
+                      maxLines: 2,
+                    ),
                   ),
                 ],
               ),
@@ -121,6 +126,7 @@ class CallSupportMoreRegionView extends ArgumentsConsumerStatelessView {
           ),
           const AppGap.extraBig(),
           AppText.bodyLarge(loc(context).callSupportDetailDesc),
+          AppText.bodyLarge(loc(context).callSupportDetailDesc2),
         ],
       ),
     );

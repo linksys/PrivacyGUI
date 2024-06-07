@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "Es ist angeschlossen",
   "pnpWaitingModemCheckingInternet": "Die Internetverbindung wird überprüft...",
   "pnpIspTypeSelectionTitle": "Welche Art von Internetanbieter-Einstellungen haben Sie?",
+  "pnpIspTypeSelectionStaticDesc": "Eine statische Internetprotokoll-(IP-)Adresse (statische IP-Adresse) ist eine permanente Zahl, die einem Netzwerk von einem Internetanbieter zugewiesen wird.",
+  "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet wird zur Verbindung mehrerer Computer-Nutzer eines lokalen LAN-Netzwerks mit einem entfernten Standort verwendet.",
   "pnpIspTypeSelectionPppoeVlanDesc": "Bei manchen Internetanbietern ist PPPoE über VLAN für den Internetzugang erforderlich.",
   "pnpPppoeTitle": "Geben Sie die ISP-Einstellungen ein",
+  "pnpPppoeDesc": "Diese Einstellungen erhalten Sie von Ihrem Internetanbieter. Wenn Sie sich nicht sicher sind, sollten Sie Ihren Internetanbieter kontaktieren.",
+  "pnpPppoeAddVlan": "VLAN-ID hinzufügen",
   "pppoeVlan": "PPPoE über VLAN",
   "saved": "Gespeichert",
   "incorrectPassword": "Falsches Passwort",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "Ethernet-Ports funktionieren nicht",
   "callSupportSelectionTitle": "Wählen Sie Ihre Region aus",
   "callSupportDetailTwentyFourSeven": "Rund um die Uhr",
+  "callSupportDetailDesc": "Damit wir Ihnen schnell helfen können, halten Sie bitte den Produkttyp, das Modell und die Seriennummer bereit.",
   "setup": "Setup",
   "connectivity": "Konnektivität",
   "speed": "Geschwindigkeit",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "Sie haben ggf. ein Modem, das über Batterien/Akkus mit Strom versorgt wird und zusätzliche Hilfe benötigt.",
   "pnpModemLightsOffTipDesc": "Ihr Modem hat ggf. einen Reserveakku. Entfernen Sie für den Neustart NICHT den Akku. Führen Sie die folgenden Schritte aus:",
   "pnpWaitingModemWaitStartUp": "Es wird gewartet, bis Ihr Modem hochgefahren ist",
+  "pnpPppoeRemoveVlan": "VLAN-ID entfernen",
   "pnpStaticIpDesc": "Diese Einstellungen sind für Nutzer mit einer manuell zugewiesenen statischen IP-Adresse.",
   "pnpErrorForStaticIpAndDhcp": "Es konnte keine Verbindung hergestellt werden. Bitte überprüfen Sie Ihre Daten und versuchen Sie es erneut.",
   "pnpErrorForPppoe": "Kontoname oder Passwort ist falsch. Bitte versuchen Sie es erneut.",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "Ziel-IP-Adresse:",
   "dmzViewDHCP": "DHCP-Client-Tabelle anzeigen",
   "specifiedRange": "Festgelegter Bereich",
-  "invalidMACAddress": "Ungültige MAC-Adresse."
+  "invalidMACAddress": "Ungültige MAC-Adresse.",
+  "noInternetConnectionWithSSIDTitle": "{ssid} hat keine Internetverbindung"
 }

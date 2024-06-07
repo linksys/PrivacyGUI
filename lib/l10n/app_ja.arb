@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "電源につながっています",
   "pnpWaitingModemCheckingInternet": "インターネットをチェックしています...",
   "pnpIspTypeSelectionTitle": "どのタイプのISP設定をお持ちですか?",
+  "pnpIspTypeSelectionStaticDesc": "静的なインターネットプロトコル(IP)アドレス(静的IPアドレス)は、インターネットサービスプロバイダー(ISP)がネットワークに割り当てる永久的な番号です。",
+  "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet (PPPoE) は、イーサネットのローカル エリア ネットワーク上の複数のコンピューター ユーザーをリモート サイトに接続する仕様です。",
   "pnpIspTypeSelectionPppoeVlanDesc": "また、ISPがインターネットへのアクセスにPPPoE over VLANを必要とすることもあります。",
   "pnpPppoeTitle": "ISP設定を入力する",
+  "pnpPppoeDesc": "この設定はインターネットサービスプロバイダー(ISP)から提供されます。ご自分の設定がおわかりにならない場合は、ISPに連絡することをお勧めします。",
+  "pnpPppoeAddVlan": "VLAN IDを追加する",
   "pppoeVlan": "PPPoE over VLAN",
   "saved": "保存しました",
   "incorrectPassword": "パスワードが正しくありません",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "イーサネットのポートが動作しない",
   "callSupportSelectionTitle": "地域を選択してください",
   "callSupportDetailTwentyFourSeven": "24 時間、週 7 日",
+  "callSupportDetailDesc": "迅速にサービスをご提供できるよう、製品の形式、モデル、シリアル番号をお手元にご用意ください。",
   "setup": "セットアップ",
   "connectivity": "接続",
   "speed": "速度",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "バッテリー内蔵型のモデム(またはONU)の場合は、追加の手順が必要です",
   "pnpModemLightsOffTipDesc": "お手持ちのモデム(またはONU)がバックアップ用のバッテリーを備えている可能性があります。再起動の際、バッテリーを取り外さないでください。以下の手順に従ってください。",
   "pnpWaitingModemWaitStartUp": "モデム(ONU)が起動をするのを待っています",
+  "pnpPppoeRemoveVlan": "VLAN IDを削除する",
   "pnpStaticIpDesc": "以下の設定は、手動で割り当てられた静的IPアドレスをお持ちのユーザー用です。",
   "pnpErrorForStaticIpAndDhcp": "接続を確立できませんでした。情報をご確認のうえ、もう一度試してください。",
   "pnpErrorForPppoe": "アカウント名またはパスワードが違います。もう一度お試しください。",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "デスティネーション IP アドレス:",
   "dmzViewDHCP": "DHCP クライアント テーブルを表示",
   "specifiedRange": "指定範囲",
-  "invalidMACAddress": "無効な MAC アドレスです。"
+  "invalidMACAddress": "無効な MAC アドレスです。",
+  "noInternetConnectionWithSSIDTitle": "{ssid}にインターネット接続がありません"
 }

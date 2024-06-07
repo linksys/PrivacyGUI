@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "Den er tilkoblet",
   "pnpWaitingModemCheckingInternet": "Søker etter internett ...",
   "pnpIspTypeSelectionTitle": "Hvilke internettleveradør-innstillinger har du?",
+  "pnpIspTypeSelectionStaticDesc": "En statisk IP-adresse er et permanent nummer tilordnet et nettverk av en Internett-leverandør.",
+  "pnpIspTypeSelectionPppoeDesc": "Punkt til punkt-protokoll over Ethernet er en spesifikasjon for tilkobling av flere datamaskinbrukere på et Ethernet-lokalnett til et eksternt område.",
   "pnpIspTypeSelectionPppoeVlanDesc": "Noen ganger krever Internett-leverandøren at du har PPPoE over VLAN for å få tilgang til Internett.",
   "pnpPppoeTitle": "Skriv inn innstillinger for Internett-leverandør",
+  "pnpPppoeDesc": "Disse innstillingene får du av Internett-leverandøren (ISP). Hvis du ikke er sikker på dem, anbefaler vi at du kontakter Internett-leverandøren.",
+  "pnpPppoeAddVlan": "Legg til VLAN ID",
   "pppoeVlan": "PPPoE over VLAN",
   "saved": "Lagret",
   "incorrectPassword": "Feil passord",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "Ethernet-porter fungerer ikke",
   "callSupportSelectionTitle": "Velg region",
   "callSupportDetailTwentyFourSeven": "24 timer i døgnet, 7 dager i uken.",
+  "callSupportDetailDesc": "For rask service, ha produkttype, modell og serienummer lett tilgjengelig.",
   "setup": "Oppsett",
   "connectivity": "Tilkobling",
   "speed": "Hastighet",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "Det kan være du har et batteridrevet modem som krever ekstra trinn",
   "pnpModemLightsOffTipDesc": "Det kan være modemet har et ekstrabatteri. IKKE fjern batteriet for å starte på nytt. Følg disse instruksjonene:",
   "pnpWaitingModemWaitStartUp": "Venter på at modemet skal starte opp",
+  "pnpPppoeRemoveVlan": "Fjern VLAN-ID",
   "pnpStaticIpDesc": "Disse innstillingene er for brukere med en manuelt tildelt statisk IP-adresse.",
   "pnpErrorForStaticIpAndDhcp": "Kunne ikke opprette en tilkobling. Sjekk informasjonen og prøv på nytt.",
   "pnpErrorForPppoe": "Kontonavnet eller passordet er feil. Prøv på nytt.",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "Destinasjons-IP-adresse:",
   "dmzViewDHCP": "Vis DHCP-klienttabell",
   "specifiedRange": "Angitt område",
-  "invalidMACAddress": "Ugyldig MAC-adresse."
+  "invalidMACAddress": "Ugyldig MAC-adresse.",
+  "noInternetConnectionWithSSIDTitle": "{ssid} har ingen internettilkobling"
 }

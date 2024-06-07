@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "Det är inkopplat",
   "pnpWaitingModemCheckingInternet": "Söker efter internet...",
   "pnpIspTypeSelectionTitle": "Vilken typ av inställningar från din internetleverantör har du fått?",
+  "pnpIspTypeSelectionStaticDesc": "En statisk Internet Protocol (IP)-adress (statisk IP-adress) är ett fast nummer som tilldelas ett nätverk av en internetleverantör.",
+  "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over ethernet (PPPoE eller punkt till punkt-protokoll över Ethernet) är en specifikation för att ansluta flera datoranvändare i ett lokalt Ethernet-nätverk till en plats på distans.",
   "pnpIspTypeSelectionPppoeVlanDesc": "Ibland kräver din internetleverantör att du har ett PPPoE över VLAN för att komma åt internet.",
   "pnpPppoeTitle": "Ange inställningar för internetleverantör",
+  "pnpPppoeDesc": "De här inställningarna får du från din internetleverantör. Om du inte är säker på dina inställningar, rekommenderar vi att du kontaktar din internetleverantör.",
+  "pnpPppoeAddVlan": "Lägg till VLAN-ID",
   "pppoeVlan": "PPPoE över VLAN",
   "saved": "Sparad",
   "incorrectPassword": "Felaktigt lösenord.",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "Ethernet-portarna fungerar inte",
   "callSupportSelectionTitle": "Välj din region",
   "callSupportDetailTwentyFourSeven": "Dygnet runt, sju dagar i veckan",
+  "callSupportDetailDesc": "För snabb hjälp, är det bra om du har uppgifter om din typ av produkt, modell och serienummer tillgängligt.",
   "setup": "Konfiguration",
   "connectivity": "Anslutning",
   "speed": "Hastighet",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "Du kanske har ett batteridrivet modem som kräver extra steg",
   "pnpModemLightsOffTipDesc": "Ditt modem kan ha ett reservbatteri. För att starta om, ta INTE bort batteriet. Gör så här:",
   "pnpWaitingModemWaitStartUp": "Väntar på att ditt modem ska starta",
+  "pnpPppoeRemoveVlan": "Ta bort VLAN-ID",
   "pnpStaticIpDesc": "Dessa inställningar är för användare med en manuellt tilldelad statisk IP-adress.",
   "pnpErrorForStaticIpAndDhcp": "Det gick inte att ansluta. Kontrollera din information och försök igen.",
   "pnpErrorForPppoe": "Kontonamnet eller lösenordet är felaktigt. Försök igen.",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "Destinations-IP-adress:",
   "dmzViewDHCP": "Visa DHCP-klienttabell",
   "specifiedRange": "Angivet intervall",
-  "invalidMACAddress": "Ogiltig MAC-adress."
+  "invalidMACAddress": "Ogiltig MAC-adress.",
+  "noInternetConnectionWithSSIDTitle": "{ssid} har ingen internetanslutning"
 }

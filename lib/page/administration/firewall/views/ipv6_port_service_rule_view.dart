@@ -15,7 +15,6 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/input_field/ipv6_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 

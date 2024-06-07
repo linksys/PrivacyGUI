@@ -152,12 +152,13 @@ class _CallbackRequestViewState extends ConsumerState<CallbackRequestView> {
                             _onInputChanged();
                           }
                         },
-                        child: AppTextField.outline(
-                          controller: regionCodeController
-                            ..text = '+${currentRegion.countryCallingCode}',
-                          readOnly: true,
-                          enable: false,
-                          errorText: isValidPhone ? null : '',
+                        child: AbsorbPointer(
+                          child: AppTextField.outline(
+                            controller: regionCodeController
+                              ..text = '+${currentRegion.countryCallingCode}',
+                            readOnly: true,
+                            errorText: isValidPhone ? null : '',
+                          ),
                         ),
                       ),
                     ),

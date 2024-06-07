@@ -112,8 +112,12 @@
   "pnpWaitingModemPluggedIn": "已插入",
   "pnpWaitingModemCheckingInternet": "正在檢查網際網路…",
   "pnpIspTypeSelectionTitle": "您的 ISP 設定屬於何種類型？",
+  "pnpIspTypeSelectionStaticDesc": "靜態網際網路通訊協定 (IP) 位址（靜態 IP 位址）是由網際網路服務提供者 (ISP) 指派給網路的永久編號。",
+  "pnpIspTypeSelectionPppoeDesc": "乙太網路上的點對點通訊協定是一個在乙太網路區域網路上，將多台電腦使用者連線至遠端站台的規格。",
   "pnpIspTypeSelectionPppoeVlanDesc": "您的 ISP 有時會要求您備妥 VLAN 上的 PPPoE 才能存取網際網路。",
   "pnpPppoeTitle": "輸入 ISP 設定",
+  "pnpPppoeDesc": "這些設定由您的網際網路服務提供者 (ISP) 提供。如果不確定您的設定詳細資料，建議您與 ISP 聯繫。",
+  "pnpPppoeAddVlan": "新增 VLAN ID",
   "pppoeVlan": "VLAN 上的 PPPoE",
   "saved": "已儲存",
   "incorrectPassword": "密碼錯誤",
@@ -241,6 +245,7 @@
   "faqListEthernetPortNotWorking": "乙太網連接埠無作用",
   "callSupportSelectionTitle": "請選擇您的區域",
   "callSupportDetailTwentyFourSeven": "全年無休",
+  "callSupportDetailDesc": "為加快服務速度，請備妥您的產品類型、型號與序列號碼資訊。",
   "setup": "設定",
   "connectivity": "連線能力",
   "speed": "速度",
@@ -327,6 +332,7 @@
   "pnpModemLightsOffTipTitle": "您可能有一個採用電池供電的數據機，需要執行額外的步驟",
   "pnpModemLightsOffTipDesc": "您的數據機可能有備用電池。若要重新啟動，「請勿」取出電池。請遵循以下指示執行：",
   "pnpWaitingModemWaitStartUp": "正在等候數據機啟動",
+  "pnpPppoeRemoveVlan": "遠端 VLA NID",
   "pnpStaticIpDesc": "此設定為具有手動指派靜態 IP 位址的使用者專用。",
   "pnpErrorForStaticIpAndDhcp": "無法建立連線。請檢查您的資訊並再試一次。",
   "pnpErrorForPppoe": "帳戶名稱或密碼不正確。請重試。",
@@ -388,5 +394,6 @@
   "dmzDestinationIPAddress": "目的地 IP 位址：",
   "dmzViewDHCP": "檢視 DHCP 用戶端資料表",
   "specifiedRange": "指定的範圍",
-  "invalidMACAddress": "MAC 位址不正確。"
+  "invalidMACAddress": "MAC 位址不正確。",
+  "noInternetConnectionWithSSIDTitle": "{ssid} 沒有網際網路連線"
 }
