@@ -284,13 +284,14 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         });
       }
     }, test: (error) => error is ExceptionNeedToReconnect).catchError((error) {
-      logger.d('[pnp] JNAP Error, $error');
+      logger.d('[pnp] Saving Error, $error');
       setState(() {
         _setupStep = _PnpSetupStep.config;
       });
+      final err = error is ExceptionSavingChanges ? error.error : error;
       showSimpleSnackBar(
-          context, 'Unexceped error! <${(error as JNAPError).error}>');
-    }, test: (error) => error is JNAPError).whenComplete(() async {
+          context, 'Unexceped error! <$err}>');
+    }, test: (error) => error is ExceptionSavingChanges).whenComplete(() async {
       logger.d('[pnp] Save complete, $isUnconfigured, $_setupStep');
 
       if (isUnconfigured) {
