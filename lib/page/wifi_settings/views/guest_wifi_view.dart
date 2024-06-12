@@ -106,7 +106,10 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
             ),
             if (guest.isEnabled) ...[
               const AppGap.regular(),
-              AppText.labelLarge(loc(context).settings),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: AppText.labelLarge(loc(context).settings),
+              ),
               AppSettingCard(
                 title: loc(context).wifiName,
                 description: guest.ssid,
@@ -116,7 +119,7 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
                 },
               ),
               AppListCard(
-                title: AppText.bodyLarge(loc(context).routerPassword),
+                title: AppText.bodyMedium(loc(context).routerPassword),
                 description: IntrinsicWidth(
                     child: Theme(
                         data: Theme.of(context).copyWith(

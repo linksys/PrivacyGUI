@@ -116,11 +116,12 @@ class DashboardWiFiItem extends Equatable {
 class DashboardHomeState extends Equatable {
   final bool isWanConnected;
   final bool isFirstPolling;
+  final bool isHorizontalLayout;
   final String masterIcon;
   final bool isAnyNodesOffline;
   final ({String value, String unit})? uploadResult;
   final ({String value, String unit})? downloadResult;
-  final String? uptime;
+  final int? uptime;
   final String? wanPortConnection;
   final List<String> lanPortConnections;
   final List<LinksysDevice> nodes;
@@ -129,6 +130,7 @@ class DashboardHomeState extends Equatable {
   const DashboardHomeState({
     this.isWanConnected = false,
     this.isFirstPolling = false,
+    this.isHorizontalLayout = false,
     this.masterIcon = '',
     this.isAnyNodesOffline = false,
     this.uploadResult,
@@ -143,11 +145,12 @@ class DashboardHomeState extends Equatable {
   DashboardHomeState copyWith({
     bool? isWanConnected,
     bool? isFirstPolling,
+    bool? isHorizontalLayout,
     String? masterIcon,
     bool? isAnyNodesOffline,
     ({String value, String unit})? uploadResult,
     ({String value, String unit})? downloadResult,
-    String? uptime,
+    int? uptime,
     String? wanPortConnection,
     List<String>? lanPortConnections,
     List<LinksysDevice>? nodes,
@@ -156,6 +159,7 @@ class DashboardHomeState extends Equatable {
     return DashboardHomeState(
       isWanConnected: isWanConnected ?? this.isWanConnected,
       isFirstPolling: isFirstPolling ?? this.isFirstPolling,
+      isHorizontalLayout: isHorizontalLayout ?? this.isHorizontalLayout,
       masterIcon: masterIcon ?? this.masterIcon,
       isAnyNodesOffline: isAnyNodesOffline ?? this.isAnyNodesOffline,
       uptime: uptime ?? this.uptime,
@@ -170,6 +174,7 @@ class DashboardHomeState extends Equatable {
     return <String, dynamic>{
       'isWanConnected': isWanConnected,
       'isFirstPolling': isFirstPolling,
+      'isHorizontalLayout': isHorizontalLayout,
       'masterIcon': masterIcon,
       'isAnyNodesOffline': isAnyNodesOffline,
       'uptimes': uptime,
@@ -184,9 +189,10 @@ class DashboardHomeState extends Equatable {
     return DashboardHomeState(
       isWanConnected: map['isWanConnected'] as bool,
       isFirstPolling: map['isFirstPolling'] as bool,
+      isHorizontalLayout: map['isHorizontalLayout'] as bool,
       masterIcon: map['masterIcon'] as String,
       isAnyNodesOffline: map['isAnyNodesOffline'] as bool,
-      uptime: map['uptimes'] != null ? map['uptimes'] as String : null,
+      uptime: map['uptimes'] != null ? map['uptimes'] as int : null,
       wanPortConnection: map['wanPortConnection'] as String,
       lanPortConnections:
           List<String>.from((map['lanPortConnections'] as List<String>)),
@@ -216,6 +222,7 @@ class DashboardHomeState extends Equatable {
     return [
       isWanConnected,
       isFirstPolling,
+      isHorizontalLayout,
       masterIcon,
       isAnyNodesOffline,
       uptime,

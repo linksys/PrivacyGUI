@@ -44,8 +44,9 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
             shrinkWrap: true,
             itemCount: _WiFiSubMenus.values.length,
             itemBuilder: (context, index) {
-              return AppCard(
-                showBorder: false,
+              return ListTile(
+                shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(100))),
                 onTap: () async {
                   final isCurrentChanged =
                       ref.read(wifiViewProvider).isCurrentViewStateChanged;
@@ -57,7 +58,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
                     _selectMenuIndex = index;
                   });
                 },
-                child: AppText.labelLarge(
+                title: AppText.labelLarge(
                   _subMenuLabel(_WiFiSubMenus.values[index]),
                   color: index == _selectMenuIndex
                       ? Theme.of(context).colorScheme.primary

@@ -86,8 +86,11 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
     final nodeDeviceInfo = await ref
         .read(dashboardManagerProvider.notifier)
         .checkDeviceInfo(null)
-        .then<NodeDeviceInfo?>((value) => value)
-        .onError((error, stackTrace) => null);
+        .then<NodeDeviceInfo?>((nodeDeviceInfo) {
+              // Build/Update better actions
+    buildBetterActions(nodeDeviceInfo.services);
+      return nodeDeviceInfo;
+    }).onError((error, stackTrace) => null);
     if (nodeDeviceInfo != null) {
       logger.d('SN changed: ${nodeDeviceInfo.serialNumber}');
       await ref.read(connectivityProvider.notifier).forceUpdate();

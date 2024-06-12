@@ -451,7 +451,7 @@
   "settings": "Settings",
   "securityMode": "Security mode",
   "wifiMode": "WiFi Mode",
-  "broadcastSSID": "Boardcast SSID",
+  "broadcastSSID": "Broadcast SSID",
   "channel": "Channel",
   "channelWidth": "Channel Width",
   "showAdvanced": "Show advanced",
@@ -693,5 +693,12 @@
   "noInternetConnectionWithSSIDTitle": "{ssid} has no internet connection",
   "internetOnline": "Internet Online",
   "wan": "WAN",
-  "indexedPort": "Port {index}"
+  "indexedPort": "Port {index}",
+  "allow": "Allow",
+  "deny": "Deny",
+  "uptime": "Uptime",
+  "nDays": "{count, plural, one{{count} day} other{{count} days}}",
+  "nHours": "{count, plural, one{{count} hr} other{{count} hrs}}",
+  "nMinutes": "{count, plural, one{{count} min} other{{count} mins}}",
+  "nSeconds": "{count, plural, one{{count} sec} other{{count} secs}}"
 }

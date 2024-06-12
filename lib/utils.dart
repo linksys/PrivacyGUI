@@ -116,7 +116,7 @@ class Utils {
 }
 
 extension DateFormatUtils on Utils {
-  static String formatDuration(Duration d) {
+  static String formatDuration(Duration d, [BuildContext? context]) {
     var seconds = d.inSeconds;
     final days = seconds ~/ Duration.secondsPerDay;
     seconds -= days * Duration.secondsPerDay;
@@ -127,15 +127,20 @@ extension DateFormatUtils on Utils {
 
     final List<String> tokens = [];
     if (days != 0) {
-      tokens.add('${days}d');
+      final token = context == null ? '${days}d' : loc(context).nDays(days);
+      tokens.add(token);
     }
     if (tokens.isNotEmpty || hours != 0) {
-      tokens.add('${hours}h');
+      final token = context == null ? '${days}h' : loc(context).nHours(hours);
+      tokens.add(token);
     }
     if (tokens.isNotEmpty || minutes != 0) {
-      tokens.add('${minutes}m');
+      final token =
+          context == null ? '${minutes}m' : loc(context).nMinutes(minutes);
+      tokens.add(token);
     }
-    tokens.add('${seconds}s');
+    final token = context == null ? '${days}s' : loc(context).nSeconds(seconds);
+    tokens.add(token);
 
     return tokens.join(' ');
   }

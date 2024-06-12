@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/utils.dart';
 
@@ -38,12 +39,11 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
             }).length))
         .toList();
     if (dashboardManagerState.guestRadios.isNotEmpty) {
-      wifiList
-        .add(DashboardWiFiItem.fromGuestRadios(
-            dashboardManagerState.guestRadios,
-            deviceManagerState.guestWifiDevices
-                .where((device) => device.connections.isNotEmpty)
-                .length));
+      wifiList.add(DashboardWiFiItem.fromGuestRadios(
+          dashboardManagerState.guestRadios,
+          deviceManagerState.guestWifiDevices
+              .where((device) => device.connections.isNotEmpty)
+              .length));
     }
     // Guest WiFi
 
@@ -51,14 +51,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     final nodeList = deviceManagerState.nodeDevices;
     final isAnyNodesOffline =
         deviceManagerState.nodeDevices.any((element) => !element.isOnline());
-    // Uptime transform
-    final uptime = DateFormatUtils.formatDuration(
-        Duration(seconds: dashboardManagerState.uptimes));
-    // Get online external devices number
-    final onlineDevices = deviceManagerState.externalDevices
-        .where((device) => device.connections.isNotEmpty)
-        .toList();
-    final numOfOnlineExternalDevices = onlineDevices.length;
+
     // Get WAN connection status
     final isWanConnected =
         deviceManagerState.wanStatus?.wanStatus == 'Connected';
@@ -79,10 +72,15 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       speed: latestSpeedTest?.speedTestResult?.downloadBandwidth ?? 0,
     );
 
+    final deviceInfo = dashboardManagerState.deviceInfo;
+    final horizontalPortLayout = isHorizontalPorts(
+        modelNumber: deviceInfo?.modelNumber ?? '',
+        hardwareVersion: deviceInfo?.hardwareVersion ?? '1');
+
     return newState.copyWith(
       wifis: wifiList,
       nodes: nodeList,
-      uptime: uptime,
+      uptime: dashboardManagerState.uptimes,
       wanPortConnection: dashboardManagerState.wanConnection,
       lanPortConnections: dashboardManagerState.lanConnections,
       isWanConnected: isWanConnected,
@@ -91,6 +89,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       isAnyNodesOffline: isAnyNodesOffline,
       uploadResult: uploadResult,
       downloadResult: downloadResult,
+      isHorizontalLayout: horizontalPortLayout,
     );
   }
 

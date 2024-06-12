@@ -71,19 +71,15 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             : ResponsiveLayout.isOverBreakpoint2(context)
                 ? 2
                 : 1,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 10,
-        childAspectRatio: (3 / 2),
-        mainAxisExtent: 120,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 16,
+        childAspectRatio: (4 / 3),
+        mainAxisExtent: 205,
       ),
       physics: const ScrollPhysics(),
       itemCount: items.length,
       itemBuilder: (context, index) {
-        return CustomAnimatedBox(
-            value: false,
-            selectable: false,
-            onChanged: (value) {},
-            child: _buildDeviceGridCell(items[index]));
+        return _buildDeviceGridCell(items[index]);
       },
     );
   }

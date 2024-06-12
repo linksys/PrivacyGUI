@@ -154,10 +154,12 @@ class StyledAppPageView extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (!ResponsiveLayout.isMobileLayout(context) && hasMenu())
+                if (!ResponsiveLayout.isMobileLayout(context) && hasMenu()) ...[
                   AppCard(
                     child: _createMenuWidget(context, 200),
                   ),
+                  const AppGap.regular(),
+                ],
                 Expanded(child: child),
               ],
             ),
@@ -324,6 +326,8 @@ class StyledAppPageView extends ConsumerWidget {
               ),
               const AppGap.regular(),
               ...(menu?.items ?? []).map((e) => ListTile(
+                    shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(100))),
                     leading: e.icon != null ? Icon(e.icon) : null,
                     title: AppText.bodySmall(e.label),
                     onTap: e.onTap,

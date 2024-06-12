@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/mac_filtering_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/mac_filtering_state.dart';
@@ -13,7 +12,6 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -50,39 +48,29 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: AppListCard(
-                    title:
-                        AppText.labelLarge(loc(context).selectFromMyDeviceList),
-                    trailing: const Icon(LinksysIcons.add),
-                    onTap: () async {
-                      final results = await context
-                          .pushNamed<List<DeviceListItem>?>(
-                              RouteNamed.devicePicker,
-                              extra: {
-                            'type': 'mac',
-                            'selected':
-                                ref.read(macFilteringProvider).macAddresses
-                          });
-                      if (results != null) {
-                        ref.read(macFilteringProvider.notifier).setSelection(
-                            results.map((e) => e.macAddress).toList());
-                      }
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: AppListCard(
-                    title: AppText.labelLarge(loc(context).manuallyAddDevice),
-                    trailing: const Icon(LinksysIcons.add),
-                    onTap: () {
-                      _showManuallyAddModal();
-                    },
-                  ),
-                ),
-              ],
+            AppListCard(
+              title: AppText.labelLarge(loc(context).selectFromMyDeviceList),
+              trailing: const Icon(LinksysIcons.add),
+              onTap: () async {
+                final results = await context.pushNamed<List<DeviceListItem>?>(
+                    RouteNamed.devicePicker,
+                    extra: {
+                      'type': 'mac',
+                      'selected': ref.read(macFilteringProvider).macAddresses
+                    });
+                if (results != null) {
+                  ref
+                      .read(macFilteringProvider.notifier)
+                      .setSelection(results.map((e) => e.macAddress).toList());
+                }
+              },
+            ),
+            AppListCard(
+              title: AppText.labelLarge(loc(context).manuallyAddDevice),
+              trailing: const Icon(LinksysIcons.add),
+              onTap: () {
+                _showManuallyAddModal();
+              },
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16.0),
