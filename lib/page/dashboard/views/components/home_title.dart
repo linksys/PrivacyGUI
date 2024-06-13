@@ -68,7 +68,7 @@ class DashboardHomeTitle extends ConsumerWidget {
                   if (!ResponsiveLayout.isMobileLayout(context) && isOnline)
                     Row(
                       children: [
-                        Icon(Icons.alarm,
+                        Icon(LinksysIcons.uptime,
                             color: Theme.of(context).colorScheme.onSurface),
                         const AppGap.regular(),
                         AppText.bodyMedium('${loc(context).uptime}: $uptime',

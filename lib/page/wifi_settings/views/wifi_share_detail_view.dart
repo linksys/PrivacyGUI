@@ -41,12 +41,10 @@ enum ShareWifiOption {
 class WiFiShareDetailView extends ConsumerStatefulWidget {
   final String ssid;
   final String password;
-  final int numOfDevices;
   const WiFiShareDetailView({
     Key? key,
     required this.ssid,
     required this.password,
-    required this.numOfDevices,
   }) : super(key: key);
 
   @override
@@ -66,29 +64,15 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      backState: StyledBackState.none,
-      scrollable: true,
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.semiBig),
-      menuWidget: ResponsiveLayout.isMobileLayout(context)
-          ? null
-          : IntrinsicWidth(child: _qrcodeSection()),
-      child: AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _wifiInfoSection(),
-            // const AppGap.big(),
-            // _optionSection(),
-            if (ResponsiveLayout.isMobileLayout(context))
-              AppCard(child: _qrcodeSection()),
-            if (!ResponsiveLayout.isMobileLayout(context))
-              AppCard(child: _shareSection()),
-          ],
-        ),
-        crossAxisAlignment: CrossAxisAlignment.start,
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _wifiInfoSection(),
+        // const AppGap.big(),
+        // _optionSection(),
+        AppCard(child: _qrcodeSection()),
+      ],
     );
   }
 

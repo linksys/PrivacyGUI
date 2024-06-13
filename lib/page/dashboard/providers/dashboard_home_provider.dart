@@ -1,4 +1,6 @@
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -29,13 +31,20 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     var newState = const DashboardHomeState();
     // Get WiFi list
     final wifiList = dashboardManagerState.mainRadios
+        .groupFoldBy<String, List<RouterRadio>>(
+            (element) =>
+                element.settings.ssid +
+                (element.settings.wpaPersonalSettings?.passphrase ?? ''),
+            (previous, element) => [...(previous ?? []), element])
+        .entries
         .map((e) => DashboardWiFiItem.fromMainRadios(
-            [e],
+            e.value,
             deviceManagerState.mainWifiDevices.where((device) {
               final deviceBand = ref
                   .read(deviceManagerProvider.notifier)
                   .getBandConnectedBy(device);
-              return device.connections.isNotEmpty && deviceBand == e.band;
+              return device.connections.isNotEmpty &&
+                  e.value.any((element) => element.band == deviceBand);
             }).length))
         .toList();
     if (dashboardManagerState.guestRadios.isNotEmpty) {
@@ -72,6 +81,10 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       speed: latestSpeedTest?.speedTestResult?.downloadBandwidth ?? 0,
     );
 
+    final speedTestTimeStamp = int.tryParse(latestSpeedTest?.timestamp ?? '');
+
+    final isSpeedCheckSupported =
+        dashboardManagerState.healthCheckModules.contains('SpeedTest');
     final deviceInfo = dashboardManagerState.deviceInfo;
     final horizontalPortLayout = isHorizontalPorts(
         modelNumber: deviceInfo?.modelNumber ?? '',
@@ -89,7 +102,9 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       isAnyNodesOffline: isAnyNodesOffline,
       uploadResult: uploadResult,
       downloadResult: downloadResult,
+      timestamp: speedTestTimeStamp,
       isHorizontalLayout: horizontalPortLayout,
+      isHealthCheckSupported: isSpeedCheckSupported,
     );
   }
 

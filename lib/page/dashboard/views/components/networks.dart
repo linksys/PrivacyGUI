@@ -19,6 +19,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class DashboardNetworks extends ConsumerWidget {
   const DashboardNetworks({super.key});
@@ -27,15 +28,143 @@ class DashboardNetworks extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardHomeProvider);
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
-    final newFirmware = hasNewFirmware(ref);
+
     return ShimmerContainer(
       isLoading: isLoading,
       child: AppCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            ResponsiveLayout(
+              desktop: state.isHorizontalLayout
+                  ? _desktopHorizontal(context, ref)
+                  : _desktopVertical(context, ref),
+              mobile: _mobile(context, ref),
+            ),
+            const AppGap.semiBig(),
+            ...state.nodes.map((e) => _nodeCard(context, e)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _desktopHorizontal(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(dashboardHomeProvider);
+    final newFirmware = hasNewFirmware(ref);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText.titleSmall(loc(context).myNetwork),
+        const AppGap.regular(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            AppText.bodySmall(
+              newFirmware
+                  ? loc(context).newFirmwareAvailable
+                  : loc(context).upToDate,
+            ),
+            newFirmware
+                ? Icon(
+                    LinksysIcons.error,
+                    color: Theme.of(context).colorScheme.error,
+                  )
+                : Icon(
+                    LinksysIcons.check,
+                    color: Theme.of(context).colorSchemeExt.green,
+                  )
+          ],
+        ),
+        const AppGap.semiBig(),
+        Row(
+          children: [
+            Expanded(
+                child: _nodesInfoTile(
+              context,
+              ref,
+              state,
+            )),
+            Expanded(
+              child: _devicesInfoTile(
+                context,
+                ref,
+                state,
+              ),
+            )
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _desktopVertical(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(dashboardHomeProvider);
+    final newFirmware = hasNewFirmware(ref);
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText.titleSmall(loc(context).myNetwork),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  AppText.bodySmall(
+                    newFirmware
+                        ? loc(context).newFirmwareAvailable
+                        : loc(context).upToDate,
+                  ),
+                  newFirmware
+                      ? Icon(
+                          LinksysIcons.error,
+                          color: Theme.of(context).colorScheme.error,
+                        )
+                      : Icon(
+                          LinksysIcons.check,
+                          color: Theme.of(context).colorSchemeExt.green,
+                        )
+                ],
+              ),
+            ],
+          ),
+        ),
+        const AppGap.regular(),
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                  child: _nodesInfoTile(
+                context,
+                ref,
+                state,
+              )),
+              Expanded(
+                child: _devicesInfoTile(
+                  context,
+                  ref,
+                  state,
+                ),
+              )
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _mobile(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(dashboardHomeProvider);
+    final newFirmware = hasNewFirmware(ref);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             AppText.titleSmall(loc(context).myNetwork),
-            const AppGap.regular(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -55,32 +184,27 @@ class DashboardNetworks extends ConsumerWidget {
                       )
               ],
             ),
-            const AppGap.semiBig(),
-            Row(
-              children: [
-                Expanded(
-                    child: _nodesInfoTile(
-                  context,
-                  ref,
-                  state,
-                )),
-                Expanded(
-                  child: _devicesInfoTile(
-                    context,
-                    ref,
-                    state.wifis.fold(
-                        0,
-                        (previousValue, element) =>
-                            previousValue += element.numOfConnectedDevices),
-                  ),
-                )
-              ],
-            ),
-            const AppGap.semiBig(),
-            ...state.nodes.map((e) => _nodeCard(context, e)),
           ],
         ),
-      ),
+        const AppGap.regular(),
+        Row(
+          children: [
+            Expanded(
+                child: _nodesInfoTile(
+              context,
+              ref,
+              state,
+            )),
+            Expanded(
+              child: _devicesInfoTile(
+                context,
+                ref,
+                state,
+              ),
+            )
+          ],
+        ),
+      ],
     );
   }
 
@@ -93,6 +217,7 @@ class DashboardNetworks extends ConsumerWidget {
 
   Widget _nodeCard(BuildContext context, LinksysDevice node) {
     return AppListCard(
+      padding: EdgeInsets.zero,
       title: AppText.titleMedium(node.getDeviceLocation()),
       description: AppText.bodyMedium(
           loc(context).nDevices(node.connectedDevices.length)),
@@ -102,10 +227,13 @@ class DashboardNetworks extends ConsumerWidget {
       trailing: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Icon(node.isAuthority
-              ? LinksysIcons.ethernet
-              : getWifiSignalIconData(context, node.signalDecibels)),
-          if (!node.isAuthority) AppText.bodySmall('${node.signalDecibels} dBM')
+          Icon(node.isOnline()
+              ? node.isAuthority
+                  ? LinksysIcons.ethernet
+                  : getWifiSignalIconData(context, node.signalDecibels)
+              : LinksysIcons.signalWifiNone),
+          if (!node.isWiredConnection() && node.isOnline())
+            AppText.bodySmall('${node.signalDecibels} dBM')
         ],
       ),
       showBorder: false,
@@ -115,6 +243,7 @@ class DashboardNetworks extends ConsumerWidget {
   Widget _nodesInfoTile(
       BuildContext context, WidgetRef ref, DashboardHomeState state) {
     return _infoTile(
+      isHorizontal: state.isHorizontalLayout,
       iconData: LinksysIcons.networkNode,
       text: loc(context).nodes,
       count: state.nodes.length,
@@ -133,10 +262,14 @@ class DashboardNetworks extends ConsumerWidget {
   }
 
   Widget _devicesInfoTile(
-      BuildContext context, WidgetRef ref, int numOfOnlineExternalDevices) {
+      BuildContext context, WidgetRef ref, DashboardHomeState state) {
     return _infoTile(
+      isHorizontal: state.isHorizontalLayout,
       text: loc(context).devices,
-      count: numOfOnlineExternalDevices,
+      count: state.wifis.fold(
+          0,
+          (previousValue, element) =>
+              previousValue += element.numOfConnectedDevices),
       iconData: LinksysIcons.devices,
       onTap: () {
         context.goNamed(RouteNamed.dashboardDevices);
@@ -148,35 +281,45 @@ class DashboardNetworks extends ConsumerWidget {
     required String text,
     required int count,
     required IconData iconData,
+    bool isHorizontal = false,
     Widget? sub,
     VoidCallback? onTap,
   }) {
-    return Container(
-      constraints: const BoxConstraints(
-        minHeight: 136,
-      ),
-      child: AppCard(
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return AppCard(
+      onTap: onTap,
+      child: isHorizontal
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    AppText.titleSmall('$count'),
+                    Icon(
+                      iconData,
+                      size: 20,
+                    ),
+                    if (sub != null) sub,
+                  ],
+                ),
+                AppText.titleSmall(text),
+              ],
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   iconData,
-                  size: 24,
+                  size: 20,
                 ),
-                if (sub != null) sub,
+                const AppGap.regular(),
+                AppText.titleSmall('$count'),
+                const AppGap.regular(),
+                AppText.titleSmall(text),
               ],
             ),
-            AppText.titleSmall(text),
-            AppText.displaySmall('$count'),
-          ],
-        ),
-      ),
     );
   }
 }

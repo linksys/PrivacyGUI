@@ -160,7 +160,8 @@ class StyledAppPageView extends ConsumerWidget {
                   ),
                   const AppGap.regular(),
                 ],
-                Expanded(child: child),
+                Expanded(
+                    child: child),
               ],
             ),
           ),

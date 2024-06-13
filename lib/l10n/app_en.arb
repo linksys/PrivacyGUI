@@ -700,5 +700,19 @@
   "nDays": "{count, plural, one{{count} day} other{{count} days}}",
   "nHours": "{count, plural, one{{count} hr} other{{count} hrs}}",
   "nMinutes": "{count, plural, one{{count} min} other{{count} mins}}",
-  "nSeconds": "{count, plural, one{{count} sec} other{{count} secs}}"
+  "nSeconds": "{count, plural, one{{count} sec} other{{count} secs}}",
+  "speedCheckLatestTime": "As of {time} {date}",
+  "@speedCheckLatestTime": {
+    "description": "Speed check with time and date parameter",
+    "placeholders": {
+      "time": {
+        "type": "DateTime",
+        "format": "jm"
+      },
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  }
 }

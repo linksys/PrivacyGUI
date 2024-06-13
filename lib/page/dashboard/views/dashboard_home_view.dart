@@ -64,6 +64,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                         child: Column(
                           children: [
                             DashboardHomePortAndSpeed(),
+                            AppGap.semiSmall(),
                             DashboardWiFiGrid(),
                           ],
                         ),
@@ -86,10 +87,11 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                       ),
                       AppGap.regular(),
                       Expanded(
-                          flex: 5,
+                          flex: 4,
                           child: Column(
                             children: [
                               DashboardNetworks(),
+                              AppGap.semiSmall(),
                               DashboardWiFiGrid(),
 
                               // _networkInfoTiles(state, isLoading),
@@ -104,12 +106,11 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             DashboardHomeTitle(),
-
-            AppGap.extraBig(),
-            DashboardNetworks(),
-            AppGap.extraBig(),
-            Spacer(),
             DashboardHomePortAndSpeed(),
+            AppGap.semiSmall(),
+            DashboardNetworks(),
+            AppGap.semiSmall(),
+
             DashboardWiFiGrid(),
             // const AppGap.extraBig(),
             // _speedTestTile(state, isLoading),
@@ -124,78 +125,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       firmware.checkFirmwareUpdateStatus();
     });
   }
-
-  // Widget _speedTestTile(DashboardHomeState state, bool isLoading) {
-  //   return GestureDetector(
-  //       onTap: () => context.goNamed(RouteNamed.dashboardSpeedTest),
-  //       child: SizedBox(
-  //         width: double.infinity,
-  //         height: 160,
-  //         child: Card(
-  //           elevation: 10,
-  //           shape: RoundedRectangleBorder(
-  //             borderRadius: BorderRadius.circular(10.0),
-  //           ),
-  //           child: Padding(
-  //             padding: const EdgeInsets.symmetric(
-  //                 horizontal: Spacing.regular, vertical: Spacing.regular),
-  //             child: isLoading
-  //                 ? Shimmer(
-  //                     gradient: _shimmerGradient,
-  //                     child: _speedResult(state),
-  //                   )
-  //                 : _speedResult(state),
-  //           ),
-  //         ),
-  //       ));
-  // }
-
-  // Widget _speedResult(DashboardHomeState state) {
-  //   return Column(
-  //     mainAxisAlignment: MainAxisAlignment.start,
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       AppText.titleLarge('Speed'),
-  //       Expanded(
-  //         child: Row(
-  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //           children: [
-  //             Expanded(
-  //               child: Column(
-  //                 mainAxisAlignment: MainAxisAlignment.center,
-  //                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                 children: [
-  //                   Row(
-  //                     children: [
-  //                       const AppGap.semiSmall(),
-  //                       AppText.titleLarge(state.uploadResult.value),
-  //                     ],
-  //                   ),
-  //                   Text('${state.uploadResult.unit}ps'),
-  //                 ],
-  //               ),
-  //             ),
-  //             Expanded(
-  //               child: Column(
-  //                 mainAxisAlignment: MainAxisAlignment.center,
-  //                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                 children: [
-  //                   Row(
-  //                     children: [
-  //                       const AppGap.semiSmall(),
-  //                       AppText.titleLarge(state.downloadResult.value),
-  //                     ],
-  //                   ),
-  //                   Text('${state.downloadResult.unit}ps'),
-  //                 ],
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
 
   // void _pushNotificationCheck() {
   //   if (kIsWeb) {
