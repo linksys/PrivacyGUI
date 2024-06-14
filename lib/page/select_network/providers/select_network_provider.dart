@@ -26,8 +26,7 @@ class SelectNetworkNotifier extends AsyncNotifier<SelectNetworkState> {
     // For now, we only care about node routers
     final networkModels = await Future.wait(
         (await cloudRepository.getNetworks())
-            // .where((element) => isCognitiveMeshRouter(
-            .where((element) => isNodeModel(
+            .where((element) => isCognitiveMeshRouter(
                 modelNumber: element.network.routerModelNumber,
                 hardwareVersion: element.network.routerHardwareVersion))
             .map((e) async {
